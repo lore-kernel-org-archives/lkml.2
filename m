@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780Ab1JLI6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 04:58:22 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:40626 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751130Ab1JLI6M (ORCPT
+	id S1751537Ab1JLI6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 04:58:20 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:53654 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab1JLI6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Oct 2011 04:58:12 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <samuel.ortiz@intel.com>,
-        Dmitry Torokhov <dtor@mail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        alsa-devel@alsa-project.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: [PATCH v3 1/5] Input: twl6040: Simplify vibra regsiter definitions
-Date: Wed, 12 Oct 2011 11:57:53 +0300
-Message-Id: <1318409877-21681-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1318409877-21681-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1318409877-21681-1-git-send-email-peter.ujfalusi@ti.com>
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9556A2.9050005@cam.ac.uk>
+Date: Wed, 12 Oct 2011 09:58:10 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-iio@vger.kernel.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: linux-next: Tree for Oct 11 (iio/resolver)
+References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au> <4E94AADA.4080204@xenotime.net>
+In-Reply-To: <4E94AADA.4080204@xenotime.net>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bits within the two control registers (for left and right channel)
-are identical.
-Use common names for the bits acros the two register.
-Also add the missing definition for the path selection bit.
+On 10/11/11 21:45, Randy Dunlap wrote:
+> On 10/11/11 02:11, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> The linux-next tree is now available from
+>> git://github.com/sfrothwell/linux-next.git as a temporary measure while
+>> the kernel.org servers are unavailable.
+>>
+>> It may also turn up on git.kernel.org (depending on the mirroring).  The
+>> patch set is still absent, however.
+>>
+>> Changes since 20111007:
+> 
+> When no GPIO support is enabled:
+Thanks Randy. Fix is clearly to add the GENERIC_GPIO dependence which should always
+have been there for this driver.  Previously it was building a non working driver
+as the stubs covered everything being used.  I'll sort a patch shortly and chase down
+if we have any others missing GENERIC_GPIO dependencies.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
----
- drivers/input/misc/twl6040-vibra.c |   12 ++++++------
- include/linux/mfd/twl6040.h        |   20 +++++++-------------
- 2 files changed, 13 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index 154b7a3..cb74185 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -74,12 +74,12 @@ static irqreturn_t twl6040_vib_irq_handler(int irq, void *data)
- 	if (status & TWL6040_VIBLOCDET) {
- 		dev_warn(info->dev, "Left Vibrator overcurrent detected\n");
- 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLL,
--				   TWL6040_VIBENAL);
-+				   TWL6040_VIBENA);
- 	}
- 	if (status & TWL6040_VIBROCDET) {
- 		dev_warn(info->dev, "Right Vibrator overcurrent detected\n");
- 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLR,
--				   TWL6040_VIBENAR);
-+				   TWL6040_VIBENA);
- 	}
- 
- 	return IRQ_HANDLED;
-@@ -104,16 +104,16 @@ static void twl6040_vibra_enable(struct vibra_info *info)
- 		 * overcurrent detection
- 		 */
- 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
--				  TWL6040_VIBENAL | TWL6040_VIBCTRLL);
-+				  TWL6040_VIBENA | TWL6040_VIBCTRL);
- 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
--				  TWL6040_VIBENAR | TWL6040_VIBCTRLR);
-+				  TWL6040_VIBENA | TWL6040_VIBCTRL);
- 		usleep_range(3000, 3500);
- 	}
- 
- 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
--			  TWL6040_VIBENAL);
-+			  TWL6040_VIBENA);
- 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
--			  TWL6040_VIBENAR);
-+			  TWL6040_VIBENA);
- 
- 	info->enabled = true;
- }
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index d9e05ea..e6c755d 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -125,24 +125,18 @@
- #define TWL6040_HSDACMODE		(1 << 1)
- #define TWL6040_HSDRVMODE		(1 << 3)
- 
--/* VIBCTLL (0x18) fields */
-+/* VIBCTLL/R (0x18/0x1A) fields */
- 
--#define TWL6040_VIBENAL			0x01
--#define TWL6040_VIBCTRLL		0x04
--#define TWL6040_VIBCTRLLP		0x08
--#define TWL6040_VIBCTRLLN		0x10
-+#define TWL6040_VIBENA			(1 << 0)
-+#define TWL6040_VIBSEL			(1 << 1)
-+#define TWL6040_VIBCTRL			(1 << 2)
-+#define TWL6040_VIBCTRL_P		(1 << 3)
-+#define TWL6040_VIBCTRL_N		(1 << 4)
- 
--/* VIBDATL (0x19) fields */
-+/* VIBDATL/R (0x19/0x1B) fields */
- 
- #define TWL6040_VIBDAT_MAX		0x64
- 
--/* VIBCTLR (0x1A) fields */
--
--#define TWL6040_VIBENAR			0x01
--#define TWL6040_VIBCTRLR		0x04
--#define TWL6040_VIBCTRLRP		0x08
--#define TWL6040_VIBCTRLRN		0x10
--
- /* GPOCTL (0x1E) fields */
- 
- #define TWL6040_GPO1			0x01
--- 
-1.7.7
+Jonathan
+> 
+> drivers/staging/iio/resolver/ad2s1210.c:657:14: error: array type has incomplete element type
+> drivers/staging/iio/resolver/ad2s1210.c:665:44: warning: type defaults to 'int' in type name
+> drivers/staging/iio/resolver/ad2s1210.c:665:44: warning: type defaults to 'int' in type name
+> drivers/staging/iio/resolver/ad2s1210.c:665:44: error: negative width in bit-field '<anonymous>'
+> drivers/staging/iio/resolver/ad2s1210.c:671:14: error: array type has incomplete element type
+> drivers/staging/iio/resolver/ad2s1210.c:679:34: warning: type defaults to 'int' in type name
+> drivers/staging/iio/resolver/ad2s1210.c:679:34: warning: type defaults to 'int' in type name
+> drivers/staging/iio/resolver/ad2s1210.c:679:34: error: negative width in bit-field '<anonymous>'
 
