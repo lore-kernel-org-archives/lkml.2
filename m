@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab1JLVd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:33:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36767 "EHLO ogre.sisk.pl"
+	id S1754310Ab1JLVfU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 17:35:20 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:40608 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754205Ab1JLVd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 17:33:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ming.lei@canonical.com
-Subject: Re: [PATCH 1/2] PM/runtime: fix comment for rpm_suspend
-Date: Wed, 12 Oct 2011 23:36:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1318391613-24364-1-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1318391613-24364-1-git-send-email-ming.lei@canonical.com>
+	id S1754270Ab1JLVfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 17:35:18 -0400
+Date: Wed, 12 Oct 2011 14:28:38 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 12/28] ext4: Use i_generation in inode-related metadata
+	checksums
+Message-ID: <20111012212838.GP12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075502.20506.15728.stgit@elm3c44.beaverton.ibm.com> <BFA9D351-575B-4B48-B5D8-D01DF5317A7C@dilger.ca>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110122336.15459.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BFA9D351-575B-4B48-B5D8-D01DF5317A7C@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11101221-8974-0000-0000-000000CF1F6A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 12, 2011, ming.lei@canonical.com wrote:
-> From: Ming Lei <ming.lei@canonical.com>
+On Wed, Oct 12, 2011 at 12:52:30PM -0700, Andreas Dilger wrote:
+> On 2011-10-08, at 12:55 AM, Darrick J. Wong wrote:
+> > Whenever we are calculating a checksum for a piece of metadata that is
+> > associated with an inode, incorporate i_generation into that calculation
+> > so that old metadata blocks cannot be re-associated after a delete/create cycle.
 > 
-> This patch fix comments for rpm_suspend:
-> 
-> - 'Cancel a pending idle notification' should be put before, also
-> should be changed as 'Cancel a pending idle notification,
-> autosuspend or suspend'
-> 
-> - after suspend succeeded, idle notification for the device has
-> been removed, so update comment for it
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> It would be better to fold this into the previous patch, since it will
+> otherwise cause the inode checksum algorithm to change in the middle of the patch series.
 
-Both patches applied to linux-pm/linux-next.
+Sure.  I guess I can go do that on the e2fsprogs side too.
 
-Thanks,
-Rafael
-
-
-> ---
->  drivers/base/power/runtime.c |   18 ++++++++++--------
->  1 files changed, 10 insertions(+), 8 deletions(-)
+> On a related note, in ext4_new_inode() it would be useful to change the
+> setting of i_generation so that it skips i_generation == 0, which doesn't
+> contribute to the checksum:
 > 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 7a6fb5e..aa23a64 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -286,14 +286,16 @@ static int rpm_callback(int (*cb)(struct device *), struct device *dev)
->   * @dev: Device to suspend.
->   * @rpmflags: Flag bits.
->   *
-> - * Check if the device's runtime PM status allows it to be suspended.  If
-> - * another suspend has been started earlier, either return immediately or wait
-> - * for it to finish, depending on the RPM_NOWAIT and RPM_ASYNC flags.  Cancel a
-> - * pending idle notification.  If the RPM_ASYNC flag is set then queue a
-> - * suspend request; otherwise run the ->runtime_suspend() callback directly.
-> - * If a deferred resume was requested while the callback was running then carry
-> - * it out; otherwise send an idle notification for the device (if the suspend
-> - * failed) or for its parent (if the suspend succeeded).
-> + * Check if the device's runtime PM status allows it to be suspended.
-> + * Cancel a pending idle notification, autosuspend or suspend. If
-> + * another suspend has been started earlier, either return immediately
-> + * or wait for it to finish, depending on the RPM_NOWAIT and RPM_ASYNC
-> + * flags. If the RPM_ASYNC flag is set then queue a suspend request;
-> + * otherwise run the ->runtime_suspend() callback directly. If a deferred
-> + * resume was requested while the callback was running then carry it out;
-> + * otherwise send an idle notification for its parent (if the suspend
-> + * succeeded and both ignore_children of parent->power and irq_safe of
-> + * dev->power are not set).
->   *
->   * This function must be called under dev->power.lock with interrupts disabled.
->   */
+>         spin_lock(&sbi->s_next_gen_lock);
+>         inode->i_generation = sbi->s_next_generation++;
+> +	if (unlikely(inode->i_generation == 0))
+> +	        inode->i_generation = sbi->s_next_generation++;
+>         spin_unlock(&sbi->s_next_gen_lock);
+
+For that to happen the UUID+inode would have to checksum to zero, which seems
+fairly unlikely since I set the "initial" value in ext4_chksum to ~0 to avoid
+the case where UUID = 0, and there's no such thing as inode 0, which means thee
+likelihood of the checksum being 0 at this point ought to be 1:2^32.  Even
+then, the checksum will be different if the value of i_generation changes.
+
+That said, if we /do/ implement this, then perhaps e2fsprogs should be taught
+to set i_generation, as it does not do that currently.
+
+> > diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> > index 6e5876a..d4b59e9 100644
+> > --- a/fs/ext4/ialloc.c
+> > +++ b/fs/ext4/ialloc.c
+> > @@ -1031,11 +1031,14 @@ got:
+> > 	/* Precompute second piece of crc */
+> > 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+> > 			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+> > +		__u32 crc;
+> > 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> > 		__le32 inum = cpu_to_le32(inode->i_ino);
+> > -		ei->i_uuid_inum_crc = ext4_chksum(sbi, sbi->s_uuid_crc,
+> > -						  (__u8 *)&inum,
+> > -						  sizeof(inum));
+> > +		__le32 gen = cpu_to_le32(inode->i_generation);
+> > +		crc = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&inum,
+> > +				  sizeof(inum));
+> > +		ei->i_uuid_inum_crc = ext4_chksum(sbi, crc, (__u8 *)&gen,
+> > +						  sizeof(gen));
+> > 	}
+> > 
+> > 	ext4_clear_state_flags(ei); /* Only relevant on 32-bit archs */
+> > 
+> > diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> > index f18bfe3..fdf0b1e 100644
+> > --- a/fs/ext4/ioctl.c
+> > +++ b/fs/ext4/ioctl.c
+> > @@ -149,6 +149,10 @@ flags_out:
+> > 		if (!inode_owner_or_capable(inode))
+> > 			return -EPERM;
+> > 
+> > +		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +			return -ENOTTY;
 > 
+> This should get an ext4_warning() in the non-checksum case to warn
+> users that this ioctl is deprecated and will be removed in the
+> future unless there is a good reason to keep it.
+
+Ok.  Maybe put it in feature_removal_schedule.txt too?  Maybe not; the ioctl is
+not being totally removed, it's merely unsupported for the metadata_csum case.
+
+--D
 
