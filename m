@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab1JLPKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 11:10:49 -0400
-Received: from mail-dy0-f46.google.com ([209.85.220.46]:38933 "EHLO
-	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab1JLPKr (ORCPT
+	id S1753268Ab1JLPTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 11:19:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37903 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab1JLPTP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 11:10:47 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
-        toshi.okajima@jp.fujitsu.com
-Subject: Re: [PATCH 0/13] read-only remount race fix v7
-References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
-	<20111012150332.GA25289@infradead.org>
-Date: Wed, 12 Oct 2011 17:09:56 +0200
-In-Reply-To: <20111012150332.GA25289@infradead.org> (Christoph Hellwig's
-	message of "Wed, 12 Oct 2011 11:03:32 -0400")
-Message-ID: <8739eyw8jf.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 12 Oct 2011 11:19:15 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <CAPM=9tyAiUZ9tNaer=_52WmiLKpJKG+3EXvZzotwGwvqkJFmOQ@mail.gmail.com>
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+	<CAPM=9tzHOa5Dbe=SQz+AURMMbio4L7qoS8kUT3Ek0+HdtkrH4g@mail.gmail.com>
+	<CAF6AEGs6kkGp85NoNVuq5W9i=WE86V8wvAtKydX=D3bQOc+6Pw@mail.gmail.com>
+	<CAPM=9twft0eBEUoCD11a2gTZHwOaPzFmZvBfE032dfK10eQ27Q@mail.gmail.com>
+	<CAF6AEGuwMt6Snq=YSN4iddTv_Cu56aR_2BY1d3hjVvTdkom5MQ@mail.gmail.com>
+	<CAPM=9tyKjodxf9MKjG=5bBDZTuqOx4Nu31L5iNN9LrO9fsp+FA@mail.gmail.com>
+	<CAF6AEGsK25wk28YmiwsZTenecKqCt6irx66nR-8nOFMo6Z=Dkw@mail.gmail.com>
+	<CAPM=9tyAiUZ9tNaer=_52WmiLKpJKG+3EXvZzotwGwvqkJFmOQ@mail.gmail.com>
+Date: Wed, 12 Oct 2011 10:15:25 -0500
+Message-ID: <CAF6AEGv8QQf_SBUcgKJgLUDaBKHONjUQGY0SY7xq9esDO5VtKw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Rob Clark <robdclark@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-
-Christoph Hellwig <hch@infradead.org> writes:
-
-> On Wed, Oct 12, 2011 at 04:48:53PM +0200, Miklos Szeredi wrote:
->> Here's an update of the read-only remount race fixes.
->> 
->> It should now fix the races after unlink.  I haven't been able to
->> trigger the bad behavior with the test scripts provided by Toshiyuki
->> Okajima.
+On Wed, Oct 12, 2011 at 9:34 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Wed, Oct 12, 2011 at 3:24 PM, Rob Clark <robdclark@gmail.com> wrote:
+>> On Wed, Oct 12, 2011 at 9:01 AM, Dave Airlie <airlied@gmail.com> wrote:
+>>>> But then we'd need a different set of accessors for every different
+>>>> drm/v4l/etc driver, wouldn't we?
+>>>
+>>> Not any more different than you need for this, you just have a new
+>>> interface that you request a sw object from,
+>>> then mmap that object, and underneath it knows who owns it in the kernel.
+>>
+>> oh, ok, so you are talking about a kernel level interface, rather than
+>> userspace..
+>>
+>> but I guess in this case I don't quite see the difference.  It amounts
+>> to which fd you call mmap (or ioctl[*]) on..  If you use the dmabuf fd
+>> directly then you don't have to pass around a 2nd fd.
+>>
+>> [*] there is nothing stopping defining some dmabuf ioctls (such as for
+>> synchronization).. although the thinking was to keep it simple for
+>> first version of dmabuf
+>>
 >
-> How does the test script look like?  Could we integrate it into xfstests
-> so that we have a good regular run regression test for this?
+> Yes a separate kernel level interface.
 
-Attaching the scripts.  It doesn't detect failure, currenly that needs
-to be derived from the output of the run and dmesg.
+I'm not against it, but if it is a device-independent interface, it
+just seems like six of one, half-dozen of the other..
 
-Thanks,
-Miklos
+Ie. how does it differ if the dmabuf fd is the fd used for ioctl/mmap,
+vs if some other /dev/buffer-sharer file that you open?
 
+But I think maybe I'm misunderstanding what you have in mind?
 
---=-=-=
-Content-Type: application/x-shellscript
-Content-Disposition: inline; filename=go.sh
-Content-Transfer-Encoding: base64
+BR,
+-R
 
-IyEvYmluL3NoCgpkZCBpZj0vZGV2L3plcm8gb2Y9L3RtcC9pbWcgYnM9MWsgY291bnQ9MSBzZWVr
-PTEwMDBrID4gL2Rldi9udWxsIDI+JjEKL3NiaW4vbWtmcy5leHQ0IC1GcSAvdG1wL2ltZwptb3Vu
-dCAtbyBsb29wIC90bXAvaW1nIC9tbnQKLi93cml0ZXIuc2ggL21udCAmCkxPT1A9MTAwMDAwMDAw
-MApmb3IgKChpPTA7IGk8TE9PUDsgaSsrKSk7CmRvCiAgICAgICAgZWNobyAiWyRpXSIKICAgICAg
-ICBpZiAoKGklMiA9PSAwKSk7CiAgICAgICAgdGhlbgogICAgICAgICAgICAgICAgbW91bnQgLW8g
-cm8scmVtb3VudCxsb29wIC9tbnQKICAgICAgICBlbHNlCiAgICAgICAgICAgICAgICBtb3VudCAt
-byBydyxyZW1vdW50LGxvb3AgL21udAogICAgICAgIGZpCiAgICAgICAgc2xlZXAgMQpkb25lCg==
---=-=-=
-Content-Type: application/x-shellscript
-Content-Disposition: inline; filename=writer.sh
-Content-Transfer-Encoding: base64
-
-IyEvYmluL3NoCgpkaXI9JDEKZm9yICgoaT0wO2k8MTAwMDAwMDA7aSsrKSk7CmRvCiAgICAgICAg
-Zm9yICgoaj0wO2o8NjQ7aisrKSk7CiAgICAgICAgZG8KICAgICAgICAgICAgICAgIGZpbGVuYW1l
-PSIkZGlyL2ZpbGUkKChpKjY0ICsgaikpIgogICAgICAgICAgICAgICAgZGQgaWY9L2Rldi96ZXJv
-IG9mPSRmaWxlbmFtZSBicz0xayBjb3VudD04ID4gL2Rldi9udWxsIDI+JjEgJgogICAgICAgIGRv
-bmUKICAgICAgICBmb3IgKChqPTA7ajw2NDtqKyspKTsKICAgICAgICBkbwogICAgICAgICAgICAg
-ICAgZmlsZW5hbWU9IiRkaXIvZmlsZSQoKGkqNjQgKyBqKSkiCiAgICAgICAgICAgICAgICBybSAt
-ZiAkZmlsZW5hbWUgPiAvZGV2L251bGwgMj4mMSAmCiAgICAgICAgZG9uZQogICAgICAgIHdhaXQK
-ICAgICAgICBpZiAoKGklMTAwID09IDAgJiYgaSA+IDApKTsKICAgICAgICB0aGVuCiAgICAgICAg
-ICAgICAgICBybSAtZiAkZGlyL2ZpbGUqCiAgICAgICAgZmkKZG9uZQpleGl0Cg==
---=-=-=--
+> Well I'd like to keep it even simpler. dmabuf is a buffer sharing API,
+> shoehorning in a sw mapping API isn't making it simpler.
+>
+> The problem I have with implementing mmap on the sharing fd, is that
+> nothing says this should be purely optional and userspace shouldn't
+> rely on it.
+>
+> In the Intel GEM space alone you have two types of mapping, one direct
+> to shmem one via GTT, the GTT could be even be a linear view. The
+> intel guys initially did GEM mmaps direct to the shmem pages because
+> it seemed simple, up until they
+> had to do step two which was do mmaps on the GTT copy and ended up
+> having two separate mmap methods. I think the problem here is it seems
+> deceptively simple to add this to the API now because the API is
+> simple, however I think in the future it'll become a burden that we'll
+> have to workaround.
+>
+> Dave.
+>
