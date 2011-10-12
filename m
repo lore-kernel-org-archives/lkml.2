@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1JLTjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:39:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20954 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab1JLTjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:39:39 -0400
-Date: Wed, 12 Oct 2011 21:34:17 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
-	thread is singlestepping.
-Message-ID: <20111012193417.GA11004@redhat.com>
-References: <1317128626.15383.61.camel@twins> <20110927131213.GE3685@linux.vnet.ibm.com> <20111005180139.GA5704@redhat.com> <20111006054710.GB17591@linux.vnet.ibm.com> <20111007165828.GA32319@redhat.com> <20111010122556.GB16268@linux.vnet.ibm.com> <20111010182535.GA6934@redhat.com> <20111011172603.GD16268@linux.vnet.ibm.com> <20111011185653.GA10215@redhat.com> <20111012120112.GB11831@linux.vnet.ibm.com>
-MIME-Version: 1.0
+	id S1754062Ab1JLToF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:44:05 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:16462 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab1JLToD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:44:03 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=1h8qd3w5pbyJS47frJc7V6h9QwwiBhgsQMy9mbCO+wA= c=1 sm=1
+ a=qsvkKbLjTbcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=ph9WmAjRBiTLtD7_lecA:9
+ a=09wAv2yCzIBcrIkn0ckA:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 11/28] ext4: Calculate and verify inode checksums
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111012120112.GB11831@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20111008075456.20506.47319.stgit@elm3c44.beaverton.ibm.com>
+Date: Wed, 12 Oct 2011 12:45:01 -0700
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1CCC75F1-41BE-49E9-8A03-372FC76E0202@dilger.ca>
+References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075456.20506.47319.stgit@elm3c44.beaverton.ibm.com>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12, Srikar Dronamraju wrote:
->
-> I think we should be okay if the test exits in UTASK_SSTEP state.
+On 2011-10-08, at 12:54 AM, Darrick J. Wong wrote:
+> This patch introduces to ext4 the ability to calculate and verify inode
+> checksums.  This requires the use of a new ro compatibility flag and some
+> accompanying e2fsprogs patches to provide the relevant features in tune2fs and
+> e2fsck.
+> 
+> +static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
+> +			      struct ext4_inode_info *ei)
+> +{
+> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> +	__u16 crc_lo;
+> +	__u16 crc_hi = 0;
+> +	__u32 crc;
+> +
+> +	crc_lo = raw->i_checksum_lo;
+> +	raw->i_checksum_lo = 0;
+> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
+> +		crc_hi = raw->i_checksum_hi;
+> +		raw->i_checksum_hi = 0;
+> +	}
+> +
+> +	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)raw,
+> +			  EXT4_INODE_SIZE(inode->i_sb));
+> +
+> +	raw->i_checksum_lo = crc_lo;
+> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+> +		raw->i_checksum_hi = crc_hi;
+> +
+> +	return crc;
+> +}
 
-Yes, and afaics we can't avoid this case, at least currently.
+This computes both the _lo and _hi parts of the checksum and overwrites what is in the inode...
 
-But we should move free_uprobe_utask() to mm_release(), or somewhere
-else before mm->core_state check in exit_mm().
+> +static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw,
+> +				  struct ext4_inode_info *ei)
+> +{
+> +	__u32 provided, calculated;
+> +
+> +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
+> +	    cpu_to_le32(EXT4_OS_LINUX) ||
+> +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> +		return 1;
+> +
+> +	provided = le16_to_cpu(raw->i_checksum_lo);
+> +	calculated = ext4_inode_csum(inode, raw, ei);
 
-My main concern is stop/freeze in UTASK_SSTEP state. If nothing else,
-debugger can attach to the stopped task and disable the stepping. Or
-SIGKILL, it should work in this case.
+This only saves the _lo part of the checksum before computing the new
+checksum (which overwrites both _lo and _hi fields), so the _hi part
+of the checksum is never properly validated below.
 
-> > Great. I'll think a bit more and send you the "final" version tomorrow.
-> > Assuming we can change sstep_complete() as we discussed, it doesn't need
-> > fatal_signal_pending().
->
-> Okay.
+> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+> +		provided |= ((__u32)le16_to_cpu(raw->i_checksum_hi)) << 16;
 
-Sorry. I was busy today. Tomorrow ;)
+This should be moved up to save _hi before calling ext4_inode_csum().
 
-> > HOWEVER. There is yet another problem. Another thread can, say, unmap()
-> > xol_vma. In this case we should ensure that the task can't fault in an
-> > endless loop.
->
-> Hmm should we add a check in unmap() to see if the vma that we are
-> trying to unmap is the xol_vma and if so return?
+> +	else
+> +		calculated &= 0xFFFF;
+> +
+> +	return provided == calculated;
+> +}
 
-Oh, I am not sure. You know, I _think_ that perhaps we should do something
-diferent in the long term. In particular, this xol page should not have
-vma at all. This way we shouldn't worry about unmap/remap/mprotect.
-But even if this is possible (I am not really sure), I do not think we
-should do this right now.
+> +static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw,
+> +				struct ext4_inode_info *ei)
+> +{
+> +	__u32 crc;
+> +
+> +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
+> +	    cpu_to_le32(EXT4_OS_LINUX) ||
+> +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> +		return;
+> +
+> +	crc = ext4_inode_csum(inode, raw, ei);
+> +	raw->i_checksum_lo = cpu_to_le16(crc & 0xFFFF);
+> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+> +		raw->i_checksum_hi = cpu_to_le16(crc >> 16);
 
-> Our assumption has been that once an xol_vma has been created, it should
-> be around till the process gets killed.
+What is the point of storing the returned crc into raw->i_checksum_lo
+and raw->i_checksum_hi, if this is done internal to ext4_inode_csum()
+already?
 
-Yes, I see. But afaics this assumption is currently wrong. This means
-that we should ensure the evil application can't exploit this fact.
+Also, would it be better to call the temporary variable "csum" instead
+of "crc", since we may use something other than crc32c as the hash
+function in the future.
 
-Oleg.
+Cheers, Andreas
+
+
+
+
 
