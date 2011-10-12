@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab1JLD5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 23:57:43 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59898 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1JLD5l (ORCPT
+	id S1751062Ab1JLENW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 00:13:22 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:4780 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750792Ab1JLENV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 23:57:41 -0400
-Message-ID: <4E95102A.3050503@linux.vnet.ibm.com>
-Date: Wed, 12 Oct 2011 09:27:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, bp@amd64.org, pavel@ucw.cz,
-        len.brown@intel.com, tj@kernel.org, mingo@elte.hu,
-        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, hpa@zytor.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <4E930C53.3010309@linux.vnet.ibm.com> <4E94A7F8.9010309@linux.vnet.ibm.com> <201110112356.31502.rjw@sisk.pl>
-In-Reply-To: <201110112356.31502.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Oct 2011 00:13:21 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
+        jeffchu@broadcom.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 2/7 v4] i2c-eg20t: Modify returned value s32 to long
+Date: Wed, 12 Oct 2011 13:13:01 +0900
+Message-Id: <1318392786-23610-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1318392786-23610-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+References: <1318392786-23610-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 03:26 AM, Rafael J. Wysocki wrote:
-> On Tuesday, October 11, 2011, Srivatsa S. Bhat wrote:
->> On 10/10/2011 08:46 PM, Srivatsa S. Bhat wrote:
->>> On 10/10/2011 07:56 PM, Peter Zijlstra wrote:
->>>> On Mon, 2011-10-10 at 18:15 +0530, Srivatsa S. Bhat wrote:
->>>>>> +     /*
->>>>>> +      * Prevent cpu online and suspend/hibernate (including freezer)
->>>>>> +      * operations from running in parallel. Fail cpu online if suspend or
->>>>>> +      * hibernate has already started.
->>>>>> +      */
->>>>>> +     if (!trylock_pm_sleep())
->>>>>
->>>>> Would it be better to hook into the suspend/hibernate notifiers and
->>>>> use them to exclude cpu hotplug from suspend/hibernate, instead of
->>>>> trying to take pm_mutex lock like this?
->>>>> Peter, I remember you pointing out in another patch's review
->>>>> (http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087)
->>>>> that introducing more locks in cpu hotplug would be a bad idea. Does that
->>>>> comment hold here as well, or is this fine? 
->>>>
->>>> Arguably pm_mutex is already involved in the whole hotplug dance due to
->>>> suspend using it, that said, I'm not at all familiar with the whole
->>>> suspend/hibernate side of things.
->>>>
->>>> I tried having a quick look this morning but failed to find the actual
->>>> code.
->>>>
->>>> I think it would be good to have an overview of the various locks and a
->>>> small description of how they interact/nest.
->>>>
->>>
->>> Sure. I'll put together whatever I have understood, in the form of a patch
->>> to Documentation/power directory and post it tomorrow, for the benefit of
->>> all.
->>>
->>
->> Here it is, just as promised :-)
->> http://lkml.org/lkml/2011/10/11/393
-> 
-> Well, I have an idea.
-> 
-> Why don't we make drivers/base/cpu.c:store_online() take pm_mutex
-> in addition to calling cpu_hotplug_driver_lock()?  This at least
-> will make the interface mutually exclusive with suspend/hibernation.
-> 
+Type of wait_event_timeout is long not s32.
+This patch replaces s32 with long.
+Additionally, delete negative processing(ret < 0).
 
-Oh, no no.. We shouldn't be doing that even though it seems very
-innocuous, because of a subtle reason: the memory hotplug code called
-in cpu_up() tries to acquire pm_mutex! So we will end up deadlocking
-ourselves, due to recursive locking!
-See kernel/cpu.c: cpu_up() calls mem_online_node() [defined in
-mm/memory_hotplug.c/mem_online_node() which calls lock_memory_hotplug()
-which internally calls lock_system_sleep(), which is where it tries
-to get pm_mutex].
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+---
+ drivers/i2c/busses/i2c-eg20t.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-So this patchset implements the mutual exclusion in the cpu_up() function
-(i.e., a little bit deeper down the road than store_online() ) and solves
-the problem.
-
-I thought I had put a comment there in my code warning about this locking
-order thing, but I must have removed it in the last minute, just before
-posting it....
-
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index d1cd304..5ecbee0 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -314,13 +314,9 @@ static void pch_i2c_start(struct i2c_algo_pch_data *adap)
+  */
+ static s32 pch_i2c_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
+ {
+-	s32 ret;
++	long ret;
+ 	ret = wait_event_timeout(pch_event,
+ 			(adap->pch_event_flag != 0), msecs_to_jiffies(50));
+-	if (ret < 0) {
+-		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
+-		return ret;
+-	}
+ 
+ 	if (ret == 0) {
+ 		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
 -- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+1.7.4.4
+
