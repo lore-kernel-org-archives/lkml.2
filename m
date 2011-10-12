@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1JLXAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 19:00:04 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57952 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab1JLXAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 19:00:03 -0400
-From: Kumar Gala <galak@kernel.crashing.org>
-To: hjk@hansjkoch.de
-Cc: gregkh@suse.de, linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Kai Jiang <Kai.Jiang@freescale.com>
-Subject: [PATCH][v2] uio: Support 36-bit physical addresses on 32-bit systems
-Date: Wed, 12 Oct 2011 15:57:43 -0500
-Message-Id: <1318453063-17349-1-git-send-email-galak@kernel.crashing.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1754533Ab1JLXHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 19:07:03 -0400
+Received: from loki.mindstab.net ([69.164.214.81]:55516 "EHLO loki.localdomain"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752443Ab1JLXHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 19:07:00 -0400
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 19:07:00 EDT
+From: Dan Ballard <dan@mindstab.net>
+To: Dan Ballard <dan@mindstab.net>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, Dan Ballard <dan@mindstab.net>
+Subject: [PATCH 1/1] added code to export CAP_LAST_CAP in /proc/sys/kernel modeled after ngroups_max
+Date: Wed, 12 Oct 2011 15:56:34 -0700
+Message-Id: <1318460194-31983-1-git-send-email-dan@mindstab.net>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kai Jiang <Kai.Jiang@freescale.com>
+In response to a request by the Linux Plumbers about getting CAP_LAST_CAP exposed somehow, I talked to Lennart Poettering briefly and went ahead and added cap_last_cap to /proc/sys/kernel in a similar fashion as ngroups_max is exported.  The patch is simple and just adds another struct to the array of exported values in sysctl.c.
 
-To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
-extend the width of 'addr' in struct uio_mem.  Numerous platforms like
-embedded PPC, ARM, and X86 have support for systems with larger physical
-address than logical.
-
-Since 'addr' may contain a physical, logical, or virtual address the
-easiest solution is to just change the type to 'unsigned long long'
-regardless of which type is utilized.
-
-For physical address we can support up to a 44-bit physical address on a
-typical 32-bit system as we utilize remap_pfn_range() for the mapping of
-the memory region and pfn's are represnted by shifting the address by
-the page size (typically 4k).
-
-Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
-Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Dan Ballard <dan@mindstab.net>
 ---
-v2:
-* Use phys_addr_t instead of 'unsigned long long'
-* Updated DocBook detail in uio-howto.tmpl
+ kernel/sysctl.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
- Documentation/DocBook/uio-howto.tmpl |    2 +-
- drivers/uio/uio.c                    |    8 ++++----
- include/linux/uio_driver.h           |    2 +-
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
-index 7c4b514d..54883de 100644
---- a/Documentation/DocBook/uio-howto.tmpl
-+++ b/Documentation/DocBook/uio-howto.tmpl
-@@ -529,7 +529,7 @@ memory (e.g. allocated with <function>kmalloc()</function>). There's also
- </para></listitem>
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 11d65b5..0cef3c2 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -57,6 +57,7 @@
+ #include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
+ #include <linux/kmod.h>
++#include <linux/capability.h>
  
- <listitem><para>
--<varname>unsigned long addr</varname>: Required if the mapping is used.
-+<varname>phys_addr_t addr</varname>: Required if the mapping is used.
- Fill in the address of your memory block. This address is the one that
- appears in sysfs.
- </para></listitem>
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 88f4444..43b7096 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -69,7 +69,7 @@ static ssize_t map_name_show(struct uio_mem *mem, char *buf)
+ #include <asm/uaccess.h>
+ #include <asm/processor.h>
+@@ -134,6 +135,7 @@ static int minolduid;
+ static int min_percpu_pagelist_fract = 8;
  
- static ssize_t map_addr_show(struct uio_mem *mem, char *buf)
- {
--	return sprintf(buf, "0x%lx\n", mem->addr);
-+	return sprintf(buf, "0x%llx\n", (unsigned long long)mem->addr);
- }
+ static int ngroups_max = NGROUPS_MAX;
++static int cap_last_cap = CAP_LAST_CAP;
  
- static ssize_t map_size_show(struct uio_mem *mem, char *buf)
-@@ -79,7 +79,7 @@ static ssize_t map_size_show(struct uio_mem *mem, char *buf)
- 
- static ssize_t map_offset_show(struct uio_mem *mem, char *buf)
- {
--	return sprintf(buf, "0x%lx\n", mem->addr & ~PAGE_MASK);
-+	return sprintf(buf, "0x%llx\n", (unsigned long long)mem->addr & ~PAGE_MASK);
- }
- 
- struct map_sysfs_entry {
-@@ -634,8 +634,8 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (idev->info->mem[mi].memtype == UIO_MEM_LOGICAL)
- 		page = virt_to_page(idev->info->mem[mi].addr + offset);
- 	else
--		page = vmalloc_to_page((void *)idev->info->mem[mi].addr
--							+ offset);
-+		page = vmalloc_to_page((void *)(unsigned long)
-+				idev->info->mem[mi].addr + offset);
- 	get_page(page);
- 	vmf->page = page;
- 	return 0;
-diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index 4c618cd..d9ce796 100644
---- a/include/linux/uio_driver.h
-+++ b/include/linux/uio_driver.h
-@@ -32,7 +32,7 @@ struct uio_map;
-  */
- struct uio_mem {
- 	const char		*name;
--	unsigned long		addr;
-+	phys_addr_t		addr;
- 	unsigned long		size;
- 	int			memtype;
- 	void __iomem		*internal_addr;
+ #ifdef CONFIG_INOTIFY_USER
+ #include <linux/inotify.h>
+@@ -730,6 +732,13 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0444,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname	= "cap_last_cap",
++		.data		= &cap_last_cap,
++		.maxlen		= sizeof(int),
++		.mode		= 0444,
++		.proc_handler	= proc_dointvec,
++	},
+ #if defined(CONFIG_LOCKUP_DETECTOR)
+ 	{
+ 		.procname       = "watchdog",
 -- 
-1.7.3.4
+1.7.4.1
 
