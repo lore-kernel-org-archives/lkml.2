@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab1JLLxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 07:53:33 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15027 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab1JLLxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 07:53:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 12 Oct 2011 04:53:14 -0700
-From: <pdeschrijver@nvidia.com>
-To: <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH v9 1/3] arm/tegra: prepare Seaboard pinmux code for derived boards
-Date: Wed, 12 Oct 2011 14:53:03 +0300
-Message-ID: <1318420387-6802-2-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1318420387-6802-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1318420387-6802-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	id S1752873Ab1JLL4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 07:56:04 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:39666 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752230Ab1JLL4C convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 07:56:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAP05o4K8BBwh5nbQpuc180WD2=ON+wksEz=gku=Y4GDQzx=BdA@mail.gmail.com>
+References: <1317901123-2546-1-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1110101835070.5205@utopia.booyaka.com>
+	<CAP05o4+Y3_-mFYdsta4DM7EfkYEq1-6psjvawN5pCWX++8jm8A@mail.gmail.com>
+	<CAP05o4K8BBwh5nbQpuc180WD2=ON+wksEz=gku=Y4GDQzx=BdA@mail.gmail.com>
+Date: Wed, 12 Oct 2011 17:26:00 +0530
+Message-ID: <CAP05o4JndWh3zQyD6mVWzK4pNr+42bDeBm7miiGSCOxqTwyvOA@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
+On Tue, Oct 11, 2011 at 1:29 PM, Munegowda, Keshava
+<keshava_mgowda@ti.com> wrote:
+> On Tue, Oct 11, 2011 at 11:18 AM, Munegowda, Keshava
+> <keshava_mgowda@ti.com> wrote:
+>> On Tue, Oct 11, 2011 at 6:08 AM, Paul Walmsley <paul@pwsan.com> wrote:
+>>> Hi
+>>>
+>>> so I just noticed another problem with these hwmods:
+>>>
+>>> On Thu, 6 Oct 2011, Keshava Munegowda wrote:
+>>>
+>>>> Following 2 hwmod structures are added
+>>>>     1. usb_host_hs
+>>>>          The hwmod of usbhs with uhh, ehci and ohci base addresses
+>>>>          functional clock and ehci, ohci irqs
+>>>>
+>>>>     2. usb_tll_hs
+>>>>           hwmod of usbhs with the TLL base address and irq.
+>>>>
+>>>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>>>> Reviewed-by: Partha Basak <parthab@india.ti.com>
+>>>> ---
+>>>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  227 ++++++++++++++++++++++++++++
+>>>>  1 files changed, 227 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>>>> index 59fdb9f..b8ca690 100644
+>>>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>>>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>>>
+>>> ...
+>>>
+>>>> +static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
+>>>
+>>> This interface is missing a .master and .slave.  It must have both.  So,
+>>> dropping this patch until it's fixed.
+>>>
+>>> Clearly we also need to modify the hwmod code needs to reject any
+>>> instances where either .master or .slave is NULL.
+>>>
+>>>
+>>> - Paul
+>>
+>> Hi Paul
+>>           I will fix it today only and I will send the updated
+>> patches in couple of hours.
+>> please help me to make it in this merge window.
+>>
+>
+>
+> Hi Paul
+>      I have posted v14 of the patches; please do review
+> if it is OK, please merge to your branch for 3.2 version
+> please let me know if you have any comments here.
+>
+>  Thanks and Regards
+>  keshava
 
-This patch splits out the common part of pinmux and GPIO initialization for
-seaboard and derived boards. This code is based on work done by Jong Kim
-<jongk@nvidia.com>.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/board-seaboard-pinmux.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+Hi Paul
+requesting to please do review the patch set
+if it is OK, please merge to your branch for 3.2 version
+please let me know if you have any comments.
 
-diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-index 74f78b7..b31c765 100644
---- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
-+++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-@@ -1,5 +1,6 @@
- /*
-- * Copyright (C) 2010 NVIDIA Corporation
-+ * Copyright (C) 2010,2011 NVIDIA Corporation
-+ * Copyright (C) 2011 Google, Inc.
-  *
-  * This software is licensed under the terms of the GNU General Public
-  * License version 2, as published by the Free Software Foundation, and
-@@ -160,7 +161,7 @@ static __initdata struct tegra_pingroup_config seaboard_pinmux[] = {
- 
- 
- 
--static struct tegra_gpio_table gpio_table[] = {
-+static struct tegra_gpio_table common_gpio_table[] = {
- 	{ .gpio = TEGRA_GPIO_SD2_CD,		.enable = true },
- 	{ .gpio = TEGRA_GPIO_SD2_WP,		.enable = true },
- 	{ .gpio = TEGRA_GPIO_SD2_POWER,		.enable = true },
-@@ -171,12 +172,17 @@ static struct tegra_gpio_table gpio_table[] = {
- 	{ .gpio = TEGRA_GPIO_USB1,		.enable = true },
- };
- 
--void __init seaboard_pinmux_init(void)
-+static void __init seaboard_common_pinmux_init(void)
- {
- 	tegra_pinmux_config_table(seaboard_pinmux, ARRAY_SIZE(seaboard_pinmux));
- 
- 	tegra_drive_pinmux_config_table(seaboard_drive_pinmux,
- 					ARRAY_SIZE(seaboard_drive_pinmux));
- 
--	tegra_gpio_config(gpio_table, ARRAY_SIZE(gpio_table));
-+	tegra_gpio_config(common_gpio_table, ARRAY_SIZE(common_gpio_table));
-+}
-+
-+void __init seaboard_pinmux_init(void)
-+{
-+	seaboard_common_pinmux_init();
- }
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+regards
+keshava
