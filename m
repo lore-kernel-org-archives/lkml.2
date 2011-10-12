@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab1JLEY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 00:24:26 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:33127 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab1JLEYZ (ORCPT
+	id S1751100Ab1JLEY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 00:24:58 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:34579 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab1JLEY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 00:24:25 -0400
-X-Greylist: delayed 655 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 00:24:25 EDT
-Message-ID: <4E9513EA.2070709@hardwarefreak.com>
-Date: Tue, 11 Oct 2011 23:13:30 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-Reply-To: stan@hardwarefreak.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        aradford@gmail.com, xfs@oss.sgi.com
-Subject: Re: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O
- load
-References: <20111011091757.GA32589@otto.nzcorp.net> <20111011133448.GA10692@infradead.org> <20111011141338.GA11808@otto.nzcorp.net> <20111012003526.GI3159@dastard>
-In-Reply-To: <20111012003526.GI3159@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Oct 2011 00:24:57 -0400
+Date: Wed, 12 Oct 2011 15:24:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: linux-next: build failure after merge of the gpio tree
+Message-Id: <20111012152451.66ce5ddffb4c5b3a4f6a31cf@canb.auug.org.au>
+In-Reply-To: <4E93EA10.4030405@dsn.lapis-semi.com>
+References: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
+	<20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au>
+	<4E93EA10.4030405@dsn.lapis-semi.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Oct_2011_15_24_51_+1100_ixEDUKGsPJXaxJyD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 7:35 PM, Dave Chinner wrote:
+--Signature=_Wed__12_Oct_2011_15_24_51_+1100_ixEDUKGsPJXaxJyD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> FWIW, if it's a repeatable problem, you might want to update the
-> driver and controller firmware to something more recent and see if
-> that solves the problem....
+Hi,
 
-New firmware was released on 08/11/2011 for the SAS2208 dual core ASIC
-based cards, the 9265-8i and 9285-8i.  I'd say the odds are good that
-the OP's card(s) shipped with the original firmware, given this one was
-released exactly two months ago today.
+On Tue, 11 Oct 2011 16:02:40 +0900 Tomoya MORINAGA <tomoya-linux@dsn.lapis-=
+semi.com> wrote:
+>
+> (2011/10/11 15:37), Stephen Rothwell wrote:
+> >=20
+> > On Thu, 6 Oct 2011 14:48:26 +1100 Stephen Rothwell<sfr@canb.auug.org.au=
+>  wrote:
+> >>
+> >> After merging the gpio tree, today's linux-next build (x86_64
+> >> allmodconfig) failed like this:
+> >>
+> >> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
+> >> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
+> >> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefine=
+d!
+> >> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefine=
+d!
+> >>
+> >> Presumably caused by commits 54be566317b6 ("gpio-ml-ioh: Support
+> >> interrupt function") and 38eb18a6f92d ("gpio-pch: Support interrupt
+> >> function").
+> >>
+> >> I have used the gpio tree from next-20111005 for today.
+> >=20
+> > I am still getting this build failure.
+> >=20
+> I built this driver with success using linux-3.0.
+> I want to try to build with the same as your build environment.
+> Where can I get your environment ?
 
-Complete list of bug fixes and enhancements in this firmware:
-http://kb.lsi.com/KnowledgebaseArticle16557.aspx
+Just try building gpio-pch and gpio-ml-ioh as modules ...
+irq_setup_generic_chip() does not have an EXPORT_SYMBOL (and didn't in
+v3.0 either).
 
-I didn't count them but it looks like a few hundred, which makes this a
-major product refresh, and seems to indicate the original firmware for
-these two cards was a bit buggy.  This is the 2nd firmware release.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Firmware file:
-http://www.lsi.com/downloads/Public/MegaRAID%20Common%20Files/23.1.1-0004_SAS_FW_Image_3.140.15-1320.zip
+--Signature=_Wed__12_Oct_2011_15_24_51_+1100_ixEDUKGsPJXaxJyD
+Content-Type: application/pgp-signature
 
--- 
-Stan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOlRaTAAoJEECxmPOUX5FEx/YP/i9jYIDcXmWC6iT0bSejxs4c
+izL/T3/yrYNpDIwDcVmaG3fqItK0WuUaTAVGke4eUV5urfsoZfuFeebEHSaJj/kU
+OP6jrHwOFEtW/tfz8F3r/nK7FJdM5qzWY0YkwJg1QoEaHm3MsBI+eRmnIEQQt54T
+GUHzZri9zWIEHJ1hE5zaq/x65PDl9t9LxCDnwplKFwD8XmBJBbb5bps6WCSAlAwT
+loQ4Vv0vOoC+Bi/W4DgpmcjDzO3O2+qdKEvzvJz0cT17Uhs+JNdhk+HWXpL6ov3w
+RF/+2fJHDxkwG1aRix+oIGcM95l7BCeh/mI/6cgLOXZL0wr/6E9Pv211LoeE+pPT
+EhSJHMBy6h42WL6Y9J4lSsfRWW7syBd/IrgnsY1j5njyyADzBOdhYjH5V0rZw7U9
+3+3OedljunGbBL7LGkuxjfr79E223gnm4FlyApbVk/OUnb20HA/jbyL/YYdIhmXe
+JCw7Wtsf7le3IgHkQO3iZfAl2VZhUBcQbZbewtuMZ4jPy1zHtaJGHgJ6zC6PL4dU
+a9A91UQfMRCHfTq2IegDj6fdeTGa9j49pSYAaHli2Nnl1x3kCLR1sYm+7i4l3i13
+APQAqBiGlVIXzbK0poUjesLftS++y7xj7HVaqZxmcdPDftK6EIR7mPVkG2sFcXry
+vnFfE0rlS7gHz21B9h/m
+=8EUU
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Oct_2011_15_24_51_+1100_ixEDUKGsPJXaxJyD--
