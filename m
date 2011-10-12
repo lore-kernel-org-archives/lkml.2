@@ -1,136 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab1JLWHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 18:07:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36827 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab1JLWHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 18:07:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-Date: Thu, 13 Oct 2011 00:09:26 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, bp@amd64.org, pavel@ucw.cz,
-        len.brown@intel.com, tj@kernel.org, mingo@elte.hu,
-        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, hpa@zytor.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <201110122131.08811.rjw@sisk.pl> <4E9605C7.5070203@linux.vnet.ibm.com>
-In-Reply-To: <4E9605C7.5070203@linux.vnet.ibm.com>
+	id S1753547Ab1JLWJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 18:09:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52392 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab1JLWJB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 18:09:01 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110130009.26552.rjw@sisk.pl>
+In-Reply-To: <CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+Date: Thu, 13 Oct 2011 00:09:01 +0200
+Message-ID: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 12, 2011, Srivatsa S. Bhat wrote:
-> On 10/13/2011 01:01 AM, Rafael J. Wysocki wrote:
-> > On Wednesday, October 12, 2011, Srivatsa S. Bhat wrote:
-> >> On 10/12/2011 03:26 AM, Rafael J. Wysocki wrote:
-> >>> On Tuesday, October 11, 2011, Srivatsa S. Bhat wrote:
-> >>>> On 10/10/2011 08:46 PM, Srivatsa S. Bhat wrote:
-> >>>>> On 10/10/2011 07:56 PM, Peter Zijlstra wrote:
-> >>>>>> On Mon, 2011-10-10 at 18:15 +0530, Srivatsa S. Bhat wrote:
-> >>>>>>>> +     /*
-> >>>>>>>> +      * Prevent cpu online and suspend/hibernate (including freezer)
-> >>>>>>>> +      * operations from running in parallel. Fail cpu online if suspend or
-> >>>>>>>> +      * hibernate has already started.
-> >>>>>>>> +      */
-> >>>>>>>> +     if (!trylock_pm_sleep())
-> >>>>>>>
-> >>>>>>> Would it be better to hook into the suspend/hibernate notifiers and
-> >>>>>>> use them to exclude cpu hotplug from suspend/hibernate, instead of
-> >>>>>>> trying to take pm_mutex lock like this?
-> >>>>>>> Peter, I remember you pointing out in another patch's review
-> >>>>>>> (http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087)
-> >>>>>>> that introducing more locks in cpu hotplug would be a bad idea. Does that
-> >>>>>>> comment hold here as well, or is this fine? 
-> >>>>>>
-> >>>>>> Arguably pm_mutex is already involved in the whole hotplug dance due to
-> >>>>>> suspend using it, that said, I'm not at all familiar with the whole
-> >>>>>> suspend/hibernate side of things.
-> >>>>>>
-> >>>>>> I tried having a quick look this morning but failed to find the actual
-> >>>>>> code.
-> >>>>>>
-> >>>>>> I think it would be good to have an overview of the various locks and a
-> >>>>>> small description of how they interact/nest.
-> >>>>>>
-> >>>>>
-> >>>>> Sure. I'll put together whatever I have understood, in the form of a patch
-> >>>>> to Documentation/power directory and post it tomorrow, for the benefit of
-> >>>>> all.
-> >>>>>
-> >>>>
-> >>>> Here it is, just as promised :-)
-> >>>> http://lkml.org/lkml/2011/10/11/393
-> >>>
-> >>> Well, I have an idea.
-> >>>
-> >>> Why don't we make drivers/base/cpu.c:store_online() take pm_mutex
-> >>> in addition to calling cpu_hotplug_driver_lock()?  This at least
-> >>> will make the interface mutually exclusive with suspend/hibernation.
-> >>>
-> >>
-> >> Oh, no no.. We shouldn't be doing that even though it seems very
-> >> innocuous, because of a subtle reason: the memory hotplug code called
-> >> in cpu_up() tries to acquire pm_mutex! So we will end up deadlocking
-> >> ourselves, due to recursive locking!
-> > 
-> > So, you're referring to mem_online_node().  Is it actually used
-> > from any place other than cpu_up()?  Perhaps we can remove the
-> > lock_system_sleep() from lock_memory_hotplug() if store_online()
-> > acquires pm_mutex?  And if we can't, then why exactly?
-> > 
-> 
-> I didn't find any other place where mem_online_node() is called. But I'll
-> check it more thoroughly to be sure. If cpu_up() is the only place where
-> it is called, then I think we can do what you said above. But doesn't it
-> seem to be more intrusive than what my patch does? I mean, what if something
-> breaks because of that avoidable modification to memory hotplug code?
+On Wed, Oct 12, 2011 at 11:48 PM, Markus Rechberger
+<mrechberger@gmail.com> wrote:
+> On Wed, Oct 12, 2011 at 10:33 PM, Greg KH <gregkh@suse.de> wrote:
+>> On Wed, Oct 12, 2011 at 06:59:01PM +0200, Markus Rechberger wrote:
+>>> On Wed, Oct 12, 2011 at 4:17 PM, Greg KH <gregkh@suse.de> wrote:
+>>> > On Wed, Oct 12, 2011 at 02:36:59PM +0200, Markus Rechberger wrote:
+>>> >> We have 2 products which can perform better with increased Bulk transfers
+>>> >
+>>> > I don't believe you :)
+>>> >
+>>> > As stated before, this patch is not acceptable.  Please work to figure
+>>> > out the real reason for your device problems here, this is not the
+>>> > correct solution at all.
+>>> >
+>>>
+>>> OK no device support for linux then. Windows and MacOSX are fine.
+>>
+>> That is your choice, not ours, as you are the one writing the closed
+>> source code.  Without usbmon dumps, showing that the problem really is
+>> in the kernel code, we can't do anything for you here.
+>>
+>
+>
+> here take your usbmon logs:
+> http://sundtek.de/support/working.log
+> http://sundtek.de/support/notworking.log (this is with your proposed
+> split up of 22k).
+>
+> Isochronous already supports up to 190kb buffers which cause no
+> trouble anywhere.
+> Bulk is castrated to 15kb buffers and 50kb should be such a big issue
+> while applications
+> which do not request it are not affected at all.
+>
+> I'm very angry that you do not really focus on what I write and just
+> try to write stories about
+> bogus things like my patch might break other applications while I
+> pointed out that this is not
+> possible with legacy applications which use this interface. It is not
+> even possible to read the
+> maximum buffer value from the kernelspace.
+>
+> Your bogus message about 1Gig ram you can put it elsewhere, I checked
+> multiple windows drivers
+> in the past the buffer size varies between small and something around
+> 50k usually.
+> I would fully like to avoid to patch this kernel to get those things
+> work because I don't want to
+> deal with people who just write around the actual issues.
+>
+> Alsi the fact that bigger buffers are already being used plus the HW
+> specifications of our main device also points out to a certain
+> buffersize near 50k. But of course you are the smart knowitall without
+> the need of explanation why
+> those things can be affected by HW and some HW chips have options to
+> influence that buffer size.
 
-We'll need to fix it. :-)
+And for those who are curious about the logfiles:
+Not working one as proposed by Alan that the full buffer size should
+be split into 2 requests:
 
-The current locking in the memory hotplug code and the way it's used
-by the CPU hotplug code seems to be a bit too ad hoc to me, so IMHO
-it makes sense to make it more straightforward anyway.
+ffff8800b38d9f00 1231540351 S Bi:2:013:1 -115 12288 <
+ffff8800b38d96c0 1231540404 S Bi:2:013:1 -115 11776 <
+ffff8800b38d9cc0 1231540440 S Bi:2:013:1 -115 12288 <
+ffff880002ede600 1231540496 S Bi:2:013:1 -115 11776 <
+ffff8800b38d9f00 1231545491 C Bi:2:013:1 0 12288 = 7a1a0840 1ca8353c
+004b80ec 4de08401 2f0227f8 34005e7e 80181dfd 1a8f700a
+ffff88007d51fb40 1231545875 S Bi:2:013:1 -115 12288 <
+ffff8800b38d96c0 1231551861 C Bi:2:013:1 0 11776 = 5244e386 a7800000
+010642ea 35bfbba5 373e738b cc035a73 c328a1ff 4da728ce
+ffff880002ede0c0 1231556173 S Bi:2:013:1 -115 11776 <
+ffff8800b38d9cc0 1231558618 C Bi:2:013:1 0 12288 = db91aae9 2d2532f3
+2e37448a fb36c213 55dda2ad 243122b2 261edb06 875848ac
 
-> >> See kernel/cpu.c: cpu_up() calls mem_online_node() [defined in
-> >> mm/memory_hotplug.c/mem_online_node() which calls lock_memory_hotplug()
-> >> which internally calls lock_system_sleep(), which is where it tries
-> >> to get pm_mutex].
-> >>
-> >> So this patchset implements the mutual exclusion in the cpu_up() function
-> >> (i.e., a little bit deeper down the road than store_online() ) and solves
-> >> the problem.
-> > 
-> > Which is not exactly the right place to do that as Peter has already
-> > indicated.  What you want is really the CPU hotplug interface to be
-> > mutually exclusive with the suspend/hibernation interface, not the
-> > CPU hotplug itself to be mutually exclusive with suspend/hibernation.
-> > 
-> 
-> Oh, is that what Peter meant? I didn't derive that meaning from what
-> he said...
-> Making the interfaces themselves mutually exclusive is also a good idea.
-> But please see my concerns above, about its implementation aspect.
-> 
-> Since my patch solves the problem with less intrusion, and produces
-> roughly the same effect as this interface exclusion idea, why not go with
-> it?
-> 
-> Or am I missing something here?
 
-Your approach may seem to be less intrusive, but it adds locking rules
-to the CPU hotplug code whose locking is complicated enough already.
-IMO it's better to avoid that.
+12288 = 7a1a0840 every Line with 12288 should start with 47 (MPEG-TS Sync byte)
 
-Thanks,
-Rafael
+The working one which allocate 7000 bytes more (oh really big memory
+pressure now!)  than this castrated USBFS interface allows.
+
+ffff88003ac37240 992178919 S Bi:2:013:1 -115 24064 <
+ffff88003ac37000 992178953 S Bi:2:013:1 -115 24064 <
+ffff88003ac37c00 992178980 S Bi:2:013:1 -115 24064 <
+ffff88003ac37e40 992179003 S Bi:2:013:1 -115 24064 <
+ffff88003ac37240 992190198 C Bi:2:013:1 0 24064 = 471fff10 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+ffff88000601f480 992194368 S Bi:2:013:1 -115 24064 <
+ffff88003ac37000 992203209 C Bi:2:013:1 0 24064 = 4701b114 43867ee6
+40790660 e898681c 9b1c7dca 08980d43 73181369 9be1bc67
+ffff880067e38a80 992204642 S Bi:2:013:1 -115 24064 <
+ffff88003ac37c00 992216318 C Bi:2:013:1 0 24064 = 4740001c 0000b01d
+0305d500 000000e0 104015e1 504016e1 60401be1 b04022e2
+ffff880067e383c0 992219978 S Bi:2:013:1 -115 24064 <
+ffff88003ac37e40 992229340 C Bi:2:013:1 0 24064 = 471fff10 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+
+everything starts nicely with 0x47
+
+And now everyone again is clueless how this can happen.. surprise surprise..
+
+Markus
