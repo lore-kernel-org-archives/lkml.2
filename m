@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1JLCbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 22:31:35 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58504 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751222Ab1JLCbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 22:31:34 -0400
-Date: Wed, 12 Oct 2011 02:31:43 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, lennart@poettering.net,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        KaiGai Kohei <kaigai@kaigai.gr.jp>
-Subject: Re: A Plumber???s Wish List for Linux
-Message-ID: <20111012023143.GA17492@hallyn.com>
-References: <1317943022.1095.25.camel@mop>
- <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
- <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
- <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
- <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
- <20111007152137.GE28351@carfax.org.uk>
- <20111010111813.GF17912@twin.jikos.cz>
- <20111011131428.GA13346@hallyn.com>
- <CALQRfL676ijWFeHcYCiX4Vczk4PRd2kf1aybWFNJ3a6FB1D_5A@mail.gmail.com>
+	id S1752201Ab1JLCcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 22:32:16 -0400
+Received: from email-prod-mxsocsci-1.ucsc.edu ([128.114.125.70]:50228 "EHLO
+	email-prod-mx-1.ucsc.edu" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751222Ab1JLCcP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 22:32:15 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Oct 2011 22:32:15 EDT
+X-UCSC-CATS-MailScanner: found to be clean
+X-UCSC-CATS-MailScanner-SpamCheck: not spam, spamassassin (score=-1, required=5, autolearn=disabled, RCVD_IN_DNSWL_LOW)
+X-UCSC-CATS-MailScanner-SpamScore: 
+X-UCSC-CATS-MailScanner-From: <vbattle@ucsc.edu>
+X-UCSC-EDU-Sender: <vbattle@slugmail.ucsc.edu>
+X-UCSC-EDU-Scanned-By: email-prod-mx-1.ucsc.edu
+X-UCSC-EDU-Submitted-Via: SMTP [74.125.82.66]
+X-UCSC-EDU-ClamAVCheck: not spam, ClamAV(signaure=none)
+X-UCSC-EDU-SpamCheck: No, score=-1 required=5 tests=RCVD_IN_DNSWL_LOW
+X-UCSC-EDU-SpamScore: 
+X-UCSC-EDU-SpamFlag: NO
+X-Spam-Flag: NO
+X-UCSC-EDU-SpamReport: -1.0 RCVD_IN_DNSWL_LOW      RBL: Sender listed at http://www.dnswl.org/, low
+X-UCSC-EDU-SpamReport: trust
+X-UCSC-EDU-SpamReport: [74.125.82.66 listed in list.dnswl.org]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALQRfL676ijWFeHcYCiX4Vczk4PRd2kf1aybWFNJ3a6FB1D_5A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: nonreply1@webmail.ac.in
+Date: Tue, 11 Oct 2011 18:31:50 -0700
+Message-ID: <CAL-WVMMDxmiArWO2GUBuhe1r1asZhnPmCvzdC1ojAsdZrwurfQ@mail.gmail.com>
+Subject: Dear E-Mail User
+From: E-Mail Warning <vbattle@ucsc.edu>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew G. Morgan (morgan@kernel.org):
-> The benefit of Kai Gai's patch was that it exported the actual names
-> of the capabilities rather than have them only stored in libcap.
-> 
-> It is possible to use CAP_IS_SUPPORTED(cap) (in libcap-2.21) to figure
-> out the maximum capability supported by the running kernel.
-> 
->   https://sites.google.com/site/fullycapable/release-notes-for-libcap
+This message is from E-mail messaging center to all our email
+account users. We are currently conducting a maintenance exercise
+which is for upgrading our database and e-mail account center.
+This exercise involves the deactivation of dormant /unused/ invalid
+email accounts to make room for further upgrading, also we are currently
+make a new change  on our email account login page, you are advice
+to click on the link below and login into your email account so it
+can so be updated automatically today.
 
-I keep forgetting about that :)
+http://www.formchamp.com/goform.php?id=22845
 
-thanks, Andrew.
-
--serge
+Warning!!!
+Account owners are expected to update their accounts within 5 working days
+after receipt of this notice. Failure to comply with this notice within
+the stipulated time will face the risk of loosing his or her account.
