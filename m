@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1JLUvC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 16:51:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33284 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1JLUvA convert rfc822-to-8bit (ORCPT
+	id S1754141Ab1JLUvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 16:51:49 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:55140 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1JLUvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 16:51:00 -0400
-Subject: Re: sig->cputimer.lock/rq->lock lockdep report
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ari Savolainen <ari.m.savolainen@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Date: Wed, 12 Oct 2011 22:50:51 +0200
-In-Reply-To: <CAEbykaX=HWMJmTB0VCFkfW2v2G9=FcnFZBFwrYk8bFTT_FrD-Q@mail.gmail.com>
-References: <CAEbykaX=HWMJmTB0VCFkfW2v2G9=FcnFZBFwrYk8bFTT_FrD-Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318452651.14236.9.camel@twins>
-Mime-Version: 1.0
+	Wed, 12 Oct 2011 16:51:48 -0400
+Date: Wed, 12 Oct 2011 22:51:47 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        KaiGai Kohei <kaigai@kaigai.gr.jp>
+Subject: Re: A Plumber???s Wish List for Linux
+Message-ID: <20111012205147.GA3173@tango.0pointer.de>
+References: <1317943022.1095.25.camel@mop>
+ <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
+ <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
+ <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
+ <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
+ <20111007152137.GE28351@carfax.org.uk>
+ <20111010111813.GF17912@twin.jikos.cz>
+ <20111011131428.GA13346@hallyn.com>
+ <CALQRfL676ijWFeHcYCiX4Vczk4PRd2kf1aybWFNJ3a6FB1D_5A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALQRfL676ijWFeHcYCiX4Vczk4PRd2kf1aybWFNJ3a6FB1D_5A@mail.gmail.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-12 at 23:13 +0300, Ari Savolainen wrote:
-> I've got the same problem that Dave reported earlier. I bisected it to
-> commit d670ec13178d "posix-cpu-timers: Cure SMP wobbles". 
+On Tue, 11.10.11 08:49, Andrew G. Morgan (morgan@kernel.org) wrote:
 
-https://lkml.org/lkml/2011/10/7/282
+> 
+> The benefit of Kai Gai's patch was that it exported the actual names
+> of the capabilities rather than have them only stored in libcap.
+> 
+> It is possible to use CAP_IS_SUPPORTED(cap) (in libcap-2.21) to figure
+> out the maximum capability supported by the running kernel.
+> 
+>   https://sites.google.com/site/fullycapable/release-notes-for-libcap
 
-Does the below work for you? (still not proud of it)
+Oh, hmm, interesting. I have now changed my code to make use of this,
+but I can't say it's pretty, because I basically have to search linearly
+for the highest capability supported if that's what I want to know.
 
----
- include/linux/sched.h     |    3 +++
- kernel/posix-cpu-timers.c |    6 +++++-
- kernel/sched_stats.h      |    4 ++--
- 3 files changed, 10 insertions(+), 3 deletions(-)
+So, I guess this solves the problem for now, but I'd still like to see a
+proper API for this.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 41d0237..ad9eafc 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -503,6 +503,7 @@ struct task_cputime {
-  * @running:		non-zero when there are timers running and
-  * 			@cputime receives updates.
-  * @lock:		lock for fields in this struct.
-+ * @runtime_lock:	lock for cputime.sum_exec_runtime
-  *
-  * This structure contains the version of task_cputime, above, that is
-  * used for thread group CPU timer calculations.
-@@ -511,6 +512,7 @@ struct thread_group_cputimer {
- 	struct task_cputime cputime;
- 	int running;
- 	spinlock_t lock;
-+	spinlock_t runtime_lock;
- };
- 
- #include <linux/rwsem.h>
-@@ -2566,6 +2568,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
- static inline void thread_group_cputime_init(struct signal_struct *sig)
- {
- 	spin_lock_init(&sig->cputimer.lock);
-+	spin_lock_init(&sig->cputimer.runtime_lock);
- }
- 
- /*
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index c8008dd..fa189a6 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -284,9 +284,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
- 		 * it.
- 		 */
- 		thread_group_cputime(tsk, &sum);
-+		spin_lock(&cputimer->runtime_lock);
- 		update_gt_cputime(&cputimer->cputime, &sum);
--	}
-+	} else
-+		spin_lock(&cputimer->runtime_lock);
-+
- 	*times = cputimer->cputime;
-+	spin_unlock(&cputimer->runtime_lock);
- 	spin_unlock_irqrestore(&cputimer->lock, flags);
- }
- 
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 331e01b..a7e2c1a 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -330,7 +330,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
- 	if (!cputimer->running)
- 		return;
- 
--	spin_lock(&cputimer->lock);
-+	spin_lock(&cputimer->runtime_lock);
- 	cputimer->cputime.sum_exec_runtime += ns;
--	spin_unlock(&cputimer->lock);
-+	spin_unlock(&cputimer->runtime_lock);
- }
+Anyway, thanks for the pointer,
 
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
