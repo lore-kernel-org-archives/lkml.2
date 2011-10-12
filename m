@@ -1,153 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab1JLEpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 00:45:51 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48766 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab1JLEpu (ORCPT
+	id S1752484Ab1JLE66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 00:58:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54060 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1JLE65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 00:45:50 -0400
-From: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        valdis.kletnieks@vt.edu,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH v2 2/2] Staging: comedi: fix printk and line over 80 character
-Date: Wed, 12 Oct 2011 10:14:59 +0530
-Message-Id: <1318394699-2222-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <valdis.kletnieks@vt.edu>
-References: <valdis.kletnieks@vt.edu>
+	Wed, 12 Oct 2011 00:58:57 -0400
+MIME-Version: 1.0
+Date: Wed, 12 Oct 2011 10:28:56 +0530
+Message-ID: <CAA_L+UPmnbe20kyHMKCMabhqggwvChmdZo0P8ENNCGA7xfNUbQ@mail.gmail.com>
+Subject: [PATCH 3.1-rc9] edac:i82975x fix 32bit compile and cleanup
+From: Arvind R <arvino55@gmail.com>
+To: trivial@kernel.org
+Cc: linux-edac@vger.kernel.org, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a  printk and line over 80 charcter found by the
-checkpatch.pl tool
+Subject: [PATCH 3.1-rc9] edac:i82975x fix 32bit compile and cleanup
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+the clean up achieves:
+  1. fix warning on 32-bit compile
+  2. reorder info extraction for clarity
+  3. add error-trap diagnostic message
+  4. handle ALL modes of memory configurations
+
+Signed-off-by: Arvind R. <arvino55@gmail.com>
 ---
- v2: printk string changes for valdis.kletnieks
- Coverted printks to pr_<level>.
+ i82975x_edac.c |   30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
+---
+diff -up a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
+--- a/drivers/edac/i82975x_edac.c
++++ b/drivers/edac/i82975x_edac.c
+@@ -277,11 +277,9 @@ static void i82975x_get_error_info(struc
+ static int i82975x_process_error_info(struct mem_ctl_info *mci,
+ 		struct i82975x_error_info *info, int handle_errors)
+ {
+-	int row, multi_chan, chan;
++	int row, chan;
+ 	unsigned long offst, page;
 
- drivers/staging/comedi/drivers/cb_pcimdda.c |   42 ++++++++++++++++-----------
- 1 files changed, 25 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
-index 8c981a8..2a73ea9 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
-@@ -105,7 +105,10 @@ struct board_struct {
- 	int ao_bits;
- 	int dio_chans;
- 	int dio_method;
--	int dio_offset;		/* how many bytes into the BADR are the DIO ports */
-+	int dio_offset;		/*
-+				 * how many bytes into the BADR
-+				 * are the DIO ports
-+				 */
- 	int regs_badrindex;	/* IO Region for the control, analog output,
- 				   and DIO registers */
- 	int reg_sz;		/* number of bytes of registers in io region */
-@@ -152,9 +155,12 @@ static DEFINE_PCI_DEVICE_TABLE(pci_table) = {
- 
- MODULE_DEVICE_TABLE(pci, pci_table);
- 
--/* this structure is for data unique to this hardware driver.  If
--   several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
-+/*
-+ * this structure is for data unique to this hardware driver.
-+ * If several hardware drivers keep similar information in this
-+ * structure, feel free to suggest moving the variable to the
-+ * struct comedi_device struct.
-+ */
- struct board_private_struct {
- 	unsigned long registers;	/* set by probe */
- 	unsigned long dio_registers;
-@@ -300,7 +306,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		return err;
- 
- /* Output some info */
--	printk("comedi%d: %s: ", dev->minor, thisboard->name);
-+	pr_debug("comedi%d: %s: attached\n", dev->minor, thisboard->name);
- 
- /*
-  * Initialize dev->board_name.  Note that we can use the "thisboard"
-@@ -335,13 +341,16 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (thisboard->dio_chans) {
- 		switch (thisboard->dio_method) {
- 		case DIO_8255:
--			/* this is a straight 8255, so register us with the 8255 driver */
-+			/*
-+			 * this is a straight 8255, so register us
-+			 * with the 8255 driver
-+			 */
- 			subdev_8255_init(dev, s, NULL, devpriv->dio_registers);
- 			devpriv->attached_to_8255 = 1;
- 			break;
- 		case DIO_INTERNAL:
- 		default:
--			printk("DIO_INTERNAL not implemented yet!\n");
-+			pr_warn("DIO_INTERNAL not implemented yet!\n");
- 			return -ENXIO;
- 			break;
- 		}
-@@ -351,8 +360,6 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	devpriv->attached_successfully = 1;
- 
--	printk("attached\n");
+-	multi_chan = mci->csrows[0].nr_channels - 1;
 -
+ 	if (!(info->errsts2 & 0x0003))
+ 		return 0;
+
+@@ -294,20 +292,30 @@ static int i82975x_process_error_info(st
+ 	}
+
+ 	page = (unsigned long) info->eap;
+-	if (info->xeap & 1)
+-		page |= 0x100000000ul;
+-	chan = page & 1;
+ 	page >>= 1;
+-	offst = page & ((1 << PAGE_SHIFT) - 1);
+-	page >>= PAGE_SHIFT;
++	if (info->xeap & 1)
++		page |= 0x80000000;
++	page >>= (PAGE_SHIFT - 1);
+ 	row = edac_mc_find_csrow_by_page(mci, page);
+
++	if (row == -1)	{
++		i82975x_mc_printk(mci, KERN_ERR, "error processing EAP:\n"
++			"\tXEAP=%u\n"
++			"\t EAP=0x%08x\n"
++			"\tPAGE=0x%08x\n",
++			(info->xeap & 1) ? 1 : 0, info->eap, (unsigned int) page);
++		return 0;
++	}
++	chan = (mci->csrows[row].nr_channels == 1) ? 0 : info->eap & 1;
++	offst = info->eap
++			& ((1 << PAGE_SHIFT) -
++				(1 << mci->csrows[row].grain));
++
+ 	if (info->errsts & 0x0002)
+ 		edac_mc_handle_ue(mci, page, offst , row, "i82975x UE");
+ 	else
+ 		edac_mc_handle_ce(mci, page, offst, info->derrsyn, row,
+-				multi_chan ? chan : 0,
+-				"i82975x CE");
++				chan, "i82975x CE");
+
  	return 1;
  }
- 
-@@ -381,8 +388,8 @@ static int detach(struct comedi_device *dev)
- 		}
- 
- 		if (devpriv->attached_successfully && thisboard)
--			printk("comedi%d: %s: detached\n", dev->minor,
--			       thisboard->name);
-+			pr_debug("comedi%d: %s: detached\n", dev->minor,
-+				 thisboard->name);
- 
- 	}
- 
-@@ -436,8 +443,11 @@ static int ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 
- 	for (i = 0; i < insn->n; i++) {
- 		inw(devpriv->registers + chan * 2);
--		/* should I set data[i] to the result of the actual read on the register
--		   or the cached unsigned int in devpriv->ao_readback[]? */
-+		/*
-+		 * should I set data[i] to the result of the actual read
-+		 * on the register or the cached unsigned int in
-+		 * devpriv->ao_readback[]?
-+		 */
- 		data[i] = devpriv->ao_readback[chan];
- 	}
- 
-@@ -489,8 +499,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
- 			devpriv->pci_dev = pcidev;
- 			dev->board_ptr = boards + index;
- 			if (comedi_pci_enable(pcidev, thisboard->name)) {
--				printk
--				    ("cb_pcimdda: Failed to enable PCI device and request regions\n");
-+				pr_warn("cb_pcimdda: Failed to enable PCI device and request regions\n");
- 				return -EIO;
- 			}
- 			registers =
-@@ -503,7 +512,6 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
- 		}
- 	}
- 
--	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
--	       "card found at the requested position\n");
-+	pr_err("cb_pcimdda: No supported ComputerBoards/MeasurementComputing card found at the requested position\n");
- 	return -ENODEV;
- }
--- 
-1.7.6.4
-
+@@ -410,7 +418,7 @@ static void i82975x_init_csrows(struct m
+ 		csrow->last_page = cumul_size - 1;
+ 		csrow->nr_pages = cumul_size - last_cumul_size;
+ 		last_cumul_size = cumul_size;
+-		csrow->grain = 1 << 6;	/* I82975X_EAP has 64B resolution */
++		csrow->grain = 1 << 7;	/* 128Byte cache-line resolution */
+ 		csrow->mtype = MEM_DDR2; /* I82975x supports only DDR2 */
+ 		csrow->dtype = i82975x_dram_type(mch_window, index);
+ 		csrow->edac_mode = EDAC_SECDED; /* only supported */
