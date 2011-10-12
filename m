@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1JLCh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 22:37:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36473 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1JLCh4 (ORCPT
+	id S1752274Ab1JLCtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 22:49:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41008 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab1JLCtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 22:37:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHj3AVnRzOQEVJu6sfE-pZt9QN_q75Pf6LEeGfdKm-NdxjFC_Q@mail.gmail.com>
-References: <1318260152-2786-1-git-send-email-mark.einon@gmail.com>
-	<CAP2e6W9oQWLxe7pJxk=Awn1HTueeu41ZV7TFF+V9tHF07_Mxag@mail.gmail.com>
-	<20111011161153.GA6697@suse.de>
-	<CANK3SE1tdJm93BK+U01Ep7Q2B=+aUJmgxkrQ537oPrqB2YZ4nA@mail.gmail.com>
-	<CAP2e6W9BCV5Wg5rTLrDLaU45NCt9PaSV5zZHT5OA88hqNvounw@mail.gmail.com>
-	<CAHj3AVnRzOQEVJu6sfE-pZt9QN_q75Pf6LEeGfdKm-NdxjFC_Q@mail.gmail.com>
-Date: Tue, 11 Oct 2011 19:37:55 -0700
-Message-ID: <CAP2e6W-sSQP-5Xb_-38=j17pX8jJeTzuA2VCaCu3b6ERrCMQhw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] staging: et131x: Update TODO list
-From: Ramesh R <rshlinux@gmail.com>
-To: Denis Kirjanov <kirjanov@gmail.com>
-Cc: Mark Einon <mark.einon@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Oct 2011 22:49:02 -0400
+Message-ID: <1318387734.3686.2.camel@edumazet-laptop>
+Subject: Re: [PATCH v3] net-netlink: Add a new attribute to expose TOS
+ values via netlink
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Muraliraja Muniraju <muralira@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Wed, 12 Oct 2011 04:48:54 +0200
+In-Reply-To: <1318382887-31824-1-git-send-email-muralira@google.com>
+References: <20111010145206.6f7e9ee2@nehalam.linuxnetplumber.net>
+	 <1318382887-31824-1-git-send-email-muralira@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 11:40 AM, Denis Kirjanov <kirjanov@gmail.com> wrote:
-> If you look at the patch once again then you find some
->
-> On Tue, Oct 11, 2011 at 9:25 PM, Ramesh R <rshlinux@gmail.com> wrote:
->> Thanks Mark,
->>
->> Are there any open items left in the TODO list for this driver at this point?
->>
->> Regards
->> Ramesh
->>
->> On Tue, Oct 11, 2011 at 9:25 AM, Mark Einon <mark.einon@gmail.com> wrote:
->>> On 11 October 2011 17:11, Greg KH <gregkh@suse.de> wrote:
->>>> On Tue, Oct 11, 2011 at 09:00:35AM -0700, Ramesh R wrote:
->>>>> Hi Mark,
->>>>>
->>>>> I wish to contribute to this project - From the latest TODO list in
->>>>> the README document
->>>>>
->>>>> drivers/staging/et131x/README
->>>>>
->>>>> If I were to start with the coding style cleanups, is there a coding
->>>>> standard available for reference? Please advice.
->>>>
->>>> Documentation/CodingStyle
->>>>
->>> Ramesh,
->>>
->>> There are no significant coding style issues with this particular
->>> driver at this time, as far as I (and the checkpatch script) are aware
->>> of.
->>> I suggest you check other staging/ drivers for these sorts of issues.
->>>
->>> Cheers,
->>>
->>> Mark
->>>
->> _______________________________________________
->> devel mailing list
->> devel@linuxdriverproject.org
->> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
->>
+Le mardi 11 octobre 2011 à 18:28 -0700, Muraliraja Muniraju a écrit :
+> From: Murali Raja <muralira@google.com>
+> 
+> This patch exposes the tos value for the TCP sockets when the TOS flag
+> is requested in the ext_flags for the inet_diag request. This would mainly be
+> used to expose TOS values for both for TCP and UDP sockets. Currently it is
+> supported for TCP. When netlink support for UDP would be added the support
+> to expose the TOS values would alse be done.
+> 
 
-Thank you, got a few items.
+You could mention TCLASS support for IPv6
 
-I could work on item #1,
-==
- TODO:
-+       - Put the driver into a single file, with a .h for the registers layout.
-+       - rx_ring.fbr{0, 1} can probably share a common structure
-+       - Use of kmem_cache seems a bit unusual
-+       - Use dma_alloc_... in place of pci_alloc_...
-+       - It's too late stopping the tx queue when there is no room
-for the current packet. The condition should be detected for the next
-packet.
-+       - PCI_VDEVICE ?
+> Signed-off-by: Murali Raja <muralira@google.com>
+> ---
+> Changelog since v2:
+> - Adding support for IPV6 class and using right API's
+> Changelog since v1:
+> - Removing reserved field 
+> 
+>  include/linux/inet_diag.h |    9 ++++++++-
+>  net/ipv4/inet_diag.c      |    5 +++++
+>  2 files changed, 13 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/inet_diag.h b/include/linux/inet_diag.h
+> index bc8c490..e36093d 100644
+> --- a/include/linux/inet_diag.h
+> +++ b/include/linux/inet_diag.h
+> @@ -97,9 +97,10 @@ enum {
+>  	INET_DIAG_INFO,
+>  	INET_DIAG_VEGASINFO,
+>  	INET_DIAG_CONG,
+> +	INET_DIAG_TOS,
+>  };
+>  
+> -#define INET_DIAG_MAX INET_DIAG_CONG
+> +#define INET_DIAG_MAX INET_DIAG_TOS
+>  
+> 
+>  /* INET_DIAG_MEM */
+> @@ -120,6 +121,12 @@ struct tcpvegas_info {
+>  	__u32	tcpv_minrtt;
+>  };
+>  
+> +/* INET_DIAG_TOS */
+> +
+> +struct inet_diag_tos {
+> +	__u8	idiag_tos;
+> +};
 
-==
+Are you sure its still needed ?
 
-I looked up for ET 1310 on ebay, amazon & few other sites like digikey
-- I couldnt find the device. Can you please let me know where I can
-buy the hardware?
+I am now wondering what is done in TIME_WAIT state.
 
-/Ramesh
+
