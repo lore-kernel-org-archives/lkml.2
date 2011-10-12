@@ -1,167 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1JLTte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:49:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59750 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1JLTtd (ORCPT
+	id S1753618Ab1JLTvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:51:32 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:58485 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab1JLTvb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:49:33 -0400
-Date: Wed, 12 Oct 2011 23:49:27 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Kim, Milo" <Milo.Kim@nsc.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Subject: Re: [PATCH 2/3] power: Add LP8727 charger driver
-Message-ID: <20111012194927.GA9239@oksana.dev.rtsoft.ru>
-References: <B567DBAB974C0544994013492B949F8E380F619DE2@EXMAIL03.scwf.nsc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <B567DBAB974C0544994013492B949F8E380F619DE2@EXMAIL03.scwf.nsc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Oct 2011 15:51:31 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=pLwgVNw+rP0xDC1aTytTpk3qcVwaN6U+yFunLg8qx5U= c=1 sm=1
+ a=hjn-XhmR8WgA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=ER5QqjZEPBzZUJsz4XgA:9
+ a=ZHthwnYiLfOK6OglnmEA:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 12/28] ext4: Use i_generation in inode-related metadata checksums
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20111008075502.20506.15728.stgit@elm3c44.beaverton.ibm.com>
+Date: Wed, 12 Oct 2011 12:52:30 -0700
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BFA9D351-575B-4B48-B5D8-D01DF5317A7C@dilger.ca>
+References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075502.20506.15728.stgit@elm3c44.beaverton.ibm.com>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kim,
+On 2011-10-08, at 12:55 AM, Darrick J. Wong wrote:
+> Whenever we are calculating a checksum for a piece of metadata that is
+> associated with an inode, incorporate i_generation into that calculation
+> so that old metadata blocks cannot be re-associated after a delete/create cycle.
 
-Sorry for the delay.
+It would be better to fold this into the previous patch, since it will
+otherwise cause the inode checksum algorithm to change in the middle of the patch series.
 
-On Wed, Sep 07, 2011 at 01:55:27AM -0700, Kim, Milo wrote:
+On a related note, in ext4_new_inode() it would be useful to change the
+setting of i_generation so that it skips i_generation == 0, which doesn't
+contribute to the checksum:
+
+        spin_lock(&sbi->s_next_gen_lock);
+        inode->i_generation = sbi->s_next_generation++;
++	if (unlikely(inode->i_generation == 0))
++	        inode->i_generation = sbi->s_next_generation++;
+        spin_unlock(&sbi->s_next_gen_lock);
+
+> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> index 6e5876a..d4b59e9 100644
+> --- a/fs/ext4/ialloc.c
+> +++ b/fs/ext4/ialloc.c
+> @@ -1031,11 +1031,14 @@ got:
+> 	/* Precompute second piece of crc */
+> 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+> 			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
+> +		__u32 crc;
+> 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> 		__le32 inum = cpu_to_le32(inode->i_ino);
+> -		ei->i_uuid_inum_crc = ext4_chksum(sbi, sbi->s_uuid_crc,
+> -						  (__u8 *)&inum,
+> -						  sizeof(inum));
+> +		__le32 gen = cpu_to_le32(inode->i_generation);
+> +		crc = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&inum,
+> +				  sizeof(inum));
+> +		ei->i_uuid_inum_crc = ext4_chksum(sbi, crc, (__u8 *)&gen,
+> +						  sizeof(gen));
+> 	}
 > 
-> diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-> new file mode 100755
-> index 0000000..2a649e0
-
-Note that each patch should have commit message (ideally), and a
-Signed-off-by: line.
-
-Though, I would fixup all the issues myself, if the patch had at
-least Signed-off-by. :-)
-
-But while you're at it, you might also want to fix some cosmetic
-issues:
-
-[...]
-> +static int lp8727_is_dedicated_charger(struct lp8727_chg *pchg)
-> +{
-> +	u8 val;
-> +	(void)lp8727_i2c_read_byte(pchg, STATUS1, &val);
-
-No need for these casts, please.
-
-> +	return (val & DCPORT);
-> +}
-[...]
-> +static int lp8727_charger_get_property(struct power_supply *psy,
-> +				       enum power_supply_property psp,
-> +				       union power_supply_propval *val)
-> +{
-> +	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
-> +
-> +	if (psp == POWER_SUPPLY_PROP_ONLINE) {
-> +		val->intval = lp8727_is_charger_attached(psy->name,
-> +							 pchg->devid);
-> +	}
-
-No need for brackets here.
-
-> +
-> +	return 0;
-> +}
-> +
-[...]
-> +static void lp8727_unregister_psy(struct lp8727_chg *pchg)
-> +{
-> +	struct lp8727_psy *psy = pchg->psy;
-> +
-> +	if (psy) {
-
-if (!psy)
-	return;
-
-> +		power_supply_unregister(&psy->ac);
-> +		power_supply_unregister(&psy->usb);
-> +		power_supply_unregister(&psy->batt);
-> +		kfree(psy);
-> +	}
-> +}
-> +
-> +static int lp8727_probe(struct i2c_client *cl, const struct i2c_device_id *id)
-> +{
-> +	struct lp8727_chg *pchg;
-> +	int ret;
-> +
-> +	pchg = kzalloc(sizeof(*pchg), GFP_KERNEL);
-> +	if (!pchg)
-> +		return -ENOMEM;
-> +
-> +	pchg->client = cl;
-> +	pchg->dev = &cl->dev;
-> +	pchg->pdata = cl->dev.platform_data;
-> +	i2c_set_clientdata(cl, pchg);
-> +
-> +	mutex_init(&pchg->xfer_lock);
-> +
-> +	lp8727_init_device(pchg);
-> +	lp8727_intr_config(pchg);
-> +
-> +	ret = lp8727_register_psy(pchg);
-> +	if (ret) {
-> +		dev_err(pchg->dev,
-> +			"can not register power supplies. err=%d", ret);
-
-No need for brackets.
-
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __devexit lp8727_remove(struct i2c_client *cl)
-> +{
-> +	struct lp8727_chg *pchg = i2c_get_clientdata(cl);
-> +
-> +	lp8727_unregister_psy(pchg);
-> +	free_irq(pchg->client->irq, pchg);
-> +	flush_workqueue(pchg->irqthread);
-> +	destroy_workqueue(pchg->irqthread);
-> +	kfree(pchg);
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id lp8727_ids[] = {
-> +	{"lp8727", 0},
-> +};
-> +
-> +static struct i2c_driver lp8727_driver = {
-> +	.driver = {
-> +		   .name = "lp8727",
-> +		   },
-> +	.probe = lp8727_probe,
-> +	.remove = __devexit_p(lp8727_remove),
-> +	.id_table = lp8727_ids,
-> +};
-> +
-> +static int __init lp8727_init(void)
-> +{
-> +	return i2c_add_driver(&lp8727_driver);
-> +}
-> +
-> +static void __exit lp8727_chg_exit(void)
-> +{
-> +	i2c_del_driver(&lp8727_driver);
-> +}
-> +
-> +module_init(lp8727_init);
-> +module_exit(lp8727_chg_exit);
-> +
-> +MODULE_DESCRIPTION("National Semiconductor LP8727 charger driver");
-> +MODULE_AUTHOR("Woogyom Kim <milo.kim@nsc.com>");
-> +MODULE_LICENSE("GPL");
+> 	ext4_clear_state_flags(ei); /* Only relevant on 32-bit archs */
 > 
+> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> index f18bfe3..fdf0b1e 100644
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@ -149,6 +149,10 @@ flags_out:
+> 		if (!inode_owner_or_capable(inode))
+> 			return -EPERM;
+> 
+> +		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> +				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> +			return -ENOTTY;
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+This should get an ext4_warning() in the non-checksum case to warn
+users that this ioctl is deprecated and will be removed in the
+future unless there is a good reason to keep it.
+
+Cheers, Andreas
+
+
+
+
+
