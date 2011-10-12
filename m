@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab1JLQJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 12:09:03 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45831 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752818Ab1JLQJA (ORCPT
+	id S1753486Ab1JLQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 12:08:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:12674 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753463Ab1JLQIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 12:09:00 -0400
-Date: Wed, 12 Oct 2011 17:08:55 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg@ti.com, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        kuninori.morimoto.gx@renesas.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH 9/9] ASoC: da7210: Add support for DAPM
-Message-ID: <20111012160854.GV3647@opensource.wolfsonmicro.com>
-References: <1318432251.12107.432.camel@matrix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318432251.12107.432.camel@matrix>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Oct 2011 12:08:07 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, robherring2@gmail.com,
+        claudio@evidence.eu.com, jesper.nilsson@axis.com,
+        alan@lxorguk.ukuu.org.uk
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 4/5] tty/serial: atmel_serial: auto-enumerate ports
+Date: Wed, 12 Oct 2011 18:06:59 +0200
+Message-Id: <ecef50a9b874d08bb46c0a12d1e4ad01e641d3d5.1318433947.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1318435620-7481-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1318435620-7481-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <37a19e194d02144aecd24f284f5e43979643a3c3.1318433947.git.nicolas.ferre@atmel.com>
+References: <37a19e194d02144aecd24f284f5e43979643a3c3.1318433947.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 08:40:51PM +0530, Ashish Chavan wrote:
-> This patch adds support for DAPM covering all inputs and outputs
-> as well as ADC and DAC.
+If no platform data provided to enumerate ports, use a bit field
+to choose port number and check if port is already initialized.
+Use this mechanism for both console and plain serial ports.
 
-So, you added a bunch of additional routes using the register sequence
-method and then add DAPM support, this seems to be the wrong way round
-and isn't great for review.  Converting the existing stuff to DAPM and
-then adding new features seems a lot more sensible.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/tty/serial/atmel_serial.c |   44 ++++++++++++++++++++++++++++++------
+ 1 files changed, 36 insertions(+), 8 deletions(-)
 
-> +	/* MICBIAS */
-> +	SND_SOC_DAPM_MICBIAS("Mic Bias", DA7210_MIC_L, 6, 0),
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index bb72354..1074329 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -157,6 +157,7 @@ struct atmel_uart_port {
+ };
+ 
+ static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
++static unsigned long atmel_ports_in_use;
+ 
+ #ifdef SUPPORT_SYSRQ
+ static struct console atmel_console;
+@@ -1423,7 +1424,6 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+ 	port->flags		= UPF_BOOT_AUTOCONF;
+ 	port->ops		= &atmel_pops;
+ 	port->fifosize		= 1;
+-	port->line		= pdata->num;
+ 	port->dev		= &pdev->dev;
+ 	port->mapbase	= pdev->resource[0].start;
+ 	port->irq	= pdev->resource[1].start;
+@@ -1613,10 +1613,15 @@ static struct console atmel_console = {
+ static int __init atmel_console_init(void)
+ {
+ 	if (atmel_default_console_device) {
+-		add_preferred_console(ATMEL_DEVICENAME,
+-				      atmel_default_console_device->id, NULL);
+-		atmel_init_port(&atmel_ports[atmel_default_console_device->id],
+-				atmel_default_console_device);
++		int id = atmel_default_console_device->id;
++		struct atmel_uart_port *port = &atmel_ports[id];
++
++		set_bit(id, &atmel_ports_in_use);
++		port->backup_imr = 0;
++		port->uart.line = id;
++
++		add_preferred_console(ATMEL_DEVICENAME, id, NULL);
++		atmel_init_port(port, atmel_default_console_device);
+ 		register_console(&atmel_console);
+ 	}
+ 
+@@ -1715,12 +1720,33 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
+ 	struct atmel_uart_port *port;
+ 	struct atmel_uart_data *pdata = pdev->dev.platform_data;
+ 	void *data;
+-	int ret;
++	int ret = -ENODEV;
+ 
+ 	BUILD_BUG_ON(ATMEL_SERIAL_RINGSIZE & (ATMEL_SERIAL_RINGSIZE - 1));
+ 
+-	port = &atmel_ports[pdata->num];
++	if (pdata)
++		ret = pdata->num;
++
++	if (ret < 0)
++		/* port id not found in platform data:
++		 * auto-enumerate it */
++		ret = find_first_zero_bit(&atmel_ports_in_use,
++				sizeof(atmel_ports_in_use));
++
++	if (ret > ATMEL_MAX_UART) {
++		ret = -ENODEV;
++		goto err;
++	}
++
++	if (test_and_set_bit(ret, &atmel_ports_in_use)) {
++		/* port already in use */
++		ret = -EBUSY;
++		goto err;
++	}
++
++	port = &atmel_ports[ret];
+ 	port->backup_imr = 0;
++	port->uart.line = ret;
+ 
+ 	atmel_init_port(port, pdev);
+ 
+@@ -1766,7 +1792,7 @@ err_alloc_ring:
+ 		clk_put(port->clk);
+ 		port->clk = NULL;
+ 	}
+-
++err:
+ 	return ret;
+ }
+ 
+@@ -1786,6 +1812,8 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
+ 
+ 	/* "port" is allocated statically, so we shouldn't free it */
+ 
++	clear_bit(port->line, &atmel_ports_in_use);
++
+ 	clk_put(atmel_port->clk);
+ 
+ 	return ret;
+-- 
+1.7.5.4
 
-Use supply widgets for biases, new code shouldn't introduce micbiases.
-
-> +	/* Input path */
-> +	{"Mic Bias", NULL, "MICR"},
-> +	{"Mic Bias", NULL, "MICL"},
-> +
-> +	{"Mic Left", NULL, "Mic Bias"},
-> +	{"Mic Right", NULL, "Mic Bias"},
-
-Microphone bias must be hooked up by the board - for example, the system
-may use an external microphone bias.
-
-> +static int da7210_add_widgets(struct snd_soc_codec *codec)
-> +{
-> +	struct snd_soc_dapm_context *dapm = &codec->dapm;
-> +
-> +	snd_soc_dapm_new_controls(dapm, da7210_dapm_widgets,
-> +				  ARRAY_SIZE(da7210_dapm_widgets));
-> +	snd_soc_dapm_add_routes(dapm, da7210_audio_map,
-> +				ARRAY_SIZE(da7210_audio_map));
-
-Just assign these in the card struct.
-
-> @@ -748,6 +942,10 @@ static int da7210_probe(struct snd_soc_codec *codec)
->  	snd_soc_write(codec, DA7210_INMIX_L, DA7210_IN_L_EN);
->  	snd_soc_write(codec, DA7210_INMIX_R, DA7210_IN_R_EN);
->  
-> +	/* In mixer source selection, only MIC is selected by default */
-> +	snd_soc_write(codec, DA7210_INMIX_L, 0x01);
-> +	snd_soc_write(codec, DA7210_INMIX_R, 0x01);
-> +
-
-As ever just leave the chip defaults alone.
-
-> +	/* Enable standby for all inputs and outputs */
-> +	snd_soc_write(codec, DA7210_STARTUP2, DA7210_LOUT1_L_STBY |
-> +		DA7210_LOUT1_R_STBY | DA7210_LOUT2_STBY | DA7210_HP_L_STBY |
-> +		DA7210_HP_R_STBY | DA7210_DAC_L_STBY | DA7210_DAC_R_STBY);
-> +	snd_soc_write(codec, DA7210_STARTUP3, DA7210_MIC_L_STBY |
-> +		DA7210_MIC_R_STBY | DA7210_LIN1_L_STBY | DA7210_LIN1_R_STBY |
-> +		DA7210_LIN2_STBY | DA7210_ADC_L_STBY | DA7210_ADC_R_STBY);
-> +
-
-This looks like it should be in set_bias_level().
