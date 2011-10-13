@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab1JMP7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:59:30 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55849 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756354Ab1JMP72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:59:28 -0400
-Date: Thu, 13 Oct 2011 16:54:05 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] pata_it8213: fix register naming used in
- it8213_set_piomode()
-Message-ID: <20111013165405.3d4d93b8@lxorguk.ukuu.org.uk>
-In-Reply-To: <201110131744.23090.bzolnier@gmail.com>
-References: <201110131744.23090.bzolnier@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756398Ab1JMP75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:59:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27787 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755780Ab1JMP74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:59:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,340,1315206000"; 
+   d="scan'208";a="73278734"
+From: Andi Kleen <andi@firstfloor.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in __vm_enough_memory
+References: <20111012160202.GA18666@sgi.com>
+	<20111012120118.e948f40a.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1110121452220.31218@router.home>
+	<20111013150642.GC6169@csn.ul.ie>
+Date: Thu, 13 Oct 2011 08:59:49 -0700
+In-Reply-To: <20111013150642.GC6169@csn.ul.ie> (Mel Gorman's message of "Thu,
+	13 Oct 2011 16:06:42 +0100")
+Message-ID: <m2hb3c287e.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011 17:44:22 +0200
-Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
+Mel Gorman <mel@csn.ul.ie> writes:
+>
+> If vm_enough_memory is being heavily hit as well, it implies that this
+> workload is mmap-intensive which is pretty inefficient in itself. I
 
-> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> Subject: [PATCH v2] pata_it8213: fix register naming used in it8213_set_piomode()
-> 
-> Rename 'idetm_port' and 'idetm_data' variables to 'master_port'
-> and 'master_data' respectively to match register naming used in
-> it8213_set_dmamode() and in ata_piix.c.
+Saw it with tmpfs originally. No need to be mmap intensive. Just
+do lots of IOs on tmpfs.
 
-I do question this renaming. Surely we should reflect the names on the
-data sheets if anything ?
+> guess it would also apply to workloads that are malloc-intensive for
+> large buffers but I'd expect the cache line bounces to only dominate if
+> there was little or no computation on the resulting buffers.
 
+I think you severly underestimate the costs of bouncing cache lines
+on >2S.
+
+> As a result, I wonder how realistic is this test workload and who useful
+> fixing this problem is in general?
+
+It's kind of bad if tmpfs doesn't scale.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
