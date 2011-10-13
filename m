@@ -1,301 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab1JMR4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:56:18 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:57042 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756622Ab1JMR4Q (ORCPT
+	id S932207Ab1JMR6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:58:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15785 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428Ab1JMR6I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:56:16 -0400
-X-SENDER-IP: [85.230.171.1]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkJbAI4ll05V5qsBPGdsb2JhbABDiTyfHBkBAQEBNzKBUwEBBScTHCMQCANGFCUKGogTt20Ohn5hBJkujCE
-X-IronPort-AV: E=Sophos;i="4.69,341,1315173600"; 
-   d="scan'208";a="53239270"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 13 Oct 2011 20:03:20 +0200
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mohan Pallaka <mpallaka@codeaurora.org>,
-        Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] Input: cyttsp - Cypress TTSP capacitive
- multi-touch screen support
-Message-ID: <20111013180319.GA2308@polaris.bitmath.org>
-References: <1318099080-26227-1-git-send-email-martinez.javier@gmail.com>
- <1318099080-26227-2-git-send-email-martinez.javier@gmail.com>
+	Thu, 13 Oct 2011 13:58:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 13 Oct 2011 10:58:00 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Doug Anderson <dianders@chromium.org>, Jiri Slaby <jirislaby@gmail.com>,
+        Olof Johansson <olof@lixom.net>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Allen Martin <AMartin@nvidia.com>, Tom Warren <TWarren@nvidia.com>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Oct 2011 10:57:59 -0700
+Subject: RE: [PATCH] tty/serial: Prevent drop of DCD on suspend for Tegra
+ UARTs
+Thread-Topic: [PATCH] tty/serial: Prevent drop of DCD on suspend for Tegra
+ UARTs
+Thread-Index: AcyIcwO59JeRq6FTQ/uZ/Ih3hSP0AQBXfDiQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A0C6@HQMAIL01.nvidia.com>
+References: <1318377943-24519-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1318377943-24519-1-git-send-email-dianders@chromium.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318099080-26227-2-git-send-email-martinez.javier@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javier,
+Doug Anderson wrote at Tuesday, October 11, 2011 6:06 PM:
+> On Tegra UARTs (except UART1), the DTR / DCD / DSR lines are not
+> externally accessible.  Instead, the DTR line internally appears to be
+> looped back to be the input to the DCD and DSR lines.  The net effect
+> of this is that when we drop DTR (like when we suspend), we'll see DCD
+> drop too.  ...and when we see DCD drop, we treat that as a hangup.
+> 
+> In order to prevent this hangup from occurring at every sleep, we need
+> to force DTR to remain high on Tegra UARTs.
+> 
+> This patch uses the mcr_mask / mcr_force fields, which were originally
+> added for the kludge ALPHA_KLUDGE_MCR.  Using these fields does not
+> prevent us from removing ALPHA_KLUDGE_MCR--we can just remove the "if"
+> tests I have added and always init mcr_mask / mcr_force from the
+> serial8250_config.
+> 
+> NOTE: If we have people that are using UARTA on a Tegra and need to
+> control DTR, we'll need to either add a separate port type for UARTA
+> or we'll need to add some tegra-specific code to detect whether the
+> DTR needs to be left high.
 
-some more comments on the code. Presumable Dmitry will have additional
-ones later on. Thank you for your patience.
+I did some research on the HW, and here's how everything is hooked up
+in Tegra20 and Tegra30. Later chips may have this fixed, or at least
+configurable; I don't know the details yet.
 
-> +/* Slots management */
-> +#define CY_MAX_FINGER               4
-> +#define CY_MAX_ID                   15
+All 5 UARTs support the modem signals in the HW block.
 
-I realize the firmware reports ids in the range [1..14], but it is not
-visible from the code. Allowing all 16 values makes correctness
-obvious.
+In UART A, you can mux the modem signals out using the pinmux. If the
+pinmux /doesn't/ route the signals out, the DSR and DCD signals are tied
+to an /active/ state.
 
-> +static int cyttsp_load_bl_regs(struct cyttsp *ts)
-> +{
-> +	int retval;
-> +
-> +	memset(&(ts->bl_data), 0, sizeof(struct cyttsp_bootloader_data));
-> +
-> +	ts->bl_data.bl_status = 0x10;
-> +
-> +	retval =  ttsp_read_block_data(ts, CY_REG_BASE,
-> +		sizeof(ts->bl_data), &(ts->bl_data));
-> +
-> +	return retval;
-> +}
+In UART B, the DTR output is indeed wired back into the DSR and DCD
+inputs, as you discovered.
 
-Looks like you missed the removal of retval here.
+In UARTs C, D, and E, the DSR and DCD signals are tied to an /inactive/
+state.
 
-> +
-> +static int cyttsp_bl_app_valid(struct cyttsp *ts)
-> +{
-> +	int retval;
-> +
-> +	retval = cyttsp_load_bl_regs(ts);
-> +
-> +	if (retval < 0) {
-> +		retval = -ENODEV;
-> +		goto done;
-> +	}
-> +
-> +	if (GET_BOOTLOADERMODE(ts->bl_data.bl_status)) {
-> +		if (IS_VALID_APP(ts->bl_data.bl_status)) {
-> +			dev_dbg(ts->dev, "%s: App found; normal boot\n",
-> +				__func__);
-> +			return 0;
-> +		} else {
-> +			dev_dbg(ts->dev, "%s: NO APP; load firmware!!\n",
-> +				__func__);
-> +			return -ENODEV;
-> +		}
-> +	}
-> +
-> +	if (GET_HSTMODE(ts->bl_data.bl_file) == CY_OPERATE_MODE) {
-> +		if (!(IS_OPERATIONAL_ERR(ts->bl_data.bl_status))) {
-> +			dev_dbg(ts->dev, "%s: Operational\n",
-> +				__func__);
-> +			return 1;
-> +		} else {
-> +			dev_dbg(ts->dev, "%s: Operational failure\n",
-> +				__func__);
-> +			return -ENODEV;
-> +		}
-> +	}
-> +
-> +	dev_dbg(ts->dev, "%s: Non-Operational failure\n",
-> +		__func__);
-> +	retval = -ENODEV;
-> +done:
-> +	return retval;
-> +
-> +}
+So, I think this particular WAR is only needed on UART B.
 
-Are the debug paths still necessary? There are a lot of them.
+-- 
+nvpublic
 
-> +static int cyttsp_exit_bl_mode(struct cyttsp *ts)
-> +{
-> +	int retval;
-> +	int tries;
-> +	u8 bl_cmd[sizeof(bl_command)];
-> +
-> +	memcpy(bl_cmd, bl_command, sizeof(bl_command));
-> +	if (ts->platform_data->bl_keys)
-> +		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
-> +			ts->platform_data->bl_keys, sizeof(bl_command));
-> +
-> +	dev_dbg(ts->dev,
-> +		"%s: bl_cmd= "
-> +		"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
-> +		__func__, bl_cmd[0], bl_cmd[1], bl_cmd[2],
-> +		bl_cmd[3], bl_cmd[4], bl_cmd[5], bl_cmd[6],
-> +		bl_cmd[7], bl_cmd[8], bl_cmd[9], bl_cmd[10]);
-> +
-> +	retval = ttsp_write_block_data(ts, CY_REG_BASE,
-> +		sizeof(bl_cmd), (void *)bl_cmd);
-> +	if (retval < 0)
-> +		return retval;
-> +
-> +	/* wait for TTSP Device to complete switch to Operational mode */
-> +	tries = 0;
-> +	do {
-> +		msleep(CY_DELAY_DFLT);
-> +		retval = cyttsp_load_bl_regs(ts);
-> +	} while (!((retval == 0) &&
-> +		!GET_BOOTLOADERMODE(ts->bl_data.bl_status)) &&
-> +		(tries++ < CY_DELAY_MAX));
-> +
-> +	dev_dbg(ts->dev, "%s: check bl ready tries=%d ret=%d stat=%02X\n",
-> +		__func__, tries, retval, ts->bl_data.bl_status);
-> +
-> +	if (retval < 0)
-> +		return retval;
-> +	else if (GET_BOOTLOADERMODE(ts->bl_data.bl_status))
-> +		return -ENODEV;
-> +	else
-> +		return 0;
-> +}
-
-Regardless of if it can ever happen, programatically the (retval > 0)
-&& GET_BOOTLOADERMODE(ts->bl_data.bl_status) case is slipping through here.
-
-> +static int cyttsp_set_operational_mode(struct cyttsp *ts)
-> +{
-> +	struct cyttsp_xydata xy_data;
-> +	int retval;
-> +	int tries;
-> +	u8 cmd = CY_OPERATE_MODE;
-> +
-> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
-> +
-> +	if (retval < 0)
-> +		return retval;
-> +
-> +	/* wait for TTSP Device to complete switch to Operational mode */
-> +	tries = 0;
-> +	do {
-> +		retval = ttsp_read_block_data(ts, CY_REG_BASE,
-> +			sizeof(xy_data), &(xy_data));
-> +	} while (!((retval == 0) &&
-> +		(xy_data.act_dist == CY_ACT_DIST_DFLT)) &&
-> +		(tries++ < CY_DELAY_MAX));
-> +
-> +	dev_dbg(ts->dev, "%s: check op ready tries=%d ret=%d dist=%02X\n",
-> +		__func__, tries, retval, xy_data.act_dist);
-> +
-> +	return retval;
-> +}
-
-So (xy_data.act_dist == CY_ACT_DIST_DFL) here is not an error?
-
-> +static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
-> +{
-> +	int retval;
-> +	int tries;
-> +	u8 cmd = CY_SYSINFO_MODE;
-> +
-> +	memset(&(ts->sysinfo_data), 0, sizeof(struct cyttsp_sysinfo_data));
-> +
-> +	/* switch to sysinfo mode */
-> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
-> +	if (retval < 0)
-> +		return retval;
-> +
-> +	/* read sysinfo registers */
-> +	tries = 0;
-> +	do {
-> +		msleep(CY_DELAY_DFLT);
-> +		retval = ttsp_read_block_data(ts, CY_REG_BASE,
-> +			sizeof(ts->sysinfo_data), &(ts->sysinfo_data));
-> +	} while (!((retval == 0) &&
-> +		!((ts->sysinfo_data.tts_verh == 0) &&
-> +		(ts->sysinfo_data.tts_verl == 0))) &&
-> +		(tries++ < CY_DELAY_MAX));
-
-Expands to (retval ||  !ts->sysinfo_data.tts_verh &&
-!ts->sysinfo_data.tts_verl) && (tries++ < CY_DELAY_MAX), which seems a
-bit simpler to me. Also, &ts->sysinfo_data could be a pointer here.
-
-Coding verh+verl as a 16-bit value?
-
-Are the timeouted (tries >= CY_DELAY_MAX) cases not errors here either?
-
-<snip>
-
-> +static int cyttsp_soft_reset(struct cyttsp *ts)
-> +{
-> +	int retval;
-> +	u8 cmd = CY_SOFT_RESET_MODE;
-> +	long wait_jiffies = msecs_to_jiffies(CY_DELAY_DFLT * CY_DELAY_MAX);
-> +	/* wait for interrupt to set ready completion */
-> +	INIT_COMPLETION(ts->bl_ready);
-> +
-> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
-> +	if (retval < 0)
-> +		return retval;
-> +
-> +	retval = wait_for_completion_timeout(&ts->bl_ready, wait_jiffies);
-> +
-> +	if (retval > 0)
-> +		retval = 0;
-
-Seems this one slipped.
-
-> +
-> +	return retval;
-> +}
-> +
-> +static int cyttsp_hndshk(struct cyttsp *ts, u8 hst_mode)
-> +{
-> +	int retval;
-> +	u8 cmd;
-> +
-> +	cmd = hst_mode & CY_HNDSHK_BIT ?
-> +		hst_mode ^ CY_HNDSHK_BIT :
-> +		hst_mode | CY_HNDSHK_BIT;
-
-Whoa, please redo this one correctly.
-
-> +
-> +	retval = ttsp_write_block_data(ts, CY_REG_BASE,
-> +		sizeof(cmd), (u8 *)&cmd);
-> +
-> +	return retval;
-> +}
-
-> +int cyttsp_resume(void *handle)
-> +{
-> +	struct cyttsp *ts = handle;
-> +	int retval = 0;
-> +	struct cyttsp_xydata xydata;
-> +
-> +	if (ts) {
-
-Neater if returning on (!ts) here instead.
-
-> +		if (ts->platform_data->use_sleep && (ts->power_state !=
-> +						     CY_ACTIVE_STATE)) {
-> +			if (ts->platform_data->wakeup) {
-> +				retval = ts->platform_data->wakeup();
-> +				if (retval < 0)
-> +					dev_dbg(ts->dev, "%s: Error, wakeup failed!\n",
-> +						__func__);
-> +			} else {
-> +				dev_dbg(ts->dev, "%s: Error, wakeup not implemented "
-> +					"(check board file).\n", __func__);
-> +				retval = -ENOSYS;
-> +			}
-> +			if (!(retval < 0)) {
-> +				retval = ttsp_read_block_data(ts, CY_REG_BASE,
-> +							      sizeof(xydata),
-> +							      &xydata);
-> +				if (!(retval < 0) &&
-> +				    !GET_HSTMODE(xydata.hst_mode))
-> +					ts->power_state = CY_ACTIVE_STATE;
-> +			}
-> +		}
-> +		dev_dbg(ts->dev, "%s: Wake Up %s\n", __func__,
-> +			(retval < 0) ? "FAIL" : "PASS");
-> +	}
-> +	return retval;
-> +}
-> +EXPORT_SYMBOL_GPL(cyttsp_resume);
-
-Thanks.
-Henrik
