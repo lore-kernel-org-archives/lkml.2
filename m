@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab1JMJEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 05:04:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1217 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752295Ab1JMJEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 05:04:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,339,1315206000"; 
-   d="scan'208";a="73125782"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: kirill.shutemov@linux.intel.com, alan@linux.intel.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@zytor.com, torvalds@linux-foundation.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>, stable@kernel.org
-Subject: [PATCH RESEND] x86, mrst: use a temporary variable for SFI irq
-Date: Thu, 13 Oct 2011 12:04:20 +0300
-Message-Id: <1318496660-23722-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1754148Ab1JMJEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 05:04:50 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:9013
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752295Ab1JMJEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 05:04:49 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-FB-SS: 13,
+Subject: Re: [alsa-devel] [PATCH 7/9] ASoC: da7210: Add support for ALC and
+ Noise suppression
+From: Ashish Chavan <ashish.chavan@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111012150404.GT3647@opensource.wolfsonmicro.com>
+References: <1318432070.12107.426.camel@matrix>
+	 <20111012150404.GT3647@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Oct 2011 14:45:45 +0530
+Message-ID: <1318497345.12107.443.camel@matrix>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.20.243]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SFI tables reside in RAM and should not be modified once they are written.
-Current code went to set pentry->irq to zero which causes subsequent reads
-to fail with invalid SFI table checksum. This will break kexec as the
-second kernel fails to validate SFI tables.
+On Wed, 2011-10-12 at 16:04 +0100, Mark Brown wrote:
+> On Wed, Oct 12, 2011 at 08:37:50PM +0530, Ashish Chavan wrote:
+> 
+> > +	if (ucontrol->value.integer.value[0]) {
+> > +		/* Check if noise suppression is enabled */
+> > +		if (reg_cache[DA7210_CONTROL] & DA7210_NOISE_SUP_EN) {
+> 
+> No, don't go peering directly into the register cache.  This is going to
+> explode if the board configures a different cache style and means you
+> can't change the cache type later.  Just read the register and trust
+> that the cache will do something sane.
 
-To fix this we use temporary variable for irq number.
+Will update the code to directly read the register. I thought of saving
+some io bandwidth and if I remember correctly, I saw few exiting drivers
+doing this.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: stable@kernel.org
----
- arch/x86/platform/mrst/mrst.c |   22 ++++++++++++----------
- 1 files changed, 12 insertions(+), 10 deletions(-)
+> 
+> > +			dev_dbg(codec->dev, "Failed to enable ALC\n");
+> > +			return -EPERM;
+> > +		}
+> 
+> Either drop the debug print or make it say what the problem is.
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 58425ad..fe73276 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -678,38 +678,40 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 	pentry = (struct sfi_device_table_entry *)sb->pentry;
- 
- 	for (i = 0; i < num; i++, pentry++) {
--		if (pentry->irq != (u8)0xff) { /* native RTE case */
-+		int irq = pentry->irq;
-+
-+		if (irq != (u8)0xff) { /* native RTE case */
- 			/* these SPI2 devices are not exposed to system as PCI
- 			 * devices, but they have separate RTE entry in IOAPIC
- 			 * so we have to enable them one by one here
- 			 */
--			ioapic = mp_find_ioapic(pentry->irq);
-+			ioapic = mp_find_ioapic(irq);
- 			irq_attr.ioapic = ioapic;
--			irq_attr.ioapic_pin = pentry->irq;
-+			irq_attr.ioapic_pin = irq;
- 			irq_attr.trigger = 1;
- 			irq_attr.polarity = 1;
--			io_apic_set_pci_routing(NULL, pentry->irq, &irq_attr);
-+			io_apic_set_pci_routing(NULL, irq, &irq_attr);
- 		} else
--			pentry->irq = 0; /* No irq */
-+			irq = 0; /* No irq */
- 
- 		switch (pentry->type) {
- 		case SFI_DEV_TYPE_IPC:
- 			/* ID as IRQ is a hack that will go away */
--			pdev = platform_device_alloc(pentry->name, pentry->irq);
-+			pdev = platform_device_alloc(pentry->name, irq);
- 			if (pdev == NULL) {
- 				pr_err("out of memory for SFI platform device '%s'.\n",
- 							pentry->name);
- 				continue;
- 			}
--			install_irq_resource(pdev, pentry->irq);
-+			install_irq_resource(pdev, irq);
- 			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
--				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
-+				"irq = 0x%2x\n", i, pentry->name, irq);
- 			sfi_handle_ipc_dev(pdev);
- 			break;
- 		case SFI_DEV_TYPE_SPI:
- 			memset(&spi_info, 0, sizeof(spi_info));
- 			strncpy(spi_info.modalias, pentry->name, SFI_NAME_LEN);
--			spi_info.irq = pentry->irq;
-+			spi_info.irq = irq;
- 			spi_info.bus_num = pentry->host_num;
- 			spi_info.chip_select = pentry->addr;
- 			spi_info.max_speed_hz = pentry->max_freq;
-@@ -726,7 +728,7 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 			memset(&i2c_info, 0, sizeof(i2c_info));
- 			bus = pentry->host_num;
- 			strncpy(i2c_info.type, pentry->name, SFI_NAME_LEN);
--			i2c_info.irq = pentry->irq;
-+			i2c_info.irq = irq;
- 			i2c_info.addr = pentry->addr;
- 			pr_debug("info[%2d]: I2C bus = %d, name = %16.16s, "
- 				"irq = 0x%2x, addr = 0x%x\n", i, bus,
--- 
-1.7.5.4
+Will add more specific info about error.
+
+> 
+> similar problems in the rest of the patch.
+> 
+> > +	SOC_SINGLE("ALC Capture Max Gain", DA7210_ALC_MAX, 0, 0x3F, 0),
+> > +	SOC_SINGLE("ALC Capture Min Gain", DA7210_ALC_MIN, 0, 0x3F, 0),
+> > +	SOC_SINGLE("ALC Capture Noise Gain", DA7210_ALC_NOIS, 0, 0x3F, 0),
+> 
+> Volume.
+> 
+
 
