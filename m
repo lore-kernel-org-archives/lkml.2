@@ -1,95 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab1JMGCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 02:02:42 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:55841 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1JMGCk (ORCPT
+	id S1753060Ab1JMGGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 02:06:20 -0400
+Received: from mail2.nsc.com ([12.238.8.132]:53330 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750960Ab1JMGGT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 02:02:40 -0400
-Date: Thu, 13 Oct 2011 17:02:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: linux-next: manual merge of the staging tree with the fbdev tree
-Message-Id: <20111013170225.254bc2d590deee544913ab6c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Oct_2011_17_02_25_+1100_lXJMlOsr1lQ0zVs2"
+	Thu, 13 Oct 2011 02:06:19 -0400
+X-WSS-ID: 0LSZQAE-0A-2HI-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Anton Vorontsov" <cbouatmailru@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Date: Wed, 12 Oct 2011 23:06:10 -0700
+Subject: RE: [PATCH 3/3] power: Add LP8727 charger driver
+Thread-Topic: [PATCH 3/3] power: Add LP8727 charger driver
+Thread-Index: AcxtOZHwsfRfFQT8RpKYDbb2wllC3QAAAS8gAAAQ+JAAAAc/AAAAfS/ABwx9ZdA=
+Message-ID: <B567DBAB974C0544994013492B949F8E380FB92912@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
+MIME-Version: 1.0
+X-WSS-ID: 6288A05E1LS7421719-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Oct_2011_17_02_25_+1100_lXJMlOsr1lQ0zVs2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi, Anton Vorontsov
 
-Hi Greg,
+I send the revised patch.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/xgifb/XGI_main_26.c between commit 0d5c6ca30bb0
-("staging: xgifb: use display information in info not in var for
-panning") from the fbdev tree and commit fd26d42019cb ("staging: xgifb:
-avoid direct references xgi_video_info") from the staging tree.
+Signed-off-by: Woogyom Kim <milo.kim@ti.com>
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>From 809577ee23f2d27df449b84310eb6ebf0ea98332 Mon Sep 17 00:00:00 2001
+From: Milo(Woogyom) Kim <milo.kim@ti.com>
+Date: Thu, 13 Oct 2011 14:56:08 +0900
+Subject: [PATCH] power: lp8727 coding style changes
 
-diff --cc drivers/staging/xgifb/XGI_main_26.c
-index f8b88ad,36db231..0000000
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@@ -1363,8 -1300,8 +1300,8 @@@ static int XGIfb_do_set_var(struct fb_v
-  	return 0;
-  }
- =20
-- #ifdef XGIFB_PAN
-- static int XGIfb_pan_var(struct fb_var_screeninfo *var, struct fb_info *i=
-nfo)
-+ static int XGIfb_pan_var(struct xgifb_video_info *xgifb_info,
- -			 struct fb_var_screeninfo *var)
-++			 struct fb_var_screeninfo *var, struct fb_info *info)
-  {
-  	unsigned int base;
- =20
-@@@ -1686,7 -1634,7 +1624,7 @@@ static int XGIfb_pan_display(struct fb_
-  						> info->var.yres_virtual)
-  			return -EINVAL;
-  	}
-- 	err =3D XGIfb_pan_var(var, info);
- -	err =3D XGIfb_pan_var(xgifb_info, var);
-++	err =3D XGIfb_pan_var(xgifb_info, var, info);
-  	if (err < 0)
-  		return err;
- =20
+Pointer coding style changes
+: add space between return type and function pointer
+  ex) u8(*get_batt_present) (void)
+   -> u8 (*get_batt_present) (void)
+---
+ include/linux/lp8727.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
---Signature=_Thu__13_Oct_2011_17_02_25_+1100_lXJMlOsr1lQ0zVs2
-Content-Type: application/pgp-signature
+diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
+index 3ec5589..ef30c7c 100755
+--- a/include/linux/lp8727.h
++++ b/include/linux/lp8727.h
+@@ -43,10 +43,10 @@ struct lp8727_chg_param {
+ };
+ 
+ struct lp8727_platform_data {
+-	u8(*get_batt_present) (void);
+-	u16(*get_batt_level) (void);
+-	u8(*get_batt_capacity) (void);
+-	u8(*get_batt_temp) (void);
++	u8 (*get_batt_present) (void);
++	u16 (*get_batt_level) (void);
++	u8 (*get_batt_capacity) (void);
++	u8 (*get_batt_temp) (void);
+ 	struct lp8727_chg_param ac;
+ 	struct lp8727_chg_param usb;
+ };
+-- 
+1.7.4.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks & BR
+Milo (Woogyom) Kim
+milo.kim@ti.com
 
-iQIcBAEBCAAGBQJOln7xAAoJEECxmPOUX5FEv88QAKUXFiGRtIxlu3mupisjhJT5
-ySSbr+C3Ba2IZsE70TEx0XIe+/4Wh61pNUWrCV8wKStJZsKmn8UaRrZIyKnV8H1z
-rYtLTZvNwdzmzYmreHEM98Wn5VO/0xDUtEsCTcTNcK2ApGow/csc3GbZv9dlPRC8
-iduN/QO2RLsk13VmbiUBF7CakAygLg8AtctwvJERVab2vGs7wzdqMUscaeW2uRA2
-TgMBdfiqXgkkTTSjdwptplSZc8vTb2TXDG4m93pEb5V7XZRnM5owp0iMbs6iuGUJ
-tf1IAQAIqfVbhIjblcHsDB9T4E3y6lKdnXJ29YiZzJgiLXADMo/pXDFUeAyjZ8M0
-uhPOL/S6X8VHFiTWAVLhMJVIvXTsqrNDPtRyBb+f8os0Wph22vTPdDAbEobDtpRL
-pTmfExJ8/2OB75ptyEtUieVsmCAVJ/iedz2CQaMCMw0GOow2R3zEu7JskAI+x9YY
-6Ewdzk/xId9eRuw41WndERudlSh9nrSkZxcVU8nnIt6IrJCjag3gv7EHBBhKCLOy
-9nwENs+j3u0CYJQgv6XfrV2LsJNt0hTohxyYS/oWfaHtoR1AgzVdPM3SQE7yu98S
-TPYhYYgmEYqEFahpZyJ/oH9BRvLspyo/Gk8RryORKjn3Eg0gg+KWa9SMaiqFSSTW
-WEIFYMfhM4FkWNvAsKqk
-=bzqx
------END PGP SIGNATURE-----
+-----Original Message-----
+From: Kim, Milo 
+Sent: Wednesday, September 07, 2011 5:56 PM
+To: 'cbouatmailru@gmail.com'
+Cc: 'linux-kernel@vger.kernel.org'; 'dwmw2@infradead.org'; 'cbou@mail.ru'
+Subject: [PATCH 3/3] power: Add LP8727 charger driver
 
---Signature=_Thu__13_Oct_2011_17_02_25_+1100_lXJMlOsr1lQ0zVs2--
+
+diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
+new file mode 100755
+index 0000000..3ec5589
+--- /dev/null
++++ b/include/linux/lp8727.h
+@@ -0,0 +1,54 @@
++/*
++ * lp8727.h - Driver for LP8727 Micro/Mini USB IC with intergrated charger
++ *
++ *			Copyright (C) 2011 National Semiconductor
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef _LP8727_H
++#define _LP8727_H
++
++enum lp8727_eoc_level {
++	EOC_5P,
++	EOC_10P,
++	EOC_16P,
++	EOC_20P,
++	EOC_25P,
++	EOC_33P,
++	EOC_50P,
++};
++
++enum lp8727_ichg {
++	ICHG_90mA,
++	ICHG_100mA,
++	ICHG_400mA,
++	ICHG_450mA,
++	ICHG_500mA,
++	ICHG_600mA,
++	ICHG_700mA,
++	ICHG_800mA,
++	ICHG_900mA,
++	ICHG_1000mA,
++};
++
++struct lp8727_chg_param {
++	/* end of charge level setting */
++	enum lp8727_eoc_level eoc_level;
++	/* charging current */
++	enum lp8727_ichg ichg;
++};
++
++struct lp8727_platform_data {
++	u8(*get_batt_present) (void);
++	u16(*get_batt_level) (void);
++	u8(*get_batt_capacity) (void);
++	u8(*get_batt_temp) (void);
++	struct lp8727_chg_param ac;
++	struct lp8727_chg_param usb;
++};
++
++#endif
+-- 
+1.7.1
+
+
+Best Regards
+------------------------------------------------------------------------------------------------------------
+Milo (Woo Gyom) KIM
+National Semiconductor
+milo.kim@nsc.com
+------------------------------------------------------------------------------------------------------------
+
+
+
