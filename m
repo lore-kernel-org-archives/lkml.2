@@ -1,233 +1,594 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab1JMHDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:03:45 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46507 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab1JMHDo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:03:44 -0400
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        vkoul@infradead.org
-Cc: rmk@arm.linux.org.uk, 21cnbao@gmail.com,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCHv5] DMAEngine: Define interleaved transfer request api
-Date: Thu, 13 Oct 2011 12:33:30 +0530
-Message-Id: <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	id S1753309Ab1JMHEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:04:07 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49829 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751734Ab1JMHEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 03:04:05 -0400
+Date: Thu, 13 Oct 2011 00:03:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 08/11 v2] nohz: Allow rcu extended quiescent state
+ handling seperately from tick stop
+Message-ID: <20111013070357.GA7656@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1318004530-705-9-git-send-email-fweisbec@gmail.com>
+ <1318082460-9982-1-git-send-email-fweisbec@gmail.com>
+ <20111013065752.GB2430@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013065752.GB2430@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a new api that could be used for doing fancy data transfers
-like interleaved to contiguous copy and vice-versa.
-Traditional SG_list based transfers tend to be very inefficient in
-such cases as where the interleave and chunk are only a few bytes,
-which call for a very condensed api to convey pattern of the transfer.
-This api supports all 4 variants of scatter-gather and contiguous transfer.
+On Wed, Oct 12, 2011 at 11:57:52PM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 08, 2011 at 04:01:00PM +0200, Frederic Weisbecker wrote:
+> > It is assumed that rcu won't be used once we switch to tickless
+> > mode and until we restart the tick. However this is not always
+> > true, as in x86-64 where we dereference the idle notifiers after
+> > the tick is stopped.
+> > 
+> > To prepare for fixing this, add two new APIs:
+> > tick_nohz_idle_enter_norcu() and tick_nohz_idle_exit_norcu().
+> > 
+> > If no use of RCU is made in the idle loop between
+> > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the arch
+> > must instead call the new *_norcu() version such that the arch doesn't
+> > need to call rcu_idle_enter() and rcu_idle_exit().
+> > 
+> > Otherwise the arch must call tick_nohz_enter_idle() and
+> > tick_nohz_exit_idle() and also call explicitly:
+> > 
+> > - rcu_idle_enter() after its last use of RCU before the CPU is put
+> > to sleep.
+> > - rcu_idle_exit() before the first use of RCU after the CPU is woken
+> > up.
+> 
+> Thank you, Frederic!  I have queued this to replace the earlier
+> version.  The set is available on branch rcu/dyntick of
+> 
+> 	https://github.com/paulmckrcu/linux
 
-Of course, neither can this api help transfers that don't lend to DMA by
-nature, i.e, scattered tiny read/writes with no periodic pattern.
+Which reminds me...  About the ultimate objective, getting tick-free
+operation.  (Or, for the guys who want to eliminate the tick entirely,
+shutting up the hrtimer stuff that they want to replace it with.)
 
-Also since now we support SLAVE channels that might not provide
-device_prep_slave_sg callback but device_prep_interleaved_dma,
-remove the BUG_ON check.
+I believe that you will then need to have two levels of not-in-dynticks
+for processes, one for idle vs. not and another for when a process
+switches from user-space to kernel execution.  Correct, or am I
+confused?
 
-Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
----
+The reason I ask is that commit e11f5981 currently only allows one
+level of not-in-dynticks for processes.  It is easy to add another
+level, but thought I should check beforehand.
 
-Dan,
- After waiting for a reply from you/Alexandre a couple of days I am revising
- my patch without adding a hook for RapidIO case for 2 reasons:
-  a) I think the RapidIO requirement is served better by the concept of
-     virtual channels, rather than hacking "struct dma_chan" to reach more
-     than one device.
-  b) If Alexandre comes up with something irresistible, we can always add
-     the hook later.
+							Thanx, Paul
 
-Changes since v4:
-1) Dropped the 'frm_irq' member.
-2) Renamed 'xfer_direction' to 'dma_transfer_direction'
-
-Changes since v3:
-1) Added explicit type for source and destination.
-
-Changes since v2:
-1) Added some notes to documentation.
-2) Removed the BUG_ON check that expects every SLAVE channel to
-   provide a prep_slave_sg, as we are now valid otherwise too.
-3) Fixed the DMA_TX_TYPE_END offset - made it last element of enum.
-4) Renamed prep_dma_genxfer to prep_interleaved_dma as Vinod wanted.
-
-Changes since v1:
-1) Dropped the 'dma_transaction_type' member until we really
-   merge another type into this api. Instead added special
-   type for this api - DMA_GENXFER in dma_transaction_type.
-2) Renamed 'xfer_template' to 'dmaxfer_template' inorder to
-
- Documentation/dmaengine.txt |    8 ++++
- drivers/dma/dmaengine.c     |    4 +-
- include/linux/dmaengine.h   |   82 +++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 90 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
-index 94b7e0f..962a2d3 100644
---- a/Documentation/dmaengine.txt
-+++ b/Documentation/dmaengine.txt
-@@ -75,6 +75,10 @@ The slave DMA usage consists of following steps:
-    slave_sg	- DMA a list of scatter gather buffers from/to a peripheral
-    dma_cyclic	- Perform a cyclic DMA operation from/to a peripheral till the
- 		  operation is explicitly stopped.
-+   interleaved_dma - This is common to Slave as well as M2M clients. For slave
-+		 address of devices' fifo could be already known to the driver.
-+		 Various types of operations could be expressed by setting
-+		 appropriate values to the 'dmaxfer_template' members.
- 
-    A non-NULL return of this transfer API represents a "descriptor" for
-    the given transaction.
-@@ -89,6 +93,10 @@ The slave DMA usage consists of following steps:
- 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
- 		size_t period_len, enum dma_data_direction direction);
- 
-+	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
-+		struct dma_chan *chan, struct dmaxfer_template *xt,
-+		unsigned long flags);
-+
-    The peripheral driver is expected to have mapped the scatterlist for
-    the DMA operation prior to calling device_prep_slave_sg, and must
-    keep the scatterlist mapped until the DMA operation has completed.
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index b48967b..a6c6051 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -693,12 +693,12 @@ int dma_async_device_register(struct dma_device *device)
- 		!device->device_prep_dma_interrupt);
- 	BUG_ON(dma_has_cap(DMA_SG, device->cap_mask) &&
- 		!device->device_prep_dma_sg);
--	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
--		!device->device_prep_slave_sg);
- 	BUG_ON(dma_has_cap(DMA_CYCLIC, device->cap_mask) &&
- 		!device->device_prep_dma_cyclic);
- 	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
- 		!device->device_control);
-+	BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
-+		!device->device_prep_interleaved_dma);
- 
- 	BUG_ON(!device->device_alloc_chan_resources);
- 	BUG_ON(!device->device_free_chan_resources);
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 8fbf40e..ce8c40a 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -71,11 +71,85 @@ enum dma_transaction_type {
- 	DMA_ASYNC_TX,
- 	DMA_SLAVE,
- 	DMA_CYCLIC,
-+	DMA_INTERLEAVE,
-+/* last transaction type for creation of the capabilities mask */
-+	DMA_TX_TYPE_END,
- };
- 
--/* last transaction type for creation of the capabilities mask */
--#define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
-+enum dma_transfer_direction {
-+	MEM_TO_MEM,
-+	MEM_TO_DEV,
-+	DEV_TO_MEM,
-+	DEV_TO_DEV,
-+};
-+
-+/**
-+ * Interleaved Transfer Request
-+ * ----------------------------
-+ * A chunk is collection of contiguous bytes to be transfered.
-+ * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
-+ * ICGs may or maynot change between chunks.
-+ * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
-+ *  that when repeated an integral number of times, specifies the transfer.
-+ * A transfer template is specification of a Frame, the number of times
-+ *  it is to be repeated and other per-transfer attributes.
-+ *
-+ * Practically, a client driver would have ready a template for each
-+ *  type of transfer it is going to need during its lifetime and
-+ *  set only 'src_start' and 'dst_start' before submitting the requests.
-+ *
-+ *
-+ *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
-+ *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
-+ *
-+ *    ==  Chunk size
-+ *    ... ICG
-+ */
- 
-+/**
-+ * struct data_chunk - Element of scatter-gather list that makes a frame.
-+ * @size: Number of bytes to read from source.
-+ *	  size_dst := fn(op, size_src), so doesn't mean much for destination.
-+ * @icg: Number of bytes to jump after last src/dst address of this
-+ *	 chunk and before first src/dst address for next chunk.
-+ *	 Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
-+ *	 Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
-+ */
-+struct data_chunk {
-+	size_t size;
-+	size_t icg;
-+};
-+
-+/**
-+ * struct dmaxfer_template - Template to convey DMAC the transfer pattern
-+ *	 and attributes.
-+ * @src_start: Bus address of source for the first chunk.
-+ * @dst_start: Bus address of destination for the first chunk.
-+ * @dir: Specifies the type of Source and Destination.
-+ * @src_inc: If the source address increments after reading from it.
-+ * @dst_inc: If the destination address increments after writing to it.
-+ * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
-+ *		Otherwise, source is read contiguously (icg ignored).
-+ *		Ignored if src_inc is false.
-+ * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
-+ *		Otherwise, destination is filled contiguously (icg ignored).
-+ *		Ignored if dst_inc is false.
-+ * @numf: Number of frames in this template.
-+ * @frame_size: Number of chunks in a frame i.e, size of sgl[].
-+ * @sgl: Array of {chunk,icg} pairs that make up a frame.
-+ */
-+struct dmaxfer_template {
-+	dma_addr_t src_start;
-+	dma_addr_t dst_start;
-+	enum dma_transfer_direction dir;
-+	bool src_inc;
-+	bool dst_inc;
-+	bool src_sgl;
-+	bool dst_sgl;
-+	size_t numf;
-+	size_t frame_size;
-+	struct data_chunk sgl[0];
-+};
- 
- /**
-  * enum dma_ctrl_flags - DMA flags to augment operation preparation,
-@@ -432,6 +506,7 @@ struct dma_tx_state {
-  * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
-  *	The function takes a buffer of size buf_len. The callback function will
-  *	be called after period_len bytes have been transferred.
-+ * @device_prep_interleaved_dma: Transfer expression in a generic way.
-  * @device_control: manipulate all pending operations on a channel, returns
-  *	zero or error code
-  * @device_tx_status: poll for transaction completion, the optional
-@@ -496,6 +571,9 @@ struct dma_device {
- 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
- 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
- 		size_t period_len, enum dma_data_direction direction);
-+	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
-+		struct dma_chan *chan, struct dmaxfer_template *xt,
-+		unsigned long flags);
- 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		unsigned long arg);
- 
--- 
-1.7.4.1
-
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Mike Frysinger <vapier@gentoo.org>
+> > Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> > Cc: David Miller <davem@davemloft.net>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> > Cc: Ralf Baechle <ralf@linux-mips.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Cc: Paul Mundt <lethal@linux-sh.org>
+> > ---
+> >  arch/arm/kernel/process.c              |    4 +-
+> >  arch/avr32/kernel/process.c            |    4 +-
+> >  arch/blackfin/kernel/process.c         |    4 +-
+> >  arch/microblaze/kernel/process.c       |    4 +-
+> >  arch/mips/kernel/process.c             |    4 +-
+> >  arch/openrisc/kernel/idle.c            |    4 +-
+> >  arch/powerpc/kernel/idle.c             |    4 +-
+> >  arch/powerpc/platforms/iseries/setup.c |    8 +++---
+> >  arch/s390/kernel/process.c             |    4 +-
+> >  arch/sh/kernel/idle.c                  |    4 +-
+> >  arch/sparc/kernel/process_64.c         |    4 +-
+> >  arch/tile/kernel/process.c             |    4 +-
+> >  arch/um/kernel/process.c               |    4 +-
+> >  arch/unicore32/kernel/process.c        |    4 +-
+> >  arch/x86/kernel/process_32.c           |    4 +-
+> >  arch/x86/kernel/process_64.c           |    4 +-
+> >  include/linux/tick.h                   |   45 +++++++++++++++++++++++++++++--
+> >  kernel/time/tick-sched.c               |   25 +++++++++--------
+> >  18 files changed, 89 insertions(+), 49 deletions(-)
+> > 
+> > diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> > index f9261d0..4f83362 100644
+> > --- a/arch/arm/kernel/process.c
+> > +++ b/arch/arm/kernel/process.c
+> > @@ -183,7 +183,7 @@ void cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		leds_event(led_idle_start);
+> >  		while (!need_resched()) {
+> >  #ifdef CONFIG_HOTPLUG_CPU
+> > @@ -210,7 +210,7 @@ void cpu_idle(void)
+> >  			}
+> >  		}
+> >  		leds_event(led_idle_end);
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+> > index 6ee7952..34c8c70 100644
+> > --- a/arch/avr32/kernel/process.c
+> > +++ b/arch/avr32/kernel/process.c
+> > @@ -34,10 +34,10 @@ void cpu_idle(void)
+> >  {
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched())
+> >  			cpu_idle_sleep();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+> > index 7b141b5..57e0749 100644
+> > --- a/arch/blackfin/kernel/process.c
+> > +++ b/arch/blackfin/kernel/process.c
+> > @@ -88,10 +88,10 @@ void cpu_idle(void)
+> >  #endif
+> >  		if (!idle)
+> >  			idle = default_idle;
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched())
+> >  			idle();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+> > index 6dc123e..c6ece38 100644
+> > --- a/arch/microblaze/kernel/process.c
+> > +++ b/arch/microblaze/kernel/process.c
+> > @@ -103,10 +103,10 @@ void cpu_idle(void)
+> >  		if (!idle)
+> >  			idle = default_idle;
+> > 
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched())
+> >  			idle();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> > 
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> > diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+> > index d50a005..7df2ffc 100644
+> > --- a/arch/mips/kernel/process.c
+> > +++ b/arch/mips/kernel/process.c
+> > @@ -56,7 +56,7 @@ void __noreturn cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched() && cpu_online(cpu)) {
+> >  #ifdef CONFIG_MIPS_MT_SMTC
+> >  			extern void smtc_idle_loop_hook(void);
+> > @@ -77,7 +77,7 @@ void __noreturn cpu_idle(void)
+> >  		     system_state == SYSTEM_BOOTING))
+> >  			play_dead();
+> >  #endif
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/openrisc/kernel/idle.c b/arch/openrisc/kernel/idle.c
+> > index fb6a9bf..2e82cd0 100644
+> > --- a/arch/openrisc/kernel/idle.c
+> > +++ b/arch/openrisc/kernel/idle.c
+> > @@ -51,7 +51,7 @@ void cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> > 
+> >  		while (!need_resched()) {
+> >  			check_pgt_cache();
+> > @@ -69,7 +69,7 @@ void cpu_idle(void)
+> >  			set_thread_flag(TIF_POLLING_NRFLAG);
+> >  		}
+> > 
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+> > index 878572f..2e782a3 100644
+> > --- a/arch/powerpc/kernel/idle.c
+> > +++ b/arch/powerpc/kernel/idle.c
+> > @@ -56,7 +56,7 @@ void cpu_idle(void)
+> > 
+> >  	set_thread_flag(TIF_POLLING_NRFLAG);
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched() && !cpu_should_die()) {
+> >  			ppc64_runlatch_off();
+> > 
+> > @@ -93,7 +93,7 @@ void cpu_idle(void)
+> > 
+> >  		HMT_medium();
+> >  		ppc64_runlatch_on();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		if (cpu_should_die())
+> >  			cpu_die();
+> > diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
+> > index e2f5fad..77ff6eb 100644
+> > --- a/arch/powerpc/platforms/iseries/setup.c
+> > +++ b/arch/powerpc/platforms/iseries/setup.c
+> > @@ -562,7 +562,7 @@ static void yield_shared_processor(void)
+> >  static void iseries_shared_idle(void)
+> >  {
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched() && !hvlpevent_is_pending()) {
+> >  			local_irq_disable();
+> >  			ppc64_runlatch_off();
+> > @@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
+> >  		}
+> > 
+> >  		ppc64_runlatch_on();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> > 
+> >  		if (hvlpevent_is_pending())
+> >  			process_iSeries_events();
+> > @@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
+> >  	set_thread_flag(TIF_POLLING_NRFLAG);
+> > 
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		if (!need_resched()) {
+> >  			while (!need_resched()) {
+> >  				ppc64_runlatch_off();
+> > @@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
+> >  		}
+> > 
+> >  		ppc64_runlatch_on();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+> > index db3e930..44028ae 100644
+> > --- a/arch/s390/kernel/process.c
+> > +++ b/arch/s390/kernel/process.c
+> > @@ -90,10 +90,10 @@ static void default_idle(void)
+> >  void cpu_idle(void)
+> >  {
+> >  	for (;;) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched())
+> >  			default_idle();
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+> > index 6015743..ad58e75 100644
+> > --- a/arch/sh/kernel/idle.c
+> > +++ b/arch/sh/kernel/idle.c
+> > @@ -89,7 +89,7 @@ void cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> > 
+> >  		while (!need_resched()) {
+> >  			check_pgt_cache();
+> > @@ -111,7 +111,7 @@ void cpu_idle(void)
+> >  			start_critical_timings();
+> >  		}
+> > 
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+> > index 1235f63..78b1bc0 100644
+> > --- a/arch/sparc/kernel/process_64.c
+> > +++ b/arch/sparc/kernel/process_64.c
+> > @@ -95,12 +95,12 @@ void cpu_idle(void)
+> >  	set_thread_flag(TIF_POLLING_NRFLAG);
+> > 
+> >  	while(1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> > 
+> >  		while (!need_resched() && !cpu_is_offline(cpu))
+> >  			sparc64_yield(cpu);
+> > 
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> > 
+> >  		preempt_enable_no_resched();
+> > 
+> > diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+> > index 920e674..53ac895 100644
+> > --- a/arch/tile/kernel/process.c
+> > +++ b/arch/tile/kernel/process.c
+> > @@ -85,7 +85,7 @@ void cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched()) {
+> >  			if (cpu_is_offline(cpu))
+> >  				BUG();  /* no HOTPLUG_CPU */
+> > @@ -105,7 +105,7 @@ void cpu_idle(void)
+> >  				local_irq_enable();
+> >  			current_thread_info()->status |= TS_POLLING;
+> >  		}
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+> > index 41acf59..9e7176b 100644
+> > --- a/arch/um/kernel/process.c
+> > +++ b/arch/um/kernel/process.c
+> > @@ -245,10 +245,10 @@ void default_idle(void)
+> >  		if (need_resched())
+> >  			schedule();
+> > 
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		nsecs = disable_timer();
+> >  		idle_sleep(nsecs);
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  	}
+> >  }
+> > 
+> > diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+> > index 9999b9a..095ff5a 100644
+> > --- a/arch/unicore32/kernel/process.c
+> > +++ b/arch/unicore32/kernel/process.c
+> > @@ -55,7 +55,7 @@ void cpu_idle(void)
+> >  {
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched()) {
+> >  			local_irq_disable();
+> >  			stop_critical_timings();
+> > @@ -63,7 +63,7 @@ void cpu_idle(void)
+> >  			local_irq_enable();
+> >  			start_critical_timings();
+> >  		}
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+> > index ad93205..f311d096 100644
+> > --- a/arch/x86/kernel/process_32.c
+> > +++ b/arch/x86/kernel/process_32.c
+> > @@ -98,7 +98,7 @@ void cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched()) {
+> > 
+> >  			check_pgt_cache();
+> > @@ -114,7 +114,7 @@ void cpu_idle(void)
+> >  				pm_idle();
+> >  			start_critical_timings();
+> >  		}
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+> > index 9ca714e..e72daf9 100644
+> > --- a/arch/x86/kernel/process_64.c
+> > +++ b/arch/x86/kernel/process_64.c
+> > @@ -121,7 +121,7 @@ void cpu_idle(void)
+> > 
+> >  	/* endless idle loop with no priority at all */
+> >  	while (1) {
+> > -		tick_nohz_idle_enter();
+> > +		tick_nohz_idle_enter_norcu();
+> >  		while (!need_resched()) {
+> > 
+> >  			rmb();
+> > @@ -147,7 +147,7 @@ void cpu_idle(void)
+> >  			__exit_idle();
+> >  		}
+> > 
+> > -		tick_nohz_idle_exit();
+> > +		tick_nohz_idle_exit_norcu();
+> >  		preempt_enable_no_resched();
+> >  		schedule();
+> >  		preempt_disable();
+> > diff --git a/include/linux/tick.h b/include/linux/tick.h
+> > index 0df1d50..7224396 100644
+> > --- a/include/linux/tick.h
+> > +++ b/include/linux/tick.h
+> > @@ -7,6 +7,7 @@
+> >  #define _LINUX_TICK_H
+> > 
+> >  #include <linux/clockchips.h>
+> > +#include <linux/irqflags.h>
+> > 
+> >  #ifdef CONFIG_GENERIC_CLOCKEVENTS
+> > 
+> > @@ -121,18 +122,56 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+> >  #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+> > 
+> >  # ifdef CONFIG_NO_HZ
+> > -extern void tick_nohz_idle_enter(void);
+> > +extern void __tick_nohz_idle_enter(void);
+> > +static inline void tick_nohz_idle_enter(void)
+> > +{
+> > +	local_irq_disable();
+> > +	__tick_nohz_idle_enter();
+> > +	local_irq_enable();
+> > +}
+> >  extern void tick_nohz_idle_exit(void);
+> > +
+> > +/*
+> > + * Call this pair of function if the arch doesn't make any use
+> > + * of RCU in-between. You won't need to call rcu_idle_enter() and
+> > + * rcu_idle_exit().
+> > + * Otherwise you need to call tick_nohz_idle_enter() and tick_nohz_idle_exit()
+> > + * and explicitly tell RCU about the window around the place the CPU enters low
+> > + * power mode where no RCU use is made. This is done by calling rcu_idle_enter()
+> > + * after the last use of RCU before the CPU is put to sleep and by calling
+> > + * rcu_idle_exit() before the first use of RCU after the CPU woke up.
+> > + */
+> > +static inline void tick_nohz_idle_enter_norcu(void)
+> > +{
+> > +	/*
+> > +	 * Also call rcu_idle_enter() in the irq disabled section even
+> > +	 * if it disables irq itself.
+> > +	 * Just an optimization that prevents from an interrupt happening
+> > +	 * between it and __tick_nohz_idle_enter() to lose time to help completing
+> > +	 * a grace period while we could be in extended grace period already.
+> > +	 */
+> > +	local_irq_disable();
+> > +	__tick_nohz_idle_enter();
+> > +	rcu_idle_enter();
+> > +	local_irq_enable();
+> > +}
+> > +static inline void tick_nohz_idle_exit_norcu(void)
+> > +{
+> > +	rcu_idle_exit();
+> > +	tick_nohz_idle_exit();
+> > +}
+> >  extern void tick_nohz_irq_exit(void);
+> >  extern ktime_t tick_nohz_get_sleep_length(void);
+> >  extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+> >  extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+> >  # else
+> > -static inline void tick_nohz_idle_enter(void)
+> > +static inline void tick_nohz_idle_enter(void) { }
+> > +static inline void tick_nohz_idle_exit(void) { }
+> > +static inline void tick_nohz_idle_enter_norcu(void)
+> >  {
+> >  	rcu_idle_enter();
+> >  }
+> > -static inline void tick_nohz_idle_exit(void)
+> > +static inline void tick_nohz_idle_exit_norcu(void)
+> >  {
+> >  	rcu_idle_exit();
+> >  }
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > index 52b7ace..360d028 100644
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -424,18 +424,22 @@ out:
+> >   *
+> >   * When the next event is more than a tick into the future, stop the idle tick
+> >   * Called when we start the idle loop.
+> > - * This also enters into RCU extended quiescent state so that this CPU doesn't
+> > - * need anymore to be part of any global grace period completion. This way
+> > - * the tick can be stopped safely as we don't need to report quiescent states.
+> > + *
+> > + * If no use of RCU is made in the idle loop between
+> > + * tick_nohz_idle_enter() and tick_nohz_idle_exit() calls, then
+> > + * tick_nohz_idle_enter_norcu() should be called instead and the arch
+> > + * doesn't need to call rcu_idle_enter() and rcu_idle_exit() explicitly.
+> > + *
+> > + * Otherwise the arch is responsible of calling:
+> > + *
+> > + * - rcu_idle_enter() after its last use of RCU before the CPU is put
+> > + *  to sleep.
+> > + * - rcu_idle_exit() before the first use of RCU after the CPU is woken up.
+> >   */
+> > -void tick_nohz_idle_enter(void)
+> > +void __tick_nohz_idle_enter(void)
+> >  {
+> >  	struct tick_sched *ts;
+> > 
+> > -	WARN_ON_ONCE(irqs_disabled());
+> > -
+> > -	local_irq_disable();
+> > -
+> >  	ts = &__get_cpu_var(tick_cpu_sched);
+> >  	/*
+> >  	 * set ts->inidle unconditionally. even if the system did not
+> > @@ -444,9 +448,6 @@ void tick_nohz_idle_enter(void)
+> >  	 */
+> >  	ts->inidle = 1;
+> >  	tick_nohz_stop_sched_tick(ts);
+> > -	rcu_idle_enter();
+> > -
+> > -	local_irq_enable();
+> >  }
+> > 
+> >  /**
+> > @@ -522,7 +523,7 @@ void tick_nohz_idle_exit(void)
+> >  	ktime_t now;
+> > 
+> >  	local_irq_disable();
+> > -	rcu_idle_exit();
+> > +
+> >  	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
+> >  		now = ktime_get();
+> > 
+> > -- 
+> > 1.7.5.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
