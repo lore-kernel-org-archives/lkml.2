@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab1JMTNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:13:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43555 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752352Ab1JMTNG (ORCPT
+	id S1753618Ab1JMTPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:15:05 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39783 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab1JMTPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:13:06 -0400
-Date: Thu, 13 Oct 2011 20:11:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pata_rdc: parallel scanning needs an extra locking
-Message-ID: <20111013201136.20594eff@lxorguk.ukuu.org.uk>
-In-Reply-To: <201110131808.31470.bzolnier@gmail.com>
-References: <201110131606.04496.bzolnier@gmail.com>
-	<20111013164923.23683fcb@lxorguk.ukuu.org.uk>
-	<201110131808.31470.bzolnier@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Oct 2011 15:15:02 -0400
+Date: Thu, 13 Oct 2011 21:14:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Niklas =?iso-8859-1?Q?S=F6derlund?= <niso@kth.se>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i7core_edac: fix erroneous size of static array
+Message-ID: <20111013191448.GD3064@aftab>
+References: <1318530294-6829-1-git-send-email-niso@kth.se>
+ <20111013185656.GC3064@aftab>
+ <987664A83D2D224EAE907B061CE93D5301EE87A060@orsmsx505.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EE87A060@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011 18:08:31 +0200
-Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
-
-> Alan Cox wrote:
+On Thu, Oct 13, 2011 at 03:03:20PM -0400, Luck, Tony wrote:
+> > -	static int cols[8] = {
+> > +	static int cols[4] = {
 > 
-> > On Thu, 13 Oct 2011 16:06:04 +0200
-> > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
-> > 
-> > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > > Subject: [PATCH] pata_rdc: parallel scanning needs an extra locking
-> > > 
-> > > This is similar change as commit 60c3be3 ("ata_piix: parallel scanning
-> > > on PATA needs an extra locking") for ata_piix host driver.
-> > 
-> > Again has anyone verified with the vendor that the RDC can support
-> > parallel scanning ?
-> 
-> Upstream has always used it:
+> Why are these arrays "static"? Does that generate better code than
+> dynamic initialization?
 
-Fair enough as nobody has complained.
+They look like lookup arrays for count of things based on bit settings
+and as such they should be static because they don't ... change :). If
+they were dynamic, then inlining them in every function callsite would
+be not cool.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
