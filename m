@@ -1,145 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab1JMOya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:54:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37390 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab1JMOy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:54:29 -0400
+	id S1756028Ab1JMO4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:56:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39180 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755339Ab1JMO4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:56:31 -0400
+Date: Thu, 13 Oct 2011 11:54:50 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] kvm: set affinity hint for assigned device msi
+Message-ID: <20111013145450.GA4143@amt.cnet>
+References: <cover.1318358229.git.mst@redhat.com>
+ <7458f62a58ad7d4022eefba4333336ba268e4ef9.1318358229.git.mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEmTpZG5MN8Ha4=ZcCnWC3jJP9x4Bw7ZEC2vQdOGJZiaG4QYkA@mail.gmail.com>
-References: <CAEmTpZG5MN8Ha4=ZcCnWC3jJP9x4Bw7ZEC2vQdOGJZiaG4QYkA@mail.gmail.com>
-Date: Thu, 13 Oct 2011 20:54:27 +0600
-Message-ID: <CAEmTpZF3xV9TEpQ4QjuJBkNk_+Gi50CW-x5mxNq6LxpLuAtqwg@mail.gmail.com>
-Subject: (splice socket -> pipe) + EPOLLET -> epoll_wait does not not wake up !
-From: =?UTF-8?B?0JzQsNGA0Log0JrQvtGA0LXQvdCx0LXRgNCz?= 
-	<socketpair@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0015174feb6c39235904af2f5102
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7458f62a58ad7d4022eefba4333336ba268e4ef9.1318358229.git.mst@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015174feb6c39235904af2f5102
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 11, 2011 at 08:38:28PM +0200, Michael S. Tsirkin wrote:
+> To forward an interrupt to a vcpu that runs on
+> a host cpu different from the current one,
+> we need an ipi which likely will cost us as much
+> as delivering the interrupt directly to that cpu would.
+> 
+> Set irq affinity hint to point there, irq balancer
+> can then take this into accound and balance
+> interrupts accordingly.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  virt/kvm/assigned-dev.c |    8 +++++---
+>  virt/kvm/irq_comm.c     |   17 ++++++++++++++++-
+>  2 files changed, 21 insertions(+), 4 deletions(-)
+> 
+> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+> index f89f138..b579777 100644
+> --- a/virt/kvm/assigned-dev.c
+> +++ b/virt/kvm/assigned-dev.c
+> @@ -142,9 +142,11 @@ static void deassign_host_irq(struct kvm *kvm,
+>  		for (i = 0; i < assigned_dev->entries_nr; i++)
+>  			disable_irq(assigned_dev->host_msix_entries[i].vector);
+>  
+> -		for (i = 0; i < assigned_dev->entries_nr; i++)
+> -			free_irq(assigned_dev->host_msix_entries[i].vector,
+> -				 (void *)assigned_dev);
+> +		for (i = 0; i < assigned_dev->entries_nr; i++) {
+> +			u32 vector = assigned_dev->host_msix_entries[i].vector;
+> +			irq_set_affinity_hint(vector, NULL);
+> +			free_irq(vector, (void *)assigned_dev);
+> +		}
+>  
+>  		assigned_dev->entries_nr = 0;
+>  		kfree(assigned_dev->host_msix_entries);
+> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> index ac8b629..68b1f7c 100644
+> --- a/virt/kvm/irq_comm.c
+> +++ b/virt/kvm/irq_comm.c
+> @@ -22,6 +22,7 @@
+>  
+>  #include <linux/kvm_host.h>
+>  #include <linux/slab.h>
+> +#include <linux/interrupt.h>
+>  #include <trace/events/kvm.h>
+>  
+>  #include <asm/msidef.h>
+> @@ -80,6 +81,17 @@ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+>  #endif
+>  }
+>  
+> +static void kvm_vcpu_host_irq_hint(struct kvm_vcpu *vcpu, int host_irq)
+> +{
+> +	const struct cpumask *mask;
+> +	/* raw_smp_processor_id() is ok here: if we get preempted we can get a
+> +	 * wrong value but we don't mind much. */
+> +	if (host_irq >= 0 && unlikely(vcpu->cpu != raw_smp_processor_id())) {
+> +		mask = get_cpu_mask(vcpu->cpu);
+> +		irq_set_affinity_hint(host_irq, mask);
+> +	}
+> +}
 
-The problem:
+Unsure about the internals of irq_set_affinity_hint, but AFAICS its
+exported so that irqbalance in userspace can make a decision.
 
-man 7 epoll said:
-For =C2=A0stream-oriented =C2=A0files =C2=A0(e.g., =C2=A0pipe, FIFO, stream=
- socket), the
-condition that the read/write I/O space is exhausted can also be
-detected by checking the amount of data read from / written to the
-target file descriptor. =C2=A0For example, if you call read(2) by asking to
-read a certain amount of data and read(2) returns a lower number of
-bytes, you =C2=A0can =C2=A0be =C2=A0sure of having exhausted the read I/O s=
-pace for
-the file descriptor.
+If that is the case, then irqbalance update rate should be high enough
+to catch up with a vcpu migrating betweens cpus (which initially does
+not appear a sensible arrangement).
 
-I decide to use splice socket -> pipe instead of recv. So I have
-registered socket's fd in epoll with EPOLLIN|EPOLLET.
+The decision to have the host interrupt follow the vcpu seems a good
+one, given that it saves an IPI and is potentially more cache friendly
+overall.
 
-When data appear in socket faster than I splice() it from socket, the
-following sometimes appear:
+And AFAICS its more intelligent for the device assignment case than
+anything irqbalance can come up with (note it depends on how the APIC is
+configured, your patch ignores that).
 
-1. in my code I sure, that pipe is empty.
-2. my code do splice(socket, pipe, 65536)
-3. splice return, say, 53248
-4. my code accordingly to man, decide not to fire splice() again, as
-it thinks that it will return EWOULDBLOCK=3DEAGAIN.
-5. so, my code go to epoll_wait to wait for EPOLLIN on socket
-6. epoll hangs.
-
-This is not appear if I do just recv(). But it may be because speed is
-lower, and some race condition in effect.
-
-The hacked version of strace output is attached.
-
---0015174feb6c39235904af2f5102
-Content-Type: text/plain; charset=US-ASCII; name="strace.txt"
-Content-Disposition: attachment; filename="strace.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gtpuzv190
-
-ZXBvbGxfY3JlYXRlKEVQT0xMX0NMT0VYRUMpICAgICAgICAgICAgICAgICAgICA9IDYKCi8qIDQg
-aXMgYSBzb2NrZXQgb2YgSFRUUF9DTElFTlQuIChnb3QgZnJvbSBhY2NlcHQ0KFNPQ0tfQ0xPRVhF
-Q3xTT0NLX05PTkJMT0NLKSkgKi8KZXBvbGxfY3RsKDYsIEVQT0xMX0NUTF9BREQsIDQsIHtFUE9M
-TElOfEVQT0xMT1VUfEVQT0xMRVR8RVBPTExSREhVUCwge2ZkPTR9fSkgPSAwCnBpcGUyKFs3LCA5
-XSwgT19OT05CTE9DS3xPX0NMT0VYRUMpICAgICA9IDAKCi8qIENyZWF0aW5nIHNvY2tldCBmb3Ig
-YSBIVFRQX1NFUlZFUiAqLwpzb2NrZXQoUEZfSU5FVCwgU09DS19TVFJFQU18U09DS19DTE9FWEVD
-fFNPQ0tfTk9OQkxPQ0ssIElQUFJPVE9fSVApID0gMTAKY29ubmVjdCgxMCwge3NhX2ZhbWlseT1B
-Rl9JTkVULCBzaW5fcG9ydD1odG9ucyg4MCksIHNpbl9hZGRyPWluZXRfYWRkcigiMTI3LjAuMC4x
-Iil9LCAxNikgPSAtMSBFSU5QUk9HUkVTUyAoT3BlcmF0aW9uIG5vdyBpbiBwcm9ncmVzcykKZXBv
-bGxfY3RsKDYsIEVQT0xMX0NUTF9BREQsIDEwLCB7RVBPTExJTnxFUE9MTE9VVHxFUE9MTEVUfDB4
-MjAwMCwge2ZkPTEwfX0pID0gMApwaXBlMihbMTEsIDEyXSwgT19OT05CTE9DS3xPX0NMT0VYRUMp
-ICAgPSAwCmVwb2xsX3dhaXQoNiwge3tFUE9MTE9VVCwge2ZkPTR9fSwge0VQT0xMT1VULCB7ZmQ9
-MTB9fX0sIDEwMCwgLTEpID0gMgpnZXRzb2Nrb3B0KDEwLCBTT0xfU09DS0VULCBTT19FUlJPUiwg
-WzBdLCBbNF0pID0gMAplcG9sbF93YWl0KDYsIHt7RVBPTExJTnxFUE9MTE9VVCwge2ZkPTR9fX0s
-IDEwMCwgLTEpID0gMQpzcGxpY2UoNCwgMCwgOSwgMCwgNjU1MzYsIFNQTElDRV9GX01PVkV8U1BM
-SUNFX0ZfTk9OQkxPQ0spICAgID0gNDIxCnNwbGljZSg3LCAwLCAxMCwgMCwgMHgxYTUsIFNQTElD
-RV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgICAgPSA0MjEKZXBvbGxfd2FpdCg2LCB7e0VQ
-T0xMSU58RVBPTExPVVQsIHtmZD0xMH19fSwgMTAwLCAtMSkgPSAxCnNwbGljZSgxMCwgMCwgMTIs
-IDAsIDY1NTM2LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICA9IDgwMQpzcGxp
-Y2UoMTEsIDAsIDQsIDAsIDB4MzIxLCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAg
-ICAgID0gODAxCmVwb2xsX3dhaXQoNiwge3tFUE9MTElOfEVQT0xMT1VULCB7ZmQ9NH19fSwgMTAw
-LCAtMSkgPSAxCnNwbGljZSg0LCAwLCA5LCAwLCA2NTUzNiwgU1BMSUNFX0ZfTU9WRXxTUExJQ0Vf
-Rl9OT05CTE9DSykgICAgPSAzNDUKc3BsaWNlKDcsIDAsIDEwLCAwLCAweDE1OSwgU1BMSUNFX0Zf
-TU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgICA9IDM0NQplcG9sbF93YWl0KDYsIHt7RVBPTExJ
-TnxFUE9MTE9VVCwge2ZkPTEwfX19LCAxMDAsIC0xKSA9IDEKc3BsaWNlKDEwLCAwLCAxMiwgMCwg
-NjU1MzYsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgID0gNTAyCnNwbGljZSgx
-MSwgMCwgNCwgMCwgMHgxZjYsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgICAg
-PSA1MDIKZXBvbGxfd2FpdCg2LCB7e0VQT0xMSU58RVBPTExPVVQsIHtmZD00fX19LCAxMDAsIC0x
-KSA9IDEKc3BsaWNlKDQsIDAsIDksIDAsIDY1NTM2LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05P
-TkJMT0NLKSAgICA9IDQ1OApzcGxpY2UoNywgMCwgMTAsIDAsIDB4MWNhLCBTUExJQ0VfRl9NT1ZF
-fFNQTElDRV9GX05PTkJMT0NLKSAgICAgID0gNDU4CmVwb2xsX3dhaXQoNiwge3tFUE9MTElOfEVQ
-T0xMT1VULCB7ZmQ9MTB9fX0sIDEwMCwgLTEpID0gMQpzcGxpY2UoMTAsIDAsIDEyLCAwLCA2NTUz
-NiwgU1BMSUNFX0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgPSA5MjkKc3BsaWNlKDExLCAw
-LCA0LCAwLCAweDNhMSwgU1BMSUNFX0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgICA9IDky
-OQplcG9sbF93YWl0KDYsIHt7RVBPTExJTnxFUE9MTE9VVCwge2ZkPTR9fX0sIDEwMCwgLTEpID0g
-MQpzcGxpY2UoNCwgMCwgOSwgMCwgNjU1MzYsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxP
-Q0spICAgID0gMzQ1CnNwbGljZSg3LCAwLCAxMCwgMCwgMHgxNTksIFNQTElDRV9GX01PVkV8U1BM
-SUNFX0ZfTk9OQkxPQ0spICAgICAgPSAzNDUKZXBvbGxfd2FpdCg2LCB7e0VQT0xMSU58RVBPTExP
-VVQsIHtmZD0xMH19fSwgMTAwLCAtMSkgPSAxCnNwbGljZSgxMCwgMCwgMTIsIDAsIDY1NTM2LCBT
-UExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICA9IDUwMgpzcGxpY2UoMTEsIDAsIDQs
-IDAsIDB4MWY2LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICAgID0gNTAyCmVw
-b2xsX3dhaXQoNiwge3tFUE9MTElOfEVQT0xMT1VULCB7ZmQ9NH19fSwgMTAwLCAtMSkgPSAxCnNw
-bGljZSg0LCAwLCA5LCAwLCA2NTUzNiwgU1BMSUNFX0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykg
-ICAgPSA1NDMKc3BsaWNlKDcsIDAsIDEwLCAwLCAweDIxZiwgU1BMSUNFX0ZfTU9WRXxTUExJQ0Vf
-Rl9OT05CTE9DSykgICAgICA9IDU0MwplcG9sbF93YWl0KDYsIHt7RVBPTExJTnxFUE9MTE9VVCwg
-e2ZkPTEwfX19LCAxMDAsIC0xKSA9IDEKc3BsaWNlKDEwLCAwLCAxMiwgMCwgNjU1MzYsIFNQTElD
-RV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgID0gMzQ4CnNwbGljZSgxMSwgMCwgNCwgMCwg
-MHgxNWMsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgICAgPSAzNDgKZXBvbGxf
-d2FpdCg2LCB7e0VQT0xMSU58RVBPTExPVVQsIHtmZD00fX19LCAxMDAsIC0xKSA9IDEKc3BsaWNl
-KDQsIDAsIDksIDAsIDY1NTM2LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICA9
-IDU0MwpzcGxpY2UoNywgMCwgMTAsIDAsIDB4MjFmLCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05P
-TkJMT0NLKSAgICAgID0gNTQzCmVwb2xsX3dhaXQoNiwge3tFUE9MTElOfEVQT0xMT1VULCB7ZmQ9
-MTB9fX0sIDEwMCwgLTEpID0gMQpzcGxpY2UoMTAsIDAsIDEyLCAwLCA2NTUzNiwgU1BMSUNFX0Zf
-TU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgPSAzODc4NwpzcGxpY2UoMTEsIDAsIDQsIDAsIDB4
-OTc4MywgU1BMSUNFX0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgID0gMzg3ODcKZXBvbGxf
-d2FpdCg2LCB7e0VQT0xMSU58RVBPTExPVVQsIHtmZD00fX19LCAxMDAsIC0xKSA9IDEKc3BsaWNl
-KDQsIDAsIDksIDAsIDY1NTM2LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICA9
-IDM0NQpzcGxpY2UoNywgMCwgMTAsIDAsIDB4MTU5LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05P
-TkJMT0NLKSAgICAgID0gMzQ1CmVwb2xsX3dhaXQoNiwge3tFUE9MTElOfEVQT0xMT1VULCB7ZmQ9
-MTB9fX0sIDEwMCwgLTEpID0gMQpzcGxpY2UoMTAsIDAsIDEyLCAwLCA2NTUzNiwgU1BMSUNFX0Zf
-TU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgPSA1MDIKc3BsaWNlKDExLCAwLCA0LCAwLCAweDFm
-NiwgU1BMSUNFX0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgICA9IDUwMgplcG9sbF93YWl0
-KDYsIHt7RVBPTExJTnxFUE9MTE9VVCwge2ZkPTR9fX0sIDEwMCwgLTEpID0gMQpzcGxpY2UoNCwg
-MCwgOSwgMCwgNjU1MzYsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgID0gNTE5
-CnNwbGljZSg3LCAwLCAxMCwgMCwgMHgyMDcsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxP
-Q0spICAgICAgPSA1MTkKZXBvbGxfd2FpdCg2LCB7e0VQT0xMSU58RVBPTExPVVQsIHtmZD0xMH19
-fSwgMTAwLCAtMSkgPSAxCnNwbGljZSgxMCwgMCwgMTIsIDAsIDY1NTM2LCBTUExJQ0VfRl9NT1ZF
-fFNQTElDRV9GX05PTkJMT0NLKSAgICA9IDQ5MTUyCnNwbGljZSgxMSwgMCwgNCwgMCwgMHhjMDAw
-LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICAgPSA0OTE1MgplcG9sbF93YWl0
-KDYsIHt7RVBPTExJTnxFUE9MTE9VVCwge2ZkPTEwfX19LCAxMDAsIC0xKSA9IDEKc3BsaWNlKDEw
-LCAwLCAxMiwgMCwgNjU1MzYsIFNQTElDRV9GX01PVkV8U1BMSUNFX0ZfTk9OQkxPQ0spICAgID0g
-NDk0NDgKc3BsaWNlKDExLCAwLCA0LCAwLCAweGMxMjgsIFNQTElDRV9GX01PVkV8U1BMSUNFX0Zf
-Tk9OQkxPQ0spICAgICA9IDQ5NDQ4CmVwb2xsX3dhaXQoNiwge3tFUE9MTElOfEVQT0xMT1VULCB7
-ZmQ9MTB9fX0sIDEwMCwgLTEpID0gMQpzcGxpY2UoMTAsIDAsIDEyLCAwLCA2NTUzNiwgU1BMSUNF
-X0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgPSA1MzI0OApzcGxpY2UoMTEsIDAsIDQsIDAs
-IDUzMjQ4LCBTUExJQ0VfRl9NT1ZFfFNQTElDRV9GX05PTkJMT0NLKSAgICAgPSAzMjQ3MgplcG9s
-bF93YWl0KDYsIHt7RVBPTExPVVQsIHtmZD00fX19LCAxMDAsIC0xKSA9IDEKc3BsaWNlKDExLCAw
-LCA0LCAwLCAyMDc3NiwgU1BMSUNFX0ZfTU9WRXxTUExJQ0VfRl9OT05CTE9DSykgICAgID0gMjA3
-NzYKZXBvbGxfd2FpdCg2LCArKysga2lsbGVkIGJ5IFNJR0lOVCArKysK
---0015174feb6c39235904af2f5102--
+> +	
+>  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+>  		struct kvm_lapic_irq *irq, int host_irq)
+>  {
+> @@ -102,6 +114,7 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+>  			if (r < 0)
+>  				r = 0;
+>  			r += kvm_apic_set_irq(vcpu, irq);
+> +			kvm_vcpu_host_irq_hint(vcpu, host_irq);
+>  		} else if (kvm_lapic_enabled(vcpu)) {
+>  			if (!lowest)
+>  				lowest = vcpu;
+> @@ -110,8 +123,10 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+>  		}
+>  	}
+>  
+> -	if (lowest)
+> +	if (lowest) {
+>  		r = kvm_apic_set_irq(lowest, irq);
+> +		kvm_vcpu_host_irq_hint(vcpu, host_irq);
+> +	}
+>  
+>  	return r;
+>  }
+> -- 
+> 1.7.5.53.gc233e
