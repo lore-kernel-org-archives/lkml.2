@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab1JMKMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:12:05 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:53482 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754581Ab1JMKME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:12:04 -0400
-Date: Thu, 13 Oct 2011 15:42:04 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Maneesh Soni <manesoni@cisco.com>
+	id S1754606Ab1JMKMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:12:25 -0400
+Received: from ams-iport-1.cisco.com ([144.254.224.140]:65452 "EHLO
+	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab1JMKMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 06:12:23 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EABe5lk6Q/khM/2dsb2JhbABDqFGBBYFTAQEBBBIBAgEREz8QCxgcEhQYMQsqoS8BgykPAZpwhwxhBId/i3mRXQ
+X-IronPort-AV: E=Sophos;i="4.69,339,1315180800"; 
+   d="scan'208";a="119017620"
+Date: Thu, 13 Oct 2011 15:42:18 +0530
+From: Maneesh Soni <manesoni@cisco.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Cc: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
         linux-mips@linux-mips.org, david.daney@cavium.com, kamensky@cisco.com
 Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
-Message-ID: <20111013101204.GB19054@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20111013090749.GB16761@cisco.com> <20111013094137.GA19054@in.ibm.com>
+Message-ID: <20111013101217.GD16761@cisco.com>
+Reply-To: manesoni@cisco.com
+References: <20111013090749.GB16761@cisco.com>
+ <20111013094137.GA19054@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20111013094137.GA19054@in.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-x-cbid: 11101310-3534-0000-0000-0000009D643C
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 03:11:37PM +0530, Ananth N Mavinakayanahalli wrote:
+On Thu, Oct 13, 2011 at 03:11:38PM +0530, Ananth N Mavinakayanahalli wrote:
 > On Thu, Oct 13, 2011 at 02:37:49PM +0530, Maneesh Soni wrote:
 > 
 > ...
@@ -62,8 +67,9 @@ On Thu, Oct 13, 2011 at 03:11:37PM +0530, Ananth N Mavinakayanahalli wrote:
 > > +		resume_execution(p, regs, kcb);
 > 
 > You are missing a preempt_disable_no_resched() here.
+> 
+ok.. you meant preempt_enable_no_resched(). Will add it in the next
+version. Thanks for pointing it out.
 
-Oops! I meant preempt_enable_no_resched().
-
-Ananth
-
+Thanks
+Maneesh
