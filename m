@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1JMUHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:07:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59470 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754606Ab1JMUHw (ORCPT
+	id S1754842Ab1JMUJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 16:09:15 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34555 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab1JMUJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:07:52 -0400
-Date: Thu, 13 Oct 2011 16:07:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Markus Rechberger <mrechberger@gmail.com>
-cc: Chris Friesen <chris.friesen@genband.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-In-Reply-To: <CA+O4pCL2NmTgW2vDU=jdhyy1_PpuP3g9SVup=iwEOVGoGzHmUA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1110131606030.2026-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 13 Oct 2011 16:09:14 -0400
+Date: Thu, 13 Oct 2011 16:08:54 -0400 (EDT)
+Message-Id: <20111013.160854.1765661520007592071.davem@davemloft.net>
+To: glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, paul@paulmenage.org, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org
+Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E9744A6.5010101@parallels.com>
+References: <1318511382-31051-1-git-send-email-glommer@parallels.com>
+	<20111013.160031.605700447623532119.davem@davemloft.net>
+	<4E9744A6.5010101@parallels.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 13 Oct 2011 13:08:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Markus Rechberger wrote:
+From: Glauber Costa <glommer@parallels.com>
+Date: Fri, 14 Oct 2011 00:05:58 +0400
 
-> fair enough I have 2 devices which don't work properly with bulk.
-> Device A works by adjusting a hardware register
-> Device B is documented in this thread.
-> 
-> Device A causes corruptions when the hardwareregister is set to a
-> buffersize > 16k.
-> There is certainly something on the physical usb layer which is unknown to the
-> (software) USB experts here.
-> The logfiles in the previous email shows up enough and is clear enough.
+> On 10/14/2011 12:00 AM, David Miller wrote:
+>> That imposes a new non-trivial cost, in fast paths, even when people
+>> do not use your feature.
+> Well, there is a cost, but all past submissions included round trip
+> benchmarks.
+> In none of them I could see any significant slowdown.
 
-When you ran the test using the 12288/11776 sizes, did you change the 
-hardware register buffersize value?  Or did you leave it set to the 
-same 24064 as in the other test?
+Did you try millions of sockets doing all kinds of different accesses?
 
-Alan Stern
-
+Did you check the nanosecond latency of operations over loopback so
+that the real cost of you change can be isolated and thus measured
+properly?
