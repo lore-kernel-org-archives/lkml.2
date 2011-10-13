@@ -1,73 +1,1783 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab1JMNdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 09:33:52 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:34345 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab1JMNdv (ORCPT
+	id S1755371Ab1JMNfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 09:35:13 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41218 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab1JMNfL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 09:33:51 -0400
-Date: Fri, 14 Oct 2011 00:33:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: currently missing kernel devel trees
-Message-Id: <20111014003341.36bd655d41bf31804d720174@canb.auug.org.au>
-In-Reply-To: <CAPM=9tyuHeKgrh6iyJVUKF3rdy8-izwSJuJRBwCOSsz4DDsccQ@mail.gmail.com>
-References: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au>
-	<CAPM=9tyuHeKgrh6iyJVUKF3rdy8-izwSJuJRBwCOSsz4DDsccQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Oct_2011_00_33_41_+1100_AKORa3fnzJtsOmdT"
+	Thu, 13 Oct 2011 09:35:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+0Zf5C1B67f7RSiEej86rGFC1Ms9vH-qmk1wN1phtskfq2vEA@mail.gmail.com>
+References: <CA+0Zf5C1B67f7RSiEej86rGFC1Ms9vH-qmk1wN1phtskfq2vEA@mail.gmail.com>
+Date: Thu, 13 Oct 2011 15:35:09 +0200
+Message-ID: <CA+0Zf5AtSYM=KAqVzkD0mN-rqjqhZBay3iJCOF5LQO6ifB28sg@mail.gmail.com>
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
+ kernel oops
+From: Elmar Vonlanthen <evonlanthen@gmail.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Oct_2011_00_33_41_+1100_AKORa3fnzJtsOmdT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Mr Miller (and all other readers)
 
-Hi Dave,
+I'm sorry for the previous horrible post. The webmail client of
+hotmail did remove a lot of newlines. So here is the hopefully
+readable mail again from my gmail Account.
 
-On Thu, 13 Oct 2011 13:36:01 +0100 Dave Airlie <airlied@gmail.com> wrote:
->
-> > drm
-> > agp
->=20
-> git://people.freedesktop.org/~airlied/linux.git drm-next
+According to the maintainer list and the document "REPORTING-BUGS" I
+should send this report to you. Please excuse me, if you are the wrong
+person to receive this mail.
 
-OK, I will switch to that.   What should I do about the agp tree. It just
-has three commits that are also in Linus' tree (as different commits).
+1. PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes kernel oops
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+2.
+I have a setup with two gateways connected with ipsec and gre tunnels.
+They do ospf routing.
 
---Signature=_Fri__14_Oct_2011_00_33_41_+1100_AKORa3fnzJtsOmdT
-Content-Type: application/pgp-signature
+This is the setup I have:
+[ host chgut11fw01 ]
+================================================== [ host chgut1fw01 ]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+    (dev gAAchgut1) 10.254.11.1 ---------gre/ospf--------- 10.254.1.11
+(dev gAAchgut11)
+                      V                                      V
+         (dev eth1) 10.10.111.4 -----strongswan/ipsec----- 10.10.101.4
+(dev eth1)
 
-iQIcBAEBCAAGBQJOlui1AAoJEECxmPOUX5FE8RsP/iaptKCjZyRSEIUj1f7VkaXe
-rq1RAlvbKXq9MHbTm9HMYGDW5WkOIfv6jkrWsOiKlq9c81PBRN8L/8JkxYYdeYkr
-jOxyKk6CZu/su1FLbKymoI7l8ErNLCwWOA7bn3iKhdjjLTK1iHvbHPiU/8GeeWWp
-0QgwamtjGRYU2tER4Md+nHoMlf71PwzUCGvnFbqLrOL0suYhLT8nhVp7ky5oyVBe
-OcqpdDzS2L+wzQPopkmaoeoDlyZudx09FlV+ZIW7rJzp20+Ma9jP2+zYxHf7DzGZ
-NewFeikfZt8Vk/RBUr0ZOFxYXaGh4hAuadBKRfhjlAFGysjkMaKYkQpslkaDS/dg
-fcObHr41+/BBuCVG7+/H/G63GdvbqHVdOrVBwhue8zXUqsfnSL2xRPkR042MZaZz
-4wJuzzXPb2auMng9C38pRoYgsFktRUIEUpDHumymIOF6GMJvhVtbQGWjv65WFMYy
-FUgaXJ79C5juMCL9gPSMuvK1Yy/lhQ8Z7AhFcGSD4PrDwda8x76RwN+0OewRPe8I
-9U0A4el7yqyvaixxZU4GXFV0OMvWZ0RuU+GSasd+nwFY6X5dxWtI9g8gYECAKxTm
-5/i5Qz2UgeiGrWZj9uAIairV6h9SjbxO9q2sCv6s8WdCIlJ+ZweOXKHpIQH8pddY
-TNJ/rFcNQM3rX2K5huTH
-=V8jC
------END PGP SIGNATURE-----
+Sometimes, if the process ospfd (package quagga) is trying to send a
+multicast packet with the system call "sendmsg" a kernel oops happens.
+When I add and remove the GRE interface in a loop the oops happens
+normally after some seconds or two, three minutes (this is the way I
+can reproduce the problem).
 
---Signature=_Fri__14_Oct_2011_00_33_41_+1100_AKORa3fnzJtsOmdT--
+But the problem happens only on host chgut11fw01 (See hardware details
+below). On host chgut1fw01 I'm not able to reproduce it!
+
+It is the call sendmsg() in ospf_packet.c line 737 (quagga-0.99.20
+source) which causes the problem. It tries to send a packet of length
+16384 to 224.0.0.5 over device gAAchgut1 as soon as the device is
+added to the multcast group.
+
+3. Keywords: networking, kernel
+
+4.1 Kernel Version: Linux version 3.0.4-SMP (root@whiskey) (gcc
+version 4.4.4 (Gentoo 4.4.4-r2 p1.3, pie-0.4.5) ) #1 SMP Thu Oct 6
+16:24:22 CEST 2011
+
+4.2 Kernel Config: If necessary, I can post the enabled configuration options.
+
+5. Kernel Version which doesn't have the bug: None
+
+6. Kernel oops message
+
+I saw too late, that my kernel 3.0.4 is "tainted". I don't know why,
+because the kernel 2.6.35.10 which I use as well is not. The only
+thing I did was to add the "aufs" patch, but on both kernel versions
+(is that the reason?). Below you find a oops with the not tainted
+kernel 2.6.35.10.
+
+2011-10-10 09:32:08 chgut11fw01 kernel: skb_over_panic: text:c1305749
+len:64 put:64 head:c7ea6a00 data:c7ea6a50 tail:0xc7ea6a90
+end:0xc7ea6a80 dev:<NULL>
+2011-10-10 09:32:08 chgut11fw01 kernel: ------------[ cut here ]------------
+2011-10-10 09:32:09 chgut11fw01 kernel: kernel BUG at net/core/skbuff.c:128!
+2011-10-10 09:32:09 chgut11fw01 kernel: invalid opcode: 0000 [#40] SMP
+2011-10-10 09:32:09 chgut11fw01 kernel: Modules linked in:
+nf_conntrack_netlink nfnetlink ip_gre gre authenc xfrm4_mode_transport
+deflate zlib_deflate ctr twofish_generic twofish_common serpent cryptd
+aes_i5
+86 aes_generic blowfish cast5 cbc ecb rmd160 sha512_generic
+sha256_generic sha1_generic xfrm_user xfrm4_tunnel tunnel4 ipcomp
+xfrm_ipcomp esp4 ah4 af_key tun ipt_LOG xt_limit ipt_REJECT xt_state
+ipt_REDIRECT
+ ipt_MASQUERADE xt_policy xt_TCPMSS xt_tcpmss xt_tcpudp xt_NOTRACK
+iptable_filter iptable_nat xt_mark xt_connmark iptable_mangle
+iptable_raw ip_tables x_tables nf_conntrack_tftp nf_nat_ftp nf_nat
+nf_conntrac
+k_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack rtc ppdev
+parport_pc parport w83792d i2c_dev i2c_i801 i2c_core pl2303 usbserial
+coretemp hwmon usbhid ohci_hcd uhci_hcd ehci_hcd usbcore e1000 e1000e
+aufs
+ata_piix libata
+2011-10-10 09:32:09 chgut11fw01 kernel:
+2011-10-10 09:32:09 chgut11fw01 kernel: Pid: 17011, comm: ospfd
+Tainted: G      D     3.0.4-SMP #1    /LakePort
+2011-10-10 09:32:09 chgut11fw01 kernel: EIP: 0060:[<c12b6575>] EFLAGS:
+00210296 CPU: 0
+2011-10-10 09:32:09 chgut11fw01 kernel: EIP is at skb_put+0x85/0x90
+2011-10-10 09:32:09 chgut11fw01 kernel: EAX: 00000078 EBX: c1305749
+ECX: 00200082 EDX: ffffff8b
+2011-10-10 09:32:09 chgut11fw01 kernel: ESI: dd6420c0 EDI: 00000040
+EBP: d7d23c7c ESP: d7d23c54
+2011-10-10 09:32:09 chgut11fw01 kernel: DS: 007b ES: 007b FS: 00d8 GS:
+0033 SS: 0068
+2011-10-10 09:32:09 chgut11fw01 kernel: Process ospfd (pid: 17011,
+ti=d7d22000 task=de908a90 task.ti=d7d22000)
+2011-10-10 09:32:09 chgut11fw01 kernel: Stack:
+2011-10-10 09:32:09 chgut11fw01 kernel: c13fd19c c1305749 00000040
+00000040 c7ea6a00 c7ea6a50 c7ea6a90 c7ea6a80
+2011-10-10 09:32:09 chgut11fw01 kernel: c13fb224 d83d90c0 d7d23d34
+c1305749 d7d23d20 02916cfd 4c9e613e 00000001
+2011-10-10 09:32:09 chgut11fw01 kernel: 00000001 d7d23ce4 d7d23cc8
+00000000 0000e8d5 d7d23ecc caddb300 c7ea6a50
+2011-10-10 09:32:09 chgut11fw01 kernel: Call Trace:
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c1305749>] ? raw_sendmsg+0x5a9/0x850
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c1305749>] raw_sendmsg+0x5a9/0x850
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c1305749>] raw_sendmsg+0x5a9/0x850
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12ccebd>] ? __rtnl_unlock+0xd/0x10
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12c06bd>] ?
+netdev_run_todo+0x3d/0x220
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c133d400>] ?
+_raw_read_lock_irq+0x20/0x20
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c130efa2>] inet_sendmsg+0x42/0xa0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12ea0e5>] ?
+do_ip_setsockopt+0x75/0xbe0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c10213e7>] ?
+__wake_up_sync_key+0x47/0x60
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12af947>] sock_sendmsg+0xa7/0xd0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12b5df9>] ? skb_queue_tail+0x39/0x50
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12af947>] ? sock_sendmsg+0xa7/0xd0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12b8be3>] ? verify_iovec+0x53/0xb0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12b0640>] __sys_sendmsg+0x2f0/0x300
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12af9de>] ?
+sockfd_lookup_light+0x1e/0x70
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12b003a>] ? sys_sendto+0xaa/0xe0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c1047d65>] ?
+sched_clock_local+0xa5/0x180
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c102f898>] ? nsecs_to_jiffies+0x8/0x10
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12eac91>] ? ip_setsockopt+0x41/0xa0
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12b0796>] sys_sendmsg+0x36/0x60
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c12b13c9>] sys_socketcall+0xe9/0x280
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c133d6a5>] syscall_call+0x7/0xb
+2011-10-10 09:32:09 chgut11fw01 kernel: [<c1330000>] ?
+packet_recvmsg+0x410/0x440
+2011-10-10 09:32:09 chgut11fw01 kernel: Code: 00 00 89 4c 24 14 8b 88
+a4 00 00 00 89 54 24 0c 89 4c 24 10 8b 40 50 89 5c 24 04 c7 04 24 9c
+d1 3f c1 89 44 24 08 e8 dc 4b 08 00 <0f> 0b eb fe b9 24 b2 3f c1 eb ae
+55 89 e5 57 56 89 d6 53 89 c3
+2011-10-10 09:32:09 chgut11fw01 kernel: EIP: [<c12b6575>]
+skb_put+0x85/0x90 SS:ESP 0068:d7d23c54
+2011-10-10 09:32:09 chgut11fw01 kernel: ---[ end trace 88d35f34d6a6da4a ]---
+
+Oops from "not-tainted" Kernel:
+2011-10-05 14:32:59 chgut11fw01 kernel: skb_over_panic: text:c12c3067
+len:64 put:64 head:d920b800 data:d920b850 tail:0xd920b890
+end:0xd920b880 dev:<NULL>
+2011-10-05 14:32:59 chgut11fw01 kernel: ------------[ cut here ]------------
+2011-10-05 14:32:59 chgut11fw01 kernel: kernel BUG at net/core/skbuff.c:127!
+2011-10-05 14:32:59 chgut11fw01 kernel: invalid opcode: 0000 [#1] SMP
+2011-10-05 14:32:59 chgut11fw01 kernel: last sysfs file:
+/sys/devices/pci0000:00/0000:00:1f.3/i2c-0/0-002d/chassis
+2011-10-05 14:33:00 chgut11fw01 kernel: Modules linked in: ip_gre
+authenc xfrm4_mode_transport deflate zlib_deflate ctr twofish
+twofish_common serpent aes_i586 aes_generic blowfish cast5 cbc ecb
+rmd160 sha512_generic sha256_generic sha1_generic xfrm_user
+xfrm4_tunnel tunnel4 ipcomp xfrm_ipcomp esp4 ah4 af_key tun ipt_LOG
+xt_limit ipt_REJECT xt_state ipt_REDIRECT ipt_MASQUERADE xt_policy
+xt_TCPMSS xt_tcpmss xt_tcpudp xt_NOTRACK iptable_filter iptable_nat
+xt_mark xt_connmark iptable_mangle iptable_raw ip_tables x_tables
+nf_conntrack_tftp nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
+nf_conntrack_ftp nf_conntrack ppdev parport_pc parport w83792d i2c_dev
+i2c_i801 i2c_core pl2303 coretemp hwmon usbhid option usb_wwan
+usbserial ohci_hcd uhci_hcd ehci_hcd usbcore e1000 e1000e aufs
+ata_piix libata
+2011-10-05 14:33:00 chgut11fw01 kernel:
+2011-10-05 14:33:00 chgut11fw01 kernel: Pid: 6119, comm: ospfd Not
+tainted 2.6.35.10-DEBUG #1 LakePort/
+2011-10-05 14:33:00 chgut11fw01 kernel: EIP: 0060:[<c1277595>] EFLAGS:
+00010282 CPU: 1
+2011-10-05 14:33:00 chgut11fw01 kernel: EIP is at skb_put+0x85/0x90
+2011-10-05 14:33:00 chgut11fw01 kernel: EAX: 00000078 EBX: c12c3067
+ECX: 00000086 EDX: 00985000
+2011-10-05 14:33:00 chgut11fw01 kernel: ESI: d9044bc0 EDI: 00000040
+EBP: d78e7c84 ESP: d78e7c5c
+2011-10-05 14:33:00 chgut11fw01 kernel: DS: 007b ES: 007b FS: 00d8 GS:
+0033 SS: 0068
+2011-10-05 14:33:00 chgut11fw01 kernel: Process ospfd (pid: 6119,
+ti=d78e6000 task=decd3170 task.ti=d78e6000)
+2011-10-05 14:33:00 chgut11fw01 kernel: Stack:
+2011-10-05 14:33:00 chgut11fw01 kernel: c13b936c c12c3067 00000040
+00000040 d920b800 d920b850 d920b890 d920b880
+2011-10-05 14:33:00 chgut11fw01 kernel: <0> c1391cb4 dbc733c0 d78e7cb8
+c12c3067 d78e7ca8 d78e7cf8 d78e7d44 c14dab80
+2011-10-05 14:33:00 chgut11fw01 kernel: <0> d78e7ee0 d920b850 db755080
+00000001 d78e7f40 db755080 00000000 d78e7d54
+2011-10-05 14:33:00 chgut11fw01 kernel: Call Trace:
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12c3067>] ?
+raw_send_hdrinc+0xd7/0x2e0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12c3067>] ?
+raw_send_hdrinc+0xd7/0x2e0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12c36c9>] ? raw_sendmsg+0x459/0x4b0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c128b900>] ?
+__rtnl_kill_links+0x40/0x70
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12a8800>] ? ip_ra_control+0xc0/0x130
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12cc0df>] ? inet_sendmsg+0x3f/0xa0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c1270c27>] ? sock_sendmsg+0xa7/0xd0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12e5f56>] ?
+unix_stream_sendmsg+0x1e6/0x340
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c1021f14>] ? scale_rt_power+0x24/0xb0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c102b128>] ?
+find_busiest_group+0x5c8/0x930
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c1279bb3>] ? verify_iovec+0x53/0xb0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12710c3>] ? sys_sendmsg+0x113/0x220
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c102b50f>] ? load_balance+0x7f/0x550
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c10470a5>] ?
+sched_clock_local+0xa5/0x180
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12a94a1>] ? ip_setsockopt+0x41/0xa0
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12c25dc>] ? raw_setsockopt+0x3c/0x80
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c1272b12>] ?
+sock_common_setsockopt+0x22/0x30
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12724d6>] ? sys_socketcall+0xd6/0x270
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12f6c25>] ? syscall_call+0x7/0xb
+2011-10-05 14:33:00 chgut11fw01 kernel: [<c12f0000>] ?
+quirk_vt8235_acpi+0x23/0x8d
+2011-10-05 14:33:00 chgut11fw01 kernel: Code: 00 00 89 4c 24 14 8b 88
+a4 00 00 00 89 54 24 0c 89 4c 24 10 8b 40 50 89 5c 24 04 c7 04 24 6c
+93 3b c1 89 44 24 08 e8 76 d2 07 00 <0f> 0b eb fe b9 b4 1c 39 c1 eb ae
+55 89 e5 57 56 53 89 c3 83 ec
+2011-10-05 14:33:00 chgut11fw01 kernel: EIP: [<c1277595>]
+skb_put+0x85/0x90 SS:ESP 0068:d78e7c5c
+2011-10-05 14:33:00 chgut11fw01 kernel: ---[ end trace bc0a60e600586911 ]---
+
+7.
+The programms ospfd/zebra (quagga) has to be running with device
+gAAchgut1 configured as ospf device. It seems ipsec (strongswan) has
+to be running as well, with encrypted transport connection between
+10.10.101.4 and 10.10.111.4.
+
+It is ospfd which causes the kernel oops.
+
+The following script triggers ospfd to execute the sendmsg system call:
+#!/bin/sh
+while true; do
+ php -r "
+   exec('ip tunnel del gAAchgut1');
+   exec('ip tunnel add gAAchgut1 mode gre remote 10.10.101.4 local
+10.10.101.4 ttl 255 tos inherit');
+   exec('ip link set gAAchgut1 up multicast on mtu 1356');
+   exec('ip addr add 10.254.11.1 peer 10.254.1.11/32 dev gAAchgut1');
+ "
+done
+
+If I execute the commands directly (and not via php), I'm not able to
+reproduce the problem. Timing problem?
+
+8.1
+Linux chgut11fw01 3.0.4-SMP #1 SMP Thu Oct 6 16:24:22 CEST 2011 i686
+Intel(R) Core(TM)2 Duo CPU E4600 @ 2.40GHz GenuineIntel GNU/Linux
+
+Gnu C                  4.4.4
+Gnu make               3.81
+binutils               2.20.1.20100303
+util-linux             2.17.2
+mount                  support
+module-init-tools      3.4
+e2fsprogs              1.41.12
+PPP                    2.4.4
+Linux C Library        2.11.2
+Dynamic linker (ldd)   2.11.2
+Linux C++ Library      6.0.13
+Procps                 3.2.7
+Net-tools              1.60
+Kbd                    1.13
+Sh-utils               6.10
+udev                   124
+Modules Loaded         nf_conntrack_netlink nfnetlink ip_gre gre
+authenc xfrm4_mode_transport deflate zlib_deflate ctr twofish_generic
+twofish_common serpent cryptd aes_i586 aes_generic blowfish cast5 cbc
+ecb rmd160 sha512_generic sha256_generic sha1_generic xfrm_user
+xfrm4_tunnel tunnel4 ipcomp xfrm_ipcomp esp4 ah4 af_key tun ipt_LOG
+xt_limit ipt_REJECT xt_state ipt_REDIRECT ipt_MASQUERADE xt_policy
+xt_TCPMSS xt_tcpmss xt_tcpudp xt_NOTRACK iptable_filter iptable_nat
+xt_mark xt_connmark iptable_mangle iptable_raw ip_tables x_tables
+nf_conntrack_tftp nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
+nf_conntrack_ftp nf_conntrack rtc ppdev parport_pc parport w83792d
+i2c_dev i2c_i801 i2c_core pl2303 usbserial coretemp hwmon usbhid
+ohci_hcd uhci_hcd ehci_hcd usbcore e1000 e1000e aufs ata_piix libata
+
+quagga:                0.99.20
+strongswan:            4.5.3
+
+I am able to reproduce the problem as well with the following versions:
+quagga:                0.99.17, 0.99.18, 0.99.19
+strongswan:            4.3.5, 4.5.3
+kernel (vanilla):      2.6.35.10, 2.6.35.14
+
+8.2
+processor       : 0
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 15
+model name      : Intel(R) Core(TM)2 Duo CPU     E4600  @ 2.40GHz
+stepping        : 13
+cpu MHz         : 2400.099
+cache size      : 2048 KB
+physical id     : 0
+siblings        : 2
+core id         : 0
+cpu cores       : 2
+apicid          : 0
+initial apicid  : 0
+fdiv_bug        : no
+hlt_bug         : no
+f00f_bug        : no
+coma_bug        : no
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 10
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
+mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx
+lm constant_tsc arch_perfmon pebs bts aperfmperf pni dtes64 monitor
+ds_cpl est tm2 ssse3 cx16 xtpr pdcm lahf_lm dts
+bogomips        : 4802.20
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 36 bits physical, 48 bits virtual
+power management:
+
+processor       : 1
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 15
+model name      : Intel(R) Core(TM)2 Duo CPU     E4600  @ 2.40GHz
+stepping        : 13
+cpu MHz         : 2400.099
+cache size      : 2048 KB
+physical id     : 0
+siblings        : 2
+core id         : 1
+cpu cores       : 2
+apicid          : 1
+initial apicid  : 1
+fdiv_bug        : no
+hlt_bug         : no
+f00f_bug        : no
+coma_bug        : no
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 10
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
+mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe nx
+lm constant_tsc arch_perfmon pebs bts aperfmperf pni dtes64 monitor
+ds_cpl est tm2 ssse3 cx16 xtpr pdcm lahf_lm dts
+bogomips        : 4801.84
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 36 bits physical, 48 bits virtual
+power management:
+
+8.3
+nf_conntrack_netlink 13284 0 - Live 0xe2f13000
+nfnetlink 1943 1 nf_conntrack_netlink, Live 0xe2f09000
+ip_gre 11012 0 - Live 0xe058e000
+gre 1098 1 ip_gre, Live 0xe0584000
+authenc 4836 2 - Live 0xe057d000
+xfrm4_mode_transport 772 4 - Live 0xe0576000
+deflate 1252 0 - Live 0xe0570000
+zlib_deflate 17922 1 deflate, Live 0xe0566000
+ctr 2308 0 - Live 0xe055c000
+twofish_generic 5252 0 - Live 0xe0554000
+twofish_common 12453 1 twofish_generic, Live 0xe054a000
+serpent 17092 0 - Live 0xe053c000
+cryptd 4974 0 - Live 0xe0526000
+aes_i586 6787 2 - Live 0xe051d000
+aes_generic 25709 1 aes_i586, Live 0xe050e000
+blowfish 7012 0 - Live 0xe0500000
+cast5 14116 0 - Live 0xe04f5000
+cbc 1764 2 - Live 0xe04eb000
+ecb 1252 0 - Live 0xe04e5000
+rmd160 6052 0 - Live 0xe04de000
+sha512_generic 6788 0 - Live 0xe04d6000
+sha256_generic 10756 0 - Live 0xe04cc000
+sha1_generic 1444 2 - Live 0xe04c3000
+xfrm_user 17892 2 - Live 0xe04b9000
+xfrm4_tunnel 932 0 - Live 0xe04ad000
+tunnel4 1170 1 xfrm4_tunnel, Live 0xe04a7000
+ipcomp 1412 0 - Live 0xe04a1000
+xfrm_ipcomp 2761 1 ipcomp, Live 0xe049a000
+esp4 4804 2 - Live 0xe0492000
+ah4 3748 0 - Live 0xe048a000
+af_key 19696 0 - Live 0xe047f000
+tun 11335 8 - Live 0xe046c000
+ipt_LOG 6288 3 - Live 0xe0405000
+xt_limit 1000 4 - Live 0xe03fd000
+ipt_REJECT 1764 4 - Live 0xe03f7000
+xt_state 772 5 - Live 0xe03f0000
+ipt_REDIRECT 740 1 - Live 0xe039c000
+ipt_MASQUERADE 996 2 - Live 0xe0396000
+xt_policy 1956 71 - Live 0xe0390000
+xt_TCPMSS 1988 1 - Live 0xe037e000
+xt_tcpmss 964 1 - Live 0xe0377000
+xt_tcpudp 1604 322 - Live 0xe036b000
+xt_NOTRACK 612 5 - Live 0xe0365000
+iptable_filter 772 1 - Live 0xe035b000
+iptable_nat 2729 1 - Live 0xe0353000
+xt_mark 708 6 - Live 0xe034c000
+xt_connmark 1124 2 - Live 0xe0346000
+iptable_mangle 868 1 - Live 0xe033e000
+iptable_raw 676 1 - Live 0xe0336000
+ip_tables 8417 4
+iptable_filter,iptable_nat,iptable_mangle,iptable_raw, Live 0xe032e000
+x_tables 9752 18
+ipt_LOG,xt_limit,ipt_REJECT,xt_state,ipt_REDIRECT,ipt_MASQUERADE,xt_policy,xt_TCPMSS,xt_tcpmss,xt_tcpudp,xt_NOTRACK,iptable_filter,iptable_nat,xt_mark,xt_connmark,iptable_mangle,iptable_raw,ip_tables,
+Live 0xe0323000
+nf_conntrack_tftp 2360 0 - Live 0xe0319000
+nf_nat_ftp 1156 0 - Live 0xe0312000
+nf_nat 10953 4 ipt_REDIRECT,ipt_MASQUERADE,iptable_nat,nf_nat_ftp,
+Live 0xe030a000
+nf_conntrack_ipv4 7554 10 iptable_nat,nf_nat, Live 0xe02ff000
+nf_defrag_ipv4 778 1 nf_conntrack_ipv4, Live 0xe02f6000
+nf_conntrack_ftp 4456 1 nf_nat_ftp, Live 0xe02ef000
+nf_conntrack 42655 11
+nf_conntrack_netlink,xt_state,ipt_MASQUERADE,xt_NOTRACK,iptable_nat,xt_connmark,nf_conntrack_tftp,nf_nat_ftp,nf_nat,nf_conntrack_ipv4,nf_conntrack_ftp,
+Live 0xe02dc000
+rtc 6428 0 - Live 0xe027b000
+ppdev 4808 2 - Live 0xe0232000
+parport_pc 14181 1 - Live 0xe0227000
+parport 12657 2 ppdev,parport_pc, Live 0xe0218000
+w83792d 12304 0 - Live 0xe020b000
+i2c_dev 3857 0 - Live 0xe01be000
+i2c_i801 6348 0 - Live 0xe01b5000
+i2c_core 13325 3 w83792d,i2c_dev,i2c_i801, Live 0xe01ac000
+pl2303 10024 0 - Live 0xe01a1000
+usbserial 23695 1 pl2303, Live 0xe016d000
+coretemp 3812 0 - Live 0xe013e000
+hwmon 1006 2 w83792d,coretemp, Live 0xe0136000
+usbhid 19509 0 - Live 0xe012c000
+ohci_hcd 15112 0 - Live 0xe00fb000
+uhci_hcd 16308 0 - Live 0xe00ba000
+ehci_hcd 27576 0 - Live 0xe0077000
+usbcore 96694 7 pl2303,usbserial,usbhid,ohci_hcd,uhci_hcd,ehci_hcd,
+Live 0xe00a1000
+e1000 83270 0 - Live 0xe0061000
+e1000e 112509 0 - Live 0xdffd5000
+aufs 137864 151 - Live 0xdff89000
+ata_piix 10988 5 - Live 0xdff55000
+libata 143665 1 ata_piix, Live 0xdff23000
+
+8.4
+/proc/ioports:
+0000-0cf7 : PCI Bus 0000:00
+ 0000-001f : dma1
+ 0020-0021 : pic1
+ 0040-0043 : timer0
+ 0050-0053 : timer1
+ 0060-0060 : keyboard
+ 0064-0064 : keyboard
+ 0070-0077 : rtc
+ 0080-008f : dma page reg
+ 00a0-00a1 : pic2
+ 00c0-00df : dma2
+ 00f0-00ff : fpu
+ 0170-0177 : 0000:00:1f.1
+   0170-0177 : piix
+ 01f0-01f7 : 0000:00:1f.1
+   01f0-01f7 : piix
+ 0290-029f : pnp 00:01
+   0290-0297 : pnp 00:01
+ 02f8-02ff : serial
+ 0376-0376 : 0000:00:1f.1
+   0376-0376 : piix
+ 0378-037a : parport0
+ 03c0-03df : vga+
+ 03f6-03f6 : 0000:00:1f.1
+   03f6-03f6 : piix
+ 03f8-03ff : serial
+ 0400-04bf : pnp 00:09
+   0400-0403 : ACPI PM1a_EVT_BLK
+   0404-0405 : ACPI PM1a_CNT_BLK
+   0408-040b : ACPI PM_TMR
+   0428-042f : ACPI GPE0_BLK
+ 04d0-04d1 : pnp 00:01
+ 0500-051f : 0000:00:1f.3
+   0500-051f : i801_smbus
+ 0800-087f : pnp 00:01
+0cf8-0cff : PCI conf1
+0d00-ffff : PCI Bus 0000:00
+ 6000-6fff : PCI Bus 0000:06
+   6f00-6f1f : 0000:06:00.0
+ 7000-7fff : PCI Bus 0000:05
+   7f00-7f1f : 0000:05:00.0
+ 8000-8fff : PCI Bus 0000:04
+   8f00-8f1f : 0000:04:00.0
+ 9000-afff : PCI Bus 0000:01
+   9000-9fff : PCI Bus 0000:03
+   a000-afff : PCI Bus 0000:02
+ b000-bfff : PCI Bus 0000:09
+   bf00-bf1f : 0000:09:00.0
+ c000-cfff : PCI Bus 0000:08
+   cf00-cf1f : 0000:08:00.0
+ d000-dfff : PCI Bus 0000:07
+   df00-df1f : 0000:07:00.0
+ e000-efff : PCI Bus 0000:0a
+   ee00-ee3f : 0000:0a:09.0
+     ee00-ee3f : e1000
+   ef00-ef3f : 0000:0a:07.0
+     ef00-ef3f : e1000
+ f500-f50f : 0000:00:1f.2
+   f500-f50f : ata_piix
+ f600-f603 : 0000:00:1f.2
+   f600-f603 : ata_piix
+ f700-f707 : 0000:00:1f.2
+   f700-f707 : ata_piix
+ f800-f803 : 0000:00:1f.2
+   f800-f803 : ata_piix
+ f900-f907 : 0000:00:1f.2
+   f900-f907 : ata_piix
+ fa00-fa0f : 0000:00:1f.1
+   fa00-fa0f : piix
+ fb00-fb1f : 0000:00:1d.3
+   fb00-fb1f : uhci_hcd
+ fc00-fc1f : 0000:00:1d.2
+   fc00-fc1f : uhci_hcd
+ fd00-fd1f : 0000:00:1d.1
+   fd00-fd1f : uhci_hcd
+ fe00-fe1f : 0000:00:1d.0
+   fe00-fe1f : uhci_hcd
+ ff00-ff07 : 0000:00:02.0
+
+/proc/iomem:
+00000000-0000ffff : reserved
+00010000-0009f3ff : System RAM
+0009f400-0009ffff : reserved
+000a0000-000bffff : PCI Bus 0000:00
+ 000a0000-000bffff : Video RAM area
+000c0000-000dffff : PCI Bus 0000:00
+ 000c0000-000c7fff : Video ROM
+000e0000-000effff : pnp 00:0c
+000f0000-000fffff : reserved
+ 000f0000-000fffff : System ROM
+00100000-1f6dffff : System RAM
+ 01000000-0133efea : Kernel code
+ 0133efeb-0145aeff : Kernel data
+ 014c2000-014eafff : Kernel bss
+1f6e0000-1f6e2fff : ACPI Non-volatile Storage
+1f6e3000-1f6effff : ACPI Tables
+1f6f0000-1f6fffff : reserved
+1f700000-febfffff : PCI Bus 0000:00
+ d0000000-dfffffff : 0000:00:02.0
+ e0000000-efffffff : PCI MMCONFIG 0000 [bus 00-ff]
+   e0000000-efffffff : reserved
+     e0000000-efffffff : pnp 00:0b
+ fcc00000-fcdfffff : PCI Bus 0000:01
+   fcc00000-fccfffff : PCI Bus 0000:03
+   fcd00000-fcdfffff : PCI Bus 0000:02
+ fce00000-fcefffff : PCI Bus 0000:0a
+   fce00000-fce1ffff : 0000:0a:07.0
+   fce20000-fce3ffff : 0000:0a:09.0
+ fcf00000-fcffffff : PCI Bus 0000:0a
+   fcf80000-fcf9ffff : 0000:0a:09.0
+     fcf80000-fcf9ffff : e1000
+   fcfa0000-fcfbffff : 0000:0a:09.0
+     fcfa0000-fcfbffff : e1000
+   fcfc0000-fcfdffff : 0000:0a:07.0
+     fcfc0000-fcfdffff : e1000
+   fcfe0000-fcffffff : 0000:0a:07.0
+     fcfe0000-fcffffff : e1000
+ fd000000-fd2fffff : PCI Bus 0000:01
+   fd000000-fd0fffff : PCI Bus 0000:02
+   fd100000-fd1fffff : PCI Bus 0000:03
+   fd2fe000-fd2fefff : 0000:01:00.3
+   fd2ff000-fd2fffff : 0000:01:00.1
+ fd300000-fd3fffff : PCI Bus 0000:09
+ fd400000-fd4fffff : PCI Bus 0000:09
+   fd4e0000-fd4fffff : 0000:09:00.0
+     fd4e0000-fd4fffff : e1000e
+ fd500000-fd5fffff : PCI Bus 0000:08
+ fd600000-fd6fffff : PCI Bus 0000:08
+   fd6e0000-fd6fffff : 0000:08:00.0
+     fd6e0000-fd6fffff : e1000e
+ fd700000-fd7fffff : PCI Bus 0000:07
+ fd800000-fd8fffff : PCI Bus 0000:07
+   fd8e0000-fd8fffff : 0000:07:00.0
+     fd8e0000-fd8fffff : e1000e
+ fd900000-fd9fffff : PCI Bus 0000:06
+ fda00000-fdafffff : PCI Bus 0000:06
+   fdae0000-fdafffff : 0000:06:00.0
+     fdae0000-fdafffff : e1000e
+ fdb00000-fdbfffff : PCI Bus 0000:05
+ fdc00000-fdcfffff : PCI Bus 0000:05
+   fdce0000-fdcfffff : 0000:05:00.0
+     fdce0000-fdcfffff : e1000e
+ fdd00000-fddfffff : PCI Bus 0000:04
+ fde00000-fdefffff : PCI Bus 0000:04
+   fdee0000-fdefffff : 0000:04:00.0
+     fdee0000-fdefffff : e1000e
+ fdf00000-fdf7ffff : 0000:00:02.0
+ fdf80000-fdfbffff : 0000:00:02.0
+ fdffe000-fdffe3ff : 0000:00:1f.2
+ fdfff000-fdfff3ff : 0000:00:1d.7
+   fdfff000-fdfff3ff : ehci_hcd
+fec00000-ffffffff : reserved
+ fec00000-fec003ff : IOAPIC 0
+ fee00000-feefffff : pnp 00:0c
+   fee00000-fee00fff : Local APIC
+ ffb00000-ffb7ffff : pnp 00:0c
+ fff00000-ffffffff : pnp 00:0c
+
+8.5
+00:00.0 Host bridge: Intel Corporation 82945G/GZ/P/PL Memory
+Controller Hub (rev 02)
+       Subsystem: Intel Corporation 82945G/GZ/P/PL Memory Controller Hub
+       Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort+ >SERR- <PERR- INTx-
+       Latency: 0
+       Capabilities: [e0] Vendor Specific Information <?>
+
+00:01.0 PCI bridge: Intel Corporation 82945G/GZ/P/PL PCI Express Root
+Port (rev 02) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=01, subordinate=03, sec-latency=0
+       I/O behind bridge: 00009000-0000afff
+       Memory behind bridge: fd000000-fd2fffff
+       Prefetchable memory behind bridge: 00000000fcc00000-00000000fcdfffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [88] Subsystem: Intel Corporation Device 0000
+       Capabilities: [80] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [90] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4159
+       Capabilities: [a0] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #2, Speed 2.5GT/s, Width x16, ASPM L0s,
+Latency L0 <1us, L1 <4us
+                       ClockPM- Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug- Surpise-
+                       Slot # 21, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Off, PwrInd On, Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState-
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal-
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [140] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:02.0 VGA compatible controller: Intel Corporation 82945G/GZ
+Integrated Graphics Controller (rev 02) (prog-if 00 [VGA controller])
+       Subsystem: Intel Corporation 82945G/GZ Integrated Graphics Controller
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin A routed to IRQ 5
+       Region 0: Memory at fdf00000 (32-bit, non-prefetchable) [size=512K]
+       Region 1: I/O ports at ff00 [size=8]
+       Region 2: Memory at d0000000 (32-bit, prefetchable) [size=256M]
+       Region 3: Memory at fdf80000 (32-bit, non-prefetchable) [size=256K]
+       Capabilities: [90] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable-
+               Address: 00000000  Data: 0000
+       Capabilities: [d0] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+
+00:1c.0 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express
+Port 1 (rev 01) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=04, subordinate=04, sec-latency=0
+       I/O behind bridge: 00008000-00008fff
+       Memory behind bridge: fde00000-fdefffff
+       Prefetchable memory behind bridge: 00000000fdd00000-00000000fddfffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+unlimited, L1 unlimited
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal+
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr+ TransPend-
+               LnkCap: Port #1, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <256ns, L1 <4us
+                       ClockPM- Suprise- LLActRep+ BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug+ Surpise+
+                       Slot # 10, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Unknown, PwrInd Unknown,
+Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState+
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal+
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4161
+       Capabilities: [90] Subsystem: Intel Corporation 82801G (ICH7
+Family) PCI Express Port 1
+       Capabilities: [a0] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [180] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:1c.1 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express
+Port 2 (rev 01) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=05, subordinate=05, sec-latency=0
+       I/O behind bridge: 00007000-00007fff
+       Memory behind bridge: fdc00000-fdcfffff
+       Prefetchable memory behind bridge: 00000000fdb00000-00000000fdbfffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+unlimited, L1 unlimited
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal+
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr+ TransPend-
+               LnkCap: Port #2, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <256ns, L1 <4us
+                       ClockPM- Suprise- LLActRep+ BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug+ Surpise+
+                       Slot # 11, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Unknown, PwrInd Unknown,
+Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState+
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal+
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4169
+       Capabilities: [90] Subsystem: Intel Corporation 82801G (ICH7
+Family) PCI Express Port 2
+       Capabilities: [a0] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [180] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:1c.2 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express
+Port 3 (rev 01) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=06, subordinate=06, sec-latency=0
+       I/O behind bridge: 00006000-00006fff
+       Memory behind bridge: fda00000-fdafffff
+       Prefetchable memory behind bridge: 00000000fd900000-00000000fd9fffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+unlimited, L1 unlimited
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal+
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr+ TransPend-
+               LnkCap: Port #3, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <256ns, L1 <4us
+                       ClockPM- Suprise- LLActRep+ BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug+ Surpise+
+                       Slot # 12, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Unknown, PwrInd Unknown,
+Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState+
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal+
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4171
+       Capabilities: [90] Subsystem: Intel Corporation 82801G (ICH7
+Family) PCI Express Port 3
+       Capabilities: [a0] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [180] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:1c.3 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express
+Port 4 (rev 01) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=07, subordinate=07, sec-latency=0
+       I/O behind bridge: 0000d000-0000dfff
+       Memory behind bridge: fd800000-fd8fffff
+       Prefetchable memory behind bridge: 00000000fd700000-00000000fd7fffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+unlimited, L1 unlimited
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal+
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr+ TransPend-
+               LnkCap: Port #4, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <256ns, L1 <4us
+                       ClockPM- Suprise- LLActRep+ BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug+ Surpise+
+                       Slot # 13, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Unknown, PwrInd Unknown,
+Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState+
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal+
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4179
+       Capabilities: [90] Subsystem: Intel Corporation 82801G (ICH7
+Family) PCI Express Port 4
+       Capabilities: [a0] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [180] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:1c.4 PCI bridge: Intel Corporation 82801GR/GH/GHM (ICH7 Family) PCI
+Express Port 5 (rev 01) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=08, subordinate=08, sec-latency=0
+       I/O behind bridge: 0000c000-0000cfff
+       Memory behind bridge: fd600000-fd6fffff
+       Prefetchable memory behind bridge: 00000000fd500000-00000000fd5fffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+unlimited, L1 unlimited
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal+
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr+ TransPend-
+               LnkCap: Port #5, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <256ns, L1 <4us
+                       ClockPM- Suprise- LLActRep+ BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug+ Surpise+
+                       Slot # 14, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Unknown, PwrInd Unknown,
+Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState+
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal+
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4181
+       Capabilities: [90] Subsystem: Intel Corporation 82801GR/GH/GHM
+(ICH7 Family) PCI Express Port 5
+       Capabilities: [a0] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [180] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:1c.5 PCI bridge: Intel Corporation 82801GR/GH/GHM (ICH7 Family) PCI
+Express Port 6 (rev 01) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=00, secondary=09, subordinate=09, sec-latency=0
+       I/O behind bridge: 0000b000-0000bfff
+       Memory behind bridge: fd400000-fd4fffff
+       Prefetchable memory behind bridge: 00000000fd300000-00000000fd3fffff
+       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+               DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+unlimited, L1 unlimited
+                       ExtTag- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal+
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr+ TransPend-
+               LnkCap: Port #6, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <256ns, L1 <4us
+                       ClockPM- Suprise- LLActRep+ BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+               SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug+ Surpise+
+                       Slot # 15, PowerLimit 10.000000; Interlock- NoCompl-
+               SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet-
+CmdCplt- HPIrq- LinkChg-
+                       Control: AttnInd Unknown, PwrInd Unknown,
+Power- Interlock-
+               SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt-
+PresDet+ Interlock-
+                       Changed: MRL- PresDet+ LinkState+
+               RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal+
+PMEIntEna- CRSVisible-
+               RootCap: CRSVisible-
+               RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+       Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
+Count=1/1 Enable+
+               Address: fee0300c  Data: 4189
+       Capabilities: [90] Subsystem: Intel Corporation 82801GR/GH/GHM
+(ICH7 Family) PCI Express Port 6
+       Capabilities: [a0] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [100] Virtual Channel <?>
+       Capabilities: [180] Root Complex Link <?>
+       Kernel driver in use: pcieport
+
+00:1d.0 USB Controller: Intel Corporation 82801G (ICH7 Family) USB
+UHCI Controller #1 (rev 01) (prog-if 00 [UHCI])
+       Subsystem: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #1
+       Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin A routed to IRQ 23
+       Region 4: I/O ports at fe00 [size=32]
+       Kernel driver in use: uhci_hcd
+       Kernel modules: uhci-hcd
+
+00:1d.1 USB Controller: Intel Corporation 82801G (ICH7 Family) USB
+UHCI Controller #2 (rev 01) (prog-if 00 [UHCI])
+       Subsystem: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #2
+       Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin B routed to IRQ 19
+       Region 4: I/O ports at fd00 [size=32]
+       Kernel driver in use: uhci_hcd
+       Kernel modules: uhci-hcd
+
+00:1d.2 USB Controller: Intel Corporation 82801G (ICH7 Family) USB
+UHCI Controller #3 (rev 01) (prog-if 00 [UHCI])
+       Subsystem: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #3
+       Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin C routed to IRQ 18
+       Region 4: I/O ports at fc00 [size=32]
+       Kernel driver in use: uhci_hcd
+       Kernel modules: uhci-hcd
+
+00:1d.3 USB Controller: Intel Corporation 82801G (ICH7 Family) USB
+UHCI Controller #4 (rev 01) (prog-if 00 [UHCI])
+       Subsystem: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #4
+       Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin D routed to IRQ 16
+       Region 4: I/O ports at fb00 [size=32]
+       Kernel driver in use: uhci_hcd
+       Kernel modules: uhci-hcd
+
+00:1d.7 USB Controller: Intel Corporation 82801G (ICH7 Family) USB2
+EHCI Controller (rev 01) (prog-if 20 [EHCI])
+       Subsystem: Intel Corporation 82801G (ICH7 Family) USB2 EHCI Controller
+       Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin A routed to IRQ 23
+       Region 0: Memory at fdfff000 (32-bit, non-prefetchable) [size=1K]
+       Capabilities: [50] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [58] Debug port: BAR=1 offset=00a0
+       Kernel driver in use: ehci_hcd
+       Kernel modules: ehci-hcd
+
+00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev e1)
+(prog-if 01 [Subtractive decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Bus: primary=00, secondary=0a, subordinate=0a, sec-latency=32
+       I/O behind bridge: 0000e000-0000efff
+       Memory behind bridge: fcf00000-fcffffff
+       Prefetchable memory behind bridge: 00000000fce00000-00000000fcefffff
+       Secondary status: 66MHz- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort+ <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [50] Subsystem: Intel Corporation 82801 PCI Bridge
+
+00:1f.0 ISA bridge: Intel Corporation 82801GB/GR (ICH7 Family) LPC
+Interface Bridge (rev 01)
+       Subsystem: Intel Corporation 82801GB/GR (ICH7 Family) LPC
+Interface Bridge
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR+ FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Capabilities: [e0] Vendor Specific Information <?>
+
+00:1f.1 IDE interface: Intel Corporation 82801G (ICH7 Family) IDE
+Controller (rev 01) (prog-if 8a [Master SecP PriP])
+       Subsystem: Intel Corporation 82801G (ICH7 Family) IDE Controller
+       Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx+
+       Latency: 0
+       Interrupt: pin A routed to IRQ 18
+       Region 0: I/O ports at 01f0 [size=8]
+       Region 1: I/O ports at 03f4 [size=1]
+       Region 2: I/O ports at 0170 [size=8]
+       Region 3: I/O ports at 0374 [size=1]
+       Region 4: I/O ports at fa00 [size=16]
+       Kernel driver in use: PIIX_IDE
+       Kernel modules: ata_piix
+
+00:1f.2 IDE interface: Intel Corporation 82801GB/GR/GH (ICH7 Family)
+SATA IDE Controller (rev 01) (prog-if 8f [Master SecP SecO PriP PriO])
+       Subsystem: Intel Corporation 82801GB/GR/GH (ICH7 Family) SATA
+IDE Controller
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Interrupt: pin B routed to IRQ 19
+       Region 0: I/O ports at f900 [size=8]
+       Region 1: I/O ports at f800 [size=4]
+       Region 2: I/O ports at f700 [size=8]
+       Region 3: I/O ports at f600 [size=4]
+       Region 4: I/O ports at f500 [size=16]
+       Region 5: Memory at fdffe000 (32-bit, non-prefetchable) [size=1K]
+       Capabilities: [70] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Kernel driver in use: ata_piix
+       Kernel modules: ata_piix
+
+00:1f.3 SMBus: Intel Corporation 82801G (ICH7 Family) SMBus Controller (rev 01)
+       Subsystem: Intel Corporation 82801G (ICH7 Family) SMBus Controller
+       Control: I/O+ Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Interrupt: pin B routed to IRQ 19
+       Region 4: I/O ports at 0500 [size=32]
+       Kernel driver in use: i801_smbus
+       Kernel modules: i2c-i801
+
+01:00.0 PCI bridge: Intel Corporation 6700PXH PCI Express-to-PCI
+Bridge A (rev 09) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=01, secondary=02, subordinate=02, sec-latency=64
+       I/O behind bridge: 0000a000-0000afff
+       Memory behind bridge: fd000000-fd0fffff
+       Prefetchable memory behind bridge: 00000000fcd00000-00000000fcdfffff
+       Secondary status: 66MHz+ FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [44] Express (v1) PCI/PCI-X Bridge, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop- BrConfRtry-
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr+ FatalErr- UnsuppReq+
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x8, ASPM L0s,
+Latency L0 unlimited, L1 unlimited
+                       ClockPM- Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; Disabled- Retrain- CommClk-
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk- DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [5c] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable-
+               Address: 0000000000000000  Data: 0000
+       Capabilities: [6c] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [d8] PCI-X bridge device
+               Secondary Status: 64bit+ 133MHz+ SCD- USC- SCO- SRD- Freq=66MHz
+               Status: Dev=01:00.0 64bit- 133MHz- SCD- USC- SCO- SRD-
+               Upstream: Capacity=65535 CommitmentLimit=65535
+               Downstream: Capacity=65535 CommitmentLimit=65535
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [300] Power Budgeting <?>
+
+01:00.1 PIC: Intel Corporation 6700/6702PXH I/OxAPIC Interrupt
+Controller A (rev 09) (prog-if 20 [IO(X)-APIC])
+       Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Region 0: Memory at fd2ff000 (32-bit, non-prefetchable) [size=4K]
+       Capabilities: [44] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr+ FatalErr- UnsuppReq+
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x8, ASPM L0s,
+Latency L0 unlimited, L1 unlimited
+                       ClockPM- Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [6c] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+
+01:00.2 PCI bridge: Intel Corporation 6700PXH PCI Express-to-PCI
+Bridge B (rev 09) (prog-if 00 [Normal decode])
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Bus: primary=01, secondary=03, subordinate=03, sec-latency=64
+       I/O behind bridge: 00009000-00009fff
+       Memory behind bridge: fd100000-fd1fffff
+       Prefetchable memory behind bridge: 00000000fcc00000-00000000fccfffff
+       Secondary status: 66MHz+ FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- <SERR- <PERR-
+       BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+               PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+       Capabilities: [44] Express (v1) PCI/PCI-X Bridge, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop- BrConfRtry-
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr+ FatalErr- UnsuppReq+
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x8, ASPM L0s,
+Latency L0 unlimited, L1 unlimited
+                       ClockPM- Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; Disabled- Retrain- CommClk-
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk- DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [5c] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable-
+               Address: 0000000000000000  Data: 0000
+       Capabilities: [6c] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+       Capabilities: [d8] PCI-X bridge device
+               Secondary Status: 64bit+ 133MHz+ SCD- USC- SCO- SRD- Freq=66MHz
+               Status: Dev=01:00.2 64bit- 133MHz- SCD- USC- SCO- SRD-
+               Upstream: Capacity=65535 CommitmentLimit=65535
+               Downstream: Capacity=65535 CommitmentLimit=65535
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [300] Power Budgeting <?>
+
+01:00.3 PIC: Intel Corporation 6700PXH I/OxAPIC Interrupt Controller B
+(rev 09) (prog-if 20 [IO(X)-APIC])
+       Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0
+       Region 0: Memory at fd2fe000 (32-bit, non-prefetchable) [size=4K]
+       Capabilities: [44] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                       RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                       MaxPayload 128 bytes, MaxReadReq 128 bytes
+               DevSta: CorrErr- UncorrErr+ FatalErr- UnsuppReq+
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x8, ASPM L0s,
+Latency L0 unlimited, L1 unlimited
+                       ClockPM- Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [6c] Power Management version 2
+               Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+
+04:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet
+Controller
+       Subsystem: Intel Corporation Device 0000
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 47
+       Region 0: Memory at fdee0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at 8f00 [size=32]
+       Capabilities: [c8] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [d0] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable+
+               Address: 00000000fee0300c  Data: 41d1
+       Capabilities: [e0] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
+Unsupported+
+                       RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM
+unknown, Latency L0 <128ns, L1 <64us
+                       ClockPM+ Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [140] Device Serial Number 10-c3-17-ff-ff-f3-10-00
+       Kernel driver in use: e1000e
+       Kernel modules: e1000e
+
+05:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet
+Controller
+       Subsystem: Intel Corporation Device 0000
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 48
+       Region 0: Memory at fdce0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at 7f00 [size=32]
+       Capabilities: [c8] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [d0] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable+
+               Address: 00000000fee0300c  Data: 41e1
+       Capabilities: [e0] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
+Unsupported+
+                       RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM
+unknown, Latency L0 <128ns, L1 <64us
+                       ClockPM+ Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [140] Device Serial Number 11-c3-17-ff-ff-f3-10-00
+       Kernel driver in use: e1000e
+       Kernel modules: e1000e
+
+06:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet
+Controller
+       Subsystem: Intel Corporation Device 0000
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 49
+       Region 0: Memory at fdae0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at 6f00 [size=32]
+       Capabilities: [c8] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [d0] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable+
+               Address: 00000000fee0300c  Data: 412a
+       Capabilities: [e0] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
+Unsupported+
+                       RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM
+unknown, Latency L0 <128ns, L1 <64us
+                       ClockPM+ Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [140] Device Serial Number 12-c3-17-ff-ff-f3-10-00
+       Kernel driver in use: e1000e
+       Kernel modules: e1000e
+
+07:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet
+Controller
+       Subsystem: Intel Corporation Device 0000
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 50
+       Region 0: Memory at fd8e0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at df00 [size=32]
+       Capabilities: [c8] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [d0] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable+
+               Address: 00000000fee0300c  Data: 414a
+       Capabilities: [e0] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
+Unsupported+
+                       RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM
+unknown, Latency L0 <128ns, L1 <64us
+                       ClockPM+ Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [140] Device Serial Number 13-c3-17-ff-ff-f3-10-00
+       Kernel driver in use: e1000e
+       Kernel modules: e1000e
+
+08:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet
+Controller
+       Subsystem: Intel Corporation Device 0000
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 51
+       Region 0: Memory at fd6e0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at cf00 [size=32]
+       Capabilities: [c8] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [d0] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable+
+               Address: 00000000fee0300c  Data: 41b1
+       Capabilities: [e0] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
+Unsupported+
+                       RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM
+unknown, Latency L0 <128ns, L1 <64us
+                       ClockPM+ Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [140] Device Serial Number 54-c6-17-ff-ff-f3-10-00
+       Kernel driver in use: e1000e
+       Kernel modules: e1000e
+
+09:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet
+Controller
+       Subsystem: Intel Corporation Device 0000
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+       Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 0, Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 52
+       Region 0: Memory at fd4e0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at bf00 [size=32]
+       Capabilities: [c8] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold-)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [d0] Message Signalled Interrupts: Mask- 64bit+
+Count=1/1 Enable+
+               Address: 00000000fee0300c  Data: 41b9
+       Capabilities: [e0] Express (v1) Endpoint, MSI 00
+               DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                       ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+               DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+
+Unsupported+
+                       RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                       MaxPayload 128 bytes, MaxReadReq 512 bytes
+               DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+               LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM
+unknown, Latency L0 <128ns, L1 <64us
+                       ClockPM+ Suprise- LLActRep- BwNot-
+               LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                       ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+               LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+       Capabilities: [100] Advanced Error Reporting
+               UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSVoil-
+               UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSVoil-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+               AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+       Capabilities: [140] Device Serial Number 55-c6-17-ff-ff-f3-10-00
+       Kernel driver in use: e1000e
+       Kernel modules: e1000e
+
+0a:07.0 Ethernet controller: Intel Corporation 82541GI Gigabit
+Ethernet Controller (rev 05)
+       Subsystem: Intel Corporation PRO/1000 MT Network Connection
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 252 (63750ns min), Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 17
+       Region 0: Memory at fcfe0000 (32-bit, non-prefetchable) [size=128K]
+       Region 1: Memory at fcfc0000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at ef00 [size=64]
+       [virtual] Expansion ROM at fce00000 [disabled] [size=128K]
+       Capabilities: [dc] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [e4] PCI-X non-bridge device
+               Command: DPERE- ERO+ RBC=512 OST=1
+               Status: Dev=00:00.0 64bit- 133MHz- SCD- USC- DC=simple
+DMMRBC=2048 DMOST=1 DMCRS=8 RSCEM- 266MHz- 533MHz-
+       Kernel driver in use: e1000
+       Kernel modules: e1000
+
+0a:09.0 Ethernet controller: Intel Corporation 82541GI Gigabit
+Ethernet Controller (rev 05)
+       Subsystem: Intel Corporation PRO/1000 MT Network Connection
+       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+       Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+       Latency: 252 (63750ns min), Cache Line Size: 64 bytes
+       Interrupt: pin A routed to IRQ 19
+       Region 0: Memory at fcfa0000 (32-bit, non-prefetchable) [size=128K]
+       Region 1: Memory at fcf80000 (32-bit, non-prefetchable) [size=128K]
+       Region 2: I/O ports at ee00 [size=64]
+       [virtual] Expansion ROM at fce20000 [disabled] [size=128K]
+       Capabilities: [dc] Power Management version 2
+               Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+               Status: D0 PME-Enable- DSel=0 DScale=1 PME-
+       Capabilities: [e4] PCI-X non-bridge device
+               Command: DPERE- ERO+ RBC=512 OST=1
+               Status: Dev=00:00.0 64bit- 133MHz- SCD- USC- DC=simple
+DMMRBC=2048 DMOST=1 DMCRS=8 RSCEM- 266MHz- 533MHz-
+       Kernel driver in use: e1000
+       Kernel modules: e1000
+
+8.6
+/proc/scsi/scsi:
+Attached devices:
+Host: scsi1 Channel: 00 Id: 00 Lun: 00
+ Vendor: ATA      Model: ST380815AS       Rev: 4.AA
+ Type:   Direct-Access                    ANSI  SCSI revision: 05
+
+8.7
+Unfortunately I am only able to reproduce the error on the following hardware:
+Nexcom NSA-1068N7 (http://www.omtec.de/network-security-appliances/nsa-1086n7/
+
+This is the file ospfd.conf:
+hostname chgut11fw01
+log syslog
+
+interface gAAchgut1
+       ip ospf network point-to-point
+       ip ospf authentication-key hallowel
+       ip ospf cost 15
+       ip ospf hello-interval 2
+       ip ospf dead-interval 10
+
+interface eth0
+interface eth1
+interface eth2
+interface eth3
+interface lo
+
+router ospf
+       ospf router-id 172.16.111.1
+       auto-cost reference-bandwidth 1
+       redistribute kernel route-map mynet
+       no ospf rfc1583compatibility
+       passive-interface eth0
+       passive-interface eth1
+       passive-interface eth2
+       passive-interface eth3
+       network 10.254.11.1/32 area 0
+       network 10.254.1.11/32 area 0
+       network 172.16.111.0/24 area 0
+
+access-list 99 permit 172.16.111.0 0.0.0.255
+access-list 99 deny any
+route-map mynet permit 10
+       match ip address 99
+line vty
+
+Please let me know if I forgot something to add.
+
+Thanks for any help.
+
+Best regards
+Elmar Vonlanthen
