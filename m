@@ -1,213 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1JMLEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 07:04:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57586 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab1JMLEP (ORCPT
+	id S1754581Ab1JMLMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 07:12:36 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:50505 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500Ab1JMLMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 07:04:15 -0400
-Date: Thu, 13 Oct 2011 13:04:10 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai.lu@oracle.com>
-Subject: Re: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space
- for HT hole around 1TB
-Message-ID: <20111013110410.GB16748@alberich.amd.com>
-References: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Oct 2011 07:12:34 -0400
+Subject: [PATCH] [TRIVIAL] cris: remove arch/cris/arch-v32/lib/nand_init.S
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Oct 2011 13:12:26 +0200
+Message-ID: <1318504346.8345.23.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC-ing Yinghai Lu <yinghai.lu@oracle.com> as yinghai@kernel.org still
-doesn't seem to work.
+Commit 3f50c0673cf5edd2c6bb76243410c3cd59b3b62d ("CRIS v32: Update
+boot/rescue/head.S code") removed the last reference to that file. So
+this file is unused since v2.6.25.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested (I do not have the toolchain needed). I've CC'ed the
+maintainers and linux-cris-kernel to be safe.
+
+ arch/cris/arch-v32/lib/nand_init.S |  178 ------------------------------------
+ 1 files changed, 0 insertions(+), 178 deletions(-)
+ delete mode 100644 arch/cris/arch-v32/lib/nand_init.S
+
+diff --git a/arch/cris/arch-v32/lib/nand_init.S b/arch/cris/arch-v32/lib/nand_init.S
+deleted file mode 100644
+index d671fed..0000000
+--- a/arch/cris/arch-v32/lib/nand_init.S
++++ /dev/null
+@@ -1,178 +0,0 @@
+-##=============================================================================
+-##
+-##      nand_init.S
+-##
+-##      The bootrom copies data from the NAND flash to the internal RAM but
+-##      due to a bug/feature we can only trust the 256 first bytes. So this
+-##      code copies more data from NAND flash to internal RAM. Obvioulsy this
+-##      code must fit in the first 256 bytes so alter with care.
+-##
+-##	Some notes about the bug/feature for future reference:
+-##        The bootrom copies the first 127 KB from NAND flash to internal
+-##        memory. The problem is that it does a bytewise copy. NAND flashes
+-##        does autoincrement on the address so for a 16-bite device each
+-##        read/write increases the address by two. So the copy loop in the
+-##        bootrom will discard every second byte. This is solved by inserting
+-##        zeroes in every second byte in the first erase block.
+-##
+-##        The bootrom also incorrectly assumes that it can read the flash
+-##        linear with only one read command but the flash will actually
+-##        switch between normal area and spare area if you do that so we
+-##        can't trust more than the first 256 bytes.
+-##
+-##=============================================================================
+-
+-#include <arch/hwregs/asm/reg_map_asm.h>
+-#include <arch/hwregs/asm/gio_defs_asm.h>
+-#include <arch/hwregs/asm/pinmux_defs_asm.h>
+-#include <arch/hwregs/asm/bif_core_defs_asm.h>
+-#include <arch/hwregs/asm/config_defs_asm.h>
+-
+-;; There are 8-bit NAND flashes and 16-bit NAND flashes.
+-;; We need to treat them slightly different.
+-#if CONFIG_ETRAX_FLASH_BUSWIDTH==2
+-#define PAGE_SIZE 256
+-#else
+-#error 2
+-#define PAGE_SIZE 512
+-#endif
+-#define ERASE_BLOCK 16384
+-
+-;; GPIO pins connected to NAND flash
+-#define CE 4
+-#define CLE 5
+-#define ALE 6
+-#define BY 7
+-
+-;; Address space for NAND flash
+-#define NAND_RD_ADDR 0x90000000
+-#define NAND_WR_ADDR 0x94000000
+-
+-#define READ_CMD 0x00
+-
+-;; Readability macros
+-#define CSP_MASK \
+-	REG_MASK(bif_core, rw_grp3_cfg, gated_csp0) | \
+-	REG_MASK(bif_core, rw_grp3_cfg, gated_csp1)
+-#define CSP_VAL \
+-	REG_STATE(bif_core, rw_grp3_cfg, gated_csp0, rd) | \
+-	REG_STATE(bif_core, rw_grp3_cfg, gated_csp1, wr)
+-
+-;;----------------------------------------------------------------------------
+-;; Macros to set/clear GPIO bits
+-
+-.macro SET x
+-	or.b   (1<<\x),$r9
+-	move.d $r9, [$r2]
+-.endm
+-
+-.macro CLR x
+-	and.b  ~(1<<\x),$r9
+-	move.d $r9, [$r2]
+-.endm
+-
+-;;----------------------------------------------------------------------------
+-
+-nand_boot:
+-	;; Check if nand boot was selected
+-	move.d REG_ADDR(config, regi_config, r_bootsel), $r0
+-	move.d [$r0], $r0
+-	and.d  REG_MASK(config, r_bootsel, boot_mode), $r0
+-	cmp.d  REG_STATE(config, r_bootsel, boot_mode, nand), $r0
+-	bne normal_boot ; No NAND boot
+-	nop
+-
+-copy_nand_to_ram:
+-	;; copy_nand_to_ram
+-	;; Arguments
+-	;;   r10 - destination
+-	;;   r11 - source offset
+-	;;   r12 - size
+-	;;   r13 - Address to jump to after completion
+-	;; Note : r10-r12 are clobbered on return
+-	;; Registers used:
+-	;;   r0 - NAND_RD_ADDR
+-	;;   r1 - NAND_WR_ADDR
+-	;;   r2 - reg_gio_rw_pa_dout
+-	;;   r3 - reg_gio_r_pa_din
+-	;;   r4 - tmp
+-	;;   r5 - byte counter within a page
+-	;;   r6 - reg_pinmux_rw_pa
+-	;;   r7 - reg_gio_rw_pa_oe
+-	;;   r8 - reg_bif_core_rw_grp3_cfg
+-	;;   r9 - reg_gio_rw_pa_dout shadow
+-	move.d 0x90000000, $r0
+-	move.d 0x94000000, $r1
+-	move.d REG_ADDR(gio, regi_gio, rw_pa_dout), $r2
+-	move.d REG_ADDR(gio, regi_gio, r_pa_din), $r3
+-	move.d REG_ADDR(pinmux, regi_pinmux, rw_pa), $r6
+-	move.d REG_ADDR(gio, regi_gio, rw_pa_oe), $r7
+-	move.d REG_ADDR(bif_core, regi_bif_core, rw_grp3_cfg), $r8
+-
+-#if CONFIG_ETRAX_FLASH_BUSWIDTH==2
+-	lsrq	1, $r11
+-#endif
+-	;; Set up GPIO
+-	move.d [$r2], $r9
+-	move.d [$r7], $r4
+-	or.b (1<<ALE) | (1 << CLE) | (1<<CE), $r4
+-	move.d $r4, [$r7]
+-
+-	;; Set up bif
+-	move.d [$r8], $r4
+-	and.d CSP_MASK, $r4
+-	or.d CSP_VAL, $r4
+-	move.d $r4, [$r8]
+-
+-1:	;; Copy one page
+-	CLR CE
+-	SET CLE
+-	moveq	READ_CMD, $r4
+-	move.b	$r4, [$r1]
+-	moveq	20, $r4
+-2:	bne	2b
+-	subq	1, $r4
+-	CLR CLE
+-	SET ALE
+-	clear.w [$r1] 		; Column address = 0
+-	move.d	$r11, $r4
+-	lsrq	8, $r4
+-	move.b	$r4, [$r1]	; Row address
+-	lsrq	8, $r4
+-	move.b	$r4, [$r1]	; Row address
+-	moveq	20, $r4
+-2:	bne	2b
+-	subq	1, $r4
+-	CLR ALE
+-2:	move.d	[$r3], $r4
+-	and.d	1 << BY, $r4
+-	beq 2b
+-	movu.w  PAGE_SIZE, $r5
+-2:	; Copy one byte/word
+-#if CONFIG_ETRAX_FLASH_BUSWIDTH==2
+-	move.w  [$r0], $r4
+-#else
+-	move.b  [$r0], $r4
+-#endif
+-	subq	1, $r5
+-	bne	2b
+-#if CONFIG_ETRAX_FLASH_BUSWIDTH==2
+-	move.w  $r4, [$r10+]
+-	subu.w	PAGE_SIZE*2, $r12
+-#else
+-	move.b  $r4, [$r10+]
+-	subu.w	PAGE_SIZE, $r12
+-#endif
+-	bpl	1b
+-	addu.w	PAGE_SIZE, $r11
+-
+-	;; End of copy
+-	jump	$r13
+-	nop
+-
+-	;; This will warn if the code above is too large. If you consider
+-	;; to remove this you don't understand the bug/feature.
+-	.org 256
+-	.org ERASE_BLOCK
+-
+-normal_boot:
+-- 
+1.7.4.4
 
 
-Andreas
 
-On Tue, Oct 11, 2011 at 05:09:35PM -0500, Jacob Shin wrote:
-> The entire HT hole and also the unused address range before that hole
-> need to be excluded from direct mapping. Otherwise speculative
-> accesses to that reserved region can happen which cause machine
-> checks.
-> 
-> Cc: stable@kernel.org   # > 2.6.32
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  arch/x86/include/asm/e820.h           |    1 +
->  arch/x86/include/asm/hypertransport.h |    7 +++++
->  arch/x86/include/asm/processor.h      |   16 +++++++++++++
->  arch/x86/kernel/cpu/amd.c             |   40 +++++++++++++++++++++++++++++++++
->  arch/x86/kernel/e820.c                |    6 +++++
->  arch/x86/kernel/setup.c               |    8 +++++-
->  6 files changed, 76 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-> index 908b969..7e4d417 100644
-> --- a/arch/x86/include/asm/e820.h
-> +++ b/arch/x86/include/asm/e820.h
-> @@ -117,6 +117,7 @@ static inline void early_memtest(unsigned long start, unsigned long end)
->  
->  extern unsigned long e820_end_of_ram_pfn(void);
->  extern unsigned long e820_end_of_low_ram_pfn(void);
-> +extern unsigned long e820_end_of_ram_under_ht_pfn(void);
->  extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
->  
->  void memblock_x86_fill(void);
-> diff --git a/arch/x86/include/asm/hypertransport.h b/arch/x86/include/asm/hypertransport.h
-> index 334b1a8..c1d5a08 100644
-> --- a/arch/x86/include/asm/hypertransport.h
-> +++ b/arch/x86/include/asm/hypertransport.h
-> @@ -42,4 +42,11 @@
->  #define HT_IRQ_HIGH_DEST_ID(v)						\
->  	((((v) >> 8) << HT_IRQ_HIGH_DEST_ID_SHIFT) & HT_IRQ_HIGH_DEST_ID_MASK)
->  
-> +/*
-> + * Memory Region Reserved for HyperTransport
-> + */
-> +
-> +#define HT_RESERVED_MEM_START           0xfd00000000ULL
-> +#define HT_RESERVED_MEM_END             0x10000000000ULL
-> +
->  #endif /* _ASM_X86_HYPERTRANSPORT_H */
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 0d1171c..73ae54f 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -970,6 +970,22 @@ extern int set_tsc_mode(unsigned int val);
->  
->  extern int amd_get_nb_id(int cpu);
->  
-> +#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
-> +extern int amd_with_ram_above_ht(void);
-> +extern unsigned long amd_init_high_memory_mapping(void);
-> +#else
-> +static inline int amd_with_ram_above_ht(void)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline unsigned long amd_init_high_memory_mapping(void)
-> +{
-> +	BUG();
-> +	return 0;
-> +}
-> +#endif
-> +
->  struct aperfmperf {
->  	u64 aperf, mperf;
->  };
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index b13ed39..a57b010 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -7,6 +7,7 @@
->  #include <asm/apic.h>
->  #include <asm/cpu.h>
->  #include <asm/pci-direct.h>
-> +#include <asm/hypertransport.h>
->  
->  #ifdef CONFIG_X86_64
->  # include <asm/numa_64.h>
-> @@ -755,3 +756,42 @@ bool cpu_has_amd_erratum(const int *erratum)
->  }
->  
->  EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
-> +
-> +#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
-> +int __cpuinit amd_with_ram_above_ht(void)
-> +{
-> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD &&
-> +	    max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_START)
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * On AMD systems, memory region 0xfd_0000_0000 ~ 0xff_ffff_ffff is reserved by
-> + * HyperTransport and cannot be used by the processor. On systems with more than
-> + * 1TB of RAM, BIOS may take memory immediately below the HT region and "hoist"
-> + * it up above the HT region, leaving a hole.
-> + */
-> +unsigned long __cpuinit amd_init_high_memory_mapping(void)
-> +{
-> +	unsigned long ret;
-> +
-> +	/* remove HT region from the e820 map, if it's declared as usable */
-> +	e820_remove_range(HT_RESERVED_MEM_START,
-> +			  HT_RESERVED_MEM_END - HT_RESERVED_MEM_START,
-> +			  E820_RAM, 1);
-> +	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-> +
-> +	/* direct mapping of high memory under HT */
-> +	ret = init_memory_mapping(1UL << 32,
-> +		e820_end_of_ram_under_ht_pfn() << PAGE_SHIFT);
-> +
-> +	/* skip HT region, direct mapping of high memory above HT */
-> +	if (max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_END)
-> +		ret = init_memory_mapping(HT_RESERVED_MEM_END,
-> +					  max_pfn << PAGE_SHIFT);
-> +
-> +	return ret;
-> +}
-> +#endif
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index 3e2ef84..c0ba036 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -22,6 +22,7 @@
->  #include <asm/e820.h>
->  #include <asm/proto.h>
->  #include <asm/setup.h>
-> +#include <asm/hypertransport.h>
->  
->  /*
->   * The e820 map is the map that gets modified e.g. with command line parameters
-> @@ -826,6 +827,11 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
->  	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
->  }
->  
-> +unsigned long __init e820_end_of_ram_under_ht_pfn(void)
-> +{
-> +	return e820_end_pfn(HT_RESERVED_MEM_START >> PAGE_SHIFT, E820_RAM);
-> +}
-> +
->  static void early_panic(char *msg)
->  {
->  	early_printk(msg);
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index afaf384..84d0968 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -937,8 +937,12 @@ void __init setup_arch(char **cmdline_p)
->  
->  #ifdef CONFIG_X86_64
->  	if (max_pfn > max_low_pfn) {
-> -		max_pfn_mapped = init_memory_mapping(1UL<<32,
-> -						     max_pfn<<PAGE_SHIFT);
-> +		if (amd_with_ram_above_ht())
-> +			max_pfn_mapped = amd_init_high_memory_mapping();
-> +		else
-> +			max_pfn_mapped = init_memory_mapping(1UL << 32,
-> +				max_pfn << PAGE_SHIFT);
-> +
->  		/* can we preseve max_low_pfn ?*/
->  		max_low_pfn = max_pfn;
->  	}
-> -- 
-> 1.7.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
