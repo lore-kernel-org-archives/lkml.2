@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab1JMS1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 14:27:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45656 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1JMS1C convert rfc822-to-8bit (ORCPT
+	id S932173Ab1JMS2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 14:28:33 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39295 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929Ab1JMS2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 14:27:02 -0400
+	Thu, 13 Oct 2011 14:28:31 -0400
+Date: Thu, 13 Oct 2011 12:28:27 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Ming Lei <tom.leiming@gmail.com>, Andrei Warkentin <awarkentin@vmware.com>,
+        Greg KH <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        "G, Manjunath Kondaiah" <manjugk@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, Manjunath@jasper.es,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Linux PM List <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+Message-ID: <20111013182827.GL18574@ponder.secretlab.ca>
+References: <20111013171539.GA18574@ponder.secretlab.ca>
+ <Pine.LNX.4.44L0.1110131413410.2026-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <4E971112.3060703@genband.com>
-References: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1110131032400.2026-100000@iolanthe.rowland.org>
-	<CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>
-	<4E970B40.8070808@genband.com>
-	<CA+O4pCJyTyhec54RYqdzmpR-Y2dSvgB6srv=bsF4DFsx3n33Yw@mail.gmail.com>
-	<4E971112.3060703@genband.com>
-Date: Thu, 13 Oct 2011 20:27:01 +0200
-Message-ID: <CA+O4pCL2NmTgW2vDU=jdhyy1_PpuP3g9SVup=iwEOVGoGzHmUA@mail.gmail.com>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1110131413410.2026-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 6:25 PM, Chris Friesen
-<chris.friesen@genband.com> wrote:
-> On 10/13/2011 10:12 AM, Markus Rechberger wrote:
->>
->> On Thu, Oct 13, 2011 at 6:01 PM, Chris Friesen
->
->> Why on earth should things be done differently than with all other
->> operating systems?
->
-> Linux does a lot of things differently than other operating systems.  In
-> many cases it's because the other OS's do things wrong.  One could just as
-> easily turn the question around and ask why on earth would your hardware be
-> different than all the other USB hardware?
->
->>> If there is a bug in the kernel, why would we want a bandaid patch that
->>> just
->>> happens to make it work rather than a true fix?
->>
->> In silicon? Are you going to tape out another one for it?
->
-> If there's a bug in the kernel, the true fix would be in the kernel.
->
->> And about the particular device the boundaries are just around 7000
->> bytes off and people are screaming about that? Sorry this is just like
->> in kindergarden here.
->
-> Actually I think that you're the one throwing a tantrum and yelling that it
-> needs to be done your way or else.  We generally don't change global
-> constants because one hardware device doesn't work.
->
+On Thu, Oct 13, 2011 at 02:16:42PM -0400, Alan Stern wrote:
+> On Thu, 13 Oct 2011, Grant Likely wrote:
+> 
+> > For the deferred case; here is an example of the additional
+> > constraint.  Consider the following hierarchy:
+> > 
+> > -A
+> >  +-B
+> >  | +-C
+> >  | +-D
+> >  |
+> >  +-E
+> >    +-F
+> >    +-G
+> > 
+> > dpm_list could be ordered in at least the following ways (depending on
+> > exactly when devices get registered).  There are many permutation, but
+> > children are always be listed after its direct parent.
+> > 
+> > 1) ABECDFG (breadth first)
+> > 2) AEBFGCD (breadth first)
+> > 3) ABCDEFG (depth first)
+> > 4) AEFGBCD (depth first)
+> > 
+> > Now, assume that device B depends on device F, and also assume that
+> > there is no way either to express that in the hierarchy or even for
+> > the constraint to be known at device registration time (the is exactly
+> > the situation we're dealing with on embedded platforms).  Only the
+> > driver for B knows that it needs a resource provided by F's driver.
+> > So, the situation becomes that the ordering of dpm_list must now also
+> > be sorted so that non-tree dependencies are also accounted for.  Of
+> > the list above, only sort order 4 meets the new constraint.
+> > 
+> > The question then becomes, how can the dpm_list get resorted
+> > dynamically at runtime to ensure that the new constraints are always
+> > met without breaking old ones.  Here are some options I can think of:
+> 
+> This was a long message and I haven't absorbed the whole thing.  
 
-fair enough I have 2 devices which don't work properly with bulk.
-Device A works by adjusting a hardware register
-Device B is documented in this thread.
+heh; I did get rather verbose there.
 
-Device A causes corruptions when the hardwareregister is set to a
-buffersize > 16k.
-There is certainly something on the physical usb layer which is unknown to the
-(software) USB experts here.
-The logfiles in the previous email shows up enough and is clear enough.
+> However it's worth pointing out right at the start that we already have
+> device_pm_move_before(), device_pm_move_after(), and
+> device_pm_move_last().  They are intended specifically to provide
+> drivers with a way of making sure that dpm_list is in the right order 
+> -- people have been aware of these issues for some time.
 
+I saw those.  I also notice that they are only used by device_move()
+when reparenting a device (which is another wrinkle I hadn't though
+about).  Reparenting a device becomes problematic if the probe order
+is also represented in the list.  If device_move() gets called, then
+any implicit probe-order sorting for that device would be lost.
 
-Why do you think is this documented in the hardware specs of one of our devices?
-The chip which has those problems unfortunately doesn't have such registers.
+I also notice that device_move disregards any children when moving a
+device, which could also be a problem.
 
-AGAIN:
-According to the hardware spec of on of our product
-Available Bulk Transfer Size are:
-- 188 * n bytes, where n = 1 ~ 256.
+Although it looks like the only users of device_move are:
 
+drivers/media/video/pvrusb2/pvrusb2-v4l2.c
+drivers/s390/cio/device.c
+net/bluetooth/hci_sysfs.c
+net/bluetooth/rfcomm/tty.c
 
-Markus
+So it may not be significant to adapt.
 
-> Chris
->
-> --
-> Chris Friesen
-> Software Developer
-> GENBAND
-> chris.friesen@genband.com
-> www.genband.com
->
+g.
+
