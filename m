@@ -1,195 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab1JMMzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 08:55:50 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57887 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab1JMMze (ORCPT
+	id S1755227Ab1JMND2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 09:03:28 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:57683 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752646Ab1JMND0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 08:55:34 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: Re: [PATCH] pata_via: add via_fixup()
-Date: Thu, 13 Oct 2011 14:54:48 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201110131310.51896.bzolnier@gmail.com> <4E96D81F.8000400@mvista.com>
-In-Reply-To: <4E96D81F.8000400@mvista.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110131454.48888.bzolnier@gmail.com>
+	Thu, 13 Oct 2011 09:03:26 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 09:03:25 EDT
+X-AuditID: 12074424-b7ef76d0000008dc-9a-4e96e0706e71
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Subject: Re: [PATCH 1/2] VFS: New /proc file /proc/self/mountstats
+References: <20050317162613.756101BB98@citi.umich.edu>
+From: stark@MIT.EDU
+Date: 13 Oct 2011 08:58:20 -0400
+Message-ID: <ycqsjmx9hg3.fsf@multics.mit.edu>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsUixG6nolvwYJqfwY4tEhb/7z5nstiz9ySL
+	xeVdc9gsLhw4zerA4vHx6S0Wj8+b5AKYorhsUlJzMstSi/TtErgyjr7rZSy4xFnxfOktpgbG
+	9+xdjJwcEgImEtsWr2aBsMUkLtxbz9bFyMUhJLCPUeL7zr8sEM4GRomJ79ZBOYeYJP60nmGF
+	cJoYJc5cncQE0i8ikCxxavIPsFnMAhoS93qnsoHYwgJOEpdnbQbaxwHUYCax93URSJhNQFji
+	4JMFYOUsAgoSm1u2g9m8AroS5w98AjuPR4BT4uXJjYwTGPkWMDKsYpRNya3SzU3MzClOTdYt
+	Tk7My0st0jXXy80s0UtNKd3ECA4iF5UdjM2HlA4xCnAwKvHwnnSe5ifEmlhWXJl7iFGSg0lJ
+	lLfgHlCILyk/pTIjsTgjvqg0J7X4EKMEB7OSCG/aUaAcb0piZVVqUT5MSpqDRUmc12ang5+Q
+	QHpiSWp2ampBahFMVoaDQ0mCd/59oEbBotT01Iq0zJwShDQTByfIcB6g4fEgNbzFBYm5xZnp
+	EPlTjIpS4rzZIAkBkERGaR5cLyzKXzGKA70izLsQpIoHmCDgul8BDWYCGmxyeCrI4JJEhJRU
+	A2PqNZ2d5lFxs20kDj2vcDdvVVVWkOQRX+K/KXnVCXUjgz1XbjxN3f0u0zLsto2xlKCMWlCh
+	+tPC9O3Jp66vyAk40Rh54PyvJR0vGBc/s1vKsObPwn4xp+u7p5jrSZ79kyeR6iG/dE/w24TG
+	G3OdFL1UeD/d9fnD/+WnGV+2q1ua+p3FR6yuzVBiKc5INNRiLipOBABjejAkzQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+Chuck Lever <cel <at> citi.umich.edu> writes:
 
-Sergei Shtylyov wrote:
+> Create a new file under /proc/self, called mountstats, where mounted file
+> systems can export information (configuration options, performance counters,
+> and so on). Use a mechanism similar to /proc/mounts and s_ops->show_options.
 
-> Hello.
-> 
-> On 13-10-2011 15:10, Bartlomiej Zolnierkiewicz wrote:
-> 
-> > From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> > Subject: [PATCH] pata_via: add via_fixup()
-> 
-> > Factor out common code from via_[re]init_one() to via_fixup().
-> 
-> > Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> > ---
-> > earlier references:
-> > https://lkml.org/lkml/2009/11/25/381
-> 
-> >   drivers/ata/pata_via.c |   49 +++++++++++++++++++++++--------------------------
-> >   1 file changed, 23 insertions(+), 26 deletions(-)
-> 
-> > Index: b/drivers/ata/pata_via.c
-> > ===================================================================
-> > --- a/drivers/ata/pata_via.c
-> > +++ b/drivers/ata/pata_via.c
-> > @@ -491,6 +491,27 @@ static void via_config_fifo(struct pci_d
-> >   	}
-> >   }
-> >
-> > +static void via_fixup(struct pci_dev *pdev, const struct via_isa_bridge *config)
-> > +{
-> > +	u32 timing;
-> > +
-> > +	/* Initialise the FIFO for the enabled channels. */
-> > +	via_config_fifo(pdev, config->flags);
-> > +
-> > +	if (config->udma_mask == ATA_UDMA4) {
-> > +		/* The 66 MHz devices require we enable the clock */
-> > +		pci_read_config_dword(pdev, 0x50,&timing);
-> > +		timing |= 0x80008;
-> > +		pci_write_config_dword(pdev, 0x50, timing);
-> > +	}
-> 
->     Hm, via_init_one() doesn't do this now... but used to do this before your 
-> patch:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=460f5318460a9a3b2562d8055b9fb1c60b768e1f
-> 
->     Was that patch wrong or am I misundertanding?
+I'm using this file to dump data into our performance metrics database along
+with all the other counters from snmp and other sources. This lets us
+calculate things like the average number of requests pending, average latency
+per request over time.
 
-It seems that the previous patch was wrong and I haven't noticed it earlier
-because both patches were in my patch queue.
+But I have a few questions about the meaning of the values and they don't seem
+to be documented outside the comments in the source. 
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH v2] pata_via: add via_fixup()
+In particular is it an invariant that execution = rtt + queue? Or is execution
+including some additional overhead other than the server and network
+congestion? Or is there something more subtle going on and these values aren't
+related in the way I'm imagining at all?
 
-* Fix via_init_one() to enable clock on 66 MHz devices
-  (bug introduced in commit 460f531 "pata_via: store UDMA masks
-   in via_isa_bridges table").
+And where can I read about the meaning of bad_xids, req_u, and bklog_u? What
+do they mean?
 
-* Factor out common code from via_[re]init_one() to via_fixup().
-
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
-v2: updated patch description
-
-earlier references:
-https://lkml.org/lkml/2009/11/25/381
-
- drivers/ata/pata_via.c |   49 +++++++++++++++++++++++--------------------------
- 1 file changed, 23 insertions(+), 26 deletions(-)
-
-Index: b/drivers/ata/pata_via.c
-===================================================================
---- a/drivers/ata/pata_via.c
-+++ b/drivers/ata/pata_via.c
-@@ -491,6 +491,27 @@ static void via_config_fifo(struct pci_d
- 	}
- }
- 
-+static void via_fixup(struct pci_dev *pdev, const struct via_isa_bridge *config)
-+{
-+	u32 timing;
-+
-+	/* Initialise the FIFO for the enabled channels. */
-+	via_config_fifo(pdev, config->flags);
-+
-+	if (config->udma_mask == ATA_UDMA4) {
-+		/* The 66 MHz devices require we enable the clock */
-+		pci_read_config_dword(pdev, 0x50, &timing);
-+		timing |= 0x80008;
-+		pci_write_config_dword(pdev, 0x50, timing);
-+	}
-+	if (config->flags & VIA_BAD_CLK66) {
-+		/* Disable the 66MHz clock on problem devices */
-+		pci_read_config_dword(pdev, 0x50, &timing);
-+		timing &= ~0x80008;
-+		pci_write_config_dword(pdev, 0x50, timing);
-+	}
-+}
-+
- /**
-  *	via_init_one		-	discovery callback
-  *	@pdev: PCI device
-@@ -553,7 +574,6 @@ static int via_init_one(struct pci_dev *
- 	const struct via_isa_bridge *config;
- 	static int printed_version;
- 	u8 enable;
--	u32 timing;
- 	unsigned long flags = id->driver_data;
- 	int rc;
- 
-@@ -593,9 +613,6 @@ static int via_init_one(struct pci_dev *
- 			return -ENODEV;
- 	}
- 
--	/* Initialise the FIFO for the enabled channels. */
--	via_config_fifo(pdev, config->flags);
--
- 	/* Clock set up */
- 	switch (config->udma_mask) {
- 	case 0x00:
-@@ -621,12 +638,7 @@ static int via_init_one(struct pci_dev *
- 		return -ENODEV;
-  	}
- 
--	if (config->flags & VIA_BAD_CLK66) {
--		/* Disable the 66MHz clock on problem devices */
--		pci_read_config_dword(pdev, 0x50, &timing);
--		timing &= ~0x80008;
--		pci_write_config_dword(pdev, 0x50, timing);
--	}
-+	via_fixup(pdev, config);
- 
- 	/* We have established the device type, now fire it up */
- 	return ata_pci_bmdma_init_one(pdev, ppi, &via_sht, (void *)config, 0);
-@@ -645,29 +657,14 @@ static int via_init_one(struct pci_dev *
- 
- static int via_reinit_one(struct pci_dev *pdev)
- {
--	u32 timing;
- 	struct ata_host *host = dev_get_drvdata(&pdev->dev);
--	const struct via_isa_bridge *config = host->private_data;
- 	int rc;
- 
- 	rc = ata_pci_device_do_resume(pdev);
- 	if (rc)
- 		return rc;
- 
--	via_config_fifo(pdev, config->flags);
--
--	if (config->udma_mask == ATA_UDMA4) {
--		/* The 66 MHz devices require we enable the clock */
--		pci_read_config_dword(pdev, 0x50, &timing);
--		timing |= 0x80008;
--		pci_write_config_dword(pdev, 0x50, timing);
--	}
--	if (config->flags & VIA_BAD_CLK66) {
--		/* Disable the 66MHz clock on problem devices */
--		pci_read_config_dword(pdev, 0x50, &timing);
--		timing &= ~0x80008;
--		pci_write_config_dword(pdev, 0x50, timing);
--	}
-+	via_fixup(pdev, host->private_data);
- 
- 	ata_host_resume(host);
- 	return 0;
+Also, connect_time, idle_time, req_u, and bklog_u are instantaneous samples
+("guages" so to speak), not integrated over time right? So they can't be used
+to calculate any aggregates?
