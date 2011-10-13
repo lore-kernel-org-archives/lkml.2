@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1JMAwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:52:33 -0400
-Received: from claw.goop.org ([74.207.240.146]:47355 "EHLO claw.goop.org"
+	id S1752178Ab1JMAwr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:52:47 -0400
+Received: from claw.goop.org ([74.207.240.146]:47311 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab1JMAvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752022Ab1JMAvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Oct 2011 20:51:50 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -16,11 +16,10 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V5 11/11] xen: enable PV ticketlocks on HVM Xen
-Date: Wed, 12 Oct 2011 17:51:43 -0700
-Message-Id: <600bd2872f3265a393a46ad96942f93a4467b062.1318466916.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V5 10/11] xen/pvticketlock: allow interrupts to be enabled while blocking
+Date: Wed, 12 Oct 2011 17:51:42 -0700
+Message-Id: <33ca794b624865721ef86b341411aec97069ad43.1318466916.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
@@ -30,23 +29,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
+If interrupts were enabled when taking the spinlock, we can leave them
+enabled while blocking to get the lock.
+
+If we can enable interrupts while waiting for the lock to become
+available, and we take an interrupt before entering the poll,
+and the handler takes a spinlock which ends up going into
+the slow state (invalidating the per-cpu "lock" and "want" values),
+then when the interrupt handler returns the event channel will
+remain pending so the poll will return immediately, causing it to
+return out to the main spinlock loop.
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/smp.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/xen/spinlock.c |   48 ++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 41 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 4dec905..2d01aeb 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -552,4 +552,5 @@ void __init xen_hvm_smp_init(void)
- 	smp_ops.cpu_die = xen_hvm_cpu_die;
- 	smp_ops.send_call_func_ipi = xen_smp_send_call_function_ipi;
- 	smp_ops.send_call_func_single_ipi = xen_smp_send_call_function_single_ipi;
-+	xen_init_spinlocks();
- }
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 0a552ec..fc506e6 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -106,11 +106,28 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ 
+ 	start = spin_time_start();
+ 
+-	/* Make sure interrupts are disabled to ensure that these
+-	   per-cpu values are not overwritten. */
++	/*
++	 * Make sure an interrupt handler can't upset things in a
++	 * partially setup state.
++	 */
+ 	local_irq_save(flags);
+ 
++	/*
++	 * We don't really care if we're overwriting some other
++	 * (lock,want) pair, as that would mean that we're currently
++	 * in an interrupt context, and the outer context had
++	 * interrupts enabled.  That has already kicked the VCPU out
++	 * of xen_poll_irq(), so it will just return spuriously and
++	 * retry with newly setup (lock,want).
++	 *
++	 * The ordering protocol on this is that the "lock" pointer
++	 * may only be set non-NULL if the "want" ticket is correct.
++	 * If we're updating "want", we must first clear "lock".
++	 */
++	w->lock = NULL;
++	smp_wmb();
+ 	w->want = want;
++	smp_wmb();
+ 	w->lock = lock;
+ 
+ 	/* This uses set_bit, which atomic and therefore a barrier */
+@@ -124,21 +141,36 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ 	/* Only check lock once pending cleared */
+ 	barrier();
+ 
+-	/* Mark entry to slowpath before doing the pickup test to make
+-	   sure we don't deadlock with an unlocker. */
++	/*
++	 * Mark entry to slowpath before doing the pickup test to make
++	 * sure we don't deadlock with an unlocker.
++	 */
+ 	__ticket_enter_slowpath(lock);
+ 
+-	/* check again make sure it didn't become free while
+-	   we weren't looking  */
++	/*
++	 * check again make sure it didn't become free while
++	 * we weren't looking 
++	 */
+ 	if (ACCESS_ONCE(lock->tickets.head) == want) {
+ 		ADD_STATS(taken_slow_pickup, 1);
+ 		goto out;
+ 	}
+ 
++	/* Allow interrupts while blocked */
++	local_irq_restore(flags);
++
++	/*
++	 * If an interrupt happens here, it will leave the wakeup irq
++	 * pending, which will cause xen_poll_irq() to return
++	 * immediately.
++	 */
++
+ 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
+ 	xen_poll_irq(irq);
+ 	ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
+ 
++	local_irq_save(flags);
++
+ 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
+ 
+ out:
+@@ -160,7 +192,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+ 	for_each_cpu(cpu, &waiting_cpus) {
+ 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+ 
+-		if (w->lock == lock && w->want == next) {
++		/* Make sure we read lock before want */
++		if (ACCESS_ONCE(w->lock) == lock &&
++		    ACCESS_ONCE(w->want) == next) {
+ 			ADD_STATS(released_slow_kicked, 1);
+ 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
+ 			break;
 -- 
 1.7.6.4
 
