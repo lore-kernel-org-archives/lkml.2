@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab1JMGMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 02:12:36 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:35298 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751423Ab1JMGMe (ORCPT
+	id S1753164Ab1JMGQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 02:16:35 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:58345 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JMGQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 02:12:34 -0400
-X-Sasl-enc: uEdkjMnmwDlAay5KPfRuxexjIigFNRFoMR17Jtb7K58q 1318486353
-Date: Thu, 13 Oct 2011 00:12:23 -0600
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        Jiri Pirko <jpirko@redhat.com>, Eliad Peller <eliad@wizery.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: linux-next: manual merge of the staging tree with the net tree
-Message-ID: <20111013061223.GC23172@kroah.com>
-References: <20111013164353.09c495e1b63d23e380cca1f7@canb.auug.org.au>
+	Thu, 13 Oct 2011 02:16:34 -0400
+Date: Thu, 13 Oct 2011 08:16:30 +0200
+From: Nils Radtke <lkml@Think-Future.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel-List <linux-kernel@vger.kernel.org>
+Subject: Re: git checkout extraversion
+Message-ID: <20111013061630.GD29770@localhost>
+Reply-To: Nils Radtke <lkml@Think-Future.com>
+Mail-Followup-To: Nils Radtke <lkml@Think-Future.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel-List <linux-kernel@vger.kernel.org>
+References: <20111012190455.GC29770@localhost>
+ <alpine.LFD.2.02.1110122114110.3240@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111013164353.09c495e1b63d23e380cca1f7@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.02.1110122114110.3240@ionos>
+X-Bkp: p2mi
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 04:43:53PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflicts in
-> drivers/staging/brcm80211/brcmfmac/dhd_linux.c and
-> drivers/staging/brcm80211/brcmsmac/mac80211_if.c between commits from the
-> net-next tree and commit fc2d6e573be6 ("staging: brcm80211: remove
-> brcm80211 driver from the staging tree") from the staging tree.
-> 
-> The latter removed the files, so I did that
+  Hi,
 
-Wonderful, thanks for doing that.
+  Thanks for the quick reply.
 
-greg
+  That's an easy solution. Pitty, it was so hard to find.
+
+  Cheers
+
+On mer2011-10-12@09-15-34+0200, Thomas Gleixner wrote: 
+# Date: Wed, 12 Oct 2011 21:15:34 +0200 (CEST)
+# From: Thomas Gleixner <tglx@linutronix.de>
+# To: Nils Radtke <lkml@Think-Future.com>
+# cc: Linux Kernel-List <linux-kernel@vger.kernel.org>
+# Subject: Re: git checkout extraversion
+# User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+# 
+# On Wed, 12 Oct 2011, Nils Radtke wrote:
+# >   Hi,
+# > 
+# >   Is it possible -- and if so: how? -- to checkout specific kernel extraversion?
+# > 
+# >   Example:
+# > 
+# >   git checkout -b my2.6.39.3 2.6.39.3
+# > 
+# >   This does not work as there's no such tag "2.6.39.3" (only "2.6.39").
+# 
+# You need to have the stable tree
+# 
+#     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+# 
+# Linus tree does not contain the stable tags.
+# 
+# Thanks,
+# 
+# 	tglx
