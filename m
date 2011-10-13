@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab1JMUyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:54:14 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64135 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab1JMUyN convert rfc822-to-8bit (ORCPT
+	id S1752986Ab1JMUzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 16:55:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3794 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab1JMUzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:54:13 -0400
+	Thu, 13 Oct 2011 16:55:53 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=GJGWnMecTgCfbqrJ7Z5TG3j0XH0BBvNf3sudPyBa98kBiPaMmOAyyyebaWEyCwjUw
+	FXuATzNdA/GfIN1MiEOHA==
+Date: Thu, 13 Oct 2011 13:55:46 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Satoru Moriya <satoru.moriya@hds.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+In-Reply-To: <20111013143501.a59efa5c.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1110131351270.24853@chino.kir.corp.google.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com> <20111011125419.2702b5dc.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com> <20111011135445.f580749b.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com> <alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com> <65795E11DBF1E645A09CEC7EAEE94B9CB516D0EA@USINDEVS02.corp.hds.com> <alpine.DEB.2.00.1110121654120.30123@chino.kir.corp.google.com>
+ <20111013143501.a59efa5c.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <32454.1318519287@redhat.com>
-References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
-	<2150.1314882260@redhat.com>
-	<CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com>
-	<CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com>
-	<5149.1317036720@redhat.com>
-	<CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com>
-	<CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com>
-	<6324.1317308270@redhat.com>
-	<CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com>
-	<12748.1317313818@redhat.com>
-	<CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com>
-	<CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com>
-	<18003.1317336244@redhat.com>
-	<CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com>
-	<6261.1317385734@redhat.com>
-	<CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com>
-	<8905.1317984176@redhat.com>
-	<CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com>
-	<9908.1318413955@redhat.com>
-	<CAOH1cHkg_eQRCHxOxiOPgO=-aZfnjts-tLFQFKffk5JjEfqy2w@mail.gmail.com>
-	<CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com>
-	<32454.1318519287@redhat.com>
-Date: Thu, 13 Oct 2011 13:48:44 -0700
-Message-ID: <CAOH1cHkFitTHBkHzg+m7cZycOZTgWW8hF0g0=+pX6bPNVZNTxw@mail.gmail.com>
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-From: Mark Moseley <moseleymark@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 8:21 AM, David Howells <dhowells@redhat.com> wrote:
-> Mark Moseley <moseleymark@gmail.com> wrote:
->
->> So on a cleared cache with SLAB, it took a while but this finally came
->> up. One interesting thing is that at some point, it logged this:
->>
->> [13461.605871] [httpd ] <== __fscache_read_or_alloc_pages() = -ENOBUFS
->> [invalidating]
->
-> That's okay.  Basically, a read-from-cache operation was rejected because the
-> cache object was in the early phase of being invalidated.  I kept it simple
-> here - the read might complete next time it is tried, but it's just a cache so
-> that shouldn't matter.
+On Thu, 13 Oct 2011, KAMEZAWA Hiroyuki wrote:
 
-Ok, noted
+> sys_mem_shrink(int nid, int nr_scan_pages, int flags)
+> 
+> This system call scans LRU of specified nodes and free pages on LRU.
+> This scan nr_scan_pages in LRU and returns the number of successfully
+> freed pages.
+> ==
+> 
+> Then, running this progam in SCHED_IDLE, a user can make free pages while
+> the system is idle. If running in the highest priority, a user can keep
+> free pages as he want. If a user run this under a memcg, user can free
+> pages in a memcg. 
+> 
 
+Satoru was specifically talking about the VM using free memory for 
+pagecache, so doing echo echo 1 > /proc/sys/vm/drop_caches can mitigate 
+that almost immediately.  I think the key to the discussion, though, is 
+that even the application doesn't know it's bursty memory behavior before 
+it happens and the kernel entering direct reclaim hurts latency-sensitive 
+applications.
 
->> It was a while from when it logged that until when I happened to check
->> on the box again, but when I did (shortly before this traceback),
->> despite constant NFS activity, nothing in the fscache cache was
->> getting written out (i.e. the used bytes on the partition stopped
->> changing), and without any messages about withdrawing the cache or
->> anythin.
->
-> Did you look at /proc/fs/fscache/stats at all?
-
-I didn't but I can repeat it. Which of the stats in
-/proc/fs/fscache/stats would be best to track?
-
-
->> [20839.802118] kernel BUG at fs/fscache/object-list.c:83!
->> [20839.802733] invalid opcode: 0000 [#1] SMP
->
-> That fits with the previous BUG elsewhere in object-list.c.  It sounds like
-> there's a refcounting problem somewhere.
-
-Any sys or proc settings I should turn on to track that?
+If there were a change to increase the space significantly between the 
+high and min watermark when min_free_kbytes changes, that would fix the 
+problem.  The problem is two-fold: that comes at a penalty for systems 
+or workloads that don't need to reclaim the additional memory, and it's 
+not clear how much space should exist between those watermarks.
