@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab1JMQ0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:26:12 -0400
-Received: from exprod7og104.obsmtp.com ([64.18.2.161]:37979 "EHLO
-	exprod7og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab1JMQ0K (ORCPT
+	id S932128Ab1JMQ1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:27:21 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:22992 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab1JMQ1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:26:10 -0400
-X-Greylist: delayed 1475 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 12:25:59 EDT
-Message-ID: <4E971112.3060703@genband.com>
-Date: Thu, 13 Oct 2011 10:25:54 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Markus Rechberger <mrechberger@gmail.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-References: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>	<Pine.LNX.4.44L0.1110131032400.2026-100000@iolanthe.rowland.org>	<CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>	<4E970B40.8070808@genband.com> <CA+O4pCJyTyhec54RYqdzmpR-Y2dSvgB6srv=bsF4DFsx3n33Yw@mail.gmail.com>
-In-Reply-To: <CA+O4pCJyTyhec54RYqdzmpR-Y2dSvgB6srv=bsF4DFsx3n33Yw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 13 Oct 2011 12:27:20 -0400
+Subject: Re: [PATCH 1/3] netdev/phy: Handle IEEE802.3 clause 45 Ethernet
+ PHYs
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Daney <david.daney@cavium.com>
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, afleming@gmail.com
+In-Reply-To: <1318442783-29058-2-git-send-email-david.daney@cavium.com>
+References: <1318442783-29058-1-git-send-email-david.daney@cavium.com>
+	 <1318442783-29058-2-git-send-email-david.daney@cavium.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Thu, 13 Oct 2011 17:27:16 +0100
+Message-ID: <1318523236.2745.29.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Oct 2011 16:25:56.0061 (UTC) FILETIME=[C8B210D0:01CC89C4]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18448.000
-X-TM-AS-Result: No--16.248700-5.000000-31
-X-TM-AS-User-Approved-Sender: No
+X-OriginalArrivalTime: 13 Oct 2011 16:27:19.0770 (UTC) FILETIME=[FA970BA0:01CC89C4]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18446.005
+X-TM-AS-Result: No--14.748000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
 X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 10:12 AM, Markus Rechberger wrote:
-> On Thu, Oct 13, 2011 at 6:01 PM, Chris Friesen
+On Wed, 2011-10-12 at 11:06 -0700, David Daney wrote:
+> The IEEE802.3 clause 45 MDIO bus protocol allows for directly
+> addressing PHY registers using a 21 bit address, and is used by many
+> 10G Ethernet PHYS.  Already existing is the ability of MDIO bus
+> drivers to use clause 45, with the MII_ADDR_C45 flag.  Here we add
+> some support in the PHY and device tree infrastructure to use these
+> PHYs.
+> 
+> Normally the MII_ADDR_C45 flag is ORed with the register address to
+> indicate a clause 45 transaction.  Here we also use this flag in the
+> *device* address passed to get_phy_id() and get_phy_device() to
+> indicate that probing should be done with clause 45 transactions.  If
+> a PHY is successfully probed with MII_ADDR_C45, the new struct
+> phy_device is_c45 flag is set for the PHY.
 
-> Why on earth should things be done differently than with all other
-> operating systems?
+That deserves a comment next to the definition of the macro.
 
-Linux does a lot of things differently than other operating systems.  In 
-many cases it's because the other OS's do things wrong.  One could just 
-as easily turn the question around and ask why on earth would your 
-hardware be different than all the other USB hardware?
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+>  drivers/net/phy/phy_device.c |   25 ++++++++++++++++++++++---
+>  include/linux/phy.h          |    3 +++
+>  2 files changed, 25 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index 83a5a5a..7e4d61b 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -171,6 +171,8 @@ static struct phy_device* phy_device_create(struct mii_bus *bus,
+>  
+>  	dev->autoneg = AUTONEG_ENABLE;
+>  
+> +	dev->is_c45 = (addr & MII_ADDR_C45) != 0;
+> +	addr &= ~MII_ADDR_C45;
+>  	dev->addr = addr;
+>  	dev->phy_id = phy_id;
+>  	dev->bus = bus;
+> @@ -205,15 +207,24 @@ static struct phy_device* phy_device_create(struct mii_bus *bus,
+>   * @phy_id: where to store the ID retrieved.
+>   *
+>   * Description: Reads the ID registers of the PHY at @addr on the
+> - *   @bus, stores it in @phy_id and returns zero on success.
+> + *   @bus, stores it in @phy_id and returns zero on success.  If the
+> + *   @addr has been ORed with MII_ADDR_C45, mdio clause 45 data
+> + *   transfer is used to read ID from the PHY device, otherwise the
+> + *   standard protocol (clause 22) is used.
+>   */
+>  int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id)
+>  {
+>  	int phy_reg;
+> +	u32 c45_reg_base = 0;
+>  
+> +	if (addr & MII_ADDR_C45) {
+> +		addr &= ~MII_ADDR_C45;
+> +		/* Access the PHY's PHY XS registers with C45 mode. */
+> +		c45_reg_base = MII_ADDR_C45 | 0x40000;
+> +	}
+[...]
 
->> If there is a bug in the kernel, why would we want a bandaid patch that just
->> happens to make it work rather than a true fix?
->
-> In silicon? Are you going to tape out another one for it?
+I'm not sure it's a safe assumption that every PHY has a PHY XS block.
+That said, I've not seen any that don't.  mdio45_probe() should work out
+which blocks are there, if you can set up an mdio_if_info for it.
 
-If there's a bug in the kernel, the true fix would be in the kernel.
+It would be nice if someone would try to improve integration between
+mdio/mii and phylib rather than duplicating logic and interfaces.  I'm
+afraid I'm not going to be spending time on MDIO, though, since we've
+putting PHY drivers in firmware rather than on the host now.
 
-> And about the particular device the boundaries are just around 7000
-> bytes off and people are screaming about that? Sorry this is just like
-> in kindergarden here.
-
-Actually I think that you're the one throwing a tantrum and yelling that 
-it needs to be done your way or else.  We generally don't change global 
-constants because one hardware device doesn't work.
-
-Chris
+Ben.
 
 -- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
