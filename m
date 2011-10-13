@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1JMPdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:33:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45848 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab1JMPdK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:33:10 -0400
-Subject: Re: [PATCH][v2] uio: Support 36-bit physical addresses on 32-bit systems
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <CAOZdJXWd_u_EWXNhh3-t258+Y8mx=JuJhU93CeZfaocPZvhOFA@mail.gmail.com>
-Date: Thu, 13 Oct 2011 10:32:51 -0500
-Cc: "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        Jiang Kai-B18973 <B18973@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <9BD33578-CD8E-4784-AC6A-ADE4614E0FC1@kernel.crashing.org>
-References: <1318453063-17349-1-git-send-email-galak@kernel.crashing.org> <CAOZdJXWd_u_EWXNhh3-t258+Y8mx=JuJhU93CeZfaocPZvhOFA@mail.gmail.com>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-X-Mailer: Apple Mail (2.1251.1)
+	id S1755602Ab1JMPeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:34:17 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:57002 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751140Ab1JMPeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:34:16 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201110131534.p9DFYAgh032034@stout.americas.sgi.com>
+Date: Thu, 13 Oct 2011 10:34:10 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.1
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus, please pull the following XFS changes for Linux 3.1.
 
-On Oct 13, 2011, at 9:37 AM, Tabi Timur-B04825 wrote:
+In trying to track down the source of an XFS hang related to active
+item pushing Christoph Hellwig identified three contributing
+problems, addressed in the commits below.
+- The first was that a "last pushed log sequence number" value was
+  being updated when it should not have been.
+- The second is that it is possible for a buffer containing inodes
+  to be found pinned at the time it gets pushed, and that could
+  cause pushing to stall.
+- The third is related to the switch to using a workqueue for AIL
+  pushing, which made it possible for pushing to get starved behind
+  syncing activity.  At this late point in the cycle, the best
+  course of action was to revert to using a kernel thread as was
+  done previously.
+The last change is simply adding tracepoints; feel free to exclude
+it if you see fit.
 
-> On Wed, Oct 12, 2011 at 3:57 PM, Kumar Gala <galak@kernel.crashing.org> wrote:
->> From: Kai Jiang <Kai.Jiang@freescale.com>
->> 
->> To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
->> extend the width of 'addr' in struct uio_mem.  Numerous platforms like
->> embedded PPC, ARM, and X86 have support for systems with larger physical
->> address than logical.
->> 
->> Since 'addr' may contain a physical, logical, or virtual address the
->> easiest solution is to just change the type to 'unsigned long long'
->> regardless of which type is utilized.
-> 
-> You forgot to update this description.
+These changes have not been through a linux-next build; portions of
+them are incompatible with the XFS code that's being included there.
+I have done builds and repeated tests with them however and expect
+no problems.
 
-will fix and update commit message
+Thank you.
 
-> 
->>  struct uio_mem {
->>        const char              *name;
->> -       unsigned long           addr;
->> +       phys_addr_t             addr;
-> 
-> Please add a comment here saying:
-> 
-> 1) That 'addr' can be a virtual or physical address
+					-Alex
 
-The code and everything else makes that clear
+The following changes since commit 65112dccf8a113737684366349d7f9ec373ddc47:
 
-> 2) That the kernel guarantees that sizeof(phys_addr_t) >= sizeof(void
-> *), so it's safe to use phys_addr_t for a virtual pointer.
+  Merge git://git.samba.org/sfrench/cifs-2.6 (2011-10-10 14:53:11 +1200)
 
-The commit message will cover that so I don't plan on add it.
+are available in the git repository at:
 
-- k
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Christoph Hellwig (4):
+      xfs: do not update xa_last_pushed_lsn for locked items
+      xfs: force the log if we encounter pinned buffers in .iop_pushbuf
+      xfs: revert to using a kthread for AIL pushing
+      xfs: add AIL pushing tracepoints
+
+ fs/xfs/xfs_buf_item.c   |    3 +-
+ fs/xfs/xfs_dquot_item.c |   10 ++++--
+ fs/xfs/xfs_inode_item.c |   10 ++++--
+ fs/xfs/xfs_linux.h      |    2 +
+ fs/xfs/xfs_super.c      |   13 +------
+ fs/xfs/xfs_trace.h      |   37 +++++++++++++++++++
+ fs/xfs/xfs_trans.h      |    2 +-
+ fs/xfs/xfs_trans_ail.c  |   91 +++++++++++++++++++++++++++++------------------
+ fs/xfs/xfs_trans_priv.h |    8 +----
+ 9 files changed, 114 insertions(+), 62 deletions(-)
