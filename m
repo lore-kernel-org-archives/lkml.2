@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab1JMFsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 01:48:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57278 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab1JMFsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 01:48:12 -0400
-Date: Thu, 13 Oct 2011 07:48:09 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: David Rientjes <rientjes@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] lguest: move process freezing before pending signals
- check
-Message-ID: <20111013054809.GB467@tiehlicka.suse.cz>
-References: <cover.1317110948.git.mhocko@suse.cz>
- <e213ea00900cba783f228eb4234ad929a05d4359.1317110948.git.mhocko@suse.cz>
- <20111012065504.GC31570@tiehlicka.suse.cz>
- <87lispepbg.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lispepbg.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752974Ab1JMFyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 01:54:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49569 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JMFyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 01:54:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 13 Oct 2011 14:53:53 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org
+Subject: Re: [PATCH v6 3/8] foundations of per-cgroup memory pressure
+ controlling.
+Message-Id: <20111013145353.161009ea.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1318242268-2234-4-git-send-email-glommer@parallels.com>
+References: <1318242268-2234-1-git-send-email-glommer@parallels.com>
+	<1318242268-2234-4-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-10-11 10:27:07, Rusty Russell wrote:
-> On Wed, 12 Oct 2011 08:55:04 +0200, Michal Hocko <mhocko@suse.cz> wrote:
-> > Hi Rusty,
-> > what is the current state of this patch? Are you planning to push it for
-> > 3.2?
+On Mon, 10 Oct 2011 14:24:23 +0400
+Glauber Costa <glommer@parallels.com> wrote:
+
+> This patch converts struct sock fields memory_pressure,
+> memory_allocated, sockets_allocated, and sysctl_mem (now prot_mem)
+> to function pointers, receiving a struct mem_cgroup parameter.
 > 
-> Oh.  Having acked it, I assumed you'd push.  But I've put it in my queue
-> now.
-
-Thanks
-
+> enter_memory_pressure is kept the same, since all its callers
+> have socket a context, and the kmem_cgroup can be derived from
+> the socket itself.
 > 
-> Thanks,
-> Rusty.
+> To keep things working, the patch convert all users of those fields
+> to use acessor functions.
+> 
+> In my benchmarks I didn't see a significant performance difference
+> with this patch applied compared to a baseline (around 1 % diff, thus
+> inside error margin).
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+a nitpick.
+
+
+>  #ifdef CONFIG_INET
+> +enum {
+> +	UNDER_LIMIT,
+> +	OVER_LIMIT,
+> +};
+> +
+
+It may be better to move this to res_counter.h or memcontrol.h
+
+
