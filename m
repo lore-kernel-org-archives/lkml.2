@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab1JMVCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 17:02:54 -0400
-Received: from che.mayfirst.org ([209.234.253.108]:34940 "EHLO
-	che.mayfirst.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1JMVCy (ORCPT
+	id S1753977Ab1JMVDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:03:05 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:43353 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753809Ab1JMVDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 17:02:54 -0400
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 17:02:54 EDT
-Message-ID: <4E9750A9.4060401@fifthhorseman.net>
-Date: Thu, 13 Oct 2011 16:57:13 -0400
-From: Daniel Kahn Gillmor <dkg@fifthhorseman.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110807 Icedove/5.0
+	Thu, 13 Oct 2011 17:03:01 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: lgxJsWkVM1l0Gyba5JIz.tLWNoopbeN2dSFkKo30uAh.n.j
+ DJfgnNWthDvmL4SA0O38BoJOMAP3n9WBaCe4umjY.9TTzmN05KcP8J2di0sc
+ 1dkD.Gr1vUinzU2jcsYO0aS8n6_11BEwV_QD666CK4mu_3alBywtMb7a9Lpq
+ p07.6VMcUzaHzvlZjgx8Yr8U5dAmvsVTAXjANvzlNE6Uk_wz2iN56ECdPWL0
+ mk9mIgXyHsCrtWan9trt75JF_oLBDchDYuii8eLBf.e0tRdPJFhTmezBjRrt
+ XoJV06fLuQOW5uiTSsgAm4qdReI8hqYcnt2iVuoE78RrREwkXHU1Uh3Tog3S
+ dpgfJR1pPOxsceMw1zmv83KlEO4BEfNXsr3wx1LRd6H3rDlQ-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 13 Oct 2011 16:02:58 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+In-Reply-To: <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1110131602020.26553@router.home>
+References: <20111012160202.GA18666@sgi.com> <20111012120118.e948f40a.akpm@linux-foundation.org> <alpine.DEB.2.00.1110121452220.31218@router.home> <20111013152355.GB6966@sgi.com> <alpine.DEB.2.00.1110131052300.18473@router.home>
+ <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, NYC Debian List <debiannyc@vireo.org>,
-        =?UTF-8?B?QW7DrWJhbCBNb25zYWx2ZSBTYWxhemFy?= <anibal@kernel.org>
-Subject: Re: {kernel,debian}.org KSP for the NYC area: October 19, 2011
-References: <4E9747AA.1040404@fifthhorseman.net> <20111013204720.GB13510@master.debian.org>
-In-Reply-To: <20111013204720.GB13510@master.debian.org>
-X-Enigmail-Version: 1.2.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig59FA8275D3ED5D273F02B3C7"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig59FA8275D3ED5D273F02B3C7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, 13 Oct 2011, Andrew Morton wrote:
 
-On 10/13/2011 04:47 PM, An=C3=ADbal Monsalve Salazar wrote:
-> On Thursday October 19, 2011 at Pacific Standard [1] from 19:00 to
-> 20:00, I and Daniel will hold a KSP.=20
+> > If there are no updates occurring for a while (due to increased deltas
+> > and/or vmstat updates) then the vm_stat cacheline should be able to stay
+> > in shared mode in multiple processors and the performance should increase.
+> >
+>
+> We could cacheline align vm_stat[].  But the thing is pretty small - we
+> couild put each entry in its own cacheline.
 
-I'm pretty sure An=C3=ADbal means "Wednesday, October 19th". :)
+Which in turn would increase the cache footprint of some key kernel
+functions (because they need multiple vm_stat entries) and cause eviction
+of other cachelines that then reduce overall system performance again.
 
-	--dkg
-
-
---------------enig59FA8275D3ED5D273F02B3C7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQJ8BAEBCgBmBQJOl1CpXxSAAAAAAC4AKGlzc3Vlci1mcHJAbm90YXRpb25zLm9w
-ZW5wZ3AuZmlmdGhob3JzZW1hbi5uZXQwRUU1QkU5NzkyODJEODBCOUY3NTQwRjFD
-Q0QyRUQ5NEQyMTczOUU5AAoJEMzS7ZTSFznpxm0QAKCBsIOKqy9kYYI9jWsgQ6XN
-gdf9ZgN3kmVuL8HjlB5YjWFic4ak7if6HZuV/0ONXFvVmyxY0Jon4+chlGDqUf/Y
-8WTrGcTEZP+/1E2DVZQMixHm1t1IIHcbyi6ZObLNI3hg0pWInO21HwS+69YNa+5K
-9BXsqmwyITnJg4QWa03NoBy3C6ZDpJDwPiGH0DQS/zNG2BTxoyTIZ2po4O3pwtea
-aPFVTD4egMMg/Gl06+xD22V3SlOgydYdTXBXeubFLWKaLihLivQ/cYnXiBjsd924
-YbGQUleDfG5An8n/xTnew5Cs3Dj/FaCDMnJyN1Rn8VeHwuWQbtxZom8y8JFK5f7X
-oG2mQsERZ043Mo8fJtRPZGONawuCnv0VYAO6LrzTJ/01cG7dSFrZJxWG9nZTtFZR
-s82dsLZ+gftL7mtnHFN/Nm8mhEtzgwie6aRk13r4ZAr921KyZhcrdVfyyd5M8/zN
-cuwfdwNf3N0cXCdDhXH5ql+iCSMWBZcISmA5pD9LNPC8Z7PZeMLWQRkOud7HlxaH
-Ht6m0ZQ7H0SlQcWzY2x4haHSYQLR/SCgrLaLuXGzGR2s1WzQBNX11IbwmSOhJ7AQ
-GBYdi6qyBNq2QKYMumx/5ToIyfp06zchOJCOhqBZCelzkGSWxyH7GE5OGK41wals
-p6YL3OKbaNzHdjbYh8B8
-=SnOz
------END PGP SIGNATURE-----
-
---------------enig59FA8275D3ED5D273F02B3C7--
