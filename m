@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1JMUYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:24:07 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:56025 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab1JMUYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:24:05 -0400
-Message-ID: <4E9748C5.6070306@parallels.com>
-Date: Fri, 14 Oct 2011 00:23:33 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1751977Ab1JMUdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 16:33:55 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:19370 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab1JMUdx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 16:33:53 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=DzvohmY1vzxbdXU0q3xSr0dwiDk4E4juVMrF52gAl1JTv/+DT6xwwV7GKAlsW3sFT
+	yIJZpLjZkrgp5B74ypOKg==
+Date: Thu, 13 Oct 2011 13:33:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ian Campbell <ian.campbell@citrix.com>
+cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: add a "struct page_frag" type containing a page,
+ offset and length
+In-Reply-To: <1318500176-10728-1-git-send-email-ian.campbell@citrix.com>
+Message-ID: <alpine.DEB.2.00.1110131327470.24853@chino.kir.corp.google.com>
+References: <1318500176-10728-1-git-send-email-ian.campbell@citrix.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <paul@paulmenage.org>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
-        <avagin@parallels.com>, <devel@openvz.org>
-Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
-References: <1318511382-31051-1-git-send-email-glommer@parallels.com> <20111013.160031.605700447623532119.davem@davemloft.net> <4E9744A6.5010101@parallels.com> <20111013.161608.1413756673453885746.davem@davemloft.net>
-In-Reply-To: <20111013.161608.1413756673453885746.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [195.68.147.2]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 12:16 AM, David Miller wrote:
-> From: Glauber Costa<glommer@parallels.com>
-> Date: Fri, 14 Oct 2011 00:05:58 +0400
->
->> Thank you for letting me now about your view of this that early.
->
-> I depend upon my colleagues to assist me in the large task that is reviewing
-> the enormous number of networking patches that get submitted.
->
-> Unfortunately, none of them got a chance to review this patch set
-> seriously, since I know most of them (especially Eric Dumazet) would
-> balk at the overhead you're proposing to add to our stack, just as I
-> did.
->
-> This is the reality of the situation, and I'm sorry to tell you that
-> snippy retorts when someone does take the time out to review your work
-> won't help at all.
-I understand that and appreciate your time.
-I'll try to come up with something that addresses this problem in the 
-next submission.
+On Thu, 13 Oct 2011, Ian Campbell wrote:
 
+> A few network drivers currently use skb_frag_struct for this purpose but I have
+> patches which add additional fields and semantics there which these other uses
+> do not want.
+> 
+
+Is this patch a part of a larger series that actually uses 
+struct page_frag?  Probably a good idea to post them so we know it doesn't 
+just lie there dormant.
+
+> A structure for reference sub-page regions seems like a generally useful thing
+> so do so instead of adding a network subsystem specific structure.
+> 
+
+Agreed.
+
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> Cc: Jens Axboe <jaxboe@fusionio.com>
+> Cc: linux-mm@kvack.org
+> Cc: linux-kernel@vger.kernel.org
+> [since v1: s/struct subpage/struct page_frag/ on advice from Christoph]
+
+Acked-by: David Rientjes <rientjes@google.com>
+
+> ---
+>  include/linux/mm_types.h |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 774b895..575faaf 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -135,6 +135,17 @@ struct page {
+>  #endif
+>  ;
+>  
+> +struct page_frag {
+> +	struct page *page;
+> +#if (BITS_PER_LONG > 32) || (PAGE_SIZE >= 65536)
+> +	__u32 page_offset;
+> +	__u32 size;
+> +#else
+> +	__u16 page_offset;
+> +	__u16 size;
+> +#endif
+> +};
+> +
+>  typedef unsigned long __nocast vm_flags_t;
+>  
+>  /*
