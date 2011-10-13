@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab1JMWIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 18:08:11 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:44025 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755086Ab1JMWIJ (ORCPT
+	id S1755324Ab1JMWMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 18:12:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43186 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754409Ab1JMWMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 18:08:09 -0400
-Message-ID: <4E976147.9030000@xenotime.net>
-Date: Thu, 13 Oct 2011 15:08:07 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Thu, 13 Oct 2011 18:12:35 -0400
+Date: Thu, 13 Oct 2011 23:12:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rajendra Nayak <rnayak@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111013221232.GB2866@opensource.wolfsonmicro.com>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <20111010172222.GG3607@opensource.wolfsonmicro.com>
+ <4E93DB41.2080900@ti.com>
+ <20111013183821.GN18574@ponder.secretlab.ca>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Faisal Latif <faisal.latif@intel.com>,
-        Linux RDMA <linux-rdma@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: [PATCH -next] infiniband: fix printk format in hw/nes_cm.c
-References: <20111013181606.a204565fad9caaa0fe680b75@canb.auug.org.au>
-In-Reply-To: <20111013181606.a204565fad9caaa0fe680b75@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013183821.GN18574@ponder.secretlab.ca>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Thu, Oct 13, 2011 at 12:38:21PM -0600, Grant Likely wrote:
 
-Fix printk format warning seen on x86_64:
-drivers/infiniband/hw/nes/nes_cm.c:3190:2: warning: format '%zu' expects type 'size_t', but argument 11 has type 'int'
+> These *sound* like flags that the driver would set based on its own
+> capabilities; in which case it is something that would be encoded
+> directly into the driver.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Faisal Latif <faisal.latif@intel.com>
----
- drivers/infiniband/hw/nes/nes_cm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+They're almost entirely a combination of system specifics and software
+capabilities - it's not even reliably one or the other.  For example the
+ability to switch regulator modes is going to depend on a combination of
+the modes a specific regulator offers, the set of things connected to
+the regulator in the current system (not all of which will be software
+visible), how good all the connected consumer drivers are at providing
+accurate information about what they're going to need from the system in
+terms of quality of regulation and current draw and how good the board
+design is in making these things reality.
 
---- next-2011-1013.orig/drivers/infiniband/hw/nes/nes_cm.c
-+++ next-2011-1013/drivers/infiniband/hw/nes/nes_cm.c
-@@ -3189,7 +3189,7 @@ int nes_accept(struct iw_cm_id *cm_id, s
- 
- 	nes_debug(NES_DBG_CM, "QP%u, Destination IP = 0x%08X:0x%04X, local = "
- 		  "0x%08X:0x%04X, rcv_nxt=0x%08X, snd_nxt=0x%08X, mpa + "
--		  "private data length=%zu.\n", nesqp->hwqp.qp_id,
-+		  "private data length=%u.\n", nesqp->hwqp.qp_id,
- 		  ntohl(cm_id->remote_addr.sin_addr.s_addr),
- 		  ntohs(cm_id->remote_addr.sin_port),
- 		  ntohl(cm_id->local_addr.sin_addr.s_addr),
+For robustness (for some of these things if you get it wrong we're
+talking catastrophic hardware failure) the Linux regulator API is
+extremely conservative and won't touch the hardware unless explicitly
+told that a specific thing is OK on a given board.
