@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab1JMTxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:53:03 -0400
-Received: from mail-vw0-f52.google.com ([209.85.212.52]:65157 "EHLO
-	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab1JMTxB convert rfc822-to-8bit (ORCPT
+	id S1754356Ab1JMT4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:56:52 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:37427 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab1JMT4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:53:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111013194644.GF18574@ponder.secretlab.ca>
-References: <4E937035.8020806@gmx.de> <20111013194644.GF18574@ponder.secretlab.ca>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 13 Oct 2011 13:52:41 -0600
-X-Google-Sender-Auth: xq2kErHgvHQGMximQfI_31QG8qA
-Message-ID: <CACxGe6ut+8ERLgQ3BcnqkWKgt2uYNHwk4baP8sjtAXVuJDe7CA@mail.gmail.com>
-Subject: Re: [Patch 1/2] gpio-pca953x: fix gpio_base and add verbosity
-To: Hartmut Knaack <knaack.h@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Oct 2011 15:56:50 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Breno Leitao <leitao@linux.vnet.ibm.com>
+Subject: [PATCH] ehea: Change maintainer to me
+Date: Thu, 13 Oct 2011 16:56:19 -0300
+Message-Id: <1318535779-18275-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.4
+x-cbid: 11101319-9254-0000-0000-000006DB6C37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 1:46 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, Oct 11, 2011 at 12:22:45AM +0200, Hartmut Knaack wrote:
->> gpio_base was set to 0 if no system platform data or open firmware
->> platform data was provided. This led to conflicts, if any other gpiochip
->> with a gpiobase of 0 was instantiated already. Setting it to -1 will
->> automatically use the first one available.
->>
->> Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
->> -------------------------------------------------------------
->
-> Corrupt patch (linewrap and whitespace damage).  Please check your mailer.
+Breno Leitao has passed the maintainership to me.
 
-I applied it manually though.
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Breno Leitao <leitao@linux.vnet.ibm.com>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-g.
-
->
->> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
->> index c43b8ff..ae479fd 100644
->> --- a/drivers/gpio/gpio-pca953x.c
->> +++ b/drivers/gpio/gpio-pca953x.c
->> @@ -577,6 +577,7 @@ pca953x_get_alt_pdata(struct i2c_client *client, int
->> *gpio_base, int *invert)
->>  void
->>  pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, int
->> *invert)
->>  {
->> +  *gpio_base = -1;
->>  }
->>  #endif
->>
->>
->
-
-
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index aac56f9..c25e93a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2468,7 +2468,7 @@ S:	Supported
+ F:	drivers/infiniband/hw/ehca/
+ 
+ EHEA (IBM pSeries eHEA 10Gb ethernet adapter) DRIVER
+-M:	Breno Leitao <leitao@linux.vnet.ibm.com>
++M:	Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+ L:	netdev@vger.kernel.org
+ S:	Maintained
+ F:	drivers/net/ethernet/ibm/ehea/
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+1.7.4.4
+
