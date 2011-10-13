@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab1JMAqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:46:07 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:49837 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751111Ab1JMAqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:46:04 -0400
-Message-ID: <4E9634C9.3020404@xenotime.net>
-Date: Wed, 12 Oct 2011 17:46:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: linux-next: Tree for Oct 12 (sound/soc/codecs/wm1250-ev1)
-References: <20111012175425.a2e3e6e6a92265e433aeca25@canb.auug.org.au>
-In-Reply-To: <20111012175425.a2e3e6e6a92265e433aeca25@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1751924Ab1JMAqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:46:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13987 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab1JMAqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:46:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,337,1315206000"; 
+   d="scan'208";a="61704794"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        jbeulich@novell.com, fenghua.yu@intel.com, khali@linux-fr.org
+Subject: [PATCH 3/3] coretemp: Get microcode revision from cpu_data v3
+Date: Wed, 12 Oct 2011 17:46:35 -0700
+Message-Id: <1318466795-7393-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1318466795-7393-1-git-send-email-andi@firstfloor.org>
+References: <1318466795-7393-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 11:54 PM, Stephen Rothwell wrote:
-> Hi all,
-> 
-> The linux-next tree is now available from
-> git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> the kernel.org servers are unavailable.
-> 
-> It may also turn up on git.kernel.org (depending on the mirroring).  The
-> patch is still absent, however.
+From: Andi Kleen <ak@linux.intel.com>
 
+Now that the ucode revision is available in cpu_data remove
+the existing code in coretemp.c to query it manually. Read the ucode
+revision from cpu_data instead
 
-When no GPIO kconfig options are enabled:
-(not GPIOLIB, not GENERIC_GPIO):
+v2: Fix misplaced variable init. Remove unused variables.
+v3: Port to latest tree
+Cc: jbeulich@novell.com
+Cc: fenghua.yu@intel.com
+Cc: khali@linux-fr.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ drivers/hwmon/coretemp.c |   28 ++++------------------------
+ 1 files changed, 4 insertions(+), 24 deletions(-)
 
-sound/soc/codecs/wm1250-ev1.c:32:14: error: array type has incomplete element type
-sound/soc/codecs/wm1250-ev1.c:126:18: warning: type defaults to 'int' in type name
-sound/soc/codecs/wm1250-ev1.c:126:18: warning: type defaults to 'int' in type name
-sound/soc/codecs/wm1250-ev1.c:126:18: error: negative width in bit-field '<anonymous>'
-sound/soc/codecs/wm1250-ev1.c:134:42: warning: type defaults to 'int' in type name
-sound/soc/codecs/wm1250-ev1.c:134:42: warning: type defaults to 'int' in type name
-sound/soc/codecs/wm1250-ev1.c:134:42: error: negative width in bit-field '<anonymous>'
-sound/soc/codecs/wm1250-ev1.c:155:34: warning: type defaults to 'int' in type name
-sound/soc/codecs/wm1250-ev1.c:155:34: warning: type defaults to 'int' in type name
-sound/soc/codecs/wm1250-ev1.c:155:34: error: negative width in bit-field '<anonymous>'
-
-
-This was on an i386 build, but that shouldn't matter.
-
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 9323837..ce18c04 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -325,15 +325,6 @@ static int get_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *dev)
+ 	return adjust_tjmax(c, id, dev);
+ }
+ 
+-static void __devinit get_ucode_rev_on_cpu(void *edx)
+-{
+-	u32 eax;
+-
+-	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+-	sync_core();
+-	rdmsr(MSR_IA32_UCODE_REV, eax, *(u32 *)edx);
+-}
+-
+ static int create_name_attr(struct platform_data *pdata, struct device *dev)
+ {
+ 	sysfs_attr_init(&pdata->name_attr.attr);
+@@ -380,27 +371,16 @@ exit_free:
+ static int __cpuinit chk_ucode_version(unsigned int cpu)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+-	int err;
+-	u32 edx;
+ 
+ 	/*
+ 	 * Check if we have problem with errata AE18 of Core processors:
+ 	 * Readings might stop update when processor visited too deep sleep,
+ 	 * fixed for stepping D0 (6EC).
+ 	 */
+-	if (c->x86_model == 0xe && c->x86_mask < 0xc) {
+-		/* check for microcode update */
+-		err = smp_call_function_single(cpu, get_ucode_rev_on_cpu,
+-					       &edx, 1);
+-		if (err) {
+-			pr_err("Cannot determine microcode revision of "
+-			       "CPU#%u (%d)!\n", cpu, err);
+-			return -ENODEV;
+-		} else if (edx < 0x39) {
+-			pr_err("Errata AE18 not fixed, update BIOS or "
+-			       "microcode of the CPU!\n");
+-			return -ENODEV;
+-		}
++	if (c->x86_model == 0xe && c->x86_mask < 0xc && c->microcode < 0x39) {
++		pr_err("Errata AE18 not fixed, update BIOS or "
++		       "microcode of the CPU!\n");
++		return -ENODEV;
+ 	}
+ 	return 0;
+ }
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.4.4
+
