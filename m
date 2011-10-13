@@ -1,184 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab1JMSnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 14:43:24 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61855 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab1JMSnX (ORCPT
+	id S1752783Ab1JMSoE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 14:44:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58262 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1JMSoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 14:43:23 -0400
-Date: Thu, 13 Oct 2011 12:43:19 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: broonie@opensource.wolfsonmicro.com, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/5] regulator: adapt fixed regulator driver to dt
-Message-ID: <20111013184319.GP18574@ponder.secretlab.ca>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-5-git-send-email-rnayak@ti.com>
+	Thu, 13 Oct 2011 14:44:02 -0400
+Message-ID: <4E97332C.8020202@colorfullife.com>
+Date: Thu, 13 Oct 2011 20:51:24 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318263578-7407-5-git-send-email-rnayak@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/3] ipc/sem.c: handle spurious wakeups
+References: <1316885831-11996-1-git-send-email-manfred@colorfullife.com> <20111011145441.228e4c94.akpm@linux-foundation.org>
+In-Reply-To: <20111011145441.228e4c94.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 09:49:37PM +0530, Rajendra Nayak wrote:
-> The fixed regulator driver uses of_get_fixed_voltage_config()
-> to extract fixed_voltage_config structure contents from device tree.
-> 
-> Also add documenation for additional bindings for fixed
-> regulators that can be passed through dt.
-> 
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> ---
->  .../bindings/regulator/fixed-regulator.txt         |   25 +++++++++
->  drivers/regulator/fixed.c                          |   58 ++++++++++++++++++++
->  2 files changed, 83 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-> new file mode 100644
-> index 0000000..049df3d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-> @@ -0,0 +1,25 @@
-> +Fixed Voltage regulators
-> +
-> +Required properties:
-> +- compatible: Must be "regulator-fixed";
-> +
-> +Optional properties:
-> +- regulator-fixed-supply: Name of the regulator supply
-> +- regulator-fixed-microvolts: Output voltage of regulator
-> +- regulator-fixed-gpio: gpio to use for enable control
-> +- regulator-fixed-startup-delay: startup time in microseconds
-> +- regulator-fixed-enable-high: Polarity of enable GPIO,
-> +  1 = Active High, 0 = Active low
-> +- regulator-fixed-enabled-at-boot: 1 = yes, 0 = no
-> +
-> +Example:
-> +
-> +	abc: fixedregulator@0 {
-> +		compatible = "regulator-fixed";
-> +		regulator-fixed-supply = "fixed-supply";
-> +		regulator-fixed-microvolts = <1800000>;
-> +		regulator-fixed-gpio = <43>;
-> +		regulator-fixed-startup-delay = <70000>;
-> +		regulator-fixed-enable-high;
-> +		regulator-fixed-enabled-at-boot;
-> +	};
-> diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-> index 2fe9d99..eb37eb6 100644
-> --- a/drivers/regulator/fixed.c
-> +++ b/drivers/regulator/fixed.c
-> @@ -23,9 +23,12 @@
->  #include <linux/platform_device.h>
->  #include <linux/regulator/driver.h>
->  #include <linux/regulator/fixed.h>
-> +#include <linux/regulator/machine.h>
->  #include <linux/gpio.h>
->  #include <linux/delay.h>
->  #include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/regulator/of_regulator.h>
->  
->  struct fixed_voltage_data {
->  	struct regulator_desc desc;
-> @@ -37,6 +40,47 @@ struct fixed_voltage_data {
->  	bool is_enabled;
->  };
->  
-> +
-> +/**
-> + * of_get_fixed_voltage_config - extract fixed_voltage_config structure info
-> + * @dev: device requesting for fixed_voltage_config
-> + *
-> + * Populates fixed_voltage_config structure by extracting data from device
-> + * tree node, returns a pointer to the populated structure of NULL if memory
-> + * alloc fails.
-> + */
-> +struct fixed_voltage_config *of_get_fixed_voltage_config(struct device *dev)
-> +{
-> +	struct fixed_voltage_config *config;
-> +	struct device_node *np = dev->of_node;
-> +	const __be32 *microvolts, *gpio, *delay;
-> +
-> +	config = devm_kzalloc(dev, sizeof(struct fixed_voltage_config), GFP_KERNEL);
-> +	if (!config)
-> +		return NULL;
-> +
-> +	config->supply_name = (char *)of_get_property(np,
-> +					"regulator-fixed-supply", NULL);
+On 10/11/2011 11:54 PM, Andrew Morton wrote:
+> On Sat, 24 Sep 2011 19:37:11 +0200
+> Manfred Spraul<manfred@colorfullife.com>  wrote:
+>
+>> semtimedop() does not handle spurious wakeups, it returns -EINTR to user space.
+>> Most other schedule() users would just loop and not return to user space.
+>> The patch adds such a loop to semtimedop()
+> What is a "spurious wakeup" and how can a process receive one?
+A spurious wakeup means that someone calls wake_up_process() without a 
+proper reason.
+The most common case would be a wake_up_process() that was somehow delayed.
 
-of_get_property() returns a (const void *).  Casting drops the const
-and should not be used.  Either make supply_name a (const char *), or
-copy the string into a (char *) buffer.
+Peter's patch made such delayed wakeups very common, this is how we 
+found the issue.
 
-> +	microvolts = of_get_property(np, "regulator-fixed-microvolts", NULL);
-> +	if (microvolts)
-> +		config->microvolts = be32_to_cpu(*microvolts);
-> +	gpio = of_get_property(np, "regulator-fixed-gpio", NULL);
-> +	if (gpio)
-> +		config->gpio = be32_to_cpu(*gpio);
+The "standard" kernel primitives handle such wakeups, ipc/sem.c doesn't 
+handle that.
 
-of_property_read_u32() may help here.
+> I'm wondering about the userspace-visible effects of this change, and
+> any compatibility issues?
+This change has no userspace visible effects.
 
-> +	delay = of_get_property(np, "regulator-fixed-startup-delay", NULL);
-> +	if (delay)
-> +		config->startup_delay = be32_to_cpu(*delay);
-> +
-> +	if (of_find_property(np, "regulator-fixed-enable-high", NULL))
-> +		config->enable_high = true;
-> +	if (of_find_property(np, "regulator-fixed-enabled-at-boot", NULL))
-> +		config->enabled_at_boot = true;
-> +
-> +	config->init_data = of_get_regulator_init_data(dev);
-> +
-> +	return config;
-> +}
-> +
->  static int fixed_voltage_is_enabled(struct regulator_dev *dev)
->  {
->  	struct fixed_voltage_data *data = rdev_get_drvdata(dev);
-> @@ -108,6 +152,9 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
->  	struct fixed_voltage_data *drvdata;
->  	int ret;
->  
-> +	if (pdev->dev.of_node)
-> +		config = of_get_fixed_voltage_config(&pdev->dev);
-> +
->  	drvdata = kzalloc(sizeof(struct fixed_voltage_data), GFP_KERNEL);
->  	if (drvdata == NULL) {
->  		dev_err(&pdev->dev, "Failed to allocate device data\n");
-> @@ -216,12 +263,23 @@ static int __devexit reg_fixed_voltage_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +#if defined(CONFIG_OF)
-> +static const struct of_device_id fixed_of_match[] __devinitconst = {
-> +	{ .compatible = "regulator-fixed", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, fixed_of_match);
-> +#else
-> +#define fixed_of_match NULL
-> +#endif
-> +
->  static struct platform_driver regulator_fixed_voltage_driver = {
->  	.probe		= reg_fixed_voltage_probe,
->  	.remove		= __devexit_p(reg_fixed_voltage_remove),
->  	.driver		= {
->  		.name		= "reg-fixed-voltage",
->  		.owner		= THIS_MODULE,
-> +		.of_match_table = fixed_of_match,
->  	},
->  };
->  
-> -- 
-> 1.7.1
-> 
+--
+     Manfred
