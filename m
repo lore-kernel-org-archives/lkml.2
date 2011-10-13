@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1JMIpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 04:45:10 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:10177
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752002Ab1JMIpI (ORCPT
+	id S1754083Ab1JMIqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 04:46:39 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:58244 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753589Ab1JMIqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 04:45:08 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: Re: [alsa-devel] [PATCH 3/9] ASoC: da7210: Add support for ADC &
- DAC equalizers
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111012145537.GP3647@opensource.wolfsonmicro.com>
-References: <1318431606.12107.408.camel@matrix>
-	 <20111012145537.GP3647@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Oct 2011 14:26:33 +0530
-Message-ID: <1318496193.12107.436.camel@matrix>
+	Thu, 13 Oct 2011 04:46:38 -0400
+Message-ID: <4E96A55F.6050408@st.com>
+Date: Thu, 13 Oct 2011 14:16:23 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+To: Vinod Koul <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>
+Subject: Re: [PATCH 1/3] dmaengine: Allow controller drivers to set channel
+ ids
+References: <63faf72913f4f35b0a542c859522e8333e878c95.1316687776.git.viresh.kumar@st.com> <1317200887.1573.1768.camel@vkoul-udesk3>
+In-Reply-To: <1317200887.1573.1768.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-12 at 15:55 +0100, Mark Brown wrote:
-> On Wed, Oct 12, 2011 at 08:30:06PM +0530, Ashish Chavan wrote:
-> > This patch adds support for ADC and DAC five band equalizers
-> > available on DA7210 codec.
+On 9/28/2011 2:38 PM, Vinod Koul wrote:
+> to dmaengine, this is just a channel representation in sysfs and nothing
+> more. If damc is assuming that this is same as what dmaengine will do
+> then dmac is wrong.
 > 
-> This is fine but doesn't apply due to dependencies on the previous
-> patches.
-> 
-Will send a v2 of patch series shortly.
+> Nevertheless, Dan was okay with changing this representation.
+> Dan I would need your comments/Ack before we discuss this further
 
+Hi Vinod/Dan,
 
+Any update/feedback on this?
+
+-- 
+viresh
