@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab1JMQos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:44:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39286 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756599Ab1JMQor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:44:47 -0400
-Message-ID: <4E971557.1050706@zytor.com>
-Date: Thu, 13 Oct 2011 09:44:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1756523Ab1JMQse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:48:34 -0400
+Received: from nm3-vm1.bullet.mail.in.yahoo.com ([121.101.151.208]:27763 "HELO
+	nm3-vm1.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753553Ab1JMQsd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:48:33 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 391781.30015.bm@omp1002.mail.in.yahoo.com
+X-YMail-OSG: RWUMd8oVM1m1nZDEoKKfNMTvKXh4ozbaLM2bBFLbu5AUa54
+ L4ZeWaUx0XZZsMuwn1tkaEz1O9I6tN3QVFVryXIud996ueXObsB4eNBQtfA4
+ UWR_5vfwnNBnBNy2ZDmyiDOT.U7gqXo4R442ujJ7u6xRJoukJXRomJC0B.cw
+ qyOFq9YK3h5AS_KwePgoy8K_jSMfqHs.6MODmtV7zwadWsdNk.wPMTKHmI48
+ w1sV1zHICEzrugM1JesBXwmhl6QwuliS66Q.QFS1b787KiI14xj6DxMwdxxm
+ 4jvXWc3JEVE1PFyFCLqLK.FCX_mdpNBAc.vZWBgjgpPtS7vx8CD5GxDJdF5G
+ ZlcMESDE0XopJBy7KhmFS6IDt_t9LH4aw2N7weVM.FLZyhcWzUP8kDVg_qmr
+ pfV4cCYffJFv77w0Q8gm0.y28KN9k9iAN12YbvmAL86ZouWt_xteTDzYl8Wg
+ Hc2whVTgVJ6BEg03MkPnLpE3xG1LNnFPLwFNVzElky0eokH4eCDN6C3T2U7U
+ .82z8voGzDUm4NjThYpBw4KP.GbxHIaUqJc3PIoFK9o9DsK5etwkFQSn6QdA
+ ZRttN
+X-RocketYMMF: love_chinmay2002
+X-Mailer: YahooMailClassic/14.0.7 YahooMailWebService/0.8.114.317681
+Message-ID: <1318524509.82996.YahooMailClassic@web95303.mail.in2.yahoo.com>
+Date: Thu, 13 Oct 2011 22:18:29 +0530 (IST)
+From: Gloria Lusen <rsm_mmko2@rediffmail.com>
+Reply-To: gloria_lusen69@yahoo.fr
+Subject: Good Day,
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-References: <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab> <4E96198F.4030906@zytor.com> <20111013073352.GB501@aftab> <20111013095708.GA1862@aftab>
-In-Reply-To: <20111013095708.GA1862@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 02:57 AM, Borislav Petkov wrote:
-> On Thu, Oct 13, 2011 at 03:33:52AM -0400, Borislav Petkov wrote:
->> Bottomline is, extending initrd handling to deal with multiple initrd
->> images might turn out to be easier to do than the linked list deal.
-> 
-> Alternatively and IMHO, we could avoid the bootloader enabling by
-> making the ucode part of the initramfs and pull up some of the
-> prepare_namespace() work in kernel_init() before smp_init() so that we
-> can have it ready for when bootstrapping the cores.
-> 
 
-I think that is really ugly, and it also makes it much harder to get the
-microcode patch in early on the BSP.  There are enough issues where we
-would like to get the microcode in early even on the BSP.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Good Day,
+How are you and your family, i am sorry for bagging into your privacy, i am Gloria Lusen 18 years old and the only child of my late parent, please i am seeking for your assistance for a relocation and transferring of my inherited fund to your country,(USD$ 9.500.000) dollars I wait for your reply for more information you might need regarding the fund and my position.
+Thank you and God bless you.
+Yours Daughter,
+Gloria Lusen.
