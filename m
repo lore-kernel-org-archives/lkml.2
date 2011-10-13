@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab1JMRpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:45:10 -0400
-Received: from smtp.cmdik.pan.pl ([212.87.26.100]:33016 "EHLO
-	medres.cmdik.pan.pl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754289Ab1JMRpF (ORCPT
+	id S1756648Ab1JMRp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:45:56 -0400
+Received: from mail.intechworld.net ([114.129.8.44]:42428 "EHLO
+	mail.intechworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab1JMRpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:45:05 -0400
-X-Greylist: delayed 768 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 13:45:05 EDT
-Date: Thu, 13 Oct 2011 19:31:53 +0200
-From: "Dear Account User" <ukupgrade222@gmail.com>
-Reply-to: "Dear Account User" <ukupgrade222@gmail.com>
-Subject: Dear Account User
-X-Priority: 1
-X-Mailer: UebiMiau 2.7.2
-X-Original-IP: 80.87.92.42
-Content-Transfer-Encoding: 7BIT
-X-MSMail-Priority: High
-Importance: High
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 13 Oct 2011 13:45:55 -0400
+Message-ID: <08a23ce34bd7cf8711a617bf18e81c2d.squirrel@intechworld.net>
+Date: Thu, 13 Oct 2011 01:03:26 +0100
+Subject: Your Payment Notification?
+From: "WESTERN UNION OFFICE" <info@yahoo.com>
+Reply-To: w.u@fengv.com
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Message-Id: <20111013173153.C0719250D90@medres.cmdik.pan.pl>
-To: undisclosed-recipients:;
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Account User,
+Western Union®
 
-Due to the congestion in all our Email users and removal of all unused
-Accounts, We will be shutting down all unused accounts before on the
-20th of October. You will have to re-confirm your account as soon as
-possible to enable us upgrade your account before the deadline date. To
-confirm your account, by filling the information below after clicking on
-the reply
-button:> * User name
-* Password
-* Date of Birth
-* Country or Territory
+The sum of Three Hundred Thousand Dollars ($300,000.00 USD) has been
+deposited here in WESTERN UNION OFFICE by the United Nations
+Organization.Kindly contact
+us for more informations.
 
-After following the instructions in the sheet, your account will not be
-interrupted and will continue as normal. Thanks for your attention to
-this request. We apologize for any inconvenience.
+Contact Email: w.u@fengv.com
 
-Thanks & Regards,
-Engineer.J.Williams
-Upgrade Team Controller
+Customer Service
+Western Union®
 
-
-
-________________________________________________
-Message sent using http://mail.cmdik.pan.pl
 
