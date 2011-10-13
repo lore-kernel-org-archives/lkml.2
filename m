@@ -1,66 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1JMHBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:01:04 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45041 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab1JMHBD (ORCPT
+	id S1753272Ab1JMHDp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:03:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46507 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab1JMHDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:01:03 -0400
-Date: Thu, 13 Oct 2011 09:00:50 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Borislav Petkov <bp@amd64.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-Message-ID: <20111013070050.GA501@aftab>
-References: <4E95E7FE.6050302@goop.org>
- <20111012194543.GD14966@aftab>
- <20111012204048.GA22260@phenom.oracle.com>
- <4E960746.90805@zytor.com>
- <20111012214013.GD28723@aftab>
- <4E96198F.4030906@zytor.com>
- <4E962581.2000605@goop.org>
- <4E9628D4.1000605@zytor.com>
- <4E962A27.4090509@goop.org>
- <4E962AE6.1060505@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E962AE6.1060505@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Oct 2011 03:03:44 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        vkoul@infradead.org
+Cc: rmk@arm.linux.org.uk, 21cnbao@gmail.com,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCHv5] DMAEngine: Define interleaved transfer request api
+Date: Thu, 13 Oct 2011 12:33:30 +0530
+Message-Id: <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 08:03:50PM -0400, H. Peter Anvin wrote:
-> On 10/12/2011 05:00 PM, Jeremy Fitzhardinge wrote:
-> >
-> > Presumably we'd want some way to make all possible microcode files
-> > available to the hypervisor/kernel so that there's no need to construct
-> > the bootloader config for a specific CPU vendor (or worse, CPU model).
-> > So that would need either some way of specifying multiple files, or a
-> > wrapper which can contain multiple files?
-> >
-> 
-> I have been thinking a "bundle" format with a per-vendor header followed 
-> by the microcode in the appropriate format for each vendor.
+Define a new api that could be used for doing fancy data transfers
+like interleaved to contiguous copy and vice-versa.
+Traditional SG_list based transfers tend to be very inefficient in
+such cases as where the interleave and chunk are only a few bytes,
+which call for a very condensed api to convey pattern of the transfer.
+This api supports all 4 variants of scatter-gather and contiguous transfer.
 
-Yes, makes sense. Keep it as simple as possible.
+Of course, neither can this api help transfers that don't lend to DMA by
+nature, i.e, scattered tiny read/writes with no periodic pattern.
 
+Also since now we support SLAVE channels that might not provide
+device_prep_slave_sg callback but device_prep_interleaved_dma,
+remove the BUG_ON check.
+
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+---
+
+Dan,
+ After waiting for a reply from you/Alexandre a couple of days I am revising
+ my patch without adding a hook for RapidIO case for 2 reasons:
+  a) I think the RapidIO requirement is served better by the concept of
+     virtual channels, rather than hacking "struct dma_chan" to reach more
+     than one device.
+  b) If Alexandre comes up with something irresistible, we can always add
+     the hook later.
+
+Changes since v4:
+1) Dropped the 'frm_irq' member.
+2) Renamed 'xfer_direction' to 'dma_transfer_direction'
+
+Changes since v3:
+1) Added explicit type for source and destination.
+
+Changes since v2:
+1) Added some notes to documentation.
+2) Removed the BUG_ON check that expects every SLAVE channel to
+   provide a prep_slave_sg, as we are now valid otherwise too.
+3) Fixed the DMA_TX_TYPE_END offset - made it last element of enum.
+4) Renamed prep_dma_genxfer to prep_interleaved_dma as Vinod wanted.
+
+Changes since v1:
+1) Dropped the 'dma_transaction_type' member until we really
+   merge another type into this api. Instead added special
+   type for this api - DMA_GENXFER in dma_transaction_type.
+2) Renamed 'xfer_template' to 'dmaxfer_template' inorder to
+
+ Documentation/dmaengine.txt |    8 ++++
+ drivers/dma/dmaengine.c     |    4 +-
+ include/linux/dmaengine.h   |   82 +++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 90 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+index 94b7e0f..962a2d3 100644
+--- a/Documentation/dmaengine.txt
++++ b/Documentation/dmaengine.txt
+@@ -75,6 +75,10 @@ The slave DMA usage consists of following steps:
+    slave_sg	- DMA a list of scatter gather buffers from/to a peripheral
+    dma_cyclic	- Perform a cyclic DMA operation from/to a peripheral till the
+ 		  operation is explicitly stopped.
++   interleaved_dma - This is common to Slave as well as M2M clients. For slave
++		 address of devices' fifo could be already known to the driver.
++		 Various types of operations could be expressed by setting
++		 appropriate values to the 'dmaxfer_template' members.
+ 
+    A non-NULL return of this transfer API represents a "descriptor" for
+    the given transaction.
+@@ -89,6 +93,10 @@ The slave DMA usage consists of following steps:
+ 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_data_direction direction);
+ 
++	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
++		struct dma_chan *chan, struct dmaxfer_template *xt,
++		unsigned long flags);
++
+    The peripheral driver is expected to have mapped the scatterlist for
+    the DMA operation prior to calling device_prep_slave_sg, and must
+    keep the scatterlist mapped until the DMA operation has completed.
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index b48967b..a6c6051 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -693,12 +693,12 @@ int dma_async_device_register(struct dma_device *device)
+ 		!device->device_prep_dma_interrupt);
+ 	BUG_ON(dma_has_cap(DMA_SG, device->cap_mask) &&
+ 		!device->device_prep_dma_sg);
+-	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+-		!device->device_prep_slave_sg);
+ 	BUG_ON(dma_has_cap(DMA_CYCLIC, device->cap_mask) &&
+ 		!device->device_prep_dma_cyclic);
+ 	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+ 		!device->device_control);
++	BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
++		!device->device_prep_interleaved_dma);
+ 
+ 	BUG_ON(!device->device_alloc_chan_resources);
+ 	BUG_ON(!device->device_free_chan_resources);
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 8fbf40e..ce8c40a 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -71,11 +71,85 @@ enum dma_transaction_type {
+ 	DMA_ASYNC_TX,
+ 	DMA_SLAVE,
+ 	DMA_CYCLIC,
++	DMA_INTERLEAVE,
++/* last transaction type for creation of the capabilities mask */
++	DMA_TX_TYPE_END,
+ };
+ 
+-/* last transaction type for creation of the capabilities mask */
+-#define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
++enum dma_transfer_direction {
++	MEM_TO_MEM,
++	MEM_TO_DEV,
++	DEV_TO_MEM,
++	DEV_TO_DEV,
++};
++
++/**
++ * Interleaved Transfer Request
++ * ----------------------------
++ * A chunk is collection of contiguous bytes to be transfered.
++ * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
++ * ICGs may or maynot change between chunks.
++ * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
++ *  that when repeated an integral number of times, specifies the transfer.
++ * A transfer template is specification of a Frame, the number of times
++ *  it is to be repeated and other per-transfer attributes.
++ *
++ * Practically, a client driver would have ready a template for each
++ *  type of transfer it is going to need during its lifetime and
++ *  set only 'src_start' and 'dst_start' before submitting the requests.
++ *
++ *
++ *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
++ *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
++ *
++ *    ==  Chunk size
++ *    ... ICG
++ */
+ 
++/**
++ * struct data_chunk - Element of scatter-gather list that makes a frame.
++ * @size: Number of bytes to read from source.
++ *	  size_dst := fn(op, size_src), so doesn't mean much for destination.
++ * @icg: Number of bytes to jump after last src/dst address of this
++ *	 chunk and before first src/dst address for next chunk.
++ *	 Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
++ *	 Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
++ */
++struct data_chunk {
++	size_t size;
++	size_t icg;
++};
++
++/**
++ * struct dmaxfer_template - Template to convey DMAC the transfer pattern
++ *	 and attributes.
++ * @src_start: Bus address of source for the first chunk.
++ * @dst_start: Bus address of destination for the first chunk.
++ * @dir: Specifies the type of Source and Destination.
++ * @src_inc: If the source address increments after reading from it.
++ * @dst_inc: If the destination address increments after writing to it.
++ * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
++ *		Otherwise, source is read contiguously (icg ignored).
++ *		Ignored if src_inc is false.
++ * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
++ *		Otherwise, destination is filled contiguously (icg ignored).
++ *		Ignored if dst_inc is false.
++ * @numf: Number of frames in this template.
++ * @frame_size: Number of chunks in a frame i.e, size of sgl[].
++ * @sgl: Array of {chunk,icg} pairs that make up a frame.
++ */
++struct dmaxfer_template {
++	dma_addr_t src_start;
++	dma_addr_t dst_start;
++	enum dma_transfer_direction dir;
++	bool src_inc;
++	bool dst_inc;
++	bool src_sgl;
++	bool dst_sgl;
++	size_t numf;
++	size_t frame_size;
++	struct data_chunk sgl[0];
++};
+ 
+ /**
+  * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+@@ -432,6 +506,7 @@ struct dma_tx_state {
+  * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
+  *	The function takes a buffer of size buf_len. The callback function will
+  *	be called after period_len bytes have been transferred.
++ * @device_prep_interleaved_dma: Transfer expression in a generic way.
+  * @device_control: manipulate all pending operations on a channel, returns
+  *	zero or error code
+  * @device_tx_status: poll for transaction completion, the optional
+@@ -496,6 +571,9 @@ struct dma_device {
+ 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+ 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_data_direction direction);
++	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
++		struct dma_chan *chan, struct dmaxfer_template *xt,
++		unsigned long flags);
+ 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		unsigned long arg);
+ 
 -- 
-Regards/Gruss,
-Boris.
+1.7.4.1
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
