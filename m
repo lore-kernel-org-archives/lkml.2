@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab1JMNPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 09:15:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146Ab1JMNPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 09:15:45 -0400
-Date: Thu, 13 Oct 2011 15:15:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/huge_memory: Clean up typo when updating mmu cache
-Message-ID: <20111013131540.GA3328@redhat.com>
-References: <CAJd=RBALaNJ680JzCP8KUaDO80dM+9_AK5yW9SSVoUD0G1Cxzw@mail.gmail.com>
+	id S1755324Ab1JMNUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 09:20:52 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57043 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252Ab1JMNUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 09:20:50 -0400
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Subject: [PATCH] libata: make ata_sff_data_xfer_noirq() work with 32-bit PIO
+Date: Thu, 13 Oct 2011 15:04:43 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBALaNJ680JzCP8KUaDO80dM+9_AK5yW9SSVoUD0G1Cxzw@mail.gmail.com>
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110131504.43311.bzolnier@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 08:52:22PM +0800, Hillf Danton wrote:
-> Hi Andrea
-> 
-> There are three cases of update_mmu_cache() in the file, and the case in
-> function collapse_huge_page() has a typo, namely the last parameter used,
-> which is corrected based on the other two cases.
-> 
-> Due to the define of update_mmu_cache by X86, the only arch that implements
-> THP currently, the change here has no really crystal point, but one or two
-> minutes of efforts could be saved for those archs that are likely to support
-> THP in future.
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: [PATCH] libata: make ata_sff_data_xfer_noirq() work with 32-bit PIO
 
-Yes, like the previous one, they make no runtime difference today, but
-they may save some debug time to who's porting THP to some other arch
-in the future, so it's good to clean this up, thanks.
+Always use ata_sff_data_xfer32() in ata_sff_data_xfer_noirq()
+so the latter can be also used for host controllers supporting
+32-bit PIO operations.
 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/mm/huge_memory.c	Sat Aug 13 11:45:14 2011
-> +++ b/mm/huge_memory.c	Thu Oct 13 20:07:29 2011
-> @@ -1906,7 +1906,7 @@ static void collapse_huge_page(struct mm
->  	BUG_ON(!pmd_none(*pmd));
->  	page_add_new_anon_rmap(new_page, vma, address);
->  	set_pmd_at(mm, address, pmd, _pmd);
-> -	update_mmu_cache(vma, address, entry);
-> +	update_mmu_cache(vma, address, _pmd);
->  	prepare_pmd_huge_pte(pgtable, mm);
->  	mm->nr_ptes--;
->  	spin_unlock(&mm->page_table_lock);
+It is a completely safe thing to do because if 32-bit PIO is
+not supported or enabled ata_sff_data_xfer32() will fallback
+to a standard method.
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+---
+earlier references:
+https://lkml.org/lkml/2009/11/25/335
+
+ drivers/ata/libata-sff.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: b/drivers/ata/libata-sff.c
+===================================================================
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -838,7 +838,7 @@ unsigned int ata_sff_data_xfer_noirq(str
+ 	unsigned int consumed;
+ 
+ 	local_irq_save(flags);
+-	consumed = ata_sff_data_xfer(dev, buf, buflen, rw);
++	consumed = ata_sff_data_xfer32(dev, buf, buflen, rw);
+ 	local_irq_restore(flags);
+ 
+ 	return consumed;
