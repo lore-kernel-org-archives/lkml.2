@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab1JMQE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:04:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59314 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756418Ab1JMQE0 (ORCPT
+	id S1756473Ab1JMQGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:06:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36461 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab1JMQGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:04:26 -0400
-Date: Thu, 13 Oct 2011 12:04:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <tom.leiming@gmail.com>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        Andrei Warkentin <awarkentin@vmware.com>, Greg KH <greg@kroah.com>,
-        Dilan Lee <dilee@nvidia.com>, "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>, <Manjunath@jasper.es>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Linux PM List <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-In-Reply-To: <CACVXFVMoac7psbfO6UdDvNux4c8bQYS4YNUdz1C-o+CiJzyuZA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1110131202350.2026-100000@iolanthe.rowland.org>
+	Thu, 13 Oct 2011 12:06:08 -0400
+Date: Thu, 13 Oct 2011 09:06:02 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        bp@amd64.org, pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
+        rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, hpa@zytor.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and
+ suspend/hibernate
+Message-ID: <20111013160602.GJ6281@google.com>
+References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com>
+ <201110122131.08811.rjw@sisk.pl>
+ <4E9605C7.5070203@linux.vnet.ibm.com>
+ <201110130009.26552.rjw@sisk.pl>
+ <4E9706D8.5040105@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9706D8.5040105@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Ming Lei wrote:
+Hello,
 
-> Hi,
-> 
-> On Thu, Oct 13, 2011 at 10:31 PM, Alan Stern <stern@rowland.harvard.edu>
-> >> Maybe we should understand the correct model of the ordering constraints
-> >> for the multiple device dependancies first, could you give a description or
-> >> some examples about it?
-> >
-> > The requirement is that devices must be capable of resuming in the
-> > order given by dpm_list, and they must be capable of suspending in
-> > the reverse order.
-> >
-> > Therefore if device A can't work unless device B is functional, then B
-> > must come before A in dpm_list.
-> 
-> If all devices can support async suspend and resume correctly, looks like
-> the device order given by dpm_list is not needed any longer, doesn't it?
+On Thu, Oct 13, 2011 at 09:12:16PM +0530, Srivatsa S. Bhat wrote:
+> Given that the microcode update hotplug optimization is going upstream,
+> (https://lkml.org/lkml/2011/10/13/258), we know that whether we want to call
+> it a bugfix or optimization, either way it *is* going to fix this bug.
+> And this current patchset's mutual exclusion approach was also aimed at fixing
+> the same bug since at the time it was written, discussion was still going on
+> about which solution would be better.
 
-It _is_ needed, because the user can disable async suspend/resume via 
-/sys/power/pm_async.
+I hate to sound like a broken recorder but the above patch isn't
+strictly correct for hot-swap cases, right?  Let's please add
+revalidation before pushing that upstream.  Rafael, did you already
+take that patch?
 
-Also, not all devices do support async suspend/resume.
+Thanks.
 
-Alan Stern
-
+-- 
+tejun
