@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1JMPW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:22:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22711 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab1JMPW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:22:27 -0400
-Date: Thu, 13 Oct 2011 11:21:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Cc: lidongyang@novell.com, joe.jin@oracle.com, Ian.Campbell@citrix.com,
-        lersek@redhat.com, jbeulich@suse.com
-Subject: [GIT PULL] (xen) stable/for-jens-3.2 - blkback and blkfront patches
- for 3.2
-Message-ID: <20111013152157.GA9627@phenom.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4E97022C.00A7:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S932148Ab1JMPWk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:22:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932135Ab1JMPWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:22:38 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com>
+References: <CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> <1448.1318338!
+ 420@redhat.com> <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com> <9908.1318413955@redhat.com> <CAOH1cHkg_eQRCHxOxiOPgO=-aZfnjts-tLFQFKffk5JjEfqy2w@mail.gmail.com> 
+To: Mark Moseley <moseleymark@gmail.com>
+Cc: dhowells@redhat.com,
+        Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+Date: Thu, 13 Oct 2011 16:21:27 +0100
+Message-ID: <32454.1318519287@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jens,
+Mark Moseley <moseleymark@gmail.com> wrote:
 
-Please pull the following git tree in your 3.2 drivers tree:
+> So on a cleared cache with SLAB, it took a while but this finally came
+> up. One interesting thing is that at some point, it logged this:
+> 
+> [13461.605871] [httpd ] <== __fscache_read_or_alloc_pages() = -ENOBUFS
+> [invalidating]
 
- git pull git://oss.oracle.com/git/kwilk/xen.git stable/for-jens-3.2
+That's okay.  Basically, a read-from-cache operation was rejected because the
+cache object was in the early phase of being invalidated.  I kept it simple
+here - the read might complete next time it is tried, but it's just a cache so
+that shouldn't matter.
 
-which has a couple of bug fixes and two new features for Xen blkfront
-and blkback.
+> It was a while from when it logged that until when I happened to check
+> on the box again, but when I did (shortly before this traceback),
+> despite constant NFS activity, nothing in the fscache cache was
+> getting written out (i.e. the used bytes on the partition stopped
+> changing), and without any messages about withdrawing the cache or
+> anythin.
 
-The bug-fixes are the normal variety - on error path we did not the proper
-thing (leak memory), on entry to some functions we did not check whether we
-should just ignore the request (b/c we might not support it), and we also
-forgot to increment the write sector count.
+Did you look at /proc/fs/fscache/stats at all?
 
-There are also two new features:
- - discard support, aka trim/unmap. We export from the backend the
-   discard alignment, granularity and do normal REQ_DISCARD. We do have
-   patches for the REQ_SECURE type - but not the hardware to test it so
-   holding on the secure discard until I get my hands on it.
+> [20839.802118] kernel BUG at fs/fscache/object-list.c:83!
+> [20839.802733] invalid opcode: 0000 [#1] SMP
 
- - barrier (pre 2.6.38 kernel) support. The backend supports the FLUSH
-   type operation but to support older kernels that did barriers we have
-   implemented a drain technique that counts all of the bio's in flight and
-   waits until they are completed and then sends a FLUSH.
+That fits with the previous BUG elsewhere in object-list.c.  It sounds like
+there's a refcounting problem somewhere.
 
-In regards to testing, I've been testing this on Intel SSD, Western Digital
-SSD. But sadly all of them export the block size as 512 - is there a good
-SSD or disk where it would export it as something more than 512?
-
-And here is the credit list:
-
-Jan Beulich (1):
-      xen-blkback: use kzalloc() in favor of kmalloc()+memset()
-
-Joe Jin (1):
-      xen-blkback: fixed indentation and comments
-
-Konrad Rzeszutek Wilk (4):
-      xen-blkfront: If no barrier or flush is supported, use invalid operation.
-      xen/blkback: Support 'feature-barrier' aka old-style BARRIER requests.
-      xen/blkback: Report VBD_WSECT (wr_sect) properly.
-      xen/blkback: Fix the inhibition to map pages when discarding sector ranges.
-
-Laszlo Ersek (1):
-      xen-blkfront: plug device number leak in xlblk_init() error path
-
-Li Dongyang (4):
-      xen-blkfront: add BLKIF_OP_DISCARD and discard request struct
-      xen-blkback: Implement discard requests ('feature-discard')
-      xen-blkfront: Handle discard requests.
-      xen-blkfront: fix a deadlock while handling discard response
-
-The diffstat:
-
- drivers/block/xen-blkback/blkback.c |  130 +++++++++++++++++++++++++++++------
- drivers/block/xen-blkback/common.h  |  100 ++++++++++++++++++++++-----
- drivers/block/xen-blkback/xenbus.c  |   80 +++++++++++++++++++++-
- drivers/block/xen-blkfront.c        |  123 ++++++++++++++++++++++++++-------
- include/xen/interface/io/blkif.h    |   36 ++++++++++
- 5 files changed, 403 insertions(+), 66 deletions(-)
+David
