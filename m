@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1JMJBZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 05:01:25 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40489 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab1JMJBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 05:01:24 -0400
-Date: Thu, 13 Oct 2011 10:59:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 0/2 v2] [GIT PULL][v3.2] tracing: queued updates
-Message-ID: <20111013085936.GA13046@elte.hu>
-References: <20111011152026.701326733@goodmis.org>
- <20111012081629.GA25086@elte.hu>
- <1318418515.13262.21.camel@gandalf.stny.rr.com>
- <1318425974.13262.26.camel@gandalf.stny.rr.com>
- <20111012162320.GA31857@elte.hu>
+	id S1754046Ab1JMJCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 05:02:01 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:7338
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753916Ab1JMJCA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 05:02:00 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz936eK154dM1432N98dKzz1202hzzz32i2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-FB-SS: 13,
+Subject: Re: [alsa-devel] [PATCH 6/9] ASoC: da7210: bugfix for head phone
+ volume control
+From: Ashish Chavan <ashish.chavan@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111012150101.GS3647@opensource.wolfsonmicro.com>
+References: <1318431934.12107.421.camel@matrix>
+	 <20111012150101.GS3647@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Oct 2011 14:42:33 +0530
+Message-ID: <1318497153.12107.439.camel@matrix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111012162320.GA31857@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.20.243]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-10-12 at 16:01 +0100, Mark Brown wrote:
+> On Wed, Oct 12, 2011 at 08:35:34PM +0530, Ashish Chavan wrote:
+> > This patch takes care of reserved bits of headphone volume
+> > register by using correct volume range.
+> 
+> This doesn't apply, which is pretty surprising given that there's no
+> obvious overlap at all with the rest of the code.
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+I guess this is mostly due to indirect dependence on [PATCH 1/9].
+It applies after applying first patch.
 
-> Tests are also looking good so far.
+> 
+> > Tested on Samsung SMDK6410 board with DA7210 evaluation board.
+> 
+> This really isn't useful information in a changelog, apart from anything
+> else this isn't going to be a system that it's easy for other people to
+> reproduce.
+> 
+OK, will remove redundant info.
 
-there's a cross-build failure on the m32r architecture:
 
-/home/mingo/tip/kernel/trace/trace_clock.c:117: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'trace_counter'
-/home/mingo/tip/kernel/trace/trace_clock.c: In function 'trace_clock_counter':
-/home/mingo/tip/kernel/trace/trace_clock.c:126: error: implicit declaration of function 'atomic64_add_return'
-/home/mingo/tip/kernel/trace/trace_clock.c:126: error: 'trace_counter' undeclared (first use in this function)
-/home/mingo/tip/kernel/trace/trace_clock.c:126: error: (Each undeclared identifier is reported only once
-/home/mingo/tip/kernel/trace/trace_clock.c:126: error: for each function it appears in.)
-
-Thanks,
-
-	Ingo
