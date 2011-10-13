@@ -1,139 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab1JMOwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:52:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab1JMOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:52:38 -0400
-Date: Thu, 13 Oct 2011 10:52:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "krzf83@gmail.com " <krzf83@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Morton Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: cgroup blkio bug/feedback
-Message-ID: <20111013145231.GB25588@redhat.com>
-References: <CAJ1PRSnQgaCr4s+JwmB3r_J9de5MHJKVwrxGnderYGqyVVMG3Q@mail.gmail.com>
- <20111012193551.GH12845@redhat.com>
- <CAJ1PRS=jPU07GjGMecyS=iMhWpfUYe-WO4ntBd=qZ0V0qnK-ow@mail.gmail.com>
+	id S1755984Ab1JMOw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:52:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42539 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab1JMOwz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:52:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJ1PRS=jPU07GjGMecyS=iMhWpfUYe-WO4ntBd=qZ0V0qnK-ow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111013040656.GE893@mgross-G62>
+References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+	<20111013040656.GE893@mgross-G62>
+Date: Thu, 13 Oct 2011 22:52:55 +0800
+Message-ID: <CACVXFVNc8jgK6kb+BaOYxeh26yBmEV5q51ZsK1=V=A1JkMU99w@mail.gmail.com>
+Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
+From: Ming Lei <tom.leiming@gmail.com>
+To: markgross@thegnar.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 06:37:52AM +0200, krzf83@gmail.com  wrote:
-> I was using rsync to copy between two hard drives on same machine. I
-> tried limiting blkio.throttle.read_iops_device and
-> blkio.throttle.write_iops_device to about 15 on the destination drive.
-> I also tried values like 5, 10.
+Hi,
 
-Ok. So no network involved. Reads and Writes happening on local system
-on different block devices.
+On Thu, Oct 13, 2011 at 12:06 PM, mark gross <markgross@thegnar.org> wrote:
+> On Mon, Oct 10, 2011 at 10:31:34PM +0800, Ming Lei wrote:
+>> Hi,
+>>
+>> Looks like it is a bit difficult to understand PM_QOS_CPU_DMA_LATENCY
+>> from the words' meaning.
+>>
+>> After searching from google, I don't find some useful information about
+>> the root cause for introducing PM_QOS_CPU_DMA_LATENCY. I understand
+>> it is very similar to interrupt latency. Also from the comment for
+>> omap_pm_set_max_mpu_wakeup_lat in file[1], the description is basically same
+>> with interrupt latency.
+>
+> its the amount of time the CPU can take to wake up and feed a DMA
+> engine.  Its a bit more general than interrupt latency.
 
-So md raid (9:2) is your source device and destination of rsync is
-some other local block device with a different file system? And you
-have put limits only on destination drive and not on source device?
+Maybe interrupt or wake up latency is more general than cpu dma
+latency, since interrupt/wake up latency should include this kind of
+DMA case.
 
-Is md raid (9:2) your root disk too?
+But the latency name does not matter, what maters is below idea.
 
-> 
-> I've even if total overload, previously described, did not occur, I
-> now see (since I've stoped using limiting) that those limits caused
-> also "minor" spikes in loadavg and resposivness of whole system.
+>> From comments of pm_qos_add_request usages in drivers, it can be understood
+>> as interrupt latency too, IMO.
+>
+> The original 2 issues that drove its predecessor implementation where
+> DMA'ing data to the original intel wifi device.  If the CPU snoozed too
+> long the wifi device would get lost and network would suffer.
 
-Can you give more details how do you define responsiveness of whole
-syste. 
+If the original 2 issues are only related slow cpu snooping in deep idle
+state, maybe it is enough to keep one cpu(suppose CPU0) to obey the
+constraint, then only let CPU0 handle IRQ from the devices, so the
+other CPUs may be allowed to enter deep idle state.
 
-> Whole
-> idea of iops limiting is to avoid spikes.
+>
+> The other one was something to do with generating audio pops if the cpu
+> didn't keep some audio buffer that was getting DMA'd to something from
+> underflowing.
 
-I think if you do some testing and debugging with me, then lets first
-solve the total deadlock case and then look into the responsiveness
-issue.
+>From the old comment for audio case[1], we can see the below:
 
-> Anyway tests that are made was on 2.6.38.8 kernel which is bit old
-> now. I don't know if there were improvments in cgroup blkio since
-> then.
+- * An example announcer of latency is an audio driver that knowns it
+- * will get an interrupt when the hardware has 200 usec of samples
+- * left in the DMA buffer; in that case the driver can set a latency
+- * constraint of, say, 150 usec.
 
-I can't think of any very significant changes going in that area since
-2.6.38.
+so the audio case may be a wake up or interrupt latency, and maybe
+it is possible to apply the constraint on only one CPU which will be
+responsible for handling audio irq.
 
-Thanks
-Vivek
+Anyway, it is just a rough idea for discussion. If it is doable, I think
+it should make sense because multiple core CPU is very popular
+in current application from server, laptop, desktop to tablet.
 
-> 
-> 
-> 2011/10/12 Vivek Goyal <vgoyal@redhat.com>:
-> > On Mon, Oct 03, 2011 at 08:39:23PM +0200, krzf83@gmail.com  wrote:
-> >> I've been testing cgroup blkio controller in production eviroment for
-> >> many days now especialy blkio.throttle.write_iops_device and
-> >> blkio.throttle.read_iops_device. I'm using software raid so I have to
-> >> limit on devices like /dev/md2 which is 9:2 in my system. Limiting
-> >> works fine but every some time whole system overloads and only thing
-> >> to do is hard reboot. For two times this happened with cgroup that was
-> >> used to limit rsync-ing about 30GB of data.
-> >
-> > So in this case rsync is reading from local disk and sending it over
-> > network somewhere and you are limiting the read iops of rsync process?
-> >
-> > Or rsync is doing some local buffered writes also and you are trying
-> > to limit those buffered writes?
-> >
-> > Currently throttling works primarily in throttling reads or direct IO.
-> > Buffered writes are not supported. In current writeback code, some IO
-> > shows up at the device in the context of writing application so that
-> > IO will still be throttled. Any IO showing in the context of flusher
-> > thread will be attributed to root group and will not be throttled. Anyway,
-> > once IO less throttling patches from Wu Fengguang are merged, then
-> > all the writeback will be done using flusher threads and none in
-> > writer's context.
-> >
-> > So my first question is what is rsync doing and what kind of limits
-> > have you put.(read/write and what are absolute numbers).
-> >
-> >> Somewhere in the middle
-> >> loadavg starts to rise quicly, shell hangs at every kill command and
-> >> soft reboot does not work.
-> >
-> > Can you do alt-sysrq-t to get a dump on console regarding what various
-> > tasks are doing.
-> >
-> >> When I do echo "9:2 0" >
-> >> blkio.throttle.read_iops_device and echo "9:2 0" >
-> >> blkio.throttle.write_iops_device problem was immeadetly gone.
-> >
-> > I suspect that it is some kind of file system serialization behind
-> > some throttled IO on the device. For example, if your throttlingl
-> > limits are low, then it might happen that rsync writer got throttled
-> > at device and filesystem is waiting for that IO to finish (to release
-> > some lock or something else) and is not allowing any other IO to
-> > proceed.
-> >
-> > Which filesystem are you using? If your limits are not very low,
-> > and system does not recover, then other possibility is that there
-> > is a bug in throttle code and we kind stop dispatching IO from
-> > a cgroup. While load average is going up, can you monitor the
-> > cgroup file "blkio.throttle.io_serviced" and see if IO dispatch
-> > numbers are increasing or not with time.
-> >
-> > You can also take a blktrace of your md device (9:2). Remember to
-> > save traces on a separate disk and separate file system as if your
-> > existing filesystem is kind of stuck, then blktrace will not write
-> > anything to disk.
-> >
-> > You can try one more thing and that is try changing the limit. So if
-> > you have iops limit as X then try setting it to X+1 and if everything
-> > works fine, then it might be the case that throttling logic got stuck
-> > and changing limits gave it an extra kick and it started working again.
-> >
-> > Also, what do you mean by that disk access is still working. How did
-> > you verify that?
-> >
-> > Thanks
-> > Vivek
-> >
+>
+>>
+>> So, could we think that PM_QOS_CPU_DMA_LATENCY is interrupt latency?
+> nope.
+
+[1], commit f011e2e2df3393c16b0fdc48e855e909b7e021ee
+Author: Mark Gross <mgross@linux.intel.com>
+Date:   Mon Feb 4 22:30:09 2008 -0800
+
+    latency.c: use QoS infrastructure
+
+
+
+thanks,
+-- 
+Ming Lei
