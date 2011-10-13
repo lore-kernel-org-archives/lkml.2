@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1JMQ7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:59:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753738Ab1JMQ7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:59:21 -0400
-Message-ID: <4E9718E3.8040805@RedHat.com>
-Date: Thu, 13 Oct 2011 12:59:15 -0400
-From: Steve Dickson <SteveD@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
+	id S932140Ab1JMRCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:02:11 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39937 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab1JMRCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 13:02:07 -0400
+Date: Thu, 13 Oct 2011 19:01:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "ashok.raj@intel.com" <ashok.raj@intel.com>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
+Message-ID: <20111013170153.GB3064@aftab>
+References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com>
+ <201110122131.08811.rjw@sisk.pl>
+ <4E9605C7.5070203@linux.vnet.ibm.com>
+ <201110130009.26552.rjw@sisk.pl>
+ <4E9706D8.5040105@linux.vnet.ibm.com>
+ <20111013160602.GJ6281@google.com>
 MIME-Version: 1.0
-To: Steve Dickson <SteveD@redhat.com>
-CC: Chuck Lever <chuck.lever@oracle.com>, Hamo <hamo.by@gmail.com>,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfs-utils: mount: really return from errno test
-References: <CAO_0yfPgXJJSZNDYXHBSt45J0WQsh5EQVUs0nBN4wb+NoT6hAQ@mail.gmail.com> <40D1A40C-BE0C-4AE0-857D-05531615748E@oracle.com> <4E971329.3000007@RedHat.com>
-In-Reply-To: <4E971329.3000007@RedHat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013160602.GJ6281@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking further into this issue, I noticed all the following 
-mounts were successful.
+On Thu, Oct 13, 2011 at 12:06:02PM -0400, Tejun Heo wrote:
+> I hate to sound like a broken recorder but the above patch isn't
+> strictly correct for hot-swap cases, right?
 
-# mount -o v3 localhost:/home /mnt/home
-# mount -o v4 localhost:/home /mnt/home
-# mount -o v4 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
-# mount -o v3 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
+hpa is working on a ucode loading solution which will take care of your
+hotswap case too.
 
-which the mount point, /mnt/home is mounted 4 different times 
-to the same server. 
+-- 
+Regards/Gruss,
+Boris.
 
-Is by design or a real problem?
-
-steved.
-
-
-On 10/13/2011 12:34 PM, Steve Dickson wrote:
-> Yeah... I believe its this one
->    https://bugzilla.redhat.com/show_bug.cgi?id=744657
-> 
-> On 10/13/2011 10:53 AM, Chuck Lever wrote:
->> What was the presenting problem?  Is there a bugzilla report I can look at?
->>
->> On Oct 11, 2011, at 5:44 AM, Hamo wrote:
->>
->>> We should only try next address family if we meet ECONNREFUSED or EHOSTUNREACH
->>> for v4 or ECONNREFUSED or EOPNOTSUPP or EHOSTUNREACH for v3v2.
->>> Before, only a break in swich can not make the program out of for loop.
->>>
->>> Signed-off-by: Yang Bai <hamo.by@gmail.com>
->>> ---
->>> utils/mount/stropts.c |    6 ++++--
->>> 1 files changed, 4 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
->>> index 314a806..4032bf3 100644
->>> --- a/utils/mount/stropts.c
->>> +++ b/utils/mount/stropts.c
->>> @@ -665,9 +665,10 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
->>> 		case EHOSTUNREACH:
->>> 			continue;
->>> 		default:
->>> -			break;
->>> +			goto out;
->>> 		}
->>> 	}
->>> +out:
->>> 	return ret;
->>> }
->>>
->>> @@ -751,9 +752,10 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
->>> 		case EHOSTUNREACH:
->>> 			continue;
->>> 		default:
->>> -			break;
->>> +			goto out;
->>> 		}
->>> 	}
->>> +out:
->>> 	return ret;
->>> }
->>>
->>> -- 
->>> 1.7.1
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
