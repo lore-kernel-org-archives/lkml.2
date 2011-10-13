@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab1JMVXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 17:23:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39435 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab1JMVXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 17:23:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Bojan Smojver" <bojan@rexursive.com>
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-Date: Thu, 13 Oct 2011 23:26:01 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-References: <1317342456.1959.6.camel@shrek.rexursive.com> <201110062045.48689.rjw@sisk.pl> <2409186928.1003010428@rexursive.com>
-In-Reply-To: <2409186928.1003010428@rexursive.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754695Ab1JMVYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:24:38 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56874 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab1JMVYg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 17:24:36 -0400
+Date: Thu, 13 Oct 2011 14:24:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-Id: <20111013142434.4d05cbdc.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1110131602020.26553@router.home>
+References: <20111012160202.GA18666@sgi.com>
+	<20111012120118.e948f40a.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1110121452220.31218@router.home>
+	<20111013152355.GB6966@sgi.com>
+	<alpine.DEB.2.00.1110131052300.18473@router.home>
+	<20111013135032.7c2c54cd.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1110131602020.26553@router.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110132326.02041.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 13, 2011, Bojan Smojver wrote:
-> ------- Original message -------
-> > From: Rafael J. Wysocki
+On Thu, 13 Oct 2011 16:02:58 -0500 (CDT)
+Christoph Lameter <cl@gentwo.org> wrote:
+
+> On Thu, 13 Oct 2011, Andrew Morton wrote:
 > 
-> >> I get a kernel panic on a test box using a x86_64 kernel with this patch
-> >> applied.
+> > > If there are no updates occurring for a while (due to increased deltas
+> > > and/or vmstat updates) then the vm_stat cacheline should be able to stay
+> > > in shared mode in multiple processors and the performance should increase.
+> > >
 > >
-> > The panic happens during late resume, when trying to switch to the 
-> > hibernated
-> > kernel.
+> > We could cacheline align vm_stat[].  But the thing is pretty small - we
+> > couild put each entry in its own cacheline.
 > 
-> In an effort to test this whole thing a bit more, I took today's kernel 
-> from Linus' repo and applied v11 of my patch. I compiled this on a single 
-> cpu machine this time, with 768 MB of memory (in today's terms, this laptop 
-> would not pass as a smartphone :-), running F-16 beta.. The system has 
-> radeon graphics (my other system, where I initially developed the patch, 
-> has intel). Also, this was a 32-bit box, as opposed to my other system, 
-> which is 64-bit.
-> 
-> I was getting kernel trouble on repeated hibernate/thaw cycles on both 
-> systems when KMS was enabled. With nomodeset passed into the kernel, both 
-> systems would go through 50+ cycles (this was my test loop) with no 
-> trouble. Whether my patch was applied or not didn't matter - I was getting 
-> trouble with Fedora supplied kernels as well, after a few cycles.
-> 
-> So, I don't know for sure, but it seems to me something is amiss in KMS 
-> when it comes to hibernation.
+> Which in turn would increase the cache footprint of some key kernel
+> functions (because they need multiple vm_stat entries) and cause eviction
+> of other cachelines that then reduce overall system performance again.
 
-If your system is 64-bit, then the patch below may help.
+Sure, but we gain performance by not having different CPUs treading on
+each other when they update different vmstat fields.  Sometimes one
+effect will win and other times the other effect will win.  Some
+engineering is needed..
 
-Thanks,
-Rafael
-
----
- arch/x86/mm/init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux/arch/x86/mm/init.c
-===================================================================
---- linux.orig/arch/x86/mm/init.c
-+++ linux/arch/x86/mm/init.c
-@@ -63,9 +63,9 @@ static void __init find_early_table_spac
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
- 	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
-+#endif
- 
- 	good_end = max_pfn_mapped << PAGE_SHIFT;
--#endif
- 
- 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
- 	if (base == MEMBLOCK_ERROR)
