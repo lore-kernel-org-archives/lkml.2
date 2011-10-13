@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab1JMVFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 17:05:41 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37392 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab1JMVFj (ORCPT
+	id S1754248Ab1JMVMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:12:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52020 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab1JMVMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 17:05:39 -0400
-Date: Thu, 13 Oct 2011 17:05:36 -0400 (EDT)
-Message-Id: <20111013.170536.562162672545514574.davem@davemloft.net>
-To: bzolnier@gmail.com
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cy82c693: fix PCI device selection
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201110131229.09178.bzolnier@gmail.com>
-References: <201110121652.10495.bzolnier@gmail.com>
-	<20111012.150207.1100668688848833225.davem@davemloft.net>
-	<201110131229.09178.bzolnier@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 13 Oct 2011 14:05:38 -0700 (PDT)
+	Thu, 13 Oct 2011 17:12:15 -0400
+Date: Thu, 13 Oct 2011 22:11:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Victor <avictor.za@gmail.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Maxim Osipov <maxim.osipov@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
+Message-ID: <20111013211145.GA27779@n2100.arm.linux.org.uk>
+References: <4DC53134.8070706@gmail.com> <20110510234526.GC18929@game.jcrosoft.org> <BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Date: Thu, 13 Oct 2011 12:28:54 +0200
-
-> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> Subject: [PATCH v2] cy82c693: fix PCI device selection
+On Wed, May 11, 2011 at 09:44:52AM +0200, Andrew Victor wrote:
+> hi,
 > 
-> Wrong PCI device may be selected by cy82c693_set_pio_mode() if modular
-> IDE host drivers are used and there are additional IDE PCI devices
-> installed in the system.  Fix it.
+> >> This patch enables external RTC support on AT91 Flexibity board.
 > 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Acked-by: Andrew Victor <linux@maxim.org.za>
+> 
+> Maxim: You can submit it to Russell's patch system.
+> 
+> 
+> > looks fine just one comment please add your board to the new at91sam9260_defconfig
+> 
+> That file does not exist in any mainline kernel.
 
-Applied.
+It's been a while since this patch went into the patch system, and it
+didn't get applied for various reasons, including because it looked
+like it was sent there without any review (no acked-by's etc added to
+it.)
+
+What's the status of this - and if its still relevant can we have
+it with the proper attributations please?
