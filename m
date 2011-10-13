@@ -1,159 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1JMTdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:33:53 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41990 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab1JMTdw (ORCPT
+	id S1753951Ab1JMTfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:35:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:34950 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab1JMTfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:33:52 -0400
-Date: Thu, 13 Oct 2011 13:33:47 -0600
+	Thu, 13 Oct 2011 15:35:42 -0400
+Date: Thu, 13 Oct 2011 13:35:38 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] irq: support domains with non-zero hwirq base
-Message-ID: <20111013193347.GB18574@ponder.secretlab.ca>
-References: <20111004233953.GE3009@ponder.secretlab.ca>
- <1317783380-773-1-git-send-email-robherring2@gmail.com>
- <4E944242.10606@gmail.com>
+To: Hartmut Knaack <knaack.h@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Patch V2 2/2] gpio-pca953x: fix gpio_base and add verbosity
+Message-ID: <20111013193538.GD18574@ponder.secretlab.ca>
+References: <4E941054.8090608@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E944242.10606@gmail.com>
+In-Reply-To: <4E941054.8090608@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, any objection to this patch?  It's entirely contained within
-the irq_domain stuff, so it is pretty well isolated.
+On Tue, Oct 11, 2011 at 11:45:56AM +0200, Hartmut Knaack wrote:
+> Sorry, I messed up the porting from my work files to clean git repo.
+> This should be right now.
+> Inspired by the gpio-pcf857x driver, this patch will output information
+> about the instantiated gpio-chip, including gpio start and end, chip
+> type and if irq is used.
+> 
+> Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+> -------------------------------------------------------------
+> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+> index 0721d85..f1a4fad 100644
+> --- a/drivers/gpio/gpio-pca953x.c
+> +++ b/drivers/gpio/gpio-pca953x.c
+> @@ -687,6 +687,12 @@ static int __devinit pca953x_probe(struct
+> i2c_client *client,
+>  	if (ret)
+>  		goto out_failed_irq;
+> 
+> +	dev_info(&client->dev, "gpios %d..%d added on a %s%s\n",
+> +		 chip->gpio_chip.base,
+> +		 chip->gpio_chip.base + chip->gpio_chip.ngpio - 1,
+> +		 client->name,
+> +		 client->irq ? " (irq ignored)" : "");
+> +
 
-It can be merged via arm-soc since it is depended on by some of the
-irq work.
+dev_dbg() for this I think.
 
-g.
-
-On Tue, Oct 11, 2011 at 08:18:58AM -0500, Rob Herring wrote:
-> Thomas,
-> 
-> On 10/04/2011 09:56 PM, Rob Herring wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > Interrupt controllers can have non-zero starting value for h/w irq numbers.
-> > Adding support in irq_domain allows the domain hwirq numbering to match
-> > the interrupt controllers' numbering.
-> > 
-> > As this makes looping over irqs for a domain more complicated, add loop
-> > iterators to iterate over all hwirqs and irqs for a domain.
-> > 
-> > Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > ---
-> > Thomas,
-> > 
-> > Please ack. I'm dependent on this for adding Calxeda highbank support, so
-> > I'd like to take this thru arm-soc tree.
-> > 
-> 
-> Can you please comment?
-> 
-> Rob
-> 
-> > v2:
-> > - Rebase to tglx's changes in my previous irq domain commit:
-> > irq: Fix check for already initialized irq_domain in irq_domain_add
-> > - drop NO_IRQ and add WARN_ON in irq_domain_to_irq
-> > 
-> > Rob
-> > 
-> >  include/linux/irqdomain.h |   16 +++++++++++++++-
-> >  kernel/irq/irqdomain.c    |   12 ++++++------
-> >  2 files changed, 21 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> > index 3ad553e..99834e58 100644
-> > --- a/include/linux/irqdomain.h
-> > +++ b/include/linux/irqdomain.h
-> > @@ -47,6 +47,7 @@ struct irq_domain_ops {
-> >   *            of the irq_domain is responsible for allocating the array of
-> >   *            irq_desc structures.
-> >   * @nr_irq: Number of irqs managed by the irq domain
-> > + * @hwirq_base: Starting number for hwirqs managed by the irq domain
-> >   * @ops: pointer to irq_domain methods
-> >   * @priv: private data pointer for use by owner.  Not touched by irq_domain
-> >   *        core code.
-> > @@ -57,6 +58,7 @@ struct irq_domain {
-> >  	struct list_head list;
-> >  	unsigned int irq_base;
-> >  	unsigned int nr_irq;
-> > +	unsigned int hwirq_base;
-> >  	const struct irq_domain_ops *ops;
-> >  	void *priv;
-> >  	struct device_node *of_node;
-> > @@ -72,9 +74,21 @@ struct irq_domain {
-> >  static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
-> >  					     unsigned long hwirq)
-> >  {
-> > -	return d->ops->to_irq ? d->ops->to_irq(d, hwirq) : d->irq_base + hwirq;
-> > +	if (d->ops->to_irq)
-> > +		return d->ops->to_irq(d, hwirq);
-> > +	if (WARN_ON(hwirq < d->hwirq_base))
-> > +		return 0;
-> > +	return d->irq_base + hwirq - d->hwirq_base;
-> >  }
-> >  
-> > +#define irq_domain_for_each_hwirq(d, hw) \
-> > +	for (hw = d->hwirq_base; hw < d->hwirq_base + d->nr_irq; hw++)
-> > +
-> > +#define irq_domain_for_each_irq(d, hw, irq) \
-> > +	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
-> > +	     hw < d->hwirq_base + d->nr_irq; \
-> > +	     hw++, irq = irq_domain_to_irq(d, hw))
-> > +
-> >  extern void irq_domain_add(struct irq_domain *domain);
-> >  extern void irq_domain_del(struct irq_domain *domain);
-> >  #endif /* CONFIG_IRQ_DOMAIN */
-> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> > index b57a377..200ce83 100644
-> > --- a/kernel/irq/irqdomain.c
-> > +++ b/kernel/irq/irqdomain.c
-> > @@ -20,15 +20,15 @@ static DEFINE_MUTEX(irq_domain_mutex);
-> >  void irq_domain_add(struct irq_domain *domain)
-> >  {
-> >  	struct irq_data *d;
-> > -	int hwirq;
-> > +	int hwirq, irq;
-> >  
-> >  	/*
-> >  	 * This assumes that the irq_domain owner has already allocated
-> >  	 * the irq_descs.  This block will be removed when support for dynamic
-> >  	 * allocation of irq_descs is added to irq_domain.
-> >  	 */
-> > -	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
-> > -		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
-> > +	irq_domain_for_each_irq(domain, hwirq, irq) {
-> > +		d = irq_get_irq_data(irq);
-> >  		if (!d) {
-> >  			WARN(1, "error: assigning domain to non existant irq_desc");
-> >  			return;
-> > @@ -54,15 +54,15 @@ void irq_domain_add(struct irq_domain *domain)
-> >  void irq_domain_del(struct irq_domain *domain)
-> >  {
-> >  	struct irq_data *d;
-> > -	int hwirq;
-> > +	int hwirq, irq;
-> >  
-> >  	mutex_lock(&irq_domain_mutex);
-> >  	list_del(&domain->list);
-> >  	mutex_unlock(&irq_domain_mutex);
-> >  
-> >  	/* Clear the irq_domain assignments */
-> > -	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
-> > -		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
-> > +	irq_domain_for_each_irq(domain, hwirq, irq) {
-> > +		d = irq_get_irq_data(irq);
-> >  		d->domain = NULL;
-> >  	}
-> >  }
+>  	if (pdata && pdata->setup) {
+>  		ret = pdata->setup(client, chip->gpio_chip.base,
+>  				chip->gpio_chip.ngpio, pdata->context);
 > 
