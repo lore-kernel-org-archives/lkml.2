@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab1JMPt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:49:26 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51524 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754300Ab1JMPtY (ORCPT
+	id S1756169Ab1JMPuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:50:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61760 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab1JMPuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:49:24 -0400
-Date: Thu, 13 Oct 2011 16:47:53 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] pata_oldpiix: enable parallel scan
-Message-ID: <20111013164753.69a5e92c@lxorguk.ukuu.org.uk>
-In-Reply-To: <201110131603.34443.bzolnier@gmail.com>
-References: <201110131603.34443.bzolnier@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Oct 2011 11:50:07 -0400
+Date: Thu, 13 Oct 2011 19:50:02 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?utf-8?B?w4lyaWM=?= Brunet <Eric.Brunet@lps.ens.fr>,
+        linux-kernel@vger.kernel.org, tiwai@suse.de, linux-pm@vger.kernel.org
+Subject: Re: Fw: List corruption and crash with kernel 3.1
+Message-ID: <20111013155002.GA10632@oksana.dev.rtsoft.ru>
+References: <20111011162500.db7cd65f.akpm@linux-foundation.org>
+ <1318410972.23801.143.camel@ted>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1318410972.23801.143.camel@ted>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011 16:03:34 +0200
-Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
+Resend, add proper Cc's.
 
-> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> Subject: [PATCH] pata_oldpiix: enable parallel scan
+On Wed, Oct 12, 2011 at 10:16:08AM +0100, Richard Purdie wrote:
+> On Tue, 2011-10-11 at 16:25 -0700, Andrew Morton wrote:
+> > erk, help, who do I blame for this?
 > 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> [...]
+> 
+> > WARNING: at lib/list_debug.c:47 __list_del_entry+0x8d/0x98()
+> > Hardware name: Latitude E4200
+> > list_del corruption, ffff880075e147b0->next is LIST_POISON1 (dead000000100100)
+> [...]
+> >  [<ffffffff81243861>] __list_del_entry+0x8d/0x98
+> >  [<ffffffff8124387a>] list_del+0xe/0x2d
+> >  [<ffffffff813a7e55>] led_trigger_unregister+0x29/0x9c
+> >  [<ffffffff813a7ee1>] led_trigger_unregister_simple+0x19/0x26
+> >  [<ffffffff813828e2>] power_supply_remove_triggers+0x21/0x8f
+> >  [<ffffffff81381d42>] power_supply_unregister+0x1f/0x2c
+> >  [<ffffffff812a7d1f>] sysfs_remove_battery+0x3c/0x54
+> >  [<ffffffff812a8c4d>] acpi_battery_notify+0x46/0xaa
+> 
+> As far as I know (and can see from the changelogs), the LED trigger
+> registration code hasn't changed in a long time.
+> led_trigger_unregister_simple() and led_trigger_unregister() are
+> relatively simple functions and looking at the latter, the list_del
+> causing this is fairly clear.
+> 
+> What puzzles me is that led_trigger_unregister_simple() wouldn't call
+> led_trigger_unregister() twice for the same trigger as it frees the
+> memory.
+> 
+> However, if that function were called multiple times in parallel with
+> the same trigger, I can imagine it racing.
+> 
+> My thought is therefore is something in the power_supply* code calling
+> this function multiple times and a race?
 
-Have you tested this. When I talked with Intel people about parallel
-scanning nobody in Intel I could find could answer whether it was safe on
-the ancient PIIX versions.
+I wonder if that patch helps:
+
+https://lkml.org/lkml/2011/7/12/242
+
+The traces are pretty similar.
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
