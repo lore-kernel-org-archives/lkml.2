@@ -1,151 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab1JMXL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 19:11:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24692 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887Ab1JMXI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 19:08:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,343,1315206000"; 
-   d="scan'208";a="77927474"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 09/12] Don't use inline node_page_state for sysfs output functions
-Date: Thu, 13 Oct 2011 16:08:49 -0700
-Message-Id: <1318547332-23155-9-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
-References: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
+	id S1755906Ab1JMXQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 19:16:30 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:41984 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1JMXQ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 19:16:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=D912n5/FiTougAqzR8s1BEFKP4gc2h9IsbdMLd1i5/L0EMRipKx8x6DdLHdP/7QrM
+	l2jdfg+jtHCEFYi917SVg==
+Date: Thu, 13 Oct 2011 16:16:01 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Pawel Sikora <pluto@agmk.net>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@vger.kernel.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+In-Reply-To: <201110122012.33767.pluto@agmk.net>
+Message-ID: <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+References: <201110122012.33767.pluto@agmk.net>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+[ Subject refers to a different, unexplained 3.0 bug from Pawel ]
 
-These are not time critical, and using an out of line function
-saves about 2.5k text on a non force inline kernel.
+On Wed, 12 Oct 2011, Pawel Sikora wrote:
 
-I left the main hotpath user -- readahead -- inline for now.
+> Hi Hugh,
+> i'm resending previous private email with larger cc list as you've requested.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Thanks, yes, on this one I think I do have an answer;
+and we ought to bring Mel and Andrea in too.
+
+> 
+> in the last weekend my server died again (processes stuck for 22/23s!) but this time i have more logs for you.
+>  
+> on my dual-opteron machines i have non-standard settings:
+> - DISABLED swap space (fast user process killing is better for my autotest farm than long disk swapping
+>                        and 64GB ecc-ram is enough for my processing).
+> - vm.overcommit_memory = 2,
+> - vm.overcommit_ratio = 100.
+> 
+> after initial BUG_ON (pasted below) there's a flood of 'rcu_sched_state detected stalls / CPU#X stuck for 22s!'
+
+Yes, those are just a tiresome consequence of exiting from a BUG
+while holding the page table lock(s).
+
+> (full compressed log is available at: http://pluto.agmk.net/kernel/kernel.bz2)
+> 
+> Oct  9 08:06:43 hal kernel: [408578.629070] ------------[ cut here ]------------
+> Oct  9 08:06:43 hal kernel: [408578.629143] kernel BUG at include/linux/swapops.h:105!
+> Oct  9 08:06:43 hal kernel: [408578.629143] invalid opcode: 0000 [#1] SMP
+> Oct  9 08:06:43 hal kernel: [408578.629143] CPU 14
+[ I'm deleting that irrelevant long line list of modules ]
+> Oct  9 08:06:43 hal kernel: [408578.629143]
+> Oct  9 08:06:43 hal kernel: [408578.629143] Pid: 29214, comm: bitgen Not tainted 3.0.4 #5 Supermicro H8DGU/H8DGU
+> Oct  9 08:06:43 hal kernel: [408578.629143] RIP: 0010:[<ffffffff81127b76>]  [<ffffffff81127b76>] migration_entry_wait+0x156/0x160
+> Oct  9 08:06:43 hal kernel: [408578.629143] RSP: 0000:ffff88021cee7d18  EFLAGS: 00010246
+> Oct  9 08:06:43 hal kernel: [408578.629143] RAX: 0a00000000080068 RBX: ffffea001d1dbe70 RCX: ffff880c02d18978
+> Oct  9 08:06:43 hal kernel: [408578.629143] RDX: 0000000000851a42 RSI: ffff880d8fe33618 RDI: ffffea002a09dd50
+> Oct  9 08:06:43 hal kernel: [408578.629143] RBP: ffff88021cee7d38 R08: ffff880d8fe33618 R09: 0000000000000028
+> Oct  9 08:06:43 hal kernel: [408578.629143] R10: ffff881006eb0f00 R11: f800000000851a42 R12: ffffea002a09dd40
+> Oct  9 08:06:43 hal kernel: [408578.629143] R13: 0000000c02d18978 R14: 00000000d872f000 R15: ffff880d8fe33618
+> Oct  9 08:06:43 hal kernel: [408578.629143] FS:  00007f864d7fa700(0000) GS:ffff880c1fc80000(0063) knlGS:00000000f432a910
+> Oct  9 08:06:43 hal kernel: [408578.629143] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+> Oct  9 08:06:43 hal kernel: [408578.629143] CR2: 00000000d872f000 CR3: 000000100668c000 CR4: 00000000000006e0
+> Oct  9 08:06:43 hal kernel: [408578.629143] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Oct  9 08:06:43 hal kernel: [408578.629143] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Oct  9 08:06:43 hal kernel: [408578.629143] Process bitgen (pid: 29214, threadinfo ffff88021cee6000, task ffff880407b06900)
+> Oct  9 08:06:43 hal kernel: [408578.629143] Stack:
+> Oct  9 08:06:43 hal kernel: [408578.629143]  00000000dcef4000 ffff880c00968c98 ffff880c02d18978 000000010a34843e
+> Oct  9 08:06:43 hal kernel: [408578.629143]  ffff88021cee7de8 ffffffff811016a1 ffff88021cee7d78 ffff881006eb0f00
+> Oct  9 08:06:43 hal kernel: [408578.629143]  ffff88021cee7d98 ffffffff810feee2 ffff880c06f0d170 8000000b98d14067
+> Oct  9 08:06:43 hal kernel: [408578.629143] Call Trace:
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff811016a1>] handle_pte_fault+0xae1/0xaf0
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff810feee2>] ? __pte_alloc+0x42/0x120
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff8112c26b>] ? do_huge_pmd_anonymous_page+0xab/0x310
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81102a31>] handle_mm_fault+0x181/0x310
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81106097>] ? vma_adjust+0x537/0x570
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81109a05>] ? do_mremap+0x2d5/0x570
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+> Oct  9 08:06:43 hal kernel: [408578.629143] Code: 80 00 00 00 00 31 f6 48 89 df e8 e6 58 fb ff eb d7 85 c9 0f 84 44 ff ff ff 8d 51 01 89 c8 f0 0f b1 16 39 c1 90 74 b5 89 c1 eb e6 <0f> 0b 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 20 48 85 ff
+> Oct  9 08:06:43 hal kernel: [408578.629143] RIP  [<ffffffff81127b76>] migration_entry_wait+0x156/0x160
+> Oct  9 08:06:43 hal kernel: [408578.629143]  RSP <ffff88021cee7d18>
+> Oct  9 08:06:43 hal kernel: [408578.642823] ---[ end trace 0a37362301163711 ]---
+> Oct  9 08:07:10 hal kernel: [408605.283257] BUG: soft lockup - CPU#12 stuck for 23s! [par:29801]
+> Oct  9 08:07:10 hal kernel: [408605.285807] CPU 12
+> Oct  9 08:07:10 hal kernel: [408605.285807]
+> Oct  9 08:07:10 hal kernel: [408605.285807] Pid: 29801, comm: par Tainted: G      D     3.0.4 #5 Supermicro H8DGU/H8DGU
+> Oct  9 08:07:10 hal kernel: [408605.285807] RIP: 0010:[<ffffffff814216a4>]  [<ffffffff814216a4>] _raw_spin_lock+0x14/0x20
+> Oct  9 08:07:10 hal kernel: [408605.285807] RSP: 0018:ffff880c02def808  EFLAGS: 00000293
+> Oct  9 08:07:10 hal kernel: [408605.285807] RAX: 0000000000000b09 RBX: ffffea002741f6b8 RCX: ffff880000000000
+> Oct  9 08:07:10 hal kernel: [408605.285807] RDX: ffffea0000000000 RSI: 000000002a09dd40 RDI: ffffea002a09dd50
+> Oct  9 08:07:10 hal kernel: [408605.285807] RBP: ffff880c02def808 R08: 0000000000000000 R09: ffff880f2e4f4d70
+> Oct  9 08:07:10 hal kernel: [408605.285807] R10: ffff880c1fffbe00 R11: 0000000000000050 R12: ffffffff8142988e
+> Oct  9 08:07:10 hal kernel: [408605.285807] R13: ffff880c02def7b8 R14: ffffffff810e63dc R15: ffff880c02def7b8
+> Oct  9 08:07:10 hal kernel: [408605.285807] FS:  00007fe6b677c720(0000) GS:ffff880c1fc00000(0063) knlGS:00000000f6e0d910
+> Oct  9 08:07:10 hal kernel: [408605.285807] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> Oct  9 08:07:10 hal kernel: [408605.285807] CR2: 00000000dd40012c CR3: 00000009f6b78000 CR4: 00000000000006e0
+> Oct  9 08:07:10 hal kernel: [408605.285807] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Oct  9 08:07:10 hal kernel: [408605.285807] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Oct  9 08:07:10 hal kernel: [408605.285807] Process par (pid: 29801, threadinfo ffff880c02dee000, task ffff880c07c90700)
+> Oct  9 08:07:10 hal kernel: [408605.285807] Stack:
+> Oct  9 08:07:10 hal kernel: [408605.285807]  ffff880c02def858 ffffffff8110a2d7 ffffea001fc16fe0 ffff880c02d183a8
+> Oct  9 08:07:10 hal kernel: [408605.285807]  ffff880c02def8c8 ffffea001fc16fa8 ffff880c00968c98 ffff881006eb0f00
+> Oct  9 08:07:10 hal kernel: [408605.285807]  0000000000000301 00000000d8675000 ffff880c02def8c8 ffffffff8110aa6a
+> Oct  9 08:07:10 hal kernel: [408605.285807] Call Trace:
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110a2d7>] __page_check_address+0x107/0x1a0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110aa6a>] try_to_unmap_one+0x3a/0x420
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110be44>] try_to_unmap_anon+0xb4/0x130
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110bf75>] try_to_unmap+0x65/0x80
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff811285d0>] migrate_pages+0x310/0x4c0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e93c2>] ? ____pagevec_lru_add+0x12/0x20
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111cbf0>] ? ftrace_define_fields_mm_compaction_isolate_template+0x70/0x70
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111d5da>] compact_zone+0x52a/0x8c0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810f9919>] ? zone_statistics+0x99/0xc0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111dade>] compact_zone_order+0x7e/0xb0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e46a8>] ? get_page_from_freelist+0x3b8/0x7e0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111dbcd>] try_to_compact_pages+0xbd/0xf0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e5148>] __alloc_pages_direct_compact+0xa8/0x180
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e56c5>] __alloc_pages_nodemask+0x4a5/0x7f0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e9698>] ? lru_cache_add_lru+0x28/0x50
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110a92d>] ? page_add_new_anon_rmap+0x9d/0xb0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111b865>] alloc_pages_vma+0x95/0x180
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8112c2f8>] do_huge_pmd_anonymous_page+0x138/0x310
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81102ace>] handle_mm_fault+0x21e/0x310
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81001716>] ? __switch_to+0x1e6/0x2c0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8141f178>] ? schedule+0x308/0xa10
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff811077a7>] ? do_mmap_pgoff+0x357/0x370
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110790d>] ? sys_mmap_pgoff+0x14d/0x220
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+> Oct  9 08:07:10 hal kernel: [408605.285807] Code: 0f b6 c2 85 c0 0f 95 c0 0f b6 c0 5d c3 66 2e 0f 1f 84 00 00 00 00 00 55 b8 00 01 00 00 48 89 e5 f0 66 0f c1 07 38 e0 74 06 f3 90 <8a> 07 eb f6 5d c3 66 0f 1f 44 00 00 55 48 89 e5 9c 58 fa ba 00
+
+I guess this is the only time you've seen this?  In which case, ideally
+I would try to devise a testcase to demonstrate the issue below instead;
+but that may involve more ingenuity than I can find time for, let's see
+see if people approve of this patch anyway (it applies to 3.1 or 3.0,
+and earlier releases except that i_mmap_mutex used to be i_mmap_lock).
+
+
+[PATCH] mm: add anon_vma locking to mremap move
+
+I don't usually pay much attention to the stale "? " addresses in
+stack backtraces, but this lucky report from Pawel Sikora hints that
+mremap's move_ptes() has inadequate locking against page migration.
+
+ 3.0 BUG_ON(!PageLocked(p)) in migration_entry_to_page():
+ kernel BUG at include/linux/swapops.h:105!
+ RIP: 0010:[<ffffffff81127b76>]  [<ffffffff81127b76>]
+                       migration_entry_wait+0x156/0x160
+  [<ffffffff811016a1>] handle_pte_fault+0xae1/0xaf0
+  [<ffffffff810feee2>] ? __pte_alloc+0x42/0x120
+  [<ffffffff8112c26b>] ? do_huge_pmd_anonymous_page+0xab/0x310
+  [<ffffffff81102a31>] handle_mm_fault+0x181/0x310
+  [<ffffffff81106097>] ? vma_adjust+0x537/0x570
+  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+  [<ffffffff81109a05>] ? do_mremap+0x2d5/0x570
+  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+
+mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+and pagetable locks, were good enough before page migration (with its
+requirement that every migration entry be found) came in; and enough
+while migration always held mmap_sem.  But not enough nowadays, when
+there's memory hotremove and compaction: anon_vma lock is also needed,
+to make sure a migration entry is not dodging around behind our back.
+
+It appears that Mel's a8bef8ff6ea1 "mm: migration: avoid race between
+shift_arg_pages() and rmap_walk() during migration by not migrating
+temporary stacks" was actually a workaround for this in the special
+common case of exec's use of move_pagetables(); and we should probably
+now remove that VM_STACK_INCOMPLETE_SETUP stuff as a separate cleanup.
+
+Reported-by: Pawel Sikora <pluto@agmk.net>
+Cc: stable@kernel.org
+Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- drivers/base/node.c |   72 +++++++++++++++++++++++++++-----------------------
- 1 files changed, 39 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 793f796..0b8e7a2 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -58,6 +58,12 @@ static inline ssize_t node_read_cpulist(struct sys_device *dev,
- static SYSDEV_ATTR(cpumap,  S_IRUGO, node_read_cpumask, NULL);
- static SYSDEV_ATTR(cpulist, S_IRUGO, node_read_cpulist, NULL);
- 
-+/* Don't inline */
-+static unsigned long my_node_page_state(int node, enum zone_stat_item item)
-+{
-+	return node_page_state(node, item);
-+}
-+
- #define K(x) ((x) << (PAGE_SHIFT - 10))
- static ssize_t node_read_meminfo(struct sys_device * dev,
- 			struct sysdev_attribute *attr, char * buf)
-@@ -82,16 +88,16 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
- 		       nid, K(i.totalram),
- 		       nid, K(i.freeram),
- 		       nid, K(i.totalram - i.freeram),
--		       nid, K(node_page_state(nid, NR_ACTIVE_ANON) +
--				node_page_state(nid, NR_ACTIVE_FILE)),
--		       nid, K(node_page_state(nid, NR_INACTIVE_ANON) +
--				node_page_state(nid, NR_INACTIVE_FILE)),
--		       nid, K(node_page_state(nid, NR_ACTIVE_ANON)),
--		       nid, K(node_page_state(nid, NR_INACTIVE_ANON)),
--		       nid, K(node_page_state(nid, NR_ACTIVE_FILE)),
--		       nid, K(node_page_state(nid, NR_INACTIVE_FILE)),
--		       nid, K(node_page_state(nid, NR_UNEVICTABLE)),
--		       nid, K(node_page_state(nid, NR_MLOCK)));
-+		       nid, K(my_node_page_state(nid, NR_ACTIVE_ANON) +
-+				my_node_page_state(nid, NR_ACTIVE_FILE)),
-+		       nid, K(my_node_page_state(nid, NR_INACTIVE_ANON) +
-+				my_node_page_state(nid, NR_INACTIVE_FILE)),
-+		       nid, K(my_node_page_state(nid, NR_ACTIVE_ANON)),
-+		       nid, K(my_node_page_state(nid, NR_INACTIVE_ANON)),
-+		       nid, K(my_node_page_state(nid, NR_ACTIVE_FILE)),
-+		       nid, K(my_node_page_state(nid, NR_INACTIVE_FILE)),
-+		       nid, K(my_node_page_state(nid, NR_UNEVICTABLE)),
-+		       nid, K(my_node_page_state(nid, NR_MLOCK)));
- 
- #ifdef CONFIG_HIGHMEM
- 	n += sprintf(buf + n,
-@@ -123,30 +129,30 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
- 		       "Node %d AnonHugePages:  %8lu kB\n"
- #endif
- 			,
--		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
--		       nid, K(node_page_state(nid, NR_WRITEBACK)),
--		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
--		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
--		       nid, K(node_page_state(nid, NR_ANON_PAGES)
-+		       nid, K(my_node_page_state(nid, NR_FILE_DIRTY)),
-+		       nid, K(my_node_page_state(nid, NR_WRITEBACK)),
-+		       nid, K(my_node_page_state(nid, NR_FILE_PAGES)),
-+		       nid, K(my_node_page_state(nid, NR_FILE_MAPPED)),
-+		       nid, K(my_node_page_state(nid, NR_ANON_PAGES)
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
--			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
-+			+ my_node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
- 			HPAGE_PMD_NR
- #endif
- 		       ),
--		       nid, K(node_page_state(nid, NR_SHMEM)),
--		       nid, node_page_state(nid, NR_KERNEL_STACK) *
-+		       nid, K(my_node_page_state(nid, NR_SHMEM)),
-+		       nid, my_node_page_state(nid, NR_KERNEL_STACK) *
- 				THREAD_SIZE / 1024,
--		       nid, K(node_page_state(nid, NR_PAGETABLE)),
--		       nid, K(node_page_state(nid, NR_UNSTABLE_NFS)),
--		       nid, K(node_page_state(nid, NR_BOUNCE)),
--		       nid, K(node_page_state(nid, NR_WRITEBACK_TEMP)),
--		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
--				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
--		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
--		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
-+		       nid, K(my_node_page_state(nid, NR_PAGETABLE)),
-+		       nid, K(my_node_page_state(nid, NR_UNSTABLE_NFS)),
-+		       nid, K(my_node_page_state(nid, NR_BOUNCE)),
-+		       nid, K(my_node_page_state(nid, NR_WRITEBACK_TEMP)),
-+		       nid, K(my_node_page_state(nid, NR_SLAB_RECLAIMABLE) +
-+				my_node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
-+		       nid, K(my_node_page_state(nid, NR_SLAB_RECLAIMABLE)),
-+		       nid, K(my_node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 			, nid,
--			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
-+			K(my_node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
- 			HPAGE_PMD_NR)
- #endif
- 		       );
-@@ -167,12 +173,12 @@ static ssize_t node_read_numastat(struct sys_device * dev,
- 		       "interleave_hit %lu\n"
- 		       "local_node %lu\n"
- 		       "other_node %lu\n",
--		       node_page_state(dev->id, NUMA_HIT),
--		       node_page_state(dev->id, NUMA_MISS),
--		       node_page_state(dev->id, NUMA_FOREIGN),
--		       node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
--		       node_page_state(dev->id, NUMA_LOCAL),
--		       node_page_state(dev->id, NUMA_OTHER));
-+		       my_node_page_state(dev->id, NUMA_HIT),
-+		       my_node_page_state(dev->id, NUMA_MISS),
-+		       my_node_page_state(dev->id, NUMA_FOREIGN),
-+		       my_node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
-+		       my_node_page_state(dev->id, NUMA_LOCAL),
-+		       my_node_page_state(dev->id, NUMA_OTHER));
- }
- static SYSDEV_ATTR(numastat, S_IRUGO, node_read_numastat, NULL);
- 
--- 
-1.7.4.4
+ mm/mremap.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
+--- 3.1-rc9/mm/mremap.c	2011-07-21 19:17:23.000000000 -0700
++++ linux/mm/mremap.c	2011-10-13 14:36:25.097780974 -0700
+@@ -77,6 +77,7 @@ static void move_ptes(struct vm_area_str
+ 		unsigned long new_addr)
+ {
+ 	struct address_space *mapping = NULL;
++	struct anon_vma *anon_vma = vma->anon_vma;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *old_pte, *new_pte, pte;
+ 	spinlock_t *old_ptl, *new_ptl;
+@@ -95,6 +96,8 @@ static void move_ptes(struct vm_area_str
+ 		mapping = vma->vm_file->f_mapping;
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 	}
++	if (anon_vma)
++		anon_vma_lock(anon_vma);
+ 
+ 	/*
+ 	 * We don't have to worry about the ordering of src and dst
+@@ -121,6 +124,8 @@ static void move_ptes(struct vm_area_str
+ 		spin_unlock(new_ptl);
+ 	pte_unmap(new_pte - 1);
+ 	pte_unmap_unlock(old_pte - 1, old_ptl);
++	if (anon_vma)
++		anon_vma_unlock(anon_vma);
+ 	if (mapping)
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 	mmu_notifier_invalidate_range_end(vma->vm_mm, old_start, old_end);
