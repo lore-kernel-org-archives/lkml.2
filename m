@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1JMHeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:34:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42287 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab1JMHeF (ORCPT
+	id S1753478Ab1JMHfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:35:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49640 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab1JMHfd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:34:05 -0400
-Date: Thu, 13 Oct 2011 09:33:52 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-Message-ID: <20111013073352.GB501@aftab>
-References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
- <4E94E1E5.4070505@goop.org>
- <20111012101615.GA14966@aftab>
- <4E95D9E7.6090304@zytor.com>
- <4E95E7FE.6050302@goop.org>
- <20111012194543.GD14966@aftab>
- <20111012204048.GA22260@phenom.oracle.com>
- <4E960746.90805@zytor.com>
- <20111012214013.GD28723@aftab>
- <4E96198F.4030906@zytor.com>
+	Thu, 13 Oct 2011 03:35:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E96198F.4030906@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87vcrtqyc3.fsf@devron.myhome.or.jp>
+References: <CAKYAXd9v_wFg2RQ_R+fYyCJnCbnuMs_VECujOen1GUSGXo3rHw@mail.gmail.com>
+	<87vcrtqyc3.fsf@devron.myhome.or.jp>
+Date: Thu, 13 Oct 2011 16:35:29 +0900
+Message-ID: <CAKYAXd-qmJSbGNCNBjtahL+OtQDkOrnop3MzHRYRVR2anu0fGw@mail.gmail.com>
+Subject: Re: RFC : fat : default errors use FAT_ERRORS_CONT instead of FAT_ERRORS_RO.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 06:49:51PM -0400, H. Peter Anvin wrote:
-> The stickiest part of all of this is where to leave the microcode so the 
-> kernel can get to it way early.  We could use the linked list, but that 
-> would mean bootloader enabling;
+2011/10/13 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> NamJae Jeon <linkinjeon@gmail.com> writes:
+>
+>> Hi ogawa.
+>>
+>> I found different error exception between linux fat and windows fat.
+>>
+>> When fat is currputed by sudden unplug usb device formatted fat, fat
+>> does never change RO partition on windows.
+>>
+>> It said windows fat provide a chance that continuously access
+>> partition except corrupted file.
+>>
+>> Currently when access corrupted file, linux fat change RO parition
+>> from RW. So user no longer do open/write on linux fat.
+>>
+>> I suggest that the default errors of linux fat use FAT_ERRORS_CONT
+>> instead of FAT_ERRORS_RO.
+>>
+>> I want to know your opinion.
+>
+> I think it is dangerous, and the default should be safer side.
+>
+> If driver noticed the corruption, it means FS is not unknown state
+> anymore.  Any files/directories are possibly corrupted.
+>
+> Even if you change the file that seems to be uncorrupted, it may make FS
+> unrecoverable more. (e.g. lose all data in worst case)
+Hi ogawa.
+Thanks for your reply. I follow your opinion.
 
-Yep, started looking at that and it means grub legacy and grub2 enabling
-at least.
-
-> another idea was to stick it as a prefix 
-> to the initramfs identified by a signature.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=179127
-
-with the patch there you can do
-
-initrd /initramfs-image1.gz /initramfs-image2.gz
-
-which is exactly what we want.
-
-Bottomline is, extending initrd handling to deal with multiple initrd
-images might turn out to be easier to do than the linked list deal.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
