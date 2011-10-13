@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab1JMVMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 17:12:16 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52020 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab1JMVMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 17:12:15 -0400
-Date: Thu, 13 Oct 2011 22:11:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Victor <avictor.za@gmail.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Maxim Osipov <maxim.osipov@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
-Message-ID: <20111013211145.GA27779@n2100.arm.linux.org.uk>
-References: <4DC53134.8070706@gmail.com> <20110510234526.GC18929@game.jcrosoft.org> <BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
+	id S1754365Ab1JMVMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:12:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753896Ab1JMVMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 17:12:18 -0400
+Message-ID: <4E97541F.9050805@redhat.com>
+Date: Thu, 13 Oct 2011 17:11:59 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: David Rientjes <rientjes@google.com>
+CC: Satoru Moriya <satoru.moriya@hds.com>, Con Kolivas <kernel@kolivas.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com> <alpine.DEB.2.00.1110111612120.5236@chino.kir.corp.google.com> <65795E11DBF1E645A09CEC7EAEE94B9CB516D459@USINDEVS02.corp.hds.com> <alpine.DEB.2.00.1110131337580.24853@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110131337580.24853@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 11, 2011 at 09:44:52AM +0200, Andrew Victor wrote:
-> hi,
-> 
-> >> This patch enables external RTC support on AT91 Flexibity board.
-> 
-> Acked-by: Andrew Victor <linux@maxim.org.za>
-> 
-> Maxim: You can submit it to Russell's patch system.
-> 
-> 
-> > looks fine just one comment please add your board to the new at91sam9260_defconfig
-> 
-> That file does not exist in any mainline kernel.
+On 10/13/2011 04:48 PM, David Rientjes wrote:
 
-It's been a while since this patch went into the patch system, and it
-didn't get applied for various reasons, including because it looked
-like it was sent there without any review (no acked-by's etc added to
-it.)
+> We'll never know the future and how much memory a latency-sensitive
+> application will require 100ms from now.  The only thing that we can do is
+> (i) identify the latency-sensitive app, (ii) reclaim more aggressively for
+> them, and (iii) reclaim additional memory in preparation for another
 
-What's the status of this - and if its still relevant can we have
-it with the proper attributations please?
+This is why I proposed a watermark solution.
+
+> burst.  At some point, though, userspace needs to be responsible to not
+> allocate enormous amounts of memory all at once and there's room for
+> mitigation there too to preallocate ahead of what you actually need.
+
+Userspace cannot be responsible, for the simple reason that
+the allocations might be done in the kernel.
+
+Think about an mlocked realtime program handling network
+packets. Memory is allocated when packets come in, and when
+the program calls sys_send(), which causes packets to get
+sent.
+
+I don't see how we can make userspace responsible for
+kernel-side allocations.
+
+I did not propose the extra_free_kbytes patch because I
+like it, or out of laziness, but because I truly have not
+come up with a better solution.
+
+So far, neither this thread (which is unfortunate).
