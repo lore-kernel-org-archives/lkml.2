@@ -1,249 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1JMVpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 17:45:52 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53626 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754618Ab1JMVpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 17:45:50 -0400
-Date: Thu, 13 Oct 2011 14:44:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0.6-rt18
-Message-ID: <20111013214432.GC2350@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LFD.2.02.1110131146370.3240@ionos>
+	id S1754879Ab1JMVq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:46:28 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:55188 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754618Ab1JMVq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 17:46:27 -0400
+X-Authenticated: #1242716
+X-Provags-ID: V01U2FsdGVkX1+po/k2hFKp46inMIDlKUKia5kDI3luYKUWf8Hbct
+	Ehj85VAC3wTBCH
+Message-ID: <4E975C30.80407@gmx.de>
+Date: Thu, 13 Oct 2011 23:46:24 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Firefox/7.0.1 SeaMonkey/2.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110131146370.3240@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [Patch V2 2/2] gpio-pca953x: fix gpio_base and add verbosity
+References: <4E941054.8090608@gmx.de> <20111013193538.GD18574@ponder.secretlab.ca>
+In-Reply-To: <20111013193538.GD18574@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 11:52:18AM +0200, Thomas Gleixner wrote:
-> Dear RT Folks,
-> 
-> I'm pleased to announce the 3.0.6-rt18 release.
-> 
-> Changes from 3.0.6-rt17 to 3.0.6-rt18
-> 
->   * Fix a long standing slab thinko (Steven Rostedt)
-> 
->   * Add missing debugobjects call to hrtimers (Yong Zhang)
-> 
->   * Tracing updates (Steven Rostedt)
-> 
->   * Minor fixes (Yong, myself)
-> 
-> Delta patch against 3.0.6-rt17
-> 
->   https://tglx.de/~tglx/rt/patch-3.0.6-rt17-rt18.patch.gz
-
-And rcutorture is quite happy with this release under 2-CPU KVM on x86.
-
-							Thanx, Paul
-
-> also appended below.
-> 
-> 
-> Patch against 3.0.6 can be found here:
-> 
->   https://tglx.de/~tglx/rt/patch-3.0.6-rt18.patch.gz
-> 
-> 
-> The split quilt queue is available at:
-> 
->   https://tglx.de/~tglx/rt/patches-3.0.6-rt18.tar.gz
-> 
-> Enjoy,
-> 
-> 	tglx
-> 
-> --------------->
-> Index: linux-2.6/arch/x86/kernel/hpet.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/hpet.c
-> +++ linux-2.6/arch/x86/kernel/hpet.c
-> @@ -570,6 +570,7 @@ static void init_one_hpet_msi_clockevent
->  static int __init dmi_disable_hpet_msi(const struct dmi_system_id *d)
->  {
->  	hpet_msi_disable = 1;
-> +	return 0;
->  }
-> 
->  static struct dmi_system_id __initdata dmi_hpet_table[] = {
-> Index: linux-2.6/include/linux/hardirq.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/hardirq.h
-> +++ linux-2.6/include/linux/hardirq.h
-> @@ -84,7 +84,7 @@
->  # define softirq_count()	(preempt_count() & SOFTIRQ_MASK)
->  # define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
->  #else
-> -# define softirq_count()	(0U)
-> +# define softirq_count()	(0UL)
->  extern int in_serving_softirq(void);
->  #endif
-> 
-> Index: linux-2.6/kernel/hrtimer.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/hrtimer.c
-> +++ linux-2.6/kernel/hrtimer.c
-> @@ -1040,6 +1040,7 @@ int __hrtimer_start_range_ns(struct hrti
->  			 * remove it again and report a failure. This avoids
->  			 * stale base->first entries.
->  			 */
-> +			debug_deactivate(timer);
->  			__remove_hrtimer(timer, new_base,
->  					timer->state & HRTIMER_STATE_CALLBACK, 0);
->  		}
-> Index: linux-2.6/kernel/trace/ftrace.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/trace/ftrace.c
-> +++ linux-2.6/kernel/trace/ftrace.c
-> @@ -1767,10 +1767,36 @@ static cycle_t		ftrace_update_time;
->  static unsigned long	ftrace_update_cnt;
->  unsigned long		ftrace_update_tot_cnt;
-> 
-> +static int ops_traces_mod(struct ftrace_ops *ops)
-> +{
-> +	struct ftrace_hash *hash;
-> +
-> +	hash = ops->filter_hash;
-> +	return !!(!hash || !hash->count);
-> +}
-> +
->  static int ftrace_update_code(struct module *mod)
->  {
->  	struct dyn_ftrace *p;
->  	cycle_t start, stop;
-> +	unsigned long ref = 0;
-> +
-> +	/*
-> +	 * When adding a module, we need to check if tracers are
-> +	 * currently enabled and if they are set to trace all functions.
-> +	 * If they are, we need to enable the module functions as well
-> +	 * as update the reference counts for those function records.
-> +	 */
-> +	if (mod) {
-> +		struct ftrace_ops *ops;
-> +
-> +		for (ops = ftrace_ops_list;
-> +		     ops != &ftrace_list_end; ops = ops->next) {
-> +			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
-> +			    ops_traces_mod(ops))
-> +				ref++;
-> +		}
-> +	}
-> 
->  	start = ftrace_now(raw_smp_processor_id());
->  	ftrace_update_cnt = 0;
-> @@ -1783,7 +1809,7 @@ static int ftrace_update_code(struct mod
-> 
->  		p = ftrace_new_addrs;
->  		ftrace_new_addrs = p->newlist;
-> -		p->flags = 0L;
-> +		p->flags = ref;
-> 
->  		/*
->  		 * Do the initial record conversion from mcount jump
-> @@ -1806,7 +1832,7 @@ static int ftrace_update_code(struct mod
->  		 * conversion puts the module to the correct state, thus
->  		 * passing the ftrace_make_call check.
->  		 */
-> -		if (ftrace_start_up) {
-> +		if (ftrace_start_up && ref) {
->  			int failed = __ftrace_replace_code(p, 1);
->  			if (failed) {
->  				ftrace_bug(failed, p->ip);
-> @@ -2430,10 +2456,9 @@ ftrace_match_module_records(struct ftrac
->   */
-> 
->  static int
-> -ftrace_mod_callback(char *func, char *cmd, char *param, int enable)
-> +ftrace_mod_callback(struct ftrace_hash *hash,
-> +		    char *func, char *cmd, char *param, int enable)
->  {
-> -	struct ftrace_ops *ops = &global_ops;
-> -	struct ftrace_hash *hash;
->  	char *mod;
->  	int ret = -EINVAL;
-> 
-> @@ -2453,11 +2478,6 @@ ftrace_mod_callback(char *func, char *cm
->  	if (!strlen(mod))
->  		return ret;
-> 
-> -	if (enable)
-> -		hash = ops->filter_hash;
-> -	else
-> -		hash = ops->notrace_hash;
-> -
->  	ret = ftrace_match_module_records(hash, func, mod);
->  	if (!ret)
->  		ret = -EINVAL;
-> @@ -2783,7 +2803,7 @@ static int ftrace_process_regex(struct f
->  	mutex_lock(&ftrace_cmd_mutex);
->  	list_for_each_entry(p, &ftrace_commands, list) {
->  		if (strcmp(p->name, command) == 0) {
-> -			ret = p->func(func, command, next, enable);
-> +			ret = p->func(hash, func, command, next, enable);
->  			goto out_unlock;
->  		}
->  	}
-> Index: linux-2.6/localversion-rt
-> ===================================================================
-> --- linux-2.6.orig/localversion-rt
-> +++ linux-2.6/localversion-rt
-> @@ -1 +1 @@
-> --rt17
-> +-rt18
-> Index: linux-2.6/mm/slab.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slab.c
-> +++ linux-2.6/mm/slab.c
-> @@ -2601,7 +2601,7 @@ static void __do_drain(void *arg, unsign
->  	struct array_cache *ac;
->  	int node = cpu_to_mem(cpu);
-> 
-> -	ac = cpu_cache_get(cachep);
-> +	ac = cpu_cache_get_on_cpu(cachep, cpu);
->  	spin_lock(&cachep->nodelists[node]->list_lock);
->  	free_block(cachep, ac->entry, ac->avail, node);
->  	spin_unlock(&cachep->nodelists[node]->list_lock);
-> Index: linux-2.6/include/linux/ftrace.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/ftrace.h
-> +++ linux-2.6/include/linux/ftrace.h
-> @@ -123,7 +123,8 @@ stack_trace_sysctl(struct ctl_table *tab
->  struct ftrace_func_command {
->  	struct list_head	list;
->  	char			*name;
-> -	int			(*func)(char *func, char *cmd,
-> +	int			(*func)(struct ftrace_hash *hash,
-> +					char *func, char *cmd,
->  					char *params, int enable);
->  };
-> 
-> Index: linux-2.6/kernel/trace/trace_functions.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/trace/trace_functions.c
-> +++ linux-2.6/kernel/trace/trace_functions.c
-> @@ -324,7 +324,8 @@ ftrace_trace_onoff_unreg(char *glob, cha
->  }
-> 
->  static int
-> -ftrace_trace_onoff_callback(char *glob, char *cmd, char *param, int enable)
-> +ftrace_trace_onoff_callback(struct ftrace_hash *hash,
-> +			    char *glob, char *cmd, char *param, int enable)
->  {
->  	struct ftrace_probe_ops *ops;
->  	void *count = (void *)-1;
+Grant Likely schrieb:
+> On Tue, Oct 11, 2011 at 11:45:56AM +0200, Hartmut Knaack wrote:
+>> Sorry, I messed up the porting from my work files to clean git repo.
+>> This should be right now.
+>> Inspired by the gpio-pcf857x driver, this patch will output information
+>> about the instantiated gpio-chip, including gpio start and end, chip
+>> type and if irq is used.
+>>
+>> Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+>> -------------------------------------------------------------
+>> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+>> index 0721d85..f1a4fad 100644
+>> --- a/drivers/gpio/gpio-pca953x.c
+>> +++ b/drivers/gpio/gpio-pca953x.c
+>> @@ -687,6 +687,12 @@ static int __devinit pca953x_probe(struct
+>> i2c_client *client,
+>>  	if (ret)
+>>  		goto out_failed_irq;
+>>
+>> +	dev_info(&client->dev, "gpios %d..%d added on a %s%s\n",
+>> +		 chip->gpio_chip.base,
+>> +		 chip->gpio_chip.base + chip->gpio_chip.ngpio - 1,
+>> +		 client->name,
+>> +		 client->irq ? " (irq ignored)" : "");
+>> +
+> dev_dbg() for this I think.
+A short look into all other gpio drivers revealed which functions are normally used for that purpose:
+pr_info: gpio-xilinx
+dev_info: gpio-pcf857x, gpio-nomadik, gpio-janz-ttl, gpio-cs5535, gpio-adp5588
+printk: gpio-bt8xx
+I took that one from the pcf857x driver, but personally I also think that info is an appropriate verbosity level.
+Empowered by Ryan Mallon's comment I thought about removing those functions from gpio driver code and move it to gpiochip_add function. This way reducing redundancy and improving uniformity. It's just 7 drivers + gpiolib, which need to be changed. What do you think?
+>>  	if (pdata && pdata->setup) {
+>>  		ret = pdata->setup(client, chip->gpio_chip.base,
+>>  				chip->gpio_chip.ngpio, pdata->context);
+>>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
