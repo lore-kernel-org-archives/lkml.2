@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab1JMHre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:47:34 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43732 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab1JMHrc (ORCPT
+	id S1753515Ab1JMHwo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:52:44 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40483 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab1JMHwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:47:32 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg Kroah-Hartman <gregkh@suse.de>, David Miller <davem@davemloft.net>
-Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Tejun Heo <htejun@gmail.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>
-Date: Thu, 13 Oct 2011 00:47:46 -0700
-Message-ID: <m1hb3dbae5.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 13 Oct 2011 03:52:43 -0400
+Date: Thu, 13 Oct 2011 15:52:30 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Fernando Lopez-Lezcano <nando@ccrma.stanford.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [PATCH -rt] hrtimer: Add missing debug_activate() aid [Was: Re:
+ [ANNOUNCE] 3.0.6-rt17]
+Message-ID: <20111013075230.GA2740@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <alpine.LFD.2.02.1110070046270.3240@ionos>
+ <4E8F3605.6060104@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/49iXACFqavhATM7gDy1CS7chTOsbsPN0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.8 RDNS_NONE Delivered to internal network by a host with no rDNS
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de> , David Miller
-	<davem@davemloft.net>
-X-Spam-Relay-Country: 
-Subject: [PATCH 0/5] Better namespace handling for /sys/class/net/bonding_masters
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4E8F3605.6060104@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 07, 2011 at 10:25:25AM -0700, Fernando Lopez-Lezcano wrote:
+> On 10/06/2011 06:15 PM, Thomas Gleixner wrote:
+> >Dear RT Folks,
+> >
+> >I'm pleased to announce the 3.0.6-rt17 release.
+> 
+> Hi and thanks again. So far this one is not hanging which is very
+> good news. But I still see the hrtimer_fixup_activate warnings I
+> reported for rt16...
 
-When I was looking at another sysfs issue that Al pointed out (since
-fixed) I realized that I had implemented a trivial code size but overly
-clever way to handle /sys/class/net/bonding_masters.
+Hi Fernando,
 
-This patchset removes the support for untagged entries in tagged
-directories (that is currently used to support bonding_masters)
-and replaces it with support for tagged sysfs attributes.
+I think below patch will smooth your concern?
 
-In the process this fixes a small misfeature in how bonding_masters
-derives the network namespace we are dealing with.  This change
-allows bonding_masters to derive the network namespace from the
-copy of bonding_masters we open instead of magically from current.
-
-The final patch of this patchset adds sanity checks to sysfs.  To
-ensure that we don't accidentally mishandle tagged sysfs entities.
-
-I have tested this code against 3.1-rc9 on my laptop with a mostly yes
-config and I am not seeing any problems.  The loud screaming warnings I
-have added in the last patch should catch any corner cases in how people
-use sysfs that I might have overlooked.
-
-Greg, Dave I'm don't know whose tree to merge this through as this code
-is equally device-core and networking.  I am hoping that we can get this
-improvement merged for 3.2.
-
-Farther out the simplifications introduced in this patchset make it much
-easier to implement sysfs directories that can scale when there are
-enormous numbers of entries in them.
-
-Eric W. Biederman (5):
-      sysfs: Implement support for tagged files in sysfs.
-      class: Implement support for class attrs in tagged sysfs directories.
-      bonding: Use a per netns implementation of /sys/class/net/bonding_masters.
-      sysfs: Remove support for tagged directories with untagged members.
-      sysfs: Reject with a warning invalid uses of tagged directories.
+Thanks,
+Yong
 
 ---
- drivers/base/class.c             |   17 ++++++++++-
- drivers/net/bonding/bond_main.c  |    7 +---
- drivers/net/bonding/bond_sysfs.c |   45 +++++++++++++++++++++---------
- drivers/net/bonding/bonding.h    |    7 +++-
- fs/sysfs/dir.c                   |   20 +++++++++++--
- fs/sysfs/file.c                  |   56 ++++++++++++++++++++++++++++++++++---
- fs/sysfs/inode.c                 |    2 -
- include/linux/device.h           |    2 +
- include/linux/sysfs.h            |    1 +
- 9 files changed, 124 insertions(+), 33 deletions(-)
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH -rt] hrtimer: Add missing debug_activate() aid
 
-Eric
+It will fix below warning, which is also reported by Fernando:
+
+[    7.616090] ------------[ cut here ]------------
+[    7.616093] WARNING: at kernel/hrtimer.c:391 hrtimer_fixup_activate+0x27/0x50()
+[    7.616094] Hardware name: OptiPlex 755
+[    7.616096] Modules linked in:
+[    7.616099] Pid: 0, comm: kworker/0:0 Tainted: G        W 3.0.6-rt17-00284-g9d73a61 #15
+[    7.616100] Call Trace:
+[    7.616103]  [<c014d9a2>] warn_slowpath_common+0x72/0xa0
+[    7.616106]  [<c0175417>] ? hrtimer_fixup_activate+0x27/0x50
+[    7.616109]  [<c0175417>] ? hrtimer_fixup_activate+0x27/0x50
+[    7.616112]  [<c014d9f2>] warn_slowpath_null+0x22/0x30
+[    7.616115]  [<c0175417>] hrtimer_fixup_activate+0x27/0x50
+[    7.616118]  [<c03b3ab0>] debug_object_activate+0x100/0x130
+[    7.616121]  [<c0176b96>] ? hrtimer_start_range_ns+0x26/0x30
+[    7.616123]  [<c0175a59>] enqueue_hrtimer+0x19/0x100
+[    7.616126]  [<c0176b96>] ? hrtimer_start_range_ns+0x26/0x30
+[    7.616129]  [<c0176744>] __hrtimer_start_range_ns+0x144/0x540
+[    7.616132]  [<c072705a>] ? _raw_spin_unlock_irqrestore+0x3a/0x80
+[    7.616136]  [<c0176b96>] hrtimer_start_range_ns+0x26/0x30
+[    7.616139]  [<c01852b5>] tick_nohz_restart_sched_tick+0x185/0x1b0
+[    7.616142]  [<c0101878>] cpu_idle+0x98/0xc0
+[    7.616146]  [<c071fcd8>] start_secondary+0x1d3/0x1da
+[    7.616148] ---[ end trace 0000000000000003 ]---
+
+Reported-by: Fernando Lopez-Lezcano <nando@ccrma.stanford.edu>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+ kernel/hrtimer.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index dfa77c5..af89591 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1040,6 +1040,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 			 * remove it again and report a failure. This avoids
+ 			 * stale base->first entries.
+ 			 */
++			debug_deactivate(timer);
+ 			__remove_hrtimer(timer, new_base,
+ 					timer->state & HRTIMER_STATE_CALLBACK, 0);
+ 		}
+-- 
+1.7.4.1
+
