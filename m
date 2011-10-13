@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1JMKIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:08:19 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45312 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752274Ab1JMKIS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:08:18 -0400
-Message-ID: <4E96B88E.6030109@monstr.eu>
-Date: Thu, 13 Oct 2011 12:08:14 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1754597Ab1JMKMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:12:05 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53482 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754581Ab1JMKME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 06:12:04 -0400
+Date: Thu, 13 Oct 2011 15:42:04 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Maneesh Soni <manesoni@cisco.com>
+Cc: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, david.daney@cavium.com, kamensky@cisco.com
+Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
+Message-ID: <20111013101204.GB19054@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20111013090749.GB16761@cisco.com> <20111013094137.GA19054@in.ibm.com>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        monstr@monstr.eu, linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: Re: Using serial driver 16550A in poll mode without interrupt connected
-References: <4E95902B.7080204@monstr.eu> <20111012145153.5490b592@lxorguk.ukuu.org.uk> <20111012151937.GL11548@thunk.org>
-In-Reply-To: <20111012151937.GL11548@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013094137.GA19054@in.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+x-cbid: 11101310-3534-0000-0000-0000009D643C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ted Ts'o wrote:
-> On Wed, Oct 12, 2011 at 02:51:53PM +0100, Alan Cox wrote:
->>> Driver is probed with no IRQ (NO_IRQ = -1 on Microblaze)
->>> 83e00000.serial: ttyS0 at MMIO 0x83e01003 (irq = -1) is a 16550A
->> Zero means no IRQ. NO_IRQ is a legacy internal thing for the old IDE code
->> so not something other code should be using. Setting the IRQ to -1 is
->> bogus and will confuse the rest of the kernel.
->>
->>> Is it possible to use serial driver without IRQ - or blocking IRQ, etc.?
->> Within limits - it kills your power management and data rates because of
->> the continual polling.
+On Thu, Oct 13, 2011 at 03:11:37PM +0530, Ananth N Mavinakayanahalli wrote:
+> On Thu, Oct 13, 2011 at 02:37:49PM +0530, Maneesh Soni wrote:
 > 
-> It was something that I implemented years ago primarily for crappy
-> hardware that didn't get interrupts right.  It's not something which
-> where I would advise anyone to intentionally design hardware to use.
-
-It shouldn't be crappy hardware in our case because in FPGA you can connect it yourself.
-It is pretty easy to connect IRQ and choose interrupt number.
-
+> ...
 > 
-> If you have really deep FIFO's (i.e., a kilobyte or more), and you're
-> primarily interested in throughput, not latency, and/or you are trying
-> to support tens or hundreds of serial ports for some kind of modem
-> pool, there is a place for a polled implementation. 
+> I know nothing of MIPS internals, but...
+>  
+> >  static int __kprobes kprobe_handler(struct pt_regs *regs)
+> > @@ -239,8 +531,13 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+> >  			save_previous_kprobe(kcb);
+> >  			set_current_kprobe(p, regs, kcb);
+> >  			kprobes_inc_nmissed_count(p);
+> > -			prepare_singlestep(p, regs);
+> > +			prepare_singlestep(p, regs, kcb);
+> >  			kcb->kprobe_status = KPROBE_REENTER;
+> > +			if (kcb->flags & SKIP_DELAYSLOT) {
+> > +				resume_execution(p, regs, kcb);
+> > +				restore_previous_kprobe(kcb);
+> > +				preempt_enable_no_resched();
+> > +			}
+> >  			return 1;
+> >  		} else {
+> >  			if (addr->word != breakpoint_insn.word) {
+> > @@ -284,8 +581,15 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+> >  	}
+> > 
+> >  ss_probe:
+> > -	prepare_singlestep(p, regs);
+> > -	kcb->kprobe_status = KPROBE_HIT_SS;
+> > +	prepare_singlestep(p, regs, kcb);
+> > +	if (kcb->flags & SKIP_DELAYSLOT) {
+> > +		kcb->kprobe_status = KPROBE_HIT_SSDONE;
+> > +		if (p->post_handler)
+> > +			p->post_handler(p, regs, 0);
+> > +		resume_execution(p, regs, kcb);
+> 
+> You are missing a preempt_disable_no_resched() here.
 
-I don't personally care about throughput or latency or even how deep FIFO is.
-It could be several bytes - just send command and receive status or so.
-Or if this need large fifo - you can just add it to your hw design.
+Oops! I meant preempt_enable_no_resched().
 
-For example our interrupt controller supports up to 32 interrupt lines.
-If someone decides to use more that 32 serial IPs(include some lines for timer, etc)
-we don't have support for IRQ cascades and for getting status over serial line will
-be easier to use polling. As you write below there should be a lot of interrupts too.
+Ananth
 
-See the Comtrol
-> Rockport for an example of hardware and with a linux driver that will
-> handle this.  It's basically a "NAPI for serial ports" sort of
-> approach to minimize the overhead of potentially hundreds of thousands
-> of interrupts per second if you are driving large numbers of ports
-> (and at that point, power management is the least of your concerns
-> :-).  But you need special hardware to do this, not a random 16550A
-> with a pathetically small 16 byte FIFO.
-
-Can you point me to that files? Is it in the mainline kernel?
-
-Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
