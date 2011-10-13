@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab1JMPWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:22:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135Ab1JMPWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:22:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com>
-References: <CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> <1448.1318338!
- 420@redhat.com> <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com> <9908.1318413955@redhat.com> <CAOH1cHkg_eQRCHxOxiOPgO=-aZfnjts-tLFQFKffk5JjEfqy2w@mail.gmail.com> 
-To: Mark Moseley <moseleymark@gmail.com>
-Cc: dhowells@redhat.com,
-        Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-Date: Thu, 13 Oct 2011 16:21:27 +0100
-Message-ID: <32454.1318519287@redhat.com>
+	id S1755696Ab1JMPX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:23:59 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35990 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751356Ab1JMPX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:23:58 -0400
+Date: Thu, 13 Oct 2011 10:23:55 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111013152355.GB6966@sgi.com>
+References: <20111012160202.GA18666@sgi.com>
+ <20111012120118.e948f40a.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110121452220.31218@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110121452220.31218@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Moseley <moseleymark@gmail.com> wrote:
-
-> So on a cleared cache with SLAB, it took a while but this finally came
-> up. One interesting thing is that at some point, it logged this:
+On Wed, Oct 12, 2011 at 02:57:53PM -0500, Christoph Lameter wrote:
+> On Wed, 12 Oct 2011, Andrew Morton wrote:
 > 
-> [13461.605871] [httpd ] <== __fscache_read_or_alloc_pages() = -ENOBUFS
-> [invalidating]
+> > > Note that this patch is simply to illustrate the gains that can be made here.
+> > > What I'm looking for is some guidance on an acceptable way to accomplish the
+> > > task of reducing contention in this area, either by caching these values in a
+> > > way similar to the attached patch, or by some other mechanism if this is
+> > > unacceptable.
+> >
+> > Yes, the global vm_stat[] array is a problem - I'm surprised it's hung
+> > around for this long.  Altering the sysctl_overcommit_memory mode will
+> > hide the problem, but that's no good.
+> 
+> The global vm_stat array is keeping the state for the zone. It would be
+> even more expensive to calculate this at every point where we need such
+> data.
+> 
+> > I think we've discussed switching vm_stat[] to a contention-avoiding
+> > counter scheme.  Simply using <percpu_counter.h> would be the simplest
+> > approach.  They'll introduce inaccuracies but hopefully any problems
+> > from that will be minor for the global page counters.
+> 
+> We already have a contention avoiding scheme for counter updates in
+> vmstat.c. The problem here is that vm_stat is frequently read. Updates
+> from other cpus that fold counter updates in a deferred way into the
+> global statistics cause cacheline eviction. The updates occur too frequent
+> in this load.
 
-That's okay.  Basically, a read-from-cache operation was rejected because the
-cache object was in the early phase of being invalidated.  I kept it simple
-here - the read might complete next time it is tried, but it's just a cache so
-that shouldn't matter.
+The test I did slowed down the reads by __vm_enough_memory by caching the
+values and updating them every two seconds (in the OVERCOMMIT_GUESS area).
+> 
+> > otoh, I think we've been round this loop before and I don't recall why
+> > nothing happened.
+> 
+> The update behavior can be tuned using /proc/sys/vm/stat_interval.
+> Increase the interval to reduce the folding into the global counter (set
+> maybe to 10?). This will reduce contention. The other approach is to
 
-> It was a while from when it logged that until when I happened to check
-> on the box again, but when I did (shortly before this traceback),
-> despite constant NFS activity, nothing in the fscache cache was
-> getting written out (i.e. the used bytes on the partition stopped
-> changing), and without any messages about withdrawing the cache or
-> anythin.
+Increasing this interval to 10 (or even 100) had no effect on the vm_stat
+contention on a 640 cpu test system, so vmstat_update() is not the culprit.
 
-Did you look at /proc/fs/fscache/stats at all?
+> increase the allowed delta per zone if frequent updates occur via the
+> overflow checks in vmstat.c. See calculate_*_threshold there.
 
-> [20839.802118] kernel BUG at fs/fscache/object-list.c:83!
-> [20839.802733] invalid opcode: 0000 [#1] SMP
+I tried changing the threshold in both directions, with slower throughput in
+both cases.
 
-That fits with the previous BUG elsewhere in object-list.c.  It sounds like
-there's a refcounting problem somewhere.
-
-David
+> 
+> Note that the deltas are current reduced for memory pressure situations
+> (after recent patches by Mel). This will cause a significant increase in
+> vm_stat cacheline contention compared to earlier kernels.
+> 
