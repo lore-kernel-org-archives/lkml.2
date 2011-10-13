@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab1JMIZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 04:25:44 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:55566 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab1JMIZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 04:25:41 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [Drbd-dev] [PATCH 13/13] DRBD: Fix comparison always false warning due to long/long long compare
-Date: Thu, 13 Oct 2011 10:25:24 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
-Cc: drbd-dev@lists.linbit.com, David Howells <dhowells@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-References: <1318422455-17539-1-git-send-email-philipp.reisner@linbit.com> <1318422455-17539-14-git-send-email-philipp.reisner@linbit.com> <CAMuHMdXGCEUGanrsyFkgyr3ZAr5YpgrjbVqJtvCu5Li6XMMDMA@mail.gmail.com>
-In-Reply-To: <CAMuHMdXGCEUGanrsyFkgyr3ZAr5YpgrjbVqJtvCu5Li6XMMDMA@mail.gmail.com>
-X-OTRS-FollowUp-SenderType: agent
+	id S1753857Ab1JMI01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 04:26:27 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45123 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118Ab1JMI0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 04:26:25 -0400
+Message-ID: <4E96A091.4000705@parallels.com>
+Date: Thu, 13 Oct 2011 12:25:53 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>
+Subject: Re: [PATCH v6 3/8] foundations of per-cgroup memory pressure controlling.
+References: <1318242268-2234-1-git-send-email-glommer@parallels.com> <1318242268-2234-4-git-send-email-glommer@parallels.com> <20111013145353.161009ea.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111013145353.161009ea.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110131025.24950.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 12. Oktober 2011, 15:35:28 schrieb Geert Uytterhoeven:
-> On Wed, Oct 12, 2011 at 14:27, Philipp Reisner
-> 
-> <philipp.reisner@linbit.com> wrote:
-> > From: David Howells <dhowells@redhat.com>
-> > 
-> > Fix warnings of the following nature in the drbd header:
-> > 
-> > In file included from drivers/block/drbd/drbd_bitmap.c:32:
-> > drivers/block/drbd/drbd_int.h: In function 'drbd_get_syncer_progress':
-> > drivers/block/drbd/drbd_int.h:2234: warning: comparison is always false
-> > due to limited range of data
-> > 
-> > where mdev->rs_total (an unsigned long) is being compared to 1ULL << 32,
-> > which is always false on a 32-bit machine.
-> 
-> But on 32-bit, unsigned long is never larger than UINT_MAX neither, so
-> it doesn't
-> really change anything??
-> 
+On 10/13/2011 09:53 AM, KAMEZAWA Hiroyuki wrote:
+> On Mon, 10 Oct 2011 14:24:23 +0400
+> Glauber Costa<glommer@parallels.com>  wrote:
+>
+>> This patch converts struct sock fields memory_pressure,
+>> memory_allocated, sockets_allocated, and sysctl_mem (now prot_mem)
+>> to function pointers, receiving a struct mem_cgroup parameter.
+>>
+>> enter_memory_pressure is kept the same, since all its callers
+>> have socket a context, and the kmem_cgroup can be derived from
+>> the socket itself.
+>>
+>> To keep things working, the patch convert all users of those fields
+>> to use acessor functions.
+>>
+>> In my benchmarks I didn't see a significant performance difference
+>> with this patch applied compared to a baseline (around 1 % diff, thus
+>> inside error margin).
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: David S. Miller<davem@davemloft.net>
+>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Eric W. Biederman<ebiederm@xmission.com>
+>
+> Reviewed-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>
+> a nitpick.
+>
+>
+>>   #ifdef CONFIG_INET
+>> +enum {
+>> +	UNDER_LIMIT,
+>> +	OVER_LIMIT,
+>> +};
+>> +
+>
+> It may be better to move this to res_counter.h or memcontrol.h
+>
+Sorry Kame,
 
-Hi Geert,
+It is in memcontrol.h already. What exactly do you mean here ?
 
-As the commit message says, David's intention was to silence a compiler
-warning, not to change anything.
 
-Best,
- Phil
--- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
 
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
