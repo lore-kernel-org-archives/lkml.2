@@ -1,130 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1JMO4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:56:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755339Ab1JMO4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:56:31 -0400
-Date: Thu, 13 Oct 2011 11:54:50 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] kvm: set affinity hint for assigned device msi
-Message-ID: <20111013145450.GA4143@amt.cnet>
-References: <cover.1318358229.git.mst@redhat.com>
- <7458f62a58ad7d4022eefba4333336ba268e4ef9.1318358229.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7458f62a58ad7d4022eefba4333336ba268e4ef9.1318358229.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756049Ab1JMO4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:56:47 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49869 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617Ab1JMO4q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:56:46 -0400
+Subject: [PATCH] ASoC: tlv320aic32x4: Use snd_soc_update_bits for
+ read-modify-write
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Oct 2011 22:56:34 +0800
+Message-ID: <1318517794.4554.4.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 08:38:28PM +0200, Michael S. Tsirkin wrote:
-> To forward an interrupt to a vcpu that runs on
-> a host cpu different from the current one,
-> we need an ipi which likely will cost us as much
-> as delivering the interrupt directly to that cpu would.
-> 
-> Set irq affinity hint to point there, irq balancer
-> can then take this into accound and balance
-> interrupts accordingly.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  virt/kvm/assigned-dev.c |    8 +++++---
->  virt/kvm/irq_comm.c     |   17 ++++++++++++++++-
->  2 files changed, 21 insertions(+), 4 deletions(-)
-> 
-> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> index f89f138..b579777 100644
-> --- a/virt/kvm/assigned-dev.c
-> +++ b/virt/kvm/assigned-dev.c
-> @@ -142,9 +142,11 @@ static void deassign_host_irq(struct kvm *kvm,
->  		for (i = 0; i < assigned_dev->entries_nr; i++)
->  			disable_irq(assigned_dev->host_msix_entries[i].vector);
->  
-> -		for (i = 0; i < assigned_dev->entries_nr; i++)
-> -			free_irq(assigned_dev->host_msix_entries[i].vector,
-> -				 (void *)assigned_dev);
-> +		for (i = 0; i < assigned_dev->entries_nr; i++) {
-> +			u32 vector = assigned_dev->host_msix_entries[i].vector;
-> +			irq_set_affinity_hint(vector, NULL);
-> +			free_irq(vector, (void *)assigned_dev);
-> +		}
->  
->  		assigned_dev->entries_nr = 0;
->  		kfree(assigned_dev->host_msix_entries);
-> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> index ac8b629..68b1f7c 100644
-> --- a/virt/kvm/irq_comm.c
-> +++ b/virt/kvm/irq_comm.c
-> @@ -22,6 +22,7 @@
->  
->  #include <linux/kvm_host.h>
->  #include <linux/slab.h>
-> +#include <linux/interrupt.h>
->  #include <trace/events/kvm.h>
->  
->  #include <asm/msidef.h>
-> @@ -80,6 +81,17 @@ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
->  #endif
->  }
->  
-> +static void kvm_vcpu_host_irq_hint(struct kvm_vcpu *vcpu, int host_irq)
-> +{
-> +	const struct cpumask *mask;
-> +	/* raw_smp_processor_id() is ok here: if we get preempted we can get a
-> +	 * wrong value but we don't mind much. */
-> +	if (host_irq >= 0 && unlikely(vcpu->cpu != raw_smp_processor_id())) {
-> +		mask = get_cpu_mask(vcpu->cpu);
-> +		irq_set_affinity_hint(host_irq, mask);
-> +	}
-> +}
+Use snd_soc_update_bits for read-modify-write register access instead of
+open-coding it using snd_soc_read and snd_soc_write.
 
-Unsure about the internals of irq_set_affinity_hint, but AFAICS its
-exported so that irqbalance in userspace can make a decision.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch also fixes the mix usage of 
+AIC32X4_MDACEN/AIC32X4_NDACEN/AIC32X4_NADCEN/AIC32X4_MADCEN in current code.
+(They are all defined as (0x01 << 7), so it is not a bug,
+ but not good for readability.)
+Axel
 
-If that is the case, then irqbalance update rate should be high enough
-to catch up with a vcpu migrating betweens cpus (which initially does
-not appear a sensible arrangement).
+ sound/soc/codecs/tlv320aic32x4.c |   61 +++++++++++++++-----------------------
+ 1 files changed, 24 insertions(+), 37 deletions(-)
 
-The decision to have the host interrupt follow the vcpu seems a good
-one, given that it saves an IPI and is potentially more cache friendly
-overall.
+diff --git a/sound/soc/codecs/tlv320aic32x4.c b/sound/soc/codecs/tlv320aic32x4.c
+index a68982e..b21c610 100644
+--- a/sound/soc/codecs/tlv320aic32x4.c
++++ b/sound/soc/codecs/tlv320aic32x4.c
+@@ -528,40 +528,33 @@ static int aic32x4_set_bias_level(struct snd_soc_codec *codec,
+ 				  enum snd_soc_bias_level level)
+ {
+ 	struct aic32x4_priv *aic32x4 = snd_soc_codec_get_drvdata(codec);
+-	u8 value;
+ 
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+ 		if (aic32x4->master) {
+ 			/* Switch on PLL */
+-			value = snd_soc_read(codec, AIC32X4_PLLPR);
+-			snd_soc_write(codec, AIC32X4_PLLPR,
+-				      (value | AIC32X4_PLLEN));
++			snd_soc_update_bits(codec, AIC32X4_PLLPR,
++					    AIC32X4_PLLEN, AIC32X4_PLLEN);
+ 
+ 			/* Switch on NDAC Divider */
+-			value = snd_soc_read(codec, AIC32X4_NDAC);
+-			snd_soc_write(codec, AIC32X4_NDAC,
+-				      value | AIC32X4_NDACEN);
++			snd_soc_update_bits(codec, AIC32X4_NDAC,
++					    AIC32X4_NDACEN, AIC32X4_NDACEN);
+ 
+ 			/* Switch on MDAC Divider */
+-			value = snd_soc_read(codec, AIC32X4_MDAC);
+-			snd_soc_write(codec, AIC32X4_MDAC,
+-				      value | AIC32X4_MDACEN);
++			snd_soc_update_bits(codec, AIC32X4_MDAC,
++					    AIC32X4_MDACEN, AIC32X4_MDACEN);
+ 
+ 			/* Switch on NADC Divider */
+-			value = snd_soc_read(codec, AIC32X4_NADC);
+-			snd_soc_write(codec, AIC32X4_NADC,
+-				      value | AIC32X4_MDACEN);
++			snd_soc_update_bits(codec, AIC32X4_NADC,
++					    AIC32X4_NADCEN, AIC32X4_NADCEN);
+ 
+ 			/* Switch on MADC Divider */
+-			value = snd_soc_read(codec, AIC32X4_MADC);
+-			snd_soc_write(codec, AIC32X4_MADC,
+-				      value | AIC32X4_MDACEN);
++			snd_soc_update_bits(codec, AIC32X4_MADC,
++					    AIC32X4_MADCEN, AIC32X4_MADCEN);
+ 
+ 			/* Switch on BCLK_N Divider */
+-			value = snd_soc_read(codec, AIC32X4_BCLKN);
+-			snd_soc_write(codec, AIC32X4_BCLKN,
+-				      value | AIC32X4_BCLKEN);
++			snd_soc_update_bits(codec, AIC32X4_BCLKN,
++					    AIC32X4_BCLKEN, AIC32X4_BCLKEN);
+ 		}
+ 		break;
+ 	case SND_SOC_BIAS_PREPARE:
+@@ -569,34 +562,28 @@ static int aic32x4_set_bias_level(struct snd_soc_codec *codec,
+ 	case SND_SOC_BIAS_STANDBY:
+ 		if (aic32x4->master) {
+ 			/* Switch off PLL */
+-			value = snd_soc_read(codec, AIC32X4_PLLPR);
+-			snd_soc_write(codec, AIC32X4_PLLPR,
+-				      (value & ~AIC32X4_PLLEN));
++			snd_soc_update_bits(codec, AIC32X4_PLLPR,
++					    AIC32X4_PLLEN, 0);
+ 
+ 			/* Switch off NDAC Divider */
+-			value = snd_soc_read(codec, AIC32X4_NDAC);
+-			snd_soc_write(codec, AIC32X4_NDAC,
+-				      value & ~AIC32X4_NDACEN);
++			snd_soc_update_bits(codec, AIC32X4_NDAC,
++					    AIC32X4_NDACEN, 0);
+ 
+ 			/* Switch off MDAC Divider */
+-			value = snd_soc_read(codec, AIC32X4_MDAC);
+-			snd_soc_write(codec, AIC32X4_MDAC,
+-				      value & ~AIC32X4_MDACEN);
++			snd_soc_update_bits(codec, AIC32X4_MDAC,
++					    AIC32X4_MDACEN, 0);
+ 
+ 			/* Switch off NADC Divider */
+-			value = snd_soc_read(codec, AIC32X4_NADC);
+-			snd_soc_write(codec, AIC32X4_NADC,
+-				      value & ~AIC32X4_NDACEN);
++			snd_soc_update_bits(codec, AIC32X4_NADC,
++					    AIC32X4_NADCEN, 0);
+ 
+ 			/* Switch off MADC Divider */
+-			value = snd_soc_read(codec, AIC32X4_MADC);
+-			snd_soc_write(codec, AIC32X4_MADC,
+-				      value & ~AIC32X4_MDACEN);
+-			value = snd_soc_read(codec, AIC32X4_BCLKN);
++			snd_soc_update_bits(codec, AIC32X4_MADC,
++					    AIC32X4_MADCEN, 0);
+ 
+ 			/* Switch off BCLK_N Divider */
+-			snd_soc_write(codec, AIC32X4_BCLKN,
+-				      value & ~AIC32X4_BCLKEN);
++			snd_soc_update_bits(codec, AIC32X4_BCLKN,
++					    AIC32X4_BCLKEN, 0);
+ 		}
+ 		break;
+ 	case SND_SOC_BIAS_OFF:
+-- 
+1.7.4.1
 
-And AFAICS its more intelligent for the device assignment case than
-anything irqbalance can come up with (note it depends on how the APIC is
-configured, your patch ignores that).
 
-> +	
->  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  		struct kvm_lapic_irq *irq, int host_irq)
->  {
-> @@ -102,6 +114,7 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  			if (r < 0)
->  				r = 0;
->  			r += kvm_apic_set_irq(vcpu, irq);
-> +			kvm_vcpu_host_irq_hint(vcpu, host_irq);
->  		} else if (kvm_lapic_enabled(vcpu)) {
->  			if (!lowest)
->  				lowest = vcpu;
-> @@ -110,8 +123,10 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  		}
->  	}
->  
-> -	if (lowest)
-> +	if (lowest) {
->  		r = kvm_apic_set_irq(lowest, irq);
-> +		kvm_vcpu_host_irq_hint(vcpu, host_irq);
-> +	}
->  
->  	return r;
->  }
-> -- 
-> 1.7.5.53.gc233e
+
