@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab1JMQjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:39:09 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:45778 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756549Ab1JMQiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:38:51 -0400
-Date: Thu, 13 Oct 2011 10:38:50 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-cc: "Kristo, Tero" <t-kristo@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv9 03/18] TEMP: OMAP3xxx: hwmod data: add PRM hwmod
-In-Reply-To: <4E954CDA.10107@ti.com>
-Message-ID: <alpine.DEB.2.00.1110131033410.24155@utopia.booyaka.com>
-References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-4-git-send-email-t-kristo@ti.com> <alpine.DEB.2.00.1110101320180.5205@utopia.booyaka.com> <4E934D79.4080000@ti.com> <alpine.DEB.2.00.1110101416530.5205@utopia.booyaka.com>
- <4E936F0E.9050203@ti.com> <alpine.DEB.2.00.1110101725140.5205@utopia.booyaka.com> <4E954CDA.10107@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756589Ab1JMQki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:40:38 -0400
+Received: from home.keithp.com ([63.227.221.253]:58748 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756124Ab1JMQkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:40:37 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915/panel: Alwyas record the backlight level again (but cleverly)
+In-Reply-To: <s5h7h492rr4.wl%tiwai@suse.de>
+References: <s5h7h492rr4.wl%tiwai@suse.de>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 13 Oct 2011 09:40:29 -0700
+Message-ID: <yunsjmw26bm.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011, Cousson, Benoit wrote:
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> On 10/11/2011 1:26 AM, Paul Walmsley wrote:
-> > On Tue, 11 Oct 2011, Cousson, Benoit wrote:
-> > 
-> > > In fact the device name does not have to match the hwmod name. So we 
-> > > can just create an "omap2_prm" omap_device for OMAP2, "omap3_prm" 
-> > > omap_device for OMAP3... That will allow the relevant PRM driver to 
-> > > be bound to the proper device.
-> > 
-> > Incidentally, given that we would be using the hwmod name and the version
-> > number to determine the appropriate omap_device name, what IP version
-> > numbers should we assign to these PRM IP blocks for different SoCs?
-> 
-> It can just be 1, 2 and 3... The idea is just to differentiate the IP for each
-> OMAP.
+On Thu, 13 Oct 2011 10:57:35 +0200, Takashi Iwai <tiwai@suse.de> wrote:
 
-So those are basically arbitrary?  Something is not clear here.
+> This patch fixes the bug by recording the backlight level always
+> when changed but only when dev_priv->backlight_enabled is set.
+> In this way, the bogus value for disabling backlight can be skipped.
 
-In the current hwmod design, IP blocks with different interfaces were 
-intended to be uniquely identified by the hwmod name alone.  That is why 
-omap_hwmod_lookup() only takes a 'name' parameter.
+I think this is better than what we have, but I'm not sure it's quite
+what we want -- the backlight level will only be remembered when it is
+enabled, so requested changes that happen while the backlight is off
+will have no effect. And, requested changes while the panel is disabled
+will still go through to the hardware, which can cause problems with
+panel power sequencing.
 
-If I understand what you want to do, you wish to change this to uniquely 
-identify them by a (name, interface version number) tuple.
+I think intel_panel_set_backlight should always record the level passed
+in, but that intel_panel_disable_backlight and
+intel_panel_enable_backlight should use a lower-level function, shared
+with intel_panel_set_backlight that doesn't record the value:
 
-I don't have a problem with this in theory, but it implies some changes to 
-the existing model.  Specifically:
+intel_panel_actually_set_backlight(dev, level) {
+        <internals of current intel_panel_set_backlight>
+}
 
-- we'll need to add an interface version number to the struct omap_hwmod
+intel_panel_set_backlight(dev, level) {
+        dev_priv->backlight_level =3D level;
+        if (dev_priv->backlight_enabled)
+                intel_panel_actually_set_backlight(dev, level);
+}
 
-- we'll need to modify omap_hwmod_lookup() to take an interface version 
-number
+intel_panel_enable_backlight(dev) {
+        dev_priv->backlight_enabled =3D true;
+        intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+}
 
-- the "ti,hwmod" DT binding that you proposed earlier will need to include 
-an interface version number
+intel_panel_disable_backlight(dev) {
+        dev_priv->backlight_enabled =3D false;
+        intel_panel_actually_set_backlight(dev, 0);
+}
 
+=2D-=20
+keith.packard@intel.com
 
-- Paul
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTpcUfTYtFsjWk68qAQhr+hAAz/TtEDUQTpOQrugOhM8nT5rRolRZ3FzW
+7dXTBcJv3zRkY7LF+HvpVe3hEkKaeqp48ZRSEEu99ISopIaHObDsUA6jxx895nJY
+khzrnG6E8ut2UmDxcyIN2HgrB3Bgxpo8getkW1/aVQkBSOEU4mEQIOcMcyVxQlbg
+ctYvym6e9zmKk1rsLYjWav+HpoE7NvpFR4JrHrcXwv3k6QM3X2T6UHohKx78D2V3
+LJLvw8hFxwmhJ8PW8d4TrlT1ic14I33Gct92CKUm4ARcNLK8gvKVxQhormLOSqsb
+LJRMdsciOeOCnIlj87FjlKvjqgvkOEfrHXuhpjUHy1XUf47CkvfTCZ+yiVehrO2g
+ksYH+gUL2KeYxpPuinjEW0jbq8yLK0UM0x2GAzaYGGFhKMc+96Afwu2HLllt7q4k
+XkTw59wz5sFiScM934YBNNlVJjDqNGMiBuM7or+t6W4g54/hoFWJkG0PvlroVVrg
+zFWx05ipksVFnX4yzkQB7xLl22CAVjD6WMMgTOe0cXgqzkSLliDpUzpE0KgnPhJ0
+neLRYsWwVFRrmdkrOd1W/vqIzvhPycQEJZBJ+dEw8mY+rJHGay1D6ITgZnUk8mzV
+GGeHCO/z8sK8n1k/FAQIMuOtL8ijkCtiR5Qwq5TJ0l+kz3c/QrEYC55WT6SXrJNX
+p6Ml5ln5VMg=
+=UMwf
+-----END PGP SIGNATURE-----
+--=-=-=--
