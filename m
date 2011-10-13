@@ -1,235 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1JMLSf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 07:18:35 -0400
-Received: from mail-dy0-f46.google.com ([209.85.220.46]:63132 "EHLO
-	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab1JMLRK (ORCPT
+	id S1754979Ab1JMLSy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 07:18:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39208 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab1JMLRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 07:17:10 -0400
+	Thu, 13 Oct 2011 07:17:07 -0400
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 To: Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH] pata_cs5536: forward port changes from cs5536
-Date: Thu, 13 Oct 2011 13:05:24 +0200
+Subject: [PATCH] pata_pdc2027x: add Power Management support
+Date: Thu, 13 Oct 2011 12:57:51 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Martin K. Petersen" <mkp@mkp.net>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
+Message-Id: <201110131257.51837.bzolnier@gmail.com>
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110131305.25001.bzolnier@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] pata_cs5536: forward port changes from cs5536
+Subject: [PATCH] pata_pdc2027x: add Power Management support
 
-* Fix cable detection to also account for the slave device cable bit.
+Fixes IDE -> libata regression.
 
-* Disable UDMA when programming MWDMA in cs5536_set_dmamode().
+There shouldn't be any problems with it as corresponding IDE's host
+driver (pdc202xx_new) has been supporting PCI Power Management since
+Oct 10 2008 (commit feb22b7f "ide: add proper PCI PM support (v2)")
+and IDE PM since Jun 14 2003 (patch v2.5.73 "ide: Power Management").
 
-* Don't change UDMA settings in cs5536_set_piomode().
-
-* Add cs5536_program_dtc() helper.
-
-* Cleanup and uninline cs5536_[read,write]() methods.
-
-Cc: Martin K. Petersen <mkp@mkp.net>
 Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 ---
- drivers/ata/pata_cs5536.c |   99 +++++++++++++++++++---------------------------
- 1 file changed, 42 insertions(+), 57 deletions(-)
+earlier references:
+https://lkml.org/lkml/2009/11/25/369
 
-Index: b/drivers/ata/pata_cs5536.c
+ drivers/ata/pata_pdc2027x.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+Index: b/drivers/ata/pata_pdc2027x.c
 ===================================================================
---- a/drivers/ata/pata_cs5536.c
-+++ b/drivers/ata/pata_cs5536.c
-@@ -1,6 +1,7 @@
- /*
-  * pata_cs5536.c	- CS5536 PATA for new ATA layer
-  *			  (C) 2007 Martin K. Petersen <mkp@mkp.net>
-+ *			  (C) 2011 Bartlomiej Zolnierkiewicz
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -55,24 +56,16 @@ MODULE_PARM_DESC(msr, "Force using MSR t
- #define DRV_VERSION	"0.0.8"
- 
- enum {
--	CFG			= 0,
--	DTC			= 1,
--	CAST			= 2,
--	ETC			= 3,
--
--	MSR_IDE_BASE		= 0x51300000,
--	MSR_IDE_CFG		= (MSR_IDE_BASE + 0x10),
--	MSR_IDE_DTC		= (MSR_IDE_BASE + 0x12),
--	MSR_IDE_CAST		= (MSR_IDE_BASE + 0x13),
--	MSR_IDE_ETC		= (MSR_IDE_BASE + 0x14),
--
-+	MSR_IDE_CFG		= 0x51300010,
- 	PCI_IDE_CFG		= 0x40,
--	PCI_IDE_DTC		= 0x48,
--	PCI_IDE_CAST		= 0x4c,
--	PCI_IDE_ETC		= 0x50,
- 
--	IDE_CFG_CHANEN		= 0x2,
--	IDE_CFG_CABLE		= 0x10000,
-+	CFG			= 0,
-+	DTC			= 2,
-+	CAST			= 3,
-+	ETC			= 4,
-+
-+	IDE_CFG_CHANEN		= (1 << 1),
-+	IDE_CFG_CABLE		= (1 << 17) | (1 << 16),
- 
- 	IDE_D0_SHIFT		= 24,
- 	IDE_D1_SHIFT		= 16,
-@@ -84,45 +77,50 @@ enum {
- 	IDE_CAST_CMD_MASK	= 0xff,
- 	IDE_CAST_CMD_SHIFT	= 24,
- 
--	IDE_ETC_NODMA		= 0x03,
-+	IDE_ETC_UDMA_MASK	= 0xc0,
+--- a/drivers/ata/pata_pdc2027x.c
++++ b/drivers/ata/pata_pdc2027x.c
+@@ -63,6 +63,7 @@ enum {
  };
  
--static const u32 msr_reg[4] = {
--	MSR_IDE_CFG, MSR_IDE_DTC, MSR_IDE_CAST, MSR_IDE_ETC,
--};
--
--static const u8 pci_reg[4] = {
--	PCI_IDE_CFG, PCI_IDE_DTC, PCI_IDE_CAST, PCI_IDE_ETC,
--};
--
--static inline int cs5536_read(struct pci_dev *pdev, int reg, u32 *val)
-+static int cs5536_read(struct pci_dev *pdev, int reg, u32 *val)
- {
- 	if (unlikely(use_msr)) {
- 		u32 dummy __maybe_unused;
+ static int pdc2027x_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
++static int pdc2027x_reinit_one(struct pci_dev *pdev);
+ static int pdc2027x_prereset(struct ata_link *link, unsigned long deadline);
+ static void pdc2027x_set_piomode(struct ata_port *ap, struct ata_device *adev);
+ static void pdc2027x_set_dmamode(struct ata_port *ap, struct ata_device *adev);
+@@ -126,6 +127,10 @@ static struct pci_driver pdc2027x_pci_dr
+ 	.id_table		= pdc2027x_pci_tbl,
+ 	.probe			= pdc2027x_init_one,
+ 	.remove			= ata_pci_remove_one,
++#ifdef CONFIG_PM
++	.suspend		= ata_pci_device_suspend,
++	.resume			= pdc2027x_reinit_one,
++#endif
+ };
  
--		rdmsr(msr_reg[reg], *val, dummy);
-+		rdmsr(MSR_IDE_CFG + reg, *val, dummy);
- 		return 0;
- 	}
- 
--	return pci_read_config_dword(pdev, pci_reg[reg], val);
-+	return pci_read_config_dword(pdev, PCI_IDE_CFG + reg * 4, val);
+ static struct scsi_host_template pdc2027x_sht = {
+@@ -758,6 +763,31 @@ static int __devinit pdc2027x_init_one(s
+ 				 IRQF_SHARED, &pdc2027x_sht);
  }
  
--static inline int cs5536_write(struct pci_dev *pdev, int reg, int val)
-+static int cs5536_write(struct pci_dev *pdev, int reg, int val)
- {
- 	if (unlikely(use_msr)) {
--		wrmsr(msr_reg[reg], val, 0);
-+		wrmsr(MSR_IDE_CFG + reg, val, 0);
- 		return 0;
- 	}
- 
--	return pci_write_config_dword(pdev, pci_reg[reg], val);
-+	return pci_write_config_dword(pdev, PCI_IDE_CFG + reg * 4, val);
-+}
-+
-+static void cs5536_program_dtc(struct ata_device *adev, u8 tim)
++#ifdef CONFIG_PM
++static int pdc2027x_reinit_one(struct pci_dev *pdev)
 +{
-+	struct pci_dev *pdev = to_pci_dev(adev->link->ap->host->dev);
-+	int dshift = adev->devno ? IDE_D1_SHIFT : IDE_D0_SHIFT;
-+	u32 dtc;
++	struct ata_host *host = dev_get_drvdata(&pdev->dev);
++	unsigned int board_idx;
++	int rc;
 +
-+	cs5536_read(pdev, DTC, &dtc);
-+	dtc &= ~(IDE_DRV_MASK << dshift);
-+	dtc |= tim << dshift;
-+	cs5536_write(pdev, DTC, dtc);
- }
- 
++	rc = ata_pci_device_do_resume(pdev);
++	if (rc)
++		return rc;
++
++	if (pdev->device == PCI_DEVICE_ID_PROMISE_20268 ||
++	    pdev->device == PCI_DEVICE_ID_PROMISE_20270)
++		board_idx = PDC_UDMA_100;
++	else
++		board_idx = PDC_UDMA_133;
++
++	if (pdc_hardware_init(host, board_idx))
++		return -EIO;
++
++	ata_host_resume(host);
++	return 0;
++}
++#endif
++
  /**
-  *	cs5536_cable_detect	-	detect cable type
-  *	@ap: Port to detect on
-  *
-- *	Perform cable detection for ATA66 capable cable. Return a libata
-- *	cable type.
-+ *	Perform cable detection for ATA66 capable cable.
-+ *
-+ *	Returns a cable type.
+  * pdc2027x_init - Called after this module is loaded into the kernel.
   */
- 
- static int cs5536_cable_detect(struct ata_port *ap)
-@@ -132,7 +130,7 @@ static int cs5536_cable_detect(struct at
- 
- 	cs5536_read(pdev, CFG, &cfg);
- 
--	if (cfg & (IDE_CFG_CABLE << ap->port_no))
-+	if (cfg & IDE_CFG_CABLE)
- 		return ATA_CBL_PATA80;
- 	else
- 		return ATA_CBL_PATA40;
-@@ -162,19 +160,15 @@ static void cs5536_set_piomode(struct at
- 	struct ata_device *pair = ata_dev_pair(adev);
- 	int mode = adev->pio_mode - XFER_PIO_0;
- 	int cmdmode = mode;
--	int dshift = adev->devno ? IDE_D1_SHIFT : IDE_D0_SHIFT;
- 	int cshift = adev->devno ? IDE_CAST_D1_SHIFT : IDE_CAST_D0_SHIFT;
--	u32 dtc, cast, etc;
-+	u32 cast;
- 
- 	if (pair)
- 		cmdmode = min(mode, pair->pio_mode - XFER_PIO_0);
- 
--	cs5536_read(pdev, DTC, &dtc);
--	cs5536_read(pdev, CAST, &cast);
--	cs5536_read(pdev, ETC, &etc);
-+	cs5536_program_dtc(adev, drv_timings[mode]);
- 
--	dtc &= ~(IDE_DRV_MASK << dshift);
--	dtc |= drv_timings[mode] << dshift;
-+	cs5536_read(pdev, CAST, &cast);
- 
- 	cast &= ~(IDE_CAST_DRV_MASK << cshift);
- 	cast |= addr_timings[mode] << cshift;
-@@ -182,12 +176,7 @@ static void cs5536_set_piomode(struct at
- 	cast &= ~(IDE_CAST_CMD_MASK << IDE_CAST_CMD_SHIFT);
- 	cast |= cmd_timings[cmdmode] << IDE_CAST_CMD_SHIFT;
- 
--	etc &= ~(IDE_DRV_MASK << dshift);
--	etc |= IDE_ETC_NODMA << dshift;
--
--	cs5536_write(pdev, DTC, dtc);
- 	cs5536_write(pdev, CAST, cast);
--	cs5536_write(pdev, ETC, etc);
- }
- 
- /**
-@@ -208,25 +197,21 @@ static void cs5536_set_dmamode(struct at
- 	};
- 
- 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
--	u32 dtc, etc;
-+	u32 etc;
- 	int mode = adev->dma_mode;
- 	int dshift = adev->devno ? IDE_D1_SHIFT : IDE_D0_SHIFT;
- 
--	if (mode >= XFER_UDMA_0) {
--		cs5536_read(pdev, ETC, &etc);
-+	cs5536_read(pdev, ETC, &etc);
- 
-+	if (mode >= XFER_UDMA_0) {
- 		etc &= ~(IDE_DRV_MASK << dshift);
- 		etc |= udma_timings[mode - XFER_UDMA_0] << dshift;
--
--		cs5536_write(pdev, ETC, etc);
- 	} else { /* MWDMA */
--		cs5536_read(pdev, DTC, &dtc);
--
--		dtc &= ~(IDE_DRV_MASK << dshift);
--		dtc |= mwdma_timings[mode - XFER_MW_DMA_0] << dshift;
--
--		cs5536_write(pdev, DTC, dtc);
-+		etc &= ~(IDE_ETC_UDMA_MASK << dshift);
-+		cs5536_program_dtc(adev, mwdma_timings[mode - XFER_MW_DMA_0]);
- 	}
-+
-+	cs5536_write(pdev, ETC, etc);
- }
- 
- static struct scsi_host_template cs5536_sht = {
