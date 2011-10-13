@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab1JMOpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:45:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49717 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab1JMOp3 (ORCPT
+	id S1755962Ab1JMOqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:46:06 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:55373 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870Ab1JMOqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:45:29 -0400
-Date: Thu, 13 Oct 2011 15:45:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, paul@pwsan.com, grant.likely@secretlab.ca,
-        sboyd@quiinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Jamie Iles <jamie@jamieiles.com>
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-Message-ID: <20111013144515.GD21648@n2100.arm.linux.org.uk>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com> <1316730422-20027-5-git-send-email-mturquette@ti.com>
+	Thu, 13 Oct 2011 10:46:04 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E96F9AC.9000001@cam.ac.uk>
+Date: Thu, 13 Oct 2011 15:46:04 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316730422-20027-5-git-send-email-mturquette@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org, zdevai@gmail.com,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
+References: <1318333383-17663-1-git-send-email-jic23@cam.ac.uk> <1318333383-17663-2-git-send-email-jic23@cam.ac.uk> <20111013143224.GO1098@sirena.org.uk>
+In-Reply-To: <20111013143224.GO1098@sirena.org.uk>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 03:26:59PM -0700, Mike Turquette wrote:
-> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-> new file mode 100644
-> index 0000000..a1d8e79
-> --- /dev/null
-> +++ b/drivers/clk/clk-gate.c
-> @@ -0,0 +1,78 @@
-> +/*
-> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Simple clk gate implementation
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/module.h>
-> +#include <asm/io.h>
+On 10/13/11 15:32, Mark Brown wrote:
+> On Tue, Oct 11, 2011 at 12:43:03PM +0100, Jonathan Cameron wrote:
+> 
+>> +struct iio_dev *iio_find_dev(const char *name);
+>> +void iio_release_dev(struct iio_dev *indio_dev);
+> 
+> This looks like it should really be clk style with a struct device and a
+> back end interface that deals with mapping the provider to consumers at
+> runtime.
+Agreed.  That definitely looks like the best discovery interface
+out there at the moment.  Will reroll with the equivalent.
 
-linux/io.h please.
+We'll have to play a few games in the drivers to map back to the underlying
+bus names so that we have consistent naming.  (simple callback).
+> 
+>> +	/* read from channel 1 and exit */
+>> +	ret = indio_dev->info->read_raw(indio_dev, &indio_dev->channels[0], &val, &val2, 0);
+> 
+> I guess an actual implementation would have wrappers for doing the
+> indirections rather than having users peer into the ops table directly?
+> 
+Yup, for some reason the cover letter seems to have detached from this.
+It suggested exactly that.  There may be weird cases where peering this
+deep into the ops makes sense, but not for something like this one.
+
