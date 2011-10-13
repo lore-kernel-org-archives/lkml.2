@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1JMKmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:42:18 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56580 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab1JMKmM (ORCPT
+	id S1754594Ab1JMKo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:44:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38264 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab1JMKoZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:42:12 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 2/3] pata_serverworks: cleanup cable detection
-Date: Thu, 13 Oct 2011 12:32:18 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201110112011.44748.bzolnier@gmail.com> <201110121705.39026.bzolnier@gmail.com> <20111012185548.4fa03544@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111012185548.4fa03544@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110131232.18514.bzolnier@gmail.com>
+	Thu, 13 Oct 2011 06:44:25 -0400
+Subject: Re: [PATCH RFC V4 10/10] jump-label: initialize jump-label
+ subsystem much earlier
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Thu, 13 Oct 2011 12:43:48 +0200
+In-Reply-To: <c133180533d7e520bb1e818e987117811a666fbc.1318464413.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
+	 <c133180533d7e520bb1e818e987117811a666fbc.1318464413.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318502628.24856.10.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-
-> On Wed, 12 Oct 2011 17:05:38 +0200
-> Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
+On Wed, 2011-10-12 at 17:08 -0700, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> > Alan Cox wrote:
-> > 
-> > > On Tue, 11 Oct 2011 20:11:44 +0200
-> > > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
-> > > 
-> > > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > > > Subject: [PATCH] pata_serverworks: cleanup cable detection
-> > > > 
-> > > > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > > 
-> > > Again no documentation although its at least a bit more obvious why
-> > 
-> > The patch only merges identical cable routines for Dell and Sun
-> > systems into common oem_cable() one.  No behavior changes here.
-> 
-> So put that that in the patch info. It seems fine to me but it ought to
-> be there
+> Initialize jump_labels much earlier, we can use them.
 
-Ok.
+We can use them, where? how? what?, that sentence just begs for more.
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH v2] pata_serverworks: cleanup cable detection
+> diff --git a/init/main.c b/init/main.c
+> index 2a9b88a..f4094ed 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -637,6 +637,7 @@ asmlinkage void __init start_kernel(void)
+>  	acpi_early_init(); /* before LAPIC and SMP init */
+>  	sfi_init_late();
+>  
+> +	jump_label_init();
+>  	ftrace_init();
+>  
+>  	/* Do the rest non-__init'ed, we're now alive */
 
-Merge identical cable routines for Dell and Sun systems into
-common oem_cable() one.
+Can we push them much earlier still? If possible I'd like them to be
+before sched_init() so that I might use them there, if not possible, at
+the very least before enabling interrupts would be nice.
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
-v2: updated patch description
 
-earlier references:
-https://lkml.org/lkml/2010/1/18/324
-
- drivers/ata/pata_serverworks.c |   37 +++++++------------------------------
- 1 file changed, 7 insertions(+), 30 deletions(-)
-
-Index: b/drivers/ata/pata_serverworks.c
-===================================================================
---- a/drivers/ata/pata_serverworks.c
-+++ b/drivers/ata/pata_serverworks.c
-@@ -57,32 +57,14 @@ static const char *csb_bad_ata100[] = {
- };
- 
- /**
-- *	dell_cable	-	Dell serverworks cable detection
-+ *	oem_cable	-	Dell/Sun serverworks cable detection
-  *	@ap: ATA port to do cable detect
-  *
-- *	Dell hide the 40/80 pin select for their interfaces in the top two
-- *	bits of the subsystem ID.
-+ *	Dell PowerEdge and Sun Cobalt 'Alpine' hide the 40/80 pin select
-+ *	for their interfaces in the top two bits of the subsystem ID.
-  */
- 
--static int dell_cable(struct ata_port *ap)
--{
--	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
--
--	if (pdev->subsystem_device & (1 << (ap->port_no + 14)))
--		return ATA_CBL_PATA80;
--	return ATA_CBL_PATA40;
--}
--
--/**
-- *	sun_cable	-	Sun Cobalt 'Alpine' cable detection
-- *	@ap: ATA port to do cable select
-- *
-- *	Cobalt CSB5 IDE hides the 40/80pin in the top two bits of the
-- *	subsystem ID the same as dell. We could use one function but we may
-- *	need to extend the Dell one in future
-- */
--
--static int sun_cable(struct ata_port *ap)
-+static int oem_cable(struct ata_port *ap)
- {
- 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
- 
-@@ -97,15 +79,10 @@ struct sv_cable_table {
- 	int (*cable_detect)(struct ata_port *ap);
- };
- 
--/*
-- *	Note that we don't copy the old serverworks code because the old
-- *	code contains obvious mistakes
-- */
--
- static struct sv_cable_table cable_detect[] = {
--	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_DELL, dell_cable },
--	{ PCI_DEVICE_ID_SERVERWORKS_CSB6IDE,   PCI_VENDOR_ID_DELL, dell_cable },
--	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_SUN,  sun_cable  },
-+	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_DELL, oem_cable },
-+	{ PCI_DEVICE_ID_SERVERWORKS_CSB6IDE,   PCI_VENDOR_ID_DELL, oem_cable },
-+	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_SUN,  oem_cable },
- 	{ PCI_DEVICE_ID_SERVERWORKS_OSB4IDE,   PCI_ANY_ID, ata_cable_40wire  },
- 	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_ANY_ID, ata_cable_unknown },
- 	{ PCI_DEVICE_ID_SERVERWORKS_CSB6IDE,   PCI_ANY_ID, ata_cable_unknown },
