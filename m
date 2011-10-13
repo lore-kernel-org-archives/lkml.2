@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab1JMR72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:59:28 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:45634 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932176Ab1JMR7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:59:25 -0400
-Date: Thu, 13 Oct 2011 20:59:21 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, paul@pwsan.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        johnstul@us.ibm.com, vishwanath.bs@ti.com
-Subject: Re: [PATCH 5/5 v14] omap: usb: host: Replace usbhs core driver APIs
- by Runtime pm APIs
-Message-ID: <20111013175921.GN28290@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1318319531-20476-1-git-send-email-keshava_mgowda@ti.com>
+	id S932383Ab1JMSBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 14:01:55 -0400
+Received: from claw.goop.org ([74.207.240.146]:49838 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752793Ab1JMSBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 14:01:53 -0400
+Message-ID: <4E971580.6030300@goop.org>
+Date: Thu, 13 Oct 2011 09:44:48 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hD6P3ib1XCFtz2ni"
-Content-Disposition: inline
-In-Reply-To: <1318319531-20476-1-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
+References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com> <1318503245.24856.12.camel@twins>
+In-Reply-To: <1318503245.24856.12.camel@twins>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/13/2011 03:54 AM, Peter Zijlstra wrote:
+> On Wed, 2011-10-12 at 17:51 -0700, Jeremy Fitzhardinge wrote:
+>> This is is all unnecessary complication if you're not using PV ticket
+>> locks, it also uses the jump-label machinery to use the standard
+>> "add"-based unlock in the non-PV case.
+>>
+>>         if (TICKET_SLOWPATH_FLAG &&
+>>             unlikely(static_branch(&paravirt_ticketlocks_enabled))) {
+>>                 arch_spinlock_t prev;
+>>
+>>                 prev = *lock;
+>>                 add_smp(&lock->tickets.head, TICKET_LOCK_INC);
+>>
+>>                 /* add_smp() is a full mb() */
+>>
+>>                 if (unlikely(lock->tickets.tail & TICKET_SLOWPATH_FLAG))
+>>                         __ticket_unlock_slowpath(lock, prev);
+>>         } else
+>>                 __add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX); 
+> Not that I mind the jump_label usage, but didn't paravirt have an
+> existing alternative() thingy to do things like this? Or is the
+> alternative() stuff not flexible enough to express this?
 
---hD6P3ib1XCFtz2ni
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, that's a good question.  There are three mechanisms with somewhat
+overlapping concerns:
 
-Hi,
+  * alternative()
+  * pvops patching
+  * jump_labels
 
-On Tue, Oct 11, 2011 at 01:22:11PM +0530, Keshava Munegowda wrote:
-> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->=20
-> The ehci and ohci drivers does not use the APIs of the usbhs
-> core driver; the runtime pm APIs are used for clock
-> enable/disable. Since usbhs is parent platform device of the
-> ehci and ohci devices, the runtime apis indirectly uses the
-> usb hs core device as input parameter to for clock functions.
->=20
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-> Reviewed-by: Kevin Hilman <khilman@ti.com>
-> Reviewed-by: Partha Basak <parthab@india.ti.com>
+Alternative() is for low-level instruction substitution, and really only
+makes sense at the assembler level with one or two instructions.
 
-I'm not sure who should queue this one. Alan, maybe ?
+pvops is basically a collection of ordinary _ops structures full of
+function pointers, but it has a layer of patching to help optimise it. 
+In the common case, this just replaces an indirect call with a direct
+one, but in some special cases it can inline code.  This is used for
+small, extremely performance-critical things like cli/sti, but it
+awkward to use in general because you have to specify the inlined code
+as a parameterless asm.
 
-FWIW:
+Jump_labels is basically an efficient way of doing conditionals
+predicated on rarely-changed booleans - so it's similar to pvops in that
+it is effectively a very ordinary C construct optimised by dynamic code
+patching.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
 
-as an extra comment, this patch has a very deep dependency on the hwmod
-conversion patches which come before this. If those aren't applied on
-the same merge window, we will have a non-working *HCI driver on OMAP.
+So for _arch_spin_unlock(), what I'm trying to go for is that if you're
+not using PV ticketlocks, then the unlock sequence is unchanged from
+normal.  But also, even if you are using PV ticketlocks, I want the
+fastpath to be inlined, with the call out to a special function only
+happening on the slow path.  So the result is that if().  If the
+static_branch is false, then the executed code sequence is:
 
---=20
-balbi
+	nop5
+	addb $2, (lock)
+	ret
 
---hD6P3ib1XCFtz2ni
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+which is pretty much ideal.  If the static_branch is true, then it ends
+up being:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	jmp5 1f
+	[...]
 
-iQIcBAEBAgAGBQJOlyb5AAoJEIaOsuA1yqREhlwQAI1ERq45siI5di45Gt/E+OHg
-htcgCnnHlDCXVsTlNp4cnD6o+wFheJghEPc8D9YdvGKYwqtvsiSCRSz9R+M/2tVs
-XUzr7XjBlL2Lv4GoNVI6gtP6Hixdk6KSeWUAuW8WpMUfVWdrFhXIoJ2/csj0WHtU
-mBzbEdwy+ew/SNoKbDCa3zvu47hbrcW1czJTbXZKdtZOKLLMC1yNVAK9mqKGHXjA
-ALmeVv+utPZBKQGLrftRAbUYh6f9dZ4q0i346YwI8nWAJq0ROgM+6cxlzyUgZozv
-wDNWOiTWuz07sdogUQj2xN8ImGL0VBD0/LML80Vu4w/D9kdmREyDNJ+RVotGXNSj
-16mNjq8AEqKL6X9QnJ3DxGN8qVLZzKdzY8IdD7UZbpgGJojCYQdBMfgKD4OToK2k
-+IM3WOFlIaHunTMrGmiMPgCK0havS6KJtqh3/A/O0VQiPO8xjdBwrZ2ym4XhPysY
-cRac2AXDMnV4XiyPyl4Q5tYNfOVf5pLmv0oKjjw3xpuA/U7PdsEYlMEHU9fo6zZU
-+FsXLkA5uLq6z6ctqLQmbxDebd3o6+/ibyrZv+6hlfEesc2y5P/UODRn5W+jMj1z
-Gvr8QxDB+p6PR3sVvS1esdQzNAC4LWQQQTTX7XvpfjkIepJxrZlirBzbn3H60MBO
-5JXavfdXawO0V47KWZvq
-=1iJT
------END PGP SIGNATURE-----
+1:	lock add $2, (lock)
+	test $1, (lock.tail)
+	jne slowpath
+	ret
+slowpath:...
 
---hD6P3ib1XCFtz2ni--
+which is also pretty good, given all the other constraints.
+
+While I could try use inline patching to get a simply add for the non-PV
+unlock case (it would be awkward without asm parameters), but I wouldn't
+be able to also get the PV unlock fastpath code to be (near) inline. 
+Hence jump_label.
+
+Thanks,
+    J
