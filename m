@@ -1,116 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab1JMQzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:55:11 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:40521 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755840Ab1JMQzJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:55:09 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: David Rientjes <rientjes@google.com>, Con Kolivas <kernel@kolivas.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Date: Thu, 13 Oct 2011 12:54:40 -0400
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Index: AcyIbLQWyqHT8m0YR2KMWptekQzjowBW8jhg
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516D459@USINDEVS02.corp.hds.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
- <20110901100650.6d884589.rdunlap@xenotime.net>
- <20110901152650.7a63cb8b@annuminas.surriel.com>
- <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
- <20111010153723.6397924f.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
- <alpine.DEB.2.00.1110111612120.5236@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110111612120.5236@chino.kir.corp.google.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756289Ab1JMQ7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:59:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753738Ab1JMQ7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:59:21 -0400
+Message-ID: <4E9718E3.8040805@RedHat.com>
+Date: Thu, 13 Oct 2011 12:59:15 -0400
+From: Steve Dickson <SteveD@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=34 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110130169
+To: Steve Dickson <SteveD@redhat.com>
+CC: Chuck Lever <chuck.lever@oracle.com>, Hamo <hamo.by@gmail.com>,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfs-utils: mount: really return from errno test
+References: <CAO_0yfPgXJJSZNDYXHBSt45J0WQsh5EQVUs0nBN4wb+NoT6hAQ@mail.gmail.com> <40D1A40C-BE0C-4AE0-857D-05531615748E@oracle.com> <4E971329.3000007@RedHat.com>
+In-Reply-To: <4E971329.3000007@RedHat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 07:22 PM, David Rientjes wrote:
-> On Tue, 11 Oct 2011, Satoru Moriya wrote:
+Looking further into this issue, I noticed all the following 
+mounts were successful.
+
+# mount -o v3 localhost:/home /mnt/home
+# mount -o v4 localhost:/home /mnt/home
+# mount -o v4 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
+# mount -o v3 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
+
+which the mount point, /mnt/home is mounted 4 different times 
+to the same server. 
+
+Is by design or a real problem?
+
+steved.
+
+
+On 10/13/2011 12:34 PM, Steve Dickson wrote:
+> Yeah... I believe its this one
+>    https://bugzilla.redhat.com/show_bug.cgi?id=744657
 > 
-> I don't know if your test case is the only thing that Rik is looking 
-> at, but if so, then that statement makes me believe that this patch is 
-> definitely in the wrong direction, so NACK on it until additional 
-> information is presented.  The reasoning is simple: if tuning the 
-> bonus given to rt-tasks in the page allocator itself would fix the 
-> issue, then we can certainly add logic specifically for rt-tasks that 
-> can reclaim more aggressively without needing any tunable from 
-> userspace (and _certainly_ not a global tunable that affects every application!).
-
-My test case is just a simple one (maybe too simple), and I tried
-to demonstrate following issues that current kernel has with it.
-
-1. Current kernel uses free memory as pagecache.
-2. Applications may allocate memory burstly and when it happens
-   they may get a latency issue because there are not enough free
-   memory. Also the amount of required memory is wide-ranging.
-3. Some users would like to control the amount of free memory
-   to avoid the situation above.
-4. User can't setup the amount of free memory explicitly.
-   From user's point of view, the amount of free memory is the delta
-   between high watermark - min watermark because below min watermark
-   user applications incur a penalty (direct reclaim). The width of
-   delta depends on min_free_kbytes, actually min watermark / 2, and
-   so if we want to make free memory bigger, we must make
-   min_free_kbytes bigger. It's not a intuitive and it introduces
-   another problem that is possibility of direct reclaim is increased.
-
-I think my test case is too simple and so we may be able to avoid
-the latency issue with my case by setting the workload rt-task,
-improving how to decide rt-task bonus and/or introducing the
-Con's patches below.
-
-But my concern described above is still alive because whether
-latency issue happen or not depends on how heavily workloads
-allocate memory at a short time. Of cource we can say same
-things for extra_free_kbytes, but we can change it and test
-an effect easily.
-
->>> Does there exist anything like a test case which demonstrates the 
->>> need for this feature?
+> On 10/13/2011 10:53 AM, Chuck Lever wrote:
+>> What was the presenting problem?  Is there a bugzilla report I can look at?
 >>
->> Unfortunately I don't have a real test case but just simple one.
->> And in my simple test case, I can avoid direct reclaim if we set 
->> workload as rt-task.
+>> On Oct 11, 2011, at 5:44 AM, Hamo wrote:
 >>
->> The simple test case I used is following:
->> http://marc.info/?l=linux-mm&m=131605773321672&w=2
+>>> We should only try next address family if we meet ECONNREFUSED or EHOSTUNREACH
+>>> for v4 or ECONNREFUSED or EOPNOTSUPP or EHOSTUNREACH for v3v2.
+>>> Before, only a break in swich can not make the program out of for loop.
+>>>
+>>> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+>>> ---
+>>> utils/mount/stropts.c |    6 ++++--
+>>> 1 files changed, 4 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
+>>> index 314a806..4032bf3 100644
+>>> --- a/utils/mount/stropts.c
+>>> +++ b/utils/mount/stropts.c
+>>> @@ -665,9 +665,10 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
+>>> 		case EHOSTUNREACH:
+>>> 			continue;
+>>> 		default:
+>>> -			break;
+>>> +			goto out;
+>>> 		}
+>>> 	}
+>>> +out:
+>>> 	return ret;
+>>> }
+>>>
+>>> @@ -751,9 +752,10 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
+>>> 		case EHOSTUNREACH:
+>>> 			continue;
+>>> 		default:
+>>> -			break;
+>>> +			goto out;
+>>> 		}
+>>> 	}
+>>> +out:
+>>> 	return ret;
+>>> }
+>>>
+>>> -- 
+>>> 1.7.1
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >>
-> 
-> I tried proposing one of Con's patches from his BFS scheduler ("mm: 
-> adjust kswapd nice level for high priority page") about 1 1/2 years 
-> ago that I recall and believe may significantly help your test case.  
-> The thread is at http://marc.info/?t=126743860700002.  (There's a lot 
-> of interesting things in Con's patchset that can be pulled into the 
-> VM, this isn't the only one.)
-> 
-> The patch wasn't merged back then because we wanted a test case that 
-> was specifically fixed by this issue, and it may be that we have just 
-> found one.  If you could try it out without any extra_free_kbytes, I 
-> think we may be able to help your situation.
-
-Thank you, David. I'll try my simple workload with it.
-
-Regards,
-Satoru
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
