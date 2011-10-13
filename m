@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab1JMR25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:28:57 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:13845 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab1JMR24 (ORCPT
+	id S1756728Ab1JMR3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:29:55 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57498 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab1JMR3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:28:56 -0400
-Message-ID: <4E971FD3.2020308@cavium.com>
-Date: Thu, 13 Oct 2011 10:28:51 -0700
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 13 Oct 2011 13:29:53 -0400
+Message-ID: <4E972001.3080204@linux.vnet.ibm.com>
+Date: Thu, 13 Oct 2011 22:59:37 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: manesoni@cisco.com
-CC: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, ananth@in.ibm.com, kamensky@cisco.com
-Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
-References: <20111013090749.GB16761@cisco.com>
-In-Reply-To: <20111013090749.GB16761@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Borislav Petkov <bp@amd64.org>
+CC: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "ashok.raj@intel.com" <ashok.raj@intel.com>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
+References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <201110122131.08811.rjw@sisk.pl> <4E9605C7.5070203@linux.vnet.ibm.com> <201110130009.26552.rjw@sisk.pl> <4E9706D8.5040105@linux.vnet.ibm.com> <20111013160602.GJ6281@google.com> <20111013170153.GB3064@aftab>
+In-Reply-To: <20111013170153.GB3064@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Oct 2011 17:28:55.0701 (UTC) FILETIME=[95895C50:01CC89CD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 02:07 AM, Maneesh Soni wrote:
->
-> From: Maneesh Soni<manesoni@cisco.com>
->
-> This patch provides support for kprobes on branch instructions. The branch
-> instruction at the probed address is actually emulated and not executed
-> out-of-line like other normal instructions. Instead the delay-slot instruction
-> is copied and single stepped out of line.
->
-> At the time of probe hit, the original branch instruction is evaluated
-> and the target cp0_epc is computed similar to compute_retrun_epc(). It
-> is also checked if the delay slot instruction can be skipped, which is
-> true if there is a NOP in delay slot or branch is taken in case of
-> branch likely instructions. Once the delay slot instruction is single
-> stepped the normal execution resume with the cp0_epc updated the earlier
-> computed cp0_epc as per the branch instructions.
->
+On 10/13/2011 10:31 PM, Borislav Petkov wrote:
+> On Thu, Oct 13, 2011 at 12:06:02PM -0400, Tejun Heo wrote:
+>> I hate to sound like a broken recorder but the above patch isn't
+>> strictly correct for hot-swap cases, right?
+> 
+> hpa is working on a ucode loading solution which will take care of your
+> hotswap case too.
+> 
 
-I haven't tested it but...
+Tejun, I have written a patch below (untested) that does what you said.
+So Boris, hpa's work would make such a patch unnecessary is it?
 
+Thanks,
+Srivatsa S. Bhat
 
-> Signed-off-by: Maneesh Soni<manesoni@cisco.com>
-> ---
->   arch/mips/include/asm/kprobes.h |    7 +
->   arch/mips/kernel/kprobes.c      |  341 +++++++++++++++++++++++++++++++++++----
->   2 files changed, 320 insertions(+), 28 deletions(-)
->
-[...]
-> +static int evaluate_branch_instruction(struct kprobe *p, struct pt_regs *regs,
-> +					struct kprobe_ctlblk *kcb)
->   {
-> +	union mips_instruction insn = p->opcode;
-> +	unsigned int dspcontrol;
-> +	long epc;
-> +
-> +	epc = regs->cp0_epc;
-> +	if (epc&  3)
-> +		goto unaligned;
-> +
-> +	if (p->ainsn.insn->word == 0)
-> +		kcb->flags |= SKIP_DELAYSLOT;
-> +	else
-> +		kcb->flags&= ~SKIP_DELAYSLOT;
-> +
-> +	switch (insn.i_format.opcode) {
-> +	/*
-> +	 * jr and jalr are in r_format format.
-> +	 */
-> +	case spec_op:
-[...]
-> +	case bgtzl_op:
-> +		/* rt field assumed to be zero */
-> +		if ((long)regs->regs[insn.i_format.rs]>  0) {
-> +			epc = epc + 4 + (insn.i_format.simmediate<<  2);
-> +			kcb->flags |= SKIP_DELAYSLOT;
-> +		} else
-> +			epc += 8;
-> +		regs->cp0_epc = epc;
-> +		break;
+---
 
+ arch/x86/kernel/microcode_core.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-
-Where is the handling for:
-
-	case cop1_op:
-
-#ifdef CONFIG_CPU_CAVIUM_OCTEON
-	case lwc2_op: /* This is bbit0 on Octeon */
-	case ldc2_op: /* This is bbit032 on Octeon */
-	case swc2_op: /* This is bbit1 on Octeon */
-	case sdc2_op: /* This is bbit132 on Octeon */
-#endif
-
-These are all defined in insn_has_delayslot() but not here.
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index f924280..849ae2d 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -155,6 +155,27 @@ static int collect_cpu_info(int cpu)
+ 	return ret;
+ }
+ 
++/*
++ * Compare the microcode revision that the kernel has in memory
++ * for this cpu and the microcode revision that we need to apply
++ * on this cpu. If they match, return 0, else return -1.
++ */
++static int compare_cpu_with_microcode(int cpu)
++{
++	struct ucode_cpu_info *uci_mem = ucode_cpu_info + cpu;
++	struct ucode_cpu_info uci_cpu;
++	int ret;
++
++	ret = collect_cpu_info_on_target(cpu, &uci_cpu->cpu_sig);
++	if(!ret) {
++		if (!(uci_mem->cpu_sig->sig == uci_cpu->cpu_sig->sig &&
++		      uci_mem->cpu_sig->pf == uci_cpu->cpu_sig->pf &&
++		      uci_mem->cpu_sig->rev == uci_cpu->cpu_sig->rev))
++			ret = -1;
++	}
++	return ret;
++}
++
+ struct apply_microcode_ctx {
+ 	int err;
+ };
+@@ -397,6 +418,18 @@ static enum ucode_state microcode_update_cpu(int cpu)
+ 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+ 	enum ucode_state ustate;
+ 
++	/*
++	 * If the CPU on which we are going to update the
++	 * microcode and the microcode which we currently
++	 * have in kernel memory are incompatible, then
++	 * invalidate the microcode that we have (and also
++	 * free its memory), so that we can get the required
++	 * microcode afresh.
++	 */
++	if (compare_cpu_with_microcode(cpu)) {
++		microcode_fini_cpu(cpu);
++	}
++
+ 	if (uci->valid)
+ 		ustate = microcode_resume_cpu(cpu);
+ 	else
 
