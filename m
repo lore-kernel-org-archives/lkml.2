@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab1JMAV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:21:26 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49877 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab1JMAVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:21:25 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: "Udo A. Steinberg" <udo@hypervisor.org>, Dave Airlie <airlied@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: Kernel panic with intel_iommu=on
-In-Reply-To: Your message of "Wed, 12 Oct 2011 10:19:55 PDT."
-             <1318439995.4465.8.camel@nimitz>
-From: Valdis.Kletnieks@vt.edu
-References: <20110812145818.00cde392@laptop.anywhere.org> <CAPM=9tzwYHgbmKUuPsrW_4nrKOQ5m+7N0JV-kMpOv43yVh-49A@mail.gmail.com> <20110812160846.29fd9149@laptop.anywhere.org>
-            <1318439995.4465.8.camel@nimitz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1318465118_2509P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 12 Oct 2011 20:18:38 -0400
-Message-ID: <11892.1318465118@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4E962E61.00B5,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1751516Ab1JMAWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:22:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49590 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002Ab1JMAWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:22:13 -0400
+Date: Wed, 12 Oct 2011 18:12:02 -0600
+From: Greg KH <gregkh@suse.de>
+To: Aras Vaichas <arasv@magellan-technology.com>
+Cc: Mihai Don??u <mihai.dontu@gmail.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        Maxim Osipov <maxim.osipov@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: Fix kernel oops with g_ether and Windows
+Message-ID: <20111013001202.GB19446@suse.de>
+References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
+ <5A47E75E594F054BAF48C5E4FC4B92AB03293269CD@dbde02.ent.ti.com>
+ <20100907212915.GB6798@suse.de>
+ <201009080254.03070.mihai.dontu@gmail.com>
+ <20100908003424.GA27719@suse.de>
+ <CAPs5rNZ07VZ0qK2PVG2u1DLEEnXS_CvVcYGLLE7fzFCcMo696A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPs5rNZ07VZ0qK2PVG2u1DLEEnXS_CvVcYGLLE7fzFCcMo696A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1318465118_2509P
-Content-Type: text/plain; charset=us-ascii
+On Thu, Oct 13, 2011 at 10:31:08AM +1100, Aras Vaichas wrote:
+> On 8 September 2010 10:34, Greg KH <gregkh@suse.de> wrote:
 
-On Wed, 12 Oct 2011 10:19:55 PDT, Dave Hansen said:
-> I'm seeing this all of a sudden on 3.1 kernels.  It might be because of
-> the firefox upgrade to 5.0 that others were talking about.  But, it's
-> quite easy to trigger.  Seems to happen in the first 10 minutes of using
-> the system.  I was only able to capture this with netconsole.
+You are responding to a message from over a year ago?
 
-I was seeing DMAR issues as well, but I figured it was self-inflicted because
-it was due to the NVidia binary driver. Rebooted with 'intel_iommu=off' and it
-behaved itself.  Basically, I got a flood of messages like these:
+> > On Wed, Sep 08, 2010 at 02:54:02AM +0300, Mihai Don??u wrote:
+> > > On Wednesday 08 September 2010 00:29:15 Greg KH wrote:
+> > > > On Tue, Sep 07, 2010 at 04:18:23PM +0530, Gadiyar, Anand wrote:
+> > > > > Since Greg has already sent a pull request, I won't touch the file
+> > > > > now; maybe a trivial patch later on to fix up the coding style.
+> > > >
+> > > > That would be fine to have, I'd gladly accept it.
+> > >
+> > > Would something like the following do? It's against:
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6.git
+> > >
+> > > Corrected the coding style.
+> >
+> > Looks good, thanks, I'll go queue it up.
+> 
+> Did this patch get applied and the problem resolved?
 
-Oct 12 17:20:09 turing-police kernel: [  301.401157] DRHD: handling fault status reg 2
-Oct 12 17:20:09 turing-police kernel: [  301.401164] DMAR:[DMA Read] Request device [01:00.0] fault addr d5b76000
-Oct 12 17:20:09 turing-police kernel: [  301.401166] DMAR:[fault reason 01] Present bit in root entry is clear
+Probably, I'd suggest you take a look at the kernel sources to verify
+this, I can't remember what was applied last week very well, let alone
+last year.
 
-Oct 12 17:20:13 turing-police kernel: [  305.615039] DRHD: handling fault status reg 2
-Oct 12 17:20:13 turing-police kernel: [  305.615047] DMAR:[DMA Read] Request device [01:00.0] fault addr 110de9000
-Oct 12 17:20:13 turing-police kernel: [  305.615048] DMAR:[fault reason 01] Present bit in root entry is clear
+> I'm running 2.6.33.7-rt29 and we have a customer in India who
+> complains that they can't connect via USB. We don't have the problem
+> here, or anywhere else that we know of.
+> 
+> I looked at the logs of the device and it appears to have the same
+> Oops error as the one that this patch addresses.
 
-Oct 12 17:20:14 turing-police kernel: [  306.056109] DRHD: handling fault status reg 2
-Oct 12 17:20:14 turing-police kernel: [  306.056116] DMAR:[DMA Read] Request device [01:00.0] fault addr ca861000
-Oct 12 17:20:14 turing-police kernel: [  306.056117] DMAR:[fault reason 01] Present bit in root entry is clear
+What kernel version are they using?  Hopefully something newer than the
+date of this original email :)
 
-Oct 12 17:20:14 turing-police kernel: [  306.059950] DRHD: handling fault status reg 2
-Oct 12 17:20:14 turing-police kernel: [  306.059959] DMAR:[DMA Read] Request device [01:00.0] fault addr ca861000
-Oct 12 17:20:14 turing-police kernel: [  306.059960] DMAR:[fault reason 01] Present bit in root entry is clear
-
-Oct 12 17:20:14 turing-police kernel: [  306.064171] DRHD: handling fault status reg 2
-Oct 12 17:20:14 turing-police kernel: [  306.064179] DMAR:[DMA Read] Request device [01:00.0] fault addr ca861000
-Oct 12 17:20:14 turing-police kernel: [  306.064180] DMAR:[fault reason 01] Present bit in root entry is clear
-
-If that tells the iommu people something, fine.  If it doesn't, that's OK too, I'll
-take it up with NVidia.
-
-
---==_Exmh_1318465118_2509P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOli5ecC3lWbTT17ARAq1OAJ0Z2HPcmIo1aDIK9hHxwoB2ajKJ/QCgxCw4
-nMZvox7EPVznJ15o/TK6490=
-=di0+
------END PGP SIGNATURE-----
-
---==_Exmh_1318465118_2509P--
-
+greg k-h
