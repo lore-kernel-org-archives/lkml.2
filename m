@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab1JMPGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:06:47 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35440 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755724Ab1JMPGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:06:46 -0400
-Date: Thu, 13 Oct 2011 16:06:42 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in __vm_enough_memory
-Message-ID: <20111013150642.GC6169@csn.ul.ie>
-References: <20111012160202.GA18666@sgi.com>
- <20111012120118.e948f40a.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110121452220.31218@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110121452220.31218@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755883Ab1JMPIe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:08:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43429 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1JMPId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:08:33 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3/6] perf hists: Fix compilation when NO_NEWT_SUPPORT is set
+Date: Thu, 13 Oct 2011 12:08:21 -0300
+Message-Id: <1318518504-23299-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1318518504-23299-1-git-send-email-acme@infradead.org>
+References: <1318518504-23299-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 02:57:53PM -0500, Christoph Lameter wrote:
-> > I think we've discussed switching vm_stat[] to a contention-avoiding
-> > counter scheme.  Simply using <percpu_counter.h> would be the simplest
-> > approach.  They'll introduce inaccuracies but hopefully any problems
-> > from that will be minor for the global page counters.
-> 
-> We already have a contention avoiding scheme for counter updates in
-> vmstat.c. The problem here is that vm_stat is frequently read. Updates
-> from other cpus that fold counter updates in a deferred way into the
-> global statistics cause cacheline eviction. The updates occur too frequent
-> in this load.
-> 
+From: Stephane Eranian <eranian@google.com>
 
-There is also a correctness issue to be concerned with. In the patch,
-there is a two second window during which the counters are not being
-read. This increases the risk that the system gets too overcommitted
-when overcommit_memory == OVERCOMMIT_GUESS.
+This patch, relative to tip/master, makes perf compile when
+NO_NEWT_SUPPORT is set.  It also fixes the line formatting to fit 80
+columns.
 
-If vm_enough_memory is being heavily hit as well, it implies that this
-workload is mmap-intensive which is pretty inefficient in itself. I
-guess it would also apply to workloads that are malloc-intensive for
-large buffers but I'd expect the cache line bounces to only dominate if
-there was little or no computation on the resulting buffers.
+Please test with NO_NEWT.
 
-As a result, I wonder how realistic is this test workload and who useful
-fixing this problem is in general?
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20111012120328.GA1619@quad
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/hist.h |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-> > otoh, I think we've been round this loop before and I don't recall why
-> > nothing happened.
-> 
-> The update behavior can be tuned using /proc/sys/vm/stat_interval.
-> Increase the interval to reduce the folding into the global counter (set
-> maybe to 10?). This will reduce contention.
-
-Unless the thresholds for per-cpu drift are being hit. If they are
-allocating and freeing pages in large numbers for example, we'll be
-calling __mod_zone_page_state(NR_FREE_PAGES) in large batches,
-overflowing the counters, calling zone_page_state_add() and dirtying the
-global vm_stat that way. In that case, increasing stat_interval alone is
-not the answer.
-
-> The other approach is to
-> increase the allowed delta per zone if frequent updates occur via the
-> overflow checks in vmstat.c. See calculate_*_threshold there.
-> 
-
-If this approach is taken, be careful that threshold is an s8 so it is
-limited in size.
-
-> Note that the deltas are current reduced for memory pressure situations
-> (after recent patches by Mel). This will cause a significant increase in
-> vm_stat cacheline contention compared to earlier kernels.
-> 
-
-That statement is misleading. The thresholds are reduced while
-kswapd is awake to avoid the possibility of all memory being allocated
-and the machine livelocking. If the system is under enough pressure for
-kswapd to be awake for prolonged periods of time, the overhead of cache
-line bouncing while updating vm_stat is going to be a lesser concern.
-
-I like the idea of the threshold being scaled under normal circumstances
-depending on the size of the central counter. Conceivably it could be
-done as part of refresh_cpu_vm_stats() using the old value of the
-central counter while walking each per_cpu_pageset.
-
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 7ea1e56..7416521 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -103,16 +103,20 @@ struct perf_evlist;
+ #ifdef NO_NEWT_SUPPORT
+ static inline
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __used,
+-				  const char *help __used, void(*timer)(void *arg) __used, void *arg,
++				  const char *help __used,
++				  void(*timer)(void *arg) __used,
++				  void *arg __used,
+ 				  int refresh __used)
+ {
+ 	return 0;
+ }
+ 
+ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+-					   int evidx __used, int nr_events __used,
++					   int evidx __used,
++					   int nr_events __used,
+ 					   void(*timer)(void *arg) __used,
+-					   void *arg __used, int delay_secs __used);
++					   void *arg __used,
++					   int delay_secs __used)
+ {
+ 	return 0;
+ }
 -- 
-Mel Gorman
-SUSE Labs
+1.6.2.5
+
