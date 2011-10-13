@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab1JMS2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 14:28:55 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36488 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755854Ab1JMS2x (ORCPT
+	id S1756146Ab1JMSar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 14:30:47 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:41387 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754663Ab1JMSaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 14:28:53 -0400
-Message-ID: <4E972DE1.9020308@xenotime.net>
-Date: Thu, 13 Oct 2011 11:28:49 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Thu, 13 Oct 2011 14:30:46 -0400
+Date: Thu, 13 Oct 2011 12:30:45 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Subject: Re: [PATCH 2/5 v14] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+In-Reply-To: <1318319355-20168-1-git-send-email-keshava_mgowda@ti.com>
+Message-ID: <alpine.DEB.2.00.1110131227270.24155@utopia.booyaka.com>
+References: <1318319355-20168-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [alsa-devel] linux-next: Tree for Oct 12 (sound/soc/codecs/wm1250-ev1)
-References: <20111012175425.a2e3e6e6a92265e433aeca25@canb.auug.org.au> <4E9634C9.3020404@xenotime.net> <20111013102427.GG1098@sirena.org.uk>
-In-Reply-To: <20111013102427.GG1098@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 03:24 AM, Mark Brown wrote:
-> On Wed, Oct 12, 2011 at 05:46:01PM -0700, Randy Dunlap wrote:
+On Tue, 11 Oct 2011, Keshava Munegowda wrote:
+
+> Following 2 hwmod structures are added
+>     1. usb_host_hs
+>          The hwmod of usbhs with uhh, ehci and ohci base addresses
+>          functional clock and ehci, ohci irqs
 > 
->> When no GPIO kconfig options are enabled:
->> (not GPIOLIB, not GENERIC_GPIO):
+>     2. usb_tll_hs
+>           hwmod of usbhs with the TLL base address and irq.
 > 
-> As ever the consumer side GPIO API is supposed to stub itself out when
-> not in use.
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> Reviewed-by: Partha Basak <parthab@india.ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  230 ++++++++++++++++++++++++++++
+>  1 files changed, 230 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> index 59fdb9f..c06b4a4 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> @@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
 
-You are listed as MODULE_AUTHOR().  Can we expect a fix?
+...
 
-I don't see how stubs help with source lines like:
-struct wm1250_priv {
-	struct gpio gpios[WM1250_EV1_NUM_GPIOS];
-};
+> +static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
+> +	.clk		= "usbtll_ick",
+> +	.addr		= omap34xx_usb_tll_hs_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+This version doesn't respond to my previous comment:
+
+"This interface is missing a .master and .slave.  It must have both.  So, 
+dropping this patch until it's fixed."
+
+Insert boilerplate frustration here...
+
+
+- Paul
