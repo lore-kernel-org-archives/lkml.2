@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab1JMIn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 04:43:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47805 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab1JMInZ convert rfc822-to-8bit (ORCPT
+	id S1754055Ab1JMIoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 04:44:11 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:10691
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753574Ab1JMIoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 04:43:25 -0400
+	Thu, 13 Oct 2011 04:44:10 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-FB-SS: 13,
+Subject: Re: [alsa-devel] [PATCH 2/9] ASoC: da7210: Add support for line
+ input and mic
+From: Ashish Chavan <ashish.chavan@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111012145310.GO3647@opensource.wolfsonmicro.com>
+References: <1318431492.12107.403.camel@matrix>
+	 <20111012145310.GO3647@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Oct 2011 14:25:38 +0530
+Message-ID: <1318496138.12107.435.camel@matrix>
 MIME-Version: 1.0
-In-Reply-To: <201110131025.24950.philipp.reisner@linbit.com>
-References: <1318422455-17539-1-git-send-email-philipp.reisner@linbit.com>
-	<1318422455-17539-14-git-send-email-philipp.reisner@linbit.com>
-	<CAMuHMdXGCEUGanrsyFkgyr3ZAr5YpgrjbVqJtvCu5Li6XMMDMA@mail.gmail.com>
-	<201110131025.24950.philipp.reisner@linbit.com>
-Date: Thu, 13 Oct 2011 10:43:24 +0200
-X-Google-Sender-Auth: pONF9Dhks-rdBL-pZ_epMFt7A-0
-Message-ID: <CAMuHMdXesV96Q-XUNkTRWN9aVyk3oH1HGgn+0p_4A3EtyqG2mQ@mail.gmail.com>
-Subject: Re: [Drbd-dev] [PATCH 13/13] DRBD: Fix comparison always false
- warning due to long/long long compare
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: drbd-dev@lists.linbit.com, David Howells <dhowells@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.20.243]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 10:25, Philipp Reisner
-<philipp.reisner@linbit.com> wrote:
-> Am Mittwoch, 12. Oktober 2011, 15:35:28 schrieb Geert Uytterhoeven:
->> On Wed, Oct 12, 2011 at 14:27, Philipp Reisner
->> <philipp.reisner@linbit.com> wrote:
->> > From: David Howells <dhowells@redhat.com>
->> >
->> > Fix warnings of the following nature in the drbd header:
->> >
->> > In file included from drivers/block/drbd/drbd_bitmap.c:32:
->> > drivers/block/drbd/drbd_int.h: In function 'drbd_get_syncer_progress':
->> > drivers/block/drbd/drbd_int.h:2234: warning: comparison is always false
->> > due to limited range of data
->> >
->> > where mdev->rs_total (an unsigned long) is being compared to 1ULL << 32,
->> > which is always false on a 32-bit machine.
->>
->> But on 32-bit, unsigned long is never larger than UINT_MAX neither, so
->> it doesn't
->> really change anything??
->
-> As the commit message says, David's intention was to silence a compiler
-> warning, not to change anything.
+On Wed, 2011-10-12 at 15:53 +0100, Mark Brown wrote:
+> On Wed, Oct 12, 2011 at 08:28:12PM +0530, Ashish Chavan wrote:
+> 
+> > +static const char *da7210_mic_bias_voltage_txt[] = {
+> > +	"1.5", "1.6", "2.2", "2.3"
+> > +};
+> > +
+> > +static const struct soc_enum da7210_mic_bias =
+> > +	SOC_ENUM_SINGLE(DA7210_MIC_L, 4, 4, da7210_mic_bias_voltage_txt);
+> > +
+> 
+> This shouldn't be application controllable, it's a board property and if
+> it needs to be managed it's likely to be by in kernel things like
+> accessory detection.  We do have some older drivers that do this but
+> they're not good.  Use platform data.
+> 
 
-Sure, but
-  1) Is the comparison a bug on 32-bit?
-  2) I don't see a reason why (a different version of) gcc won't give
-a warning for the
-      new comparison always being false.
+In that case I think, it's better to remove it from here.
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
