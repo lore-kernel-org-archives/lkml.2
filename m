@@ -1,62 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab1JMOG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:06:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56901 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab1JMOGy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:06:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318099080-26227-1-git-send-email-martinez.javier@gmail.com>
-References: <1318099080-26227-1-git-send-email-martinez.javier@gmail.com>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Thu, 13 Oct 2011 16:06:33 +0200
-Message-ID: <CAAwP0s0iQtsmf6=2H17o_k6UagTdHeTffkaFWuB4UMPgb=WdxA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/3] Input: Cypress TTSP device driver
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mohan Pallaka <mpallaka@codeaurora.org>,
-        Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755715Ab1JMOLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:11:08 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38697 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755516Ab1JMOLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:11:04 -0400
+From: Kumar Gala <galak@kernel.crashing.org>
+To: linuxppc-dev@ozlabs.org
+Cc: Andrew Morton <akpm@osdl.org>, linux-kernel@vger.kernel.org,
+        alexandre.bounine@idt.com, Liu Gang <Gang.Liu@freescale.com>
+Subject: [PATCH 1/5][v2] powerpc/fsl: Document rapidio node binding-information
+Date: Thu, 13 Oct 2011 09:08:38 -0500
+Message-Id: <1318514922-12672-1-git-send-email-galak@kernel.crashing.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 8, 2011 at 8:37 PM, Javier Martinez Canillas
-<martinez.javier@gmail.com> wrote:
-> Cypress TrueTouch(tm) Standard Product controllers are found in
-> a wide range of embedded devices. This patch-set adds support for a
-> variety of TTSP controllers.
->
-> The original author of the driver is Kevin McNeely <kev@cypress.com>
->
-> Since the hardware is capable of tracking identifiable contacts and the
-> original driver used multi-touch protocol type A (stateless), I've added
-> multi-touch protocol type B (stateful) support.
->
-> The driver is composed of a core driver that process the data sent by
-> the contacts (fingers) and two bus specific interface modules (I2C and SPI).
->
-> This is a fifth version of the driver that fixes issues called out by
-> Dmitry Torokhov, Henrik Rydberg and Mohan Pallaka and Kevin McNeely.
->
-> The patchset is composed of the patches:
->
-> [PATCH v5 1/3] Input: cyttsp - Cypress TTSP capacitive multi-touch screen support
-> [PATCH v5 2/3] Input: cyttsp - add support for Cypress TTSP touchscreen I2C bus interface
-> [PATCH v5 3/3] Input: cyttsp - add support for Cypress TTSP touchscreen SPI bus interface
->
+From: Liu Gang <Gang.Liu@freescale.com>
 
-Hi Henrik,
+This document is created for powerpc rapidio and rmu nodes in dts file.
+These nodes can support two rapidio ports and message units. In addition,
+It explicates the properties and gives examples about rapidio and rmu nodes.
 
-Any feedback from this patch-set?
+Signed-off-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Jin Qing <b24347@freescale.com>
+Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+---
+ .../devicetree/bindings/powerpc/fsl/srio-rmu.txt   |  163 ++++++++++++++++++++
+ .../devicetree/bindings/powerpc/fsl/srio.txt       |  103 ++++++++++++
+ 2 files changed, 266 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/powerpc/fsl/srio-rmu.txt
+ create mode 100644 Documentation/devicetree/bindings/powerpc/fsl/srio.txt
 
-Thank you and best regards,
-
+diff --git a/Documentation/devicetree/bindings/powerpc/fsl/srio-rmu.txt b/Documentation/devicetree/bindings/powerpc/fsl/srio-rmu.txt
+new file mode 100644
+index 0000000..b9a8a2b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/powerpc/fsl/srio-rmu.txt
+@@ -0,0 +1,163 @@
++Message unit node:
++
++For SRIO controllers that implement the message unit as part of the controller
++this node is required.  For devices with RMAN this node should NOT exist.  The
++node is composed of three types of sub-nodes ("fsl-srio-msg-unit",
++"fsl-srio-dbell-unit" and "fsl-srio-port-write-unit").
++
++See srio.txt for more details about generic SRIO controller details.
++
++   - compatible
++	Usage: required
++	Value type: <string>
++	Definition: Must include "fsl,srio-rmu-vX.Y", "fsl,srio-rmu".
++
++	The version X.Y should match the general SRIO controller's IP Block
++	revision register's Major(X) and Minor (Y) value.
++
++   - reg
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: A standard property.  Specifies the physical address and
++		length of the SRIO configuration registers for message units
++		and doorbell units.
++
++   - fsl,liodn
++	Usage: optional-but-recommended (for devices with PAMU)
++	Value type: <prop-encoded-array>
++	Definition: The logical I/O device number for the PAMU (IOMMU) to be
++		correctly configured for SRIO accesses.  The property should
++		not exist on devices that do not support PAMU.
++
++		The LIODN value is associated with all RMU transactions
++		(msg-unit, doorbell, port-write).
++
++Sub-Nodes for RMU:  The RMU node is composed of multiple sub-nodes that
++correspond to the actual sub-controllers in the RMU.  The manual for a given
++SoC will detail which and how many of these sub-controllers are implemented.
++
++Message Unit:
++
++   - compatible
++	Usage: required
++	Value type: <string>
++	Definition: Must include "fsl,srio-msg-unit-vX.Y", "fsl,srio-msg-unit".
++
++	The version X.Y should match the general SRIO controller's IP Block
++	revision register's Major(X) and Minor (Y) value.
++
++   - reg
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: A standard property.  Specifies the physical address and
++		length of the SRIO configuration registers for message units
++		and doorbell units.
++
++   - interrupts
++	Usage: required
++	Value type: <prop_encoded-array>
++	Definition:  Specifies the interrupts generated by this device.  The
++		value of the interrupts property consists of one interrupt
++		specifier. The format of the specifier is defined by the
++		binding document describing the node's interrupt parent.
++
++		A pair of IRQs are specified in this property.  The first
++		element is associated with the transmit (TX) interrupt and the
++		second element is associated with the receive (RX) interrupt.
++
++Doorbell Unit:
++
++   - compatible
++	Usage: required
++	Value type: <string>
++	Definition: Must include:
++		"fsl,srio-dbell-unit-vX.Y", "fsl,srio-dbell-unit"
++
++	The version X.Y should match the general SRIO controller's IP Block
++	revision register's Major(X) and Minor (Y) value.
++
++   - reg
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: A standard property.  Specifies the physical address and
++		length of the SRIO configuration registers for message units
++		and doorbell units.
++
++   - interrupts
++	Usage: required
++	Value type: <prop_encoded-array>
++	Definition:  Specifies the interrupts generated by this device.  The
++		value of the interrupts property consists of one interrupt
++		specifier. The format of the specifier is defined by the
++		binding document describing the node's interrupt parent.
++
++		A pair of IRQs are specified in this property.  The first
++		element is associated with the transmit (TX) interrupt and the
++		second element is associated with the receive (RX) interrupt.
++
++Port-Write Unit:
++
++   - compatible
++	Usage: required
++	Value type: <string>
++	Definition: Must include:
++		 "fsl,srio-port-write-unit-vX.Y", "fsl,srio-port-write-unit"
++
++	The version X.Y should match the general SRIO controller's IP Block
++	revision register's Major(X) and Minor (Y) value.
++
++   - reg
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: A standard property.  Specifies the physical address and
++		length of the SRIO configuration registers for message units
++		and doorbell units.
++
++   - interrupts
++	Usage: required
++	Value type: <prop_encoded-array>
++	Definition:  Specifies the interrupts generated by this device.  The
++		value of the interrupts property consists of one interrupt
++		specifier. The format of the specifier is defined by the
++		binding document describing the node's interrupt parent.
++
++		A single IRQ that handles port-write conditions is
++		specified by this property.  (Typically shared with error).
++
++   Note: All other standard properties (see the ePAPR) are allowed
++   but are optional.
++
++Example:
++	rmu: rmu@d3000 {
++		compatible = "fsl,srio-rmu";
++		reg = <0xd3000 0x400>;
++		ranges = <0x0 0xd3000 0x400>;
++		fsl,liodn = <0xc8>;
++
++		message-unit@0 {
++			compatible = "fsl,srio-msg-unit";
++			reg = <0x0 0x100>;
++			interrupts = <
++				60 2 0 0  /* msg1_tx_irq */
++				61 2 0 0>;/* msg1_rx_irq */
++		};
++		message-unit@100 {
++			compatible = "fsl,srio-msg-unit";
++			reg = <0x100 0x100>;
++			interrupts = <
++				62 2 0 0  /* msg2_tx_irq */
++				63 2 0 0>;/* msg2_rx_irq */
++		};
++		doorbell-unit@400 {
++			compatible = "fsl,srio-dbell-unit";
++			reg = <0x400 0x80>;
++			interrupts = <
++				56 2 0 0  /* bell_outb_irq */
++				57 2 0 0>;/* bell_inb_irq */
++		};
++		port-write-unit@4e0 {
++			compatible = "fsl,srio-port-write-unit";
++			reg = <0x4e0 0x20>;
++			interrupts = <16 2 1 11>;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+new file mode 100644
+index 0000000..b039bcb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+@@ -0,0 +1,103 @@
++* Freescale Serial RapidIO (SRIO) Controller
++
++RapidIO port node:
++Properties:
++   - compatible
++	Usage: required
++	Value type: <string>
++	Definition: Must include "fsl,srio" for IP blocks with IP Block
++	Revision Register (SRIO IPBRR1) Major ID equal to 0x01c0.
++
++	Optionally, a compatiable string of "fsl,srio-vX.Y" where X is Major
++	version in IP Block Revision Register and Y is Minor version.  If this
++	compatiable is provided it should be ordered before "fsl,srio".
++
++   - reg
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: A standard property.  Specifies the physical address and
++		length of the SRIO configuration registers.  The size should
++		be set to 0x11000.
++
++   - interrupts
++	Usage: required
++	Value type: <prop_encoded-array>
++	Definition:  Specifies the interrupts generated by this device.  The
++		value of the interrupts property consists of one interrupt
++		specifier. The format of the specifier is defined by the
++		binding document describing the node's interrupt parent.
++
++		A single IRQ that handles error conditions is specified by this
++		property.  (Typically shared with port-write).
++
++   - fsl,srio-rmu-handle:
++	Usage: required if rmu node is defined
++	Value type: <phandle>
++	Definition: A single <phandle> value that points to the RMU.
++	(See srio-rmu.txt for more details on RMU node binding)
++
++Port Child Nodes:  There should a port child node for each port that exists in
++the controller.  The ports are numbered starting at one (1) and should have
++the following properties:
++
++   - cell-index
++	Usage: required
++	Value type: <u32>
++	Definition: A standard property.  Matches the port id.
++
++   - ranges
++	Usage: required if local access windows preset
++	Value type: <prop-encoded-array>
++	Definition: A standard property. Utilized to describe the memory mapped
++		IO space utilized by the controller.  This corresponds to the
++		setting of the local access windows that are targeted to this
++		SRIO port.
++
++   - fsl,liodn
++	Usage: optional-but-recommended (for devices with PAMU)
++	Value type: <prop-encoded-array>
++	Definition: The logical I/O device number for the PAMU (IOMMU) to be
++		correctly configured for SRIO accesses.  The property should
++		not exist on devices that do not support PAMU.
++
++		For HW (ie, the P4080) that only supports a LIODN for both
++		memory and maintenance transactions then a single LIODN is
++		represented in the property for both transactions.
++
++		For HW (ie, the P304x/P5020, etc) that supports an LIODN for
++		memory transactions and a unique LIODN for maintenance
++		transactions then a pair of LIODNs are represented in the
++		property.  Within the pair, the first element represents the
++		LIODN associated with memory transactions and the second element
++		represents the LIODN associated with maintenance transactions
++		for the port.
++
++Note: All other standard properties (see ePAPR) are allowed but are optional.
++
++Example:
++
++	rapidio: rapidio@ffe0c0000 {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		reg = <0xf 0xfe0c0000 0 0x11000>;
++		compatible = "fsl,srio";
++		interrupts = <16 2 1 11>; /* err_irq */
++		fsl,srio-rmu-handle = <&rmu>;
++		ranges;
++
++		port1 {
++			cell-index = <1>;
++			#address-cells = <2>;
++			#size-cells = <2>;
++			fsl,liodn = <34>;
++			ranges = <0 0 0xc 0x20000000 0 0x10000000>;
++		};
++
++		port2 {
++			cell-index = <2>;
++			#address-cells = <2>;
++			#size-cells = <2>;
++			fsl,liodn = <48>;
++			ranges = <0 0 0xc 0x30000000 0 0x10000000>;
++		};
++	};
 -- 
-Javier Martínez Canillas
-(+34) 682 39 81 69
-Barcelona, Spain
+1.7.3.4
+
