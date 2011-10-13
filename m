@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414Ab1JMXJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 19:09:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14192 "EHLO mga11.intel.com"
+	id S1756689Ab1JMXJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 19:09:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61259 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755876Ab1JMXJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 19:09:01 -0400
+	id S1755421Ab1JMXI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 19:08:59 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,343,1315206000"; 
-   d="scan'208";a="73443405"
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="62778877"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: dri-devel@lists.freedesktop.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, David Airlie <airlied@linux.ie>
-Subject: [PATCH 02/12] RADEON: Move r100_*_*reg out of line
-Date: Thu, 13 Oct 2011 16:08:42 -0700
-Message-Id: <1318547332-23155-2-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 12/12] Force always inline for gcc 4.5 when optimizing for size
+Date: Thu, 13 Oct 2011 16:08:52 -0700
+Message-Id: <1318547332-23155-12-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
 References: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
@@ -25,121 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This shrinks the sizes of a lot of functions in the radeon driver
-dramatically.
+I found that gcc 4.5 didn't inline a lot of inlines with
+CONFIG_OPTIMIZE_INLINING and CONFIG_CC_OPTIMIZE_FOR_SIZE. It was quite
+common to have very small inlines to be out of line, or worse inline
+statics in include files to be out of line with a copy for every file
+using it too.
 
-With a non force inline + -Os kernel this is default anyways.
+This is handily visible in a function graph trace for might_fault:
 
-Cc: David Airlie <airlied@linux.ie>
+ 10)               |    might_fault() {
+ 10)               |      _cond_resched() {
+ 10)               |        should_resched() {
+ 10)               |          need_resched() {
+ 10)   0.063 us    |            test_ti_thread_flag();
+ 10)   0.643 us    |          }
+ 10)   1.238 us    |        }
+ 10)   1.845 us    |      }
+ 10)   2.438 us    |    }
+
+Note all of these functions are very small and should be definitely
+inlined in each other. In many cases even copy_from_user
+ends up out of line now which is really bad!
+
+If I switch to -O2 it is also not quite as bad, but since a lot
+of people use -Os I was trying to fix it up.
+
+So this patch forces inlining with gcc 4.5 with -Os.
+
+Unfortunately it costs some code size with just this patch.
+
+   text	   data	    bss	    dec	    hex	filename
+11507035	1940276	1191936	14639247	 df608f	vmlinux-O2
+10189858	1908124	1187840	13285822	 cab9be	vmlinux-Os-force
+9808525		1940204	1187840	12936569 	 c56579	vmlinux-Os-orig
+
+It turned out most of this was because of unnecessary inlines.
+With a lot of inlines removed I now get:
+
+11175824        1977200 1191936 14344960         dae300 vmlinux-inlines-removed-no-optimize
+11642530        2018416 1191936 14852882         e2a312 vmlinux-master-no-optimize
+11530439        2001264 1191936 14723639         e0aa37 vmlinux-master-optimize
+
+which is significantly smaller.
+
+I haven't tested earlier gcc 4.x versions, but they may need
+the same treatment.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/gpu/drm/radeon/r100.c   |   40 ++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon.h |   43 +++-----------------------------------
- 2 files changed, 44 insertions(+), 39 deletions(-)
+ include/linux/compiler-gcc.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 7fcdbbb..9a1efac 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -3965,3 +3965,43 @@ int r100_init(struct radeon_device *rdev)
- 	}
- 	return 0;
- }
-+
-+uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg)
-+{
-+	if (reg < rdev->rmmio_size)
-+		return readl(((void __iomem *)rdev->rmmio) + reg);
-+	else {
-+		writel(reg, ((void __iomem *)rdev->rmmio) + RADEON_MM_INDEX);
-+		return readl(((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
-+	}
-+}
-+
-+void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
-+{
-+	if (reg < rdev->rmmio_size)
-+		writel(v, ((void __iomem *)rdev->rmmio) + reg);
-+	else {
-+		writel(reg, ((void __iomem *)rdev->rmmio) + RADEON_MM_INDEX);
-+		writel(v, ((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
-+	}
-+}
-+
-+u32 r100_io_rreg(struct radeon_device *rdev, u32 reg)
-+{
-+	if (reg < rdev->rio_mem_size)
-+		return ioread32(rdev->rio_mem + reg);
-+	else {
-+		iowrite32(reg, rdev->rio_mem + RADEON_MM_INDEX);
-+		return ioread32(rdev->rio_mem + RADEON_MM_DATA);
-+	}
-+}
-+
-+void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v)
-+{
-+	if (reg < rdev->rio_mem_size)
-+		iowrite32(v, rdev->rio_mem + reg);
-+	else {
-+		iowrite32(reg, rdev->rio_mem + RADEON_MM_INDEX);
-+		iowrite32(v, rdev->rio_mem + RADEON_MM_DATA);
-+	}
-+}
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index c1e056b..8ac6cba 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -1252,45 +1252,10 @@ int radeon_device_init(struct radeon_device *rdev,
- void radeon_device_fini(struct radeon_device *rdev);
- int radeon_gpu_wait_for_idle(struct radeon_device *rdev);
- 
--static inline uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg)
--{
--	if (reg < rdev->rmmio_size)
--		return readl((rdev->rmmio) + reg);
--	else {
--		writel(reg, (rdev->rmmio) + RADEON_MM_INDEX);
--		return readl((rdev->rmmio) + RADEON_MM_DATA);
--	}
--}
--
--static inline void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
--{
--	if (reg < rdev->rmmio_size)
--		writel(v, (rdev->rmmio) + reg);
--	else {
--		writel(reg, (rdev->rmmio) + RADEON_MM_INDEX);
--		writel(v, (rdev->rmmio) + RADEON_MM_DATA);
--	}
--}
--
--static inline u32 r100_io_rreg(struct radeon_device *rdev, u32 reg)
--{
--	if (reg < rdev->rio_mem_size)
--		return ioread32(rdev->rio_mem + reg);
--	else {
--		iowrite32(reg, rdev->rio_mem + RADEON_MM_INDEX);
--		return ioread32(rdev->rio_mem + RADEON_MM_DATA);
--	}
--}
--
--static inline void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v)
--{
--	if (reg < rdev->rio_mem_size)
--		iowrite32(v, rdev->rio_mem + reg);
--	else {
--		iowrite32(reg, rdev->rio_mem + RADEON_MM_INDEX);
--		iowrite32(v, rdev->rio_mem + RADEON_MM_DATA);
--	}
--}
-+uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg);
-+void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
-+u32 r100_io_rreg(struct radeon_device *rdev, u32 reg);
-+void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v);
- 
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 59e4028..e477a7c 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -44,9 +44,12 @@
  /*
-  * Cast helper
+  * Force always-inline if the user requests it so via the .config,
+  * or if gcc is too old:
++ * When optimizing for size on gcc 4.5 always force inlining too.
+  */
+ #if !defined(CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING) || \
+-    !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4)
++    !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4) || \
++    (defined(CONFIG_CC_OPTIMIZE_FOR_SIZE) && \
++		(__GNUC__ == 4 && __GNUC_MINOR__ == 5))
+ # define inline		inline		__attribute__((always_inline))
+ # define __inline__	__inline__	__attribute__((always_inline))
+ # define __inline	__inline	__attribute__((always_inline))
 -- 
 1.7.4.4
 
