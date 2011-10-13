@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab1JMCJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 22:09:12 -0400
-Received: from ozlabs.org ([203.10.76.45]:41491 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab1JMCJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 22:09:09 -0400
-From: Rusty Russell <rusty@ozlabs.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>, mingo@elte.hu,
-        torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
-In-Reply-To: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 13 Oct 2011 12:37:47 +1030
-Message-ID: <87botlej9o.fsf@rustcorp.com.au>
+	id S1752453Ab1JMCZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 22:25:33 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49936 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab1JMCZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 22:25:31 -0400
+Date: Wed, 12 Oct 2011 19:02:48 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        robherring2@gmail.com, claudio@evidence.eu.com,
+        jesper.nilsson@axis.com, alan@lxorguk.ukuu.org.uk,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v2 3/5] tty/serial: atmel_serial: whitespace and braces
+ modifications
+Message-ID: <20111013010248.GN14042@ponder.secretlab.ca>
+References: <37a19e194d02144aecd24f284f5e43979643a3c3.1318433947.git.nicolas.ferre@atmel.com>
+ <e4c59e6f5ee33c1be57085ac0840b53322526367.1318433947.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e4c59e6f5ee33c1be57085ac0840b53322526367.1318433947.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jul 2011 01:16:07 -0400, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> I don't think there really is any rocket science or contentious stuff here.
-> It is a sensible cleanup that adds organization and speeds up compiles.
-> The RFC I'm hoping for is more about how/when we want to get this in tree.
+On Wed, Oct 12, 2011 at 06:06:58PM +0200, Nicolas Ferre wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-In future, when you're ripping into module.h, please CC the module
-maintainer.  It's not just a courtesy, it helps everyone avoid redundant
-work.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-You may insert your own sarcastic comment about "rocket science" here.
-
-As to the patch: it's marginal improvement, but it's neater and I'm
-happy you're doing it.
-
-Thanks,
-Rusty.
+> ---
+>  drivers/tty/serial/atmel_serial.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index a507daa..bb72354 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -1433,10 +1433,10 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+>  
+>  	memset(&atmel_port->rx_ring, 0, sizeof(atmel_port->rx_ring));
+>  
+> -	if (pdata->regs)
+> +	if (pdata->regs) {
+>  		/* Already mapped by setup code */
+>  		port->membase = pdata->regs;
+> -	else {
+> +	} else {
+>  		port->flags	|= UPF_IOREMAP;
+>  		port->membase	= NULL;
+>  	}
+> @@ -1450,9 +1450,10 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+>  		/* only enable clock when USART is in use */
+>  	}
+>  
+> -	atmel_port->use_dma_rx = pdata->use_dma_rx;
+> -	atmel_port->use_dma_tx = pdata->use_dma_tx;
+> +	atmel_port->use_dma_rx	= pdata->use_dma_rx;
+> +	atmel_port->use_dma_tx	= pdata->use_dma_tx;
+>  	atmel_port->rs485	= pdata->rs485;
+> +
+>  	/* Use TXEMPTY for interrupt when rs485 else TXRDY or ENDTX|TXBUFE */
+>  	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
+>  		atmel_port->tx_done_mask = ATMEL_US_TXEMPTY;
+> -- 
+> 1.7.5.4
+> 
