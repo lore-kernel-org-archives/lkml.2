@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab1JMJ46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 05:56:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51673 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab1JMJ44 (ORCPT
+	id S1754452Ab1JMJ5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 05:57:23 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39512 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab1JMJ5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 05:56:56 -0400
-Message-ID: <4E96B5E4.1040602@monstr.eu>
-Date: Thu, 13 Oct 2011 11:56:52 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Thu, 13 Oct 2011 05:57:21 -0400
+Date: Thu, 13 Oct 2011 11:57:08 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+Message-ID: <20111013095708.GA1862@aftab>
+References: <4E94E1E5.4070505@goop.org>
+ <20111012101615.GA14966@aftab>
+ <4E95D9E7.6090304@zytor.com>
+ <4E95E7FE.6050302@goop.org>
+ <20111012194543.GD14966@aftab>
+ <20111012204048.GA22260@phenom.oracle.com>
+ <4E960746.90805@zytor.com>
+ <20111012214013.GD28723@aftab>
+ <4E96198F.4030906@zytor.com>
+ <20111013073352.GB501@aftab>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-serial@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: Re: Using serial driver 16550A in poll mode without interrupt connected
-References: <4E95902B.7080204@monstr.eu> <20111012145153.5490b592@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111012145153.5490b592@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013073352.GB501@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
->> Driver is probed with no IRQ (NO_IRQ = -1 on Microblaze)
->> 83e00000.serial: ttyS0 at MMIO 0x83e01003 (irq = -1) is a 16550A
-> 
-> Zero means no IRQ. NO_IRQ is a legacy internal thing for the old IDE code
-> so not something other code should be using. Setting the IRQ to -1 is
-> bogus and will confuse the rest of the kernel.
+On Thu, Oct 13, 2011 at 03:33:52AM -0400, Borislav Petkov wrote:
+> Bottomline is, extending initrd handling to deal with multiple initrd
+> images might turn out to be easier to do than the linked list deal.
 
-It is on my list. There are still some archs (ARM, etc) which still use it.
-
-> 
->> Is it possible to use serial driver without IRQ - or blocking IRQ, etc.?
-> 
-> Within limits - it kills your power management and data rates because of
-> the continual polling.
-
-Microblaze does nothing with power management and data rates is no problem -
-it could exchange some data to check actual status or so.
-
-We just need to make a decision about generating compatible properties for
-serial IPs without IRQ. Our BSP which generate dts from Xilinx tools is able
-to check if IRQ is connected and based on that do any action - show error/warning/ignore.
-
-If compatible string is not in DTS driver for this IP is not probed.
-If you are saying that Linux serial drivers are not prepared for polling because of any reason
-we will handle that in BSP.
-
-Thanks,
-Michal
+Alternatively and IMHO, we could avoid the bootloader enabling by
+making the ucode part of the initramfs and pull up some of the
+prepare_namespace() work in kernel_init() before smp_init() so that we
+can have it ready for when bootstrapping the cores.
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
