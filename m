@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab1JMSWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 14:22:01 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59438 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756581Ab1JMSV7 (ORCPT
+	id S1755036Ab1JMS1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 14:27:05 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45656 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab1JMS1C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 14:21:59 -0400
-Date: Thu, 13 Oct 2011 14:21:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Markus Rechberger <mrechberger@gmail.com>
-cc: Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-In-Reply-To: <CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1110131417070.2026-100000@iolanthe.rowland.org>
+	Thu, 13 Oct 2011 14:27:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4E971112.3060703@genband.com>
+References: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1110131032400.2026-100000@iolanthe.rowland.org>
+	<CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>
+	<4E970B40.8070808@genband.com>
+	<CA+O4pCJyTyhec54RYqdzmpR-Y2dSvgB6srv=bsF4DFsx3n33Yw@mail.gmail.com>
+	<4E971112.3060703@genband.com>
+Date: Thu, 13 Oct 2011 20:27:01 +0200
+Message-ID: <CA+O4pCL2NmTgW2vDU=jdhyy1_PpuP3g9SVup=iwEOVGoGzHmUA@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Markus Rechberger wrote:
+On Thu, Oct 13, 2011 at 6:25 PM, Chris Friesen
+<chris.friesen@genband.com> wrote:
+> On 10/13/2011 10:12 AM, Markus Rechberger wrote:
+>>
+>> On Thu, Oct 13, 2011 at 6:01 PM, Chris Friesen
+>
+>> Why on earth should things be done differently than with all other
+>> operating systems?
+>
+> Linux does a lot of things differently than other operating systems.  In
+> many cases it's because the other OS's do things wrong.  One could just as
+> easily turn the question around and ask why on earth would your hardware be
+> different than all the other USB hardware?
+>
+>>> If there is a bug in the kernel, why would we want a bandaid patch that
+>>> just
+>>> happens to make it work rather than a true fix?
+>>
+>> In silicon? Are you going to tape out another one for it?
+>
+> If there's a bug in the kernel, the true fix would be in the kernel.
+>
+>> And about the particular device the boundaries are just around 7000
+>> bytes off and people are screaming about that? Sorry this is just like
+>> in kindergarden here.
+>
+> Actually I think that you're the one throwing a tantrum and yelling that it
+> needs to be done your way or else.  We generally don't change global
+> constants because one hardware device doesn't work.
+>
 
-> The same issues happen with MacOSX and AGAIN windows is also using the same
-> buffer size.
-> Currently there's only one sample available, the production should be
-> ready by the end of this month.
-> I can certainly give you one device for playing around as soon as it
-> is ready but for that
-> 
-> Before that I insist that this patch will go into the kernel (I know
-> that sounds ridiculous but so far I did everything
-> you requested me to do), I clearly pointed out that we even have hardware
-> specs which can influence the transfer buffer. The patch does not hurt
-> and makes the device work.
-> 
-> Now it turns out that this issue suddenly is interesting because
-> there's no idea why that can happen.
-> First priority is to get this device work, second priority is
-> everything else if Linux support is wanted.
+fair enough I have 2 devices which don't work properly with bulk.
+Device A works by adjusting a hardware register
+Device B is documented in this thread.
 
-For my part, I don't much mind raising the limit from 16 KB to 32 KB.  
-48 KB may be unnecessary, especially since one of the devices doesn't 
-even work when the transfer buffer is that large.
+Device A causes corruptions when the hardwareregister is set to a
+buffersize > 16k.
+There is certainly something on the physical usb layer which is unknown to the
+(software) USB experts here.
+The logfiles in the previous email shows up enough and is clear enough.
 
-However it's just a work-around, not a real solution to the underlying
-problem (whatever that problem turns out to be).  Part of the reason
-for keeping the limit low is that it shouldn't matter, since people
-ought to be able to use a bunch of small transfers rather than one
-large transfer.  Apparently that justification doesn't work with these
-webcams, although there's no known reason why it shouldn't.
 
-But I'm not the person in charge of these decisions...
+Why do you think is this documented in the hardware specs of one of our devices?
+The chip which has those problems unfortunately doesn't have such registers.
 
-Alan Stern
+AGAIN:
+According to the hardware spec of on of our product
+Available Bulk Transfer Size are:
+- 188 * n bytes, where n = 1 ~ 256.
 
+
+Markus
+
+> Chris
+>
+> --
+> Chris Friesen
+> Software Developer
+> GENBAND
+> chris.friesen@genband.com
+> www.genband.com
+>
