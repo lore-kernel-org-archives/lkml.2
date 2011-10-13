@@ -1,64 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1JMHIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:08:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50356 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab1JMHIh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:08:37 -0400
+	id S1753153Ab1JMHMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:12:45 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:46438 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751055Ab1JMHMn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 03:12:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111006181220.GA15950@khazad-dum.debian.net>
-References: <1300181106-20219-1-git-send-email-keng-yu.lin@canonical.com>
- <20110316185755.GC7918@khazad-dum.debian.net> <CADXHx7b36g1+vo9cjuiq7VnjN3LWiwQtgepHjGU1P74ZsdtwQw@mail.gmail.com>
- <20111006181220.GA15950@khazad-dum.debian.net>
-From: =?UTF-8?B?S2VuZy1Zw7wgTGlu?= <kengyu@canonical.com>
-Date: Thu, 13 Oct 2011 15:07:56 +0800
-X-Google-Sender-Auth: THA6Fzy3TsY9hJLOdiO30cAIx3Y
-Message-ID: <CADXHx7YFJYvd6K0Djqabxs6kyPJU5YjEGTBTvrMVmFdLirF5rA@mail.gmail.com>
-Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: disable alsa volume mixer
- for SL410/SL510
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+	<alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
+	<CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
+	<cbad72cea703d117067f7c628f7db806@mail.gmail.com>
+	<1317127327.3820.31.camel@sokoban>
+	<CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
+Date: Thu, 13 Oct 2011 12:42:41 +0530
+Message-ID: <CAP05o4K2EzAKDgC9EdfEURCfcM=M7TRJdBuAtRafL2RHg+qTag@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: t-kristo@ti.com, Paul Walmsley <paul@pwsan.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+Cc: "Basak, Partha" <p-basak2@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
+        parthab@india.ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gadiyar, Anand" <gadiyar@ti.com>, sameo@linux.intel.com,
+        tony@atomide.com, "Hilman, Kevin" <khilman@ti.com>,
+        johnstul@us.ibm.com, "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 2:12 AM, Henrique de Moraes Holschuh
-<hmh@hmh.eng.br> wrote:
-> On Thu, 06 Oct 2011, Keng-YÃ¼ Lin wrote:
->> On Thu, Mar 17, 2011 at 2:57 AM, Henrique de Moraes Holschuh
->> <hmh@hmh.eng.br> wrote:
->> > On Tue, 15 Mar 2011, Keng-Yu Lin wrote:
->> >> The mute key on SL410/SL510 only works when the alsa volume mixer
->> >> is not enabled. This patch makes the alsa volume mixer disabled
->> >> on the matched SL410/SL510 EC versions.
->> >
->> > I'd like more data on this. Â Is this some sort of weird interaction with
->> > userspace, or does the firmware actually changes behaviour when we
->> > enable the MUTE HKEY event in the event mask?
+On Tue, Sep 27, 2011 at 6:48 PM, Munegowda, Keshava
+<keshava_mgowda@ti.com> wrote:
+> On Tue, Sep 27, 2011 at 6:12 PM, Tero Kristo <t-kristo@ti.com> wrote:
+>> On Tue, 2011-09-27 at 08:04 +0200, Basak, Partha wrote:
+>>> >
+>> Texas Instruments Oy, Tekniikantie 12, 02150 Espoo. Y-tunnus: 0115040-6. Kotipaikka: Helsinki
 >>
->> The firmware does not change its behaviour with the key enabled in the keymask.
->> The mute key (and the LED on it) of the two models works good without
->> thinkpad_acpi loaded. So in the patch I like to exclude the volume
->> control part for the two models.
+>> -----Original Message-----
+>>
+>>> >From: Munegowda, Keshava [mailto:keshava_mgowda@ti.com]
+>>> >Sent: Monday, September 26, 2011 7:49 PM
+>>> >To: Paul Walmsley; Tero Kristo; b-cousson@ti.com; balbi@ti.com;
+>>> >parthab@india.ti.com
+>>> >Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+>>> >kernel@vger.kernel.org; gadiyar@ti.com; sameo@linux.intel.com;
+>>> >tony@atomide.com; khilman@ti.com; johnstul@us.ibm.com;
+>>> >vishwanath.bs@ti.com
+>>> >Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod
+>>> >structures for omap3
+>>> >
+>>> >On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>>> >> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+>>> >>
+>>> >>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com>
+>>> >wrote:
+>>> >>>
+>>> >>> But the question arises here , why do we need these ehci and ohci as
+>>> >two
+>>> >>> different hwmods containing only irq and base address? It is required
+>>> >>> for future - to implement remote wakeup feature for ehci and ohci
+>>> >ports
+>>> >>> depending on irq-chain handler patches by Tero. Separate hwmods for
+>>> >ehci
+>>> >>> and ohci are needed to enable prcm chain-handler to uniquely identify
+>>> >>> the wakeup source as ehci or ohci and call only the corresponding
+>>> >>> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
+>>> >>> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
+>>> >>> Depending on the particular wakeup source(ehci/ohci), the
+>>> >corresponding
+>>> >>> ehci or ohci irq handler will be called.
+>>> >>>
+>>> >>> If ehci and ohci are combined with usbhs hwmod as a single hwmod ,
+>>> >then
+>>> >>> for every wakeup (either ehci or ohci port wakeup) only the first
+>>> >>> interrupt handler will be called (please look at the function
+>>> >>> omap_hwmod_mux_handle_irq of
+>>> >>>
+>>> >>> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
+>>> >>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
+>>> >>> , so in this
+>>> >>> case, if ehci interrupt is the first interrupt , then even for ohci
+>>> >wakeup
+>>> >>> , only ehci interrupt will get called; which will break the
+>>> >functionality.
+>>> >>
+>>> >> Any reason why this couldn't be handled either by:
+>>> >>
+>>> >> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and
+>>> >changing
+>>> >> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
+>>> >
+>>> >
+>>> >yes, it is possible by changing the existing irq-chain handler by tero
+>>> >Kristo
+>>> >
+>>> >I am looping tero too.
+>>> >
+>>> >So here are new requirements for the irq-chain handler
+>>> >
+>>> >1. The hwmod should have have option to have multiple mux structures
+>>> >
+>>> >This is something like:
+>>> >
+>>> >The existing mux structure definition in omap_hwmod [file:
+>>> >/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
+>>> >
+>>> >     struct omap_hwmod_mux_info      *mux;
+>>> >
+>>> >it should changed to
+>>> >
+>>> >     struct omap_hwmod_mux_info      **pmux;
+>>> >         U32                                            mux_cnt;
+>>> >
+>>> >
+>>> >pmux - pointers to mux ; array of mux structures.
+>>> >mux_cnt - number of mux per hwmod.
+>>> >
+>>> >
+>>> >2. The mux  omap_hwmod_mux_info  structure should have new member
+>>> >called irq, like as follows:
+>>> >
+>>> >struct omap_hwmod_mux_info {
+>>> >     int                             nr_pads;
+>>> >     ...
+>>> >        ....
+>>> >        u32                           irq;
+>>> >
+>>> >};
+>>> >
+>>> >Upon wakeup of the I/O pad of the mux , the irq-chain handler should
+>>> >invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
+>>> >
+>>> >3.  There should be "SOME WAY" to supply the irqs  from hwmod
+>>> >structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
+>>> >
+>>> >
+>>> >if you , tero and other opensource people are aligned on the proposed
+>>> >changes on the irq-handler ;
+>>> >then it is possible to have two hwmods ( usbhs and tll) for usbhost
+>>> >driver.
+>>> >please let me know you comments on the above approach.
+>>> >
+>>>
+>>> Hello Tero,
+>>>
+>>> I would like to draw your attention to the following thread:
+>>>
+>>> We need to support the following:
+>>> 1. Ability to associate multiple mux info to a hwmod.
+>>> 2. Able to associate a particular irq handler to a mux info.
+>>> 3. PRCM Chain handler should loop through all mux-info arrays
+>>>    for a particular hwmod to identify the possible wakeup source(s)
+>>>    and call the appropriate irq handler for that mux-info.
+>>>    (It is possible that both mux-info are woken up in which case both
+>>> handlers should be called).
+>>>
+>>> To give you a little more perspective, EHCI & OHCI are co-controllers
+>>> under UHH/TLL.
+>>> They do not get presented separately to the OCP bus, hence do not qualify
+>>> as separate hwmods
+>>> (Paul had objected to the design approach representing EHCI & OHCI as
+>>> different hwmods).
+>>>
+>>> However, we need a mechanism to efficiently identify/distinguish
+>>> remote-wakeup, connect/disconnect
+>>> On to an EHCI port vs an OHCI port & call only the correct interrupt
+>>> handler(EHCI or OHCI).
+>>>
+>>>  To incorporate this, chain handler implementation would need some
+>>> enhancements.
+>>>  We can look into the details in the next merge window cycle in
+>>> conjunction with aggressive clock management support for EHCI/OHCI.
+>>>  But fundamentally, if you are aligned to the approach, we can go ahead
+>>> collapsing the EHCI & OHCI hwmods into one.
+>>
+>> Hi,
+>>
+>> So, you would need a mechanism to do something like this:
+>>
+>> pad a or b wakeup detected -> irq0
+>> pad c or d wakeup detected -> irq1?
 >
-> If the firmware does not change behaviour, doesn't that mean the bug is
-> elsewhere?
->
-> Is the firmware reporting these keys somewhere else (e.g. through the
-> keyboard)?
->
+> yes, if get something like this , its perfect.
 
-As the users reported in https://launchpad.net/bugs/595896, there is
-no KEY_MUTE either from thinkpad_acpi nor the keyboard when pressing
-the mute hotkey. (I do not really possess the hardware. but just
-debugged/helped remotely).
+Hi Tero
+           Are you posting the patches with these changes?
+please let me know when you will be able to post the patches.
+so that I start the design of usb host remote wakeup using your changes.
 
-It will be really appreciated if there is any suggestion/insight for
-looking into the bug.  At the moment I can just find this fix for the
-issue.
+regards
+keshava
+
+
+
+
+>
+>>
+>> Is it okay to do this:
+>>
+>> pad a...d wakeup -> irq0 and irq1?
+>
+> No, we dont need multiple irq handlers for single wakeup source.
+>
+>>
+>> I am okay doing something like this, we just need to agree how this
+>> would be represented from the hwmod point of view. Currently the chain
+>> handler set does not change hwmod structures at all to provide what it
+>> does.
+>
+> paul and benoit are the people to design the mechanisam for this.
+>
+> paul/Benoit
+>            please give you thoughts on this.
+>
+> regards
+> keshava
+>
+>
+>>
+>> -Tero
+>>
+>>> >
+>>> >>
+>>> >> or
+>>> >>
+>>> >> 2. using shared interrupts?
+>>> >>
+>>> >>
+>>> >> - Paul
+>>> >>
+>>
+>>
+>>
+>
