@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab1JMPPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:15:41 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64870 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab1JMPPk (ORCPT
+	id S1756075Ab1JMPQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:16:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59270 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753355Ab1JMPQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:15:40 -0400
+	Thu, 13 Oct 2011 11:16:24 -0400
+Date: Thu, 13 Oct 2011 11:16:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: markgross@thegnar.org, <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <arve@android.com>,
+        <amit.kucheria@linaro.org>, <farrowg@sg.ibm.com>,
+        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        <linux-pm@lists.linux-foundation.org>, <khilman@ti.com>,
+        Magnus Damm <damm@opensource.se>, <mjg@redhat.com>,
+        <peterz@infradead.org>
+Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
+ blocking (aka more wakelock stuff)]
+In-Reply-To: <20111013163526.3863be01@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1110131111200.2026-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au>
-References: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au>
-Date: Thu, 13 Oct 2011 11:15:38 -0400
-X-Google-Sender-Auth: kgknSEoEuO-bMnbqrIaNcX5PmZY
-Message-ID: <CAEKwDSDdLvNHYugPLGTj49kWPN0JnxECkjDFaam6ZA8agExCiQ@mail.gmail.com>
-Subject: Re: currently missing kernel devel trees
-From: Bob Copeland <me@bobcopeland.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 2:43 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> With the mrege window approaching (sometime) I thought I would see how
-> many of the 200 odd trees that are included in linux-next are actually
-> currently inaccessible.
+On Thu, 13 Oct 2011, NeilBrown wrote:
 
-> omfs
+> Nope, but I'm keen for you to convince me.  Identify a wakeup event that
+> cannot be made visible to poll (or to user-space by some other
+> mechanism) before the wakeup_source needs to be deactivated.  Or if I've
+> misunderstood what sort of notification is problematic, help me understand.
 
-git://github.com/bcopeland/omfs.git for-next
+Here's an example (just for kicks, not completely relevant to your
+discussion): A USB keyboard key release.  Unlike key presses, key
+releases need not generate input events.  If no processes are
+monitoring the raw keyboard event queue then the release is not visible
+to userspace at all, hence not visible before the wakeup_source needs
+to be deactivated.
 
-Though I don't have anything queued for 3.2 (should have some updates
-for 3.3 though).
+Alan Stern
 
--- 
-Bob Copeland %% www.bobcopeland.com
