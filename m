@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1JMTMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:12:23 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43547 "EHLO
+	id S1753567Ab1JMTNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:13:07 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43555 "EHLO
 	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752352Ab1JMTMW (ORCPT
+	with ESMTP id S1752352Ab1JMTNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:12:22 -0400
-Date: Thu, 13 Oct 2011 20:12:15 +0100
+	Thu, 13 Oct 2011 15:13:06 -0400
+Date: Thu, 13 Oct 2011 20:11:36 +0100
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
 To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] pata_oldpiix: enable parallel scan
-Message-ID: <20111013201215.50541413@lxorguk.ukuu.org.uk>
-In-Reply-To: <201110131806.27248.bzolnier@gmail.com>
-References: <201110131603.34443.bzolnier@gmail.com>
-	<20111013164753.69a5e92c@lxorguk.ukuu.org.uk>
-	<201110131806.27248.bzolnier@gmail.com>
+Subject: Re: [PATCH] pata_rdc: parallel scanning needs an extra locking
+Message-ID: <20111013201136.20594eff@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110131808.31470.bzolnier@gmail.com>
+References: <201110131606.04496.bzolnier@gmail.com>
+	<20111013164923.23683fcb@lxorguk.ukuu.org.uk>
+	<201110131808.31470.bzolnier@gmail.com>
 X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
 Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
@@ -27,27 +27,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011 18:06:08 +0200
+On Thu, 13 Oct 2011 18:08:31 +0200
 Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
 > Alan Cox wrote:
 > 
-> > On Thu, 13 Oct 2011 16:03:34 +0200
+> > On Thu, 13 Oct 2011 16:06:04 +0200
 > > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 > > 
 > > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > > Subject: [PATCH] pata_oldpiix: enable parallel scan
+> > > Subject: [PATCH] pata_rdc: parallel scanning needs an extra locking
 > > > 
-> > > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > > This is similar change as commit 60c3be3 ("ata_piix: parallel scanning
+> > > on PATA needs an extra locking") for ata_piix host driver.
 > > 
-> > Have you tested this. When I talked with Intel people about parallel
-> > scanning nobody in Intel I could find could answer whether it was safe on
-> > the ancient PIIX versions.
+> > Again has anyone verified with the vendor that the RDC can support
+> > parallel scanning ?
 > 
-> No, it wasn't tested on the real hardware.
-> 
-> I think it should be in libata-dev or -mm/-next for rather long time..
+> Upstream has always used it:
 
-I don't see it's worth adding, its near impossible to test and its for
-old hardware that doesn't fast boot anyway. Really it's the netbook
-generation devices where this matters.
+Fair enough as nobody has complained.
