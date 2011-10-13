@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1JMJCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 05:02:01 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:7338
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753916Ab1JMJCA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 05:02:00 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz936eK154dM1432N98dKzz1202hzzz32i2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-FB-SS: 13,
-Subject: Re: [alsa-devel] [PATCH 6/9] ASoC: da7210: bugfix for head phone
- volume control
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111012150101.GS3647@opensource.wolfsonmicro.com>
-References: <1318431934.12107.421.camel@matrix>
-	 <20111012150101.GS3647@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Oct 2011 14:42:33 +0530
-Message-ID: <1318497153.12107.439.camel@matrix>
+	id S1754079Ab1JMJCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 05:02:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38671 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753617Ab1JMJCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 05:02:35 -0400
+Date: Thu, 13 Oct 2011 11:00:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fix
+Message-ID: <20111013090054.GA22473@elte.hu>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-12 at 16:01 +0100, Mark Brown wrote:
-> On Wed, Oct 12, 2011 at 08:35:34PM +0530, Ashish Chavan wrote:
-> > This patch takes care of reserved bits of headphone volume
-> > register by using correct volume range.
-> 
-> This doesn't apply, which is pretty surprising given that there's no
-> obvious overlap at all with the rest of the code.
+Linus,
 
-I guess this is mostly due to indirect dependence on [PATCH 1/9].
-It applies after applying first patch.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-> 
-> > Tested on Samsung SMDK6410 board with DA7210 evaluation board.
-> 
-> This really isn't useful information in a changelog, apart from anything
-> else this isn't going to be a system that it's easy for other people to
-> reproduce.
-> 
-OK, will remove redundant info.
+   git://tesla.tglx.de/git/linux-2.6-tip.git x86-urgent-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Adrian Bunk (1):
+      x86: Default to vsyscall=native for now
 
 
+ Documentation/kernel-parameters.txt |    7 ++++---
+ arch/x86/kernel/vsyscall_64.c       |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 854ed5ca..d6e6724 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2706,10 +2706,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			functions are at fixed addresses, they make nice
+ 			targets for exploits that can control RIP.
+ 
+-			emulate     [default] Vsyscalls turn into traps and are
+-			            emulated reasonably safely.
++			emulate     Vsyscalls turn into traps and are emulated
++			            reasonably safely.
+ 
+-			native      Vsyscalls are native syscall instructions.
++			native      [default] Vsyscalls are native syscall
++			            instructions.
+ 			            This is a little bit faster than trapping
+ 			            and makes a few dynamic recompilers work
+ 			            better than they would in emulation mode.
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 18ae83d..b56c65de 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -56,7 +56,7 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
+ 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
+ };
+ 
+-static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
++static enum { EMULATE, NATIVE, NONE } vsyscall_mode = NATIVE;
+ 
+ static int __init vsyscall_setup(char *str)
+ {
