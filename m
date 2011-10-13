@@ -1,229 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab1JMLtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 07:49:14 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:47479 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751762Ab1JMLtN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 07:49:13 -0400
+	id S1754862Ab1JMLyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 07:54:33 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:17008 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754158Ab1JMLyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 07:54:32 -0400
+Message-ID: <4E96D161.8050602@atmel.com>
+Date: Thu, 13 Oct 2011 13:54:09 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1318505283.23199.4.camel@sokoban>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
-	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
-	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
-	<alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com>
-	<CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com>
-	<cbad72cea703d117067f7c628f7db806@mail.gmail.com>
-	<1317127327.3820.31.camel@sokoban>
-	<CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com>
-	<CAP05o4K2EzAKDgC9EdfEURCfcM=M7TRJdBuAtRafL2RHg+qTag@mail.gmail.com>
-	<1318505283.23199.4.camel@sokoban>
-Date: Thu, 13 Oct 2011 17:19:11 +0530
-Message-ID: <CAP05o4LUpo=H9_2sXswYzk_vkgyvm2F2qT3Pdo6cqSzMKMYi5A@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: t-kristo@ti.com
-Cc: Paul Walmsley <paul@pwsan.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        "Basak, Partha" <p-basak2@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
-        parthab@india.ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gadiyar, Anand" <gadiyar@ti.com>, sameo@linux.intel.com,
-        tony@atomide.com, "Hilman, Kevin" <khilman@ti.com>,
-        johnstul@us.ibm.com, "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
+        robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/4] dmaengine: at_hdmac: add device tree support
+References: <f91f267b82ac0f0459c11a7bdf3ab0ea8758656a.1318438197.git.nicolas.ferre@atmel.com> <6a7ec87c53609bbb517b199a9b48a5322a625aa1.1318438197.git.nicolas.ferre@atmel.com> <20111013003422.GE14042@ponder.secretlab.ca>
+In-Reply-To: <20111013003422.GE14042@ponder.secretlab.ca>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 4:58 PM, Tero Kristo <t-kristo@ti.com> wrote:
-> On Thu, 2011-10-13 at 09:12 +0200, Munegowda, Keshava wrote:
->> On Tue, Sep 27, 2011 at 6:48 PM, Munegowda, Keshava
->> <keshava_mgowda@ti.com> wrote:
->> > On Tue, Sep 27, 2011 at 6:12 PM, Tero Kristo <t-kristo@ti.com> wrote:
->> >> On Tue, 2011-09-27 at 08:04 +0200, Basak, Partha wrote:
->> >>> >
->> >> Texas Instruments Oy, Tekniikantie 12, 02150 Espoo. Y-tunnus: 0115040-6. Kotipaikka: Helsinki
->> >>
->> >>
-> Texas Instruments Oy, Porkkalankatu 22, 00180 Helsinki, Finland. Business ID: 0115040-6. Domicile: Helsinki
->
-> -----Original Message-----
->
->> >>
->> >>> >From: Munegowda, Keshava [mailto:keshava_mgowda@ti.com]
->> >>> >Sent: Monday, September 26, 2011 7:49 PM
->> >>> >To: Paul Walmsley; Tero Kristo; b-cousson@ti.com; balbi@ti.com;
->> >>> >parthab@india.ti.com
->> >>> >Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
->> >>> >kernel@vger.kernel.org; gadiyar@ti.com; sameo@linux.intel.com;
->> >>> >tony@atomide.com; khilman@ti.com; johnstul@us.ibm.com;
->> >>> >vishwanath.bs@ti.com
->> >>> >Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod
->> >>> >structures for omap3
->> >>> >
->> >>> >On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
->> >>> >> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
->> >>> >>
->> >>> >>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com>
->> >>> >wrote:
->> >>> >>>
->> >>> >>> But the question arises here , why do we need these ehci and ohci as
->> >>> >two
->> >>> >>> different hwmods containing only irq and base address? It is required
->> >>> >>> for future - to implement remote wakeup feature for ehci and ohci
->> >>> >ports
->> >>> >>> depending on irq-chain handler patches by Tero. Separate hwmods for
->> >>> >ehci
->> >>> >>> and ohci are needed to enable prcm chain-handler to uniquely identify
->> >>> >>> the wakeup source as ehci or ohci and call only the corresponding
->> >>> >>> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
->> >>> >>> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
->> >>> >>> Depending on the particular wakeup source(ehci/ohci), the
->> >>> >corresponding
->> >>> >>> ehci or ohci irq handler will be called.
->> >>> >>>
->> >>> >>> If ehci and ohci are combined with usbhs hwmod as a single hwmod ,
->> >>> >then
->> >>> >>> for every wakeup (either ehci or ohci port wakeup) only the first
->> >>> >>> interrupt handler will be called (please look at the function
->> >>> >>> omap_hwmod_mux_handle_irq of
->> >>> >>>
->> >>> >>> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
->> >>> >>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
->> >>> >>> , so in this
->> >>> >>> case, if ehci interrupt is the first interrupt , then even for ohci
->> >>> >wakeup
->> >>> >>> , only ehci interrupt will get called; which will break the
->> >>> >functionality.
->> >>> >>
->> >>> >> Any reason why this couldn't be handled either by:
->> >>> >>
->> >>> >> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and
->> >>> >changing
->> >>> >> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
->> >>> >
->> >>> >
->> >>> >yes, it is possible by changing the existing irq-chain handler by tero
->> >>> >Kristo
->> >>> >
->> >>> >I am looping tero too.
->> >>> >
->> >>> >So here are new requirements for the irq-chain handler
->> >>> >
->> >>> >1. The hwmod should have have option to have multiple mux structures
->> >>> >
->> >>> >This is something like:
->> >>> >
->> >>> >The existing mux structure definition in omap_hwmod [file:
->> >>> >/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
->> >>> >
->> >>> >     struct omap_hwmod_mux_info      *mux;
->> >>> >
->> >>> >it should changed to
->> >>> >
->> >>> >     struct omap_hwmod_mux_info      **pmux;
->> >>> >         U32                                            mux_cnt;
->> >>> >
->> >>> >
->> >>> >pmux - pointers to mux ; array of mux structures.
->> >>> >mux_cnt - number of mux per hwmod.
->> >>> >
->> >>> >
->> >>> >2. The mux  omap_hwmod_mux_info  structure should have new member
->> >>> >called irq, like as follows:
->> >>> >
->> >>> >struct omap_hwmod_mux_info {
->> >>> >     int                             nr_pads;
->> >>> >     ...
->> >>> >        ....
->> >>> >        u32                           irq;
->> >>> >
->> >>> >};
->> >>> >
->> >>> >Upon wakeup of the I/O pad of the mux , the irq-chain handler should
->> >>> >invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
->> >>> >
->> >>> >3.  There should be "SOME WAY" to supply the irqs  from hwmod
->> >>> >structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
->> >>> >
->> >>> >
->> >>> >if you , tero and other opensource people are aligned on the proposed
->> >>> >changes on the irq-handler ;
->> >>> >then it is possible to have two hwmods ( usbhs and tll) for usbhost
->> >>> >driver.
->> >>> >please let me know you comments on the above approach.
->> >>> >
->> >>>
->> >>> Hello Tero,
->> >>>
->> >>> I would like to draw your attention to the following thread:
->> >>>
->> >>> We need to support the following:
->> >>> 1. Ability to associate multiple mux info to a hwmod.
->> >>> 2. Able to associate a particular irq handler to a mux info.
->> >>> 3. PRCM Chain handler should loop through all mux-info arrays
->> >>>    for a particular hwmod to identify the possible wakeup source(s)
->> >>>    and call the appropriate irq handler for that mux-info.
->> >>>    (It is possible that both mux-info are woken up in which case both
->> >>> handlers should be called).
->> >>>
->> >>> To give you a little more perspective, EHCI & OHCI are co-controllers
->> >>> under UHH/TLL.
->> >>> They do not get presented separately to the OCP bus, hence do not qualify
->> >>> as separate hwmods
->> >>> (Paul had objected to the design approach representing EHCI & OHCI as
->> >>> different hwmods).
->> >>>
->> >>> However, we need a mechanism to efficiently identify/distinguish
->> >>> remote-wakeup, connect/disconnect
->> >>> On to an EHCI port vs an OHCI port & call only the correct interrupt
->> >>> handler(EHCI or OHCI).
->> >>>
->> >>>  To incorporate this, chain handler implementation would need some
->> >>> enhancements.
->> >>>  We can look into the details in the next merge window cycle in
->> >>> conjunction with aggressive clock management support for EHCI/OHCI.
->> >>>  But fundamentally, if you are aligned to the approach, we can go ahead
->> >>> collapsing the EHCI & OHCI hwmods into one.
->> >>
->> >> Hi,
->> >>
->> >> So, you would need a mechanism to do something like this:
->> >>
->> >> pad a or b wakeup detected -> irq0
->> >> pad c or d wakeup detected -> irq1?
->> >
->> > yes, if get something like this , its perfect.
+On 10/13/2011 02:34 AM, Grant Likely :
+> On Wed, Oct 12, 2011 at 06:57:12PM +0200, Nicolas Ferre wrote:
+>> Add device tree probe support for atmel at_hdmac DMA driver.
+>> Bindings are added to specify DMA controller configuration.
 >>
->> Hi Tero
->>            Are you posting the patches with these changes?
->> please let me know when you will be able to post the patches.
->> so that I start the design of usb host remote wakeup using your changes.
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  .../devicetree/bindings/dma/atmel-dma.txt          |   14 +++++++++
+>>  drivers/dma/at_hdmac.c                             |   30 +++++++++++++++++++-
+>>  2 files changed, 43 insertions(+), 1 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/dma/atmel-dma.txt
 >>
->> regards
->> keshava
->>
->
-> Sorry for the delay, but I am still not quite sure how this should be
-> handled for upstream. Attached is a proposal hack patch that should
-> work, you can at least try it out to see what happens. It applies on top
-> of my latest PRCM chain handler set (version 9.) Patch desc contains a
-> guide how to use it.
->
-> -Tero
+>> diff --git a/Documentation/devicetree/bindings/dma/atmel-dma.txt b/Documentation/devicetree/bindings/dma/atmel-dma.txt
+>> new file mode 100644
+>> index 0000000..3c046ee
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/dma/atmel-dma.txt
+>> @@ -0,0 +1,14 @@
+>> +* Atmel Direct Memory Access Controller (DMA)
+>> +
+>> +Required properties:
+>> +- compatible: Should be "atmel,<chip>-dma"
+>> +- reg: Should contain DMA registers location and length
+>> +- interrupts: Should contain DMA interrupt
+>> +
+>> +Examples:
+>> +
+>> +dma@ffffec00 {
+>> +	compatible = "atmel,at91sam9g45-dma";
+>> +	reg = <0xffffec00 0x200>;
+>> +	interrupts = <21>;
+>> +};
+>> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+>> index d1869c5..42bd64c 100644
+>> --- a/drivers/dma/at_hdmac.c
+>> +++ b/drivers/dma/at_hdmac.c
+>> @@ -23,6 +23,8 @@
+>>  #include <linux/module.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/slab.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_device.h>
+>>  
+>>  #include "at_hdmac_regs.h"
+>>  
+>> @@ -1175,6 +1177,20 @@ static void atc_free_chan_resources(struct dma_chan *chan)
+>>  
+>>  /*--  Module Management  -----------------------------------------------*/
+>>  
+>> +#if defined(CONFIG_OF)
+>> +static const struct of_device_id atmel_dma_dt_ids[] = {
+>> +	{
+>> +		.compatible = "atmel,at91sam9rl-dma",
+>> +		.data = (void *)ATDMA_DEVTYPE_SAM9RL
+>> +	}, {
+>> +		.compatible = "atmel,at91sam9g45-dma",
+>> +		.data = (void *)ATDMA_DEVTYPE_SAM9G45
+>> +	}, { /* sentinel */ }
+>> +};
+>> +
+>> +MODULE_DEVICE_TABLE(of, atmel_dma_dt_ids);
+>> +#endif
+>> +
+>>  static struct platform_device_id atdma_devtypes[] = {
+>>  	{
+>>  		.name = "at91sam9rl_dma",
+>> @@ -1187,6 +1203,17 @@ static struct platform_device_id atdma_devtypes[] = {
+>>  	}
+>>  };
+>>  
+>> +static inline enum atdma_devtype __init at_dma_get_driver_data(
+>> +					struct platform_device *pdev)
+>> +{
+>> +	if (pdev->dev.of_node) {
+>> +		const struct of_device_id *match;
+>> +		match = of_match_node(atmel_dma_dt_ids, pdev->dev.of_node);
+> 
+> You'll need to check the return value.  It is possible (though
+> unlikely) to have a device with an of_node but still happens to get
+> bound via the platform_driver id_table.  In which case match would be
+> NULL here.
+
+Ok, I add:
+
+                if (match == NULL)
+                        return ATDMA_DEVTYPE_UNDEFINED;
+
+Which will take care about this case.
 
 
-Thanks tero,
-          we are still in the internal design discussion of usbhs remote wakeup.
-but, we are looking for the upstreamable code.
-I request please send it as formal patch so that we will align with
-Paul, benoit, kevin
-Felipe and all other USB and PM experts.
+> Otherwise, you can add my a-b after fixing that bug.
+> 
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-regards
-keshava
+Thanks a lot for your reviews Grant,
+
+Bye,
+-- 
+Nicolas Ferre
