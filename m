@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab1JMPyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:54:35 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:35015 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752676Ab1JMPye (ORCPT
+	id S1756090Ab1JMPzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:55:52 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55813 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753213Ab1JMPzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:54:34 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0VGKZ7UVM1kW_Lm9ouy1U0bqJVvQzprn5sMPyiceqa4OmI5
- YotQTp7EV6c98r_O2fo.TdWeR6mjSepQQSy88cxjZQi2M9VSaodcamdWb7Fx
- 3EicOAF3bYfAKu9nCLTLq65548z35PE77VvAYozf_nkud3TcIhbqtYMkWVwv
- D3fEfcXNFNp44XyOp9udXe369QcFGvITCvgtBinOp7nhHP9pgfYEYjaOTv0A
- WeCOxyrxQ7LdMVvhiYCQjT2tSU_9UXYAmGr4Feo7_1A9LDkRhquIzZG0x8AK
- F.6uwD1NnpOclipGBp7Ppb97NxZF6MGlEbgw2ldLrDXy6EI7.YtCAVBzCV4u
- V8vnkogRYaWicQTdTXJ7IDQDm3JYDAL4_a1Xfn_ft8DLlynY-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 13 Oct 2011 10:54:30 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Dimitri Sivanich <sivanich@sgi.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-In-Reply-To: <20111013152355.GB6966@sgi.com>
-Message-ID: <alpine.DEB.2.00.1110131052300.18473@router.home>
-References: <20111012160202.GA18666@sgi.com> <20111012120118.e948f40a.akpm@linux-foundation.org> <alpine.DEB.2.00.1110121452220.31218@router.home> <20111013152355.GB6966@sgi.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 13 Oct 2011 11:55:50 -0400
+Date: Thu, 13 Oct 2011 16:55:56 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] piix: add new short cable IDs
+Message-ID: <20111013165556.0454731d@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110131520.15650.bzolnier@gmail.com>
+References: <201110131520.15650.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Dimitri Sivanich wrote:
+On Thu, 13 Oct 2011 15:20:15 +0200
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-> > increase the allowed delta per zone if frequent updates occur via the
-> > overflow checks in vmstat.c. See calculate_*_threshold there.
->
-> I tried changing the threshold in both directions, with slower throughput in
-> both cases.
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Subject: [PATCH] piix: add new short cable IDs
+> 
+> Based on commits 6034734 ("ata_piix: Add new laptop short
+> cable IDs") and 760cdb7 ("ata_piix: Add new short cable ID")
+> for ata_piix.
 
-If that is the case check for the vm_stat cacheline being shared with
-another hot kernel variable variable. Maybe that causes cacheline
-eviction.
-
-If there are no updates occurring for a while (due to increased deltas
-and/or vmstat updates) then the vm_stat cacheline should be able to stay
-in shared mode in multiple processors and the performance should increase.
-
+On unknown XYZ is hardly maintainable data
 
