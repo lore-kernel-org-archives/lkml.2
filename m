@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab1JMXKA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 19:10:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24692 "EHLO mga01.intel.com"
+	id S1756789Ab1JMXJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 19:09:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28707 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755901Ab1JMXI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755962Ab1JMXI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Oct 2011 19:08:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,343,1315206000"; 
-   d="scan'208";a="77927473"
+   d="scan'208";a="26560764"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: dri-devel@lists.freedesktop.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, airlied@linux.ie
-Subject: [PATCH 07/12] RADEON: Move more code out of line
-Date: Thu, 13 Oct 2011 16:08:47 -0700
-Message-Id: <1318547332-23155-7-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, David Airlie <airlied@linux.ie>,
+        benh@kernel.crashing.org
+Subject: [PATCH 05/12] FB_ATY: Move register accesses out of line
+Date: Thu, 13 Oct 2011 16:08:45 -0700
+Message-Id: <1318547332-23155-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
 References: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
@@ -25,376 +26,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With this patch I'm only about 50k larger with DRM debugging
-enables (why is that enabled by default?!?), and slightly
-smaller without.
+This fixes size regressions like
 
-Cc: airlied@linux.ie
+radeon_set_suspend                          1724    7873   +6149
+radeon_reinitialize_M10                     3974    9285   +5311
+radeon_pm_disable_dynamic_mode               868    6125   +5257
+radeon_pm_enable_dynamic_mode                985    6065   +5080
+radeon_pm_start_mclk_sclk                      -    4614   +4614
+radeon_write_mode                           1252    5377   +4125
+
+among others compared to a non force inline kernel.
+
+Cc: David Airlie <airlied@linux.ie>
+Cc: benh@kernel.crashing.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/gpu/drm/radeon/r100.c             |   39 ++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/r300_cmdbuf.c      |    2 +-
- drivers/gpu/drm/radeon/r600.c             |    4 +-
- drivers/gpu/drm/radeon/r600_blit_kms.c    |    2 +-
- drivers/gpu/drm/radeon/radeon.h           |   39 +++++----------------------
- drivers/gpu/drm/radeon/radeon_atombios.c  |    4 +-
- drivers/gpu/drm/radeon/radeon_irq.c       |    2 +-
- drivers/gpu/drm/radeon/radeon_legacy_tv.c |    2 +-
- drivers/gpu/drm/radeon/radeon_object.c    |   41 ++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_object.h    |   42 ++--------------------------
- drivers/gpu/drm/radeon/radeon_state.c     |   16 +++++-----
- 11 files changed, 106 insertions(+), 87 deletions(-)
+ drivers/video/aty/radeon_accel.c |   88 ++++++++++++++++++++++++++++++++++
+ drivers/video/aty/radeonfb.h     |   96 +++-----------------------------------
+ 2 files changed, 95 insertions(+), 89 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 6720929..1bbed1f 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -4107,3 +4107,42 @@ void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v)
- 		iowrite32(v, rdev->rio_mem + RADEON_MM_DATA);
- 	}
+diff --git a/drivers/video/aty/radeon_accel.c b/drivers/video/aty/radeon_accel.c
+index a469a3d..0f1e367 100644
+--- a/drivers/video/aty/radeon_accel.c
++++ b/drivers/video/aty/radeon_accel.c
+@@ -326,3 +326,91 @@ void radeonfb_engine_init (struct radeonfb_info *rinfo)
+ 
+ 	radeon_engine_idle ();
  }
 +
-+/* Better place? */
-+u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
++
++void _OUTREGP(struct radeonfb_info *rinfo, u32 addr, u32 val, u32 mask)
 +{
-+	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
-+	u32 pg_idx, pg_offset;
-+	u32 idx_value = 0;
-+	int new_page;
++	unsigned long flags;
++	unsigned int tmp;
 +
-+	pg_idx = (idx * 4) / PAGE_SIZE;
-+	pg_offset = (idx * 4) % PAGE_SIZE;
-+
-+	if (ibc->kpage_idx[0] == pg_idx)
-+		return ibc->kpage[0][pg_offset/4];
-+	if (ibc->kpage_idx[1] == pg_idx)
-+		return ibc->kpage[1][pg_offset/4];
-+
-+	new_page = radeon_cs_update_pages(p, pg_idx);
-+	if (new_page < 0) {
-+		p->parser_error = new_page;
-+		return 0;
-+	}
-+
-+	idx_value = ibc->kpage[new_page][pg_offset/4];
-+	return idx_value;
-+}
-+
-+void radeon_ring_write(struct radeon_device *rdev, uint32_t v)
-+{
-+#if DRM_DEBUG_CODE
-+	if (rdev->cp.count_dw <= 0) {
-+		DRM_ERROR("radeon: writting more dword to ring than expected !\n");
-+	}
-+#endif
-+	rdev->cp.ring[rdev->cp.wptr++] = v;
-+	rdev->cp.wptr &= rdev->cp.ptr_mask;
-+	rdev->cp.count_dw--;
-+	rdev->cp.ring_free_dw--;
-+}
-diff --git a/drivers/gpu/drm/radeon/r300_cmdbuf.c b/drivers/gpu/drm/radeon/r300_cmdbuf.c
-index c5c2742..1fe98b4 100644
---- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
-+++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
-@@ -791,7 +791,7 @@ static __inline__ int r300_emit_packet3(drm_radeon_private_t *dev_priv,
- /**
-  * Emit the sequence to pacify R300.
-  */
--static __inline__ void r300_pacify(drm_radeon_private_t *dev_priv)
-+static void r300_pacify(drm_radeon_private_t *dev_priv)
- {
- 	uint32_t cache_z, cache_3d, cache_2d;
- 	RING_LOCALS;
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 720dd99..c85047f 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3137,7 +3137,7 @@ int r600_irq_set(struct radeon_device *rdev)
- 	return 0;
- }
- 
--static inline void r600_irq_ack(struct radeon_device *rdev)
-+static void r600_irq_ack(struct radeon_device *rdev)
- {
- 	u32 tmp;
- 
-@@ -3238,7 +3238,7 @@ void r600_irq_disable(struct radeon_device *rdev)
- 	r600_disable_interrupt_state(rdev);
- }
- 
--static inline u32 r600_get_ih_wptr(struct radeon_device *rdev)
-+static u32 r600_get_ih_wptr(struct radeon_device *rdev)
- {
- 	u32 wptr, tmp;
- 
-diff --git a/drivers/gpu/drm/radeon/r600_blit_kms.c b/drivers/gpu/drm/radeon/r600_blit_kms.c
-index 9aa74c3..bbbafe6 100644
---- a/drivers/gpu/drm/radeon/r600_blit_kms.c
-+++ b/drivers/gpu/drm/radeon/r600_blit_kms.c
-@@ -450,7 +450,7 @@ set_default_state(struct radeon_device *rdev)
- 	radeon_ring_write(rdev, sq_stack_resource_mgmt_2);
- }
- 
--static inline uint32_t i2f(uint32_t input)
-+static uint32_t i2f(uint32_t input)
- {
- 	u32 result, i, exponent, fraction;
- 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 8ac6cba..5ed7ef7 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -601,32 +601,7 @@ struct radeon_cs_parser {
- 
- extern int radeon_cs_update_pages(struct radeon_cs_parser *p, int pg_idx);
- extern int radeon_cs_finish_pages(struct radeon_cs_parser *p);
--
--
--static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
--{
--	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
--	u32 pg_idx, pg_offset;
--	u32 idx_value = 0;
--	int new_page;
--
--	pg_idx = (idx * 4) / PAGE_SIZE;
--	pg_offset = (idx * 4) % PAGE_SIZE;
--
--	if (ibc->kpage_idx[0] == pg_idx)
--		return ibc->kpage[0][pg_offset/4];
--	if (ibc->kpage_idx[1] == pg_idx)
--		return ibc->kpage[1][pg_offset/4];
--
--	new_page = radeon_cs_update_pages(p, pg_idx);
--	if (new_page < 0) {
--		p->parser_error = new_page;
--		return 0;
--	}
--
--	idx_value = ibc->kpage[new_page][pg_offset/4];
--	return idx_value;
--}
-+extern u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
- 
- struct radeon_cs_packet {
- 	unsigned	idx;
-@@ -1378,19 +1353,19 @@ void radeon_atombios_fini(struct radeon_device *rdev);
- /*
-  * RING helpers.
-  */
-+
-+#if DRM_DEBUG_CODE == 0
- static inline void radeon_ring_write(struct radeon_device *rdev, uint32_t v)
- {
--#if DRM_DEBUG_CODE
--	if (rdev->cp.count_dw <= 0) {
--		DRM_ERROR("radeon: writting more dword to ring than expected !\n");
--	}
--#endif
- 	rdev->cp.ring[rdev->cp.wptr++] = v;
- 	rdev->cp.wptr &= rdev->cp.ptr_mask;
- 	rdev->cp.count_dw--;
- 	rdev->cp.ring_free_dw--;
- }
--
-+#else
-+/* With debugging this is just too big to inline */
-+void radeon_ring_write(struct radeon_device *rdev, uint32_t v);
-+#endif
- 
- /*
-  * ASICs macro.
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index bf2b615..08d0b94 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -62,7 +62,7 @@ union atom_supported_devices {
- 	struct _ATOM_SUPPORTED_DEVICES_INFO_2d1 info_2d1;
- };
- 
--static inline struct radeon_i2c_bus_rec radeon_lookup_i2c_gpio(struct radeon_device *rdev,
-+static struct radeon_i2c_bus_rec radeon_lookup_i2c_gpio(struct radeon_device *rdev,
- 							       uint8_t id)
- {
- 	struct atom_context *ctx = rdev->mode_info.atom_context;
-@@ -228,7 +228,7 @@ void radeon_atombios_i2c_init(struct radeon_device *rdev)
- 	}
- }
- 
--static inline struct radeon_gpio_rec radeon_lookup_gpio(struct radeon_device *rdev,
-+static struct radeon_gpio_rec radeon_lookup_gpio(struct radeon_device *rdev,
- 							u8 id)
- {
- 	struct atom_context *ctx = rdev->mode_info.atom_context;
-diff --git a/drivers/gpu/drm/radeon/radeon_irq.c b/drivers/gpu/drm/radeon/radeon_irq.c
-index 465746b..00da384 100644
---- a/drivers/gpu/drm/radeon/radeon_irq.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq.c
-@@ -129,7 +129,7 @@ void radeon_disable_vblank(struct drm_device *dev, int crtc)
- 	}
- }
- 
--static inline u32 radeon_acknowledge_irqs(drm_radeon_private_t *dev_priv, u32 *r500_disp_int)
-+static u32 radeon_acknowledge_irqs(drm_radeon_private_t *dev_priv, u32 *r500_disp_int)
- {
- 	u32 irqs = RADEON_READ(RADEON_GEN_INT_STATUS);
- 	u32 irq_mask = RADEON_SW_INT_TEST;
-diff --git a/drivers/gpu/drm/radeon/radeon_legacy_tv.c b/drivers/gpu/drm/radeon/radeon_legacy_tv.c
-index c7b6cb4..b37ec0f 100644
---- a/drivers/gpu/drm/radeon/radeon_legacy_tv.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_tv.c
-@@ -864,7 +864,7 @@ void radeon_legacy_tv_adjust_crtc_reg(struct drm_encoder *encoder,
- 	*v_sync_strt_wid = tmp;
- }
- 
--static inline int get_post_div(int value)
-+static int get_post_div(int value)
- {
- 	int post_div;
- 	switch (value) {
-diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
-index 976c3b1..1c85152 100644
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -515,3 +515,44 @@ int radeon_bo_fault_reserve_notify(struct ttm_buffer_object *bo)
- 	}
- 	return 0;
- }
-+
-+int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type, bool no_wait)
-+{
-+	int r;
-+
-+	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
-+	if (unlikely(r != 0))
-+		return r;
-+	spin_lock(&bo->tbo.bdev->fence_lock);
-+	if (mem_type)
-+		*mem_type = bo->tbo.mem.mem_type;
-+	if (bo->tbo.sync_obj)
-+		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
-+	spin_unlock(&bo->tbo.bdev->fence_lock);
-+	ttm_bo_unreserve(&bo->tbo);
-+	return r;
++	spin_lock_irqsave(&rinfo->reg_lock, flags);
++	tmp = INREG(addr);
++	tmp &= (mask);
++	tmp |= (val);
++	OUTREG(addr, tmp);
++	spin_unlock_irqrestore(&rinfo->reg_lock, flags);
 +}
 +
 +
-+/**
-+ * radeon_bo_reserve - reserve bo
-+ * @bo:		bo structure
-+ * @no_wait:		don't sleep while trying to reserve (return -EBUSY)
++/*
++ * Note about PLL register accesses:
 + *
-+ * Returns:
-+ * -EBUSY: buffer is busy and @no_wait is true
-+ * -ERESTARTSYS: A wait for the buffer to become unreserved was interrupted by
-+ * a signal. Release all buffer reservations and return to user-space.
++ * I have removed the spinlock on them on purpose. The driver now
++ * expects that it will only manipulate the PLL registers in normal
++ * task environment, where radeon_msleep() will be called, protected
++ * by a semaphore (currently the console semaphore) so that no conflict
++ * will happen on the PLL register index.
++ *
++ * With the latest changes to the VT layer, this is guaranteed for all
++ * calls except the actual drawing/blits which aren't supposed to use
++ * the PLL registers anyway
++ *
++ * This is very important for the workarounds to work properly. The only
++ * possible exception to this rule is the call to unblank(), which may
++ * be done at irq time if an oops is in progress.
 + */
-+int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait)
++void radeon_pll_errata_after_index(struct radeonfb_info *rinfo)
 +{
-+	int r;
++	if (!(rinfo->errata & CHIP_ERRATA_PLL_DUMMYREADS))
++		return;
 +
-+	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
-+	if (unlikely(r != 0)) {
-+		if (r != -ERESTARTSYS)
-+			dev_err(bo->rdev->dev, "%p reserve failed\n", bo);
-+		return r;
-+	}
-+	return 0;
++	(void)INREG(CLOCK_CNTL_DATA);
++	(void)INREG(CRTC_GEN_CNTL);
 +}
-diff --git a/drivers/gpu/drm/radeon/radeon_object.h b/drivers/gpu/drm/radeon/radeon_object.h
-index ede6c13..b07f0f9 100644
---- a/drivers/gpu/drm/radeon/radeon_object.h
-+++ b/drivers/gpu/drm/radeon/radeon_object.h
-@@ -52,28 +52,7 @@ static inline unsigned radeon_mem_type_to_domain(u32 mem_type)
- 	return 0;
- }
++
++void radeon_pll_errata_after_data(struct radeonfb_info *rinfo)
++{
++	if (rinfo->errata & CHIP_ERRATA_PLL_DELAY) {
++		/* we can't deal with posted writes here ... */
++		_radeon_msleep(rinfo, 5);
++	}
++	if (rinfo->errata & CHIP_ERRATA_R300_CG) {
++		u32 save, tmp;
++		save = INREG(CLOCK_CNTL_INDEX);
++		tmp = save & ~(0x3f | PLL_WR_EN);
++		OUTREG(CLOCK_CNTL_INDEX, tmp);
++		tmp = INREG(CLOCK_CNTL_DATA);
++		OUTREG(CLOCK_CNTL_INDEX, save);
++	}
++}
++
++u32 __INPLL(struct radeonfb_info *rinfo, u32 addr)
++{
++	u32 data;
++
++	OUTREG8(CLOCK_CNTL_INDEX, addr & 0x0000003f);
++	radeon_pll_errata_after_index(rinfo);
++	data = INREG(CLOCK_CNTL_DATA);
++	radeon_pll_errata_after_data(rinfo);
++	return data;
++}
++
++void __OUTPLL(struct radeonfb_info *rinfo, unsigned int index, u32 val)
++{
++
++	OUTREG8(CLOCK_CNTL_INDEX, (index & 0x0000003f) | 0x00000080);
++	radeon_pll_errata_after_index(rinfo);
++	OUTREG(CLOCK_CNTL_DATA, val);
++	radeon_pll_errata_after_data(rinfo);
++}
++
++void __OUTPLLP(struct radeonfb_info *rinfo, unsigned int index, u32 val, u32 mask)
++{
++	unsigned int tmp;
++
++	tmp  = __INPLL(rinfo, index);
++	tmp &= (mask);
++	tmp |= (val);
++	__OUTPLL(rinfo, index, tmp);
++}
++
+diff --git a/drivers/video/aty/radeonfb.h b/drivers/video/aty/radeonfb.h
+index 7351e66..cde9c2e 100644
+--- a/drivers/video/aty/radeonfb.h
++++ b/drivers/video/aty/radeonfb.h
+@@ -393,98 +393,16 @@ static inline void _radeon_msleep(struct radeonfb_info *rinfo, unsigned long ms)
+ #define INREG(addr)		readl((rinfo->mmio_base)+addr)
+ #define OUTREG(addr,val)	writel(val, (rinfo->mmio_base)+addr)
  
--/**
-- * radeon_bo_reserve - reserve bo
-- * @bo:		bo structure
-- * @no_wait:		don't sleep while trying to reserve (return -EBUSY)
+-static inline void _OUTREGP(struct radeonfb_info *rinfo, u32 addr,
+-		       u32 val, u32 mask)
+-{
+-	unsigned long flags;
+-	unsigned int tmp;
+-
+-	spin_lock_irqsave(&rinfo->reg_lock, flags);
+-	tmp = INREG(addr);
+-	tmp &= (mask);
+-	tmp |= (val);
+-	OUTREG(addr, tmp);
+-	spin_unlock_irqrestore(&rinfo->reg_lock, flags);
+-}
++void _OUTREGP(struct radeonfb_info *rinfo, u32 addr, u32 val, u32 mask);
++void __OUTPLLP(struct radeonfb_info *rinfo, unsigned int index,
++			     u32 val, u32 mask);
++void __OUTPLL(struct radeonfb_info *rinfo, unsigned int index, u32 val);
++u32 __INPLL(struct radeonfb_info *rinfo, u32 addr);
++void radeon_pll_errata_after_data(struct radeonfb_info *rinfo);
++void radeon_pll_errata_after_index(struct radeonfb_info *rinfo);
+ 
+ #define OUTREGP(addr,val,mask)	_OUTREGP(rinfo, addr, val,mask)
+ 
+-/*
+- * Note about PLL register accesses:
 - *
-- * Returns:
-- * -EBUSY: buffer is busy and @no_wait is true
-- * -ERESTARTSYS: A wait for the buffer to become unreserved was interrupted by
-- * a signal. Release all buffer reservations and return to user-space.
+- * I have removed the spinlock on them on purpose. The driver now
+- * expects that it will only manipulate the PLL registers in normal
+- * task environment, where radeon_msleep() will be called, protected
+- * by a semaphore (currently the console semaphore) so that no conflict
+- * will happen on the PLL register index.
+- *
+- * With the latest changes to the VT layer, this is guaranteed for all
+- * calls except the actual drawing/blits which aren't supposed to use
+- * the PLL registers anyway
+- *
+- * This is very important for the workarounds to work properly. The only
+- * possible exception to this rule is the call to unblank(), which may
+- * be done at irq time if an oops is in progress.
 - */
--static inline int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait)
+-static inline void radeon_pll_errata_after_index(struct radeonfb_info *rinfo)
 -{
--	int r;
+-	if (!(rinfo->errata & CHIP_ERRATA_PLL_DUMMYREADS))
+-		return;
 -
--	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
--	if (unlikely(r != 0)) {
--		if (r != -ERESTARTSYS)
--			dev_err(bo->rdev->dev, "%p reserve failed\n", bo);
--		return r;
+-	(void)INREG(CLOCK_CNTL_DATA);
+-	(void)INREG(CRTC_GEN_CNTL);
+-}
+-
+-static inline void radeon_pll_errata_after_data(struct radeonfb_info *rinfo)
+-{
+-	if (rinfo->errata & CHIP_ERRATA_PLL_DELAY) {
+-		/* we can't deal with posted writes here ... */
+-		_radeon_msleep(rinfo, 5);
 -	}
--	return 0;
+-	if (rinfo->errata & CHIP_ERRATA_R300_CG) {
+-		u32 save, tmp;
+-		save = INREG(CLOCK_CNTL_INDEX);
+-		tmp = save & ~(0x3f | PLL_WR_EN);
+-		OUTREG(CLOCK_CNTL_INDEX, tmp);
+-		tmp = INREG(CLOCK_CNTL_DATA);
+-		OUTREG(CLOCK_CNTL_INDEX, save);
+-	}
 -}
-+int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait);
- 
- static inline void radeon_bo_unreserve(struct radeon_bo *bo)
- {
-@@ -118,23 +97,8 @@ static inline u64 radeon_bo_mmap_offset(struct radeon_bo *bo)
- 	return bo->tbo.addr_space_offset;
- }
- 
--static inline int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type,
--					bool no_wait)
--{
--	int r;
 -
--	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
--	if (unlikely(r != 0))
--		return r;
--	spin_lock(&bo->tbo.bdev->fence_lock);
--	if (mem_type)
--		*mem_type = bo->tbo.mem.mem_type;
--	if (bo->tbo.sync_obj)
--		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
--	spin_unlock(&bo->tbo.bdev->fence_lock);
--	ttm_bo_unreserve(&bo->tbo);
--	return r;
+-static inline u32 __INPLL(struct radeonfb_info *rinfo, u32 addr)
+-{
+-	u32 data;
+-
+-	OUTREG8(CLOCK_CNTL_INDEX, addr & 0x0000003f);
+-	radeon_pll_errata_after_index(rinfo);
+-	data = INREG(CLOCK_CNTL_DATA);
+-	radeon_pll_errata_after_data(rinfo);
+-	return data;
 -}
-+extern int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type,
-+			  bool no_wait);
- 
- extern int radeon_bo_create(struct radeon_device *rdev,
- 				unsigned long size, int byte_align,
-diff --git a/drivers/gpu/drm/radeon/radeon_state.c b/drivers/gpu/drm/radeon/radeon_state.c
-index 92e7ea7..e8422ae 100644
---- a/drivers/gpu/drm/radeon/radeon_state.c
-+++ b/drivers/gpu/drm/radeon/radeon_state.c
-@@ -272,12 +272,12 @@ static __inline__ int radeon_check_and_fixup_packets(drm_radeon_private_t *
- 	return 0;
- }
- 
--static __inline__ int radeon_check_and_fixup_packet3(drm_radeon_private_t *
--						     dev_priv,
--						     struct drm_file *file_priv,
--						     drm_radeon_kcmd_buffer_t *
--						     cmdbuf,
--						     unsigned int *cmdsz)
-+static int radeon_check_and_fixup_packet3(drm_radeon_private_t *
-+					  dev_priv,
-+					  struct drm_file *file_priv,
-+					  drm_radeon_kcmd_buffer_t *
-+					  cmdbuf,
-+					  unsigned int *cmdsz)
- {
- 	u32 *cmd = drm_buffer_pointer_to_dword(cmdbuf->buffer, 0);
- 	u32 offset, narrays;
-@@ -446,8 +446,8 @@ static __inline__ int radeon_check_and_fixup_packet3(drm_radeon_private_t *
-  * CP hardware state programming functions
-  */
- 
--static __inline__ void radeon_emit_clip_rect(drm_radeon_private_t * dev_priv,
--					     struct drm_clip_rect * box)
-+static void radeon_emit_clip_rect(drm_radeon_private_t * dev_priv,
-+				  struct drm_clip_rect * box)
- {
- 	RING_LOCALS;
- 
+-
+-static inline void __OUTPLL(struct radeonfb_info *rinfo, unsigned int index,
+-			    u32 val)
+-{
+-
+-	OUTREG8(CLOCK_CNTL_INDEX, (index & 0x0000003f) | 0x00000080);
+-	radeon_pll_errata_after_index(rinfo);
+-	OUTREG(CLOCK_CNTL_DATA, val);
+-	radeon_pll_errata_after_data(rinfo);
+-}
+-
+-
+-static inline void __OUTPLLP(struct radeonfb_info *rinfo, unsigned int index,
+-			     u32 val, u32 mask)
+-{
+-	unsigned int tmp;
+-
+-	tmp  = __INPLL(rinfo, index);
+-	tmp &= (mask);
+-	tmp |= (val);
+-	__OUTPLL(rinfo, index, tmp);
+-}
+-
+-
+ #define INPLL(addr)			__INPLL(rinfo, addr)
+ #define OUTPLL(index, val)		__OUTPLL(rinfo, index, val)
+ #define OUTPLLP(index, val, mask)	__OUTPLLP(rinfo, index, val, mask)
 -- 
 1.7.4.4
 
