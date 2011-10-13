@@ -1,270 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab1JMSkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 14:40:13 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59054 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab1JMSkM (ORCPT
+	id S1751784Ab1JMSnY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 14:43:24 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:61855 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab1JMSnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 14:40:12 -0400
-Date: Thu, 13 Oct 2011 12:40:07 -0600
+	Thu, 13 Oct 2011 14:43:23 -0400
+Date: Thu, 13 Oct 2011 12:43:19 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Rajendra Nayak <rnayak@ti.com>
 Cc: broonie@opensource.wolfsonmicro.com, devicetree-discuss@lists.ozlabs.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111013184007.GO18574@ponder.secretlab.ca>
+Subject: Re: [PATCH v2 4/5] regulator: adapt fixed regulator driver to dt
+Message-ID: <20111013184319.GP18574@ponder.secretlab.ca>
 References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <1318263578-7407-5-git-send-email-rnayak@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318263578-7407-4-git-send-email-rnayak@ti.com>
+In-Reply-To: <1318263578-7407-5-git-send-email-rnayak@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 09:49:36PM +0530, Rajendra Nayak wrote:
-> The helper routine is meant to be used by regulator drivers
-> to extract the regulator_init_data structure from the data
-> that is passed from device tree.
-> 'consumer_supplies' which is part of regulator_init_data is not extracted
-> as the regulator consumer mappings are passed through DT differently,
-> implemented in subsequent patches.
-> Similarly the regulator<-->parent/supply mapping is handled in
-> subsequent patches.
+On Mon, Oct 10, 2011 at 09:49:37PM +0530, Rajendra Nayak wrote:
+> The fixed regulator driver uses of_get_fixed_voltage_config()
+> to extract fixed_voltage_config structure contents from device tree.
 > 
-> Also add documentation for regulator bindings to be used to pass
-> regulator_init_data struct information from device tree.
+> Also add documenation for additional bindings for fixed
+> regulators that can be passed through dt.
 > 
 > Signed-off-by: Rajendra Nayak <rnayak@ti.com>
 > ---
->  .../devicetree/bindings/regulator/regulator.txt    |   44 +++++++++
->  drivers/regulator/Kconfig                          |    8 ++
->  drivers/regulator/Makefile                         |    1 +
->  drivers/regulator/of_regulator.c                   |   93 ++++++++++++++++++++
->  include/linux/regulator/of_regulator.h             |   21 +++++
->  5 files changed, 167 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/regulator.txt
->  create mode 100644 drivers/regulator/of_regulator.c
->  create mode 100644 include/linux/regulator/of_regulator.h
+>  .../bindings/regulator/fixed-regulator.txt         |   25 +++++++++
+>  drivers/regulator/fixed.c                          |   58 ++++++++++++++++++++
+>  2 files changed, 83 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/regulator/fixed-regulator.txt
 > 
-> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+> diff --git a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
 > new file mode 100644
-> index 0000000..a623fdd
+> index 0000000..049df3d
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-> @@ -0,0 +1,44 @@
-> +Voltage/Current Regulators
+> +++ b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
+> @@ -0,0 +1,25 @@
+> +Fixed Voltage regulators
+> +
+> +Required properties:
+> +- compatible: Must be "regulator-fixed";
 > +
 > +Optional properties:
-> +- regulator-min-uV: smallest voltage consumers may set
-> +- regulator-max-uV: largest voltage consumers may set
-> +- regulator-uV-offset: Offset applied to voltages to compensate for voltage drops
-> +- regulator-min-uA: smallest current consumers may set
-> +- regulator-max-uA: largest current consumers may set
-> +- regulator-change-voltage: boolean, Output voltage can be changed by software
-> +- regulator-change-current: boolean, Output current can be chnaged by software
-> +- regulator-change-mode: boolean, Operating mode can be changed by software
-> +- regulator-change-status: boolean, Enable/Disable control for regulator exists
-> +- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
-> +- regulator-mode-fast: boolean, allow/set fast mode for the regulator
-> +- regulator-mode-normal: boolean, allow/set normal mode for the regulator
-> +- regulator-mode-idle: boolean, allow/set idle mode for the regulator
-> +- regulator-mode-standby: boolean, allow/set standby mode for the regulator
-> +- regulator-input-uV: Input voltage for regulator when supplied by another regulator
-> +- regulator-always-on: boolean, regulator should never be disabled
-> +- regulator-boot-on: bootloader/firmware enabled regulator
-> +- <name>-supply: phandle to the parent supply/regulator node
+> +- regulator-fixed-supply: Name of the regulator supply
+> +- regulator-fixed-microvolts: Output voltage of regulator
+> +- regulator-fixed-gpio: gpio to use for enable control
+> +- regulator-fixed-startup-delay: startup time in microseconds
+> +- regulator-fixed-enable-high: Polarity of enable GPIO,
+> +  1 = Active High, 0 = Active low
+> +- regulator-fixed-enabled-at-boot: 1 = yes, 0 = no
 > +
 > +Example:
 > +
-> +	xyzreg: regulator@0 {
-> +		regulator-min-uV = <1000000>;
-> +		regulator-max-uV = <2500000>;
-> +		regulator-mode-fast;
-> +		regulator-change-voltage;
-> +		regulator-always-on;
-> +		vin-supply = <&vin>;
+> +	abc: fixedregulator@0 {
+> +		compatible = "regulator-fixed";
+> +		regulator-fixed-supply = "fixed-supply";
+> +		regulator-fixed-microvolts = <1800000>;
+> +		regulator-fixed-gpio = <43>;
+> +		regulator-fixed-startup-delay = <70000>;
+> +		regulator-fixed-enable-high;
+> +		regulator-fixed-enabled-at-boot;
 > +	};
-> +
-> +The same binding used by a regulator to reference its
-> +supply can be used by any consumer to reference its
-> +regulator/supply
-> +
-> +Example of a device node referencing a regulator node,
-> +
-> +	devicenode: node@0x0 {
-> +		...
-> +		...
-> +		<name>-supply = <&xyzreg>;
-> +	};
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index c7fd2c0..981c92e 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -64,6 +64,14 @@ config REGULATOR_USERSPACE_CONSUMER
->  
->            If unsure, say no.
->  
-> +config OF_REGULATOR
-> +	tristate "OF regulator helpers"
-> +	depends on OF
-> +	default y if OF
-
-drop the default y line.  This probably shouldn't even be a
-user-visible option.  Make drivers select OF_REGULATOR if it needs
-it.
-
-> +	help
-> +	  OpenFirmware regulator framework helper routines that can
-> +	  used by regulator drivers to extract data from device tree.
-> +
->  config REGULATOR_BQ24022
->  	tristate "TI bq24022 Dual Input 1-Cell Li-Ion Charger IC"
->  	help
-> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-> index 040d5aa..e6bc009 100644
-> --- a/drivers/regulator/Makefile
-> +++ b/drivers/regulator/Makefile
-> @@ -7,6 +7,7 @@ obj-$(CONFIG_REGULATOR) += core.o dummy.o
->  obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
->  obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
->  obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
-> +obj-$(CONFIG_OF_REGULATOR) += of_regulator.o
->  
->  obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
->  obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
-> diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-> new file mode 100644
-> index 0000000..9262d06
-> --- /dev/null
-> +++ b/drivers/regulator/of_regulator.c
-> @@ -0,0 +1,93 @@
-> +/*
-> + * OF helpers for regulator framework
-> + *
-> + * Copyright (C) 2011 Texas Instruments, Inc.
-> + * Rajendra Nayak <rnayak@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
+> diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+> index 2fe9d99..eb37eb6 100644
+> --- a/drivers/regulator/fixed.c
+> +++ b/drivers/regulator/fixed.c
+> @@ -23,9 +23,12 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/regulator/driver.h>
+>  #include <linux/regulator/fixed.h>
 > +#include <linux/regulator/machine.h>
-> +
-> +static void of_get_regulation_constraints(struct device_node *np,
-> +					struct regulator_init_data **init_data)
-> +{
-> +	const __be32 *min_uV, *max_uV, *uV_offset;
-> +	const __be32 *min_uA, *max_uA, *input_uV;
-> +	unsigned int valid_modes_mask = 0, valid_ops_mask = 0;
-> +
-> +	min_uV = of_get_property(np, "regulator-min-uV", NULL);
-> +	if (min_uV)
-> +		(*init_data)->constraints.min_uV = be32_to_cpu(*min_uV);
-> +	max_uV = of_get_property(np, "regulator-max-uV", NULL);
-> +	if (max_uV)
-> +		(*init_data)->constraints.max_uV = be32_to_cpu(*max_uV);
-> +	uV_offset = of_get_property(np, "regulator-uV-offset", NULL);
-> +	if (uV_offset)
-> +		(*init_data)->constraints.uV_offset = be32_to_cpu(*uV_offset);
-> +	min_uA = of_get_property(np, "regulator-min-uA", NULL);
-> +	if (min_uA)
-> +		(*init_data)->constraints.min_uA = be32_to_cpu(*min_uA);
-> +	max_uA = of_get_property(np, "regulator-max-uA", NULL);
-> +	if (max_uA)
-> +		(*init_data)->constraints.max_uA = be32_to_cpu(*max_uA);
-> +	input_uV = of_get_property(np, "regulator-input-uV", NULL);
-> +	if (input_uV)
-> +		(*init_data)->constraints.input_uV = be32_to_cpu(*input_uV);
-> +
-> +	/* valid modes mask */
-> +	if (of_find_property(np, "regulator-mode-fast", NULL))
-> +				valid_modes_mask |= REGULATOR_MODE_FAST;
-> +	if (of_find_property(np, "regulator-mode-normal", NULL))
-> +				valid_modes_mask |= REGULATOR_MODE_NORMAL;
-> +	if (of_find_property(np, "regulator-mode-idle", NULL))
-> +				valid_modes_mask |= REGULATOR_MODE_IDLE;
-> +	if (of_find_property(np, "regulator-mode-standby", NULL))
-> +				valid_modes_mask |= REGULATOR_MODE_STANDBY;
-> +
-> +	/* valid ops mask */
-> +	if (of_find_property(np, "regulator-change-voltage", NULL))
-> +				valid_ops_mask |= REGULATOR_CHANGE_VOLTAGE;
-> +	if (of_find_property(np, "regulator-change-current", NULL))
-> +				valid_ops_mask |= REGULATOR_CHANGE_CURRENT;
-> +	if (of_find_property(np, "regulator-change-mode", NULL))
-> +				valid_ops_mask |= REGULATOR_CHANGE_MODE;
-> +	if (of_find_property(np, "regulator-change-status", NULL))
-> +				valid_ops_mask |= REGULATOR_CHANGE_STATUS;
-> +
-> +	(*init_data)->constraints.valid_modes_mask = valid_modes_mask;
-> +	(*init_data)->constraints.valid_ops_mask = valid_ops_mask;
-> +
-> +	if (of_find_property(np, "regulator-always-on", NULL))
-> +				(*init_data)->constraints.always_on = true;
-> +	if (of_find_property(np, "regulator-boot-on", NULL))
-> +				(*init_data)->constraints.boot_on = true;
-> +}
+>  #include <linux/gpio.h>
+>  #include <linux/delay.h>
+>  #include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/regulator/of_regulator.h>
+>  
+>  struct fixed_voltage_data {
+>  	struct regulator_desc desc;
+> @@ -37,6 +40,47 @@ struct fixed_voltage_data {
+>  	bool is_enabled;
+>  };
+>  
 > +
 > +/**
-> + * of_get_regulator_init_data - extract regulator_init_data structure info
-> + * @dev: device requesting for regulator_init_data
+> + * of_get_fixed_voltage_config - extract fixed_voltage_config structure info
+> + * @dev: device requesting for fixed_voltage_config
 > + *
-> + * Populates regulator_init_data structure by extracting data from device
-> + * tree node, returns a pointer to the populated struture or NULL if memory
+> + * Populates fixed_voltage_config structure by extracting data from device
+> + * tree node, returns a pointer to the populated structure of NULL if memory
 > + * alloc fails.
 > + */
-> +struct regulator_init_data *of_get_regulator_init_data(struct device *dev)
+> +struct fixed_voltage_config *of_get_fixed_voltage_config(struct device *dev)
 > +{
-> +	struct regulator_init_data *init_data;
+> +	struct fixed_voltage_config *config;
+> +	struct device_node *np = dev->of_node;
+> +	const __be32 *microvolts, *gpio, *delay;
 > +
-> +	if (!dev->of_node)
+> +	config = devm_kzalloc(dev, sizeof(struct fixed_voltage_config), GFP_KERNEL);
+> +	if (!config)
 > +		return NULL;
 > +
-> +	init_data = devm_kzalloc(dev, sizeof(*init_data), GFP_KERNEL);
-> +	if (!init_data)
-> +		return NULL; /* Out of memory? */
+> +	config->supply_name = (char *)of_get_property(np,
+> +					"regulator-fixed-supply", NULL);
+
+of_get_property() returns a (const void *).  Casting drops the const
+and should not be used.  Either make supply_name a (const char *), or
+copy the string into a (char *) buffer.
+
+> +	microvolts = of_get_property(np, "regulator-fixed-microvolts", NULL);
+> +	if (microvolts)
+> +		config->microvolts = be32_to_cpu(*microvolts);
+> +	gpio = of_get_property(np, "regulator-fixed-gpio", NULL);
+> +	if (gpio)
+> +		config->gpio = be32_to_cpu(*gpio);
+
+of_property_read_u32() may help here.
+
+> +	delay = of_get_property(np, "regulator-fixed-startup-delay", NULL);
+> +	if (delay)
+> +		config->startup_delay = be32_to_cpu(*delay);
 > +
-> +	of_get_regulation_constraints(dev->of_node, &init_data);
-> +	return init_data;
+> +	if (of_find_property(np, "regulator-fixed-enable-high", NULL))
+> +		config->enable_high = true;
+> +	if (of_find_property(np, "regulator-fixed-enabled-at-boot", NULL))
+> +		config->enabled_at_boot = true;
+> +
+> +	config->init_data = of_get_regulator_init_data(dev);
+> +
+> +	return config;
 > +}
-> diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
-> new file mode 100644
-> index 0000000..c5a1ad6
-> --- /dev/null
-> +++ b/include/linux/regulator/of_regulator.h
-> @@ -0,0 +1,21 @@
-> +/*
-> + * OpenFirmware regulator support routines
-> + *
-> + */
 > +
-> +#ifndef __LINUX_OF_REG_H
-> +#define __LINUX_OF_REG_H
+>  static int fixed_voltage_is_enabled(struct regulator_dev *dev)
+>  {
+>  	struct fixed_voltage_data *data = rdev_get_drvdata(dev);
+> @@ -108,6 +152,9 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
+>  	struct fixed_voltage_data *drvdata;
+>  	int ret;
+>  
+> +	if (pdev->dev.of_node)
+> +		config = of_get_fixed_voltage_config(&pdev->dev);
 > +
-> +#if defined(CONFIG_OF_REGULATOR)
-> +extern struct regulator_init_data
-> +	*of_get_regulator_init_data(struct device *dev);
+>  	drvdata = kzalloc(sizeof(struct fixed_voltage_data), GFP_KERNEL);
+>  	if (drvdata == NULL) {
+>  		dev_err(&pdev->dev, "Failed to allocate device data\n");
+> @@ -216,12 +263,23 @@ static int __devexit reg_fixed_voltage_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#if defined(CONFIG_OF)
+> +static const struct of_device_id fixed_of_match[] __devinitconst = {
+> +	{ .compatible = "regulator-fixed", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, fixed_of_match);
 > +#else
-> +static inline struct regulator_init_data
-> +	*of_get_regulator_init_data(struct device *dev)
-> +{
-> +	return NULL;
-> +}
-> +#endif /* CONFIG_OF_REGULATOR */
+> +#define fixed_of_match NULL
+> +#endif
 > +
-> +#endif /* __LINUX_OF_REG_H */
-> +
+>  static struct platform_driver regulator_fixed_voltage_driver = {
+>  	.probe		= reg_fixed_voltage_probe,
+>  	.remove		= __devexit_p(reg_fixed_voltage_remove),
+>  	.driver		= {
+>  		.name		= "reg-fixed-voltage",
+>  		.owner		= THIS_MODULE,
+> +		.of_match_table = fixed_of_match,
+>  	},
+>  };
+>  
 > -- 
 > 1.7.1
 > 
