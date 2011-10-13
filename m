@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab1JMAKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:10:30 -0400
-Received: from claw.goop.org ([74.207.240.146]:47109 "EHLO claw.goop.org"
+	id S1751852Ab1JMAK2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:10:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:47099 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab1JMAIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:08:55 -0400
+	id S1751646Ab1JMAIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:08:54 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -17,10 +17,14 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V4 05/10] sparc/jump_label: drop arch_jump_label_text_poke_early()
-Date: Wed, 12 Oct 2011 17:08:36 -0700
-Message-Id: <d01b6d0db1cd0e25797065982e06a38f5d6caf7f.1318464413.git.jeremy.fitzhardinge@citrix.com>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH RFC V4 02/10] stop_machine: make stop_machine safe and efficient to call early
+Date: Wed, 12 Oct 2011 17:08:33 -0700
+Message-Id: <838519059293cb6340bdea9b1bae4d866e2a4c65.1318464413.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
@@ -32,32 +36,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-It is no longer used.
+Make stop_machine() safe to call early in boot, before stop_machine()
+has been set up, by simply calling the callback function directly if
+there's only one CPU online.
+
+[ Fixes from AKPM:
+   - add comment
+   - local_irq_flags, not save_flags
+   - also call hard_irq_disable() for systems which need it
+
+  Tejun suggested using an explicit flag rather than just looking at
+  the online cpu count. ]
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Cc: David Miller <davem@davemloft.net>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/sparc/kernel/jump_label.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ kernel/stop_machine.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
-index ea2dafc..971fd43 100644
---- a/arch/sparc/kernel/jump_label.c
-+++ b/arch/sparc/kernel/jump_label.c
-@@ -36,12 +36,4 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 	put_online_cpus();
- }
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index ba5070c..d3f960a 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -41,6 +41,7 @@ struct cpu_stopper {
+ };
  
--void arch_jump_label_text_poke_early(jump_label_t addr)
--{
--	u32 *insn_p = (u32 *) (unsigned long) addr;
--
--	*insn_p = 0x01000000;
--	flushi(insn_p);
--}
--
- #endif
+ static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++static bool stop_machine_initialized = false;
+ 
+ static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
+ {
+@@ -386,6 +387,8 @@ static int __init cpu_stop_init(void)
+ 	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
+ 	register_cpu_notifier(&cpu_stop_cpu_notifier);
+ 
++	stop_machine_initialized = true;
++
+ 	return 0;
+ }
+ early_initcall(cpu_stop_init);
+@@ -485,6 +488,25 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+ 					    .num_threads = num_online_cpus(),
+ 					    .active_cpus = cpus };
+ 
++	if (!stop_machine_initialized) {
++		/*
++		 * Handle the case where stop_machine() is called
++		 * early in boot before stop_machine() has been
++		 * initialized.
++		 */
++ 		unsigned long flags;
++		int ret;
++
++		WARN_ON_ONCE(smdata.num_threads != 1);
++
++		local_irq_save(flags);
++		hard_irq_disable();
++		ret = (*fn)(data);
++		local_irq_restore(flags);
++
++		return ret;
++	}
++
+ 	/* Set the initial state and stop all online cpus. */
+ 	set_state(&smdata, STOPMACHINE_PREPARE);
+ 	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
 -- 
 1.7.6.4
 
