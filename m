@@ -1,122 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab1JMH3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:29:44 -0400
-Received: from imx9.toshiba.co.jp ([202.33.96.51]:62856 "EHLO
-	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab1JMH3n convert rfc822-to-8bit (ORCPT
+	id S1753378Ab1JMHda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:33:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59972 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab1JMHd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:29:43 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 03:29:42 EDT
-From: <akira2.iguchi@toshiba.co.jp>
-To: <bzolnier@gmail.com>, <alan@lxorguk.ukuu.org.uk>
-CC: <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kou.ishizaki@toshiba.co.jp>
-Subject: RE: [PATCH] pata_scc: add proper cable detection method
-Thread-Topic: [PATCH] pata_scc: add proper cable detection method
-Thread-Index: AQHMiPOoFI5m7LHg+02wdIxUYWybB5V53akQ
-Date: Thu, 13 Oct 2011 07:23:19 +0000
-Message-ID: <0AD1ABF616D7584184961C46C6BECD283C156EEA@TGXML215.toshiba.local>
-References: <201110112007.24530.bzolnier@gmail.com>
- <20111011205415.1d5708af@lxorguk.ukuu.org.uk>
- <201110121716.37990.bzolnier@gmail.com>
-In-Reply-To: <201110121716.37990.bzolnier@gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-x-originating-ip: [133.118.185.131]
-msscp.transfermailtomossagent: 103
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Oct 2011 03:33:29 -0400
+Date: Thu, 13 Oct 2011 16:33:21 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Satoru Moriya <satoru.moriya@hds.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Message-ID: <20111013073321.GA2784@barrios-desktop>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+ <20110901100650.6d884589.rdunlap@xenotime.net>
+ <20110901152650.7a63cb8b@annuminas.surriel.com>
+ <20110901145819.4031ef7c.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CAFB42677@USINDEVS02.corp.hds.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CAFB42677@USINDEVS02.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for maintaining our code.
-This patch makes no difference in functionality.
+On Fri, Sep 02, 2011 at 12:31:14PM -0400, Satoru Moriya wrote:
+> On 09/01/2011 05:58 PM, Andrew Morton wrote:
+> > On Thu, 1 Sep 2011 15:26:50 -0400
+> > Rik van Riel <riel@redhat.com> wrote:
+> > 
+> >> Add a userspace visible knob
+> > 
+> > argh.  Fear and hostility at new knobs which need to be maintained for 
+> > ever, even if the underlying implementation changes.
+> > 
+> > Unfortunately, this one makes sense.
+> > 
+> >> to tell the VM to keep an extra amount of memory free, by increasing 
+> >> the gap between each zone's min and low watermarks.
+> >>
+> >> This is useful for realtime applications that call system calls and 
+> >> have a bound on the number of allocations that happen in any short 
+> >> time period.  In this application, extra_free_kbytes would be left at 
+> >> an amount equal to or larger than the maximum number of 
+> >> allocations that happen in any burst.
+> > 
+> > _is_ it useful?  Proof?
+> > 
+> > Who is requesting this?  Have they tested it?  Results?
+> 
+> This is interesting for me.
+> 
+> Some of our customers have realtime applications and they are concerned 
+> the fact that Linux uses free memory as pagecache. It means that
+> when their application allocate memory, Linux kernel tries to reclaim
+> memory at first and then allocate it. This may make memory allocation
+> latency bigger.
+> 
+> In many cases this is not a big issue because Linux has kswapd for
+> background reclaim and it is fast enough not to enter direct reclaim
+> path if there are a lot of clean cache. But under some situations -
+> e.g. Application allocates a lot of memory which is larger than delta
+> between watermark_low and watermark_min in a short time and kswapd
+> can't reclaim fast enough due to dirty page reclaim, direct reclaim
+> is executed and causes big latency.
+> 
+> We can avoid the issue above by using preallocation and mlock.
+> But it can't cover kmalloc used in systemcall. So I'd like to use
+> this patch with mlock to avoid memory allocation latency issue as
+> low as possible. It may not be a perfect solution but it is important
+> for customers in enterprise area to configure the amount of free
+> memory at their own risk.
 
-Acked-by: Kou Ishizaki <kou.ishizaki@toshiba.co.jp>
-Acked-by: Akira Iguchi <akira2.iguchi@toshiba.co.jp>
+I agree needs for such feature but don't like such primitive interface
+exporting to user.
 
-> -----Original Message-----
-> From: Bartlomiej Zolnierkiewicz [mailto:bzolnier@gmail.com]
-> Sent: Thursday, October 13, 2011 12:17 AM
-> To: Alan Cox
-> Cc: Jeff Garzik; linux-ide@vger.kernel.org;
-> linux-kernel@vger.kernel.org; ishizaki ko(石崎 浩 ○府□放Ｎブ○放送
-> 機); iguchi akira(井口 晃 ○Ｌジ□ＬＳ開○ＬＳ二)
-> Subject: Re: [PATCH] pata_scc: add proper cable detection method
-> 
-> Alan Cox wrote:
-> 
-> > On Tue, 11 Oct 2011 20:07:24 +0200
-> > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
-> >
-> > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > > Subject: [PATCH] pata_scc: add proper cable detection method
-> > >
-> > > Use standard ata_cable_80wire() method for the cable detection, as a
-> > > bonus this allows us to use the default ->prereset method.
-> >
-> > What documentation have you got that confirms that the hardcoding is
-> > not needed. It goes back to the original code and I see nothing saying
-> > that the device has standard PC style cable detect.
-> 
-> The driver predates standard cable detect routines and open-codes its own
-> one.  There should be no functionality changes caused by this patch.
-> 
-> Commit a619f981b ("libata: PATA driver for Celleb") is from Jan 2007 while
-> ata_cable_80wire() was added by commit be0d18d ("libata: cable detection
-> fixes") in Mar 2007.
-> 
-> > You should also I think cc the Toshiba maintainers
-> 
-> added to cc:.
-> 
-> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> Subject: [PATCH] pata_scc: add proper cable detection method
-> 
-> Use standard ata_cable_80wire() method for the cable detection, as a bonus
-> this allows us to use the default ->prereset method.
-> 
-> Cc: Kou Ishizaki <kou.ishizaki@toshiba.co.jp>
-> Cc: Akira Iguchi <akira2.iguchi@toshiba.co.jp>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> ---
-> earlier references:
-> https://lkml.org/lkml/2009/11/25/373
-> 
->  drivers/ata/pata_scc.c |   14 +-------------
->  1 file changed, 1 insertion(+), 13 deletions(-)
-> 
-> Index: b/drivers/ata/pata_scc.c
-> ===================================================================
-> --- a/drivers/ata/pata_scc.c
-> +++ b/drivers/ata/pata_scc.c
-> @@ -827,18 +827,6 @@ static unsigned int scc_data_xfer (struc  }
-> 
->  /**
-> - *	scc_pata_prereset - prepare for reset
-> - *	@ap: ATA port to be reset
-> - *	@deadline: deadline jiffies for the operation
-> - */
-> -
-> -static int scc_pata_prereset(struct ata_link *link, unsigned long
-> deadline) -{
-> -	link->ap->cbl = ATA_CBL_PATA80;
-> -	return ata_sff_prereset(link, deadline);
-> -}
-> -
-> -/**
->   *	scc_postreset - standard postreset callback
->   *	@ap: the target ata_port
->   *	@classes: classes of attached devices
-> @@ -947,7 +935,7 @@ static struct ata_port_operations scc_pa
->  	.bmdma_status		= scc_bmdma_status,
->  	.sff_data_xfer		= scc_data_xfer,
-> 
-> -	.prereset		= scc_pata_prereset,
-> +	.cable_detect		= ata_cable_80wire,
->  	.softreset		= scc_softreset,
->  	.postreset		= scc_postreset,
-> 
+As Satoru said, we can reserve free pages for user through preallocation and mlocking.
+The thing is free pages for kernel itself.
+Most desirable thing is we have to avoid syscall in critical realtime section.
+But if we can't avoid, my crazy idea is to use memcg for kernel pages.
+Of course, we should implement it and not simple stuff but AFAIK, memcg people
+always consider it and finally will do it. :)
+Recently, Glauber try "Basic kernel memory functionality" but I don't have reviewed
+it yet. I am not sure we can reuse it, anyway. Kame?
+
+My simple idea is as follows,
+
+We can assign basic revered page pool and/or size of user-determined pages pool
+for each task registred at memcg-slab.
+The application have to notify start of RT section to memcg before it goes to
+RT section. So, memcg could fill up page pool if it is short. In this case,
+application can stuck but it's okay as it doesn't go to RT section yet.
+The applicatoin have to notify end of RT section to memcg, too so that memcg
+could try to fill up reserved page pool in case of shortage.
+
+Why we need such notification is kswapd high prioiry, new knob and others never
+can meet application's deadline requirement in some situations(ex,
+there are so many dirty pages in LRU or fill up anon pages in non-swap case and so on)
+so that application might end up stuck at some point. The somepoint must be out of RT
+section of the task.
+
+For implemenation, we might need new watermark setting for each memcg or/and
+kswapd prioirity promotion like thing for hurry reclaiming.
+Anyway, they are just implementaions and we could enhance/add further more through
+various techniques as time goes by.
+
+Personally, I think it could a valuable featue.
+
+-- 
+Kinds regards,
+Minchan Kim
