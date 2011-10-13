@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1JMQc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:32:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135Ab1JMQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:32:24 -0400
-Subject: Re: [PATCH 10/13] filesystems: add set_nlink()
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
-        akpm@linux-foundation.org, toshi.okajima@jp.fujitsu.com,
-        mszeredi@suse.cz
-In-Reply-To: <1318430946-7091-11-git-send-email-miklos@szeredi.hu>
-References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
-	 <1318430946-7091-11-git-send-email-miklos@szeredi.hu>
+	id S932195Ab1JMQcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:32:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44694 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135Ab1JMQci convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:32:38 -0400
+Subject: Re: [PATCH RFC V4 06/10] jump_label: add
+ arch_jump_label_transform_static() to optimise non-live code updates
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, rth@redhat.com
+Date: Thu, 13 Oct 2011 18:32:05 +0200
+In-Reply-To: <20111013155553.GD2455@redhat.com>
+References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
+	 <16f652166605c973e9817177b6ba6a081e3e5b3f.1318464413.git.jeremy.fitzhardinge@citrix.com>
+	 <1318501954.24856.5.camel@twins> <20111013135439.GA2455@redhat.com>
+	 <1318519758.27731.15.camel@twins> <20111013155553.GD2455@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 13 Oct 2011 17:33:19 +0100
-Message-ID: <1318523599.2719.45.camel@menhir>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318523526.27731.18.camel@twins>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 2011-10-12 at 16:49 +0200, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
+On Thu, 2011-10-13 at 11:55 -0400, Jason Baron wrote:
+> > I actually need them to be either way.. no preference between on or off
+> > just a means of very _very_ infrequent runtime change in behaviour.
+> > 
 > 
-> Replace remaining direct i_nlink updates with a new set_nlink()
-> updater function.
+> ok, this is a new use case, all the current users are biased with gcc
+> out-of-lining the infrequent case.
+
+Right, 
+
+> > If we can push jump_label init to before sched_init() all I need is a
+> > static_branch() without the unlikely() in to avoid GCC out-of-lining the
+> > branch.
+> > 
 > 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
-[snip]
+> hmmm....the current code (I believe) is biased  b/c gcc sees the
+> branch as always false, see: arch_static_branch() - its not b/c we have
+> an unlikely there. Without open coding the label, like we had before
+> everybody hated, I'll have to play around and see what will create an
+> unbiased branch...perhaps, somebody has an idea? 
 
+Fix gcc and stick an unlikely in static_branch() ? :-)
 
+> > > and by patching them early
+> > > like this, at least for x86, we can avoid the stop machine calls. So its
+> > > the combination of most are expected to be off and no sense to call extra
+> > > stop machines that lead the code to its present state.
+> > 
+> > But we could use arch_jump_label_transform_static because its before we
+> > actually execute any module text (sans the arg crap) which is
+> > stomp-machine free, removing that obstacle.
+> > 
+> > Or am I confused more?
+> > 
+> 
+> The MODULE_COMING callback happens *after* the call to flush_module_icache(mod),
+> so I'm not sure that is safe... 
 
-> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-> index da21eca..102cf5e 100644
-> --- a/fs/gfs2/glops.c
-> +++ b/fs/gfs2/glops.c
-> @@ -277,7 +277,7 @@ static void gfs2_set_nlink(struct inode *inode, u32 nlink)
->  		if (nlink == 0)
->  			clear_nlink(inode);
->  		else
-> -			inode->i_nlink = nlink;
-> +			set_nlink(inode, nlink);
->  	}
->  }
-
-So long as it is ok to call set_nlink() with nlink == 0, then the if
-statement here can be removed and just replaced with set_nlink()
-
-Steve.
-
-
-
+We can issue another one of those?
