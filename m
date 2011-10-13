@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab1JMKQb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:16:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59830 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab1JMKQa convert rfc822-to-8bit (ORCPT
+	id S1754580Ab1JMKYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:24:38 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50055 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab1JMKYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:16:30 -0400
-Subject: Re: [PATCH RFC V4 04/10] x86/jump_label: drop
- arch_jump_label_text_poke_early()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <07d7a349087d253549be9946d6fe8e3219492cda.1318464413.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
-	 <07d7a349087d253549be9946d6fe8e3219492cda.1318464413.git.jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 13 Oct 2011 12:15:52 +0200
-Message-ID: <1318500952.19425.4.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.3- 
+	Thu, 13 Oct 2011 06:24:37 -0400
+Date: Thu, 13 Oct 2011 11:24:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [alsa-devel] linux-next: Tree for Oct 12
+ (sound/soc/codecs/wm1250-ev1)
+Message-ID: <20111013102427.GG1098@sirena.org.uk>
+References: <20111012175425.a2e3e6e6a92265e433aeca25@canb.auug.org.au>
+ <4E9634C9.3020404@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9634C9.3020404@xenotime.net>
+X-Cookie: Drilling for oil is boring.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-12 at 17:08 -0700, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> It is no longer used.
-> 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Acked-by: Jason Baron <jbaron@redhat.com>
-> ---
->  arch/x86/kernel/jump_label.c |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-> index 3fee346..2ad0298 100644
-> --- a/arch/x86/kernel/jump_label.c
-> +++ b/arch/x86/kernel/jump_label.c
-> @@ -42,10 +42,4 @@ void arch_jump_label_transform(struct jump_entry *entry,
->  	put_online_cpus();
->  }
->  
-> -void arch_jump_label_text_poke_early(jump_label_t addr)
-> -{
-> -	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
-> -			JUMP_LABEL_NOP_SIZE);
-> -}
-> -
->  #endif
+On Wed, Oct 12, 2011 at 05:46:01PM -0700, Randy Dunlap wrote:
 
-This was the (first and) last usage site outside of alternative.c, so at
-the very least we should clean up arch/x86/include/asm/alternative.h.
+> When no GPIO kconfig options are enabled:
+> (not GPIOLIB, not GENERIC_GPIO):
 
-However, since stop_machine now works early, is there any reason to keep
-text_poke_early() itself? Shouldn't we also convert alternative.c's use
-of text_poke_early and simply kill the thing off?
+As ever the consumer side GPIO API is supposed to stub itself out when
+not in use.
