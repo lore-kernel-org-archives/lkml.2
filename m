@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab1JMLRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 07:17:06 -0400
-Received: from mail-dy0-f46.google.com ([209.85.220.46]:63132 "EHLO
-	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab1JMLRF (ORCPT
+	id S1754970Ab1JML0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 07:26:34 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54519 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab1JML0d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 07:17:05 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH] pata_cs5535: fix DRV_NAME
-Date: Thu, 13 Oct 2011 12:52:21 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+	Thu, 13 Oct 2011 07:26:33 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110131252.21866.bzolnier@gmail.com>
+In-Reply-To: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au>
+References: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au>
+Date: Thu, 13 Oct 2011 07:26:31 -0400
+Message-ID: <CA+5PVA4s=eZsibyuJBTXB4CDPDSxab7kPWBHKLCsDLbFdr8OtQ@mail.gmail.com>
+Subject: Re: currently missing kernel devel trees
+From: Josh Boyer <jwboyer@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] pata_cs5535: fix DRV_NAME
+On Thu, Oct 13, 2011 at 2:43 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Some of these may be no longer useful (please tell me).  Some may have no
+> commits for v3.2.  But I bet that at leaset some do.
 
-.. and also a module description while at it.
+> 4xx
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
- drivers/ata/pata_cs5535.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I don't have anything queued for 3.2 that isn't already in Ben's tree.
+ I'll likely have to move the 4xx tree elsewhere for the 3.3 merge
+window, given that getting my key signed is going to take longer.
+I'll let you know when I've moved it.  Thanks for the reminder.
 
-Index: b/drivers/ata/pata_cs5535.c
-===================================================================
---- a/drivers/ata/pata_cs5535.c
-+++ b/drivers/ata/pata_cs5535.c
-@@ -38,7 +38,7 @@
- #include <linux/libata.h>
- #include <asm/msr.h>
- 
--#define DRV_NAME	"cs5535"
-+#define DRV_NAME	"pata_cs5535"
- #define DRV_VERSION	"0.2.12"
- 
- /*
-@@ -218,7 +218,7 @@ static void __exit cs5535_exit(void)
- }
- 
- MODULE_AUTHOR("Alan Cox, Jens Altmann, Wolfgan Zuleger, Alexander Kiausch");
--MODULE_DESCRIPTION("low-level driver for the NS/AMD 5530");
-+MODULE_DESCRIPTION("low-level driver for the NS/AMD 5535");
- MODULE_LICENSE("GPL");
- MODULE_DEVICE_TABLE(pci, cs5535);
- MODULE_VERSION(DRV_VERSION);
+josh
