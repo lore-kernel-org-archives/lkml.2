@@ -1,269 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab1JMXaB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 19:30:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19319 "EHLO
+	id S1756828Ab1JMXaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 19:30:35 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:48465 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756070Ab1JMX37 (ORCPT
+	with ESMTP id S1752733Ab1JMXad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 19:29:59 -0400
-From: Terry Lambert <tlambert@chromium.org>
-To: jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Terry Lambert <tlambert@chromium.org>
-Subject: [PATCH] Driver for Primax keyboards violating USB HID spec
-Date: Thu, 13 Oct 2011 16:28:37 -0700
-Message-Id: <1318548517-5289-1-git-send-email-tlambert@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 13 Oct 2011 19:30:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=gXST3vPqI71WlafEfoZyAiuGLE6EIYFmu6Ys7XAExfZcXIJA8FIrCbfg+nEZeJSHh
+	hwpBz0V+dv7zpsL6T1shQ==
+Date: Thu, 13 Oct 2011 16:30:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Pawel Sikora <pluto@agmk.net>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+In-Reply-To: <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+Message-ID: <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+References: <201110122012.33767.pluto@agmk.net> <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Primax keyboards with the issue this driver addresses report modifier
-keys as in band key events instead of as out of band modifier bits,
-resulting in the modifier keys generating key up events immediately
-before the keys they are intended to modify.  This driver rewrites
-the raw report data from such keyboards into USB HID 1.11 compliant
-report data.  It only matches the USB vendor and product IDs for the
-keyboard it has been tested on. Since there are several keyboards,
-notably a number of laptops and folding USB keyboards known to have
-similar unresolved problem reports, the list is expected to grow.
+[ Subject refers to a different, unexplained 3.0 bug from Pawel ]
+[ Resend with correct address for linux-mm@kvack.org ]
 
-Signed-off-by: Terry Lambert <tlambert@chromium.org>
+On Wed, 12 Oct 2011, Pawel Sikora wrote:
+
+> Hi Hugh,
+> i'm resending previous private email with larger cc list as you've requested.
+
+Thanks, yes, on this one I think I do have an answer;
+and we ought to bring Mel and Andrea in too.
+
+> 
+> in the last weekend my server died again (processes stuck for 22/23s!) but this time i have more logs for you.
+>  
+> on my dual-opteron machines i have non-standard settings:
+> - DISABLED swap space (fast user process killing is better for my autotest farm than long disk swapping
+>                        and 64GB ecc-ram is enough for my processing).
+> - vm.overcommit_memory = 2,
+> - vm.overcommit_ratio = 100.
+> 
+> after initial BUG_ON (pasted below) there's a flood of 'rcu_sched_state detected stalls / CPU#X stuck for 22s!'
+
+Yes, those are just a tiresome consequence of exiting from a BUG
+while holding the page table lock(s).
+
+> (full compressed log is available at: http://pluto.agmk.net/kernel/kernel.bz2)
+> 
+> Oct  9 08:06:43 hal kernel: [408578.629070] ------------[ cut here ]------------
+> Oct  9 08:06:43 hal kernel: [408578.629143] kernel BUG at include/linux/swapops.h:105!
+> Oct  9 08:06:43 hal kernel: [408578.629143] invalid opcode: 0000 [#1] SMP
+> Oct  9 08:06:43 hal kernel: [408578.629143] CPU 14
+[ I'm deleting that irrelevant long line list of modules ]
+> Oct  9 08:06:43 hal kernel: [408578.629143]
+> Oct  9 08:06:43 hal kernel: [408578.629143] Pid: 29214, comm: bitgen Not tainted 3.0.4 #5 Supermicro H8DGU/H8DGU
+> Oct  9 08:06:43 hal kernel: [408578.629143] RIP: 0010:[<ffffffff81127b76>]  [<ffffffff81127b76>] migration_entry_wait+0x156/0x160
+> Oct  9 08:06:43 hal kernel: [408578.629143] RSP: 0000:ffff88021cee7d18  EFLAGS: 00010246
+> Oct  9 08:06:43 hal kernel: [408578.629143] RAX: 0a00000000080068 RBX: ffffea001d1dbe70 RCX: ffff880c02d18978
+> Oct  9 08:06:43 hal kernel: [408578.629143] RDX: 0000000000851a42 RSI: ffff880d8fe33618 RDI: ffffea002a09dd50
+> Oct  9 08:06:43 hal kernel: [408578.629143] RBP: ffff88021cee7d38 R08: ffff880d8fe33618 R09: 0000000000000028
+> Oct  9 08:06:43 hal kernel: [408578.629143] R10: ffff881006eb0f00 R11: f800000000851a42 R12: ffffea002a09dd40
+> Oct  9 08:06:43 hal kernel: [408578.629143] R13: 0000000c02d18978 R14: 00000000d872f000 R15: ffff880d8fe33618
+> Oct  9 08:06:43 hal kernel: [408578.629143] FS:  00007f864d7fa700(0000) GS:ffff880c1fc80000(0063) knlGS:00000000f432a910
+> Oct  9 08:06:43 hal kernel: [408578.629143] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+> Oct  9 08:06:43 hal kernel: [408578.629143] CR2: 00000000d872f000 CR3: 000000100668c000 CR4: 00000000000006e0
+> Oct  9 08:06:43 hal kernel: [408578.629143] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Oct  9 08:06:43 hal kernel: [408578.629143] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Oct  9 08:06:43 hal kernel: [408578.629143] Process bitgen (pid: 29214, threadinfo ffff88021cee6000, task ffff880407b06900)
+> Oct  9 08:06:43 hal kernel: [408578.629143] Stack:
+> Oct  9 08:06:43 hal kernel: [408578.629143]  00000000dcef4000 ffff880c00968c98 ffff880c02d18978 000000010a34843e
+> Oct  9 08:06:43 hal kernel: [408578.629143]  ffff88021cee7de8 ffffffff811016a1 ffff88021cee7d78 ffff881006eb0f00
+> Oct  9 08:06:43 hal kernel: [408578.629143]  ffff88021cee7d98 ffffffff810feee2 ffff880c06f0d170 8000000b98d14067
+> Oct  9 08:06:43 hal kernel: [408578.629143] Call Trace:
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff811016a1>] handle_pte_fault+0xae1/0xaf0
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff810feee2>] ? __pte_alloc+0x42/0x120
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff8112c26b>] ? do_huge_pmd_anonymous_page+0xab/0x310
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81102a31>] handle_mm_fault+0x181/0x310
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81106097>] ? vma_adjust+0x537/0x570
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81109a05>] ? do_mremap+0x2d5/0x570
+> Oct  9 08:06:43 hal kernel: [408578.629143]  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+> Oct  9 08:06:43 hal kernel: [408578.629143] Code: 80 00 00 00 00 31 f6 48 89 df e8 e6 58 fb ff eb d7 85 c9 0f 84 44 ff ff ff 8d 51 01 89 c8 f0 0f b1 16 39 c1 90 74 b5 89 c1 eb e6 <0f> 0b 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 20 48 85 ff
+> Oct  9 08:06:43 hal kernel: [408578.629143] RIP  [<ffffffff81127b76>] migration_entry_wait+0x156/0x160
+> Oct  9 08:06:43 hal kernel: [408578.629143]  RSP <ffff88021cee7d18>
+> Oct  9 08:06:43 hal kernel: [408578.642823] ---[ end trace 0a37362301163711 ]---
+> Oct  9 08:07:10 hal kernel: [408605.283257] BUG: soft lockup - CPU#12 stuck for 23s! [par:29801]
+> Oct  9 08:07:10 hal kernel: [408605.285807] CPU 12
+> Oct  9 08:07:10 hal kernel: [408605.285807]
+> Oct  9 08:07:10 hal kernel: [408605.285807] Pid: 29801, comm: par Tainted: G      D     3.0.4 #5 Supermicro H8DGU/H8DGU
+> Oct  9 08:07:10 hal kernel: [408605.285807] RIP: 0010:[<ffffffff814216a4>]  [<ffffffff814216a4>] _raw_spin_lock+0x14/0x20
+> Oct  9 08:07:10 hal kernel: [408605.285807] RSP: 0018:ffff880c02def808  EFLAGS: 00000293
+> Oct  9 08:07:10 hal kernel: [408605.285807] RAX: 0000000000000b09 RBX: ffffea002741f6b8 RCX: ffff880000000000
+> Oct  9 08:07:10 hal kernel: [408605.285807] RDX: ffffea0000000000 RSI: 000000002a09dd40 RDI: ffffea002a09dd50
+> Oct  9 08:07:10 hal kernel: [408605.285807] RBP: ffff880c02def808 R08: 0000000000000000 R09: ffff880f2e4f4d70
+> Oct  9 08:07:10 hal kernel: [408605.285807] R10: ffff880c1fffbe00 R11: 0000000000000050 R12: ffffffff8142988e
+> Oct  9 08:07:10 hal kernel: [408605.285807] R13: ffff880c02def7b8 R14: ffffffff810e63dc R15: ffff880c02def7b8
+> Oct  9 08:07:10 hal kernel: [408605.285807] FS:  00007fe6b677c720(0000) GS:ffff880c1fc00000(0063) knlGS:00000000f6e0d910
+> Oct  9 08:07:10 hal kernel: [408605.285807] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> Oct  9 08:07:10 hal kernel: [408605.285807] CR2: 00000000dd40012c CR3: 00000009f6b78000 CR4: 00000000000006e0
+> Oct  9 08:07:10 hal kernel: [408605.285807] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> Oct  9 08:07:10 hal kernel: [408605.285807] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Oct  9 08:07:10 hal kernel: [408605.285807] Process par (pid: 29801, threadinfo ffff880c02dee000, task ffff880c07c90700)
+> Oct  9 08:07:10 hal kernel: [408605.285807] Stack:
+> Oct  9 08:07:10 hal kernel: [408605.285807]  ffff880c02def858 ffffffff8110a2d7 ffffea001fc16fe0 ffff880c02d183a8
+> Oct  9 08:07:10 hal kernel: [408605.285807]  ffff880c02def8c8 ffffea001fc16fa8 ffff880c00968c98 ffff881006eb0f00
+> Oct  9 08:07:10 hal kernel: [408605.285807]  0000000000000301 00000000d8675000 ffff880c02def8c8 ffffffff8110aa6a
+> Oct  9 08:07:10 hal kernel: [408605.285807] Call Trace:
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110a2d7>] __page_check_address+0x107/0x1a0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110aa6a>] try_to_unmap_one+0x3a/0x420
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110be44>] try_to_unmap_anon+0xb4/0x130
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110bf75>] try_to_unmap+0x65/0x80
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff811285d0>] migrate_pages+0x310/0x4c0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e93c2>] ? ____pagevec_lru_add+0x12/0x20
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111cbf0>] ? ftrace_define_fields_mm_compaction_isolate_template+0x70/0x70
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111d5da>] compact_zone+0x52a/0x8c0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810f9919>] ? zone_statistics+0x99/0xc0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111dade>] compact_zone_order+0x7e/0xb0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e46a8>] ? get_page_from_freelist+0x3b8/0x7e0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111dbcd>] try_to_compact_pages+0xbd/0xf0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e5148>] __alloc_pages_direct_compact+0xa8/0x180
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e56c5>] __alloc_pages_nodemask+0x4a5/0x7f0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff810e9698>] ? lru_cache_add_lru+0x28/0x50
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110a92d>] ? page_add_new_anon_rmap+0x9d/0xb0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8111b865>] alloc_pages_vma+0x95/0x180
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8112c2f8>] do_huge_pmd_anonymous_page+0x138/0x310
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81102ace>] handle_mm_fault+0x21e/0x310
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81001716>] ? __switch_to+0x1e6/0x2c0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8141f178>] ? schedule+0x308/0xa10
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff811077a7>] ? do_mmap_pgoff+0x357/0x370
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff8110790d>] ? sys_mmap_pgoff+0x14d/0x220
+> Oct  9 08:07:10 hal kernel: [408605.285807]  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+> Oct  9 08:07:10 hal kernel: [408605.285807] Code: 0f b6 c2 85 c0 0f 95 c0 0f b6 c0 5d c3 66 2e 0f 1f 84 00 00 00 00 00 55 b8 00 01 00 00 48 89 e5 f0 66 0f c1 07 38 e0 74 06 f3 90 <8a> 07 eb f6 5d c3 66 0f 1f 44 00 00 55 48 89 e5 9c 58 fa ba 00
+
+I guess this is the only time you've seen this?  In which case, ideally
+I would try to devise a testcase to demonstrate the issue below instead;
+but that may involve more ingenuity than I can find time for, let's see
+see if people approve of this patch anyway (it applies to 3.1 or 3.0,
+and earlier releases except that i_mmap_mutex used to be i_mmap_lock).
+
+
+[PATCH] mm: add anon_vma locking to mremap move
+
+I don't usually pay much attention to the stale "? " addresses in
+stack backtraces, but this lucky report from Pawel Sikora hints that
+mremap's move_ptes() has inadequate locking against page migration.
+
+ 3.0 BUG_ON(!PageLocked(p)) in migration_entry_to_page():
+ kernel BUG at include/linux/swapops.h:105!
+ RIP: 0010:[<ffffffff81127b76>]  [<ffffffff81127b76>]
+                       migration_entry_wait+0x156/0x160
+  [<ffffffff811016a1>] handle_pte_fault+0xae1/0xaf0
+  [<ffffffff810feee2>] ? __pte_alloc+0x42/0x120
+  [<ffffffff8112c26b>] ? do_huge_pmd_anonymous_page+0xab/0x310
+  [<ffffffff81102a31>] handle_mm_fault+0x181/0x310
+  [<ffffffff81106097>] ? vma_adjust+0x537/0x570
+  [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
+  [<ffffffff81109a05>] ? do_mremap+0x2d5/0x570
+  [<ffffffff81421d5f>] page_fault+0x1f/0x30
+
+mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+and pagetable locks, were good enough before page migration (with its
+requirement that every migration entry be found) came in; and enough
+while migration always held mmap_sem.  But not enough nowadays, when
+there's memory hotremove and compaction: anon_vma lock is also needed,
+to make sure a migration entry is not dodging around behind our back.
+
+It appears that Mel's a8bef8ff6ea1 "mm: migration: avoid race between
+shift_arg_pages() and rmap_walk() during migration by not migrating
+temporary stacks" was actually a workaround for this in the special
+common case of exec's use of move_pagetables(); and we should probably
+now remove that VM_STACK_INCOMPLETE_SETUP stuff as a separate cleanup.
+
+Reported-by: Pawel Sikora <pluto@agmk.net>
+Cc: stable@kernel.org
+Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- drivers/hid/Kconfig      |    8 ++
- drivers/hid/Makefile     |    1 +
- drivers/hid/hid-core.c   |    1 +
- drivers/hid/hid-ids.h    |    3 +
- drivers/hid/hid-primax.c |  163 ++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 176 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hid/hid-primax.c
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 1130a89..a097e17 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -441,6 +441,14 @@ config HID_PICOLCD_LEDS
- 	---help---
- 	  Provide access to PicoLCD's GPO pins via leds class.
- 
-+config HID_PRIMAX
-+	tristate "Primax non-fully HID-compliant devices" if EXPERT
-+	depends on USB_HID
-+	default !EXPERT
-+	---help---
-+	Support for Primax devices that are not fully compliant with the
-+	HID standard.
-+
- config HID_QUANTA
- 	tristate "Quanta Optical Touch panels"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 0a0a38e..735b8cc 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_HID_QUANTA)	+= hid-quanta.o
- obj-$(CONFIG_HID_PANTHERLORD)	+= hid-pl.o
- obj-$(CONFIG_HID_PETALYNX)	+= hid-petalynx.o
- obj-$(CONFIG_HID_PICOLCD)	+= hid-picolcd.o
-+obj-$(CONFIG_HID_PRIMAX)	+= hid-primax.o
- obj-$(CONFIG_HID_ROCCAT)	+= hid-roccat.o
- obj-$(CONFIG_HID_ROCCAT_COMMON)	+= hid-roccat-common.o
- obj-$(CONFIG_HID_ROCCAT_ARVO)	+= hid-roccat-arvo.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 242353d..7d2d5d9 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1461,6 +1461,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PENMOUNT, USB_DEVICE_ID_PENMOUNT_PCI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 7484e1b..bd2a2ec 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -693,4 +693,7 @@
- #define USB_VENDOR_ID_ZYDACRON	0x13EC
- #define USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL	0x0006
- 
-+#define USB_VENDOR_ID_PRIMAX	0x0461
-+#define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
-+
- #endif
-diff --git a/drivers/hid/hid-primax.c b/drivers/hid/hid-primax.c
-new file mode 100644
-index 0000000..d77a46f
---- /dev/null
-+++ b/drivers/hid/hid-primax.c
-@@ -0,0 +1,163 @@
-+/*
-+ * HID driver for primax and similar keyboards with in-band modifiers
-+ *
-+ * Copyright 2011 Google Inc. All Rights Reserved
-+ *
-+ * Author:
-+ *	Terry Lambert <tlambert@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/module.h>
-+
-+#include "hid-ids.h"
-+
-+#define PX_REPORT_SIZE	6	/* 6 bytes of report data */
-+
-+/* Handle; other models (not explicitly supported yet) need instance state */
-+struct px_device {
-+	struct input_dev	*input_primax;
-+};
-+
-+
-+static int px_input_mapping(struct hid_device *hid, struct hid_input *hi,
-+	struct hid_field *field, struct hid_usage *usage,
-+	unsigned long **bit, int *max)
-+{
-+	struct px_device *px = hid_get_drvdata(hid);
-+
-+	px->input_primax = hi->input;
-+
-+	/* Remap keys, if necesssary, here */
-+
-+	return 0;
-+}
-+
-+static int px_raw_event(struct hid_device *hid, struct hid_report *report,
-+	 u8 *data, int size)
-+{
-+	struct px_device *px = hid_get_drvdata(hid);
-+	int idx = size;
-+
-+	switch (report->id) {
-+	case 0:		/* keyboard input */
-+		/*
-+		 * Convert in-band modifier key values into out of band
-+		 * modifier bits and pull the key strokes from the report.
-+		 * Thus a report data set which looked like:
-+		 *
-+		 * [00][00][E0][30][00][00][00][00]
-+		 * (no modifier bits + "Left Shift" key + "1" key)
-+		 *
-+		 * Would be converted to:
-+		 *
-+		 * [01][00][00][30][00][00][00][00]
-+		 * (Left Shift modifier bit + "1" key)
-+		 *
-+		 * As long as it's in the size range, the upper level
-+		 * drivers don't particularly care if there are in-band
-+		 * 0-valued keys, so they don't stop parsing.
-+		 */
-+		while (--idx > 1) {
-+			if (data[idx] < 0xE0 || data[idx] > 0xE7)
-+				continue;
-+			data[0] |= (1 << (data[idx] - 0xE0));
-+			data[idx] = 0;
-+		}
-+		hid_report_raw_event(hid, HID_INPUT_REPORT, data, size, 0);
-+		return 1;
-+
-+	default:	/* unknown report */
-+		/* Unknown report type; pass upstream */
-+		hid_info(hid, "unknown report type %d\n", report->id);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int px_probe(struct hid_device *hid, const struct hid_device_id *id)
-+{
-+	int ret;
-+	struct px_device *px;
-+
-+	px = kzalloc(sizeof(*px), GFP_KERNEL);
-+	if (px == NULL) {
-+		hid_err(hid, "can't alloc descriptor\n");
-+		return -ENOMEM;
-+	}
-+
-+	hid_set_drvdata(hid, px);
-+
-+	ret = hid_parse(hid);
-+	if (ret) {
-+		hid_err(hid, "parse failed\n");
-+		goto fail;
-+	}
-+
-+	ret = hid_hw_start(hid, HID_CONNECT_DEFAULT);
-+	if (ret) {
-+		hid_err(hid, "hw start failed\n");
-+		goto fail;
-+	}
-+
-+	return 0;
-+fail:
-+	kfree(px);
-+
-+	return ret;
-+}
-+
-+static void px_remove(struct hid_device *hid)
-+{
-+	struct px_device *px = hid_get_drvdata(hid);
-+
-+	hid_hw_stop(hid);
-+
-+	if (NULL != px)
-+		kfree(px);
-+}
-+
-+static const struct hid_device_id px_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_PRIMAX, USB_DEVICE_ID_PRIMAX_KEYBOARD) },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(hid, px_devices);
-+
-+static struct hid_driver px_driver = {
-+	.name = "primax",
-+	.id_table = px_devices,
-+	.input_mapping = px_input_mapping,
-+	.raw_event = px_raw_event,
-+	.probe = px_probe,
-+	.remove = px_remove,
-+};
-+
-+static int __init px_init(void)
-+{
-+	int ret = hid_register_driver(&px_driver);
-+
-+	printk(KERN_INFO "hid_register_driver says %d\n", ret);
-+
-+	return ret;
-+}
-+
-+static void __exit px_exit(void)
-+{
-+	hid_unregister_driver(&px_driver);
-+}
-+
-+module_init(px_init);
-+module_exit(px_exit);
-+MODULE_AUTHOR("Terry Lambert <tlambert@google.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.3.1
+ mm/mremap.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
+--- 3.1-rc9/mm/mremap.c	2011-07-21 19:17:23.000000000 -0700
++++ linux/mm/mremap.c	2011-10-13 14:36:25.097780974 -0700
+@@ -77,6 +77,7 @@ static void move_ptes(struct vm_area_str
+ 		unsigned long new_addr)
+ {
+ 	struct address_space *mapping = NULL;
++	struct anon_vma *anon_vma = vma->anon_vma;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *old_pte, *new_pte, pte;
+ 	spinlock_t *old_ptl, *new_ptl;
+@@ -95,6 +96,8 @@ static void move_ptes(struct vm_area_str
+ 		mapping = vma->vm_file->f_mapping;
+ 		mutex_lock(&mapping->i_mmap_mutex);
+ 	}
++	if (anon_vma)
++		anon_vma_lock(anon_vma);
+ 
+ 	/*
+ 	 * We don't have to worry about the ordering of src and dst
+@@ -121,6 +124,8 @@ static void move_ptes(struct vm_area_str
+ 		spin_unlock(new_ptl);
+ 	pte_unmap(new_pte - 1);
+ 	pte_unmap_unlock(old_pte - 1, old_ptl);
++	if (anon_vma)
++		anon_vma_unlock(anon_vma);
+ 	if (mapping)
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 	mmu_notifier_invalidate_range_end(vma->vm_mm, old_start, old_end);
