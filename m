@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab1JMPGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:06:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59255 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755620Ab1JMPGg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:06:36 -0400
-Date: Thu, 13 Oct 2011 11:06:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: mark gross <markgross@thegnar.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, NeilBrown <neilb@suse.de>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        <arve@android.com>, <amit.kucheria@linaro.org>, <farrowg@sg.ibm.com>,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        <linux-pm@lists.linux-foundation.org>, <khilman@ti.com>,
-        Magnus Damm <damm@opensource.se>, <mjg@redhat.com>,
-        <peterz@infradead.org>
-Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
- blocking (aka more wakelock stuff)]
-In-Reply-To: <20111013030742.GB893@mgross-G62>
-Message-ID: <Pine.LNX.4.44L0.1110131101420.2026-100000@iolanthe.rowland.org>
+	id S1755787Ab1JMPGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:06:47 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35440 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755724Ab1JMPGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:06:46 -0400
+Date: Thu, 13 Oct 2011 16:06:42 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in __vm_enough_memory
+Message-ID: <20111013150642.GC6169@csn.ul.ie>
+References: <20111012160202.GA18666@sgi.com>
+ <20111012120118.e948f40a.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110121452220.31218@router.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110121452220.31218@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011, mark gross wrote:
-
-> > > > sometimes devices that are not wake up sources need critical sections
-> > > > where suspend is a problem.
-> > 
-> > Mark, can you give some examples?  This isn't the same as the firmware 
-> > update thing, is it?  That deserves to be handled by a completely 
-> > separate mechanism.
+On Wed, Oct 12, 2011 at 02:57:53PM -0500, Christoph Lameter wrote:
+> > I think we've discussed switching vm_stat[] to a contention-avoiding
+> > counter scheme.  Simply using <percpu_counter.h> would be the simplest
+> > approach.  They'll introduce inaccuracies but hopefully any problems
+> > from that will be minor for the global page counters.
 > 
-> The biggest example I know of is any usb gadget implementation while
-> connected to a USB host.  If the device is connected to the USB bus then
-> it needs to not suspend because it cannot respond to the USB commands
-> for bus power.  i.e. if its connected to a laptop and the suspend the
-> laptop the gadget needs to handle the USB protocol packets.
+> We already have a contention avoiding scheme for counter updates in
+> vmstat.c. The problem here is that vm_stat is frequently read. Updates
+> from other cpus that fold counter updates in a deferred way into the
+> global statistics cause cacheline eviction. The updates occur too frequent
+> in this load.
 > 
-> Also, when charging battery under OS control we don't want to suspend
-> because it will be hard to respond to thermal events  or changing
-> battery conditions if the system is in suspend.
 
-This is like the firmware update problem -- it has nothing to do with 
-wakeups.  It could be handled very easily either by abusing a wakeup 
-source as Neil suggested or by adding a different mechanism for 
-preventing system sleeps.
+There is also a correctness issue to be concerned with. In the patch,
+there is a two second window during which the counters are not being
+read. This increases the risk that the system gets too overcommitted
+when overcommit_memory == OVERCOMMIT_GUESS.
 
-> > Although many of these problems could be solved by adopting a suitable
-> > protocol in userspace, currently there is no such protocol.  Even if
-> > one did exist, the process of getting all the relevant programs to
-> > adopt it would take quite a while.  This is a case where a problem can
-> > be solved either in the kernel or in userspace, and the in-kernel
-> > solution may be simpler.
+If vm_enough_memory is being heavily hit as well, it implies that this
+workload is mmap-intensive which is pretty inefficient in itself. I
+guess it would also apply to workloads that are malloc-intensive for
+large buffers but I'd expect the cache line bounces to only dominate if
+there was little or no computation on the resulting buffers.
+
+As a result, I wonder how realistic is this test workload and who useful
+fixing this problem is in general?
+
+> > otoh, I think we've been round this loop before and I don't recall why
+> > nothing happened.
 > 
-> I do think a better solution would involve some kernel coordination.
+> The update behavior can be tuned using /proc/sys/vm/stat_interval.
+> Increase the interval to reduce the folding into the global counter (set
+> maybe to 10?). This will reduce contention.
+
+Unless the thresholds for per-cpu drift are being hit. If they are
+allocating and freeing pages in large numbers for example, we'll be
+calling __mod_zone_page_state(NR_FREE_PAGES) in large batches,
+overflowing the counters, calling zone_page_state_add() and dirtying the
+global vm_stat that way. In that case, increasing stat_interval alone is
+not the answer.
+
+> The other approach is to
+> increase the allowed delta per zone if frequent updates occur via the
+> overflow checks in vmstat.c. See calculate_*_threshold there.
 > 
-> I don't want to split hairs on if its 100% possible to implement a
-> correct solution only in user mode.  but, I think there are corner cases
-> that may be hard or impossible to get right with only user mode.  See
-> gadget issue above.  Not all gadgets have a user mode daemon backing up
-> the kernel part do they?
 
-I don't know.  But if they don't have some sort of userspace component
-for power management then they never go into suspend, because the
-kernel doesn't initiate suspends by itself.
+If this approach is taken, be careful that threshold is an s8 so it is
+limited in size.
 
-Alan Stern
+> Note that the deltas are current reduced for memory pressure situations
+> (after recent patches by Mel). This will cause a significant increase in
+> vm_stat cacheline contention compared to earlier kernels.
+> 
 
+That statement is misleading. The thresholds are reduced while
+kswapd is awake to avoid the possibility of all memory being allocated
+and the machine livelocking. If the system is under enough pressure for
+kswapd to be awake for prolonged periods of time, the overhead of cache
+line bouncing while updating vm_stat is going to be a lesser concern.
+
+I like the idea of the threshold being scaled under normal circumstances
+depending on the size of the central counter. Conceivably it could be
+done as part of refresh_cpu_vm_stats() using the old value of the
+central counter while walking each per_cpu_pageset.
+
+-- 
+Mel Gorman
+SUSE Labs
