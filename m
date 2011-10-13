@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab1JMRZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:25:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40031 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756666Ab1JMRZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:25:33 -0400
-Date: Thu, 13 Oct 2011 11:25:19 -0600
-From: Greg KH <gregkh@suse.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Tejun Heo <htejun@gmail.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>
-Subject: Re: [PATCH 0/5] Better namespace handling for
- /sys/class/net/bonding_masters
-Message-ID: <20111013172519.GA30682@suse.de>
-References: <m1hb3dbae5.fsf@fess.ebiederm.org>
+	id S1756709Ab1JMR25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:28:57 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:13845 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756433Ab1JMR24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 13:28:56 -0400
+Message-ID: <4E971FD3.2020308@cavium.com>
+Date: Thu, 13 Oct 2011 10:28:51 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hb3dbae5.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: manesoni@cisco.com
+CC: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, ananth@in.ibm.com, kamensky@cisco.com
+Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
+References: <20111013090749.GB16761@cisco.com>
+In-Reply-To: <20111013090749.GB16761@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Oct 2011 17:28:55.0701 (UTC) FILETIME=[95895C50:01CC89CD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 12:47:46AM -0700, Eric W. Biederman wrote:
-> 
-> When I was looking at another sysfs issue that Al pointed out (since
-> fixed) I realized that I had implemented a trivial code size but overly
-> clever way to handle /sys/class/net/bonding_masters.
-> 
-> This patchset removes the support for untagged entries in tagged
-> directories (that is currently used to support bonding_masters)
-> and replaces it with support for tagged sysfs attributes.
-> 
-> In the process this fixes a small misfeature in how bonding_masters
-> derives the network namespace we are dealing with.  This change
-> allows bonding_masters to derive the network namespace from the
-> copy of bonding_masters we open instead of magically from current.
-> 
-> The final patch of this patchset adds sanity checks to sysfs.  To
-> ensure that we don't accidentally mishandle tagged sysfs entities.
-> 
-> I have tested this code against 3.1-rc9 on my laptop with a mostly yes
-> config and I am not seeing any problems.  The loud screaming warnings I
-> have added in the last patch should catch any corner cases in how people
-> use sysfs that I might have overlooked.
-> 
-> Greg, Dave I'm don't know whose tree to merge this through as this code
-> is equally device-core and networking.  I am hoping that we can get this
-> improvement merged for 3.2.
+On 10/13/2011 02:07 AM, Maneesh Soni wrote:
+>
+> From: Maneesh Soni<manesoni@cisco.com>
+>
+> This patch provides support for kprobes on branch instructions. The branch
+> instruction at the probed address is actually emulated and not executed
+> out-of-line like other normal instructions. Instead the delay-slot instruction
+> is copied and single stepped out of line.
+>
+> At the time of probe hit, the original branch instruction is evaluated
+> and the target cp0_epc is computed similar to compute_retrun_epc(). It
+> is also checked if the delay slot instruction can be skipped, which is
+> true if there is a NOP in delay slot or branch is taken in case of
+> branch likely instructions. Once the delay slot instruction is single
+> stepped the normal execution resume with the cp0_epc updated the earlier
+> computed cp0_epc as per the branch instructions.
+>
 
-These all look fine to me, and I have no problem with them going through
-the network tree as that will most likely be the easiest way due to any
-potential merge issues.
+I haven't tested it but...
 
-David, feel free to add an:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-to these patches and take them through your tree if that is ok with you.
-If not, I can also always take them through mine, it's your choice.
+> Signed-off-by: Maneesh Soni<manesoni@cisco.com>
+> ---
+>   arch/mips/include/asm/kprobes.h |    7 +
+>   arch/mips/kernel/kprobes.c      |  341 +++++++++++++++++++++++++++++++++++----
+>   2 files changed, 320 insertions(+), 28 deletions(-)
+>
+[...]
+> +static int evaluate_branch_instruction(struct kprobe *p, struct pt_regs *regs,
+> +					struct kprobe_ctlblk *kcb)
+>   {
+> +	union mips_instruction insn = p->opcode;
+> +	unsigned int dspcontrol;
+> +	long epc;
+> +
+> +	epc = regs->cp0_epc;
+> +	if (epc&  3)
+> +		goto unaligned;
+> +
+> +	if (p->ainsn.insn->word == 0)
+> +		kcb->flags |= SKIP_DELAYSLOT;
+> +	else
+> +		kcb->flags&= ~SKIP_DELAYSLOT;
+> +
+> +	switch (insn.i_format.opcode) {
+> +	/*
+> +	 * jr and jalr are in r_format format.
+> +	 */
+> +	case spec_op:
+[...]
+> +	case bgtzl_op:
+> +		/* rt field assumed to be zero */
+> +		if ((long)regs->regs[insn.i_format.rs]>  0) {
+> +			epc = epc + 4 + (insn.i_format.simmediate<<  2);
+> +			kcb->flags |= SKIP_DELAYSLOT;
+> +		} else
+> +			epc += 8;
+> +		regs->cp0_epc = epc;
+> +		break;
 
-thanks,
 
-greg k-h
+
+Where is the handling for:
+
+	case cop1_op:
+
+#ifdef CONFIG_CPU_CAVIUM_OCTEON
+	case lwc2_op: /* This is bbit0 on Octeon */
+	case ldc2_op: /* This is bbit032 on Octeon */
+	case swc2_op: /* This is bbit1 on Octeon */
+	case sdc2_op: /* This is bbit132 on Octeon */
+#endif
+
+These are all defined in insn_has_delayslot() but not here.
+
