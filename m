@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab1JMS5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 14:57:12 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46540 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab1JMS5L (ORCPT
+	id S1752882Ab1JMTDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:03:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26632 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146Ab1JMTDX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 14:57:11 -0400
-Date: Thu, 13 Oct 2011 20:56:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Niklas =?iso-8859-1?Q?S=F6derlund?= <niso@kth.se>
-Cc: "mchehab@redhat.com" <mchehab@redhat.com>,
+	Thu, 13 Oct 2011 15:03:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,342,1315206000"; 
+   d="scan'208";a="62328049"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>,
+        =?iso-8859-1?Q?Niklas_S=F6derlund?= <niso@kth.se>
+CC: "mchehab@redhat.com" <mchehab@redhat.com>,
         "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i7core_edac: fix erroneous size of static array
-Message-ID: <20111013185656.GC3064@aftab>
+Date: Thu, 13 Oct 2011 12:03:20 -0700
+Subject: RE: [PATCH] i7core_edac: fix erroneous size of static array
+Thread-Topic: [PATCH] i7core_edac: fix erroneous size of static array
+Thread-Index: AcyJ2e9PKLmWip5YRV6EtoKihaXKWgAAEwyw
+Message-ID: <987664A83D2D224EAE907B061CE93D5301EE87A060@orsmsx505.amr.corp.intel.com>
 References: <1318530294-6829-1-git-send-email-niso@kth.se>
+ <20111013185656.GC3064@aftab>
+In-Reply-To: <20111013185656.GC3064@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1318530294-6829-1-git-send-email-niso@kth.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 02:24:54PM -0400, Niklas Söderlund wrote:
-> Signed-off-by: Niklas Söderlund <niso@kth.se>
-> ---
->  drivers/edac/i7core_edac.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-> index 70ad892..e0f6096 100644
-> --- a/drivers/edac/i7core_edac.c
-> +++ b/drivers/edac/i7core_edac.c
-> @@ -441,7 +441,7 @@ static inline int numrow(u32 row)
->  
->  static inline int numcol(u32 col)
->  {
 > -	static int cols[8] = {
 > +	static int cols[4] = {
->  		1 << 10, 1 << 11, 1 << 12, -EINVAL,
->  	};
 
-Even better,
+Why are these arrays "static"? Does that generate better code than
+dynamic initialization?
 
-you could completely remove the number in the [] since the {}
-initializer contains all array elements already. In this and the
-remaining arrays in those small inline functions.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-Tony
