@@ -1,33 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab1JMQ1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:27:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36805 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab1JMQ1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:27:46 -0400
-Date: Thu, 13 Oct 2011 18:27:45 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Reporting Kernel Bugs
-In-Reply-To: <4E96D2E2.8030208@canonical.com>
-Message-ID: <alpine.LNX.2.00.1110131823350.14768@pobox.suse.cz>
-References: <4E95D7A6.6010603@canonical.com> <alpine.LRH.2.00.1110122011360.29079@twin.jikos.cz> <4E96D2E2.8030208@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932157Ab1JMQcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:32:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48922 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932135Ab1JMQcL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:32:11 -0400
+Date: Thu, 13 Oct 2011 17:32:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v2 4/9] ASoC: da7210: Add support for mute
+ and zero cross controls
+Message-ID: <20111013163208.GL5193@opensource.wolfsonmicro.com>
+References: <1318515113.12107.481.camel@matrix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318515113.12107.481.camel@matrix>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Joseph Salisbury wrote:
+On Thu, Oct 13, 2011 at 07:41:53PM +0530, Ashish Chavan wrote:
 
-> One additional question.  Is there a way to work and search existing 
-> bugs while bugzilla.kernel.org is unavailable?
+> +	SOC_SINGLE("DAC Mute Switch", DA7210_DAC_HPF, 2, 1, 0),
 
-Nothing official right now as far as I know.
+Digital Playback Switch so it matches up with the corresponding Volume
+control, though I rather expect that this should in fact be controlled
+by the digital_mute() callback for the DAI rather than a control.
 
--- 
-Jiri Kosina
-SUSE Labs
+Anything called "Foo Mute Switch" is probably doing something wrong as a
+switch is already an on/off control.
