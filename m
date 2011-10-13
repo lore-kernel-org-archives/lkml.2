@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab1JMPnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:43:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53911 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741Ab1JMPnk (ORCPT
+	id S1756130Ab1JMPo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:44:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35975 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab1JMPo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:43:40 -0400
-Message-ID: <1318520635.2393.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: (splice socket -> pipe) + EPOLLET -> epoll_wait does not not
- wake up !
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?UTF-8?Q?=D0=9C=D0=B0=D1=80=D0=BA_?=
-	 =?UTF-8?Q?=D0=9A=D0=BE=D1=80=D0=B5=D0=BD=D0=B1=D0=B5=D1=80=D0=B3?= 
-	<socketpair@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Oct 2011 17:43:55 +0200
-In-Reply-To: <CAEmTpZFt=j-TQjk_8Hx1Yv781SH8MFR_=OrnfH+vke9Q8JZpFA@mail.gmail.com>
-References: <CAEmTpZG5MN8Ha4=ZcCnWC3jJP9x4Bw7ZEC2vQdOGJZiaG4QYkA@mail.gmail.com>
-	 <CAEmTpZFt=j-TQjk_8Hx1Yv781SH8MFR_=OrnfH+vke9Q8JZpFA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 13 Oct 2011 11:44:56 -0400
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Subject: [PATCH v2] pata_it8213: fix register naming used in it8213_set_piomode()
+Date: Thu, 13 Oct 2011 17:44:22 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Message-Id: <201110131744.23090.bzolnier@gmail.com>
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 13 octobre 2011 à 20:48 +0600, Марк Коренберг a écrit :
-> The problem:
-> 
-> man 7 epoll said:
-> For  stream-oriented  files  (e.g.,  pipe, FIFO, stream socket), the
-> condition that the read/write I/O space is exhausted can also be
-> detected by checking the amount of data read from / written to the
-> target file descriptor.  For example, if you call read(2) by asking to
-> read a certain amount of data and read(2) returns a lower number of
-> bytes, you  can  be  sure of having exhausted the read I/O space for
-> the file descriptor.
-> 
-> I decide to use splice socket -> pipe instead of recv. So I have
-> registered socket's fd in epoll with EPOLLIN|EPOLLET.
-> 
-> When data appear in socket faster than I splice() it from socket, the
-> following sometimes appear:
-> 
-> 1. in my code I sure, that pipe is empty.
-> 2. my code do splice(socket, pipe, 65536)
-> 3. splice return, say, 53248
-> 4. my code accordingly to man, decide not to fire splice() again, as
-> it thinks that it will return EWOULDBLOCK=EAGAIN.
-> 5. so, my code go to epoll_wait to wait for EPOLLIN on socket
-> 6. epoll hangs.
-> 
-> This is not appear if I do just recv(). But it may be because speed is
-> lower, and some race condition in effect.
-> 
-> The hacked version of strace output is attached.
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: [PATCH v2] pata_it8213: fix register naming used in it8213_set_piomode()
 
-Your assumptions about splice() are false.
+Rename 'idetm_port' and 'idetm_data' variables to 'master_port'
+and 'master_data' respectively to match register naming used in
+it8213_set_dmamode() and in ata_piix.c.
 
-splice() can transfert partial pages.
+Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+---
+v2: don't change master_port type
 
-So you can hit the 16 pages pipe limit, and splice() doesnt necessarly
-returns 16*PAGE_SIZE.
+earlier references:
+https://lkml.org/lkml/2011/2/8/103
 
-With TCP frames, usually 1460 bytes per PAGE are used.
+ drivers/ata/pata_it8213.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-You must call splice() again and again, unless 0 bytes (EAGAIN) are
-returned.
-
-
-
+Index: b/drivers/ata/pata_it8213.c
+===================================================================
+--- a/drivers/ata/pata_it8213.c
++++ b/drivers/ata/pata_it8213.c
+@@ -76,8 +76,8 @@ static void it8213_set_piomode (struct a
+ {
+ 	unsigned int pio	= adev->pio_mode - XFER_PIO_0;
+ 	struct pci_dev *dev	= to_pci_dev(ap->host->dev);
+-	unsigned int idetm_port= ap->port_no ? 0x42 : 0x40;
+-	u16 idetm_data;
++	unsigned int master_port = ap->port_no ? 0x42 : 0x40;
++	u16 master_data;
+ 	int control = 0;
+ 
+ 	/*
+@@ -100,19 +100,19 @@ static void it8213_set_piomode (struct a
+ 	if (adev->class != ATA_DEV_ATA)
+ 		control |= 4;	/* PPE */
+ 
+-	pci_read_config_word(dev, idetm_port, &idetm_data);
++	pci_read_config_word(dev, master_port, &master_data);
+ 
+ 	/* Set PPE, IE, and TIME as appropriate */
+ 	if (adev->devno == 0) {
+-		idetm_data &= 0xCCF0;
+-		idetm_data |= control;
+-		idetm_data |= (timings[pio][0] << 12) |
++		master_data &= 0xCCF0;
++		master_data |= control;
++		master_data |= (timings[pio][0] << 12) |
+ 			(timings[pio][1] << 8);
+ 	} else {
+ 		u8 slave_data;
+ 
+-		idetm_data &= 0xFF0F;
+-		idetm_data |= (control << 4);
++		master_data &= 0xFF0F;
++		master_data |= (control << 4);
+ 
+ 		/* Slave timing in separate register */
+ 		pci_read_config_byte(dev, 0x44, &slave_data);
+@@ -121,8 +121,8 @@ static void it8213_set_piomode (struct a
+ 		pci_write_config_byte(dev, 0x44, slave_data);
+ 	}
+ 
+-	idetm_data |= 0x4000;	/* Ensure SITRE is set */
+-	pci_write_config_word(dev, idetm_port, idetm_data);
++	master_data |= 0x4000;	/* Ensure SITRE is set */
++	pci_write_config_word(dev, master_port, master_data);
+ }
+ 
+ /**
