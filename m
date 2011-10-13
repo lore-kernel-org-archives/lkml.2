@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1JMVyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 17:54:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39523 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab1JMVyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 17:54:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
+	id S1754918Ab1JMV4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:56:09 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:32865 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab1JMV4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 17:56:07 -0400
 Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-Date: Thu, 13 Oct 2011 23:57:13 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-References: <1317342456.1959.6.camel@shrek.rexursive.com> <201110132326.02041.rjw@sisk.pl> <1318542285.2081.1.camel@shrek.rexursive.com>
-In-Reply-To: <1318542285.2081.1.camel@shrek.rexursive.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Date: Fri, 14 Oct 2011 08:56:05 +1100
+In-Reply-To: <201110132357.13555.rjw@sisk.pl>
+References: <1317342456.1959.6.camel@shrek.rexursive.com>
+	 <201110132326.02041.rjw@sisk.pl>
+	 <1318542285.2081.1.camel@shrek.rexursive.com>
+	 <201110132357.13555.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110132357.13555.rjw@sisk.pl>
+Message-ID: <1318542965.2081.2.camel@shrek.rexursive.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 13, 2011, Bojan Smojver wrote:
-> On Thu, 2011-10-13 at 23:26 +0200, Rafael J. Wysocki wrote:
-> > If your system is 64-bit, then the patch below may help.
-> 
-> OK, I may try that on my ThinkPad.
-> 
-> Anyhow, you still getting panics as a direct result of my hibernation
-> patch?
+On Thu, 2011-10-13 at 23:57 +0200, Rafael J. Wysocki wrote:
+> No, v11 doesn't panic for me any more, so I'm going to put it
+> back into linux-pm/linux-next. 
 
-No, v11 doesn't panic for me any more, so I'm going to put it
-back into linux-pm/linux-next.
+Nice! Thanks.
 
-Thanks,
-Rafael
+-- 
+Bojan
+
