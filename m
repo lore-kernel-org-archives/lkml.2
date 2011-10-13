@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1JMPlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:41:24 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:28377 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab1JMPlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:41:23 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-Message-ID: <4E970690.3080207@freescale.com>
-Date: Thu, 13 Oct 2011 10:41:04 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	id S1756098Ab1JMPlh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:41:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38925 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751678Ab1JMPlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:41:36 -0400
+Message-ID: <4E97067A.2070305@zytor.com>
+Date: Thu, 13 Oct 2011 08:40:42 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Kumar Gala <galak@kernel.crashing.org>, <linuxppc-dev@ozlabs.org>,
-        <hjk@hansjkoch.de>, <gregkh@suse.de>, <linux-kernel@vger.kernel.org>,
-        Jiang Kai-B18973 <B18973@freescale.com>
-Subject: Re: [PATCH][v2] uio: Support 36-bit physical addresses on 32-bit
- systems
-References: <AE90C24D6B3A694183C094C60CF0A2F6D8AE7E@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AE7E@saturn3.aculab.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH RFC V4 09/10] x86/jump_label: use GENERIC_NOP5_ATOMIC
+ instead of jmp5 +0
+References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com> <34ede5db1571d541a5c3fc49923bb353a37dd431.1318464413.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <34ede5db1571d541a5c3fc49923bb353a37dd431.1318464413.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Laight wrote:
-> Since there is a discriminating field, could a union be used?
-> At a guess the type of the address is constrained between
-> produces and consumer??
+On 10/12/2011 05:08 PM, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> 
+> GENERIC_NOP5_ATOMIC should make a better nop.
+> 
 
-I don't think we need to complicate the code by changing that variable into a
-union.  I just a want a short comment added to the structure definition.  I
-don't think that's asking a lot.
+On 32 bits, yes.  On 64 bits you should use P6_NOP5_ATOMIC.
+
+	-hpa
 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
