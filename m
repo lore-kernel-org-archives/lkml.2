@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab1JMWgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 18:36:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36577 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab1JMWgp (ORCPT
+	id S1755503Ab1JMWkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 18:40:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65181 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab1JMWkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 18:36:45 -0400
-Date: Thu, 13 Oct 2011 16:36:42 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Hartmut Knaack <knaack.h@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [Patch V2 2/2] gpio-pca953x: fix gpio_base and add verbosity
-Message-ID: <20111013223642.GB28726@ponder.secretlab.ca>
-References: <4E941054.8090608@gmx.de>
- <20111013193538.GD18574@ponder.secretlab.ca>
- <4E975C30.80407@gmx.de>
+	Thu, 13 Oct 2011 18:40:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E975C30.80407@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20111013165129.GO5193@opensource.wolfsonmicro.com>
+References: <1318490575.2857.8.camel@phoenix> <20111013165129.GO5193@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 14 Oct 2011 06:39:43 +0800
+Message-ID: <CAF+7xWkVLNgToGiEn+xqgnii7QozNu0QAf2U-kXRNRtVK0dkqA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ASoC: alc5623: Convert codec->hw_read to regmap_read
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 11:46:24PM +0200, Hartmut Knaack wrote:
-> Grant Likely schrieb:
-> > On Tue, Oct 11, 2011 at 11:45:56AM +0200, Hartmut Knaack wrote:
-> >> Sorry, I messed up the porting from my work files to clean git repo.
-> >> This should be right now.
-> >> Inspired by the gpio-pcf857x driver, this patch will output information
-> >> about the instantiated gpio-chip, including gpio start and end, chip
-> >> type and if irq is used.
-> >>
-> >> Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
-> >> -------------------------------------------------------------
-> >> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-> >> index 0721d85..f1a4fad 100644
-> >> --- a/drivers/gpio/gpio-pca953x.c
-> >> +++ b/drivers/gpio/gpio-pca953x.c
-> >> @@ -687,6 +687,12 @@ static int __devinit pca953x_probe(struct
-> >> i2c_client *client,
-> >>  	if (ret)
-> >>  		goto out_failed_irq;
-> >>
-> >> +	dev_info(&client->dev, "gpios %d..%d added on a %s%s\n",
-> >> +		 chip->gpio_chip.base,
-> >> +		 chip->gpio_chip.base + chip->gpio_chip.ngpio - 1,
-> >> +		 client->name,
-> >> +		 client->irq ? " (irq ignored)" : "");
-> >> +
-> > dev_dbg() for this I think.
-> A short look into all other gpio drivers revealed which functions are normally used for that purpose:
-> pr_info: gpio-xilinx
-> dev_info: gpio-pcf857x, gpio-nomadik, gpio-janz-ttl, gpio-cs5535, gpio-adp5588
-> printk: gpio-bt8xx
-> I took that one from the pcf857x driver, but personally I also think that info is an appropriate verbosity level.
-> Empowered by Ryan Mallon's comment I thought about removing those functions from gpio driver code and move it to gpiochip_add function. This way reducing redundancy and improving uniformity. It's just 7 drivers + gpiolib, which need to be changed. What do you think?
-> >>  	if (pdata && pdata->setup) {
-> >>  		ret = pdata->setup(client, chip->gpio_chip.base,
-> >>  				chip->gpio_chip.ngpio, pdata->context);
-> >>
+2011/10/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Thu, Oct 13, 2011 at 03:22:55PM +0800, Axel Lin wrote:
+>> codec->hw_read is broken now, let's covert to regmap_read.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>
+> I'd rather not fix these like this because when we convert these drivers
+> to use regmap directly it won't be quite so obvious what's going on and
+> we'll easily introduce bugs where we start using the cached values from
+> a regmap level cache.
+>
+> Probably the best thing here is to convert all these drivers to use
+> cache_bypass to read directly through the cache - the same thing will
+> then work with direct regmap usage.
+>
+I don't complete understand "use cache_bypass to read directly through
+the cache".
+Can you illustrate it?
+The purpose of original implementation is to read h/w then fill the cache.
+The cache is zeroed before we call alc5623_fill_cache().
 
-Draft a patch and we'll see what it looks like.
+Or do you mean changes like below instead of calling regmap_read directly?
 
-g.
+diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
+index 557b3af..43006b3 100644
+--- a/sound/soc/codecs/alc5623.c
++++ b/sound/soc/codecs/alc5623.c
+@@ -51,10 +51,15 @@ static void alc5623_fill_cache(struct snd_soc_codec *codec)
+ {
+        int i, step = codec->driver->reg_cache_step;
+        u16 *cache = codec->reg_cache;
++       unsigned int val;
 
+        /* not really efficient ... */
+-       for (i = 0 ; i < codec->driver->reg_cache_size ; i += step)
+-               cache[i] = codec->hw_read(codec, i);
++       codec->cache_bypass = 1;
++       for (i = 0 ; i < codec->driver->reg_cache_size ; i += step) {
++               snd_soc_read(codec, i);
++               cache[i] = val;
++       }
++       codec->cache_bypass = 0;
+ }
+
+ static inline int alc5623_reset(struct snd_soc_codec *codec)
+
+Thanks,
+Axel
