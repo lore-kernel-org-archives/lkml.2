@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab1JMTw0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:52:26 -0400
-Received: from mail-vw0-f52.google.com ([209.85.212.52]:47800 "EHLO
+	id S1754288Ab1JMTxD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:53:03 -0400
+Received: from mail-vw0-f52.google.com ([209.85.212.52]:65157 "EHLO
 	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab1JMTwZ (ORCPT
+	with ESMTP id S1754102Ab1JMTxB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:52:25 -0400
+	Thu, 13 Oct 2011 15:53:01 -0400
 MIME-Version: 1.0
+In-Reply-To: <20111013194644.GF18574@ponder.secretlab.ca>
+References: <4E937035.8020806@gmx.de> <20111013194644.GF18574@ponder.secretlab.ca>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 13 Oct 2011 13:52:04 -0600
-X-Google-Sender-Auth: __qg9EOfITDnPY9FRYnA-jL7kdE
-Message-ID: <CACxGe6un6zVKQ=xZYwTeYDeQxvWvqJ6gaPv=VFkfs-C5xJM+Pw@mail.gmail.com>
-Subject: [GIT PULL] gpio bug fixes
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Oct 2011 13:52:41 -0600
+X-Google-Sender-Auth: xq2kErHgvHQGMximQfI_31QG8qA
+Message-ID: <CACxGe6ut+8ERLgQ3BcnqkWKgt2uYNHwk4baP8sjtAXVuJDe7CA@mail.gmail.com>
+Subject: Re: [Patch 1/2] gpio-pca953x: fix gpio_base and add verbosity
+To: Hartmut Knaack <knaack.h@gmx.de>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 13, 2011 at 1:46 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Tue, Oct 11, 2011 at 12:22:45AM +0200, Hartmut Knaack wrote:
+>> gpio_base was set to 0 if no system platform data or open firmware
+>> platform data was provided. This led to conflicts, if any other gpiochip
+>> with a gpiobase of 0 was instantiated already. Setting it to -1 will
+>> automatically use the first one available.
+>>
+>> Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+>> -------------------------------------------------------------
+>
+> Corrupt patch (linewrap and whitespace damage).  Please check your mailer.
 
-Oops, missed another bug fix.  Here's an updated pull request with
-another gpio commit.
+I applied it manually though.
 
 g.
 
-The following changes since commit 37cf95162af4036b4198756a590aab8126fa2ce4:
+>
+>> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+>> index c43b8ff..ae479fd 100644
+>> --- a/drivers/gpio/gpio-pca953x.c
+>> +++ b/drivers/gpio/gpio-pca953x.c
+>> @@ -577,6 +577,7 @@ pca953x_get_alt_pdata(struct i2c_client *client, int
+>> *gpio_base, int *invert)
+>>  void
+>>  pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, int
+>> *invert)
+>>  {
+>> +  *gpio_base = -1;
+>>  }
+>>  #endif
+>>
+>>
+>
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-(2011-10-13 18:25:45 +1200)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 gpio/merge
-
-Hartmut Knaack (1):
-      gpio-pca953x: fix gpio_base
-
-Janusz Krzysztofik (1):
-      gpio/omap: fix build error with certain OMAP1 configs
-
- drivers/gpio/gpio-omap.c    |    2 +-
- drivers/gpio/gpio-pca953x.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
 
 
 -- 
