@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1JMCAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 22:00:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49174 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab1JMCAg convert rfc822-to-8bit (ORCPT
+	id S1752276Ab1JMCB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 22:01:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50245 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab1JMCB2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 22:00:36 -0400
+	Wed, 12 Oct 2011 22:01:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111012173019.37dbde1f6797be48f8ad7c62@canb.auug.org.au>
-References: <20111012173019.37dbde1f6797be48f8ad7c62@canb.auug.org.au>
-Date: Wed, 12 Oct 2011 22:00:35 -0400
-X-Google-Sender-Auth: Xq6PYLsGf08WVDPKDa1_617Cjyk
-Message-ID: <CAP=VYLp6T+dPpSQQD_WsqEfuwuOX5vs0GgkRynwn2o5WzYPCRA@mail.gmail.com>
-Subject: Re: linux-next: build warnings after merge of the moduleh tree
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAKYAXd_AtgQY313b273PpziN0hkgD2mposNf9cykvH863KL28A@mail.gmail.com>
+References: <CAKYAXd9v_wFg2RQ_R+fYyCJnCbnuMs_VECujOen1GUSGXo3rHw@mail.gmail.com>
+	<13498.1318467461@turing-police.cc.vt.edu>
+	<CAKYAXd--8=MkpXi0H4-nGF1vYQF42aL+OEjysg86gw83uyrefQ@mail.gmail.com>
+	<CAKYAXd_AtgQY313b273PpziN0hkgD2mposNf9cykvH863KL28A@mail.gmail.com>
+Date: Thu, 13 Oct 2011 11:01:26 +0900
+Message-ID: <CAKYAXd_Y1Gm6c1i8ChP_k_rNTGWXcG0D-5frkk6iOKKVBzQKxw@mail.gmail.com>
+Subject: Re: RFC : fat : default errors use FAT_ERRORS_CONT instead of FAT_ERRORS_RO.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 2:30 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Paul,
->
-> After merging the moduleh tree, today's linux-next build (x86_64
-> allmodconfig) produced these warnings:
->
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:43:1: warning: data definition has no type or storage class [enabled by default]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:43:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:43:1: warning: parameter names (without types) in function declaration [enabled by default]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:79:1: warning: data definition has no type or storage class [enabled by default]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:79:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:79:1: warning: parameter names (without types) in function declaration [enabled by default]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:136:1: warning: data definition has no type or storage class [enabled by default]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:136:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
-> drivers/net/wireless/brcm80211/brcmutil/wifi.c:136:1: warning: parameter names (without types) in function declaration [enabled by default]
-> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:348:1: warning: data definition has no type or storage class [enabled by default]
-> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:348:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
-> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:348:1: warning: parameter names (without types) in function declaration [enabled by default]
-> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:363:1: warning: data definition has no type or storage class [enabled by default]
-> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:363:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
-> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:363:1: warning: parameter names (without types) in function declaration [enabled by default]
->
-> Caused by commit 5b435de0d786 ("net: wireless: add brcm80211 drivers")
-> from the wireless tree interacting with the module.h split up.
->
-> I have added the following patch:
-
-Thanks Stephen, added to the post merge queue with the other post-merge
-wireless export.h additions.
-
-Paul.
-
->
-> From 9ea7a8cb92322497a92d464e6e40cd1da20fbcde Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 12 Oct 2011 17:22:53 +1100
-> Subject: [PATCH] net: wireless; brcm80211: add export.h
->
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |    1 +
->  drivers/net/wireless/brcm80211/brcmutil/wifi.c   |    2 ++
->  2 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> index bff9dcd..76c78fd 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> @@ -21,6 +21,7 @@
->  #include <linux/pci_ids.h>
->  #include <linux/sched.h>
->  #include <linux/completion.h>
-> +#include <linux/export.h>
->  #include <linux/mmc/sdio.h>
->  #include <linux/mmc/sdio_func.h>
->  #include <linux/mmc/card.h>
-> diff --git a/drivers/net/wireless/brcm80211/brcmutil/wifi.c b/drivers/net/wireless/brcm80211/brcmutil/wifi.c
-> index 509e25c..5616fa8 100644
-> --- a/drivers/net/wireless/brcm80211/brcmutil/wifi.c
-> +++ b/drivers/net/wireless/brcm80211/brcmutil/wifi.c
-> @@ -13,6 +13,8 @@
->  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
->  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
->  */
-> +#include <linux/export.h>
-> +
->  #include <brcmu_wifi.h>
->
->  /*
-> --
-> 1.7.6.3
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+2011/10/13 NamJae Jeon <linkinjeon@gmail.com>:
+> 2011/10/13 NamJae Jeon <linkinjeon@gmail.com>:
+>> 2011/10/13 Â <Valdis.Kletnieks@vt.edu>:
+>>> On Thu, 13 Oct 2011 09:24:52 +0900, NamJae Jeon said:
+>>>
+>>>> It said windows fat provide a chance that continuously access
+>>>> partition except corrupted file.
+>>>
+>>> It also gives you a chance to make things worse by continuing to write to the
+>>> device. Â If you force it RO at the first sign of trouble, maybe you lose a few
+>>> blocks of one file. Â If you keep writing to it, creating new files, erasing
+>>> files, and so on, pretty soon your corrupted filesystem is even more corrupted.
+>> There is no journal feature in FAT. it means FAT is corrupted well in
+>> unexpected status.
+>> Can you explain specifically what error will happen in case of keep writing ?
+>> I think that MS consider also about this. maybe they think that
+>> keeping access is better than changing RO type by one file is
+>> corrupted.
+And currenly we still can write on FAT if corrupted file is not accessed.
+>>>
+>>>> I suggest that the default errors of linux fat use FAT_ERRORS_CONT
+>>>> instead of FAT_ERRORS_RO.
+>>>
+>>> And what user benefit does that give? Â If you keep going, they won't
+>>> realize their device is corrupted, and won't have any reason to *fix* the
+>>> filesystem.
+>> for example, FAT is RW filesystem. and it is corrupted well by
+>> unexpected status.
+>> If so, user can not write FAT filesystem anytime while using linux
+>> FAT. Â there is no mehod except they should directly remount fat
+>> parittion. well known linux user can do it only.
+> And user can know file is corrupted or not by corrupted message and
+> return value when accessing this file.
+>>>
+>>
 >
