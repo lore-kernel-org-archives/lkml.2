@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab1JMXKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 19:10:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61259 "EHLO mga02.intel.com"
+	id S1756819Ab1JMXKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 19:10:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24692 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755896Ab1JMXI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755901Ab1JMXI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Oct 2011 19:08:59 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="62778874"
+X-IronPort-AV: E=Sophos;i="4.69,343,1315206000"; 
+   d="scan'208";a="77927473"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: dri-devel@lists.freedesktop.org, akpm@linux-foundation.org,
         Andi Kleen <ak@linux.intel.com>, airlied@linux.ie
-Subject: [PATCH 06/12] RADEON: Remove more bogus inlines in the radeon driver.
-Date: Thu, 13 Oct 2011 16:08:46 -0700
-Message-Id: <1318547332-23155-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 07/12] RADEON: Move more code out of line
+Date: Thu, 13 Oct 2011 16:08:47 -0700
+Message-Id: <1318547332-23155-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
 References: <1318547332-23155-1-git-send-email-andi@firstfloor.org>
@@ -25,45 +25,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Remove bogus inlines in evergreen and r100.
+With this patch I'm only about 50k larger with DRM debugging
+enables (why is that enabled by default?!?), and slightly
+smaller without.
 
 Cc: airlied@linux.ie
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c          |    4 +-
- drivers/gpu/drm/radeon/evergreen_blit_kms.c |    2 +-
- drivers/gpu/drm/radeon/r100.c               |  106 +++++++++++++++++++++++++-
- drivers/gpu/drm/radeon/r100_track.h         |  110 ++-------------------------
- 4 files changed, 114 insertions(+), 108 deletions(-)
+ drivers/gpu/drm/radeon/r100.c             |   39 ++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/r300_cmdbuf.c      |    2 +-
+ drivers/gpu/drm/radeon/r600.c             |    4 +-
+ drivers/gpu/drm/radeon/r600_blit_kms.c    |    2 +-
+ drivers/gpu/drm/radeon/radeon.h           |   39 +++++----------------------
+ drivers/gpu/drm/radeon/radeon_atombios.c  |    4 +-
+ drivers/gpu/drm/radeon/radeon_irq.c       |    2 +-
+ drivers/gpu/drm/radeon/radeon_legacy_tv.c |    2 +-
+ drivers/gpu/drm/radeon/radeon_object.c    |   41 ++++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_object.h    |   42 ++--------------------------
+ drivers/gpu/drm/radeon/radeon_state.c     |   16 +++++-----
+ 11 files changed, 106 insertions(+), 87 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index c4ffa14f..1c5cd09 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2586,7 +2586,7 @@ int evergreen_irq_set(struct radeon_device *rdev)
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 6720929..1bbed1f 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -4107,3 +4107,42 @@ void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v)
+ 		iowrite32(v, rdev->rio_mem + RADEON_MM_DATA);
+ 	}
+ }
++
++/* Better place? */
++u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
++{
++	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
++	u32 pg_idx, pg_offset;
++	u32 idx_value = 0;
++	int new_page;
++
++	pg_idx = (idx * 4) / PAGE_SIZE;
++	pg_offset = (idx * 4) % PAGE_SIZE;
++
++	if (ibc->kpage_idx[0] == pg_idx)
++		return ibc->kpage[0][pg_offset/4];
++	if (ibc->kpage_idx[1] == pg_idx)
++		return ibc->kpage[1][pg_offset/4];
++
++	new_page = radeon_cs_update_pages(p, pg_idx);
++	if (new_page < 0) {
++		p->parser_error = new_page;
++		return 0;
++	}
++
++	idx_value = ibc->kpage[new_page][pg_offset/4];
++	return idx_value;
++}
++
++void radeon_ring_write(struct radeon_device *rdev, uint32_t v)
++{
++#if DRM_DEBUG_CODE
++	if (rdev->cp.count_dw <= 0) {
++		DRM_ERROR("radeon: writting more dword to ring than expected !\n");
++	}
++#endif
++	rdev->cp.ring[rdev->cp.wptr++] = v;
++	rdev->cp.wptr &= rdev->cp.ptr_mask;
++	rdev->cp.count_dw--;
++	rdev->cp.ring_free_dw--;
++}
+diff --git a/drivers/gpu/drm/radeon/r300_cmdbuf.c b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+index c5c2742..1fe98b4 100644
+--- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
++++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+@@ -791,7 +791,7 @@ static __inline__ int r300_emit_packet3(drm_radeon_private_t *dev_priv,
+ /**
+  * Emit the sequence to pacify R300.
+  */
+-static __inline__ void r300_pacify(drm_radeon_private_t *dev_priv)
++static void r300_pacify(drm_radeon_private_t *dev_priv)
+ {
+ 	uint32_t cache_z, cache_3d, cache_2d;
+ 	RING_LOCALS;
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index 720dd99..c85047f 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -3137,7 +3137,7 @@ int r600_irq_set(struct radeon_device *rdev)
  	return 0;
  }
  
--static inline void evergreen_irq_ack(struct radeon_device *rdev)
-+static void evergreen_irq_ack(struct radeon_device *rdev)
+-static inline void r600_irq_ack(struct radeon_device *rdev)
++static void r600_irq_ack(struct radeon_device *rdev)
  {
  	u32 tmp;
  
-@@ -2697,7 +2697,7 @@ void evergreen_irq_suspend(struct radeon_device *rdev)
- 	r600_rlc_stop(rdev);
+@@ -3238,7 +3238,7 @@ void r600_irq_disable(struct radeon_device *rdev)
+ 	r600_disable_interrupt_state(rdev);
  }
  
--static inline u32 evergreen_get_ih_wptr(struct radeon_device *rdev)
-+static u32 evergreen_get_ih_wptr(struct radeon_device *rdev)
+-static inline u32 r600_get_ih_wptr(struct radeon_device *rdev)
++static u32 r600_get_ih_wptr(struct radeon_device *rdev)
  {
  	u32 wptr, tmp;
  
-diff --git a/drivers/gpu/drm/radeon/evergreen_blit_kms.c b/drivers/gpu/drm/radeon/evergreen_blit_kms.c
-index 2eb2518..7eb78b3 100644
---- a/drivers/gpu/drm/radeon/evergreen_blit_kms.c
-+++ b/drivers/gpu/drm/radeon/evergreen_blit_kms.c
-@@ -584,7 +584,7 @@ set_default_state(struct radeon_device *rdev)
- 
+diff --git a/drivers/gpu/drm/radeon/r600_blit_kms.c b/drivers/gpu/drm/radeon/r600_blit_kms.c
+index 9aa74c3..bbbafe6 100644
+--- a/drivers/gpu/drm/radeon/r600_blit_kms.c
++++ b/drivers/gpu/drm/radeon/r600_blit_kms.c
+@@ -450,7 +450,7 @@ set_default_state(struct radeon_device *rdev)
+ 	radeon_ring_write(rdev, sq_stack_resource_mgmt_2);
  }
  
 -static inline uint32_t i2f(uint32_t input)
@@ -71,255 +140,261 @@ index 2eb2518..7eb78b3 100644
  {
  	u32 result, i, exponent, fraction;
  
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 9a1efac..6720929 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -68,6 +68,108 @@ MODULE_FIRMWARE(FIRMWARE_R520);
-  * r100,rv100,rs100,rv200,rs200,r200,rv250,rs300,rv280
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 8ac6cba..5ed7ef7 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -601,32 +601,7 @@ struct radeon_cs_parser {
+ 
+ extern int radeon_cs_update_pages(struct radeon_cs_parser *p, int pg_idx);
+ extern int radeon_cs_finish_pages(struct radeon_cs_parser *p);
+-
+-
+-static inline u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx)
+-{
+-	struct radeon_cs_chunk *ibc = &p->chunks[p->chunk_ib_idx];
+-	u32 pg_idx, pg_offset;
+-	u32 idx_value = 0;
+-	int new_page;
+-
+-	pg_idx = (idx * 4) / PAGE_SIZE;
+-	pg_offset = (idx * 4) % PAGE_SIZE;
+-
+-	if (ibc->kpage_idx[0] == pg_idx)
+-		return ibc->kpage[0][pg_offset/4];
+-	if (ibc->kpage_idx[1] == pg_idx)
+-		return ibc->kpage[1][pg_offset/4];
+-
+-	new_page = radeon_cs_update_pages(p, pg_idx);
+-	if (new_page < 0) {
+-		p->parser_error = new_page;
+-		return 0;
+-	}
+-
+-	idx_value = ibc->kpage[new_page][pg_offset/4];
+-	return idx_value;
+-}
++extern u32 radeon_get_ib_value(struct radeon_cs_parser *p, int idx);
+ 
+ struct radeon_cs_packet {
+ 	unsigned	idx;
+@@ -1378,19 +1353,19 @@ void radeon_atombios_fini(struct radeon_device *rdev);
+ /*
+  * RING helpers.
   */
- 
-+int r100_reloc_pitch_offset(struct radeon_cs_parser *p,
-+			    struct radeon_cs_packet *pkt,
-+			    unsigned idx,
-+			    unsigned reg)
-+{
-+	int r;
-+	u32 tile_flags = 0;
-+	u32 tmp;
-+	struct radeon_cs_reloc *reloc;
-+	u32 value;
 +
-+	r = r100_cs_packet_next_reloc(p, &reloc);
-+	if (r) {
-+		DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
-+			  idx, reg);
-+		r100_cs_dump_packet(p, pkt);
-+		return r;
-+	}
-+	value = radeon_get_ib_value(p, idx);
-+	tmp = value & 0x003fffff;
-+	tmp += (((u32)reloc->lobj.gpu_offset) >> 10);
-+
-+	if (reloc->lobj.tiling_flags & RADEON_TILING_MACRO)
-+		tile_flags |= RADEON_DST_TILE_MACRO;
-+	if (reloc->lobj.tiling_flags & RADEON_TILING_MICRO) {
-+		if (reg == RADEON_SRC_PITCH_OFFSET) {
-+			DRM_ERROR("Cannot src blit from microtiled surface\n");
-+			r100_cs_dump_packet(p, pkt);
-+			return -EINVAL;
-+		}
-+		tile_flags |= RADEON_DST_TILE_MICRO;
-+	}
-+
-+	tmp |= tile_flags;
-+	p->ib->ptr[idx] = (value & 0x3fc00000) | tmp;
-+	return 0;
-+}
-+
-+int r100_packet3_load_vbpntr(struct radeon_cs_parser *p,
-+			     struct radeon_cs_packet *pkt,
-+			     int idx)
-+{
-+	unsigned c, i;
-+	struct radeon_cs_reloc *reloc;
-+	struct r100_cs_track *track;
-+	int r = 0;
-+	volatile uint32_t *ib;
-+	u32 idx_value;
-+
-+	ib = p->ib->ptr;
-+	track = (struct r100_cs_track *)p->track;
-+	c = radeon_get_ib_value(p, idx++) & 0x1F;
-+	if (c > 16) {
-+	    DRM_ERROR("Only 16 vertex buffers are allowed %d\n",
-+		      pkt->opcode);
-+	    r100_cs_dump_packet(p, pkt);
-+	    return -EINVAL;
-+	}
-+	track->num_arrays = c;
-+	for (i = 0; i < (c - 1); i+=2, idx+=3) {
-+		r = r100_cs_packet_next_reloc(p, &reloc);
-+		if (r) {
-+			DRM_ERROR("No reloc for packet3 %d\n",
-+				  pkt->opcode);
-+			r100_cs_dump_packet(p, pkt);
-+			return r;
-+		}
-+		idx_value = radeon_get_ib_value(p, idx);
-+		ib[idx+1] = radeon_get_ib_value(p, idx + 1) + ((u32)reloc->lobj.gpu_offset);
-+
-+		track->arrays[i + 0].esize = idx_value >> 8;
-+		track->arrays[i + 0].robj = reloc->robj;
-+		track->arrays[i + 0].esize &= 0x7F;
-+		r = r100_cs_packet_next_reloc(p, &reloc);
-+		if (r) {
-+			DRM_ERROR("No reloc for packet3 %d\n",
-+				  pkt->opcode);
-+			r100_cs_dump_packet(p, pkt);
-+			return r;
-+		}
-+		ib[idx+2] = radeon_get_ib_value(p, idx + 2) + ((u32)reloc->lobj.gpu_offset);
-+		track->arrays[i + 1].robj = reloc->robj;
-+		track->arrays[i + 1].esize = idx_value >> 24;
-+		track->arrays[i + 1].esize &= 0x7F;
-+	}
-+	if (c & 1) {
-+		r = r100_cs_packet_next_reloc(p, &reloc);
-+		if (r) {
-+			DRM_ERROR("No reloc for packet3 %d\n",
-+					  pkt->opcode);
-+			r100_cs_dump_packet(p, pkt);
-+			return r;
-+		}
-+		idx_value = radeon_get_ib_value(p, idx);
-+		ib[idx+1] = radeon_get_ib_value(p, idx + 1) + ((u32)reloc->lobj.gpu_offset);
-+		track->arrays[i + 0].robj = reloc->robj;
-+		track->arrays[i + 0].esize = idx_value >> 8;
-+		track->arrays[i + 0].esize &= 0x7F;
-+	}
-+	return r;
-+}
-+
- void r100_pre_page_flip(struct radeon_device *rdev, int crtc)
++#if DRM_DEBUG_CODE == 0
+ static inline void radeon_ring_write(struct radeon_device *rdev, uint32_t v)
  {
- 	/* enable the pflip int */
-@@ -588,7 +690,7 @@ void r100_irq_disable(struct radeon_device *rdev)
- 	WREG32(R_000044_GEN_INT_STATUS, tmp);
+-#if DRM_DEBUG_CODE
+-	if (rdev->cp.count_dw <= 0) {
+-		DRM_ERROR("radeon: writting more dword to ring than expected !\n");
+-	}
+-#endif
+ 	rdev->cp.ring[rdev->cp.wptr++] = v;
+ 	rdev->cp.wptr &= rdev->cp.ptr_mask;
+ 	rdev->cp.count_dw--;
+ 	rdev->cp.ring_free_dw--;
  }
+-
++#else
++/* With debugging this is just too big to inline */
++void radeon_ring_write(struct radeon_device *rdev, uint32_t v);
++#endif
  
--static inline uint32_t r100_irq_ack(struct radeon_device *rdev)
-+static uint32_t r100_irq_ack(struct radeon_device *rdev)
+ /*
+  * ASICs macro.
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index bf2b615..08d0b94 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -62,7 +62,7 @@ union atom_supported_devices {
+ 	struct _ATOM_SUPPORTED_DEVICES_INFO_2d1 info_2d1;
+ };
+ 
+-static inline struct radeon_i2c_bus_rec radeon_lookup_i2c_gpio(struct radeon_device *rdev,
++static struct radeon_i2c_bus_rec radeon_lookup_i2c_gpio(struct radeon_device *rdev,
+ 							       uint8_t id)
  {
- 	uint32_t irqs = RREG32(RADEON_GEN_INT_STATUS);
- 	uint32_t irq_mask = RADEON_SW_INT_TEST |
-@@ -3147,7 +3249,7 @@ void r100_bandwidth_update(struct radeon_device *rdev)
+ 	struct atom_context *ctx = rdev->mode_info.atom_context;
+@@ -228,7 +228,7 @@ void radeon_atombios_i2c_init(struct radeon_device *rdev)
  	}
  }
  
--static inline void r100_cs_track_texture_print(struct r100_cs_track_texture *t)
-+static void r100_cs_track_texture_print(struct r100_cs_track_texture *t)
+-static inline struct radeon_gpio_rec radeon_lookup_gpio(struct radeon_device *rdev,
++static struct radeon_gpio_rec radeon_lookup_gpio(struct radeon_device *rdev,
+ 							u8 id)
  {
- 	DRM_ERROR("pitch                      %d\n", t->pitch);
- 	DRM_ERROR("use_pitch                  %d\n", t->use_pitch);
-diff --git a/drivers/gpu/drm/radeon/r100_track.h b/drivers/gpu/drm/radeon/r100_track.h
-index 686f9dc..6a603b3 100644
---- a/drivers/gpu/drm/radeon/r100_track.h
-+++ b/drivers/gpu/drm/radeon/r100_track.h
-@@ -92,106 +92,10 @@ int r200_packet0_check(struct radeon_cs_parser *p,
- 		       struct radeon_cs_packet *pkt,
- 		       unsigned idx, unsigned reg);
+ 	struct atom_context *ctx = rdev->mode_info.atom_context;
+diff --git a/drivers/gpu/drm/radeon/radeon_irq.c b/drivers/gpu/drm/radeon/radeon_irq.c
+index 465746b..00da384 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq.c
++++ b/drivers/gpu/drm/radeon/radeon_irq.c
+@@ -129,7 +129,7 @@ void radeon_disable_vblank(struct drm_device *dev, int crtc)
+ 	}
+ }
  
--
--
--static inline int r100_reloc_pitch_offset(struct radeon_cs_parser *p,
--					  struct radeon_cs_packet *pkt,
--					  unsigned idx,
--					  unsigned reg)
+-static inline u32 radeon_acknowledge_irqs(drm_radeon_private_t *dev_priv, u32 *r500_disp_int)
++static u32 radeon_acknowledge_irqs(drm_radeon_private_t *dev_priv, u32 *r500_disp_int)
+ {
+ 	u32 irqs = RADEON_READ(RADEON_GEN_INT_STATUS);
+ 	u32 irq_mask = RADEON_SW_INT_TEST;
+diff --git a/drivers/gpu/drm/radeon/radeon_legacy_tv.c b/drivers/gpu/drm/radeon/radeon_legacy_tv.c
+index c7b6cb4..b37ec0f 100644
+--- a/drivers/gpu/drm/radeon/radeon_legacy_tv.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_tv.c
+@@ -864,7 +864,7 @@ void radeon_legacy_tv_adjust_crtc_reg(struct drm_encoder *encoder,
+ 	*v_sync_strt_wid = tmp;
+ }
+ 
+-static inline int get_post_div(int value)
++static int get_post_div(int value)
+ {
+ 	int post_div;
+ 	switch (value) {
+diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
+index 976c3b1..1c85152 100644
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -515,3 +515,44 @@ int radeon_bo_fault_reserve_notify(struct ttm_buffer_object *bo)
+ 	}
+ 	return 0;
+ }
++
++int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type, bool no_wait)
++{
++	int r;
++
++	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
++	if (unlikely(r != 0))
++		return r;
++	spin_lock(&bo->tbo.bdev->fence_lock);
++	if (mem_type)
++		*mem_type = bo->tbo.mem.mem_type;
++	if (bo->tbo.sync_obj)
++		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
++	spin_unlock(&bo->tbo.bdev->fence_lock);
++	ttm_bo_unreserve(&bo->tbo);
++	return r;
++}
++
++
++/**
++ * radeon_bo_reserve - reserve bo
++ * @bo:		bo structure
++ * @no_wait:		don't sleep while trying to reserve (return -EBUSY)
++ *
++ * Returns:
++ * -EBUSY: buffer is busy and @no_wait is true
++ * -ERESTARTSYS: A wait for the buffer to become unreserved was interrupted by
++ * a signal. Release all buffer reservations and return to user-space.
++ */
++int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait)
++{
++	int r;
++
++	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
++	if (unlikely(r != 0)) {
++		if (r != -ERESTARTSYS)
++			dev_err(bo->rdev->dev, "%p reserve failed\n", bo);
++		return r;
++	}
++	return 0;
++}
+diff --git a/drivers/gpu/drm/radeon/radeon_object.h b/drivers/gpu/drm/radeon/radeon_object.h
+index ede6c13..b07f0f9 100644
+--- a/drivers/gpu/drm/radeon/radeon_object.h
++++ b/drivers/gpu/drm/radeon/radeon_object.h
+@@ -52,28 +52,7 @@ static inline unsigned radeon_mem_type_to_domain(u32 mem_type)
+ 	return 0;
+ }
+ 
+-/**
+- * radeon_bo_reserve - reserve bo
+- * @bo:		bo structure
+- * @no_wait:		don't sleep while trying to reserve (return -EBUSY)
+- *
+- * Returns:
+- * -EBUSY: buffer is busy and @no_wait is true
+- * -ERESTARTSYS: A wait for the buffer to become unreserved was interrupted by
+- * a signal. Release all buffer reservations and return to user-space.
+- */
+-static inline int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait)
 -{
 -	int r;
--	u32 tile_flags = 0;
--	u32 tmp;
--	struct radeon_cs_reloc *reloc;
--	u32 value;
 -
--	r = r100_cs_packet_next_reloc(p, &reloc);
--	if (r) {
--		DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
--			  idx, reg);
--		r100_cs_dump_packet(p, pkt);
+-	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
+-	if (unlikely(r != 0)) {
+-		if (r != -ERESTARTSYS)
+-			dev_err(bo->rdev->dev, "%p reserve failed\n", bo);
 -		return r;
 -	}
--	value = radeon_get_ib_value(p, idx);
--	tmp = value & 0x003fffff;
--	tmp += (((u32)reloc->lobj.gpu_offset) >> 10);
--
--	if (reloc->lobj.tiling_flags & RADEON_TILING_MACRO)
--		tile_flags |= RADEON_DST_TILE_MACRO;
--	if (reloc->lobj.tiling_flags & RADEON_TILING_MICRO) {
--		if (reg == RADEON_SRC_PITCH_OFFSET) {
--			DRM_ERROR("Cannot src blit from microtiled surface\n");
--			r100_cs_dump_packet(p, pkt);
--			return -EINVAL;
--		}
--		tile_flags |= RADEON_DST_TILE_MICRO;
--	}
--
--	tmp |= tile_flags;
--	p->ib->ptr[idx] = (value & 0x3fc00000) | tmp;
 -	return 0;
 -}
--
--static inline int r100_packet3_load_vbpntr(struct radeon_cs_parser *p,
--					   struct radeon_cs_packet *pkt,
--					   int idx)
++int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait);
+ 
+ static inline void radeon_bo_unreserve(struct radeon_bo *bo)
+ {
+@@ -118,23 +97,8 @@ static inline u64 radeon_bo_mmap_offset(struct radeon_bo *bo)
+ 	return bo->tbo.addr_space_offset;
+ }
+ 
+-static inline int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type,
+-					bool no_wait)
 -{
--	unsigned c, i;
--	struct radeon_cs_reloc *reloc;
--	struct r100_cs_track *track;
--	int r = 0;
--	volatile uint32_t *ib;
--	u32 idx_value;
+-	int r;
 -
--	ib = p->ib->ptr;
--	track = (struct r100_cs_track *)p->track;
--	c = radeon_get_ib_value(p, idx++) & 0x1F;
--	if (c > 16) {
--	    DRM_ERROR("Only 16 vertex buffers are allowed %d\n",
--		      pkt->opcode);
--	    r100_cs_dump_packet(p, pkt);
--	    return -EINVAL;
--	}
--	track->num_arrays = c;
--	for (i = 0; i < (c - 1); i+=2, idx+=3) {
--		r = r100_cs_packet_next_reloc(p, &reloc);
--		if (r) {
--			DRM_ERROR("No reloc for packet3 %d\n",
--				  pkt->opcode);
--			r100_cs_dump_packet(p, pkt);
--			return r;
--		}
--		idx_value = radeon_get_ib_value(p, idx);
--		ib[idx+1] = radeon_get_ib_value(p, idx + 1) + ((u32)reloc->lobj.gpu_offset);
--
--		track->arrays[i + 0].esize = idx_value >> 8;
--		track->arrays[i + 0].robj = reloc->robj;
--		track->arrays[i + 0].esize &= 0x7F;
--		r = r100_cs_packet_next_reloc(p, &reloc);
--		if (r) {
--			DRM_ERROR("No reloc for packet3 %d\n",
--				  pkt->opcode);
--			r100_cs_dump_packet(p, pkt);
--			return r;
--		}
--		ib[idx+2] = radeon_get_ib_value(p, idx + 2) + ((u32)reloc->lobj.gpu_offset);
--		track->arrays[i + 1].robj = reloc->robj;
--		track->arrays[i + 1].esize = idx_value >> 24;
--		track->arrays[i + 1].esize &= 0x7F;
--	}
--	if (c & 1) {
--		r = r100_cs_packet_next_reloc(p, &reloc);
--		if (r) {
--			DRM_ERROR("No reloc for packet3 %d\n",
--					  pkt->opcode);
--			r100_cs_dump_packet(p, pkt);
--			return r;
--		}
--		idx_value = radeon_get_ib_value(p, idx);
--		ib[idx+1] = radeon_get_ib_value(p, idx + 1) + ((u32)reloc->lobj.gpu_offset);
--		track->arrays[i + 0].robj = reloc->robj;
--		track->arrays[i + 0].esize = idx_value >> 8;
--		track->arrays[i + 0].esize &= 0x7F;
--	}
+-	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
+-	if (unlikely(r != 0))
+-		return r;
+-	spin_lock(&bo->tbo.bdev->fence_lock);
+-	if (mem_type)
+-		*mem_type = bo->tbo.mem.mem_type;
+-	if (bo->tbo.sync_obj)
+-		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
+-	spin_unlock(&bo->tbo.bdev->fence_lock);
+-	ttm_bo_unreserve(&bo->tbo);
 -	return r;
 -}
-+int r100_reloc_pitch_offset(struct radeon_cs_parser *p,
-+			    struct radeon_cs_packet *pkt,
-+			    unsigned idx,
-+			    unsigned reg);
-+int r100_packet3_load_vbpntr(struct radeon_cs_parser *p,
-+			     struct radeon_cs_packet *pkt,
-+			     int idx);
++extern int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type,
++			  bool no_wait);
+ 
+ extern int radeon_bo_create(struct radeon_device *rdev,
+ 				unsigned long size, int byte_align,
+diff --git a/drivers/gpu/drm/radeon/radeon_state.c b/drivers/gpu/drm/radeon/radeon_state.c
+index 92e7ea7..e8422ae 100644
+--- a/drivers/gpu/drm/radeon/radeon_state.c
++++ b/drivers/gpu/drm/radeon/radeon_state.c
+@@ -272,12 +272,12 @@ static __inline__ int radeon_check_and_fixup_packets(drm_radeon_private_t *
+ 	return 0;
+ }
+ 
+-static __inline__ int radeon_check_and_fixup_packet3(drm_radeon_private_t *
+-						     dev_priv,
+-						     struct drm_file *file_priv,
+-						     drm_radeon_kcmd_buffer_t *
+-						     cmdbuf,
+-						     unsigned int *cmdsz)
++static int radeon_check_and_fixup_packet3(drm_radeon_private_t *
++					  dev_priv,
++					  struct drm_file *file_priv,
++					  drm_radeon_kcmd_buffer_t *
++					  cmdbuf,
++					  unsigned int *cmdsz)
+ {
+ 	u32 *cmd = drm_buffer_pointer_to_dword(cmdbuf->buffer, 0);
+ 	u32 offset, narrays;
+@@ -446,8 +446,8 @@ static __inline__ int radeon_check_and_fixup_packet3(drm_radeon_private_t *
+  * CP hardware state programming functions
+  */
+ 
+-static __inline__ void radeon_emit_clip_rect(drm_radeon_private_t * dev_priv,
+-					     struct drm_clip_rect * box)
++static void radeon_emit_clip_rect(drm_radeon_private_t * dev_priv,
++				  struct drm_clip_rect * box)
+ {
+ 	RING_LOCALS;
+ 
 -- 
 1.7.4.4
 
