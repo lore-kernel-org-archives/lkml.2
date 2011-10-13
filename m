@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1JMURb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:17:31 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:44453 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab1JMUR3 (ORCPT
+	id S1752185Ab1JMUSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 16:18:32 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50369 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab1JMUSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:17:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1110131606030.2026-100000@iolanthe.rowland.org>
-References: <CA+O4pCL2NmTgW2vDU=jdhyy1_PpuP3g9SVup=iwEOVGoGzHmUA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1110131606030.2026-100000@iolanthe.rowland.org>
-Date: Thu, 13 Oct 2011 22:17:28 +0200
-Message-ID: <CA+O4pC+AnDjZ3x2BRA83b6Wf7rWo0g2Xa7+WfPtRJr9aJCZvuw@mail.gmail.com>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Chris Friesen <chris.friesen@genband.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Oct 2011 16:18:31 -0400
+Date: Thu, 13 Oct 2011 16:18:19 -0400 (EDT)
+Message-Id: <20111013.161819.264553121596077263.davem@davemloft.net>
+To: glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, paul@paulmenage.org, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org
+Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E9746B0.7030603@parallels.com>
+References: <4E9744A6.5010101@parallels.com>
+	<20111013.161221.1969725742975317077.davem@davemloft.net>
+	<4E9746B0.7030603@parallels.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 13 Oct 2011 13:18:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 10:07 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 13 Oct 2011, Markus Rechberger wrote:
->
->> fair enough I have 2 devices which don't work properly with bulk.
->> Device A works by adjusting a hardware register
->> Device B is documented in this thread.
->>
->> Device A causes corruptions when the hardwareregister is set to a
->> buffersize > 16k.
->> There is certainly something on the physical usb layer which is unknown to the
->> (software) USB experts here.
->> The logfiles in the previous email shows up enough and is clear enough.
->
-> When you ran the test using the 12288/11776 sizes, did you change the
-> hardware register buffersize value?
+From: Glauber Costa <glommer@parallels.com>
+Date: Fri, 14 Oct 2011 00:14:40 +0400
 
-sorry for confusing you here, this device does not have such a register.
+> Are you happy, or at least willing to accept, an approach that keep
+> things as they were with cgroups *compiled out*, or were you referring
+> to not in use == compiled in, but with no users?
 
-Device A has the hardware register, the buffer is currently set to
-~16kb for it and it is okay, it does not
-require the patch. By increasing the hw register to >16kb the transfer
-is also damaged.
-
-Device B unfortunately not and only accepts 24064 bytes, before
-getting that constant I tried
-several other smaller buffer sizes and it did not succeed (result is
-just as indicated by the video and logfiles in the earlier
-post). CPU usage is also okay 0.9% for the entire streaming application.
-
-Markus
-
-> Or did you leave it set to the same 24064 as in the other test?
->
-> Alan Stern
->
->
+To me these are the same exact thing, because %99 of users will be running
+a kernel with every feature turned on in the Kconfig.
