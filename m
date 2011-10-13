@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab1JMAHM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:07:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35217 "EHLO mga02.intel.com"
+	id S1751410Ab1JMAIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:08:46 -0400
+Received: from claw.goop.org ([74.207.240.146]:47050 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab1JMAHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:07:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="62393771"
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        ak@linux.intel.com
-In-Reply-To: <CADE8fzrdMOBF1RyyEpMVi8aKcgOVKRQSKi0=c1Qvh3p6hHcXRA@mail.gmail.com>
-References: <20111012160202.GA18666@sgi.com>
-	 <20111012120118.e948f40a.akpm@linux-foundation.org>
-	 <CADE8fzrdMOBF1RyyEpMVi8aKcgOVKRQSKi0=c1Qvh3p6hHcXRA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 17:07:17 -0700
-Message-ID: <1318464437.6469.16.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1750784Ab1JMAIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:08:45 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V4 00/10] jump-label: allow early jump_label_enable()
+Date: Wed, 12 Oct 2011 17:08:31 -0700
+Message-Id: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-> Yes, the global vm_stat[] array is a problem - I'm surprised it's hung
-> around for this long.  Altering the sysctl_overcommit_memory mode will
-> hide the problem, but that's no good.
-> 
-> I think we've discussed switching vm_stat[] to a contention-avoiding
-> counter scheme.  Simply using <percpu_counter.h> would be the simplest
-> approach.  They'll introduce inaccuracies but hopefully any problems
-> from that will be minor for the global page counters.
-> 
-> otoh, I think we've been round this loop before and I don't recall why
-> nothing happened.
+[ Change from V3: Move jump_label_init() much earlier, so that the
+  jump_label mechanism will be reliabily initialized before use. ]
 
-Yeah, we have had this discussion on vm_enough_memory before.  
+While trying to use the jump-label stuff for my PV ticketlock changes,
+I had some problems using jump labels early in the kernel's lifetime
+(pre-SMP).
 
-https://lkml.org/lkml/2011/1/26/473
+The basic problem is that even if I enable a jump_label_key, the
+jump_label_init() initializer ends up nopping out all the code sites.
 
-The current version of per cpu counter was not really suitable because
-the batch size is not appropriate.  I've tried to use per cpu counter
-with batch size adjusted in my attempt.  Andrew has suggested having an
-elastic batch size that's proportional to the size of the central
-counter but I haven't gotten around to try that out.
+This series enables early use of jump labels by making
+jump_label_init() respect already-enabled keys.
 
-Tim
+To do this, I've dropped arch_jump_label_poke_text_early() and
+replaced it with arch_jump_label_transform(), allowing it to either
+insert an optimal nop, or leave the jump in place.
+
+Part of this series makes sure that stop_machine() is safe to call
+in an early pre-SMP environment, by making it just call the function
+with interrupts disabled.
+
+git://github.com/jsgf/linux-xen upstream/jump-label-noearly
+
+Jeremy Fitzhardinge (10):
+  jump_label: use proper atomic_t initializer
+  stop_machine: make stop_machine safe and efficient to call early
+  jump_label: if a key has already been initialized, don't nop it out
+  x86/jump_label: drop arch_jump_label_text_poke_early()
+  sparc/jump_label: drop arch_jump_label_text_poke_early()
+  jump_label: add arch_jump_label_transform_static() to optimise
+    non-live code updates
+  s390/jump-label: add arch_jump_label_transform_static()
+  x86/jump_label: add arch_jump_label_transform_static()
+  x86/jump_label: use GENERIC_NOP5_ATOMIC instead of jmp5 +0
+  jump-label: initialize jump-label subsystem much earlier
+
+ arch/s390/kernel/jump_label.c     |   51 ++++++++++++++++++++++--------------
+ arch/sparc/kernel/jump_label.c    |    8 ------
+ arch/x86/include/asm/jump_label.h |    3 +-
+ arch/x86/kernel/jump_label.c      |   20 ++++++++++----
+ include/linux/jump_label.h        |   23 ++++++++++------
+ init/main.c                       |    1 +
+ kernel/jump_label.c               |   37 +++++++++++++++-----------
+ kernel/stop_machine.c             |   22 ++++++++++++++++
+ 8 files changed, 105 insertions(+), 60 deletions(-)
+
+-- 
+1.7.6.4
 
