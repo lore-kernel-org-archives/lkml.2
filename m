@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab1JMGQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 02:16:35 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:58345 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab1JMGQe (ORCPT
+	id S1753197Ab1JMGTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 02:19:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35893 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JMGTi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 02:16:34 -0400
-Date: Thu, 13 Oct 2011 08:16:30 +0200
-From: Nils Radtke <lkml@Think-Future.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel-List <linux-kernel@vger.kernel.org>
-Subject: Re: git checkout extraversion
-Message-ID: <20111013061630.GD29770@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.com>
-Mail-Followup-To: Nils Radtke <lkml@Think-Future.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel-List <linux-kernel@vger.kernel.org>
-References: <20111012190455.GC29770@localhost>
- <alpine.LFD.2.02.1110122114110.3240@ionos>
+	Thu, 13 Oct 2011 02:19:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110122114110.3240@ionos>
-X-Bkp: p2mi
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E947BC9.7040805@mit.edu>
+References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
+ <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
+ <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+ <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
+ <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
+ <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+ <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
+ <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
+ <20111010114840.GC17079@elte.hu> <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
+ <20111011062253.GA3589@elte.hu> <4E947BC9.7040805@mit.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Oct 2011 18:19:16 +1200
+X-Google-Sender-Auth: wHXrb9drfzKyelmYDjOOVbCPHIs
+Message-ID: <CA+55aFyMXgzywjXCtS1a5F-BDu_XP4ecg3Tw7zLuawZs0QNYaw@mail.gmail.com>
+Subject: Re: [RFC] fixing the UML failure root cause
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Wed, Oct 12, 2011 at 5:24 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>
+> So here's a different approach.  It's not perfect: it always blames
+> SEGV_MAPERR instead of SEGV_ACCERR.  I implemented it for vgettimeofday
+> but not the other two vsyscalls.
+>
+> What do you think of this approach?  If it seems good, I'll finish the
+> patch and submit it.
 
-  Thanks for the quick reply.
+I think the approach is valid, but you should *not* do this as some
+kind of crazy byte-by-byte copy_to_user() emulation.
 
-  That's an easy solution. Pitty, it was so hard to find.
+Do the "copy tz to user mode" as individual "put_user()" calls for
+tv_sec/tv_usec/timezone. IOW, there are three words being written to
+user mode, not "two memcpy's".
 
-  Cheers
+Other than that, there doesn't seem to be anything wrong.
 
-On mer2011-10-12@09-15-34+0200, Thomas Gleixner wrote: 
-# Date: Wed, 12 Oct 2011 21:15:34 +0200 (CEST)
-# From: Thomas Gleixner <tglx@linutronix.de>
-# To: Nils Radtke <lkml@Think-Future.com>
-# cc: Linux Kernel-List <linux-kernel@vger.kernel.org>
-# Subject: Re: git checkout extraversion
-# User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-# 
-# On Wed, 12 Oct 2011, Nils Radtke wrote:
-# >   Hi,
-# > 
-# >   Is it possible -- and if so: how? -- to checkout specific kernel extraversion?
-# > 
-# >   Example:
-# > 
-# >   git checkout -b my2.6.39.3 2.6.39.3
-# > 
-# >   This does not work as there's no such tag "2.6.39.3" (only "2.6.39").
-# 
-# You need to have the stable tree
-# 
-#     git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-# 
-# Linus tree does not contain the stable tags.
-# 
-# Thanks,
-# 
-# 	tglx
+            Linus
