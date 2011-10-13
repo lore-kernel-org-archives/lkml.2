@@ -1,630 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab1JMOLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:11:05 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38693 "EHLO gate.crashing.org"
+	id S1755790Ab1JMOMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:12:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38698 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755091Ab1JMOLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:11:01 -0400
+	id S1755517Ab1JMOLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:11:04 -0400
 From: Kumar Gala <galak@kernel.crashing.org>
 To: linuxppc-dev@ozlabs.org
 Cc: Andrew Morton <akpm@osdl.org>, linux-kernel@vger.kernel.org,
-        alexandre.bounine@idt.com
-Subject: [PATCH 4/5][v2] powerpc/85xx: Update SRIO device tree nodes
-Date: Thu, 13 Oct 2011 09:08:41 -0500
-Message-Id: <1318514922-12672-4-git-send-email-galak@kernel.crashing.org>
+        alexandre.bounine@idt.com, Kai Jiang <Kai.Jiang@freescale.com>
+Subject: [PATCH 5/5][v2] powerpc/8xxx: Update device tree bus probe for new RapidIO node binding
+Date: Thu, 13 Oct 2011 09:08:42 -0500
+Message-Id: <1318514922-12672-5-git-send-email-galak@kernel.crashing.org>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1318514922-12672-3-git-send-email-galak@kernel.crashing.org>
+In-Reply-To: <1318514922-12672-4-git-send-email-galak@kernel.crashing.org>
 References: <1318514922-12672-1-git-send-email-galak@kernel.crashing.org>
  <1318514922-12672-2-git-send-email-galak@kernel.crashing.org>
  <1318514922-12672-3-git-send-email-galak@kernel.crashing.org>
+ <1318514922-12672-4-git-send-email-galak@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update all dts files that support SRIO controllers to match the new
-fsl,srio device tree binding.
+From: Kai Jiang <Kai.Jiang@freescale.com>
 
+Update of_platform_bus_probe() RapidIO node to be compitable with
+new RapidIO dts compatible property.
+
+Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
 Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 ---
- arch/powerpc/boot/dts/mpc8568mds.dts   |   66 ++++++++++++++++++++++-------
- arch/powerpc/boot/dts/mpc8569mds.dts   |   72 +++++++++++++++++++++++++------
- arch/powerpc/boot/dts/mpc8641_hpcn.dts |   69 ++++++++++++++++++++++++-------
- arch/powerpc/boot/dts/p2041rdb.dts     |   11 +++++
- arch/powerpc/boot/dts/p2041si.dtsi     |   20 +++++++++
- arch/powerpc/boot/dts/p3041ds.dts      |   11 +++++
- arch/powerpc/boot/dts/p3041si.dtsi     |   26 ++++++++---
- arch/powerpc/boot/dts/p4080ds.dts      |   12 ++++-
- arch/powerpc/boot/dts/p4080si.dtsi     |   64 +++++++++++++++++++++++-----
- arch/powerpc/boot/dts/p5020ds.dts      |   11 +++++
- arch/powerpc/boot/dts/p5020si.dtsi     |   26 ++++++++---
- 11 files changed, 314 insertions(+), 74 deletions(-)
+ arch/powerpc/platforms/85xx/corenet_ds.c   |    2 +-
+ arch/powerpc/platforms/85xx/mpc85xx_mds.c  |    2 +-
+ arch/powerpc/platforms/86xx/mpc86xx_hpcn.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/boot/dts/mpc8568mds.dts b/arch/powerpc/boot/dts/mpc8568mds.dts
-index 647daf8..2ca5387 100644
---- a/arch/powerpc/boot/dts/mpc8568mds.dts
-+++ b/arch/powerpc/boot/dts/mpc8568mds.dts
-@@ -26,7 +26,6 @@
- 		serial1 = &serial1;
- 		pci0 = &pci0;
- 		pci1 = &pci1;
--		rapidio0 = &rio0;
- 	};
+diff --git a/arch/powerpc/platforms/85xx/corenet_ds.c b/arch/powerpc/platforms/85xx/corenet_ds.c
+index 802ad11..c48b661 100644
+--- a/arch/powerpc/platforms/85xx/corenet_ds.c
++++ b/arch/powerpc/platforms/85xx/corenet_ds.c
+@@ -112,7 +112,7 @@ static const struct of_device_id of_device_ids[] __devinitconst = {
+ 		.compatible	= "simple-bus"
+ 	},
+ 	{
+-		.compatible	= "fsl,rapidio-delta",
++		.compatible	= "fsl,srio",
+ 	},
+ 	{
+ 		.compatible	= "fsl,p4080-pcie",
+diff --git a/arch/powerpc/platforms/85xx/mpc85xx_mds.c b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
+index a23a3ff..7968ced 100644
+--- a/arch/powerpc/platforms/85xx/mpc85xx_mds.c
++++ b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
+@@ -433,7 +433,7 @@ static struct of_device_id mpc85xx_ids[] = {
+ 	{ .compatible = "soc", },
+ 	{ .compatible = "simple-bus", },
+ 	{ .compatible = "gianfar", },
+-	{ .compatible = "fsl,rapidio-delta", },
++	{ .compatible = "fsl,srio", },
+ 	{ .compatible = "fsl,mpc8548-guts", },
+ 	{ .compatible = "gpio-leds", },
+ 	{},
+diff --git a/arch/powerpc/platforms/86xx/mpc86xx_hpcn.c b/arch/powerpc/platforms/86xx/mpc86xx_hpcn.c
+index b11c353..569262c 100644
+--- a/arch/powerpc/platforms/86xx/mpc86xx_hpcn.c
++++ b/arch/powerpc/platforms/86xx/mpc86xx_hpcn.c
+@@ -161,7 +161,7 @@ mpc86xx_time_init(void)
  
- 	cpus {
-@@ -331,6 +330,41 @@
- 			};
- 		};
- 
-+		rmu: rmu@d3000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "fsl,srio-rmu";
-+			reg = <0xd3000 0x500>;
-+			ranges = <0x0 0xd3000 0x500>;
-+
-+			message-unit@0 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x0 0x100>;
-+				interrupts = <
-+					53 2 /* msg1_tx_irq */
-+					54 2>;/* msg1_rx_irq */
-+			};
-+			message-unit@100 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x100 0x100>;
-+				interrupts = <
-+					55 2  /* msg2_tx_irq */
-+					56 2>;/* msg2_rx_irq */
-+			};
-+			doorbell-unit@400 {
-+				compatible = "fsl,srio-dbell-unit";
-+				reg = <0x400 0x80>;
-+				interrupts = <
-+					49 2  /* bell_outb_irq */
-+					50 2>;/* bell_inb_irq */
-+			};
-+			port-write-unit@4e0 {
-+				compatible = "fsl,srio-port-write-unit";
-+				reg = <0x4e0 0x20>;
-+				interrupts = <48 2>;
-+			};
-+		};
-+
- 		global-utilities@e0000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-@@ -638,22 +672,22 @@
- 		};
- 	};
- 
--	rio0: rapidio@e00c00000 {
--		#address-cells = <2>;
--		#size-cells = <2>;
--		compatible = "fsl,mpc8568-rapidio", "fsl,rapidio-delta";
--		reg = <0xe00c0000 0x20000>;
--		ranges = <0x0 0x0 0xc0000000 0x0 0x20000000>;
--		interrupts = <48 2 /* error     */
--			      49 2 /* bell_outb */
--			      50 2 /* bell_inb  */
--			      53 2 /* msg1_tx   */
--			      54 2 /* msg1_rx   */
--			      55 2 /* msg2_tx   */
--			      56 2 /* msg2_rx   */>;
-+	rapidio@e00c0000 {
-+		reg = <0xe00c0000 0x11000>;
-+		compatible = "fsl,srio";
- 		interrupt-parent = <&mpic>;
--		sleep = <&pmc 0x00080000   /* controller */
--			 &pmc 0x00040000>; /* message unit */
-+		interrupts = <48 2>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		fsl,srio-rmu-handle = <&rmu>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+			ranges = <0x0 0x0 0xc0000000 0x0 0x20000000>;
-+		};
- 	};
- 
- 	leds {
-diff --git a/arch/powerpc/boot/dts/mpc8569mds.dts b/arch/powerpc/boot/dts/mpc8569mds.dts
-index 8b72eaf..0d9d167 100644
---- a/arch/powerpc/boot/dts/mpc8569mds.dts
-+++ b/arch/powerpc/boot/dts/mpc8569mds.dts
-@@ -27,7 +27,6 @@
- 		ethernet5 = &enet5;
- 		ethernet7 = &enet7;
- 		pci1 = &pci1;
--		rapidio0 = &rio0;
- 	};
- 
- 	cpus {
-@@ -326,6 +325,41 @@
- 			interrupt-parent = <&mpic>;
- 		};
- 
-+		rmu: rmu@d3000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "fsl,srio-rmu";
-+			reg = <0xd3000 0x500>;
-+			ranges = <0x0 0xd3000 0x500>;
-+
-+			message-unit@0 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x0 0x100>;
-+				interrupts = <
-+					53 2 /* msg1_tx_irq */
-+					54 2>;/* msg1_rx_irq */
-+			};
-+			message-unit@100 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x100 0x100>;
-+				interrupts = <
-+					55 2  /* msg2_tx_irq */
-+					56 2>;/* msg2_rx_irq */
-+			};
-+			doorbell-unit@400 {
-+				compatible = "fsl,srio-dbell-unit";
-+				reg = <0x400 0x80>;
-+				interrupts = <
-+					49 2  /* bell_outb_irq */
-+					50 2>;/* bell_inb_irq */
-+			};
-+			port-write-unit@4e0 {
-+				compatible = "fsl,srio-port-write-unit";
-+				reg = <0x4e0 0x20>;
-+				interrupts = <48 2>;
-+			};
-+		};
-+
- 		global-utilities@e0000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-@@ -771,20 +805,30 @@
- 		};
- 	};
- 
--	rio0: rapidio@e00c00000 {
--		#address-cells = <2>;
--		#size-cells = <2>;
--		compatible = "fsl,mpc8569-rapidio", "fsl,rapidio-delta";
--		reg = <0xe00c0000 0x20000>;
--		ranges = <0x0 0x0 0xc0000000 0x0 0x20000000>;
--		interrupts = <48 2 /* error     */
--			      49 2 /* bell_outb */
--			      50 2 /* bell_inb  */
--			      53 2 /* msg1_tx   */
--			      54 2 /* msg1_rx   */
--			      55 2 /* msg2_tx   */
--			      56 2 /* msg2_rx   */>;
-+	rapidio@e00c0000 {
-+		reg = <0xe00c0000 0x11000>;
-+		compatible = "fsl,srio";
- 		interrupt-parent = <&mpic>;
-+		interrupts = <48 2>;
- 		sleep = <&pmc 0x00080000>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		fsl,srio-rmu-handle = <&rmu>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+			ranges = <0x0 0x0 0xc0000000 0x0 0x20000000>;
-+		};
-+
-+		port2 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <2>;
-+			status = "disabled";
-+		};
- 	};
-+
+ static __initdata struct of_device_id of_bus_ids[] = {
+ 	{ .compatible = "simple-bus", },
+-	{ .compatible = "fsl,rapidio-delta", },
++	{ .compatible = "fsl,srio", },
+ 	{ .compatible = "gianfar", },
+ 	{},
  };
-diff --git a/arch/powerpc/boot/dts/mpc8641_hpcn.dts b/arch/powerpc/boot/dts/mpc8641_hpcn.dts
-index 848320e..fb8640e 100644
---- a/arch/powerpc/boot/dts/mpc8641_hpcn.dts
-+++ b/arch/powerpc/boot/dts/mpc8641_hpcn.dts
-@@ -26,13 +26,6 @@
- 		serial1 = &serial1;
- 		pci0 = &pci0;
- 		pci1 = &pci1;
--/*
-- * Only one of Rapid IO or PCI can be present due to HW limitations and
-- * due to the fact that the 2 now share address space in the new memory
-- * map.  The most likely case is that we have PCI, so comment out the
-- * rapidio node.  Leave it here for reference.
-- */
--		/* rapidio0 = &rapidio0; */
- 	};
- 
- 	cpus {
-@@ -361,6 +354,41 @@
- 			device_type = "open-pic";
- 		};
- 
-+		rmu: rmu@d3000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "fsl,srio-rmu";
-+			reg = <0xd3000 0x500>;
-+			ranges = <0x0 0xd3000 0x500>;
-+
-+			message-unit@0 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x0 0x100>;
-+				interrupts = <
-+					53 2 /* msg1_tx_irq */
-+					54 2>;/* msg1_rx_irq */
-+			};
-+			message-unit@100 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x100 0x100>;
-+				interrupts = <
-+					55 2  /* msg2_tx_irq */
-+					56 2>;/* msg2_rx_irq */
-+			};
-+			doorbell-unit@400 {
-+				compatible = "fsl,srio-dbell-unit";
-+				reg = <0x400 0x80>;
-+				interrupts = <
-+					49 2  /* bell_outb_irq */
-+					50 2>;/* bell_inb_irq */
-+			};
-+			port-write-unit@4e0 {
-+				compatible = "fsl,srio-port-write-unit";
-+				reg = <0x4e0 0x20>;
-+				interrupts = <48 2>;
-+			};
-+		};
-+
- 		global-utilities@e0000 {
- 			compatible = "fsl,mpc8641-guts";
- 			reg = <0xe0000 0x1000>;
-@@ -612,16 +640,27 @@
- 		};
- 	};
- /*
--	rapidio0: rapidio@ffec0000 {
-+ * Only one of Rapid IO or PCI can be present due to HW limitations and
-+ * due to the fact that the 2 now share address space in the new memory
-+ * map.  The most likely case is that we have PCI, so comment out the
-+ * rapidio node.  Leave it here for reference.
-+
-+	rapidio@ffec0000 {
-+		reg = <0xffec0000 0x11000>;
-+		compatible = "fsl,srio";
-+		interrupt-parent = <&mpic>;
-+		interrupts = <48 2>;
- 		#address-cells = <2>;
- 		#size-cells = <2>;
--		compatible = "fsl,rapidio-delta";
--		reg = <0xffec0000 0x20000>;
--		ranges = <0 0 0x80000000 0 0x20000000>;
--		interrupt-parent = <&mpic>;
--		// err_irq bell_outb_irq bell_inb_irq
--		//	msg1_tx_irq msg1_rx_irq	msg2_tx_irq msg2_rx_irq
--		interrupts = <48 2 49 2 50 2 53 2 54 2 55 2 56 2>;
-+		fsl,srio-rmu-handle = <&rmu>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+			ranges = <0 0 0x80000000 0 0x20000000>;
-+		};
- 	};
- */
- 
-diff --git a/arch/powerpc/boot/dts/p2041rdb.dts b/arch/powerpc/boot/dts/p2041rdb.dts
-index 47bb461..9141eea 100644
---- a/arch/powerpc/boot/dts/p2041rdb.dts
-+++ b/arch/powerpc/boot/dts/p2041rdb.dts
-@@ -102,6 +102,17 @@
- 		};
- 	};
- 
-+	rapidio@ffe0c0000 {
-+		reg = <0xf 0xfe0c0000 0 0x11000>;
-+
-+		port1 {
-+			ranges = <0 0 0xc 0x20000000 0 0x10000000>;
-+		};
-+		port2 {
-+			ranges = <0 0 0xc 0x30000000 0 0x10000000>;
-+		};
-+	};
-+
- 	localbus@ffe124000 {
- 		reg = <0xf 0xfe124000 0 0x1000>;
- 		ranges = <0 0 0xf 0xe8000000 0x08000000>;
-diff --git a/arch/powerpc/boot/dts/p2041si.dtsi b/arch/powerpc/boot/dts/p2041si.dtsi
-index 420cdb0..54413dd 100644
---- a/arch/powerpc/boot/dts/p2041si.dtsi
-+++ b/arch/powerpc/boot/dts/p2041si.dtsi
-@@ -533,6 +533,26 @@
- 
- 	};
- 
-+	rapidio@ffe0c0000 {
-+		compatible = "fsl,srio";
-+		interrupts = <16 2 1 11>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+		};
-+
-+		port2 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <2>;
-+		};
-+	};
-+
- 	localbus@ffe124000 {
- 		compatible = "fsl,p2041-elbc", "fsl,elbc", "simple-bus";
- 		interrupts = <25 2 0 0>;
-diff --git a/arch/powerpc/boot/dts/p3041ds.dts b/arch/powerpc/boot/dts/p3041ds.dts
-index 69cae67..9232f40 100644
---- a/arch/powerpc/boot/dts/p3041ds.dts
-+++ b/arch/powerpc/boot/dts/p3041ds.dts
-@@ -95,6 +95,17 @@
- 		};
- 	};
- 
-+	rapidio@ffe0c0000 {
-+		reg = <0xf 0xfe0c0000 0 0x11000>;
-+
-+		port1 {
-+			ranges = <0 0 0xc 0x20000000 0 0x10000000>;
-+		};
-+		port2 {
-+			ranges = <0 0 0xc 0x30000000 0 0x10000000>;
-+		};
-+	};
-+
- 	localbus@ffe124000 {
- 		reg = <0xf 0xfe124000 0 0x1000>;
- 		ranges = <0 0 0xf 0xe8000000 0x08000000
-diff --git a/arch/powerpc/boot/dts/p3041si.dtsi b/arch/powerpc/boot/dts/p3041si.dtsi
-index 8b69580..635e7e9 100644
---- a/arch/powerpc/boot/dts/p3041si.dtsi
-+++ b/arch/powerpc/boot/dts/p3041si.dtsi
-@@ -70,10 +70,6 @@
- 		rtic_c = &rtic_c;
- 		rtic_d = &rtic_d;
- 		sec_mon = &sec_mon;
--
--/*
--		rio0 = &rapidio0;
-- */
- 	};
- 
- 	cpus {
-@@ -538,9 +534,25 @@
- 		};
- 	};
- 
--/*
--	rapidio0: rapidio@ffe0c0000
--*/
-+	rapidio@ffe0c0000 {
-+		compatible = "fsl,srio";
-+		interrupts = <16 2 1 11>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+		};
-+
-+		port2 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <2>;
-+		};
-+	};
- 
- 	localbus@ffe124000 {
- 		compatible = "fsl,p3041-elbc", "fsl,elbc", "simple-bus";
-diff --git a/arch/powerpc/boot/dts/p4080ds.dts b/arch/powerpc/boot/dts/p4080ds.dts
-index eb11098..81d46a9 100644
---- a/arch/powerpc/boot/dts/p4080ds.dts
-+++ b/arch/powerpc/boot/dts/p4080ds.dts
-@@ -101,9 +101,15 @@
- 		};
- 	};
- 
--	rapidio0: rapidio@ffe0c0000 {
--		reg = <0xf 0xfe0c0000 0 0x20000>;
--		ranges = <0 0 0xc 0x20000000 0 0x01000000>;
-+	rapidio@ffe0c0000 {
-+		reg = <0xf 0xfe0c0000 0 0x11000>;
-+
-+		port1 {
-+			ranges = <0 0 0xc 0x20000000 0 0x10000000>;
-+		};
-+		port2 {
-+			ranges = <0 0 0xc 0x30000000 0 0x10000000>;
-+		};
- 	};
- 
- 	localbus@ffe124000 {
-diff --git a/arch/powerpc/boot/dts/p4080si.dtsi b/arch/powerpc/boot/dts/p4080si.dtsi
-index b71051f..ff14d15 100644
---- a/arch/powerpc/boot/dts/p4080si.dtsi
-+++ b/arch/powerpc/boot/dts/p4080si.dtsi
-@@ -69,8 +69,6 @@
- 		rtic_c = &rtic_c;
- 		rtic_d = &rtic_d;
- 		sec_mon = &sec_mon;
--
--		rio0 = &rapidio0;
- 	};
- 
- 	cpus {
-@@ -253,6 +251,41 @@
- 				0xf7 0 0 0>;
- 		};
- 
-+		rmu: rmu@d3000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "fsl,srio-rmu";
-+			reg = <0xd3000 0x500>;
-+			ranges = <0x0 0xd3000 0x500>;
-+
-+			message-unit@0 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x0 0x100>;
-+				interrupts = <
-+					60 2 0 0  /* msg1_tx_irq */
-+					61 2 0 0>;/* msg1_rx_irq */
-+			};
-+			message-unit@100 {
-+				compatible = "fsl,srio-msg-unit";
-+				reg = <0x100 0x100>;
-+				interrupts = <
-+					62 2 0 0  /* msg2_tx_irq */
-+					63 2 0 0>;/* msg2_rx_irq */
-+			};
-+			doorbell-unit@400 {
-+				compatible = "fsl,srio-dbell-unit";
-+				reg = <0x400 0x80>;
-+				interrupts = <
-+					56 2 0 0  /* bell_outb_irq */
-+					57 2 0 0>;/* bell_inb_irq */
-+			};
-+			port-write-unit@4e0 {
-+				compatible = "fsl,srio-port-write-unit";
-+				reg = <0x4e0 0x20>;
-+				interrupts = <16 2 1 11>;
-+			};
-+		};
-+
- 		guts: global-utilities@e0000 {
- 			compatible = "fsl,qoriq-device-config-1.0";
- 			reg = <0xe0000 0xe00>;
-@@ -557,18 +590,25 @@
- 		};
- 	};
- 
--	rapidio0: rapidio@ffe0c0000 {
-+	rapidio@ffe0c0000 {
-+		compatible = "fsl,srio";
-+		interrupts = <16 2 1 11>;
- 		#address-cells = <2>;
- 		#size-cells = <2>;
--		compatible = "fsl,rapidio-delta";
--		interrupts = <
--			16 2 1 11 /* err_irq */
--			56 2 0 0  /* bell_outb_irq */
--			57 2 0 0  /* bell_inb_irq */
--			60 2 0 0  /* msg1_tx_irq */
--			61 2 0 0  /* msg1_rx_irq */
--			62 2 0 0  /* msg2_tx_irq */
--			63 2 0 0>; /* msg2_rx_irq */
-+		fsl,srio-rmu-handle = <&rmu>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+		};
-+
-+		port2 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <2>;
-+		};
- 	};
- 
- 	localbus@ffe124000 {
-diff --git a/arch/powerpc/boot/dts/p5020ds.dts b/arch/powerpc/boot/dts/p5020ds.dts
-index 8366e2f..3dc557c 100644
---- a/arch/powerpc/boot/dts/p5020ds.dts
-+++ b/arch/powerpc/boot/dts/p5020ds.dts
-@@ -95,6 +95,17 @@
- 		};
- 	};
- 
-+	rapidio@ffe0c0000 {
-+		reg = <0xf 0xfe0c0000 0 0x11000>;
-+
-+		port1 {
-+			ranges = <0 0 0xc 0x20000000 0 0x10000000>;
-+		};
-+		port2 {
-+			ranges = <0 0 0xc 0x30000000 0 0x10000000>;
-+		};
-+	};
-+
- 	localbus@ffe124000 {
- 		reg = <0xf 0xfe124000 0 0x1000>;
- 		ranges = <0 0 0xf 0xe8000000 0x08000000
-diff --git a/arch/powerpc/boot/dts/p5020si.dtsi b/arch/powerpc/boot/dts/p5020si.dtsi
-index 5e6048e..c4867fb 100644
---- a/arch/powerpc/boot/dts/p5020si.dtsi
-+++ b/arch/powerpc/boot/dts/p5020si.dtsi
-@@ -70,10 +70,6 @@
- 		rtic_c = &rtic_c;
- 		rtic_d = &rtic_d;
- 		sec_mon = &sec_mon;
--
--/*
--		rio0 = &rapidio0;
-- */
- 	};
- 
- 	cpus {
-@@ -530,9 +526,25 @@
- 		};
- 	};
- 
--/*
--	rapidio0: rapidio@ffe0c0000
--*/
-+	rapidio@ffe0c0000 {
-+		compatible = "fsl,srio";
-+		interrupts = <16 2 1 11>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges;
-+
-+		port1 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <1>;
-+		};
-+
-+		port2 {
-+			#address-cells = <2>;
-+			#size-cells = <2>;
-+			cell-index = <2>;
-+		};
-+	};
- 
- 	localbus@ffe124000 {
- 		compatible = "fsl,p5020-elbc", "fsl,elbc", "simple-bus";
 -- 
 1.7.3.4
 
