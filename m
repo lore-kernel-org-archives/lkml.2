@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab1JMGTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 02:19:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35893 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab1JMGTi convert rfc822-to-8bit (ORCPT
+	id S1753234Ab1JMGUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 02:20:20 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:38192 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201Ab1JMGUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 02:19:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E947BC9.7040805@mit.edu>
-References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
- <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
- <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
- <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
- <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
- <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
- <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
- <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
- <20111010114840.GC17079@elte.hu> <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
- <20111011062253.GA3589@elte.hu> <4E947BC9.7040805@mit.edu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 13 Oct 2011 18:19:16 +1200
-X-Google-Sender-Auth: wHXrb9drfzKyelmYDjOOVbCPHIs
-Message-ID: <CA+55aFyMXgzywjXCtS1a5F-BDu_XP4ecg3Tw7zLuawZs0QNYaw@mail.gmail.com>
-Subject: Re: [RFC] fixing the UML failure root cause
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Oct 2011 02:20:18 -0400
+Date: Thu, 13 Oct 2011 17:20:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the moduleh tree with the staging tree
+Message-Id: <20111013172005.3fddf0e3ef5f5b5c5736b04a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__13_Oct_2011_17_20_05_+1100_Tpc6SF5AnPit1cIE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 5:24 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> So here's a different approach.  It's not perfect: it always blames
-> SEGV_MAPERR instead of SEGV_ACCERR.  I implemented it for vgettimeofday
-> but not the other two vsyscalls.
->
-> What do you think of this approach?  If it seems good, I'll finish the
-> patch and submit it.
+--Signature=_Thu__13_Oct_2011_17_20_05_+1100_Tpc6SF5AnPit1cIE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think the approach is valid, but you should *not* do this as some
-kind of crazy byte-by-byte copy_to_user() emulation.
+Hi Paul,
 
-Do the "copy tz to user mode" as individual "put_user()" calls for
-tv_sec/tv_usec/timezone. IOW, there are three words being written to
-user mode, not "two memcpy's".
+Today's linux-next merge of the moduleh tree got conflicts in
+drivers/staging/brcm80211/brcmfmac/bcmsdh.c,
+drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c,
+drivers/staging/brcm80211/brcmfmac/dhd_linux.c and
+drivers/staging/brcm80211/brcmfmac/dhd_sdio.c between commit fc2d6e573be6
+("staging: brcm80211: remove brcm80211 driver from the staging tree")
+from the staging tree and commits from the moduleh tree.
 
-Other than that, there doesn't seem to be anything wrong.
+The former removed the files, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-            Linus
+--Signature=_Thu__13_Oct_2011_17_20_05_+1100_Tpc6SF5AnPit1cIE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIbBAEBCAAGBQJOloMVAAoJEECxmPOUX5FE7JgP+P7G7dXXbAqCRFPMnsxRTwFu
+SWRARL/eEOt8KLncYke1t5LqulA475Z8IorbYp6VEK4MYZMpYxx7NPxAdj25mIAG
+rcnEFncj73Eexg1IR6G3t0liaXRRSmiUwlriMk0ukeB0WNzCFx332qWyKwjU/TL0
+qYIw0NZzBoVkoaKkcNQXQ/MF9Lpxk+ZA1s+godgVRTgRJZJzMr+PM1RVk0Jd/yoQ
+uQ15s2zdhNBbWTsbZEBDsavpFkIoSKnuRkVXSTU031S1qp5D7v2hdx9jZy2bUJg/
+4KJBc9Ik3+RgGF8sTJpjY1jeG9N+TaoBhSWf0oTw+cIlD5WV3AyVp3RVqZoehjRA
+FIadc+nXD24hrBRX/QCvAFBLaFuG/McofEleeyergDIJpWhqks9k+yDrxwLD+FMm
+3OsrPaTpTqmCYl2Z6OhUVwJsz+59WT1vfSTQSb1I9hhzdjb5OBCJ+8rpf53iWNWY
+MouksZuMLIwohliFoWqm3yaaBjcDJHxsnHH/aIjdGovbsaY2E8NZ9xs+U11wCIHX
+qRSfiIXU7uMO/gzm9+L6b70FEZW59/35E/sk8m5ZWQtk80EZH7uVXL0L39kAg8wy
+aohwJ2zR+CqJ9y1wZz3rmyCOEVxTj8RK/qTIrfiFvh8/wltNjcIkwHEUG19KBzVo
+rjiASbuTeO5RPsfBx94=
+=l02S
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_Oct_2011_17_20_05_+1100_Tpc6SF5AnPit1cIE--
