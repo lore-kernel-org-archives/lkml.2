@@ -1,119 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab1JMWvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 18:51:49 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47092 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab1JMWvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 18:51:48 -0400
-Date: Thu, 13 Oct 2011 15:51:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 08/11 v2] nohz: Allow rcu extended quiescent state
- handling seperately from tick stop
-Message-ID: <20111013225136.GG2350@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1318004530-705-9-git-send-email-fweisbec@gmail.com>
- <1318082460-9982-1-git-send-email-fweisbec@gmail.com>
- <20111013065752.GB2430@linux.vnet.ibm.com>
- <20111013070357.GA7656@linux.vnet.ibm.com>
- <20111013125017.GH14968@somewhere>
+	id S1755540Ab1JMWwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 18:52:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53175 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752538Ab1JMWwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 18:52:40 -0400
+Date: Thu, 13 Oct 2011 23:52:37 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/3] ASoC: alc5623: Convert codec->hw_read to regmap_read
+Message-ID: <20111013225237.GA2952@opensource.wolfsonmicro.com>
+References: <1318490575.2857.8.camel@phoenix>
+ <20111013165129.GO5193@opensource.wolfsonmicro.com>
+ <CAF+7xWkVLNgToGiEn+xqgnii7QozNu0QAf2U-kXRNRtVK0dkqA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111013125017.GH14968@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAF+7xWkVLNgToGiEn+xqgnii7QozNu0QAf2U-kXRNRtVK0dkqA@mail.gmail.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 02:50:20PM +0200, Frederic Weisbecker wrote:
-> On Thu, Oct 13, 2011 at 12:03:57AM -0700, Paul E. McKenney wrote:
-> > On Wed, Oct 12, 2011 at 11:57:52PM -0700, Paul E. McKenney wrote:
-> > > On Sat, Oct 08, 2011 at 04:01:00PM +0200, Frederic Weisbecker wrote:
-> > > > It is assumed that rcu won't be used once we switch to tickless
-> > > > mode and until we restart the tick. However this is not always
-> > > > true, as in x86-64 where we dereference the idle notifiers after
-> > > > the tick is stopped.
-> > > > 
-> > > > To prepare for fixing this, add two new APIs:
-> > > > tick_nohz_idle_enter_norcu() and tick_nohz_idle_exit_norcu().
-> > > > 
-> > > > If no use of RCU is made in the idle loop between
-> > > > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the arch
-> > > > must instead call the new *_norcu() version such that the arch doesn't
-> > > > need to call rcu_idle_enter() and rcu_idle_exit().
-> > > > 
-> > > > Otherwise the arch must call tick_nohz_enter_idle() and
-> > > > tick_nohz_exit_idle() and also call explicitly:
-> > > > 
-> > > > - rcu_idle_enter() after its last use of RCU before the CPU is put
-> > > > to sleep.
-> > > > - rcu_idle_exit() before the first use of RCU after the CPU is woken
-> > > > up.
-> > > 
-> > > Thank you, Frederic!  I have queued this to replace the earlier
-> > > version.  The set is available on branch rcu/dyntick of
-> > > 
-> > > 	https://github.com/paulmckrcu/linux
-> > 
-> > Which reminds me...  About the ultimate objective, getting tick-free
-> > operation.  (Or, for the guys who want to eliminate the tick entirely,
-> > shutting up the hrtimer stuff that they want to replace it with.)
-> > 
-> > I believe that you will then need to have two levels of not-in-dynticks
-> > for processes, one for idle vs. not and another for when a process
-> > switches from user-space to kernel execution.  Correct, or am I
-> > confused?
-> > 
-> > The reason I ask is that commit e11f5981 currently only allows one
-> > level of not-in-dynticks for processes.  It is easy to add another
-> > level, but thought I should check beforehand.
-> 
-> Hmm, yeah looking at that patch, it's going to be hard to have a nesting
-> that looks like:
-> 
-> rcu_irq_enter();
-> rcu_user_enter();
-> rcu_irq_exit(); <-- with effective extended quiescent state starting there
+On Fri, Oct 14, 2011 at 06:39:43AM +0800, Axel Lin wrote:
+> 2011/10/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-OK, so the idea here is that there has been two runnable processes on
-the current CPU, but during the irq handler one of them moves or some
-such?  If so, how about a rcu_user_enter_fromirq() that sets the counter
-to 1 so that the rcu_irq_exit() cleans up properly?  If need be, I could
-of course provide an argument to allow you to specify the count offset.
+> > Probably the best thing here is to convert all these drivers to use
+> > cache_bypass to read directly through the cache - the same thing will
+> > then work with direct regmap usage.
 
-Or am I misunderstanding the problem?
+> I don't complete understand "use cache_bypass to read directly through
+> the cache".
 
-> I also need to be able to call rcu_user_enter() from non-irq path.
+Set the cache_bypass flag in the device struct.
 
-Then rcu_user_enter_fromirq() would be for the irq path and
-rcu_user_enter() from the non-irq path.
+> Or do you mean changes like below instead of calling regmap_read directly?
 
-Would that work for you?
-
-> I don't truly understand the problem of the usermode helpers that
-> mess up the dynticks counts. May be we can somewhow fix it differently
-> from the offending callsite?
-
-I tried a few approaches along these lines, but there were way too
-many opportunities for interruption and preemption along the way.
-The problem is that unless the fixup happens under a no-preempt
-region of code that includes the rcu_irq_enter() or rcu_irq_exit()
-call (as the case may be), then you end up messing up the idle-depth
-count of two CPUs rather than just one.  :-(
-
-But maybe I am missing something -- suggestions more than welcome!
-
-							Thanx, Paul
+No, this isn't going to work.  snd_soc_read() will use the cache.
