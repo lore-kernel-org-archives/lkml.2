@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab1JMR6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:58:10 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15785 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab1JMR6I convert rfc822-to-8bit (ORCPT
+	id S932365Ab1JMR72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:59:28 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:45634 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932176Ab1JMR7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:58:08 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 13 Oct 2011 10:58:00 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Doug Anderson <dianders@chromium.org>, Jiri Slaby <jirislaby@gmail.com>,
-        Olof Johansson <olof@lixom.net>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Allen Martin <AMartin@nvidia.com>, Tom Warren <TWarren@nvidia.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Oct 2011 10:57:59 -0700
-Subject: RE: [PATCH] tty/serial: Prevent drop of DCD on suspend for Tegra
- UARTs
-Thread-Topic: [PATCH] tty/serial: Prevent drop of DCD on suspend for Tegra
- UARTs
-Thread-Index: AcyIcwO59JeRq6FTQ/uZ/Ih3hSP0AQBXfDiQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A0C6@HQMAIL01.nvidia.com>
-References: <1318377943-24519-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1318377943-24519-1-git-send-email-dianders@chromium.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Oct 2011 13:59:25 -0400
+Date: Thu, 13 Oct 2011 20:59:21 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, paul@pwsan.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 5/5 v14] omap: usb: host: Replace usbhs core driver APIs
+ by Runtime pm APIs
+Message-ID: <20111013175921.GN28290@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1318319531-20476-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hD6P3ib1XCFtz2ni"
+Content-Disposition: inline
+In-Reply-To: <1318319531-20476-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote at Tuesday, October 11, 2011 6:06 PM:
-> On Tegra UARTs (except UART1), the DTR / DCD / DSR lines are not
-> externally accessible.  Instead, the DTR line internally appears to be
-> looped back to be the input to the DCD and DSR lines.  The net effect
-> of this is that when we drop DTR (like when we suspend), we'll see DCD
-> drop too.  ...and when we see DCD drop, we treat that as a hangup.
-> 
-> In order to prevent this hangup from occurring at every sleep, we need
-> to force DTR to remain high on Tegra UARTs.
-> 
-> This patch uses the mcr_mask / mcr_force fields, which were originally
-> added for the kludge ALPHA_KLUDGE_MCR.  Using these fields does not
-> prevent us from removing ALPHA_KLUDGE_MCR--we can just remove the "if"
-> tests I have added and always init mcr_mask / mcr_force from the
-> serial8250_config.
-> 
-> NOTE: If we have people that are using UARTA on a Tegra and need to
-> control DTR, we'll need to either add a separate port type for UARTA
-> or we'll need to add some tegra-specific code to detect whether the
-> DTR needs to be left high.
 
-I did some research on the HW, and here's how everything is hooked up
-in Tegra20 and Tegra30. Later chips may have this fixed, or at least
-configurable; I don't know the details yet.
+--hD6P3ib1XCFtz2ni
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-All 5 UARTs support the modem signals in the HW block.
+Hi,
 
-In UART A, you can mux the modem signals out using the pinmux. If the
-pinmux /doesn't/ route the signals out, the DSR and DCD signals are tied
-to an /active/ state.
+On Tue, Oct 11, 2011 at 01:22:11PM +0530, Keshava Munegowda wrote:
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>=20
+> The ehci and ohci drivers does not use the APIs of the usbhs
+> core driver; the runtime pm APIs are used for clock
+> enable/disable. Since usbhs is parent platform device of the
+> ehci and ohci devices, the runtime apis indirectly uses the
+> usb hs core device as input parameter to for clock functions.
+>=20
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> Reviewed-by: Partha Basak <parthab@india.ti.com>
 
-In UART B, the DTR output is indeed wired back into the DSR and DCD
-inputs, as you discovered.
+I'm not sure who should queue this one. Alan, maybe ?
 
-In UARTs C, D, and E, the DSR and DCD signals are tied to an /inactive/
-state.
+FWIW:
 
-So, I think this particular WAR is only needed on UART B.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
--- 
-nvpublic
+as an extra comment, this patch has a very deep dependency on the hwmod
+conversion patches which come before this. If those aren't applied on
+the same merge window, we will have a non-working *HCI driver on OMAP.
 
+--=20
+balbi
+
+--hD6P3ib1XCFtz2ni
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOlyb5AAoJEIaOsuA1yqREhlwQAI1ERq45siI5di45Gt/E+OHg
+htcgCnnHlDCXVsTlNp4cnD6o+wFheJghEPc8D9YdvGKYwqtvsiSCRSz9R+M/2tVs
+XUzr7XjBlL2Lv4GoNVI6gtP6Hixdk6KSeWUAuW8WpMUfVWdrFhXIoJ2/csj0WHtU
+mBzbEdwy+ew/SNoKbDCa3zvu47hbrcW1czJTbXZKdtZOKLLMC1yNVAK9mqKGHXjA
+ALmeVv+utPZBKQGLrftRAbUYh6f9dZ4q0i346YwI8nWAJq0ROgM+6cxlzyUgZozv
+wDNWOiTWuz07sdogUQj2xN8ImGL0VBD0/LML80Vu4w/D9kdmREyDNJ+RVotGXNSj
+16mNjq8AEqKL6X9QnJ3DxGN8qVLZzKdzY8IdD7UZbpgGJojCYQdBMfgKD4OToK2k
++IM3WOFlIaHunTMrGmiMPgCK0havS6KJtqh3/A/O0VQiPO8xjdBwrZ2ym4XhPysY
+cRac2AXDMnV4XiyPyl4Q5tYNfOVf5pLmv0oKjjw3xpuA/U7PdsEYlMEHU9fo6zZU
++FsXLkA5uLq6z6ctqLQmbxDebd3o6+/ibyrZv+6hlfEesc2y5P/UODRn5W+jMj1z
+Gvr8QxDB+p6PR3sVvS1esdQzNAC4LWQQQTTX7XvpfjkIepJxrZlirBzbn3H60MBO
+5JXavfdXawO0V47KWZvq
+=1iJT
+-----END PGP SIGNATURE-----
+
+--hD6P3ib1XCFtz2ni--
