@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264Ab1JMUMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:12:35 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52233 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1JMUMd (ORCPT
+	id S1751437Ab1JMUMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 16:12:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43646 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1JMUMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:12:33 -0400
-Date: Thu, 13 Oct 2011 16:12:21 -0400 (EDT)
-Message-Id: <20111013.161221.1969725742975317077.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, paul@paulmenage.org, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org
-Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4E9744A6.5010101@parallels.com>
-References: <1318511382-31051-1-git-send-email-glommer@parallels.com>
-	<20111013.160031.605700447623532119.davem@davemloft.net>
-	<4E9744A6.5010101@parallels.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 13 Oct 2011 13:12:24 -0700 (PDT)
+	Thu, 13 Oct 2011 16:12:43 -0400
+Date: Thu, 13 Oct 2011 22:12:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] irq: support domains with non-zero hwirq base
+In-Reply-To: <20111013193347.GB18574@ponder.secretlab.ca>
+Message-ID: <alpine.LFD.2.02.1110132212120.3240@ionos>
+References: <20111004233953.GE3009@ponder.secretlab.ca> <1317783380-773-1-git-send-email-robherring2@gmail.com> <4E944242.10606@gmail.com> <20111013193347.GB18574@ponder.secretlab.ca>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Fri, 14 Oct 2011 00:05:58 +0400
+On Thu, 13 Oct 2011, Grant Likely wrote:
 
-> Also, I kind of dispute the affirmation that !cgroup will encompass
-> the majority of users, since cgroups is being enabled by default by
-> most vendors. All systemd based systems use it extensively, for
-> instance.
-
-I will definitely advise people against this, since the cost of having
-this on by default is absolutely non-trivial.
-
-People keep asking every few releases "where the heck has my performance
-gone" and it's because of creeping features like this.  This socket
-cgroup feature is a prime example of where that kind of stuff comes
-from.
-
-I really get irritated when people go "oh, it's just one indirect
-function call" and "oh, it's just one more pointer in struct sock"
-
-We work really hard to _remove_ elements from structures and make them
-smaller, and to remove expensive operations from the fast paths.
-
-It might take someone weeks if not months to find a way to make a
-patch which compensates for the extra overhead your patches are adding.
-
-And I don't think you fully appreciate that.
+> Thomas, any objection to this patch?  It's entirely contained within
+> the irq_domain stuff, so it is pretty well isolated.
+> 
+> It can be merged via arm-soc since it is depended on by some of the
+> irq work.
+ 
+Acked-by-me
