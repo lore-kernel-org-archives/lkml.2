@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab1JMGoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 02:44:08 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:41686 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab1JMGoG (ORCPT
+	id S1753142Ab1JMGs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 02:48:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37210 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1JMGs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 02:44:06 -0400
-Date: Thu, 13 Oct 2011 17:43:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: currently missing kernel devel trees
-Message-Id: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Oct_2011_17_43_58_+1100_QgoXl.BhHOLcJ4Ow"
+	Thu, 13 Oct 2011 02:48:58 -0400
+From: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, joe@perches.com,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 5/5] Staging: comedi: fix printk issue in c6xdigio.c
+Date: Thu, 13 Oct 2011 12:18:05 +0530
+Message-Id: <1318488485-15318-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Oct_2011_17_43_58_+1100_QgoXl.BhHOLcJ4Ow
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a patch to the c6xdigio.c file that fixes up a printk warning
+found by the checkpatch.pl tool
 
-Hi all,
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+Converted embedded function names to "%s", __func__ as Joe Perches
+suggested and printk to pr_<level>.
+	
+ drivers/staging/comedi/drivers/c6xdigio.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
-With the mrege window approaching (sometime) I thought I would see how
-many of the 200 odd trees that are included in linux-next are actually
-currently inaccessible.  The list below (of 63 trees) is a couple of days
-out of date.  These are the trees that were hosted on git.kernel.org that
-have not popped up anywhere else (or, at least I have not been informed
-is they have) nor been resurrected on kernel.org.
+diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
+index e0ac825..a372a64 100644
+--- a/drivers/staging/comedi/drivers/c6xdigio.c
++++ b/drivers/staging/comedi/drivers/c6xdigio.c
+@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
+ 				   struct comedi_subdevice *s,
+ 				   struct comedi_insn *insn, unsigned int *data)
+ {
+-	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
++	pr_debug("%s: %x\n", __func__, insn->n);
+ 	return insn->n;
+ }
+ 
+@@ -439,9 +439,8 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 	struct comedi_subdevice *s;
+ 
+ 	iobase = it->options[0];
+-	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
+ 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
+-		printk("comedi%d: I/O port conflict\n", dev->minor);
++		pr_err("comedi%d: I/O port conflict\n", dev->minor);
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -456,9 +455,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 
+ 	irq = it->options[1];
+ 	if (irq > 0)
+-		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
++		pr_debug("comedi%d: irq = %u ignored\n", dev->minor, irq);
+ 	else if (irq == 0)
+-		printk("comedi%d: no irq\n", dev->minor);
++		pr_debug("comedi%d: no irq\n", dev->minor);
+ 
+ 	s = dev->subdevices + 0;
+ 	/* pwm output subdevice */
+@@ -503,8 +502,6 @@ static int c6xdigio_detach(struct comedi_device *dev)
+ {
+ 	/* board_halt(dev);  may not need this */
+ 
+-	printk("comedi%d: c6xdigio: remove\n", dev->minor);
+-
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, C6XDIGIO_SIZE);
+ 
+-- 
+1.7.6.4
 
-Some of these may be no longer useful (please tell me).  Some may have no
-commits for v3.2.  But I bet that at leaset some do.
-
-linux-spec
-omap
-pxa
-blackfin
-m68k
-4xx
-galak
-sh
-rmobile
-tile
-unicore32
-xtensa
-configfs
-ecryptfs
-ext3
-fatfs
-fuse
-gfs2
-hfsplus
-jfs
-logfs
-nilfs2
-omfs
-squashfs
-udf
-vfs
-vfs-scale
-pci
-i2c
-jdelvare-hwmon
-docs
-kconfig
-idle-test
-powertools
-cpupowerutils
-dlm
-swiotlb
-ibft
-iscsi-target
-async_tx
-bluetooth
-cpufreq
-input-mt
-lsm
-pcmcia
-kgdb
-uclinux
-hdlc
-drm
-agp
-watchdog
-bdev
-nommu
-audit
-irda
-ptrace
-sfi
-asm-generic
-drivers-x86
-hwpoison
-sysctl
-namespace
-bkl-config
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__13_Oct_2011_17_43_58_+1100_QgoXl.BhHOLcJ4Ow
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOloiuAAoJEECxmPOUX5FEsF4P/1IMluJ9rHPjBob/7j2egJOx
-PYQr9OoyPT6C3Xyjzb0l6z79jC1ThC7GTuP0GQGmHdeNZNHbUM/I6HfTTNkWxKay
-4hgD2rtOw1OqlkF4RutcXFQ7EPmS15jidafLieS9Sej18WezJP91Wz9Jes/G4/Og
-kAGY2U1TBJkizA3fdIRUoc9zAO1UQNMglz1ywp8vjjnKolBWYpkkLN0TcwulTz8d
-7Q+Zri7JZWbVh5XwYmRegglIRmK+xg9GUdiLP/K22nNBufsGqUSoFu7HnYM4lblb
-5dcsOv7Fwdh9xoRXMNJpdlsCiXpZPfD4868JbCjTbgG9NQ8bJNfWRVPBLVckOruG
-xXQ+UYTRjAHyZ60ttRtad9Agtwn94skK1hzphKcA29/1Xgvp+Aqsfd5lsEknnouo
-RX9DRvEIv5V+MmaTgnUKuGOrS2weeeDSYUytCLlgoWEJ+VFsusn6JPFkRtDGxup5
-7E4KNVQRXADAs7Sy+uAMrvDI88q+HkjwVNrMLUS/zm1M9o3nrtHGTe/1I67VZErI
-kQfpU9sfbFAWQSK4wpgbsE0p7ZNDwtckIEsXGmIkjoCYMZEn/UBeXji6MxewXuhJ
-z6cIuH0M+wWZPg0lMEBpbglDU2bautj/QidkH0mWDWPj40r3T4F8rTT2GE4Nokq2
-NcryfWi6pyq1VcJVTnbs
-=MoCo
------END PGP SIGNATURE-----
-
---Signature=_Thu__13_Oct_2011_17_43_58_+1100_QgoXl.BhHOLcJ4Ow--
