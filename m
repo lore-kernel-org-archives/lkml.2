@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1JMAvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:51:49 -0400
-Received: from claw.goop.org ([74.207.240.146]:47297 "EHLO claw.goop.org"
+	id S1752253Ab1JMAx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:53:57 -0400
+Received: from claw.goop.org ([74.207.240.146]:47345 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab1JMAvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:51:47 -0400
+	id S1751963Ab1JMAvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:51:49 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V5 04/11] xen: defer spinlock setup until boot CPU setup
-Date: Wed, 12 Oct 2011 17:51:36 -0700
-Message-Id: <7db4506ad0a64e20ccd9e258f30c026295a19552.1318466916.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V5 06/11] xen/pvticketlocks: add xen_nopvspin parameter to disable xen pv ticketlocks
+Date: Wed, 12 Oct 2011 17:51:38 -0700
+Message-Id: <58ca1ea5c2cd3a0d6ee6d20fae17bf4a813e8b06.1318466916.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
@@ -31,34 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-There's no need to do it at very early init, and doing it there
-makes it impossible to use the jump_label machinery.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/smp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/xen/spinlock.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index e79dbb9..4dec905 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -200,6 +200,7 @@ static void __init xen_smp_prepare_boot_cpu(void)
- 
- 	xen_filter_cpu_maps();
- 	xen_setup_vcpu_info_placement();
-+	xen_init_spinlocks();
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index f6133c5..1e21c99 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -195,12 +195,26 @@ void xen_uninit_lock_cpu(int cpu)
+ 	unbind_from_irqhandler(per_cpu(lock_kicker_irq, cpu), NULL);
  }
  
- static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
-@@ -513,7 +514,6 @@ void __init xen_smp_init(void)
++static bool xen_pvspin __initdata = true;
++
+ void __init xen_init_spinlocks(void)
  {
- 	smp_ops = xen_smp_ops;
- 	xen_fill_possible_map();
--	xen_init_spinlocks();
++	if (!xen_pvspin) {
++		printk(KERN_DEBUG "xen: PV spinlocks disabled\n");
++		return;
++	}
++
+ 	pv_lock_ops.lock_spinning = xen_lock_spinning;
+ 	pv_lock_ops.unlock_kick = xen_unlock_kick;
  }
  
- static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
++static __init int xen_parse_nopvspin(char *arg)
++{
++	xen_pvspin = false;
++	return 0;
++}
++early_param("xen_nopvspin", xen_parse_nopvspin);
++
+ #ifdef CONFIG_XEN_DEBUG_FS
+ 
+ static struct dentry *d_spin_debug;
 -- 
 1.7.6.4
 
