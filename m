@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1JMQBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:01:37 -0400
-Received: from exprod7og110.obsmtp.com ([64.18.2.173]:45366 "EHLO
-	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab1JMQBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:01:36 -0400
-Message-ID: <4E970B40.8070808@genband.com>
-Date: Thu, 13 Oct 2011 10:01:04 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+	id S932093Ab1JMQCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:02:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753443Ab1JMQCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:02:19 -0400
+Date: Thu, 13 Oct 2011 12:00:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "krzf83@gmail.com " <krzf83@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Morton Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: cgroup blkio bug/feedback
+Message-ID: <20111013160041.GC25588@redhat.com>
+References: <CAJ1PRSnQgaCr4s+JwmB3r_J9de5MHJKVwrxGnderYGqyVVMG3Q@mail.gmail.com>
+ <20111012193551.GH12845@redhat.com>
+ <CAJ1PRS=jPU07GjGMecyS=iMhWpfUYe-WO4ntBd=qZ0V0qnK-ow@mail.gmail.com>
+ <20111013145231.GB25588@redhat.com>
+ <CAJ1PRSkCw9D78ODk2YrgR8TVvdLZ6vqBtksAPZUDL-MvEdeUdQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Markus Rechberger <mrechberger@gmail.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-References: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>	<Pine.LNX.4.44L0.1110131032400.2026-100000@iolanthe.rowland.org> <CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>
-In-Reply-To: <CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Oct 2011 16:01:06.0645 (UTC) FILETIME=[50EF3850:01CC89C1]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18448.000
-X-TM-AS-Result: No--12.896600-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJ1PRSkCw9D78ODk2YrgR8TVvdLZ6vqBtksAPZUDL-MvEdeUdQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 09:19 AM, Markus Rechberger wrote:
-> On Thu, Oct 13, 2011 at 4:58 PM, Alan Stern<stern@rowland.harvard.edu>  wrote:
+[ Please don't top post. Respond inline ]
 
->> This is very interesting.  There are only two things that could be
->> happening: Either the device sends different data during the two tests,
->> or there's a bug in the kernel.
+On Thu, Oct 13, 2011 at 05:37:33PM +0200, krzf83@gmail.com  wrote:
+> Rsync iops limiting thing was that I've tried limiting when rsync-ing
+> from /dev/sdc (mounted as /ssd) to /home/ssd-copy (/home is /dev/md2).
+> During that usage I've encountred overloads and system unresponsivness
+> even greater than when not using limiting at all.
 
-> Before that I insist that this patch will go into the kernel (I know
-> that sounds ridiculous but so far I did everything
-> you requested me to do), I clearly pointed out that we even have hardware
-> specs which can influence the transfer buffer. The patch does not hurt
-> and makes the device work.
+Ok, so you have your /home on md target and rsyncing from ssd to home and
+hence trying to limit the impact of writes on /home by limiting write
+rate on /home disk.
 
-That makes no sense.  If there's a bug in the hardware we likely don't 
-want to make global changes to work around it--a more targeted fix may 
-be more appropriate.
+What's the file system you are using on /home ? I will try to do
+something similar on local system and see if I can reproduce the
+issue.
 
-If there is a bug in the kernel, why would we want a bandaid patch that 
-just happens to make it work rather than a true fix?
+> 
+> I've also tried to limit iops for every "normal" user (not deamon
+> running users) in the system for /home (/dev/md2). I've writen script
+> that initialy assings pids to cgroups and initializes cgrulesengd so
+> spawned apllications in the future will be in proper croups. I've
+> encountred system overloads (hard reboot required) every 5-20 hours.
+> That is also when I specifilcy did not limit tasks that were spawned
+> by webserver (which are fastcgi php tasks and some passenger tasks).
 
-Chris
+So if you just put processes in a blkio cgroup but not specify any
+limits, load average is fine? It is only when you specify some limits
+load average goes up?
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+I am still scratching my head that how does that happen. Is it that
+some application is forking more processes if sufficient IO is not
+making progress due to throttling or what.
+
+> 
+> Anyway as for my other tests with blkio memory limits
+> (memory.limit_in_bytes)
+
+A minor clarification. memory.limit_in_bytes is provided by memory controller
+and not by blkio controller.
+
+> I also got huge system overloads when tasks
+> were killed. However this were probably due to websever spawning those
+> again and again imideatly (mainly phusion passenger tasks). I've tried
+> separating process-es that were spawned by webserver to other, not
+> limited, cgroup, but as I recall (I've done it about 1,5 month ago)
+> something were also causing overloads and constatant
+> kill/respawn/kill/respawn in my production webserver.
+
+Looks like you need to give more memory to this cgroup.
+
+> 
+> As for blkio blkio.weight this would be fine thing, however  it causes
+> loadavg to spike like hell when limiting one process.
+
+Are you using CFQ on your md raid component disks? What's the mdraid
+configuraiton. Again, I might give it a shot here. Have not seen
+anything like what you are explaining.
+
+When this load average increases, can you capture "vmstat 2" output.
+I am also curious to know who is forking off these extra processes
+in the system. (may be some "ps" can help).
+
+Thanks
+Vivek
