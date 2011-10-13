@@ -1,61 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab1JMRTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:19:40 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:48223 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753802Ab1JMRTj (ORCPT
+	id S932188Ab1JMRT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:19:58 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:65051 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756430Ab1JMRT4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:19:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111013144515.GD21648@n2100.arm.linux.org.uk>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-5-git-send-email-mturquette@ti.com> <20111013144515.GD21648@n2100.arm.linux.org.uk>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 13 Oct 2011 10:18:31 -0700
-Message-ID: <CAJOA=zMikM=0UT1_qJZ_Tz2dpVLRnqQU2gOCCuhnxqjNPSwWPg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, paul@pwsan.com, grant.likely@secretlab.ca,
-        sboyd@quiinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Jamie Iles <jamie@jamieiles.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Oct 2011 13:19:56 -0400
+X-IronPort-AV: E=Sophos;i="4.69,341,1315206000"; 
+   d="scan'208";a="588993640"
+Subject: Re: [PATCH] nfs-utils: mount: really return from errno test
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Steve Dickson <SteveD@redhat.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>, Hamo <hamo.by@gmail.com>,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Oct 2011 13:19:55 -0400
+In-Reply-To: <4E9718E3.8040805@RedHat.com>
+References: <CAO_0yfPgXJJSZNDYXHBSt45J0WQsh5EQVUs0nBN4wb+NoT6hAQ@mail.gmail.com>
+	 <40D1A40C-BE0C-4AE0-857D-05531615748E@oracle.com>
+	 <4E971329.3000007@RedHat.com> <4E9718E3.8040805@RedHat.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1318526395.4773.20.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 13 Oct 2011 17:19:55.0935 (UTC) FILETIME=[53CF9AF0:01CC89CC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 7:45 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Sep 22, 2011 at 03:26:59PM -0700, Mike Turquette wrote:
->> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
->> new file mode 100644
->> index 0000000..a1d8e79
->> --- /dev/null
->> +++ b/drivers/clk/clk-gate.c
->> @@ -0,0 +1,78 @@
->> +/*
->> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * Simple clk gate implementation
->> + */
->> +
->> +#include <linux/clk.h>
->> +#include <linux/module.h>
->> +#include <asm/io.h>
->
-> linux/io.h please.
->
+This is by design.
 
-Will roll into v3.
+NFSv3 and NFSv4 have no server-side identifiers to inform us that we may
+be talking to the same server, and so we don't worry about doing so.
 
-Thanks for reviewing,
-Mike
+An NFSv4.1 server can tell you that this is the same server replying on
+different IP addresses. We are planning on adding proper support for
+that, but I don't believe we've currently got it right.
+
+Cheers
+  Trond
+
+On Thu, 2011-10-13 at 12:59 -0400, Steve Dickson wrote: 
+> Looking further into this issue, I noticed all the following 
+> mounts were successful.
+> 
+> # mount -o v3 localhost:/home /mnt/home
+> # mount -o v4 localhost:/home /mnt/home
+> # mount -o v4 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
+> # mount -o v3 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
+> 
+> which the mount point, /mnt/home is mounted 4 different times 
+> to the same server. 
+> 
+> Is by design or a real problem?
+> 
+> steved.
+> 
+> 
+> On 10/13/2011 12:34 PM, Steve Dickson wrote:
+> > Yeah... I believe its this one
+> >    https://bugzilla.redhat.com/show_bug.cgi?id=744657
+> > 
+> > On 10/13/2011 10:53 AM, Chuck Lever wrote:
+> >> What was the presenting problem?  Is there a bugzilla report I can look at?
+> >>
+> >> On Oct 11, 2011, at 5:44 AM, Hamo wrote:
+> >>
+> >>> We should only try next address family if we meet ECONNREFUSED or EHOSTUNREACH
+> >>> for v4 or ECONNREFUSED or EOPNOTSUPP or EHOSTUNREACH for v3v2.
+> >>> Before, only a break in swich can not make the program out of for loop.
+> >>>
+> >>> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+> >>> ---
+> >>> utils/mount/stropts.c |    6 ++++--
+> >>> 1 files changed, 4 insertions(+), 2 deletions(-)
+> >>>
+> >>> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
+> >>> index 314a806..4032bf3 100644
+> >>> --- a/utils/mount/stropts.c
+> >>> +++ b/utils/mount/stropts.c
+> >>> @@ -665,9 +665,10 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
+> >>> 		case EHOSTUNREACH:
+> >>> 			continue;
+> >>> 		default:
+> >>> -			break;
+> >>> +			goto out;
+> >>> 		}
+> >>> 	}
+> >>> +out:
+> >>> 	return ret;
+> >>> }
+> >>>
+> >>> @@ -751,9 +752,10 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
+> >>> 		case EHOSTUNREACH:
+> >>> 			continue;
+> >>> 		default:
+> >>> -			break;
+> >>> +			goto out;
+> >>> 		}
+> >>> 	}
+> >>> +out:
+> >>> 	return ret;
+> >>> }
+> >>>
+> >>> -- 
+> >>> 1.7.1
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
