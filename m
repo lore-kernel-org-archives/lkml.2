@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab1JMOSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:18:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56024 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab1JMOSI convert rfc822-to-8bit (ORCPT
+	id S932082Ab1JMOZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:25:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63098 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab1JMOZ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:18:08 -0400
+	Thu, 13 Oct 2011 10:25:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111013040923.GE15829@ponder.secretlab.ca>
-References: <20111008155502.GB616@kroah.com>
-	<361419345.198335.1318268242916.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-	<CACVXFVMnt-ChUDhawhoyMm-wJ8xSQAWs1c8ykzmyshfX49HEsw@mail.gmail.com>
-	<20111013040923.GE15829@ponder.secretlab.ca>
-Date: Thu, 13 Oct 2011 22:18:07 +0800
-Message-ID: <CACVXFVNXyzzJw7UK+OFuDe23voQvyywoP9AvUsV=iPDFPO4fPw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-From: Ming Lei <tom.leiming@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Andrei Warkentin <awarkentin@vmware.com>, Greg KH <greg@kroah.com>,
-        Dilan Lee <dilee@nvidia.com>, "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>, Manjunath@jasper.es,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Linux PM List <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAOZdJXVLhe3aNM669sRFmDpHGCVRrP_93xdDwsY9R2VzHUZ-eQ@mail.gmail.com>
+References: <1318430145-19898-1-git-send-email-galak@kernel.crashing.org>
+	<20111012153229.GB21852@local>
+	<AD39F4F8-E9C0-4090-9AEA-644F82DD328B@kernel.crashing.org>
+	<CAMuHMdU1rHDvZEknNqKLHyBmJ26kH7SJtxsOZmOysrSzg6bz4g@mail.gmail.com>
+	<CAOZdJXVLhe3aNM669sRFmDpHGCVRrP_93xdDwsY9R2VzHUZ-eQ@mail.gmail.com>
+Date: Thu, 13 Oct 2011 16:25:56 +0200
+X-Google-Sender-Auth: Gh2A6-nofK0yRs2xhEf9cWOunNM
+Message-ID: <CAMuHMdVYsMj99jTJRj_NJ_dCg+b-39ExnDD1Mhqnv3R6tWf1iQ@mail.gmail.com>
+Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tabi Timur-B04825 <B04825@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiang Kai-B18973 <B18973@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Rafael and linux-pm
-
-On Thu, Oct 13, 2011 at 12:09 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Tue, Oct 11, 2011 at 08:29:18PM +0800, Ming Lei wrote:
->> On Tue, Oct 11, 2011 at 1:37 AM, Andrei Warkentin <awarkentin@vmware.com> wrote:
->> > Hi,
->> >
->> > ----- Original Message -----
->> >> From: "Greg KH" <greg@kroah.com>
->> >> To: "Josh Triplett" <josh@joshtriplett.org>
->> >> Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-arm-kernel@lists.infradead.org, "Grant Likely"
->> >> <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
->> >> "Dilan Lee" <dilee@nvidia.com>, "Mark Brown" <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
->> >> Sent: Saturday, October 8, 2011 11:55:02 AM
->> >> Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
->> >>
->> >
->> > I'm a bit of a fly on the wall here, but I'm curious how this impacts suspend/resume.
->> > device_initialize->device_pm_init are called from device_register, so certainly this
->> > patch doesn't also ensure that the PM ordering matches probe ordering, which is bound
->> > to break suspend, right? Was this ever tested with the OMAP target? Shouldn't the
+On Thu, Oct 13, 2011 at 16:10, Tabi Timur-B04825 <B04825@freescale.com> wrote:
+> On Wed, Oct 12, 2011 at 11:15 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
 >>
->> Inside device_add(), device_pm_add is called before bus_probe_device,
->> so the patch can't change the device order in pm list, and just change
->> the driver probe order.
+>>> Do we believe phys_addr_t is always greater than or equal to size need for logical & virtual addresses?
+>>
+>> Yes:
+>>
+>> #ifdef CONFIG_PHYS_ADDR_T_64BIT
+>> typedef u64 phys_addr_t;
+>> #else
+>> typedef u32 phys_addr_t;
+>> #endif
 >
-> That's the way it works now, but can it be reworked? �It would be
+> This isn't really an answer to the question.  This just says that
+> phys_addr_t can be 64-bit.  I don't see anywhere in the kernel that we
+> *enforce* or *require* that sizeof(phys_addr_t) >= sizeof(void *).
 
-IMO, it depends on what shape you plan to rework.  Currently, the
-deferred probe may found a resource dependency, but I am not sure
-that pm dependency is same with the resource dependency found
-during probe.
+You deleted this part:
 
-> possible to adjust the list order after successful probe. �However,
-> I'm not clear on the ordering rules for the dpm_list. �Right now it is
-> explicitly ordered to have parents before children, but as already
-> expressed, that doesn't accurately represent ordering constraints for
-> multiple device dependancies.
+config PHYS_ADDR_T_64BIT
+       def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
 
-Maybe we should understand the correct model of the ordering constraints
-for the multiple device dependancies first, could you give a description or
-some examples about it?
+which enforces that PHYS_ADDR_T_64BIT is enabled if 64BIT is set.
 
->
-> So, reordering the list would probably require maintaining the
-> existing parent-child ordering constraint, but to also shift
-> devices (and any possible children?) to be after drivers that are
-> already probed. �That alone will be difficult to implement and get
-> right, but maybe the constraints can be simplified. �It needs some
-> further thought.
->
-> g.
->
->
+It still doesn't protect against 64-bit architectures not setting 64BIT,
+but they have worse problems ;-)
 
+On 32-bit platforms, void * is 32-bit, and phys_addr_t is either
+32-bit or 64-bit.
+On 64-bit platforms (which are required to set 64BIT), void * is 64-bit,
+just like phys_addr_t.
 
-thanks,
--- 
-Ming Lei
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
