@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab1JMQoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:44:12 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:14544 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067Ab1JMQoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:44:10 -0400
-Date: Thu, 13 Oct 2011 11:44:06 -0500
-From: Mike Miller <mike.miller@hp.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: thenzl@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>, scameron@beardog.cce.hp.com
-Subject: [PATCH 1/1] hpsa: change confusing comment to more clear
-Message-ID: <20111013164406.GA17444@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1756611Ab1JMQos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:44:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39286 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756599Ab1JMQor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:44:47 -0400
+Message-ID: <4E971557.1050706@zytor.com>
+Date: Thu, 13 Oct 2011 09:44:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab> <4E96198F.4030906@zytor.com> <20111013073352.GB501@aftab> <20111013095708.GA1862@aftab>
+In-Reply-To: <20111013095708.GA1862@aftab>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 1 of 1
-hpsa: clarify comment in kdump reset code
+On 10/13/2011 02:57 AM, Borislav Petkov wrote:
+> On Thu, Oct 13, 2011 at 03:33:52AM -0400, Borislav Petkov wrote:
+>> Bottomline is, extending initrd handling to deal with multiple initrd
+>> images might turn out to be easier to do than the linked list deal.
+> 
+> Alternatively and IMHO, we could avoid the bootloader enabling by
+> making the ucode part of the initramfs and pull up some of the
+> prepare_namespace() work in kernel_init() before smp_init() so that we
+> can have it ready for when bootstrapping the cores.
+> 
 
-From: Mike Miller <mike.miller@hp.com>
+I think that is really ugly, and it also makes it much harder to get the
+microcode patch in early on the BSP.  There are enough issues where we
+would like to get the microcode in early even on the BSP.
 
-The following warning message may be confusing to some users:
+	-hpa
 
-dev_warn(&pdev->dev, "Controller claims that "
-		"'Bit 2 doorbell reset' is "
-		"supported, but not 'bit 5 doorbell reset'.  "
-		"Firmware update is recommended.\n");
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Most users don't know or care what bit we may be hitting. Also change
-"recommended" to "required."
-
-Signed-off-by: Mike Miller <mike.miller@hp.com>
----
- drivers/scsi/hpsa.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 311bf7a..f7a569e 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3450,10 +3450,8 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
- 	} else {
- 		use_doorbell = misc_fw_support & MISC_FW_DOORBELL_RESET;
- 		if (use_doorbell) {
--			dev_warn(&pdev->dev, "Controller claims that "
--				"'Bit 2 doorbell reset' is "
--				"supported, but not 'bit 5 doorbell reset'.  "
--				"Firmware update is recommended.\n");
-+			dev_warn(&pdev->dev, "Soft reset not supported. "
-+				"Firmware update is required.\n");
- 			rc = -ENOTSUPP; /* try soft reset */
- 			goto unmap_cfgtable;
- 		}
