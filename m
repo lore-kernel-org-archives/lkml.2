@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1JMPIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:08:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53101 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab1JMPIg (ORCPT
+	id S932114Ab1JMPJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:09:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43432 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1JMPIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:08:36 -0400
+	Thu, 13 Oct 2011 11:08:35 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/6] perf hists browser: Recalculate browser pointers after resort/decay
-Date: Thu, 13 Oct 2011 12:08:19 -0300
-Message-Id: <1318518504-23299-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/6] perf hists: Don't free decayed entries if in the annotation browser
+Date: Thu, 13 Oct 2011 12:08:20 -0300
+Message-Id: <1318518504-23299-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1318518504-23299-1-git-send-email-acme@infradead.org>
 References: <1318518504-23299-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,16 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-In browsers that access dynamic underlying data structures, like in the
-hists browser and its hist_entry rb_tree, we need to revalidate any
-reference to the underlying data structure, because they can have gone
-away, decayed.
-
-This fixes a problem where after a while the top entries get behind the
-top of the screen, i.e. the top_idx stays at 0, which means it is at the
-first entry in the rb_tree when in fact it wasn't because the
-browser->top didn't got revalidated after the timer ran and the
-underlying data structure got updated.
+Just let it there till the user exits the annotation browser.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -46,87 +37,73 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-mhje66qssdko24q67a2lhlho@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-nmaxuzreqhm5k10t2co5sk9a@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browser.c        |   23 +++++++++++++++++++++++
- tools/perf/util/ui/browser.h        |    1 +
- tools/perf/util/ui/browsers/hists.c |    9 ++-------
- 3 files changed, 26 insertions(+), 7 deletions(-)
+ tools/perf/util/hist.c              |   10 ++++++++--
+ tools/perf/util/sort.h              |    1 +
+ tools/perf/util/ui/browsers/hists.c |    6 +++++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 611219f..5911bba 100644
---- a/tools/perf/util/ui/browser.c
-+++ b/tools/perf/util/ui/browser.c
-@@ -230,6 +230,29 @@ int ui_browser__refresh(struct ui_browser *self)
- 	return 0;
- }
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 50c8fec..9b9d12b 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -100,6 +100,8 @@ static void hist_entry__decay(struct hist_entry *he)
  
-+/*
-+ * Here we're updating nr_entries _after_ we started browsing, i.e.  we have to
-+ * forget about any reference to any entry in the underlying data structure,
-+ * that is why we do a SEEK_SET. Think about 'perf top' in the hists browser
-+ * after an output_resort and hist decay.
-+ */
-+void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries)
-+{
-+	off_t offset = nr_entries - browser->nr_entries;
-+
-+	browser->nr_entries = nr_entries;
-+
-+	if (offset < 0) {
-+		if (browser->top_idx < (u64)-offset)
-+			offset = -browser->top_idx;
-+
-+		browser->index += offset;
-+		browser->top_idx += offset;
-+	}
-+
-+	browser->seek(browser, browser->top_idx, SEEK_SET);
-+}
-+
- int ui_browser__run(struct ui_browser *self)
+ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
  {
- 	struct newtExitStruct es;
-diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
-index fc63dda..d42be43 100644
---- a/tools/perf/util/ui/browser.h
-+++ b/tools/perf/util/ui/browser.h
-@@ -41,6 +41,7 @@ int ui_browser__show(struct ui_browser *self, const char *title,
- void ui_browser__hide(struct ui_browser *self);
- int ui_browser__refresh(struct ui_browser *self);
- int ui_browser__run(struct ui_browser *self);
-+void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries);
++	if (he->period == 0)
++		return true;
+ 	hists->stats.total_period -= he->period;
+ 	hist_entry__decay(he);
+ 	hists->stats.total_period += he->period;
+@@ -114,8 +116,12 @@ void hists__decay_entries(struct hists *hists)
+ 	while (next) {
+ 		n = rb_entry(next, struct hist_entry, rb_node);
+ 		next = rb_next(&n->rb_node);
+-
+-		if (hists__decay_entry(hists, n)) {
++		/*
++		 * We may be annotating this, for instance, so keep it here in
++		 * case some it gets new samples, we'll eventually free it when
++		 * the user stops browsing and it agains gets fully decayed.
++		 */
++		if (hists__decay_entry(hists, n) && !n->used) {
+ 			rb_erase(&n->rb_node, &hists->entries);
  
- void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence);
- unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self);
+ 			if (sort__need_collapse)
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 03851e3..3f67ae3 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -64,6 +64,7 @@ struct hist_entry {
+ 
+ 	bool			init_have_children;
+ 	char			level;
++	bool			used;
+ 	u8			filtered;
+ 	struct symbol		*parent;
+ 	union {
 diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index e64d952..9ece843 100644
+index 9ece843..fdc3c90 100644
 --- a/tools/perf/util/ui/browsers/hists.c
 +++ b/tools/perf/util/ui/browsers/hists.c
-@@ -332,13 +332,7 @@ static int hist_browser__run(struct hist_browser *self, const char *ev_name,
- 		case -1:
- 			/* FIXME we need to check if it was es.reason == NEWT_EXIT_TIMER */
- 			timer(arg);
--			/*
--			 * The timer may have changed the number of entries.
--			 * XXX: Find better way to keep this in synch, probably
--			 * removing this timer function altogether and just sync
--			 * using the hists->lock...
--			 */
--			self->b.nr_entries = self->hists->nr_entries;
-+			ui_browser__update_nr_entries(&self->b, self->hists->nr_entries);
- 			hists__browser_title(self->hists, title, sizeof(title),
- 					     ev_name, self->dso_filter,
- 					     self->thread_filter);
-@@ -985,6 +979,7 @@ do_annotate:
- 
+@@ -976,9 +976,13 @@ do_annotate:
+ 			he = hist_browser__selected_entry(browser);
+ 			if (he == NULL)
+ 				continue;
+-
++			/*
++			 * Don't let this be freed, say, by hists__decay_entry.
++			 */
++			he->used = true;
  			hist_entry__tui_annotate(he, evsel->idx, nr_events,
  						 timer, arg, delay_secs);
-+			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
++			he->used = false;
+ 			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
  		} else if (choice == browse_map)
  			map__browse(browser->selection->map);
- 		else if (choice == zoom_dso) {
 -- 
 1.6.2.5
 
