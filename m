@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab1JMPxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:53:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39003 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753270Ab1JMPw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:52:59 -0400
-Message-ID: <4E97094F.6050900@zytor.com>
-Date: Thu, 13 Oct 2011 08:52:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1756236Ab1JMPyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:54:35 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:35015 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752676Ab1JMPye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:54:34 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0VGKZ7UVM1kW_Lm9ouy1U0bqJVvQzprn5sMPyiceqa4OmI5
+ YotQTp7EV6c98r_O2fo.TdWeR6mjSepQQSy88cxjZQi2M9VSaodcamdWb7Fx
+ 3EicOAF3bYfAKu9nCLTLq65548z35PE77VvAYozf_nkud3TcIhbqtYMkWVwv
+ D3fEfcXNFNp44XyOp9udXe369QcFGvITCvgtBinOp7nhHP9pgfYEYjaOTv0A
+ WeCOxyrxQ7LdMVvhiYCQjT2tSU_9UXYAmGr4Feo7_1A9LDkRhquIzZG0x8AK
+ F.6uwD1NnpOclipGBp7Ppb97NxZF6MGlEbgw2ldLrDXy6EI7.YtCAVBzCV4u
+ V8vnkogRYaWicQTdTXJ7IDQDm3JYDAL4_a1Xfn_ft8DLlynY-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 13 Oct 2011 10:54:30 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Dimitri Sivanich <sivanich@sgi.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+In-Reply-To: <20111013152355.GB6966@sgi.com>
+Message-ID: <alpine.DEB.2.00.1110131052300.18473@router.home>
+References: <20111012160202.GA18666@sgi.com> <20111012120118.e948f40a.akpm@linux-foundation.org> <alpine.DEB.2.00.1110121452220.31218@router.home> <20111013152355.GB6966@sgi.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-CC: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space
- for HT hole around 1TB
-References: <1318370975-10817-1-git-send-email-jacob.shin@amd.com> <4E94D4E7.5010001@zytor.com> <20111013095734.GA16748@alberich.amd.com>
-In-Reply-To: <20111013095734.GA16748@alberich.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 02:57 AM, Andreas Herrmann wrote:
->
-> So what is the point in including address space below TOM2 not backed
-> with memory in kernel's direct mapping? For similar reserved space
-> before 4GB we don't do this.
->
-> Instead of barfing, some more constructive feedback would be
-> appreciated.
->
+On Thu, 13 Oct 2011, Dimitri Sivanich wrote:
 
-Ok, that's a BUG, plain and simple, and a very serious one (for exactly 
-the reason you just described.)  We should NEVER have cachable mappings 
-for a RESERVED region because it can have arbitrary side effects, so the 
-fact that that happens at all is the real problem and it MUST be addressed.
+> > increase the allowed delta per zone if frequent updates occur via the
+> > overflow checks in vmstat.c. See calculate_*_threshold there.
+>
+> I tried changing the threshold in both directions, with slower throughput in
+> both cases.
 
-So I'm not arguing that it is not a problem for you (it is a real and 
-serious problem), but I would like to see it addressed correctly, which 
-is to exclude these memory regions from direct mapping just as we do for 
-< 4 GB.  That way the fix applies to any RESERVED region.
+If that is the case check for the vm_stat cacheline being shared with
+another hot kernel variable variable. Maybe that causes cacheline
+eviction.
 
-	-hpa
+If there are no updates occurring for a while (due to increased deltas
+and/or vmstat updates) then the vm_stat cacheline should be able to stay
+in shared mode in multiple processors and the performance should increase.
+
 
