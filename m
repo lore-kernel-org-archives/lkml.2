@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1JMQki (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:40:38 -0400
-Received: from home.keithp.com ([63.227.221.253]:58748 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756124Ab1JMQkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:40:37 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915/panel: Alwyas record the backlight level again (but cleverly)
-In-Reply-To: <s5h7h492rr4.wl%tiwai@suse.de>
-References: <s5h7h492rr4.wl%tiwai@suse.de>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 13 Oct 2011 09:40:29 -0700
-Message-ID: <yunsjmw26bm.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1756595Ab1JMQoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:44:12 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:14544 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab1JMQoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 12:44:10 -0400
+Date: Thu, 13 Oct 2011 11:44:06 -0500
+From: Mike Miller <mike.miller@hp.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: thenzl@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, scameron@beardog.cce.hp.com
+Subject: [PATCH 1/1] hpsa: change confusing comment to more clear
+Message-ID: <20111013164406.GA17444@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Patch 1 of 1
+hpsa: clarify comment in kdump reset code
 
-On Thu, 13 Oct 2011 10:57:35 +0200, Takashi Iwai <tiwai@suse.de> wrote:
+From: Mike Miller <mike.miller@hp.com>
 
-> This patch fixes the bug by recording the backlight level always
-> when changed but only when dev_priv->backlight_enabled is set.
-> In this way, the bogus value for disabling backlight can be skipped.
+The following warning message may be confusing to some users:
 
-I think this is better than what we have, but I'm not sure it's quite
-what we want -- the backlight level will only be remembered when it is
-enabled, so requested changes that happen while the backlight is off
-will have no effect. And, requested changes while the panel is disabled
-will still go through to the hardware, which can cause problems with
-panel power sequencing.
+dev_warn(&pdev->dev, "Controller claims that "
+		"'Bit 2 doorbell reset' is "
+		"supported, but not 'bit 5 doorbell reset'.  "
+		"Firmware update is recommended.\n");
 
-I think intel_panel_set_backlight should always record the level passed
-in, but that intel_panel_disable_backlight and
-intel_panel_enable_backlight should use a lower-level function, shared
-with intel_panel_set_backlight that doesn't record the value:
+Most users don't know or care what bit we may be hitting. Also change
+"recommended" to "required."
 
-intel_panel_actually_set_backlight(dev, level) {
-        <internals of current intel_panel_set_backlight>
-}
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+---
+ drivers/scsi/hpsa.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-intel_panel_set_backlight(dev, level) {
-        dev_priv->backlight_level =3D level;
-        if (dev_priv->backlight_enabled)
-                intel_panel_actually_set_backlight(dev, level);
-}
-
-intel_panel_enable_backlight(dev) {
-        dev_priv->backlight_enabled =3D true;
-        intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-}
-
-intel_panel_disable_backlight(dev) {
-        dev_priv->backlight_enabled =3D false;
-        intel_panel_actually_set_backlight(dev, 0);
-}
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTpcUfTYtFsjWk68qAQhr+hAAz/TtEDUQTpOQrugOhM8nT5rRolRZ3FzW
-7dXTBcJv3zRkY7LF+HvpVe3hEkKaeqp48ZRSEEu99ISopIaHObDsUA6jxx895nJY
-khzrnG6E8ut2UmDxcyIN2HgrB3Bgxpo8getkW1/aVQkBSOEU4mEQIOcMcyVxQlbg
-ctYvym6e9zmKk1rsLYjWav+HpoE7NvpFR4JrHrcXwv3k6QM3X2T6UHohKx78D2V3
-LJLvw8hFxwmhJ8PW8d4TrlT1ic14I33Gct92CKUm4ARcNLK8gvKVxQhormLOSqsb
-LJRMdsciOeOCnIlj87FjlKvjqgvkOEfrHXuhpjUHy1XUf47CkvfTCZ+yiVehrO2g
-ksYH+gUL2KeYxpPuinjEW0jbq8yLK0UM0x2GAzaYGGFhKMc+96Afwu2HLllt7q4k
-XkTw59wz5sFiScM934YBNNlVJjDqNGMiBuM7or+t6W4g54/hoFWJkG0PvlroVVrg
-zFWx05ipksVFnX4yzkQB7xLl22CAVjD6WMMgTOe0cXgqzkSLliDpUzpE0KgnPhJ0
-neLRYsWwVFRrmdkrOd1W/vqIzvhPycQEJZBJ+dEw8mY+rJHGay1D6ITgZnUk8mzV
-GGeHCO/z8sK8n1k/FAQIMuOtL8ijkCtiR5Qwq5TJ0l+kz3c/QrEYC55WT6SXrJNX
-p6Ml5ln5VMg=
-=UMwf
------END PGP SIGNATURE-----
---=-=-=--
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 311bf7a..f7a569e 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3450,10 +3450,8 @@ static __devinit int hpsa_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 	} else {
+ 		use_doorbell = misc_fw_support & MISC_FW_DOORBELL_RESET;
+ 		if (use_doorbell) {
+-			dev_warn(&pdev->dev, "Controller claims that "
+-				"'Bit 2 doorbell reset' is "
+-				"supported, but not 'bit 5 doorbell reset'.  "
+-				"Firmware update is recommended.\n");
++			dev_warn(&pdev->dev, "Soft reset not supported. "
++				"Firmware update is required.\n");
+ 			rc = -ENOTSUPP; /* try soft reset */
+ 			goto unmap_cfgtable;
+ 		}
