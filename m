@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab1JMAJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:09:46 -0400
-Received: from claw.goop.org ([74.207.240.146]:47146 "EHLO claw.goop.org"
+	id S1751908Ab1JMAKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:10:30 -0400
+Received: from claw.goop.org ([74.207.240.146]:47109 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab1JMAI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:08:59 -0400
+	id S1751670Ab1JMAIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:08:55 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -18,9 +18,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V4 08/10] x86/jump_label: add arch_jump_label_transform_static()
-Date: Wed, 12 Oct 2011 17:08:39 -0700
-Message-Id: <d438943704881d46c8f73318d2b1705a5e2809d7.1318464413.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V4 05/10] sparc/jump_label: drop arch_jump_label_text_poke_early()
+Date: Wed, 12 Oct 2011 17:08:36 -0700
+Message-Id: <d01b6d0db1cd0e25797065982e06a38f5d6caf7f.1318464413.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
@@ -32,56 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-This allows jump-label entries to be cheaply updated on code which is
-not yet live.
+It is no longer used.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Acked-by: Jason Baron <jbaron@redhat.com>
+Cc: David Miller <davem@davemloft.net>
 ---
- arch/x86/kernel/jump_label.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/jump_label.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-index 2ad0298..ea9d5f2f 100644
---- a/arch/x86/kernel/jump_label.c
-+++ b/arch/x86/kernel/jump_label.c
-@@ -24,8 +24,9 @@ union jump_code_union {
- 	} __attribute__((packed));
- };
- 
--void arch_jump_label_transform(struct jump_entry *entry,
--			       enum jump_label_type type)
-+static void __jump_label_transform(struct jump_entry *entry,
-+				   enum jump_label_type type,
-+				   void *(*poker)(void *, const void *, size_t))
- {
- 	union jump_code_union code;
- 
-@@ -35,11 +36,24 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 				(entry->code + JUMP_LABEL_NOP_SIZE);
- 	} else
- 		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-+
-+	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
- 	get_online_cpus();
- 	mutex_lock(&text_mutex);
--	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	__jump_label_transform(entry, type, text_poke_smp);
- 	mutex_unlock(&text_mutex);
+diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
+index ea2dafc..971fd43 100644
+--- a/arch/sparc/kernel/jump_label.c
++++ b/arch/sparc/kernel/jump_label.c
+@@ -36,12 +36,4 @@ void arch_jump_label_transform(struct jump_entry *entry,
  	put_online_cpus();
  }
  
-+void arch_jump_label_transform_static(struct jump_entry *entry,
-+				      enum jump_label_type type)
-+{
-+	__jump_label_transform(entry, type, text_poke_early);
-+}
-+
+-void arch_jump_label_text_poke_early(jump_label_t addr)
+-{
+-	u32 *insn_p = (u32 *) (unsigned long) addr;
+-
+-	*insn_p = 0x01000000;
+-	flushi(insn_p);
+-}
+-
  #endif
 -- 
 1.7.6.4
