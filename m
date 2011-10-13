@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab1JMAwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:52:47 -0400
+	id S1752222Ab1JMAxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:53:03 -0400
 Received: from claw.goop.org ([74.207.240.146]:47311 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab1JMAvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:51:50 -0400
+	id S1752014Ab1JMAvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:51:49 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V5 10/11] xen/pvticketlock: allow interrupts to be enabled while blocking
-Date: Wed, 12 Oct 2011 17:51:42 -0700
-Message-Id: <33ca794b624865721ef86b341411aec97069ad43.1318466916.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V5 08/11] x86/pvticketlock: when paravirtualizing ticket locks, increment by 2
+Date: Wed, 12 Oct 2011 17:51:40 -0700
+Message-Id: <79ae0a17bf2b10eb8d89102ede53b6c2d08dfe94.1318466916.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
@@ -31,108 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+Increment ticket head/tails by 2 rather than 1 to leave the LSB free
+to store a "is in slowpath state" bit.  This halves the number
+of possible CPUs for a given ticket size, but this shouldn't matter
+in practice - kernels built for 32k+ CPU systems are probably
+specially built for the hardware rather than a generic distro
+kernel.
 
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/spinlock.c |   48 ++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 41 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/spinlock.h       |   10 +++++-----
+ arch/x86/include/asm/spinlock_types.h |   10 +++++++++-
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 0a552ec..fc506e6 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -106,11 +106,28 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index f0d6a59..dd155f7 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -78,7 +78,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __t
+  */
+ static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
+ {
+-	register struct __raw_tickets inc = { .tail = 1 };
++	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
  
- 	start = spin_time_start();
+ 	inc = xadd(&lock->tickets, inc);
  
--	/* Make sure interrupts are disabled to ensure that these
--	   per-cpu values are not overwritten. */
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
- 	local_irq_save(flags);
+@@ -104,7 +104,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	if (old.tickets.head != old.tickets.tail)
+ 		return 0;
  
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
-+	smp_wmb();
- 	w->lock = lock;
+-	new.head_tail = old.head_tail + (1 << TICKET_SHIFT);
++	new.head_tail = old.head_tail + (TICKET_LOCK_INC << TICKET_SHIFT);
  
- 	/* This uses set_bit, which atomic and therefore a barrier */
-@@ -124,21 +141,36 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
+ 	/* cmpxchg is a full barrier, so nothing can move before it */
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+@@ -112,9 +112,9 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
  
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
+-	__ticket_t next = lock->tickets.head + 1;
++	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
  
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking 
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		ADD_STATS(taken_slow_pickup, 1);
- 		goto out;
- 	}
+-	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
++	__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
+ 	__ticket_unlock_kick(lock, next);
+ }
  
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
+@@ -129,7 +129,7 @@ static inline int arch_spin_is_contended(arch_spinlock_t *lock)
+ {
+ 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
++	return ((tmp.tail - tmp.head) & TICKET_MASK) > TICKET_LOCK_INC;
+ }
+ #define arch_spin_is_contended	arch_spin_is_contended
+ 
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index dbe223d..aa9a205 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -3,7 +3,13 @@
+ 
+ #include <linux/types.h>
+ 
+-#if (CONFIG_NR_CPUS < 256)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++#define __TICKET_LOCK_INC	2
++#else
++#define __TICKET_LOCK_INC	1
++#endif
 +
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
++#if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+ typedef u8  __ticket_t;
+ typedef u16 __ticketpair_t;
+ #else
+@@ -11,6 +17,8 @@ typedef u16 __ticket_t;
+ typedef u32 __ticketpair_t;
+ #endif
+ 
++#define TICKET_LOCK_INC	((__ticket_t)__TICKET_LOCK_INC)
 +
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
+ #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
+ #define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
  
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- 
- out:
-@@ -160,7 +192,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			ADD_STATS(released_slow_kicked, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
 -- 
 1.7.6.4
 
