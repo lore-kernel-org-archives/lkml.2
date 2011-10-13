@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab1JMR3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:29:55 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57498 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab1JMR3x (ORCPT
+	id S1756739Ab1JMRbp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:31:45 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:54753 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756489Ab1JMRbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:29:53 -0400
-Message-ID: <4E972001.3080204@linux.vnet.ibm.com>
-Date: Thu, 13 Oct 2011 22:59:37 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Thu, 13 Oct 2011 13:31:43 -0400
+Date: Thu, 13 Oct 2011 20:31:37 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, paul@pwsan.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH v13 v14] mfd: omap: usb: Runtime PM support
+Message-ID: <20111013173134.GK28290@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1318319560-20500-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "ashok.raj@intel.com" <ashok.raj@intel.com>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <201110122131.08811.rjw@sisk.pl> <4E9605C7.5070203@linux.vnet.ibm.com> <201110130009.26552.rjw@sisk.pl> <4E9706D8.5040105@linux.vnet.ibm.com> <20111013160602.GJ6281@google.com> <20111013170153.GB3064@aftab>
-In-Reply-To: <20111013170153.GB3064@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3W6riq+uV6J42Ub"
+Content-Disposition: inline
+In-Reply-To: <1318319560-20500-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 10:31 PM, Borislav Petkov wrote:
-> On Thu, Oct 13, 2011 at 12:06:02PM -0400, Tejun Heo wrote:
->> I hate to sound like a broken recorder but the above patch isn't
->> strictly correct for hot-swap cases, right?
-> 
-> hpa is working on a ucode loading solution which will take care of your
-> hotswap case too.
-> 
 
-Tejun, I have written a patch below (untested) that does what you said.
-So Boris, hpa's work would make such a patch unnecessary is it?
+--u3W6riq+uV6J42Ub
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Srivatsa S. Bhat
+On Tue, Oct 11, 2011 at 01:22:40PM +0530, Keshava Munegowda wrote:
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>=20
+> The usbhs core driver does not enable/disable the interface and
+> functional clocks directly, These clocks are handled by runtime pm,
+> hence instead of the clock enable/disable, the runtime pm APIS are
+> used. however,the optional clocks and port clocks are handled by
+> the usbhs core.
+>=20
+> Dependency:
+> This patch is dependent on this series:
+> [PATCH 0/5 v13 or latest version] omap: usb: host: Runtime PM preparation=
+=20
+> for EHCI and OHCI drivers.
+>=20
+> Validation performed:
+> The global suspend/resume of EHCI and OHCI is validated on=20
+> OMAP3430 sdp board with this patch combined with the series:
+> [PATCH 0/5 v13 or latest version] omap: usb: host: Runtime PM preparation=
+=20
+> for EHCI and OHCI drivers.=20
+>=20
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> Reviewed-by: Partha Basak <parthab@india.ti.com>
 
----
+Acked-by: Felipe Balbi <balbi@ti.com>
 
- arch/x86/kernel/microcode_core.c |   33 +++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
+--=20
+balbi
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index f924280..849ae2d 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -155,6 +155,27 @@ static int collect_cpu_info(int cpu)
- 	return ret;
- }
- 
-+/*
-+ * Compare the microcode revision that the kernel has in memory
-+ * for this cpu and the microcode revision that we need to apply
-+ * on this cpu. If they match, return 0, else return -1.
-+ */
-+static int compare_cpu_with_microcode(int cpu)
-+{
-+	struct ucode_cpu_info *uci_mem = ucode_cpu_info + cpu;
-+	struct ucode_cpu_info uci_cpu;
-+	int ret;
-+
-+	ret = collect_cpu_info_on_target(cpu, &uci_cpu->cpu_sig);
-+	if(!ret) {
-+		if (!(uci_mem->cpu_sig->sig == uci_cpu->cpu_sig->sig &&
-+		      uci_mem->cpu_sig->pf == uci_cpu->cpu_sig->pf &&
-+		      uci_mem->cpu_sig->rev == uci_cpu->cpu_sig->rev))
-+			ret = -1;
-+	}
-+	return ret;
-+}
-+
- struct apply_microcode_ctx {
- 	int err;
- };
-@@ -397,6 +418,18 @@ static enum ucode_state microcode_update_cpu(int cpu)
- 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
- 	enum ucode_state ustate;
- 
-+	/*
-+	 * If the CPU on which we are going to update the
-+	 * microcode and the microcode which we currently
-+	 * have in kernel memory are incompatible, then
-+	 * invalidate the microcode that we have (and also
-+	 * free its memory), so that we can get the required
-+	 * microcode afresh.
-+	 */
-+	if (compare_cpu_with_microcode(cpu)) {
-+		microcode_fini_cpu(cpu);
-+	}
-+
- 	if (uci->valid)
- 		ustate = microcode_resume_cpu(cpu);
- 	else
+--u3W6riq+uV6J42Ub
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIbBAEBAgAGBQJOlyB2AAoJEIaOsuA1yqREAFYP8QFCdHHIf4NXoEOwIn9a4tHi
+Y937Q8xIfKVHvfx18s8k2YmTlmfEt+47ptyiKf/ybq0cVhIc1iXJOc4BtSjeaAcp
+7fXeI2ueqVvCCNRrUAeidyYASOn+shOgRwB95xU1jKvYXGzXYm3ZmD06w2qYQHEO
+0QGj/PQlGmrIpuP+6wpOh7UjgFvQGRrJ2fJwG2mNE7teNXQzxooEDNeFBBBCHAo6
+47eEfAAnQS2c+DR92NCjyMozJVVnHhWxqtIQyt1KfbhUF/C6ldZhVbiovz7/cYyE
+43sBN9PGRDut4dkc6Upasa/LGYkWmq8smwO10VpWuVIdo7GvdvsyboKMRNLo0q2k
+fe7Z4DxQqkvCo6ATDE6OaSWzs6JSuvQ3DXlPb6M46O5CgpodkIWPikTqSYu0ZCD2
+wFlqYFF2Ya0QbwL9UuN4Gk0GLfxwJatog0RtNvWjL5Msi5mkHMnSxNfDfUYgc7hO
+pV/xLOj/8stWqCyfd4LYPcw/kfBlnBcCUORF6UZf9gHYhDLznDuSn/QThhmFYFGR
+tQQXJQgXHCLU1dn4Q2eRDuDSdQ5tTKDjmn6HB2q03l+1RGQE37uoNFfC25/ynBOr
+Ilv4Y+E4cREIV2pNNXMddalMGhqvJLJ5UWtryDPzcrrBXQxGMH9KyvOHfCASGFpX
+CSd8JgPBhmbDsd53o9w=
+=l/GE
+-----END PGP SIGNATURE-----
+
+--u3W6riq+uV6J42Ub--
