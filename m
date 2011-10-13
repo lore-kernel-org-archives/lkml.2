@@ -1,53 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab1JMD5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 23:57:19 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44681 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab1JMD5S (ORCPT
+	id S1751109Ab1JMEDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 00:03:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42985 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab1JMEDY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 23:57:18 -0400
-Date: Wed, 12 Oct 2011 21:57:14 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Cc: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the gpio tree
-Message-ID: <20111013035714.GD15829@ponder.secretlab.ca>
-References: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
- <20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au>
- <4E93EA10.4030405@dsn.lapis-semi.com>
- <20111012152451.66ce5ddffb4c5b3a4f6a31cf@canb.auug.org.au>
- <4E9525AC.9080909@dsn.lapis-semi.com>
- <CABMQnV+S2WbW0YZBiMXfs81b2dyLzj9wBxPmNuFrYErKfXsWtg@mail.gmail.com>
- <4E9551B8.4060601@dsn.lapis-semi.com>
+	Thu, 13 Oct 2011 00:03:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9551B8.4060601@dsn.lapis-semi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+Date: Thu, 13 Oct 2011 09:33:21 +0530
+Message-ID: <CAHFNz9JUV6wabQxsvrxPRX6q41sWNMDy8DJcOpNTecNTbL=XaQ@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Manu Abraham <abraham.manu@gmail.com>
+To: Markus Rechberger <mrechberger@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 05:37:12PM +0900, Tomoya MORINAGA wrote:
-> (2011/10/12 16:21), Nobuhiro Iwamatsu wrote:
-> >This is a problem of generic-chip.
-> >I created the patch and contributed the point to LKML.
-> >He forgot to put you into CC, sorry.
-> >
-> >Please check LKML for subject of "[PATCH] irq: Add EXPORT_SYMBOL to
-> >function of irq generic-chip".
-> >
-> 
-> OK,
-> We will be able to use our GPIO driver with module soon.
-> Good information.
+Hello Markus,
 
-I've temporarily pushed out a commit that makes the pch and ml_ioh
-bool instead of tristate.  If that other patch gets acked by Thomas,
-then I should probably take it through the gpio tree.
+On Thu, Oct 13, 2011 at 3:39 AM, Markus Rechberger
+<mrechberger@gmail.com> wrote:
+> On Wed, Oct 12, 2011 at 11:48 PM, Markus Rechberger
+> <mrechberger@gmail.com> wrote:
+>> On Wed, Oct 12, 2011 at 10:33 PM, Greg KH <gregkh@suse.de> wrote:
+>>> On Wed, Oct 12, 2011 at 06:59:01PM +0200, Markus Rechberger wrote:
+>>>> On Wed, Oct 12, 2011 at 4:17 PM, Greg KH <gregkh@suse.de> wrote:
+>>>> > On Wed, Oct 12, 2011 at 02:36:59PM +0200, Markus Rechberger wrote:
+>>>> >> We have 2 products which can perform better with increased Bulk transfers
+>>>> >
+>>>> > I don't believe you :)
+>>>> >
+>>>> > As stated before, this patch is not acceptable.  Please work to figure
+>>>> > out the real reason for your device problems here, this is not the
+>>>> > correct solution at all.
+>>>> >
+>>>>
+>>>> OK no device support for linux then. Windows and MacOSX are fine.
+>>>
+>>> That is your choice, not ours, as you are the one writing the closed
+>>> source code.  Without usbmon dumps, showing that the problem really is
+>>> in the kernel code, we can't do anything for you here.
+>>>
+>>
+>>
+>> here take your usbmon logs:
+>> http://sundtek.de/support/working.log
+>> http://sundtek.de/support/notworking.log (this is with your proposed
+>> split up of 22k).
+>>
+>> Isochronous already supports up to 190kb buffers which cause no
+>> trouble anywhere.
+>> Bulk is castrated to 15kb buffers and 50kb should be such a big issue
+>> while applications
+>> which do not request it are not affected at all.
+>>
+>> I'm very angry that you do not really focus on what I write and just
+>> try to write stories about
+>> bogus things like my patch might break other applications while I
+>> pointed out that this is not
+>> possible with legacy applications which use this interface. It is not
+>> even possible to read the
+>> maximum buffer value from the kernelspace.
+>>
+>> Your bogus message about 1Gig ram you can put it elsewhere, I checked
+>> multiple windows drivers
+>> in the past the buffer size varies between small and something around
+>> 50k usually.
+>> I would fully like to avoid to patch this kernel to get those things
+>> work because I don't want to
+>> deal with people who just write around the actual issues.
+>>
+>> Alsi the fact that bigger buffers are already being used plus the HW
+>> specifications of our main device also points out to a certain
+>> buffersize near 50k. But of course you are the smart knowitall without
+>> the need of explanation why
+>> those things can be affected by HW and some HW chips have options to
+>> influence that buffer size.
+>
+> And for those who are curious about the logfiles:
+> Not working one as proposed by Alan that the full buffer size should
+> be split into 2 requests:
+>
+> ffff8800b38d9f00 1231540351 S Bi:2:013:1 -115 12288 <
+> ffff8800b38d96c0 1231540404 S Bi:2:013:1 -115 11776 <
+> ffff8800b38d9cc0 1231540440 S Bi:2:013:1 -115 12288 <
+> ffff880002ede600 1231540496 S Bi:2:013:1 -115 11776 <
+> ffff8800b38d9f00 1231545491 C Bi:2:013:1 0 12288 = 7a1a0840 1ca8353c
+> 004b80ec 4de08401 2f0227f8 34005e7e 80181dfd 1a8f700a
+> ffff88007d51fb40 1231545875 S Bi:2:013:1 -115 12288 <
+> ffff8800b38d96c0 1231551861 C Bi:2:013:1 0 11776 = 5244e386 a7800000
+> 010642ea 35bfbba5 373e738b cc035a73 c328a1ff 4da728ce
+> ffff880002ede0c0 1231556173 S Bi:2:013:1 -115 11776 <
+> ffff8800b38d9cc0 1231558618 C Bi:2:013:1 0 12288 = db91aae9 2d2532f3
+> 2e37448a fb36c213 55dda2ad 243122b2 261edb06 875848ac
+>
+>
+> 12288 = 7a1a0840 every Line with 12288 should start with 47 (MPEG-TS Sync byte)
+>
+> The working one which allocate 7000 bytes more (oh really big memory
+> pressure now!)  than this castrated USBFS interface allows.
+>
+> ffff88003ac37240 992178919 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37000 992178953 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37c00 992178980 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37e40 992179003 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37240 992190198 C Bi:2:013:1 0 24064 = 471fff10 00000000
+> 00000000 00000000 00000000 00000000 00000000 00000000
+> ffff88000601f480 992194368 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37000 992203209 C Bi:2:013:1 0 24064 = 4701b114 43867ee6
+> 40790660 e898681c 9b1c7dca 08980d43 73181369 9be1bc67
+> ffff880067e38a80 992204642 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37c00 992216318 C Bi:2:013:1 0 24064 = 4740001c 0000b01d
+> 0305d500 000000e0 104015e1 504016e1 60401be1 b04022e2
+> ffff880067e383c0 992219978 S Bi:2:013:1 -115 24064 <
+> ffff88003ac37e40 992229340 C Bi:2:013:1 0 24064 = 471fff10 00000000
+> 00000000 00000000 00000000 00000000 00000000 00000000
+>
+> everything starts nicely with 0x47
 
-g.
+Is the transfer size a multiple of 188 bytes in both cases ? In the
+working case, it looks so, but in the broken case ? Many DTV bridges
+have fixed DMA apertures and not variable really much, even though the
+device specifications do state that it might support different block
+sizes, some modes could be broken. I guess most likely, you would have
+handled this situation.
 
+Other issues that could possibly happen (wrt your jitter) is a high
+latency (in the particular case of failures) where the received data
+have unusable relative timestamps wrt DTS and or PTS.
+
+The only areas where you can have a corrupted stream as you mentioned
+"jitter" is either lost frames or the above two cases. I don't know
+what's the issue in your case, but might help to track down the issue
+altogether.
+
+Regards,
+Manu
