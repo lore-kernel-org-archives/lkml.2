@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab1JMRnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:43:00 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39704 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab1JMRm6 (ORCPT
+	id S1756507Ab1JMRoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:44:11 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:57331 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754417Ab1JMRoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:42:58 -0400
-Date: Thu, 13 Oct 2011 11:42:55 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, tony@atomide.com,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH 3.1-rc3] gpio/omap: fix build error with certain OMAP1
- configs
-Message-ID: <20111013174255.GH18574@ponder.secretlab.ca>
-References: <201108231342.25101.jkrzyszt@tis.icnet.pl>
- <87sjoshx2k.fsf@ti.com>
- <201110071430.14420.jkrzyszt@tis.icnet.pl>
- <alpine.DEB.2.00.1110102356530.7624@dell>
- <87fwiz8okk.fsf@ti.com>
+	Thu, 13 Oct 2011 13:44:09 -0400
+Date: Thu, 13 Oct 2011 20:43:59 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
+Cc: balbi@ti.com, gregkh@suse.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sshtylyov@ru.mvista.com
+Subject: Re: [PATCH v4] usb: add new usb gadget for ACM and mass storage
+Message-ID: <20111013174357.GM28290@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+ <1318235543-24203-1-git-send-email-schwarzkopf@sensortherm.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JlJsEFsx9RQyiX4C"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87fwiz8okk.fsf@ti.com>
+In-Reply-To: <1318235543-24203-1-git-send-email-schwarzkopf@sensortherm.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 09:45:15AM -0700, Kevin Hilman wrote:
-> Aaro Koskinen <aaro.koskinen@iki.fi> writes:
-> 
-> > Hi,
-> >
-> > On Fri, 7 Oct 2011, Janusz Krzysztofik wrote:
-> >> Dnia wtorek, 23 sierpnia 2011 o 19:11:47 Kevin Hilman napisał(a):
-> >>> Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> writes:
-> >>>> With commit f64ad1a0e21a, "gpio/omap: cleanup _set_gpio_wakeup(), remove
-> >>>> ifdefs", access to build time conditionally omitted 'suspend_wakeup'
-> >>>> member of the 'gpio_bank' structure has been placed unconditionally in
-> >>>> function _set_gpio_wakeup(), which is always built. This resulted in the
-> >>>> driver compilation broken for certain OMAP1, i.e., non-OMAP16xx,
-> >>>> configurations.
-> >>>>
-> >>>> Really required or not in previously excluded cases, define this
-> >>>> structure member unconditionally as a fix.
-> >>>>
-> >>>> Tested with a custom OMAP1510 only configuration.
-> >>>>
-> >>>> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> >>>
-> >>> Verified that this fixes a build problem when building for OMAP1
-> >>> (730/850 only)
-> >>>
-> >>> Acked-by: Kevin Hilman <khilman@ti.com>
-> >
-> > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> >
-> >>> Grant, can you queue this as a fix for 3.1-rc?
-> >>
-> >> Sorry for being so late with checking this, but it looks like this patch
-> >> never got into 3.1-rc, as it should, leaving the issue not fixed.
-> >> Any chance for it still being pushed into 3.1?
-> >
-> > This patch is one-liner, and still needed to get 3.1-rc9 compiled and
-> > running on e.g. Amstrad E3, so I think it should get into 3.1.
-> 
-> Grant?
 
-I'll pick this up now and send it on to Linus
+--JlJsEFsx9RQyiX4C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-g.
+On Mon, Oct 10, 2011 at 10:32:23AM +0200, Klaus Schwarzkopf wrote:
+> This driver provides two functions in one configuration:
+> a mass storage, and a ACM (serial port) link.
+> Heavily based on multi.c and cdc2.c
+>=20
+> Signed-off-by: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
 
-> 
+applied, thanks
+
+--=20
+balbi
+
+--JlJsEFsx9RQyiX4C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOlyNdAAoJEIaOsuA1yqRESWgQAIKstvjP1iNegvUYnLZMAJ8A
+6Emg/4vcwn7d0LxuMH30FNvQ7tSCcR/zzCk+NjA1X7u+RL1V3MP5j0uR0I4QHTqa
+f/ACmYKv2uNuoBYs9fpsjwUXMtk2fejbBO8hJPGmwS17xZKUIRVuwudIbyjBtgLf
+akK6BteoJ+nwjWwngLqu3d4fBR7nbHP6MUz58+9a/rqsrcqndOE9TdwfY8NO9bCk
+f761qg20TVFxk5V9cu1WcCn+oF0Gaqf8TSRxM/EeitxWlsT4DsMeYqMHqWtFhYEN
+FjL0POEyR2pUO+P88zwPovIrcy5nL6mwaEwKSFt+mqCRsZwRFIKkWj1YCQY7TlR0
+vLNzcqxcnT3unkNI3SkQuVWl1ZQztKZMZ+illoIxQ5wBt+FkMno2Nz7cnil/Ib/E
+DFu+ai8ycZZ9b7JPXSRU8LF1aqV8MCv5QRteeNlS6CQjQKuWFXcCpbg+T2EIp0yD
+yOJWnh5FNVUVi4aiFPH2L5cXFWiJfy2K21Tzf3J1bp0cFhRtek3UiMAKTl9OWe0a
+jfa6B0cKxq5WzxarIUM+Y1dUFrgypBweGrirFgpmLo+f0utUTm1X8a3TdmZ5KZq3
+AmLDTfv6wEGf0+Ha8NAiUSJGz5h+M/KYtId4GYgRxZx7fK50xnXYSwyIzipfhIYv
+fnDA56IyAW5pMOztk4mW
+=+Z9B
+-----END PGP SIGNATURE-----
+
+--JlJsEFsx9RQyiX4C--
