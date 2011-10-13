@@ -1,165 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1JMTUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:20:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051Ab1JMTUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:20:10 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
-        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
-        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [v2 PATCH 1/3] x86, reboot:  Use NMI instead of REBOOT_VECTOR to stop cpus
-Date: Thu, 13 Oct 2011 15:14:25 -0400
-Message-Id: <1318533267-18880-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1318533267-18880-1-git-send-email-dzickus@redhat.com>
-References: <1318533267-18880-1-git-send-email-dzickus@redhat.com>
+	id S1753515Ab1JMTZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:25:18 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:51514 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab1JMTZQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 15:25:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1318529518-4922-4-git-send-email-mark.einon@gmail.com>
+References: <1318529518-4922-1-git-send-email-mark.einon@gmail.com>
+	<1318529518-4922-4-git-send-email-mark.einon@gmail.com>
+Date: Thu, 13 Oct 2011 23:25:15 +0400
+Message-ID: <CAHj3AV=Sht2D6XREsmNrk=5Cmt0RxtKAHXzk=NWp26=o=bZjPA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] staging: et131x: use dma_alloc... instead of pci_alloc...
+From: Denis Kirjanov <kirjanov@gmail.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A recent discussion started talking about the locking on the pstore fs
-and how it relates to the kmsg infrastructure.  We noticed it was possible
-for userspace to r/w to the pstore fs (grabbing the locks in the process)
-and block the panic path from r/w to the same fs.
+This conversion is incomplete. You haven't converted other functions
+to the new DMA API
 
-The reason was the cpu with the lock could be doing work while the crashing
-cpu is panic'ing.  Busting those spinlocks might cause those cpus to step
-on each other's data.  Fine, fair enough.
+On Thu, Oct 13, 2011 at 10:11 PM, Mark Einon <mark.einon@gmail.com> wrote:
+> Use dma_allocs instead of pci_allocs, so we can use GFP_KERNEL
+> allocations.
+>
+> Also removed this item from the TODO list
+>
+> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> ---
+>  drivers/staging/et131x/README   |    1 -
+>  drivers/staging/et131x/et131x.c |   39 ++++++++++++++++++++++-----------------
+>  2 files changed, 22 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+> index 1e0fcf4..87b9360 100644
+> --- a/drivers/staging/et131x/README
+> +++ b/drivers/staging/et131x/README
+> @@ -9,7 +9,6 @@ driver as they did not build properly at the time.
+>
+>  TODO:
+>        - Use of kmem_cache seems a bit unusual
+> -       - Use dma_alloc_... in place of pci_alloc_...
+>        - It's too late stopping the tx queue when there is no room for the current packet. The condition should be detected for the next packet.
+>        - PCI_VDEVICE ?
+>
+> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> index 0fbb77d..06ba4a9 100644
+> --- a/drivers/staging/et131x/et131x.c
+> +++ b/drivers/staging/et131x/et131x.c
+> @@ -1965,9 +1965,10 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>
+>        /* Allocate an area of memory for Free Buffer Ring 1 */
+>        bufsize = (sizeof(struct fbr_desc) * rx_ring->fbr[0]->num_entries) + 0xfff;
+> -       rx_ring->fbr[0]->ring_virtaddr = pci_alloc_consistent(adapter->pdev,
+> -                                               bufsize,
+> -                                               &rx_ring->fbr[0]->ring_physaddr);
+> +       rx_ring->fbr[0]->ring_virtaddr = dma_alloc_coherent(&adapter->pdev->dev,
+> +                                       bufsize,
+> +                                       &rx_ring->fbr[0]->ring_physaddr,
+> +                                       GFP_KERNEL);
+>        if (!rx_ring->fbr[0]->ring_virtaddr) {
+>                dev_err(&adapter->pdev->dev,
+>                          "Cannot alloc memory for Free Buffer Ring 1\n");
+> @@ -1995,9 +1996,10 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>  #ifdef USE_FBR0
+>        /* Allocate an area of memory for Free Buffer Ring 0 */
+>        bufsize = (sizeof(struct fbr_desc) * rx_ring->fbr[1]->num_entries) + 0xfff;
+> -       rx_ring->fbr[1]->ring_virtaddr = pci_alloc_consistent(adapter->pdev,
+> +       rx_ring->fbr[1]->ring_virtaddr = dma_alloc_coherent(&adapter->pdev->dev,
+>                                                bufsize,
+> -                                               &rx_ring->fbr[1]->ring_physaddr);
+> +                                               &rx_ring->fbr[1]->ring_physaddr,
+> +                                               GFP_KERNEL);
+>        if (!rx_ring->fbr[1]->ring_virtaddr) {
+>                dev_err(&adapter->pdev->dev,
+>                          "Cannot alloc memory for Free Buffer Ring 0\n");
+> @@ -2042,8 +2044,8 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>                fbr_chunksize =
+>                    (FBR_CHUNKS * rx_ring->fbr[0]->buffsize) + fbr1_align - 1;
+>                rx_ring->fbr[0]->mem_virtaddrs[i] =
+> -                   pci_alloc_consistent(adapter->pdev, fbr_chunksize,
+> -                                        &rx_ring->fbr[0]->mem_physaddrs[i]);
+> +                   dma_alloc_coherent(&adapter->pdev->dev, fbr_chunksize,
+> +                                        &rx_ring->fbr[0]->mem_physaddrs[i], GFP_KERNEL);
+>
+>                if (!rx_ring->fbr[0]->mem_virtaddrs[i]) {
+>                        dev_err(&adapter->pdev->dev,
+> @@ -2094,8 +2096,8 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>                fbr_chunksize =
+>                    ((FBR_CHUNKS + 1) * rx_ring->fbr[1]->buffsize) - 1;
+>                rx_ring->fbr[1]->mem_virtaddrs[i] =
+> -                   pci_alloc_consistent(adapter->pdev, fbr_chunksize,
+> -                                        &rx_ring->fbr[1]->mem_physaddrs[i]);
+> +                   dma_alloc_coherent(&adapter->pdev->dev, fbr_chunksize,
+> +                                        &rx_ring->fbr[1]->mem_physaddrs[i], GFP_KERNEL);
+>
+>                if (!rx_ring->fbr[1]->mem_virtaddrs[i]) {
+>                        dev_err(&adapter->pdev->dev,
+> @@ -2137,9 +2139,10 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>        pktstat_ringsize =
+>            sizeof(struct pkt_stat_desc) * adapter->rx_ring.psr_num_entries;
+>
+> -       rx_ring->ps_ring_virtaddr = pci_alloc_consistent(adapter->pdev,
+> +       rx_ring->ps_ring_virtaddr = dma_alloc_coherent(&adapter->pdev->dev,
+>                                                  pktstat_ringsize,
+> -                                                 &rx_ring->ps_ring_physaddr);
+> +                                                 &rx_ring->ps_ring_physaddr,
+> +                                                 GFP_KERNEL);
+>
+>        if (!rx_ring->ps_ring_virtaddr) {
+>                dev_err(&adapter->pdev->dev,
+> @@ -2157,9 +2160,10 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+>         */
+>
+>        /* Allocate an area of memory for writeback of status information */
+> -       rx_ring->rx_status_block = pci_alloc_consistent(adapter->pdev,
+> +       rx_ring->rx_status_block = dma_alloc_coherent(&adapter->pdev->dev,
+>                                            sizeof(struct rx_status_block),
+> -                                           &rx_ring->rx_status_bus);
+> +                                           &rx_ring->rx_status_bus,
+> +                                           GFP_KERNEL);
+>        if (!rx_ring->rx_status_block) {
+>                dev_err(&adapter->pdev->dev,
+>                          "Cannot alloc memory for Status Block\n");
+> @@ -2992,8 +2996,8 @@ int et131x_tx_dma_memory_alloc(struct et131x_adapter *adapter)
+>         */
+>        desc_size = (sizeof(struct tx_desc) * NUM_DESC_PER_RING_TX) + 4096 - 1;
+>        tx_ring->tx_desc_ring =
+> -           (struct tx_desc *) pci_alloc_consistent(adapter->pdev, desc_size,
+> -                                                   &tx_ring->tx_desc_ring_pa);
+> +           (struct tx_desc *) dma_alloc_coherent(&adapter->pdev->dev, desc_size,
+> +                                                   &tx_ring->tx_desc_ring_pa, GFP_KERNEL);
+>        if (!adapter->tx_ring.tx_desc_ring) {
+>                dev_err(&adapter->pdev->dev,
+>                                        "Cannot alloc memory for Tx Ring\n");
+> @@ -3008,9 +3012,10 @@ int et131x_tx_dma_memory_alloc(struct et131x_adapter *adapter)
+>         * storing the adjusted address.
+>         */
+>        /* Allocate memory for the Tx status block */
+> -       tx_ring->tx_status = pci_alloc_consistent(adapter->pdev,
+> +       tx_ring->tx_status = dma_alloc_coherent(&adapter->pdev->dev,
+>                                                    sizeof(u32),
+> -                                                   &tx_ring->tx_status_pa);
+> +                                                   &tx_ring->tx_status_pa,
+> +                                                   GFP_KERNEL);
+>        if (!adapter->tx_ring.tx_status_pa) {
+>                dev_err(&adapter->pdev->dev,
+>                                  "Cannot alloc memory for Tx status block\n");
+> --
+> 1.7.6.4
+>
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+>
 
-It was suggested it would be nice to serialize the panic path (ie stop
-the other cpus) and have only one cpu running.  This would allow us to
-bust the spinlocks and not worry about another cpu stepping on the data.
 
-Of course, smp_send_stop() does this in the panic case.  kmsg_dump() would
-have to be moved to be called after it.  Easy enough.
 
-The only problem is on x86 the smp_send_stop() function calls the
-REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and its backend
-ERST would do), block this IPI and thus do not stop.  This makes it
-difficult to reliably log data to the pstore fs.
-
-The patch below switches from the REBOOT_VECTOR to NMI (and mimics what
-kdump does).  Switching to NMI allows us to deliver the IPI when irqs are
-disabled, increasing the reliability of this function.
-
-However, Andi carefully noted that on some machines this approach does not
-work because of broken BIOSes or whatever.
-
-To help accomodate this, the next couple of patches will run a selftest and
-provide a knob to disable.
-
-V2:
-  uses atomic ops to serialize the cpu that shuts everyone down
-V3:
-  comment cleanup
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
-
-[note] this patch sits on top of another NMI infrastructure change I have
-submitted, so the nmi registeration might not apply cleanly without that patch.
----
- arch/x86/kernel/smp.c |   59 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 57 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 013e7eb..991d184 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -28,6 +28,7 @@
- #include <asm/mmu_context.h>
- #include <asm/proto.h>
- #include <asm/apic.h>
-+#include <asm/nmi.h>
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -147,6 +148,60 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- 	free_cpumask_var(allbutself);
- }
- 
-+static atomic_t stopping_cpu = ATOMIC_INIT(-1);
-+
-+static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
-+{
-+	/* We are registered on stopping cpu too, avoid spurious NMI */
-+	if (raw_smp_processor_id() == atomic_read(&stopping_cpu))
-+		return NMI_HANDLED;
-+
-+	stop_this_cpu(NULL);
-+
-+	return NMI_HANDLED;
-+}
-+
-+static void native_nmi_stop_other_cpus(int wait)
-+{
-+	unsigned long flags;
-+	unsigned long timeout;
-+
-+	if (reboot_force)
-+		return;
-+
-+	/*
-+	 * Use an own vector here because smp_call_function
-+	 * does lots of things not suitable in a panic situation.
-+	 */
-+	if (num_online_cpus() > 1) {
-+		/* did someone beat us here? */
-+		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id() != -1))
-+			return;
-+
-+		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-+					 NMI_FLAG_FIRST, "smp_stop"))
-+			/* Note: we ignore failures here */
-+			return;
-+
-+		/* sync above data before sending NMI */
-+		wmb();
-+
-+		apic->send_IPI_allbutself(NMI_VECTOR);
-+
-+		/*
-+		 * Don't wait longer than a second if the caller
-+		 * didn't ask us to wait.
-+		 */
-+		timeout = USEC_PER_SEC;
-+		while (num_online_cpus() > 1 && (wait || timeout--))
-+			udelay(1);
-+	}
-+
-+	local_irq_save(flags);
-+	disable_local_APIC();
-+	local_irq_restore(flags);
-+}
-+
- /*
-  * this function calls the 'stop' function on all other CPUs in the system.
-  */
-@@ -159,7 +214,7 @@ asmlinkage void smp_reboot_interrupt(void)
- 	irq_exit();
- }
- 
--static void native_stop_other_cpus(int wait)
-+static void native_irq_stop_other_cpus(int wait)
- {
- 	unsigned long flags;
- 	unsigned long timeout;
-@@ -229,7 +284,7 @@ struct smp_ops smp_ops = {
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
- 	.smp_cpus_done		= native_smp_cpus_done,
- 
--	.stop_other_cpus	= native_stop_other_cpus,
-+	.stop_other_cpus	= native_nmi_stop_other_cpus,
- 	.smp_send_reschedule	= native_smp_send_reschedule,
- 
- 	.cpu_up			= native_cpu_up,
 -- 
-1.7.6.4
-
+Regards,
+Denis
