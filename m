@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab1JMEHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 00:07:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49666 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab1JMEG7 (ORCPT
+	id S1751576Ab1JMEJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 00:09:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56133 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab1JMEJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 00:06:59 -0400
-Date: Wed, 12 Oct 2011 21:06:56 -0700
-From: mark gross <markgross@thegnar.org>
+	Thu, 13 Oct 2011 00:09:28 -0400
+Date: Wed, 12 Oct 2011 22:09:23 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
 To: Ming Lei <tom.leiming@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM List <linux-pm@vger.kernel.org>
-Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
-Message-ID: <20111013040656.GE893@mgross-G62>
-Reply-To: markgross@thegnar.org
-References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+Cc: Andrei Warkentin <awarkentin@vmware.com>, Greg KH <greg@kroah.com>,
+        Dilan Lee <dilee@nvidia.com>, "G, Manjunath Kondaiah" <manjugk@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, Manjunath@jasper.es,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+Message-ID: <20111013040923.GE15829@ponder.secretlab.ca>
+References: <20111008155502.GB616@kroah.com>
+ <361419345.198335.1318268242916.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+ <CACVXFVMnt-ChUDhawhoyMm-wJ8xSQAWs1c8ykzmyshfX49HEsw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+In-Reply-To: <CACVXFVMnt-ChUDhawhoyMm-wJ8xSQAWs1c8ykzmyshfX49HEsw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 10:31:34PM +0800, Ming Lei wrote:
-> Hi,
+On Tue, Oct 11, 2011 at 08:29:18PM +0800, Ming Lei wrote:
+> On Tue, Oct 11, 2011 at 1:37 AM, Andrei Warkentin <awarkentin@vmware.com> wrote:
+> > Hi,
+> >
+> > ----- Original Message -----
+> >> From: "Greg KH" <greg@kroah.com>
+> >> To: "Josh Triplett" <josh@joshtriplett.org>
+> >> Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-arm-kernel@lists.infradead.org, "Grant Likely"
+> >> <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+> >> "Dilan Lee" <dilee@nvidia.com>, "Mark Brown" <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
+> >> Sent: Saturday, October 8, 2011 11:55:02 AM
+> >> Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+> >>
+> >
+> > I'm a bit of a fly on the wall here, but I'm curious how this impacts suspend/resume.
+> > device_initialize->device_pm_init are called from device_register, so certainly this
+> > patch doesn't also ensure that the PM ordering matches probe ordering, which is bound
+> > to break suspend, right? Was this ever tested with the OMAP target? Shouldn't the
 > 
-> Looks like it is a bit difficult to understand PM_QOS_CPU_DMA_LATENCY
-> from the words' meaning.
-> 
-> After searching from google, I don't find some useful information about
-> the root cause for introducing PM_QOS_CPU_DMA_LATENCY. I understand
-> it is very similar to interrupt latency. Also from the comment for
-> omap_pm_set_max_mpu_wakeup_lat in file[1], the description is basically same
-> with interrupt latency.
+> Inside device_add(), device_pm_add is called before bus_probe_device,
+> so the patch can't change the device order in pm list, and just change
+> the driver probe order.
 
-its the amount of time the CPU can take to wake up and feed a DMA
-engine.  Its a bit more general than interrupt latency.
+That's the way it works now, but can it be reworked?  It would be
+possible to adjust the list order after successful probe.  However,
+I'm not clear on the ordering rules for the dpm_list.  Right now it is
+explicitly ordered to have parents before children, but as already
+expressed, that doesn't accurately represent ordering constraints for
+multiple device dependancies.
 
-> From comments of pm_qos_add_request usages in drivers, it can be understood
-> as interrupt latency too, IMO.
+So, reordering the list would probably require maintaining the
+existing parent-child ordering constraint, but to also shift
+devices (and any possible children?) to be after drivers that are
+already probed.  That alone will be difficult to implement and get
+right, but maybe the constraints can be simplified.  It needs some
+further thought.
 
-The original 2 issues that drove its predecessor implementation where
-DMA'ing data to the original intel wifi device.  If the CPU snoozed too
-long the wifi device would get lost and network would suffer.
+g.
 
-The other one was something to do with generating audio pops if the cpu
-didn't keep some audio buffer that was getting DMA'd to something from
-underflowing.
-
-
-> 
-> So, could we think that PM_QOS_CPU_DMA_LATENCY is interrupt latency?
-nope.
-
---mark
-> 
-> [1], arch/arm/plat-omap/include/plat/omap-pm.h
-> 
-> thanks,
-> -- 
-> Ming Lei
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
