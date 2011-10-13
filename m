@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab1JMUGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:06:37 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53700 "EHLO mx2.parallels.com"
+	id S1754748Ab1JMUG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 16:06:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab1JMUGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:06:34 -0400
-Message-ID: <4E9744A6.5010101@parallels.com>
-Date: Fri, 14 Oct 2011 00:05:58 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754674Ab1JMUGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 16:06:55 -0400
+Message-ID: <4E9744C1.5040903@redhat.com>
+Date: Thu, 13 Oct 2011 17:06:25 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <paul@paulmenage.org>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
-        <avagin@parallels.com>, <devel@openvz.org>
-Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
-References: <1318511382-31051-1-git-send-email-glommer@parallels.com> <20111013.160031.605700447623532119.davem@davemloft.net>
-In-Reply-To: <20111013.160031.605700447623532119.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [195.68.147.2]
+To: =?UTF-8?B?TmlrbGFzIFPDtmRlcmx1bmQ=?= <niso@kth.se>
+CC: Borislav Petkov <bp@amd64.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i7core_edac: fix erroneous size of static array
+References: <1318530294-6829-1-git-send-email-niso@kth.se> <20111013185656.GC3064@aftab> <4E97442A.80308@kth.se>
+In-Reply-To: <4E97442A.80308@kth.se>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 12:00 AM, David Miller wrote:
-> From: Glauber Costa<glommer@parallels.com>
-> Date: Thu, 13 Oct 2011 17:09:34 +0400
->
->> This series was extensively reviewed over the past month, and after
->> all major comments were merged, I feel it is ready for inclusion when
->> the next merge window opens. Minor fixes will be provided if they
->> prove to be necessary.
->
-> I'm not applying this.
+Em 13-10-2011 17:03, Niklas Söderlund escreveu:
+> On 10/13/2011 08:56 PM, Borislav Petkov wrote:
+> 
+>> On Thu, Oct 13, 2011 at 02:24:54PM -0400, Niklas Söderlund wrote:
+>>> Signed-off-by: Niklas Söderlund <niso@kth.se>
+>>> ---
+>>>  drivers/edac/i7core_edac.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+>>> index 70ad892..e0f6096 100644
+>>> --- a/drivers/edac/i7core_edac.c
+>>> +++ b/drivers/edac/i7core_edac.c
+>>> @@ -441,7 +441,7 @@ static inline int numrow(u32 row)
+>>>  
+>>>  static inline int numcol(u32 col)
+>>>  {
+>>> -	static int cols[8] = {
+>>> +	static int cols[4] = {
+>>>  		1 << 10, 1 << 11, 1 << 12, -EINVAL,
+>>>  	};
+>>
+>> Even better,
+>>
+>> you could completely remove the number in the [] since the {}
+>> initializer contains all array elements already. In this and the
+>> remaining arrays in those small inline functions.
+>>
+> 
+> 
+> Thanks for the feedback!
+> 
+> What would be the correct way of submitting an updated patch? Sending it
+> in this mail thread or create a new one?
 
-Thank you for letting me now about your view of this that early.
+[PATCHv2] is the usual way. if you're using git, you may use the msgid of
+the first message as a reference for the version 2.
 
-> You're turning inline increments and decrements of the existing memory
-> limits into indirect function calls.
-
-Yes, indeed.
-
-> That imposes a new non-trivial cost, in fast paths, even when people
-> do not use your feature.
-Well, there is a cost, but all past submissions included round trip 
-benchmarks.
-In none of them I could see any significant slowdown.
-
-> Make this evaluate into exactly the same exact code stream we have
-> now when the memory cgroup feature is not in use, which will be the
-> majority of users.
-
-What exactly do you mean by "not in use" ? Not compiled in or not 
-actively being exercised ? If you mean the later, I appreciate tips on 
-how to achieve it.
-
-Also, I kind of dispute the affirmation that !cgroup will encompass
-the majority of users, since cgroups is being enabled by default by
-most vendors. All systemd based systems use it extensively, for instance.
-
-
+Mauro.
