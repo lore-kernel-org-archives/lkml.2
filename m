@@ -1,89 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab1JMLCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 07:02:39 -0400
-Received: from bubo.tul.cz ([147.230.16.1]:57588 "EHLO bubo.tul.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282Ab1JMLCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 07:02:38 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Organization: TUL
-Subject: [RFC][PATCH][TRIVIAL] System ACE fails in look for root devices
-To: grant.likely@secretlab.ca
-Date: Thu, 13 Oct 2011 13:02:42 +0200
-Cc: linux-kernel@vger.kernel.org
+	id S1754851Ab1JMLEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 07:04:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57586 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab1JMLEP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 07:04:15 -0400
+Date: Thu, 13 Oct 2011 13:04:10 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai.lu@oracle.com>
+Subject: Re: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space
+ for HT hole around 1TB
+Message-ID: <20111013110410.GB16748@alberich.amd.com>
+References: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Petr Cvek" <petr.cvek@tul.cz>
-Message-ID: <op.v3aeassn4x40tt@localhost>
-User-Agent: Opera Mail/10.63 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+CC-ing Yinghai Lu <yinghai.lu@oracle.com> as yinghai@kernel.org still
+doesn't seem to work.
 
-I sent this mail some time ago, but nobody replied :-(.
 
+Andreas
 
-I'm using microblaze linux on ML506 board and I found problem with  
-SystemACE CF driver.
-
-When xsysace driver is probed, and dts file does not include entry  
-"port-number" (existence of line not actually tested) on line:
-
-	of_property_read_u32(dev->dev.of_node, "port-number", &id);
-
-kernel fails to boot with this message:
-
-	<4>VFS: Cannot open root device "xsa2" or unknown-block(0,0)
-	<4>Please append a correct "root=" boot option; here are the available  
-partitions:
-	<4>fff:ffff0     990864 xs`  (driver?)
-	<4>  fff:ffff1     124960 xs`1 00000000-0000-0000-0000-000000000000
-	<4>  fff:ffff2     865872 xs`2 00000000-0000-0000-0000-000000000000
-	<0>Kernel panic - not syncing: VFS: Unable to mount root fs on  
-unknown-block(0,0)
-
-(note xs` xs`1 xs`2 partition names)
-
-So I've done some searching and found "ace->id" variable, which has value  
-"-1". Because this value define letter of drive and is incremented by 'a',  
-then with its value of -1, creates letter before 'a' thus '`'.
-
-"ace->id" value is assigned in ace_probe function on line
-
-       of_property_read_u32(dev->dev.of_node, "port-number", &id);
-       if (id < 0)
-           id = 0;
-
-This condition should prevents value to be less than zero, but is does  
-not. It's because type, which is u32 few lines before, condition is never  
-true.  So I suggest changing it to int. Actually, there was patch some  
-time ago, which has changed it into u32 (last patch for xsysace.c).
-
-	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=5d10302f46df1d9a85c34ea97f9b6c29e414482e
-
-And finally here is my patch, which suggests changing this line back:
-
-Test for signed value is never true, because of unsigned type.
-
-From: Petr Cvek <petr.cvek@tul.cz>
-
-Signed-off-by: Petr Cvek <petr.cvek@tul.cz>
----
-diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-index fb1975d..3ed920c 100644
---- a/drivers/block/xsysace.c
-+++ b/drivers/block/xsysace.c
-@@ -1155,7 +1155,7 @@ static int __devinit ace_probe(struct
-platform_device *dev)
-    {
-           resource_size_t physaddr = 0;
-           int bus_width = ACE_BUS_WIDTH_16; /* FIXME: should not be hard
-coded */
--       u32 id = dev->id;
-+       int id = dev->id;
-           int irq = NO_IRQ;
-           int i;
-
+On Tue, Oct 11, 2011 at 05:09:35PM -0500, Jacob Shin wrote:
+> The entire HT hole and also the unused address range before that hole
+> need to be excluded from direct mapping. Otherwise speculative
+> accesses to that reserved region can happen which cause machine
+> checks.
+> 
+> Cc: stable@kernel.org   # > 2.6.32
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> ---
+>  arch/x86/include/asm/e820.h           |    1 +
+>  arch/x86/include/asm/hypertransport.h |    7 +++++
+>  arch/x86/include/asm/processor.h      |   16 +++++++++++++
+>  arch/x86/kernel/cpu/amd.c             |   40 +++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/e820.c                |    6 +++++
+>  arch/x86/kernel/setup.c               |    8 +++++-
+>  6 files changed, 76 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+> index 908b969..7e4d417 100644
+> --- a/arch/x86/include/asm/e820.h
+> +++ b/arch/x86/include/asm/e820.h
+> @@ -117,6 +117,7 @@ static inline void early_memtest(unsigned long start, unsigned long end)
+>  
+>  extern unsigned long e820_end_of_ram_pfn(void);
+>  extern unsigned long e820_end_of_low_ram_pfn(void);
+> +extern unsigned long e820_end_of_ram_under_ht_pfn(void);
+>  extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+>  
+>  void memblock_x86_fill(void);
+> diff --git a/arch/x86/include/asm/hypertransport.h b/arch/x86/include/asm/hypertransport.h
+> index 334b1a8..c1d5a08 100644
+> --- a/arch/x86/include/asm/hypertransport.h
+> +++ b/arch/x86/include/asm/hypertransport.h
+> @@ -42,4 +42,11 @@
+>  #define HT_IRQ_HIGH_DEST_ID(v)						\
+>  	((((v) >> 8) << HT_IRQ_HIGH_DEST_ID_SHIFT) & HT_IRQ_HIGH_DEST_ID_MASK)
+>  
+> +/*
+> + * Memory Region Reserved for HyperTransport
+> + */
+> +
+> +#define HT_RESERVED_MEM_START           0xfd00000000ULL
+> +#define HT_RESERVED_MEM_END             0x10000000000ULL
+> +
+>  #endif /* _ASM_X86_HYPERTRANSPORT_H */
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 0d1171c..73ae54f 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -970,6 +970,22 @@ extern int set_tsc_mode(unsigned int val);
+>  
+>  extern int amd_get_nb_id(int cpu);
+>  
+> +#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
+> +extern int amd_with_ram_above_ht(void);
+> +extern unsigned long amd_init_high_memory_mapping(void);
+> +#else
+> +static inline int amd_with_ram_above_ht(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline unsigned long amd_init_high_memory_mapping(void)
+> +{
+> +	BUG();
+> +	return 0;
+> +}
+> +#endif
+> +
+>  struct aperfmperf {
+>  	u64 aperf, mperf;
+>  };
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index b13ed39..a57b010 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -7,6 +7,7 @@
+>  #include <asm/apic.h>
+>  #include <asm/cpu.h>
+>  #include <asm/pci-direct.h>
+> +#include <asm/hypertransport.h>
+>  
+>  #ifdef CONFIG_X86_64
+>  # include <asm/numa_64.h>
+> @@ -755,3 +756,42 @@ bool cpu_has_amd_erratum(const int *erratum)
+>  }
+>  
+>  EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
+> +
+> +#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
+> +int __cpuinit amd_with_ram_above_ht(void)
+> +{
+> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD &&
+> +	    max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_START)
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * On AMD systems, memory region 0xfd_0000_0000 ~ 0xff_ffff_ffff is reserved by
+> + * HyperTransport and cannot be used by the processor. On systems with more than
+> + * 1TB of RAM, BIOS may take memory immediately below the HT region and "hoist"
+> + * it up above the HT region, leaving a hole.
+> + */
+> +unsigned long __cpuinit amd_init_high_memory_mapping(void)
+> +{
+> +	unsigned long ret;
+> +
+> +	/* remove HT region from the e820 map, if it's declared as usable */
+> +	e820_remove_range(HT_RESERVED_MEM_START,
+> +			  HT_RESERVED_MEM_END - HT_RESERVED_MEM_START,
+> +			  E820_RAM, 1);
+> +	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+> +
+> +	/* direct mapping of high memory under HT */
+> +	ret = init_memory_mapping(1UL << 32,
+> +		e820_end_of_ram_under_ht_pfn() << PAGE_SHIFT);
+> +
+> +	/* skip HT region, direct mapping of high memory above HT */
+> +	if (max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_END)
+> +		ret = init_memory_mapping(HT_RESERVED_MEM_END,
+> +					  max_pfn << PAGE_SHIFT);
+> +
+> +	return ret;
+> +}
+> +#endif
+> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+> index 3e2ef84..c0ba036 100644
+> --- a/arch/x86/kernel/e820.c
+> +++ b/arch/x86/kernel/e820.c
+> @@ -22,6 +22,7 @@
+>  #include <asm/e820.h>
+>  #include <asm/proto.h>
+>  #include <asm/setup.h>
+> +#include <asm/hypertransport.h>
+>  
+>  /*
+>   * The e820 map is the map that gets modified e.g. with command line parameters
+> @@ -826,6 +827,11 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
+>  	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
+>  }
+>  
+> +unsigned long __init e820_end_of_ram_under_ht_pfn(void)
+> +{
+> +	return e820_end_pfn(HT_RESERVED_MEM_START >> PAGE_SHIFT, E820_RAM);
+> +}
+> +
+>  static void early_panic(char *msg)
+>  {
+>  	early_printk(msg);
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index afaf384..84d0968 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -937,8 +937,12 @@ void __init setup_arch(char **cmdline_p)
+>  
+>  #ifdef CONFIG_X86_64
+>  	if (max_pfn > max_low_pfn) {
+> -		max_pfn_mapped = init_memory_mapping(1UL<<32,
+> -						     max_pfn<<PAGE_SHIFT);
+> +		if (amd_with_ram_above_ht())
+> +			max_pfn_mapped = amd_init_high_memory_mapping();
+> +		else
+> +			max_pfn_mapped = init_memory_mapping(1UL << 32,
+> +				max_pfn << PAGE_SHIFT);
+> +
+>  		/* can we preseve max_low_pfn ?*/
+>  		max_low_pfn = max_pfn;
+>  	}
+> -- 
+> 1.7.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
