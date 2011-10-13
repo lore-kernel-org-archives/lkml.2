@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab1JMIWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 04:22:13 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26022 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752227Ab1JMIWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 04:22:11 -0400
-Message-ID: <4E969FAE.5000909@dsn.lapis-semi.com>
-Date: Thu, 13 Oct 2011 17:22:06 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1753835Ab1JMIZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 04:25:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34547 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509Ab1JMIZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 04:25:38 -0400
+Date: Thu, 13 Oct 2011 10:25:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>
+Subject: Re: [PATCH] [TRIVIAL] ARM: pxa: Fix typo
+ 'CONFIG_BACKLIGHT_PWM__MODULE'
+In-Reply-To: <1318347115.5754.3.camel@x61.thuisdomein>
+Message-ID: <alpine.LNX.2.00.1110131024160.14768@pobox.suse.cz>
+References: <1318347115.5754.3.camel@x61.thuisdomein>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the gpio tree
-References: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au> <20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au> <4E93EA10.4030405@dsn.lapis-semi.com> <20111012152451.66ce5ddffb4c5b3a4f6a31cf@canb.auug.org.au> <4E9525AC.9080909@dsn.lapis-semi.com> <CABMQnV+S2WbW0YZBiMXfs81b2dyLzj9wBxPmNuFrYErKfXsWtg@mail.gmail.com> <4E9551B8.4060601@dsn.lapis-semi.com> <20111013035714.GD15829@ponder.secretlab.ca>
-In-Reply-To: <20111013035714.GD15829@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/13 12:57), Grant Likely wrote:
-> I've temporarily pushed out a commit that makes the pch and ml_ioh
-> bool instead of tristate.  If that other patch gets acked by Thomas,
-> then I should probably take it through the gpio tree.
-Let me clarify your intention.
-Does previous patch for generic-chip posted by Nobuhiro enable 
-pch/ml_ioh gpio driver works on both module and built-in ?
-If yes, why do you need to change tristate to bool ?
+On Tue, 11 Oct 2011, Paul Bolle wrote:
+
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested (I don't think I've got the hardware, nor have I got the
+> toolchain at hand, etc.).
+
+Neither do I, so I'd like to get Ack from maintainer (added to CC) before 
+I take this one, to make sure that it doesn't introduce some failure that 
+has been hidden by this.
+
+Marek? Thanks.
+
+> 
+>  arch/arm/mach-pxa/colibri-pxa270-income.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-pxa/colibri-pxa270-income.c b/arch/arm/mach-pxa/colibri-pxa270-income.c
+> index 80538b8..248804b 100644
+> --- a/arch/arm/mach-pxa/colibri-pxa270-income.c
+> +++ b/arch/arm/mach-pxa/colibri-pxa270-income.c
+> @@ -183,7 +183,7 @@ static inline void income_lcd_init(void) {}
+>  /******************************************************************************
+>   * Backlight
+>   ******************************************************************************/
+> -#if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM__MODULE)
+> +#if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM_MODULE)
+>  static struct platform_pwm_backlight_data income_backlight_data = {
+>  	.pwm_id		= 0,
+>  	.max_brightness	= 0x3ff,
+> -- 
+> 1.7.4.4
+> 
 
 -- 
-tomoya
-ROHM Co., Ltd.
+Jiri Kosina
+SUSE Labs
