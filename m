@@ -1,36 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab1JMOBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:01:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7211 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755404Ab1JMOBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:01:42 -0400
-Date: Thu, 13 Oct 2011 11:01:21 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
-Subject: Re: [PATCH] perf: fix compilation when NO_NEWT_SUPPORT is set
-Message-ID: <20111013140121.GA18358@ghostprotocols.net>
-References: <20111012120328.GA1619@quad>
+	id S1755562Ab1JMOCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:02:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44942 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab1JMOCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:02:23 -0400
+Date: Thu, 13 Oct 2011 18:02:16 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: LKML <linux-kernel@vger.kernel.org>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Linux Containers <containers@lists.osdl.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: [PATCH] clone: Introduce the CLONE_CHILD_USEPID functionality
+Message-ID: <20111013140216.GD11230@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111012120328.GA1619@quad>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 12, 2011 at 02:03:28PM +0200, Stephane Eranian escreveu:
-> 
-> This patch, relative to tip/master, makes perf compile
-> when NO_NEWT_SUPPORT is set.  It also fixes the line
-> formatting to fit 80 columns.
-> 
-> Please test with NO_NEWT.
+At previous review session seems no final conclusion was made so this is
+a second attempt to step forward.
 
-Thanks, sorry about that.
+---
+From: Pavel Emelyanov <xemul@openvz.org>
+Subject: [PATCH] clone: Introduce the CLONE_CHILD_USEPID functionality
 
-- Arnaldo
+When restoring a task (or a set of tasks) we need to recreate them with
+exactly the same pid as they had before. Thus we need the ability to create
+a task with specified pid.
+
+The proposal is to reuse the already free CLONE_STOPPED clone flag.
+
+About the security implication - this can create some problems with pids
+wraparound and similar, so this approach can be restricted with the "don't
+allow for CLONE_CHILD_USEPID when the current pid namespace has ever done
+real pid allocation". This will work perfectly for checkpoint-restore and
+will not give anyone chances for screwing pids up on a living system.
+
+Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ include/linux/pid.h   |    2 -
+ include/linux/sched.h |    1 
+ kernel/fork.c         |   10 ++++++-
+ kernel/pid.c          |   70 ++++++++++++++++++++++++++++++++++++--------------
+ 4 files changed, 62 insertions(+), 21 deletions(-)
+
+Index: linux-2.6.git/include/linux/pid.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/pid.h
++++ linux-2.6.git/include/linux/pid.h
+@@ -119,7 +119,7 @@ extern struct pid *find_get_pid(int nr);
+ extern struct pid *find_ge_pid(int nr, struct pid_namespace *);
+ int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
+ 
+-extern struct pid *alloc_pid(struct pid_namespace *ns);
++extern struct pid *alloc_pid(struct pid_namespace *ns, int pid);
+ extern void free_pid(struct pid *pid);
+ 
+ /*
+Index: linux-2.6.git/include/linux/sched.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/sched.h
++++ linux-2.6.git/include/linux/sched.h
+@@ -23,6 +23,7 @@
+ #define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
+ /* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
+    and is now available for re-use. */
++#define CLONE_CHILD_USEPID	0x02000000	/* use the given pid */
+ #define CLONE_NEWUTS		0x04000000	/* New utsname group? */
+ #define CLONE_NEWIPC		0x08000000	/* New ipcs */
+ #define CLONE_NEWUSER		0x10000000	/* New user namespace */
+Index: linux-2.6.git/kernel/fork.c
+===================================================================
+--- linux-2.6.git.orig/kernel/fork.c
++++ linux-2.6.git/kernel/fork.c
+@@ -1239,8 +1239,16 @@ static struct task_struct *copy_process(
+ 		goto bad_fork_cleanup_io;
+ 
+ 	if (pid != &init_struct_pid) {
++		int want_pid = 0;
++
++		if (clone_flags & CLONE_CHILD_USEPID) {
++			retval = get_user(want_pid, child_tidptr);
++			if (retval)
++				goto bad_fork_cleanup_io;
++		}
++
+ 		retval = -ENOMEM;
+-		pid = alloc_pid(p->nsproxy->pid_ns);
++		pid = alloc_pid(p->nsproxy->pid_ns, want_pid);
+ 		if (!pid)
+ 			goto bad_fork_cleanup_io;
+ 	}
+Index: linux-2.6.git/kernel/pid.c
+===================================================================
+--- linux-2.6.git.orig/kernel/pid.c
++++ linux-2.6.git/kernel/pid.c
+@@ -159,11 +159,55 @@ static void set_last_pid(struct pid_name
+ 	} while ((prev != last_write) && (pid_before(base, last_write, pid)));
+ }
+ 
+-static int alloc_pidmap(struct pid_namespace *pid_ns)
++static int alloc_pidmap_page(struct pidmap *map)
++{
++	if (unlikely(!map->page)) {
++		void *page = kzalloc(PAGE_SIZE, GFP_KERNEL);
++		/*
++		 * Free the page if someone raced with us
++		 * installing it:
++		 */
++		spin_lock_irq(&pidmap_lock);
++		if (!map->page) {
++			map->page = page;
++			page = NULL;
++		}
++		spin_unlock_irq(&pidmap_lock);
++		kfree(page);
++		if (unlikely(!map->page))
++			return -ENOMEM;
++	}
++
++	return 0;
++}
++
++static int set_pidmap(struct pid_namespace *pid_ns, int pid)
++{
++	int offset;
++	struct pidmap *map;
++
++	offset = pid & BITS_PER_PAGE_MASK;
++	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
++
++	if (alloc_pidmap_page(map) < 0)
++		return -ENOMEM;
++
++	if (!test_and_set_bit(offset, map->page)) {
++		atomic_dec(&map->nr_free);
++		return pid;
++	}
++
++	return -EBUSY;
++}
++
++static int alloc_pidmap(struct pid_namespace *pid_ns, int desired_pid)
+ {
+ 	int i, offset, max_scan, pid, last = pid_ns->last_pid;
+ 	struct pidmap *map;
+ 
++	if (desired_pid)
++		return set_pidmap(pid_ns, desired_pid);
++
+ 	pid = last + 1;
+ 	if (pid >= pid_max)
+ 		pid = RESERVED_PIDS;
+@@ -176,22 +220,9 @@ static int alloc_pidmap(struct pid_names
+ 	 */
+ 	max_scan = DIV_ROUND_UP(pid_max, BITS_PER_PAGE) - !offset;
+ 	for (i = 0; i <= max_scan; ++i) {
+-		if (unlikely(!map->page)) {
+-			void *page = kzalloc(PAGE_SIZE, GFP_KERNEL);
+-			/*
+-			 * Free the page if someone raced with us
+-			 * installing it:
+-			 */
+-			spin_lock_irq(&pidmap_lock);
+-			if (!map->page) {
+-				map->page = page;
+-				page = NULL;
+-			}
+-			spin_unlock_irq(&pidmap_lock);
+-			kfree(page);
+-			if (unlikely(!map->page))
+-				break;
+-		}
++		if (alloc_pidmap_page(map) < 0)
++			break;
++
+ 		if (likely(atomic_read(&map->nr_free))) {
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
+@@ -277,7 +308,7 @@ void free_pid(struct pid *pid)
+ 	call_rcu(&pid->rcu, delayed_put_pid);
+ }
+ 
+-struct pid *alloc_pid(struct pid_namespace *ns)
++struct pid *alloc_pid(struct pid_namespace *ns, int this_ns_pid)
+ {
+ 	struct pid *pid;
+ 	enum pid_type type;
+@@ -291,13 +322,14 @@ struct pid *alloc_pid(struct pid_namespa
+ 
+ 	tmp = ns;
+ 	for (i = ns->level; i >= 0; i--) {
+-		nr = alloc_pidmap(tmp);
++		nr = alloc_pidmap(tmp, this_ns_pid);
+ 		if (nr < 0)
+ 			goto out_free;
+ 
+ 		pid->numbers[i].nr = nr;
+ 		pid->numbers[i].ns = tmp;
+ 		tmp = tmp->parent;
++		this_ns_pid = 0;
+ 	}
+ 
+ 	get_pid_ns(ns);
