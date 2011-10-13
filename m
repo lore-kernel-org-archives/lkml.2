@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab1JMOAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 10:00:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755043Ab1JMOAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 10:00:12 -0400
-Date: Thu, 13 Oct 2011 09:59:47 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH RFC V4 10/10] jump-label: initialize jump-label subsystem
- much earlier
-Message-ID: <20111013135945.GB2455@redhat.com>
-References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
- <c133180533d7e520bb1e818e987117811a666fbc.1318464413.git.jeremy.fitzhardinge@citrix.com>
- <1318502628.24856.10.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318502628.24856.10.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755524Ab1JMOAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 10:00:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57664 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab1JMOAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 10:00:15 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=NFX316_vVeIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=J7-p8CfoAc0K6OV2Y5cA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1318514413.12224.7.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/2 v2] [GIT PULL][v3.2] tracing: queued updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu, 13 Oct 2011 10:00:13 -0400
+In-Reply-To: <1318514142.12224.5.camel@gandalf.stny.rr.com>
+References: <20111011152026.701326733@goodmis.org>
+	 <20111012081629.GA25086@elte.hu>
+	 <1318418515.13262.21.camel@gandalf.stny.rr.com>
+	 <1318425974.13262.26.camel@gandalf.stny.rr.com>
+	 <20111012162320.GA31857@elte.hu> <20111013085936.GA13046@elte.hu>
+	 <1318514142.12224.5.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 12:43:48PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-10-12 at 17:08 -0700, Jeremy Fitzhardinge wrote:
-> > From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > 
-> > Initialize jump_labels much earlier, we can use them.
-> 
-> We can use them, where? how? what?, that sentence just begs for more.
-> 
-> > diff --git a/init/main.c b/init/main.c
-> > index 2a9b88a..f4094ed 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -637,6 +637,7 @@ asmlinkage void __init start_kernel(void)
-> >  	acpi_early_init(); /* before LAPIC and SMP init */
-> >  	sfi_init_late();
-> >  
-> > +	jump_label_init();
-> >  	ftrace_init();
-> >  
-> >  	/* Do the rest non-__init'ed, we're now alive */
-> 
-> Can we push them much earlier still? If possible I'd like them to be
-> before sched_init() so that I might use them there, if not possible, at
-> the very least before enabling interrupts would be nice.
-> 
-> 
+On Thu, 2011-10-13 at 09:55 -0400, Steven Rostedt wrote:
 
-Yes, earlier still would be good. Also, it still bothers me a bit that
-jump_label_inc()/dec() could be called and the branch not updated until
-the jump label initialization. I feel like there should be a WARN() for
-this case...ie:
+> > there's a cross-build failure on the m32r architecture:
+> 
+> Hmm, I don't have a m32r cross compiler in my arsenal.
 
-jump_label_inc()/dec() {
-	if (!jump_label_initialized)
-		WARN("calling branch update before subsystem initialization");
-}
+Ah, I didn't see a 4.5.2 m32r binary cross compiler, but there is a
+4.5.1. I'll add this to my tool chain.
 
+Thanks!
 
-
+-- Steve
 
 
