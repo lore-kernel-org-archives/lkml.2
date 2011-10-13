@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab1JMXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 19:32:09 -0400
-Received: from mail.intechworld.net ([114.129.8.44]:56664 "EHLO
-	mail.intechworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1JMXcI (ORCPT
+	id S1756847Ab1JMXcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 19:32:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53220 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab1JMXcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 19:32:08 -0400
-Message-ID: <b9dfb0b80f625cb75030d334e48790f0.squirrel@intechworld.net>
-Date: Thu, 13 Oct 2011 00:46:53 +0100
-Subject: Your Payment Notification?
-From: "WESTERN UNION OFFICE" <info@yahoo.com>
-Reply-To: w.u@fengv.com
-User-Agent: SquirrelMail/1.4.21
+	Thu, 13 Oct 2011 19:32:52 -0400
+Date: Fri, 14 Oct 2011 00:32:50 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/3] ASoC: alc5623: Convert codec->hw_read to
+ regmap_read
+Message-ID: <20111013233250.GA21690@sirena.org.uk>
+References: <1318490575.2857.8.camel@phoenix>
+ <20111013165129.GO5193@opensource.wolfsonmicro.com>
+ <CAF+7xWkVLNgToGiEn+xqgnii7QozNu0QAf2U-kXRNRtVK0dkqA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWkVLNgToGiEn+xqgnii7QozNu0QAf2U-kXRNRtVK0dkqA@mail.gmail.com>
+X-Cookie: Do not exceed recommended dosage.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Western Union®
+On Fri, Oct 14, 2011 at 06:39:43AM +0800, Axel Lin wrote:
 
-The sum of Three Hundred Thousand Dollars ($300,000.00 USD) has been
-deposited here in WESTERN UNION OFFICE by the United Nations
-Organization.Kindly contact
-us for more informations.
+> +       codec->cache_bypass = 1;
+> +       for (i = 0 ; i < codec->driver->reg_cache_size ; i += step) {
+> +               snd_soc_read(codec, i);
+> +               cache[i] = val;
+> +       }
+> +       codec->cache_bypass = 0;
 
-Contact Email: w.u@fengv.com
-
-Customer Service
-Western Union®
-
-
+Oh, sorry - I misread this and this is what I'm expecting.
