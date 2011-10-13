@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab1JMHda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 03:33:30 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59972 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab1JMHd3 (ORCPT
+	id S1753465Ab1JMHeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 03:34:09 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42287 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab1JMHeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 03:33:29 -0400
-Date: Thu, 13 Oct 2011 16:33:21 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Satoru Moriya <satoru.moriya@hds.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-Message-ID: <20111013073321.GA2784@barrios-desktop>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
- <20110901100650.6d884589.rdunlap@xenotime.net>
- <20110901152650.7a63cb8b@annuminas.surriel.com>
- <20110901145819.4031ef7c.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CAFB42677@USINDEVS02.corp.hds.com>
+	Thu, 13 Oct 2011 03:34:05 -0400
+Date: Thu, 13 Oct 2011 09:33:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+Message-ID: <20111013073352.GB501@aftab>
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
+ <4E94E1E5.4070505@goop.org>
+ <20111012101615.GA14966@aftab>
+ <4E95D9E7.6090304@zytor.com>
+ <4E95E7FE.6050302@goop.org>
+ <20111012194543.GD14966@aftab>
+ <20111012204048.GA22260@phenom.oracle.com>
+ <4E960746.90805@zytor.com>
+ <20111012214013.GD28723@aftab>
+ <4E96198F.4030906@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CAFB42677@USINDEVS02.corp.hds.com>
+In-Reply-To: <4E96198F.4030906@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 12:31:14PM -0400, Satoru Moriya wrote:
-> On 09/01/2011 05:58 PM, Andrew Morton wrote:
-> > On Thu, 1 Sep 2011 15:26:50 -0400
-> > Rik van Riel <riel@redhat.com> wrote:
-> > 
-> >> Add a userspace visible knob
-> > 
-> > argh.  Fear and hostility at new knobs which need to be maintained for 
-> > ever, even if the underlying implementation changes.
-> > 
-> > Unfortunately, this one makes sense.
-> > 
-> >> to tell the VM to keep an extra amount of memory free, by increasing 
-> >> the gap between each zone's min and low watermarks.
-> >>
-> >> This is useful for realtime applications that call system calls and 
-> >> have a bound on the number of allocations that happen in any short 
-> >> time period.  In this application, extra_free_kbytes would be left at 
-> >> an amount equal to or larger than the maximum number of 
-> >> allocations that happen in any burst.
-> > 
-> > _is_ it useful?  Proof?
-> > 
-> > Who is requesting this?  Have they tested it?  Results?
-> 
-> This is interesting for me.
-> 
-> Some of our customers have realtime applications and they are concerned 
-> the fact that Linux uses free memory as pagecache. It means that
-> when their application allocate memory, Linux kernel tries to reclaim
-> memory at first and then allocate it. This may make memory allocation
-> latency bigger.
-> 
-> In many cases this is not a big issue because Linux has kswapd for
-> background reclaim and it is fast enough not to enter direct reclaim
-> path if there are a lot of clean cache. But under some situations -
-> e.g. Application allocates a lot of memory which is larger than delta
-> between watermark_low and watermark_min in a short time and kswapd
-> can't reclaim fast enough due to dirty page reclaim, direct reclaim
-> is executed and causes big latency.
-> 
-> We can avoid the issue above by using preallocation and mlock.
-> But it can't cover kmalloc used in systemcall. So I'd like to use
-> this patch with mlock to avoid memory allocation latency issue as
-> low as possible. It may not be a perfect solution but it is important
-> for customers in enterprise area to configure the amount of free
-> memory at their own risk.
+On Wed, Oct 12, 2011 at 06:49:51PM -0400, H. Peter Anvin wrote:
+> The stickiest part of all of this is where to leave the microcode so the 
+> kernel can get to it way early.  We could use the linked list, but that 
+> would mean bootloader enabling;
 
-I agree needs for such feature but don't like such primitive interface
-exporting to user.
+Yep, started looking at that and it means grub legacy and grub2 enabling
+at least.
 
-As Satoru said, we can reserve free pages for user through preallocation and mlocking.
-The thing is free pages for kernel itself.
-Most desirable thing is we have to avoid syscall in critical realtime section.
-But if we can't avoid, my crazy idea is to use memcg for kernel pages.
-Of course, we should implement it and not simple stuff but AFAIK, memcg people
-always consider it and finally will do it. :)
-Recently, Glauber try "Basic kernel memory functionality" but I don't have reviewed
-it yet. I am not sure we can reuse it, anyway. Kame?
+> another idea was to stick it as a prefix 
+> to the initramfs identified by a signature.
 
-My simple idea is as follows,
+https://bugzilla.redhat.com/show_bug.cgi?id=179127
 
-We can assign basic revered page pool and/or size of user-determined pages pool
-for each task registred at memcg-slab.
-The application have to notify start of RT section to memcg before it goes to
-RT section. So, memcg could fill up page pool if it is short. In this case,
-application can stuck but it's okay as it doesn't go to RT section yet.
-The applicatoin have to notify end of RT section to memcg, too so that memcg
-could try to fill up reserved page pool in case of shortage.
+with the patch there you can do
 
-Why we need such notification is kswapd high prioiry, new knob and others never
-can meet application's deadline requirement in some situations(ex,
-there are so many dirty pages in LRU or fill up anon pages in non-swap case and so on)
-so that application might end up stuck at some point. The somepoint must be out of RT
-section of the task.
+initrd /initramfs-image1.gz /initramfs-image2.gz
 
-For implemenation, we might need new watermark setting for each memcg or/and
-kswapd prioirity promotion like thing for hurry reclaiming.
-Anyway, they are just implementaions and we could enhance/add further more through
-various techniques as time goes by.
+which is exactly what we want.
 
-Personally, I think it could a valuable featue.
+Bottomline is, extending initrd handling to deal with multiple initrd
+images might turn out to be easier to do than the linked list deal.
 
 -- 
-Kinds regards,
-Minchan Kim
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
