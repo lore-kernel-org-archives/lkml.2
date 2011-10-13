@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab1JMKCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:02:41 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35250 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754496Ab1JMKCk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:02:40 -0400
-Date: Thu, 13 Oct 2011 11:01:58 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: NamJae Jeon <linkinjeon@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, hirofumi@mail.parknet.co.jp,
-        linux-kernel@vger.kernel.org
-Subject: Re: RFC : fat : default errors use FAT_ERRORS_CONT instead of
- FAT_ERRORS_RO.
-Message-ID: <20111013110158.0b16341c@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAKYAXd--8=MkpXi0H4-nGF1vYQF42aL+OEjysg86gw83uyrefQ@mail.gmail.com>
-References: <CAKYAXd9v_wFg2RQ_R+fYyCJnCbnuMs_VECujOen1GUSGXo3rHw@mail.gmail.com>
-	<13498.1318467461@turing-police.cc.vt.edu>
-	<CAKYAXd--8=MkpXi0H4-nGF1vYQF42aL+OEjysg86gw83uyrefQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754537Ab1JMKDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:03:05 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:36945 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754425Ab1JMKDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 06:03:03 -0400
+X-IronPort-AV: E=Sophos;i="4.69,339,1315195200"; 
+   d="scan'208";a="18184690"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-mm@kvack.org
+Subject: [PATCH] mm: add a "struct page_frag" type containing a page, offset and length
+Date: Thu, 13 Oct 2011 11:02:56 +0100
+Message-ID: <1318500176-10728-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If so, user can not write FAT filesystem anytime while using linux
-> FAT.  there is no mehod except they should directly remount fat
-> parittion. well known linux user can do it only.
+A few network drivers currently use skb_frag_struct for this purpose but I have
+patches which add additional fields and semantics there which these other uses
+do not want.
 
-That is a user space tools problem. Nothing stops a desktop doing things
-like allowing you to click on a device and have a 'repair' menu entry
-when appropriate. We have a FAT fsck (although neither it nor the
-Microsoft one are brilliant at rescuing FAT disks) and the OS supports
-mount/unmount/remount.
+A structure for reference sub-page regions seems like a generally useful thing
+so do so instead of adding a network subsystem specific structure.
 
-Alan
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+[since v1: s/struct subpage/struct page_frag/ on advice from Christoph]
+---
+ include/linux/mm_types.h |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 774b895..575faaf 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -135,6 +135,17 @@ struct page {
+ #endif
+ ;
+ 
++struct page_frag {
++	struct page *page;
++#if (BITS_PER_LONG > 32) || (PAGE_SIZE >= 65536)
++	__u32 page_offset;
++	__u32 size;
++#else
++	__u16 page_offset;
++	__u16 size;
++#endif
++};
++
+ typedef unsigned long __nocast vm_flags_t;
+ 
+ /*
+-- 
+1.7.2.5
+
