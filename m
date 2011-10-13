@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab1JMPeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:34:17 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57002 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751140Ab1JMPeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:34:16 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201110131534.p9DFYAgh032034@stout.americas.sgi.com>
-Date: Thu, 13 Oct 2011 10:34:10 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1755773Ab1JMPe2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:34:28 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:20063
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755657Ab1JMPe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:34:27 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4E9704F9.1090103@freescale.com>
+Date: Thu, 13 Oct 2011 10:34:17 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        Jiang Kai-B18973 <B18973@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][v2] uio: Support 36-bit physical addresses on 32-bit
+ systems
+References: <1318453063-17349-1-git-send-email-galak@kernel.crashing.org> <CAOZdJXWd_u_EWXNhh3-t258+Y8mx=JuJhU93CeZfaocPZvhOFA@mail.gmail.com> <9BD33578-CD8E-4784-AC6A-ADE4614E0FC1@kernel.crashing.org>
+In-Reply-To: <9BD33578-CD8E-4784-AC6A-ADE4614E0FC1@kernel.crashing.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following XFS changes for Linux 3.1.
+Kumar Gala wrote:
+>>> >> +       phys_addr_t             addr;
+>> > 
+>> > Please add a comment here saying:
+>> > 
+>> > 1) That 'addr' can be a virtual or physical address
+> The code and everything else makes that clear
 
-In trying to track down the source of an XFS hang related to active
-item pushing Christoph Hellwig identified three contributing
-problems, addressed in the commits below.
-- The first was that a "last pushed log sequence number" value was
-  being updated when it should not have been.
-- The second is that it is possible for a buffer containing inodes
-  to be found pinned at the time it gets pushed, and that could
-  cause pushing to stall.
-- The third is related to the switch to using a workqueue for AIL
-  pushing, which made it possible for pushing to get starved behind
-  syncing activity.  At this late point in the cycle, the best
-  course of action was to revert to using a kernel thread as was
-  done previously.
-The last change is simply adding tracepoints; feel free to exclude
-it if you see fit.
+I'm sorry, but I have to strongly disagree here.  It is *NOT* clear that a
+variable of type 'phys_addr_t' can hold something that is not a physical address.
 
-These changes have not been through a linux-next build; portions of
-them are incompatible with the XFS code that's being included there.
-I have done builds and repeated tests with them however and expect
-no problems.
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
-Thank you.
-
-					-Alex
-
-The following changes since commit 65112dccf8a113737684366349d7f9ec373ddc47:
-
-  Merge git://git.samba.org/sfrench/cifs-2.6 (2011-10-10 14:53:11 +1200)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (4):
-      xfs: do not update xa_last_pushed_lsn for locked items
-      xfs: force the log if we encounter pinned buffers in .iop_pushbuf
-      xfs: revert to using a kthread for AIL pushing
-      xfs: add AIL pushing tracepoints
-
- fs/xfs/xfs_buf_item.c   |    3 +-
- fs/xfs/xfs_dquot_item.c |   10 ++++--
- fs/xfs/xfs_inode_item.c |   10 ++++--
- fs/xfs/xfs_linux.h      |    2 +
- fs/xfs/xfs_super.c      |   13 +------
- fs/xfs/xfs_trace.h      |   37 +++++++++++++++++++
- fs/xfs/xfs_trans.h      |    2 +-
- fs/xfs/xfs_trans_ail.c  |   91 +++++++++++++++++++++++++++++------------------
- fs/xfs/xfs_trans_priv.h |    8 +----
- 9 files changed, 114 insertions(+), 62 deletions(-)
