@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab1JMAuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:50:24 -0400
-Received: from ozlabs.org ([203.10.76.45]:33543 "EHLO ozlabs.org"
+	id S1752089Ab1JMAvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:51:52 -0400
+Received: from claw.goop.org ([74.207.240.146]:47311 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067Ab1JMAuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:50:23 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-pci: Use PCI MMIO instead of PIO when available
-In-Reply-To: <4E950BDA.2040408@ozlabs.ru>
-References: <4E950BDA.2040408@ozlabs.ru>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 13 Oct 2011 10:22:36 +1030
-Message-ID: <87r52hepiz.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751735Ab1JMAvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:51:48 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V5 02/11] x86/ticketlock: don't inline _spin_unlock when using paravirt spinlocks
+Date: Wed, 12 Oct 2011 17:51:34 -0700
+Message-Id: <b6d44e8e22a3ccf6fca1ea574b72f988aa327009.1318466916.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011 14:39:06 +1100, Alexey Kardashevskiy <aik@ozlabs.ru> wrote:
-> Currently virtio-pci is specced so that configuration of the device is
-> done through a PCI IO space (via BAR 0 of the virtual PCI device).
-> However, use of PCI IO space (aka PIO) is long deprecated, and can be
-> awkward to use on some systems (for example IBM pSeries machines
-> typically have many PCI domains, and not all firmware/hypervisor
-> versions necessarily support PCI PIO access on all domains).
-> 
-> Therefore, it would be preferable for the virtio virtual PCI device to
-> advertise a PCI memory space (aka MMIO) BAR and have configuration
-> done through this interface instead.  This can be done backwards
-> compatibly by advertising the MMIO BAR in addition to the existing PIO
-> BAR so that the guest driver can choose whichever interface.
-> 
-> In anticipation of adding such an MMIO BAR to virtio host-side
-> implementations (e.g. qemu), this patch updates the Linux virtio-pci
-> driver to attempt to use BAR 2 (which will be MMIO) in preference to
-> the existing PIO BAR 0.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Applied.  Had to convert spaces to tabs though...
+The code size expands somewhat, and its probably better to just call
+a function rather than inline it.
 
-Thanks,
-Rusty.
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/Kconfig     |    3 +++
+ kernel/Kconfig.locks |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 6a47bb2..1f03f82 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -585,6 +585,9 @@ config PARAVIRT_SPINLOCKS
+ 
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config ARCH_NOINLINE_SPIN_UNLOCK
++       def_bool PARAVIRT_SPINLOCKS
++
+ config PARAVIRT_CLOCK
+ 	bool
+ 
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 5068e2a..584637b 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -125,7 +125,7 @@ config INLINE_SPIN_LOCK_IRQSAVE
+ 		 ARCH_INLINE_SPIN_LOCK_IRQSAVE
+ 
+ config INLINE_SPIN_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK)
++	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK) && !ARCH_NOINLINE_SPIN_UNLOCK
+ 
+ config INLINE_SPIN_UNLOCK_BH
+ 	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_BH
+-- 
+1.7.6.4
+
