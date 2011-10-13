@@ -1,125 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab1JMRyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 13:54:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:28297 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab1JMRyb convert rfc822-to-8bit (ORCPT
+	id S1756780Ab1JMR4S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 13:56:18 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:57042 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab1JMR4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 13:54:31 -0400
-Subject: Re: [PATCH] nfs-utils: mount: really return from errno test
-Mime-Version: 1.0 (Apple Message framework v1084)
+	Thu, 13 Oct 2011 13:56:16 -0400
+X-SENDER-IP: [85.230.171.1]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkJbAI4ll05V5qsBPGdsb2JhbABDiTyfHBkBAQEBNzKBUwEBBScTHCMQCANGFCUKGogTt20Ohn5hBJkujCE
+X-IronPort-AV: E=Sophos;i="4.69,341,1315173600"; 
+   d="scan'208";a="53239270"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 13 Oct 2011 20:03:20 +0200
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mohan Pallaka <mpallaka@codeaurora.org>,
+        Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] Input: cyttsp - Cypress TTSP capacitive
+ multi-touch screen support
+Message-ID: <20111013180319.GA2308@polaris.bitmath.org>
+References: <1318099080-26227-1-git-send-email-martinez.javier@gmail.com>
+ <1318099080-26227-2-git-send-email-martinez.javier@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <4E9718E3.8040805@RedHat.com>
-Date: Thu, 13 Oct 2011 13:54:06 -0400
-Cc: Hamo <hamo.by@gmail.com>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D7792A21-C227-4A3B-9FBA-E08BF224620C@oracle.com>
-References: <CAO_0yfPgXJJSZNDYXHBSt45J0WQsh5EQVUs0nBN4wb+NoT6hAQ@mail.gmail.com> <40D1A40C-BE0C-4AE0-857D-05531615748E@oracle.com> <4E971329.3000007@RedHat.com> <4E9718E3.8040805@RedHat.com>
-To: Steve Dickson <SteveD@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1084)
-X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
-X-CT-RefId: str=0001.0A090204.4E9725D4.00AF,ss=1,re=0.000,fgs=0
+Content-Disposition: inline
+In-Reply-To: <1318099080-26227-2-git-send-email-martinez.javier@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Javier,
 
-On Oct 13, 2011, at 12:59 PM, Steve Dickson wrote:
+some more comments on the code. Presumable Dmitry will have additional
+ones later on. Thank you for your patience.
 
-> Looking further into this issue, I noticed all the following 
-> mounts were successful.
-> 
-> # mount -o v3 localhost:/home /mnt/home
-> # mount -o v4 localhost:/home /mnt/home
+> +/* Slots management */
+> +#define CY_MAX_FINGER               4
+> +#define CY_MAX_ID                   15
 
-Does this actually change the NFS version in use for /mnt/home, or does the client recognize that this is the same server and export as an existing mount point, and share the cache and mount options?
+I realize the firmware reports ids in the range [1..14], but it is not
+visible from the code. Allowing all 16 values makes correctness
+obvious.
 
-If the mount options are the same, this is equivalent to
+> +static int cyttsp_load_bl_regs(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +
+> +	memset(&(ts->bl_data), 0, sizeof(struct cyttsp_bootloader_data));
+> +
+> +	ts->bl_data.bl_status = 0x10;
+> +
+> +	retval =  ttsp_read_block_data(ts, CY_REG_BASE,
+> +		sizeof(ts->bl_data), &(ts->bl_data));
+> +
+> +	return retval;
+> +}
 
-# mount -o v3 localhost:/home /mnt/home
-# mount -o v3 localhost:/home /mnt/home
+Looks like you missed the removal of retval here.
 
-And both mount requests should succeed.
+> +
+> +static int cyttsp_bl_app_valid(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +
+> +	retval = cyttsp_load_bl_regs(ts);
+> +
+> +	if (retval < 0) {
+> +		retval = -ENODEV;
+> +		goto done;
+> +	}
+> +
+> +	if (GET_BOOTLOADERMODE(ts->bl_data.bl_status)) {
+> +		if (IS_VALID_APP(ts->bl_data.bl_status)) {
+> +			dev_dbg(ts->dev, "%s: App found; normal boot\n",
+> +				__func__);
+> +			return 0;
+> +		} else {
+> +			dev_dbg(ts->dev, "%s: NO APP; load firmware!!\n",
+> +				__func__);
+> +			return -ENODEV;
+> +		}
+> +	}
+> +
+> +	if (GET_HSTMODE(ts->bl_data.bl_file) == CY_OPERATE_MODE) {
+> +		if (!(IS_OPERATIONAL_ERR(ts->bl_data.bl_status))) {
+> +			dev_dbg(ts->dev, "%s: Operational\n",
+> +				__func__);
+> +			return 1;
+> +		} else {
+> +			dev_dbg(ts->dev, "%s: Operational failure\n",
+> +				__func__);
+> +			return -ENODEV;
+> +		}
+> +	}
+> +
+> +	dev_dbg(ts->dev, "%s: Non-Operational failure\n",
+> +		__func__);
+> +	retval = -ENODEV;
+> +done:
+> +	return retval;
+> +
+> +}
 
-> # mount -o v4 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
-> # mount -o v3 [fec0::2:5652:ff:fe20:8459]:/home /mnt/home
-> 
-> which the mount point, /mnt/home is mounted 4 different times 
-> to the same server.
+Are the debug paths still necessary? There are a lot of them.
 
-Assuming localhost is fec0::2:5652:ff:fe20:8459, this test allows you to mount the same server by an IPv4 and an IPv6 address onto the same local directory.  Why then does 744657's test case fail?
+> +static int cyttsp_exit_bl_mode(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	int tries;
+> +	u8 bl_cmd[sizeof(bl_command)];
+> +
+> +	memcpy(bl_cmd, bl_command, sizeof(bl_command));
+> +	if (ts->platform_data->bl_keys)
+> +		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
+> +			ts->platform_data->bl_keys, sizeof(bl_command));
+> +
+> +	dev_dbg(ts->dev,
+> +		"%s: bl_cmd= "
+> +		"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
+> +		__func__, bl_cmd[0], bl_cmd[1], bl_cmd[2],
+> +		bl_cmd[3], bl_cmd[4], bl_cmd[5], bl_cmd[6],
+> +		bl_cmd[7], bl_cmd[8], bl_cmd[9], bl_cmd[10]);
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE,
+> +		sizeof(bl_cmd), (void *)bl_cmd);
+> +	if (retval < 0)
+> +		return retval;
+> +
+> +	/* wait for TTSP Device to complete switch to Operational mode */
+> +	tries = 0;
+> +	do {
+> +		msleep(CY_DELAY_DFLT);
+> +		retval = cyttsp_load_bl_regs(ts);
+> +	} while (!((retval == 0) &&
+> +		!GET_BOOTLOADERMODE(ts->bl_data.bl_status)) &&
+> +		(tries++ < CY_DELAY_MAX));
+> +
+> +	dev_dbg(ts->dev, "%s: check bl ready tries=%d ret=%d stat=%02X\n",
+> +		__func__, tries, retval, ts->bl_data.bl_status);
+> +
+> +	if (retval < 0)
+> +		return retval;
+> +	else if (GET_BOOTLOADERMODE(ts->bl_data.bl_status))
+> +		return -ENODEV;
+> +	else
+> +		return 0;
+> +}
 
-> Is by design or a real problem?
-> steved.
-> 
-> 
-> On 10/13/2011 12:34 PM, Steve Dickson wrote:
->> Yeah... I believe its this one
->>   https://bugzilla.redhat.com/show_bug.cgi?id=744657
->> 
->> On 10/13/2011 10:53 AM, Chuck Lever wrote:
->>> What was the presenting problem?  Is there a bugzilla report I can look at?
->>> 
->>> On Oct 11, 2011, at 5:44 AM, Hamo wrote:
->>> 
->>>> We should only try next address family if we meet ECONNREFUSED or EHOSTUNREACH
->>>> for v4 or ECONNREFUSED or EOPNOTSUPP or EHOSTUNREACH for v3v2.
->>>> Before, only a break in swich can not make the program out of for loop.
->>>> 
->>>> Signed-off-by: Yang Bai <hamo.by@gmail.com>
->>>> ---
->>>> utils/mount/stropts.c |    6 ++++--
->>>> 1 files changed, 4 insertions(+), 2 deletions(-)
->>>> 
->>>> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
->>>> index 314a806..4032bf3 100644
->>>> --- a/utils/mount/stropts.c
->>>> +++ b/utils/mount/stropts.c
->>>> @@ -665,9 +665,10 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
->>>> 		case EHOSTUNREACH:
->>>> 			continue;
->>>> 		default:
->>>> -			break;
->>>> +			goto out;
->>>> 		}
->>>> 	}
->>>> +out:
->>>> 	return ret;
->>>> }
->>>> 
->>>> @@ -751,9 +752,10 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
->>>> 		case EHOSTUNREACH:
->>>> 			continue;
->>>> 		default:
->>>> -			break;
->>>> +			goto out;
->>>> 		}
->>>> 	}
->>>> +out:
->>>> 	return ret;
->>>> }
->>>> 
->>>> -- 
->>>> 1.7.1
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Regardless of if it can ever happen, programatically the (retval > 0)
+&& GET_BOOTLOADERMODE(ts->bl_data.bl_status) case is slipping through here.
 
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
+> +static int cyttsp_set_operational_mode(struct cyttsp *ts)
+> +{
+> +	struct cyttsp_xydata xy_data;
+> +	int retval;
+> +	int tries;
+> +	u8 cmd = CY_OPERATE_MODE;
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
+> +
+> +	if (retval < 0)
+> +		return retval;
+> +
+> +	/* wait for TTSP Device to complete switch to Operational mode */
+> +	tries = 0;
+> +	do {
+> +		retval = ttsp_read_block_data(ts, CY_REG_BASE,
+> +			sizeof(xy_data), &(xy_data));
+> +	} while (!((retval == 0) &&
+> +		(xy_data.act_dist == CY_ACT_DIST_DFLT)) &&
+> +		(tries++ < CY_DELAY_MAX));
+> +
+> +	dev_dbg(ts->dev, "%s: check op ready tries=%d ret=%d dist=%02X\n",
+> +		__func__, tries, retval, xy_data.act_dist);
+> +
+> +	return retval;
+> +}
 
+So (xy_data.act_dist == CY_ACT_DIST_DFL) here is not an error?
 
+> +static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	int tries;
+> +	u8 cmd = CY_SYSINFO_MODE;
+> +
+> +	memset(&(ts->sysinfo_data), 0, sizeof(struct cyttsp_sysinfo_data));
+> +
+> +	/* switch to sysinfo mode */
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
+> +	if (retval < 0)
+> +		return retval;
+> +
+> +	/* read sysinfo registers */
+> +	tries = 0;
+> +	do {
+> +		msleep(CY_DELAY_DFLT);
+> +		retval = ttsp_read_block_data(ts, CY_REG_BASE,
+> +			sizeof(ts->sysinfo_data), &(ts->sysinfo_data));
+> +	} while (!((retval == 0) &&
+> +		!((ts->sysinfo_data.tts_verh == 0) &&
+> +		(ts->sysinfo_data.tts_verl == 0))) &&
+> +		(tries++ < CY_DELAY_MAX));
 
+Expands to (retval ||  !ts->sysinfo_data.tts_verh &&
+!ts->sysinfo_data.tts_verl) && (tries++ < CY_DELAY_MAX), which seems a
+bit simpler to me. Also, &ts->sysinfo_data could be a pointer here.
 
+Coding verh+verl as a 16-bit value?
+
+Are the timeouted (tries >= CY_DELAY_MAX) cases not errors here either?
+
+<snip>
+
+> +static int cyttsp_soft_reset(struct cyttsp *ts)
+> +{
+> +	int retval;
+> +	u8 cmd = CY_SOFT_RESET_MODE;
+> +	long wait_jiffies = msecs_to_jiffies(CY_DELAY_DFLT * CY_DELAY_MAX);
+> +	/* wait for interrupt to set ready completion */
+> +	INIT_COMPLETION(ts->bl_ready);
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
+> +	if (retval < 0)
+> +		return retval;
+> +
+> +	retval = wait_for_completion_timeout(&ts->bl_ready, wait_jiffies);
+> +
+> +	if (retval > 0)
+> +		retval = 0;
+
+Seems this one slipped.
+
+> +
+> +	return retval;
+> +}
+> +
+> +static int cyttsp_hndshk(struct cyttsp *ts, u8 hst_mode)
+> +{
+> +	int retval;
+> +	u8 cmd;
+> +
+> +	cmd = hst_mode & CY_HNDSHK_BIT ?
+> +		hst_mode ^ CY_HNDSHK_BIT :
+> +		hst_mode | CY_HNDSHK_BIT;
+
+Whoa, please redo this one correctly.
+
+> +
+> +	retval = ttsp_write_block_data(ts, CY_REG_BASE,
+> +		sizeof(cmd), (u8 *)&cmd);
+> +
+> +	return retval;
+> +}
+
+> +int cyttsp_resume(void *handle)
+> +{
+> +	struct cyttsp *ts = handle;
+> +	int retval = 0;
+> +	struct cyttsp_xydata xydata;
+> +
+> +	if (ts) {
+
+Neater if returning on (!ts) here instead.
+
+> +		if (ts->platform_data->use_sleep && (ts->power_state !=
+> +						     CY_ACTIVE_STATE)) {
+> +			if (ts->platform_data->wakeup) {
+> +				retval = ts->platform_data->wakeup();
+> +				if (retval < 0)
+> +					dev_dbg(ts->dev, "%s: Error, wakeup failed!\n",
+> +						__func__);
+> +			} else {
+> +				dev_dbg(ts->dev, "%s: Error, wakeup not implemented "
+> +					"(check board file).\n", __func__);
+> +				retval = -ENOSYS;
+> +			}
+> +			if (!(retval < 0)) {
+> +				retval = ttsp_read_block_data(ts, CY_REG_BASE,
+> +							      sizeof(xydata),
+> +							      &xydata);
+> +				if (!(retval < 0) &&
+> +				    !GET_HSTMODE(xydata.hst_mode))
+> +					ts->power_state = CY_ACTIVE_STATE;
+> +			}
+> +		}
+> +		dev_dbg(ts->dev, "%s: Wake Up %s\n", __func__,
+> +			(retval < 0) ? "FAIL" : "PASS");
+> +	}
+> +	return retval;
+> +}
+> +EXPORT_SYMBOL_GPL(cyttsp_resume);
+
+Thanks.
+Henrik
