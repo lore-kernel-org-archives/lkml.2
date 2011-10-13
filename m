@@ -1,144 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab1JMCZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 22:25:36 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61126 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab1JMCZf (ORCPT
+	id S1752541Ab1JMCZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 22:25:40 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39518 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab1JMCZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 22:25:35 -0400
-Date: Wed, 12 Oct 2011 18:34:22 -0600
+	Wed, 12 Oct 2011 22:25:36 -0400
+Date: Wed, 12 Oct 2011 19:03:18 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
-        robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] dmaengine: at_hdmac: add device tree support
-Message-ID: <20111013003422.GE14042@ponder.secretlab.ca>
-References: <f91f267b82ac0f0459c11a7bdf3ab0ea8758656a.1318438197.git.nicolas.ferre@atmel.com>
- <6a7ec87c53609bbb517b199a9b48a5322a625aa1.1318438197.git.nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        robherring2@gmail.com, claudio@evidence.eu.com,
+        jesper.nilsson@axis.com, alan@lxorguk.ukuu.org.uk,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v2 4/5] tty/serial: atmel_serial: auto-enumerate ports
+Message-ID: <20111013010318.GO14042@ponder.secretlab.ca>
+References: <37a19e194d02144aecd24f284f5e43979643a3c3.1318433947.git.nicolas.ferre@atmel.com>
+ <ecef50a9b874d08bb46c0a12d1e4ad01e641d3d5.1318433947.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6a7ec87c53609bbb517b199a9b48a5322a625aa1.1318438197.git.nicolas.ferre@atmel.com>
+In-Reply-To: <ecef50a9b874d08bb46c0a12d1e4ad01e641d3d5.1318433947.git.nicolas.ferre@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 06:57:12PM +0200, Nicolas Ferre wrote:
-> Add device tree probe support for atmel at_hdmac DMA driver.
-> Bindings are added to specify DMA controller configuration.
+On Wed, Oct 12, 2011 at 06:06:59PM +0200, Nicolas Ferre wrote:
+> If no platform data provided to enumerate ports, use a bit field
+> to choose port number and check if port is already initialized.
+> Use this mechanism for both console and plain serial ports.
 > 
 > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  .../devicetree/bindings/dma/atmel-dma.txt          |   14 +++++++++
->  drivers/dma/at_hdmac.c                             |   30 +++++++++++++++++++-
->  2 files changed, 43 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/dma/atmel-dma.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/dma/atmel-dma.txt b/Documentation/devicetree/bindings/dma/atmel-dma.txt
-> new file mode 100644
-> index 0000000..3c046ee
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/dma/atmel-dma.txt
-> @@ -0,0 +1,14 @@
-> +* Atmel Direct Memory Access Controller (DMA)
-> +
-> +Required properties:
-> +- compatible: Should be "atmel,<chip>-dma"
-> +- reg: Should contain DMA registers location and length
-> +- interrupts: Should contain DMA interrupt
-> +
-> +Examples:
-> +
-> +dma@ffffec00 {
-> +	compatible = "atmel,at91sam9g45-dma";
-> +	reg = <0xffffec00 0x200>;
-> +	interrupts = <21>;
-> +};
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index d1869c5..42bd64c 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -23,6 +23,8 @@
->  #include <linux/module.h>
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  
->  #include "at_hdmac_regs.h"
->  
-> @@ -1175,6 +1177,20 @@ static void atc_free_chan_resources(struct dma_chan *chan)
->  
->  /*--  Module Management  -----------------------------------------------*/
->  
-> +#if defined(CONFIG_OF)
-> +static const struct of_device_id atmel_dma_dt_ids[] = {
-> +	{
-> +		.compatible = "atmel,at91sam9rl-dma",
-> +		.data = (void *)ATDMA_DEVTYPE_SAM9RL
-> +	}, {
-> +		.compatible = "atmel,at91sam9g45-dma",
-> +		.data = (void *)ATDMA_DEVTYPE_SAM9G45
-> +	}, { /* sentinel */ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, atmel_dma_dt_ids);
-> +#endif
-> +
->  static struct platform_device_id atdma_devtypes[] = {
->  	{
->  		.name = "at91sam9rl_dma",
-> @@ -1187,6 +1203,17 @@ static struct platform_device_id atdma_devtypes[] = {
->  	}
->  };
->  
-> +static inline enum atdma_devtype __init at_dma_get_driver_data(
-> +					struct platform_device *pdev)
-> +{
-> +	if (pdev->dev.of_node) {
-> +		const struct of_device_id *match;
-> +		match = of_match_node(atmel_dma_dt_ids, pdev->dev.of_node);
-
-You'll need to check the return value.  It is possible (though
-unlikely) to have a device with an of_node but still happens to get
-bound via the platform_driver id_table.  In which case match would be
-NULL here.
-
-Otherwise, you can add my a-b after fixing that bug.
 
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-g.
-
-
-> +		return (enum atdma_devtype)match->data;
-> +	}
-> +	return platform_get_device_id(pdev)->driver_data;
-> +}
-> +
->  /**
->   * at_dma_off - disable DMA controller
->   * @atdma: the Atmel HDAMC device
-> @@ -1218,7 +1245,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  	dma_cap_set(DMA_MEMCPY, cap_mask);
->  
->  	/* get DMA parameters from controller type */
-> -	atdmatype = platform_get_device_id(pdev)->driver_data;
-> +	atdmatype = at_dma_get_driver_data(pdev);
->  
->  	switch (atdmatype) {
->  	case ATDMA_DEVTYPE_SAM9RL:
-> @@ -1526,6 +1553,7 @@ static struct platform_driver at_dma_driver = {
->  	.driver = {
->  		.name	= "at_hdmac",
->  		.pm	= &at_dma_dev_pm_ops,
-> +		.of_match_table	= of_match_ptr(atmel_dma_dt_ids),
->  	},
+> ---
+>  drivers/tty/serial/atmel_serial.c |   44 ++++++++++++++++++++++++++++++------
+>  1 files changed, 36 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index bb72354..1074329 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -157,6 +157,7 @@ struct atmel_uart_port {
 >  };
 >  
+>  static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
+> +static unsigned long atmel_ports_in_use;
+>  
+>  #ifdef SUPPORT_SYSRQ
+>  static struct console atmel_console;
+> @@ -1423,7 +1424,6 @@ static void __devinit atmel_init_port(struct atmel_uart_port *atmel_port,
+>  	port->flags		= UPF_BOOT_AUTOCONF;
+>  	port->ops		= &atmel_pops;
+>  	port->fifosize		= 1;
+> -	port->line		= pdata->num;
+>  	port->dev		= &pdev->dev;
+>  	port->mapbase	= pdev->resource[0].start;
+>  	port->irq	= pdev->resource[1].start;
+> @@ -1613,10 +1613,15 @@ static struct console atmel_console = {
+>  static int __init atmel_console_init(void)
+>  {
+>  	if (atmel_default_console_device) {
+> -		add_preferred_console(ATMEL_DEVICENAME,
+> -				      atmel_default_console_device->id, NULL);
+> -		atmel_init_port(&atmel_ports[atmel_default_console_device->id],
+> -				atmel_default_console_device);
+> +		int id = atmel_default_console_device->id;
+> +		struct atmel_uart_port *port = &atmel_ports[id];
+> +
+> +		set_bit(id, &atmel_ports_in_use);
+> +		port->backup_imr = 0;
+> +		port->uart.line = id;
+> +
+> +		add_preferred_console(ATMEL_DEVICENAME, id, NULL);
+> +		atmel_init_port(port, atmel_default_console_device);
+>  		register_console(&atmel_console);
+>  	}
+>  
+> @@ -1715,12 +1720,33 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
+>  	struct atmel_uart_port *port;
+>  	struct atmel_uart_data *pdata = pdev->dev.platform_data;
+>  	void *data;
+> -	int ret;
+> +	int ret = -ENODEV;
+>  
+>  	BUILD_BUG_ON(ATMEL_SERIAL_RINGSIZE & (ATMEL_SERIAL_RINGSIZE - 1));
+>  
+> -	port = &atmel_ports[pdata->num];
+> +	if (pdata)
+> +		ret = pdata->num;
+> +
+> +	if (ret < 0)
+> +		/* port id not found in platform data:
+> +		 * auto-enumerate it */
+> +		ret = find_first_zero_bit(&atmel_ports_in_use,
+> +				sizeof(atmel_ports_in_use));
+> +
+> +	if (ret > ATMEL_MAX_UART) {
+> +		ret = -ENODEV;
+> +		goto err;
+> +	}
+> +
+> +	if (test_and_set_bit(ret, &atmel_ports_in_use)) {
+> +		/* port already in use */
+> +		ret = -EBUSY;
+> +		goto err;
+> +	}
+> +
+> +	port = &atmel_ports[ret];
+>  	port->backup_imr = 0;
+> +	port->uart.line = ret;
+>  
+>  	atmel_init_port(port, pdev);
+>  
+> @@ -1766,7 +1792,7 @@ err_alloc_ring:
+>  		clk_put(port->clk);
+>  		port->clk = NULL;
+>  	}
+> -
+> +err:
+>  	return ret;
+>  }
+>  
+> @@ -1786,6 +1812,8 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
+>  
+>  	/* "port" is allocated statically, so we shouldn't free it */
+>  
+> +	clear_bit(port->line, &atmel_ports_in_use);
+> +
+>  	clk_put(atmel_port->clk);
+>  
+>  	return ret;
 > -- 
 > 1.7.5.4
 > 
