@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab1JMQL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 12:11:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37716 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab1JMQLz (ORCPT
+	id S1756147Ab1JMQMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 12:12:44 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47600 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1JMQMn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 12:11:55 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH] pata_it8213: add UDMA100 and UDMA133 support
-Date: Thu, 13 Oct 2011 18:11:29 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+	Thu, 13 Oct 2011 12:12:43 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110131811.30054.bzolnier@gmail.com>
+In-Reply-To: <4E970B40.8070808@genband.com>
+References: <CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1110131032400.2026-100000@iolanthe.rowland.org>
+	<CA+O4pC+kRXvGYpnHD7bocuL_t+YWLbChKg8kVAtxmMkd+60+CA@mail.gmail.com>
+	<4E970B40.8070808@genband.com>
+Date: Thu, 13 Oct 2011 18:12:42 +0200
+Message-ID: <CA+O4pCJyTyhec54RYqdzmpR-Y2dSvgB6srv=bsF4DFsx3n33Yw@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] pata_it8213: add UDMA100 and UDMA133 support
+On Thu, Oct 13, 2011 at 6:01 PM, Chris Friesen
+<chris.friesen@genband.com> wrote:
+> On 10/13/2011 09:19 AM, Markus Rechberger wrote:
+>>
+>> On Thu, Oct 13, 2011 at 4:58 PM, Alan Stern<stern@rowland.harvard.edu>
+>>  wrote:
+>
+>>> This is very interesting.  There are only two things that could be
+>>> happening: Either the device sends different data during the two tests,
+>>> or there's a bug in the kernel.
+>
+>> Before that I insist that this patch will go into the kernel (I know
+>> that sounds ridiculous but so far I did everything
+>> you requested me to do), I clearly pointed out that we even have hardware
+>> specs which can influence the transfer buffer. The patch does not hurt
+>> and makes the device work.
+>
+> That makes no sense.  If there's a bug in the hardware we likely don't want
+> to make global changes to work around it--a more targeted fix may be more
+> appropriate.
+>
 
-Fixes IDE -> libata regression.
+Did you read the part about that we have some hardware which can do
+some settings
+in hardware to affect the transfer buffer? Even that part is not clear
+how it can affect the
+transfer for the usb subsystem.
 
-IDE's it8213 host driver has been supporting those modes
-(per official documentation) since the initial driver's merge
-on Feb 7 2007 (commit 9c6712c0 "ide: add it8213 IDE driver").
+Why on earth should things be done differently than with all other
+operating systems?
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
-earlier references:
-https://lkml.org/lkml/2011/2/8/105
-https://lkml.org/lkml/2009/11/25/324
+> If there is a bug in the kernel, why would we want a bandaid patch that just
+> happens to make it work rather than a true fix?
+>
 
- drivers/ata/pata_it8213.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+In silicon? Are you going to tape out another one for it?
+First priority is that the device can work and be sold, my last
+priority is that requested academic research (as we are not
+the design house for the particular IC), I'm willing
+to support it if my request is fulfilled, the demo videos are online
+and show that it works with increasing the maximum allowed buffersize.
 
-Index: b/drivers/ata/pata_it8213.c
-===================================================================
---- a/drivers/ata/pata_it8213.c
-+++ b/drivers/ata/pata_it8213.c
-@@ -164,7 +164,7 @@ static void it8213_set_dmamode (struct a
- 
- 		/* Clocks follow the PIIX style */
- 		u_speed = min(2 - (udma & 1), udma);
--		if (udma == 5)
-+		if (udma > 4)
- 			u_clock = 0x1000;	/* 100Mhz */
- 		else if (udma > 2)
- 			u_clock = 1;		/* 66Mhz */
-@@ -234,7 +234,7 @@ static int it8213_init_one (struct pci_d
- 		.flags		= ATA_FLAG_SLAVE_POSS,
- 		.pio_mask	= ATA_PIO4,
- 		.mwdma_mask	= ATA_MWDMA12_ONLY,
--		.udma_mask 	= ATA_UDMA4, /* FIXME: want UDMA 100? */
-+		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &it8213_ops,
- 	};
- 	/* Current IT8213 stuff is single port */
+And about the particular device the boundaries are just around 7000
+bytes off and people are screaming about that? Sorry this is just like
+in kindergarden here.
+
+Markus
