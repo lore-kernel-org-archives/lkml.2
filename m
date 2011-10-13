@@ -1,61 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab1JMT2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 15:28:42 -0400
-Received: from home.keithp.com ([63.227.221.253]:36908 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab1JMT2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 15:28:41 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915/panel: Alwyas record the backlight level again (but cleverly)
-In-Reply-To: <s5hobxkzs02.wl%tiwai@suse.de>
-References: <s5h7h492rr4.wl%tiwai@suse.de> <yunsjmw26bm.fsf@aiko.keithp.com> <s5hobxkzs02.wl%tiwai@suse.de>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 13 Oct 2011 12:28:07 -0700
-Message-ID: <yunhb3c1yk8.fsf@aiko.keithp.com>
+	id S1753994Ab1JMTdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 15:33:53 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41990 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab1JMTdw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 15:33:52 -0400
+Date: Thu, 13 Oct 2011 13:33:47 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] irq: support domains with non-zero hwirq base
+Message-ID: <20111013193347.GB18574@ponder.secretlab.ca>
+References: <20111004233953.GE3009@ponder.secretlab.ca>
+ <1317783380-773-1-git-send-email-robherring2@gmail.com>
+ <4E944242.10606@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E944242.10606@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Thomas, any objection to this patch?  It's entirely contained within
+the irq_domain stuff, so it is pretty well isolated.
 
-On Thu, 13 Oct 2011 20:05:49 +0200, Takashi Iwai <tiwai@suse.de> wrote:
+It can be merged via arm-soc since it is depended on by some of the
+irq work.
 
-> Yes, this looks more understandable, indeed.
-> Would you patch it by yourself or should I refresh the patch?
-> In either way, I'll test tomorrow, as I'm already at home without a
-> test machine.
+g.
 
-I don't have time before Monday to look at this further.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTpc7xzYtFsjWk68qAQhMEw//ZnlXsQacpdrGtbQnM0GO3a5hcHYriEZp
-XWg+0tKAddicYcsa6YEuvIA4CyGfblS45opgPXsBEJTMv7SMEwSscW6KNd9SUBIH
-Io5rVBhfnFcTevURIR0V2H8sOEeSsVg6Fn9tDeq/lBeDscnamHqxNN0ovNdrcXek
-ZDwlm/p8Tfb62lNKiQwU6jFUL2/tu5MlPoUMQye7YfiDWvuJGZOlqcOtQB6g85Qi
-FtpeS9vooGIwJnBUVhnlcMZE9N8nfaVdHStdGnqXcNZBOWGbLAee6YjX7WPLfz6M
-VTTjhKjcdjcHZqF69EJaEkqQgINg7b+Qb18JryHM1BK4xaC5qExm7beQAtcy1xPG
-j3X2GlWq7Q6L1GvWNuLLRsKRb4P2D5Uc/cqeusUYJf4MwBVtn850NK+YZfmI9DaT
-AXnZLaKT8Ku3Ilyms72AmeAuZnPoweXAztOROQYHxXykh/fDwOecKnnksXYw4O8l
-EvxYqt8lLOVA2gnuaTW0dAotmx6nhUNM4aTzkjxqJ9QY6YO+MLXMwpHo4CK5/xoH
-CyXK3hXqSdgEyUupniRfDjv4S3dspC7/ooPR1TIG+s5vF0/wta74jbzR+SmcN7o1
-RfCxG98VxQgzsk7cOLmpwyaTaP47AuniMxcKjGRPpNTkufAUsQKkcOX5dGJac0oc
-ZDwfL0WQ1+k=
-=Ty/k
------END PGP SIGNATURE-----
---=-=-=--
+On Tue, Oct 11, 2011 at 08:18:58AM -0500, Rob Herring wrote:
+> Thomas,
+> 
+> On 10/04/2011 09:56 PM, Rob Herring wrote:
+> > From: Rob Herring <rob.herring@calxeda.com>
+> > 
+> > Interrupt controllers can have non-zero starting value for h/w irq numbers.
+> > Adding support in irq_domain allows the domain hwirq numbering to match
+> > the interrupt controllers' numbering.
+> > 
+> > As this makes looping over irqs for a domain more complicated, add loop
+> > iterators to iterate over all hwirqs and irqs for a domain.
+> > 
+> > Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> > ---
+> > Thomas,
+> > 
+> > Please ack. I'm dependent on this for adding Calxeda highbank support, so
+> > I'd like to take this thru arm-soc tree.
+> > 
+> 
+> Can you please comment?
+> 
+> Rob
+> 
+> > v2:
+> > - Rebase to tglx's changes in my previous irq domain commit:
+> > irq: Fix check for already initialized irq_domain in irq_domain_add
+> > - drop NO_IRQ and add WARN_ON in irq_domain_to_irq
+> > 
+> > Rob
+> > 
+> >  include/linux/irqdomain.h |   16 +++++++++++++++-
+> >  kernel/irq/irqdomain.c    |   12 ++++++------
+> >  2 files changed, 21 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+> > index 3ad553e..99834e58 100644
+> > --- a/include/linux/irqdomain.h
+> > +++ b/include/linux/irqdomain.h
+> > @@ -47,6 +47,7 @@ struct irq_domain_ops {
+> >   *            of the irq_domain is responsible for allocating the array of
+> >   *            irq_desc structures.
+> >   * @nr_irq: Number of irqs managed by the irq domain
+> > + * @hwirq_base: Starting number for hwirqs managed by the irq domain
+> >   * @ops: pointer to irq_domain methods
+> >   * @priv: private data pointer for use by owner.  Not touched by irq_domain
+> >   *        core code.
+> > @@ -57,6 +58,7 @@ struct irq_domain {
+> >  	struct list_head list;
+> >  	unsigned int irq_base;
+> >  	unsigned int nr_irq;
+> > +	unsigned int hwirq_base;
+> >  	const struct irq_domain_ops *ops;
+> >  	void *priv;
+> >  	struct device_node *of_node;
+> > @@ -72,9 +74,21 @@ struct irq_domain {
+> >  static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
+> >  					     unsigned long hwirq)
+> >  {
+> > -	return d->ops->to_irq ? d->ops->to_irq(d, hwirq) : d->irq_base + hwirq;
+> > +	if (d->ops->to_irq)
+> > +		return d->ops->to_irq(d, hwirq);
+> > +	if (WARN_ON(hwirq < d->hwirq_base))
+> > +		return 0;
+> > +	return d->irq_base + hwirq - d->hwirq_base;
+> >  }
+> >  
+> > +#define irq_domain_for_each_hwirq(d, hw) \
+> > +	for (hw = d->hwirq_base; hw < d->hwirq_base + d->nr_irq; hw++)
+> > +
+> > +#define irq_domain_for_each_irq(d, hw, irq) \
+> > +	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
+> > +	     hw < d->hwirq_base + d->nr_irq; \
+> > +	     hw++, irq = irq_domain_to_irq(d, hw))
+> > +
+> >  extern void irq_domain_add(struct irq_domain *domain);
+> >  extern void irq_domain_del(struct irq_domain *domain);
+> >  #endif /* CONFIG_IRQ_DOMAIN */
+> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> > index b57a377..200ce83 100644
+> > --- a/kernel/irq/irqdomain.c
+> > +++ b/kernel/irq/irqdomain.c
+> > @@ -20,15 +20,15 @@ static DEFINE_MUTEX(irq_domain_mutex);
+> >  void irq_domain_add(struct irq_domain *domain)
+> >  {
+> >  	struct irq_data *d;
+> > -	int hwirq;
+> > +	int hwirq, irq;
+> >  
+> >  	/*
+> >  	 * This assumes that the irq_domain owner has already allocated
+> >  	 * the irq_descs.  This block will be removed when support for dynamic
+> >  	 * allocation of irq_descs is added to irq_domain.
+> >  	 */
+> > -	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+> > -		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
+> > +	irq_domain_for_each_irq(domain, hwirq, irq) {
+> > +		d = irq_get_irq_data(irq);
+> >  		if (!d) {
+> >  			WARN(1, "error: assigning domain to non existant irq_desc");
+> >  			return;
+> > @@ -54,15 +54,15 @@ void irq_domain_add(struct irq_domain *domain)
+> >  void irq_domain_del(struct irq_domain *domain)
+> >  {
+> >  	struct irq_data *d;
+> > -	int hwirq;
+> > +	int hwirq, irq;
+> >  
+> >  	mutex_lock(&irq_domain_mutex);
+> >  	list_del(&domain->list);
+> >  	mutex_unlock(&irq_domain_mutex);
+> >  
+> >  	/* Clear the irq_domain assignments */
+> > -	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+> > -		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
+> > +	irq_domain_for_each_irq(domain, hwirq, irq) {
+> > +		d = irq_get_irq_data(irq);
+> >  		d->domain = NULL;
+> >  	}
+> >  }
+> 
