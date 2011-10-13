@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab1JMGcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 02:32:03 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53275 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab1JMGcB convert rfc822-to-8bit (ORCPT
+	id S1751422Ab1JMGhl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 02:37:41 -0400
+Received: from 220-128-132-181.HINET-IP.hinet.net ([220.128.132.181]:3685 "EHLO
+	mail.sportgear.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab1JMGhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 02:32:01 -0400
+	Thu, 13 Oct 2011 02:37:40 -0400
+X-Greylist: delayed 7125 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 02:37:40 EDT
+Message-ID: <1318478136.4e966138b8e00@mail.sportgear.com.tw>
+Date: Thu, 13 Oct 2011 05:55:36 +0200
+From: Mr Ashraf Salah <ahmed_kha2009@yahoo.co.th>
+Reply-To: asfraf-salahabdallah@live.com
+Subject: Hello Dear Friend
 MIME-Version: 1.0
-In-Reply-To: <4E94B9FD.5030500@tilera.com>
-References: <4E94B9FD.5030500@tilera.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 13 Oct 2011 18:31:40 +1200
-X-Google-Sender-Auth: j9iAtiB9UU4O1ikrIIp3_BtgCCE
-Message-ID: <CA+55aFwLWrurcrjX86wBR_eDurvGnsYGOqORXZZ9vyzdM2Ff2Q@mail.gmail.com>
-Subject: Re: [GIT PULL] arch/tile update for 3.1
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.0
+X-Originating-IP: 41.83.211.64
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 9:49 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->
-> Please pull the following trivial change for 3.1 from:
->
->  git://github.com/cmetcalf-tilera/linux-tile.git stable
->
-> This change allows 3.1-rc9 to build for the Tile architecture.  A bombing
-> of <asm/atomic.h> to <linux/atomic.h> erroneously modified a couple
-> of places where we were relying on some assembly constants in the tile
-> <asm/atomic.h>.  Thanks!
 
-This is not *at*all* what I get when I pull that branch.
 
-I get a merge and two other commits too.
+My Dear Friend,
 
-Not pulled.
+Assalamu alaikum!
 
-         Linus
+I'm Mr Ashraf Salah Eldin Abdullah, please I have a business issue to discuss 
+with you,If you are interested reply me.
+
+Please contact me urgently.
+
+Best regards,
+
+Mr Ashraf Salah Eldin Abdullah.
