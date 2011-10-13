@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab1JMK0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:26:07 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50077 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab1JMK0F (ORCPT
+	id S1754636Ab1JMKcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:32:24 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:58107 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab1JMKcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:26:05 -0400
-Date: Thu, 13 Oct 2011 11:26:03 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        alsa-devel <alsa-devel@alsa-project.org>, lrg@ti.com,
-        kuninori.morimoto.gx@renesas.com,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [alsa-devel] [PATCH 7/9] ASoC: da7210: Add support for ALC and
- Noise suppression
-Message-ID: <20111013102602.GH1098@sirena.org.uk>
-References: <1318432070.12107.426.camel@matrix>
- <20111012150404.GT3647@opensource.wolfsonmicro.com>
- <1318497345.12107.443.camel@matrix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318497345.12107.443.camel@matrix>
-X-Cookie: Drilling for oil is boring.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Thu, 13 Oct 2011 06:32:20 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 05/10] drbd: Fixed state transitions in case reading meta data failes
+Date: Thu, 13 Oct 2011 12:32:11 +0200
+Message-Id: <1318501936-11689-6-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1318501936-11689-1-git-send-email-philipp.reisner@linbit.com>
+References: <1318501936-11689-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 02:45:45PM +0530, Ashish Chavan wrote:
-> On Wed, 2011-10-12 at 16:04 +0100, Mark Brown wrote:
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_nl.c    |    2 +-
+ drivers/block/drbd/drbd_state.c |    7 -------
+ 2 files changed, 1 insertions(+), 8 deletions(-)
 
-> > No, don't go peering directly into the register cache.  This is going to
-> > explode if the board configures a different cache style and means you
-> > can't change the cache type later.  Just read the register and trust
-> > that the cache will do something sane.
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index ec4829b..0f8d473 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1685,7 +1685,7 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
+  force_diskless_dec:
+ 	put_ldev(mdev);
+  force_diskless:
+-	drbd_force_state(mdev, NS(disk, D_FAILED));
++	drbd_force_state(mdev, NS(disk, D_DISKLESS));
+ 	drbd_md_sync(mdev);
+  fail:
+ 	conn_reconfig_done(mdev->tconn);
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 3221743..65ba12b 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -655,13 +655,6 @@ is_valid_transition(union drbd_state os, union drbd_state ns)
+ 	if (ns.disk == D_FAILED && os.disk == D_DISKLESS)
+ 		rv = SS_IS_DISKLESS;
+ 
+-	/* if we are only D_ATTACHING yet,
+-	 * we can (and should) go directly to D_DISKLESS. */
+-	if (ns.disk == D_FAILED && os.disk == D_ATTACHING) {
+-		printk("TODO: FIX ME\n");
+-		rv = SS_IS_DISKLESS;
+-	}
+-
+ 	return rv;
+ }
+ 
+-- 
+1.7.4.1
 
-> Will update the code to directly read the register. I thought of saving
-> some io bandwidth and if I remember correctly, I saw few exiting drivers
-> doing this.
-
-The whole point of having the register cache is that reads don't result
-in any actual I/O, if there's any I/O happening we need to fix the
-register cache code.
