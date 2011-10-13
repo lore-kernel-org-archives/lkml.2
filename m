@@ -1,78 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab1JMArL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 20:47:11 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:45053 "HELO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751902Ab1JMArI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 20:47:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111013001202.GB19446@suse.de>
-References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
- <5A47E75E594F054BAF48C5E4FC4B92AB03293269CD@dbde02.ent.ti.com>
- <20100907212915.GB6798@suse.de> <201009080254.03070.mihai.dontu@gmail.com>
- <20100908003424.GA27719@suse.de> <CAPs5rNZ07VZ0qK2PVG2u1DLEEnXS_CvVcYGLLE7fzFCcMo696A@mail.gmail.com>
- <20111013001202.GB19446@suse.de>
-From: Aras Vaichas <arasv@magellan-technology.com>
-Date: Thu, 13 Oct 2011 11:46:45 +1100
-Message-ID: <CAPs5rNYJYauYSW4ByMVTn-sQSj=6i-1wmyX6MR_4BfYPGqQhWQ@mail.gmail.com>
-Subject: Re: [PATCH] USB: Fix kernel oops with g_ether and Windows
-To: Greg KH <gregkh@suse.de>
-Cc: "Mihai Don??u" <mihai.dontu@gmail.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
-        Maxim Osipov <maxim.osipov@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751751Ab1JMAqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 20:46:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64555 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747Ab1JMAqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 20:46:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="62704259"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/3] x86, intel: Output microcode revision v6
+Date: Wed, 12 Oct 2011 17:46:33 -0700
+Message-Id: <1318466795-7393-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 October 2011 11:12, Greg KH <gregkh@suse.de> wrote:
-> On Thu, Oct 13, 2011 at 10:31:08AM +1100, Aras Vaichas wrote:
->> On 8 September 2010 10:34, Greg KH <gregkh@suse.de> wrote:
->
-> You are responding to a message from over a year ago?
+From: Andi Kleen <ak@linux.intel.com>
 
-Yes, sorry, but it's the latest record I could find of this particular
-bug and talk of the patch. I just wanted to see if it was followed up
-or maybe there was some other issue that meant it couldn't be applied.
+I got a request to make it easier to determine the microcode update level
+on Intel CPUs. This patch adds a new "microcode" field to /proc/cpuinfo.
 
+The microcode level is also outputed on fatal machine checks together
+with the other CPUID model information.
 
->> Did this patch get applied and the problem resolved?
->
-> Probably, I'd suggest you take a look at the kernel sources to verify
-> this, I can't remember what was applied last week very well, let alone
-> last year.
+I removed the respective code from the microcode update driver, it
+just reads the field from cpu_data. Also when the microcode is updated
+it fills in the new values too.
 
-Sorry, I should have checked there first.
+I had to add a memory barrier to native_cpuid to prevent it being
+optimized away when the result is not used.
 
-It doesn't appear to have been applied to the version I use on my
-product which is 2.6.33.7-at91-rt29.
+This turns out to clean up further code which already got this
+information manually. This is done in followon patches.
 
-The patch appears to have been applied to 3.1-rc4 so it happened
-somewhere in between.
+v2:  Lots of updates based on feedback.
+v3:  Rename cpu_update to microcode. Misc changes from feedback.
+v4:  minor updates. rebased.
+v5:  move MSR read to early_intel_init()
+v6:  Use sync_core() instead of CPUID 1. Drop a white space change.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/processor.h  |    4 +++-
+ arch/x86/kernel/cpu/intel.c       |    9 +++++++++
+ arch/x86/kernel/cpu/mcheck/mce.c  |    9 +++++++--
+ arch/x86/kernel/cpu/proc.c        |    2 ++
+ arch/x86/kernel/microcode_intel.c |   14 +++++---------
+ 5 files changed, 26 insertions(+), 12 deletions(-)
 
-Oh well, I guess I was unlucky. Luckily this is only affecting 1
-customer that I know of. Our previous kernel bug was the JFFS2 garbage
-collection bug - that one was bricking our products in the field
-randomly on every power cycle. I built a solid-state power-cycle jig
-that switches our product on and off every few minutes to expose these
-types of problems. :)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 0d1171c..b650435 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -111,6 +111,7 @@ struct cpuinfo_x86 {
+ 	/* Index into per_cpu list: */
+ 	u16			cpu_index;
+ #endif
++	u32			microcode;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+ #define X86_VENDOR_INTEL	0
+@@ -179,7 +180,8 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+ 	      "=b" (*ebx),
+ 	      "=c" (*ecx),
+ 	      "=d" (*edx)
+-	    : "0" (*eax), "2" (*ecx));
++	    : "0" (*eax), "2" (*ecx)
++	    : "memory");
+ }
+ 
+ static inline void load_cr3(pgd_t *pgdir)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index ed6086e..26627a3 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -47,6 +47,15 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 		(c->x86 == 0x6 && c->x86_model >= 0x0e))
+ 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ 
++	if (c->x86 >= 6 && !cpu_has(c, X86_FEATURE_IA64)) {
++		unsigned lower_word;
++
++		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
++		/* Required by the SDM */
++		sync_core();
++		rdmsr(MSR_IA32_UCODE_REV, lower_word, c->microcode);
++	}
++
+ 	/*
+ 	 * Atom erratum AAE44/AAF40/AAG38/AAH41:
+ 	 *
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 08363b0..8af6fa4 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -217,8 +217,13 @@ static void print_mce(struct mce *m)
+ 		pr_cont("MISC %llx ", m->misc);
+ 
+ 	pr_cont("\n");
+-	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
+-		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
++	/*
++	 * Note this output is parsed by external tools and old fields
++	 * should not be changed.
++	 */
++	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x microcode %u\n",
++		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid,
++		cpu_data(m->extcpu).microcode);
+ 
+ 	/*
+ 	 * Print out human-readable details about the MCE error,
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 62ac8cb..6254fda 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -85,6 +85,8 @@ static int show_cpuinfo(struct seq_file *m, void *v)
+ 		seq_printf(m, "stepping\t: %d\n", c->x86_mask);
+ 	else
+ 		seq_printf(m, "stepping\t: unknown\n");
++	if (c->microcode)
++		seq_printf(m, "microcode\t: %u\n", c->microcode);
+ 
+ 	if (cpu_has(c, X86_FEATURE_TSC)) {
+ 		unsigned int freq = cpufreq_quick_get(cpu);
+diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+index 1a1b606..3ca42d0 100644
+--- a/arch/x86/kernel/microcode_intel.c
++++ b/arch/x86/kernel/microcode_intel.c
+@@ -161,12 +161,7 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
+ 		csig->pf = 1 << ((val[1] >> 18) & 7);
+ 	}
+ 
+-	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+-	/* see notes above for revision 1.07.  Apparent chip bug */
+-	sync_core();
+-	/* get the current revision from MSR 0x8B */
+-	rdmsr(MSR_IA32_UCODE_REV, val[0], csig->rev);
+-
++	csig->rev = c->microcode;
+ 	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
+ 		cpu_num, csig->sig, csig->pf, csig->rev);
+ 
+@@ -299,9 +294,9 @@ static int apply_microcode(int cpu)
+ 	struct microcode_intel *mc_intel;
+ 	struct ucode_cpu_info *uci;
+ 	unsigned int val[2];
+-	int cpu_num;
++	int cpu_num = raw_smp_processor_id();
++	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
+ 
+-	cpu_num = raw_smp_processor_id();
+ 	uci = ucode_cpu_info + cpu;
+ 	mc_intel = uci->mc;
+ 
+@@ -317,7 +312,7 @@ static int apply_microcode(int cpu)
+ 	      (unsigned long) mc_intel->bits >> 16 >> 16);
+ 	wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+ 
+-	/* see notes above for revision 1.07.  Apparent chip bug */
++	/* As documented in the SDM: Do a CPUID 1 here */
+ 	sync_core();
+ 
+ 	/* get the current revision from MSR 0x8B */
+@@ -335,6 +330,7 @@ static int apply_microcode(int cpu)
+ 		(mc_intel->hdr.date >> 16) & 0xff);
+ 
+ 	uci->cpu_sig.rev = val[1];
++	c->microcode = val[1];
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.4
 
-
->> I'm running 2.6.33.7-rt29 and we have a customer in India who
->> complains that they can't connect via USB. We don't have the problem
->> here, or anywhere else that we know of.
->>
->> I looked at the logs of the device and it appears to have the same
->> Oops error as the one that this patch addresses.
->
-> What kernel version are they using?  Hopefully something newer than the
-> date of this original email :)
-
-They are using our product, which is 2.6.33.7-at91-rt29.
-
-Aras
