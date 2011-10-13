@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab1JMKMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:12:25 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:65452 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab1JMKMX (ORCPT
+	id S1754480Ab1JMKQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 06:16:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59830 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab1JMKQa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 06:12:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EABe5lk6Q/khM/2dsb2JhbABDqFGBBYFTAQEBBBIBAgEREz8QCxgcEhQYMQsqoS8BgykPAZpwhwxhBId/i3mRXQ
-X-IronPort-AV: E=Sophos;i="4.69,339,1315180800"; 
-   d="scan'208";a="119017620"
-Date: Thu, 13 Oct 2011 15:42:18 +0530
-From: Maneesh Soni <manesoni@cisco.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, david.daney@cavium.com, kamensky@cisco.com
-Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
-Message-ID: <20111013101217.GD16761@cisco.com>
-Reply-To: manesoni@cisco.com
-References: <20111013090749.GB16761@cisco.com>
- <20111013094137.GA19054@in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111013094137.GA19054@in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 13 Oct 2011 06:16:30 -0400
+Subject: Re: [PATCH RFC V4 04/10] x86/jump_label: drop
+ arch_jump_label_text_poke_early()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <07d7a349087d253549be9946d6fe8e3219492cda.1318464413.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>
+	 <07d7a349087d253549be9946d6fe8e3219492cda.1318464413.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 13 Oct 2011 12:15:52 +0200
+Message-ID: <1318500952.19425.4.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 3.0.3- 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 03:11:38PM +0530, Ananth N Mavinakayanahalli wrote:
-> On Thu, Oct 13, 2011 at 02:37:49PM +0530, Maneesh Soni wrote:
+On Wed, 2011-10-12 at 17:08 -0700, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> ...
+> It is no longer used.
 > 
-> I know nothing of MIPS internals, but...
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Acked-by: Jason Baron <jbaron@redhat.com>
+> ---
+>  arch/x86/kernel/jump_label.c |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+> index 3fee346..2ad0298 100644
+> --- a/arch/x86/kernel/jump_label.c
+> +++ b/arch/x86/kernel/jump_label.c
+> @@ -42,10 +42,4 @@ void arch_jump_label_transform(struct jump_entry *entry,
+>  	put_online_cpus();
+>  }
 >  
-> >  static int __kprobes kprobe_handler(struct pt_regs *regs)
-> > @@ -239,8 +531,13 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
-> >  			save_previous_kprobe(kcb);
-> >  			set_current_kprobe(p, regs, kcb);
-> >  			kprobes_inc_nmissed_count(p);
-> > -			prepare_singlestep(p, regs);
-> > +			prepare_singlestep(p, regs, kcb);
-> >  			kcb->kprobe_status = KPROBE_REENTER;
-> > +			if (kcb->flags & SKIP_DELAYSLOT) {
-> > +				resume_execution(p, regs, kcb);
-> > +				restore_previous_kprobe(kcb);
-> > +				preempt_enable_no_resched();
-> > +			}
-> >  			return 1;
-> >  		} else {
-> >  			if (addr->word != breakpoint_insn.word) {
-> > @@ -284,8 +581,15 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
-> >  	}
-> > 
-> >  ss_probe:
-> > -	prepare_singlestep(p, regs);
-> > -	kcb->kprobe_status = KPROBE_HIT_SS;
-> > +	prepare_singlestep(p, regs, kcb);
-> > +	if (kcb->flags & SKIP_DELAYSLOT) {
-> > +		kcb->kprobe_status = KPROBE_HIT_SSDONE;
-> > +		if (p->post_handler)
-> > +			p->post_handler(p, regs, 0);
-> > +		resume_execution(p, regs, kcb);
-> 
-> You are missing a preempt_disable_no_resched() here.
-> 
-ok.. you meant preempt_enable_no_resched(). Will add it in the next
-version. Thanks for pointing it out.
+> -void arch_jump_label_text_poke_early(jump_label_t addr)
+> -{
+> -	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
+> -			JUMP_LABEL_NOP_SIZE);
+> -}
+> -
+>  #endif
 
-Thanks
-Maneesh
+This was the (first and) last usage site outside of alternative.c, so at
+the very least we should clean up arch/x86/include/asm/alternative.h.
+
+However, since stop_machine now works early, is there any reason to keep
+text_poke_early() itself? Shouldn't we also convert alternative.c's use
+of text_poke_early and simply kill the thing off?
