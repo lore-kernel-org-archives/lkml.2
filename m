@@ -1,186 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1JMU5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 16:57:38 -0400
-Received: from master.debian.org ([70.103.162.29]:60322 "EHLO
-	master.debian.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab1JMU5g (ORCPT
+	id S1753215Ab1JMVAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 17:00:33 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1217 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab1JMVAb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 16:57:36 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Oct 2011 16:57:36 EDT
-Date: Thu, 13 Oct 2011 16:47:20 -0400
-From: =?iso-8859-1?Q?An=EDbal?= Monsalve Salazar <anibal@debian.org>
-To: linux-kernel@vger.kernel.org
-Cc: NYC Debian List <debiannyc@vireo.org>,
-        Daniel Kahn Gillmor <dkg@fifthhorseman.net>,
-        =?iso-8859-1?Q?An=EDbal?= Monsalve Salazar <anibal@kernel.org>
-Subject: {kernel,debian}.org KSP for the NYC area: October 19, 2011
-Message-ID: <20111013204720.GB13510@master.debian.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	NYC Debian List <debiannyc@vireo.org>,
-	Daniel Kahn Gillmor <dkg@fifthhorseman.net>,
-	=?iso-8859-1?Q?An=EDbal?= Monsalve Salazar <anibal@kernel.org>
-References: <4E9747AA.1040404@fifthhorseman.net>
+	Thu, 13 Oct 2011 17:00:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 13 Oct 2011 13:59:56 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stijn Devriendt <highguy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>
+Date: Thu, 13 Oct 2011 13:59:55 -0700
+Subject: pinctrl_config APIs, and other pinmux questions
+Thread-Topic: pinctrl_config APIs, and other pinmux questions
+Thread-Index: AcyJ1Uo95s84SX4BQUyc/ZWAiPwinA==
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A166@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="uZ3hkaAS1mZxFaxD"
-Content-Disposition: inline
-In-Reply-To: <4E9747AA.1040404@fifthhorseman.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus, (and other people interested in pinmux!)
 
---uZ3hkaAS1mZxFaxD
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I've started to look at porting the Tegra pinmux driver to your pinctrl
+subsystem. In order to replace the existing pinmux driver, I need a way
+to support configuring options such as tri-state, pull-up/down, drive-
+strength, etc.
 
-Subject: Re: wednesday 2011-10-19 7pm at PST -- beer and meetup?
+At this point, I have a couple of options:
 
-On Thu, Oct 13, 2011 at 04:18:50PM -0400, Daniel Kahn Gillmor wrote:
->hey folks--
->
->what say y'all to meeting up for a social hour or three at Pacific
->Standard this coming Wednesday evening at 7pm?  anibal@debian.org will
->be in town, and possibly some other free software folks will come too.
->
->This might be an opportunity for linux kernel folks to meet up and sign
->keys too, so bring keysigning info if you want to participate in that
->kind of interaction.
->
->Looking forward to seeing everyone,
->
->	--dkg
->
+1) Initialize all those parameters (and indeed the initial system-level
+mux configuration) using custom code in the Tegra pinmux driver, and just
+use the pin controller subsystem APIs for dynamic pin-muxing. As you
+recall, I did post some patches to the Tegra pinmux driver to do this,
+but I'm hoping to do (2) instead.
 
-On Thursday October 19, 2011 at Pacific Standard [1] from 19:00 to
-20:00, I and Daniel will hold a KSP.=20
+2) Enhance the pin controller subsystem to support configuring these
+properties.
 
-[1] http://pacificstandardbrooklyn.com/
+The following is some issues that need to be thought about if we do (2):
 
-Please forward this message to other interested people.
 
-Please send your key details (see requieremt #2 below) to
-anibal@debian.org to compile everyone's key information.
 
-Questions? Write to anibal@debian.org and dkg@debian.org.
 
-Please read below the KSP requirements.
+Issue 1: Pinctrl core -> driver interface
 
-On Thu, Oct 13, 2011 at 11:31:54AM -0400, Theodore Ts'o wrote:
->
->I will be holding a key signing party in Cambridge on Tuesday, October
->18, from 4-5pm for folks in the Boston greater metropolitan area.
->
->Anyone who is interested should send me their key-id by Tuesday noon
->US/Eastern, and I will give those folks the details about where we will
->be holding the key signing party.   Please put "BOSTON KEY SIGNING" in
->the subject line.
->
->Please feel free to forward this to any fellow kernel devs who might not
->be reading LKML.
->
->    	    	  	   	   	   - Ted
->
->
->What's a key-signing party?
->
->A key-signing party is a get-together with PGP users for the purpose of
->meeting other PGP users and signing each other's keys. This helps to
->extend the "web of trust" to a great degree. Also, it sometimes serves
->as a forum to discuss strong cryptography and related issues.
->
->What do I need for this party?
->
->Required Items
->Physical attendance
->Positive picture ID
->Your Key ID, Key type, HEX fingerprint, and Key size
->A pen/pencil or whatever you'd like to write with....
->NO computer
->
->Required Process
->
->1.  All attendees send their public keys to a public keyserver. For this
->party, we'll use keyserver.cryptnet.net. If for some reason you don't
->want your key to be in a public keyserver, but still want to
->participate, please let me know.
->
->2.  All attendees send their key ID, key type, fingerprint, and key size to
->the host, tytso@mit.edu, who will compile everyone's key information.
->
->3.  The host prints a list with everyone's key ID, key type,
->fingerprint, and key size from the compiled keyrings and distributes
->copies of the printout at the meeting.
->
->4.  Attend the party. Bring along a paper copy of your key ID, key type,
->fingerprint, and key size that you obtained from your own keyring. You
->must also bring along a suitable photo ID. Instruct the attendees at the
->beginning that they are to make two marks on the listing, one for
->correct key information (key ID, key type, fingerprint, and key size)
->and one if the ID check is ok.
->
->5. At the meeting each key owner reads his key ID, key type,
->fingerprint, key size, and user ID from his own printout, not from the
->distributed listing. This is because there could be an error, intended
->or not, on the listing. This is also the time to tell which ID's to sign
->or not. If the key information matches your printout then place a
->check-mark by the key.
->
->6. After everyone has read his key ID information, have all attendees
->form a line.
->
->7. The first person walks down the line having every person check his
->ID.   The second person follows immediately behind the first person and
->so on.
->
->8.  If you are satisfied that the person is who they say they are, and
->that the key on the printout is theirs, you place another check-mark
->next to their key on your printout.
->
->9.  Once the first person cycles back around to the front of the line he
->has checked all the other IDs and his ID has been checked by all others.
->
->10. After confirming that the key information on the key server matches
->the printout that you have checked, sign the appropriate keys. Keys
->should only be signed if they have two check-marks.  If you are using
->Debian or Ubuntu, the "caff" (certifying authority fire and forget)
->script can be found in the "signing-party" package along with other
->useful scripts, which makes it much easier to sign the keys.  For
->Fedora, the "caff" script can be found in the "pgp-tools" package.
->
->11.  Send the signed keys back to the keyservers, or to owners of the
->key.
->
->Other questions about signing keys?
->
->You may want to read the Keysigning Party Howto which includes an
->explanation of the concepts behind keysigning, instructions for hosting
->a keysigning party, instructions for participating in a keysinging
->party, and step by step instructions for signing other's keys.
+I propose adding the following to pinctrl_ops:
 
---uZ3hkaAS1mZxFaxD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+int (*pin_config)(unsigned pin, u32 param, u32 data);
+int (*group_config)(unsigned group, u32 param, u32 data);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+Where "param" is some driver-specific parameter, such as:
 
-iQIcBAEBCAAGBQJOl05YAAoJEHxWrP6UeJfYgX4P/RAVaBRSjQNL1vQviy3arHCi
-6ynZOKCPGd3jp+2zllsMPY8+Ul6xfNrWVk+jWH+9MWVUqGT3ljUVoyAmkPzFTUQQ
-0qbRoQijnLzvlyxW/CJqUd209/HwAzfHWZEPIiZxheenmwMx9wvZ5FcnBG52ExQY
-h34tdmHMNn52xsw+9pyc/H+NB69GTdhI6Di38YPL9Yc38AwnGgtIHK56k8Y0j1nq
-wOs3Q5eBsEAEMIiRsItRKwWEW6Qm2d5CQeWKE6l3Vig8h292PLmi/ilpBI47bTWW
-RtiR0+ebbtU/QpoGiVO9TOOqteg/TJ+Ttv00j/LfdnegSK0Yc9r67icZM9KTBXGl
-ZerzZE0w1RXu/54XV7IghYuxNK3wBsQQOw/OQlNE7a34Bz0ZBPI5muddZvx5O8Ne
-ymFW6DCjc5wo3qh9hj98DtY90hPSO41hy+0ZiW/vkH+JYhUzz7V8trm5AEFPM647
-SRZhyC/z19t7xBhJV+1NT9qh4BZb+sP+SDnhDllGjQ4v/Q91Fv1bdRivQT8xtK2l
-0+qFb4EyDWAVtzH+BhOMtFMoPl7W3bzVQgBp2ijTaLv2sa2v3Lb/f0PJOO9u0vB0
-NFOeJLZ7BZureNLWT/jSvumDySr2N6Ar6vxEQR0z4X59c6Js7rvkLYUoZudUcXTK
-3Luq8qBAzawZg0C5h0ol
-=IYiQ
------END PGP SIGNATURE-----
+#define TEGRA_PINCTRL_PARAM_TRISTATE_ENABLE    0
+#define TEGRA_PINCTRL_PARAM_PULL_TYPE          1
+#define TEGRA_PINCTRL_PARAM_SCHMITT_ENABLE     2
+#define TEGRA_PINCTRL_PARAM_HIGH_SPEED_ENABLE  3
+#define TEGRA_PINCTRL_PARAM_DRIVE_STRENGTH     4
+#define TEGRA_PINCTRL_PARAM_PULL_UP_STRENGTH   5
+#define TEGRA_PINCTRL_PARAM_PULL_DOWN_STRENGTH 6
+#define TEGRA_PINCTRL_PARAM_SLEW_RATE_RISING   7
+#define TEGRA_PINCTRL_PARAM_SLEW_RATE_FALLING  8
 
---uZ3hkaAS1mZxFaxD--
+Rationale:
+
+Param being SoC-specific:
+
+I looked at a bunch of existing pinmux drivers in the mainline kernel.
+There are certainly some common concepts between SoCs. However, the
+details are often different enough that I don't think attempting to
+unify the set of configuration options will be that successful; I
+doubt we could create a generic enough abstraction of these settings
+for a cross-SoC driver to be able to usefully name and select values
+for all the different pin/group options.
+
+Data being a plain u32 rather than a pointer as your v7 patchset had it:
+
+Using a pointer does allow passing arbitrary data into the driver, which
+seems useful. However, this also makes it much more difficult for the
+core pin controller API to handle the values, e.g. in the mapping table,
+in a device-tree representation thereof, etc.
+
+Having both config_pin and config_group functions:
+
+Tegra at least has settings that are applicable to groups. Most (all??)
+other SoCs apply configurations to individual pins. I think we need
+separate functions to make this explicit, so the function knows if it's
+looking up selector as a pin name (ID) or a group name (ID).
+
+
+
+
+Issue 2: Do we need a new "pin settings" table passed from the board to
+the pin controller core?
+
+Issue 3: Do we need to change "pin settings" on-the-fly, or only at boot?
+
+These issues are closely related.
+
+If we only care about statically configuring pins at boot time, then
+pinmux_register_mappings() could be enhanced to accept two tables; the
+existing one for the mux settings, and a second one that's essentially
+just a list of pin/group_config calls to make at pinmux init time.
+
+However, if we ever want things to change dynamically (say, suspend/
+resume), or only be activated when a device initializes (just like the
+mux settings), we need to enhance struct pinmux_map to contain either
+mux settings or config settings; perhaps rework it as follows:
+
+enum pinmux_map_type {
+    MUX,
+    PIN_CONFIG,
+    GROUP_CONFIG
+};
+
+struct pinmux_map {
+        const char *name;
+        struct device *ctrl_dev;
+        const char *ctrl_dev_name;
+        enum pinmux_map_type type;
+        union {
+            struct {
+                const char *function;
+                const char *group;
+            } mux;
+            struct {
+                u32 param;
+                u32 data;
+            } config;
+        } data;
+        struct device *dev;
+        const char *dev_name;
+        const bool hog_on_boot;
+};
+
+Such that pinmux_enable would both activate all the mux settings, and
+also call pin/group_config based on the mapping table.
+
+
+
+
+Issue 4: Device-tree
+
+I'd like to enhance the pinmux core to allow the mapping table to be read
+from device tree. If we end up with a separate "pin configuration" table,
+the same applies there. Do you have any thoughts here, or should I just go
+ahead and create/propose something? I'd probably base this partially on my
+previous patches that do this within the Tegra pinmux driver itself.
+
+
+
+
+Issue 5: Suspend/resume, and other state changes
+
+First, some HW background on Tegra, which I imagine applies to any SoC
+capable of muxing a single "function" onto different sets of pins:
+
+Lets take Tegra's first I2C controller. It can be mux'd onto pingroups
+"I2CP" or "RM". Given the register definitions (for each pingroup, there's
+a "function select" register field), it's possible to tell the HW to mux
+that I2C function onto *both* pingroups at once. However, we must avoid
+this, because this will cause incorrect HW operation; for input pins, both
+pingroups will be trying to drive the internal signal. At best, this will
+cause the I2C controller to receive garbled signals. At worst, it will
+cause damage to the chip. (I'm not sure which is true in Tegra's case).
+
+For this reason, any time the pinmux driver is told to disable a function,
+it must program that pingroup's mux function to a "safe" value, which is
+guaranteed not to cause conflicts for any other possible mux settings on
+other pingroups. Possibly, the driver should tristate the pingroup too,
+to avoid whatever HW function the "safe" function is from actually driving
+any output pins and confusing the attached device. Our current driver
+doesn't tristate though.
+
+Now let's suppose that we've enhanced the mapping table to support pin/
+group_config values, and that a driver is written to expect a pinmux
+mapping table with the following mappings:
+
+"active"
+"suspend"
+
+Where the only difference between those two mappings is some pin/
+group_config value. When switching between those two settings, the "active"
+mux values will be rolled back to some "safe" values, then the "suspend"
+mux values will be re-programmed. This may cause spurious changes in output
+signals, depending on what the "safe" function is exactly. It might even
+temporarily change some pins from inputs to outputs.
+
+The pinmux API currently conflates two different things:
+
+a) A device's ownership of certain pins.
+
+b) The configuration of those pins.
+
+I think we should aim for some mechanism of teasing those two concepts
+apart, and allowing dynamic transitioning between different configurations
+for the owned pins without completely releasing them.
+
+There's also the slight issue that if you put() a mapping to change to
+another one, there's a small window where the driver doesn't own the pins,
+which might show up in a pinmux debug file, or allow another driver to
+take ownership of them.
+
+One possibility might be to add another column to the mapping table, so
+that we end up with the search key being:
+
+Search keys: device, name, configuration (new)
+Output data: list of mux settings, pin/group_config settings
+
+This would modify the client driver API to something like:
+
+Mapping table:
+
+Driver mapping_name configuration settings
+-----------------------------------------
+i2c    -            active        group i2cp.mux = i2c
+i2c    -            active        group i2cp.tristate = false
+i2c    -            suspend       group i2cp.mux = i2c
+i2c    -            suspend       group i2cp.tristate = true
+
+Driver probe():
+
+reservation = pinmux_reserve(device, NULL /* mapping_name */)
+pinmux_select(reservation, "active")
+
+Driver suspend():
+
+// Within this call, the pinmux driver doesn't have to program safe values
+// into HW, because it knows that any future programming on pins relevant
+// to the driver can only be driven by mapping table entries for the "4-bit"
+// reservation, and we assume the person creating those mapping table
+// entries didn't set up some problematic configuration
+//
+// The mapping tables may be set up so the only difference is some pin/
+// group_config values here
+pinmux_select(reservation, "suspend")
+
+Driver resume():
+
+pinmux_select(reservation, "active")
+
+Driver remove():
+
+// Within this call, the pinmux driver programs the safe values into HW,
+// since the ownership of the pins is released; some other driver may
+// start using the pins or mux'd HW modules now.
+pinmux_unreserve(reservation)
+
+In this scheme, the mapping table might even be enhanced to be a list of
+actions to perform on each transition, rather than completely describing
+the state of the mux in each state. That might optimize the set of actions
+performed by some state transitions, if the mapping table author desires.
+
+What are your thoughts on this?
+
+
+
+For reference, I read through all the pinmux drivers I could find in arch/
+arm, and made a rough list of all the pin/group_config settings they support:
+
+msm:
+
+  pads?:
+
+    drive strength = 2, 4, 6, 8, 10, 12, 14, 16mA
+    pull = n, down, keeper, up
+
+mxs:
+
+  pads:
+
+    drive strength = 4, 8, 12, 16mA
+    voltage = 1.8, 3.3V
+    pull = n, up
+
+omap2 (2420, 2430, 34xx, 44xx):
+
+  pads:
+
+    off out enable
+    off out value
+    off pull enable
+    off pull up
+    wakeup enable
+
+tegra20:
+
+  mux pingroups:
+
+    tri-state = y, n
+    pull = n, up, down
+
+  drive pingroups:
+
+    high speed mode = y, n
+    schmitt = y, n
+    drive strength = /1, /2, /4, /8
+    pull down strength = 0..31
+    pull up strength = 0..31
+    slew rate rising = fastest, fast, slow, slowest
+    slew rate falling = fastest, fast, slow, slowest
+
+mxc v1:
+
+  ??
+
+mxc v3:
+
+   pads:
+
+    dvs? # drive strength?
+    hys? # hysteresis?
+    pke? # pull/keeper enable?
+    pue? # pull enable (rather than keeper)?
+    pull strength = 100k down, 47k up, 22k up
+    ode? # open drain?
+    slew rate = slow, fast
+
+mxc mx1:
+
+  ??
+
+mxc mx3:
+
+  pads:
+
+    loopback
+    pke? = none, enable (keeper?)
+    pue? = (look at?) keeper (bit?), pud
+    pull strength = 100k pull down, 100k pull up, 47k pull up, 22k pullup
+    hysteresis = cmos, schmitt
+    driver = cmos, open drain
+    drive strength = normal, high, max
+    slew rate = slow, fast
+
+nomadik (ux500):
+
+  pads:
+
+    pull = n, up, down
+    sleep mode = make input, no change
+      or: sleep mode wakeup = enable, disable
+    sleep mode pull = n, up, down
+    sleep mode direction = in, out
+    sleep mode value = 0, 1
+
+-- 
+nvpublic
+
