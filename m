@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab1JMPQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:16:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59270 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753355Ab1JMPQY (ORCPT
+	id S1756088Ab1JMPRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:17:40 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:59461 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753270Ab1JMPRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:16:24 -0400
-Date: Thu, 13 Oct 2011 11:16:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: NeilBrown <neilb@suse.de>
-cc: markgross@thegnar.org, <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <arve@android.com>,
-        <amit.kucheria@linaro.org>, <farrowg@sg.ibm.com>,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        <linux-pm@lists.linux-foundation.org>, <khilman@ti.com>,
-        Magnus Damm <damm@opensource.se>, <mjg@redhat.com>,
-        <peterz@infradead.org>
-Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
- blocking (aka more wakelock stuff)]
-In-Reply-To: <20111013163526.3863be01@notabene.brown>
-Message-ID: <Pine.LNX.4.44L0.1110131111200.2026-100000@iolanthe.rowland.org>
+	Thu, 13 Oct 2011 11:17:37 -0400
+X-Sasl-enc: yoVc1huKVGUYBuCY23bJ/rTxC7FMi1XWukTtw6fHHc+x 1318519056
+Date: Thu, 13 Oct 2011 09:10:14 -0600
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: linux-next: manual merge of the staging tree with the fbdev tree
+Message-ID: <20111013151014.GA28061@kroah.com>
+References: <20111013170225.254bc2d590deee544913ab6c@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013170225.254bc2d590deee544913ab6c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, NeilBrown wrote:
+On Thu, Oct 13, 2011 at 05:02:25PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/xgifb/XGI_main_26.c between commit 0d5c6ca30bb0
+> ("staging: xgifb: use display information in info not in var for
+> panning") from the fbdev tree and commit fd26d42019cb ("staging: xgifb:
+> avoid direct references xgi_video_info") from the staging tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-> Nope, but I'm keen for you to convince me.  Identify a wakeup event that
-> cannot be made visible to poll (or to user-space by some other
-> mechanism) before the wakeup_source needs to be deactivated.  Or if I've
-> misunderstood what sort of notification is problematic, help me understand.
+The fix looks correct to me, thanks.
 
-Here's an example (just for kicks, not completely relevant to your
-discussion): A USB keyboard key release.  Unlike key presses, key
-releases need not generate input events.  If no processes are
-monitoring the raw keyboard event queue then the release is not visible
-to userspace at all, hence not visible before the wakeup_source needs
-to be deactivated.
-
-Alan Stern
-
+greg k-h
