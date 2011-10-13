@@ -1,84 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1JMKmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 06:42:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56690 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab1JMKmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754754Ab1JMKmS (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 Oct 2011 06:42:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56580 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab1JMKmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 06:42:12 -0400
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] ide: ide_port_wait_ready() fix
-Date: Thu, 13 Oct 2011 12:41:04 +0200
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 2/3] pata_serverworks: cleanup cable detection
+Date: Thu, 13 Oct 2011 12:32:18 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201110111913.18492.bzolnier@gmail.com> <201110121659.55961.bzolnier@gmail.com> <20111012.150349.1115347260310770962.davem@davemloft.net>
-In-Reply-To: <20111012.150349.1115347260310770962.davem@davemloft.net>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201110112011.44748.bzolnier@gmail.com> <201110121705.39026.bzolnier@gmail.com> <20111012185548.4fa03544@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111012185548.4fa03544@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110131241.04759.bzolnier@gmail.com>
+Message-Id: <201110131232.18514.bzolnier@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
+Alan Cox wrote:
 
-> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> Date: Wed, 12 Oct 2011 16:59:55 +0200
+> On Wed, 12 Oct 2011 17:05:38 +0200
+> Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 > 
-> > David Miller wrote:
+> > Alan Cox wrote:
 > > 
-> >> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> >> Date: Tue, 11 Oct 2011 19:13:18 +0200
-> >> 
-> >> > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> >> > Subject: [PATCH] ide: ide_port_wait_ready() fix
-> >> > 
-> >> > Fix for commit a20b2a4 ("ide: skip probe if there are no devices on
-> >> > the port (v2)").  We must check for slave device before failing.
-> >> > 
-> >> > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> >> 
-> >> This will mishandle the case where there is no slave in the device
-> >> list.
+> > > On Tue, 11 Oct 2011 20:11:44 +0200
+> > > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
+> > > 
+> > > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > > > Subject: [PATCH] pata_serverworks: cleanup cable detection
+> > > > 
+> > > > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > > 
+> > > Again no documentation although its at least a bit more obvious why
 > > 
-> > I don't see it:
-> > 
-> > @ -598,7 +598,7 @@ static int ide_port_wait_ready(ide_hwif_
-> >  {
-> >  	const struct ide_tp_ops *tp_ops = hwif->tp_ops;
-> >  	ide_drive_t *drive;
-> > -	int i, rc;
-> > +	int i, rc, prev_rc = 0;
-> >  
-> >  	printk(KERN_DEBUG "Probing IDE interface %s...\n", hwif->name);
-> >  
-> > @@ -623,8 +623,10 @@ static int ide_port_wait_ready(ide_hwif_
-> >  			tp_ops->write_devctl(hwif, ATA_DEVCTL_OBS);
-> >  			mdelay(2);
-> >  			rc = ide_wait_not_busy(hwif, 35000);
-> > -			if (rc)
-> > +			if (prev_rc && rc)
-> >  				goto out;
-> > +			prev_rc = rc;
-> > +			rc = 0;
-> >  		} else
-> >  			printk(KERN_DEBUG "%s: ide_wait_not_busy() skipped\n",
-> >  					  drive->name);
-> > 
-> > If there is no slave device but there is a master device the code falls-through
-> > and returns a success.
+> > The patch only merges identical cable routines for Dell and Sun
+> > systems into common oem_cable() one.  No behavior changes here.
 > 
-> That's not what we want, if there is only a master device and no slave device
-> in the list this loop is iterating over we want to return the error code
-> in "rc", not zero.
+> So put that that in the patch info. It seems fine to me but it ought to
+> be there
 
-No, we want to return zero (success) since at least once device was found
-(otherwise we fail probe on some esoteric setups returning -ENODEV from
-ide_wait_not_busy() for master device).
+Ok.
 
-This is how this function worked before commit a20b2a4 if you want something
-else okay but it needs to work with aforementioned setups.
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: [PATCH v2] pata_serverworks: cleanup cable detection
+
+Merge identical cable routines for Dell and Sun systems into
+common oem_cable() one.
+
+Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+---
+v2: updated patch description
+
+earlier references:
+https://lkml.org/lkml/2010/1/18/324
+
+ drivers/ata/pata_serverworks.c |   37 +++++++------------------------------
+ 1 file changed, 7 insertions(+), 30 deletions(-)
+
+Index: b/drivers/ata/pata_serverworks.c
+===================================================================
+--- a/drivers/ata/pata_serverworks.c
++++ b/drivers/ata/pata_serverworks.c
+@@ -57,32 +57,14 @@ static const char *csb_bad_ata100[] = {
+ };
+ 
+ /**
+- *	dell_cable	-	Dell serverworks cable detection
++ *	oem_cable	-	Dell/Sun serverworks cable detection
+  *	@ap: ATA port to do cable detect
+  *
+- *	Dell hide the 40/80 pin select for their interfaces in the top two
+- *	bits of the subsystem ID.
++ *	Dell PowerEdge and Sun Cobalt 'Alpine' hide the 40/80 pin select
++ *	for their interfaces in the top two bits of the subsystem ID.
+  */
+ 
+-static int dell_cable(struct ata_port *ap)
+-{
+-	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
+-
+-	if (pdev->subsystem_device & (1 << (ap->port_no + 14)))
+-		return ATA_CBL_PATA80;
+-	return ATA_CBL_PATA40;
+-}
+-
+-/**
+- *	sun_cable	-	Sun Cobalt 'Alpine' cable detection
+- *	@ap: ATA port to do cable select
+- *
+- *	Cobalt CSB5 IDE hides the 40/80pin in the top two bits of the
+- *	subsystem ID the same as dell. We could use one function but we may
+- *	need to extend the Dell one in future
+- */
+-
+-static int sun_cable(struct ata_port *ap)
++static int oem_cable(struct ata_port *ap)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
+ 
+@@ -97,15 +79,10 @@ struct sv_cable_table {
+ 	int (*cable_detect)(struct ata_port *ap);
+ };
+ 
+-/*
+- *	Note that we don't copy the old serverworks code because the old
+- *	code contains obvious mistakes
+- */
+-
+ static struct sv_cable_table cable_detect[] = {
+-	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_DELL, dell_cable },
+-	{ PCI_DEVICE_ID_SERVERWORKS_CSB6IDE,   PCI_VENDOR_ID_DELL, dell_cable },
+-	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_SUN,  sun_cable  },
++	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_DELL, oem_cable },
++	{ PCI_DEVICE_ID_SERVERWORKS_CSB6IDE,   PCI_VENDOR_ID_DELL, oem_cable },
++	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_VENDOR_ID_SUN,  oem_cable },
+ 	{ PCI_DEVICE_ID_SERVERWORKS_OSB4IDE,   PCI_ANY_ID, ata_cable_40wire  },
+ 	{ PCI_DEVICE_ID_SERVERWORKS_CSB5IDE,   PCI_ANY_ID, ata_cable_unknown },
+ 	{ PCI_DEVICE_ID_SERVERWORKS_CSB6IDE,   PCI_ANY_ID, ata_cable_unknown },
