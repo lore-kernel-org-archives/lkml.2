@@ -1,51 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1JMFp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 01:45:28 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40148 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab1JMFp0 (ORCPT
+	id S1752943Ab1JMFqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 01:46:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41612 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1JMFqM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 01:45:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 13 Oct 2011 14:44:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org
-Subject: Re: [PATCH v6 1/8] Basic kernel memory functionality for the Memory
- Controller
-Message-Id: <20111013144430.636ee7e2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1318242268-2234-2-git-send-email-glommer@parallels.com>
-References: <1318242268-2234-1-git-send-email-glommer@parallels.com>
-	<1318242268-2234-2-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Oct 2011 01:46:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+O4pCJ2gDicdC7BbCbo0m3xdCX0cdhY-Azn9aqu6+C58u0kgQ@mail.gmail.com>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<CAHFNz9JUV6wabQxsvrxPRX6q41sWNMDy8DJcOpNTecNTbL=XaQ@mail.gmail.com>
+	<CA+O4pCJ2gDicdC7BbCbo0m3xdCX0cdhY-Azn9aqu6+C58u0kgQ@mail.gmail.com>
+Date: Thu, 13 Oct 2011 11:16:09 +0530
+Message-ID: <CAHFNz9+a4PjsAoBYF-bJ9nSOzNtEVq23UJzxSTxo=fdmSGOJPw@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Manu Abraham <abraham.manu@gmail.com>
+To: Markus Rechberger <mrechberger@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Oct 2011 14:24:21 +0400
-Glauber Costa <glommer@parallels.com> wrote:
+On Thu, Oct 13, 2011 at 10:29 AM, Markus Rechberger
+<mrechberger@gmail.com> wrote:
+> On Thu, Oct 13, 2011 at 6:03 AM, Manu Abraham <abraham.manu@gmail.com> wrote:
+>> Hello Markus,
+>>
+>> On Thu, Oct 13, 2011 at 3:39 AM, Markus Rechberger
+>> <mrechberger@gmail.com> wrote:
+>>> On Wed, Oct 12, 2011 at 11:48 PM, Markus Rechberger
+>>> <mrechberger@gmail.com> wrote:
+>>>> On Wed, Oct 12, 2011 at 10:33 PM, Greg KH <gregkh@suse.de> wrote:
+>>>>> On Wed, Oct 12, 2011 at 06:59:01PM +0200, Markus Rechberger wrote:
+>>>>>> On Wed, Oct 12, 2011 at 4:17 PM, Greg KH <gregkh@suse.de> wrote:
+>>>>>> > On Wed, Oct 12, 2011 at 02:36:59PM +0200, Markus Rechberger wrote:
+>>>>>> >> We have 2 products which can perform better with increased Bulk transfers
+>>>>>> >
+>>>>>> > I don't believe you :)
+>>>>>> >
+>>>>>> > As stated before, this patch is not acceptable.  Please work to figure
+>>>>>> > out the real reason for your device problems here, this is not the
+>>>>>> > correct solution at all.
+>>>>>> >
+>>>>>>
+>>>>>> OK no device support for linux then. Windows and MacOSX are fine.
+>>>>>
+>>>>> That is your choice, not ours, as you are the one writing the closed
+>>>>> source code.  Without usbmon dumps, showing that the problem really is
+>>>>> in the kernel code, we can't do anything for you here.
+>>>>>
+>>>>
+>>>>
+>>>> here take your usbmon logs:
+>>>> http://sundtek.de/support/working.log
+>>>> http://sundtek.de/support/notworking.log (this is with your proposed
+>>>> split up of 22k).
+>>>>
+>>>> Isochronous already supports up to 190kb buffers which cause no
+>>>> trouble anywhere.
+>>>> Bulk is castrated to 15kb buffers and 50kb should be such a big issue
+>>>> while applications
+>>>> which do not request it are not affected at all.
+>>>>
+>>>> I'm very angry that you do not really focus on what I write and just
+>>>> try to write stories about
+>>>> bogus things like my patch might break other applications while I
+>>>> pointed out that this is not
+>>>> possible with legacy applications which use this interface. It is not
+>>>> even possible to read the
+>>>> maximum buffer value from the kernelspace.
+>>>>
+>>>> Your bogus message about 1Gig ram you can put it elsewhere, I checked
+>>>> multiple windows drivers
+>>>> in the past the buffer size varies between small and something around
+>>>> 50k usually.
+>>>> I would fully like to avoid to patch this kernel to get those things
+>>>> work because I don't want to
+>>>> deal with people who just write around the actual issues.
+>>>>
+>>>> Alsi the fact that bigger buffers are already being used plus the HW
+>>>> specifications of our main device also points out to a certain
+>>>> buffersize near 50k. But of course you are the smart knowitall without
+>>>> the need of explanation why
+>>>> those things can be affected by HW and some HW chips have options to
+>>>> influence that buffer size.
+>>>
+>>> And for those who are curious about the logfiles:
+>>> Not working one as proposed by Alan that the full buffer size should
+>>> be split into 2 requests:
+>>>
+>>> ffff8800b38d9f00 1231540351 S Bi:2:013:1 -115 12288 <
+>>> ffff8800b38d96c0 1231540404 S Bi:2:013:1 -115 11776 <
+>>> ffff8800b38d9cc0 1231540440 S Bi:2:013:1 -115 12288 <
+>>> ffff880002ede600 1231540496 S Bi:2:013:1 -115 11776 <
+>>> ffff8800b38d9f00 1231545491 C Bi:2:013:1 0 12288 = 7a1a0840 1ca8353c
+>>> 004b80ec 4de08401 2f0227f8 34005e7e 80181dfd 1a8f700a
+>>> ffff88007d51fb40 1231545875 S Bi:2:013:1 -115 12288 <
+>>> ffff8800b38d96c0 1231551861 C Bi:2:013:1 0 11776 = 5244e386 a7800000
+>>> 010642ea 35bfbba5 373e738b cc035a73 c328a1ff 4da728ce
+>>> ffff880002ede0c0 1231556173 S Bi:2:013:1 -115 11776 <
+>>> ffff8800b38d9cc0 1231558618 C Bi:2:013:1 0 12288 = db91aae9 2d2532f3
+>>> 2e37448a fb36c213 55dda2ad 243122b2 261edb06 875848ac
+>>>
+>>>
+>>> 12288 = 7a1a0840 every Line with 12288 should start with 47 (MPEG-TS Sync byte)
+>>>
+>>> The working one which allocate 7000 bytes more (oh really big memory
+>>> pressure now!)  than this castrated USBFS interface allows.
+>>>
+>>> ffff88003ac37240 992178919 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37000 992178953 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37c00 992178980 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37e40 992179003 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37240 992190198 C Bi:2:013:1 0 24064 = 471fff10 00000000
+>>> 00000000 00000000 00000000 00000000 00000000 00000000
+>>> ffff88000601f480 992194368 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37000 992203209 C Bi:2:013:1 0 24064 = 4701b114 43867ee6
+>>> 40790660 e898681c 9b1c7dca 08980d43 73181369 9be1bc67
+>>> ffff880067e38a80 992204642 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37c00 992216318 C Bi:2:013:1 0 24064 = 4740001c 0000b01d
+>>> 0305d500 000000e0 104015e1 504016e1 60401be1 b04022e2
+>>> ffff880067e383c0 992219978 S Bi:2:013:1 -115 24064 <
+>>> ffff88003ac37e40 992229340 C Bi:2:013:1 0 24064 = 471fff10 00000000
+>>> 00000000 00000000 00000000 00000000 00000000 00000000
+>>>
+>>> everything starts nicely with 0x47
+>>
+>> Is the transfer size a multiple of 188 bytes in both cases ? In the
+>> working case, it looks so, but in the broken case ? Many DTV bridges
+>> have fixed DMA apertures and not variable really much, even though the
+>> device specifications do state that it might support different block
+>> sizes, some modes could be broken. I guess most likely, you would have
+>> handled this situation.
+>>
+>> Other issues that could possibly happen (wrt your jitter) is a high
+>> latency (in the particular case of failures) where the received data
+>> have unusable relative timestamps wrt DTS and or PTS.
+>>
+>> The only areas where you can have a corrupted stream as you mentioned
+>> "jitter" is either lost frames or the above two cases. I don't know
+>> what's the issue in your case, but might help to track down the issue
+>> altogether.
+>>
+>
+> I am not so sure about that one but I guess that's it.
+> The 'black outs (0xff after the Sync byte)' are also related to the
+> demodulator (not perfect signal, it's still DVB-T) but
+> the alignment is just perfect
+> I also guess the misaligning problem could be related to the latency
+> and that the bridges have some
+> fixed or adjustable bulk transfer settings to work with that. In the
+> end the additional features
+> are done with software demodulation so there will be a certain minimal
+> system requirement anyway.
+>
 
-> This patch lays down the foundation for the kernel memory component
-> of the Memory Controller.
-> 
-> As of today, I am only laying down the following files:
-> 
->  * memory.independent_kmem_limit
->  * memory.kmem.limit_in_bytes (currently ignored)
->  * memory.kmem.usage_in_bytes (always zero)
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
-> CC: Paul Menage <paul@paulmenage.org>
-> CC: Greg Thelen <gthelen@google.com>
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I guess you meant to imply "software decoding" of the MPEG stream I
+would say, rather than "demodulation" of the Baseband signal.
 
+
+> What would be against that theory would be that 2*that maximum
+> transfer size also results in a misaligned
+> video. Since I tried many other transfer sizes before I've been told
+> to use that one and I even thought the
+> device is broke but it just works that way... also with Windows and MacOSX.
+> As far as I can tell for user experience the device is okay with 24064 bytes.
+>
+> TV has been running for several days now with no issues (I was also
+> testing the ts 'blackouts' where data
+> after the sync byte 0x47 is 0xff on weak signal, the TS sync byte
+> itself is still valid)
+
+I have had such an issue earlier (0x47 followed 0xff. ie 0x47 0x1f 0xf
+0x00 0x00 0x00 and so on) with a stream from the demodulator on a PCIe
+device, but eventually it turned out to be that, it was handling the
+device DMA in the reverse order, the device having 8 DMA apertures of
+which all 8 had to be used for stream transfer.
+
+RING(W) : Buf:2 Tail: 2 Count:0 Size:16
+RING(R): Buf:2 Head: 2 Count:! Size: 16
+47 If ff 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+Additionally, to be noted is that the ISO13818-1 specification allows
+NULL padding of the TS by the channel modulator to achieve a CBR, from
+VBR ES's. There exists an ETSI specification dealing with NULL padding
+explicitly, don't remember the exact TR no.
+
+After a search, EN 302755 v1.1.1 Section 5.1.5 deals with that, A
+quick glance at least wrt to T2, I remember the same while I was
+working with S2 as well.
+
+All such issues mixed when together can be very nasty and painful,
+making things difficult.
+
+Regards,
+Manu
