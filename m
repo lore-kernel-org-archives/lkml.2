@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab1JMPuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 11:50:44 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34633 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab1JMPun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 11:50:43 -0400
-Subject: Re: [PATCH][v2] uio: Support 36-bit physical addresses on 32-bit systems
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AE7E@saturn3.aculab.com>
-Date: Thu, 13 Oct 2011 10:50:17 -0500
-Cc: "Timur Tabi" <timur@freescale.com>, <linuxppc-dev@ozlabs.org>,
-        <hjk@hansjkoch.de>, <gregkh@suse.de>, <linux-kernel@vger.kernel.org>,
-        "Jiang Kai-B18973" <B18973@freescale.com>
+	id S1756190Ab1JMPuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 11:50:52 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53086 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755372Ab1JMPuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 11:50:50 -0400
+Date: Thu, 13 Oct 2011 16:49:23 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pata_rdc: parallel scanning needs an extra locking
+Message-ID: <20111013164923.23683fcb@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110131606.04496.bzolnier@gmail.com>
+References: <201110131606.04496.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <9FAA2091-2FED-4B44-9224-6C735CF51D2C@kernel.crashing.org>
-References: <AE90C24D6B3A694183C094C60CF0A2F6D8AE7E@saturn3.aculab.com>
-To: David Laight <David.Laight@ACULAB.COM>
-X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 13 Oct 2011 16:06:04 +0200
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-On Oct 13, 2011, at 10:37 AM, David Laight wrote:
-
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Subject: [PATCH] pata_rdc: parallel scanning needs an extra locking
 > 
->> Kumar Gala wrote:
->>>>>>> +       phys_addr_t             addr;
->>>>> 
->>>>> Please add a comment here saying:
->>>>> 
->>>>> 1) That 'addr' can be a virtual or physical address
->>> The code and everything else makes that clear
->> 
->> I'm sorry, but I have to strongly disagree here.  It is *NOT* 
->> clear that a variable of type 'phys_addr_t' can hold something
->> that is not a physical address.
-> 
-> Since there is a discriminating field, could a union be used?
-> At a guess the type of the address is constrained between
-> produces and consumer??
+> This is similar change as commit 60c3be3 ("ata_piix: parallel scanning
+> on PATA needs an extra locking") for ata_piix host driver.
 
-Uugh.
-
-I'll add a comment to uio_mem.
-
-- k
+Again has anyone verified with the vendor that the RDC can support
+parallel scanning ?
