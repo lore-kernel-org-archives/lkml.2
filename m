@@ -1,34 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1JMJQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 05:16:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47817 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab1JMJQ6 (ORCPT
+	id S1754174Ab1JMJRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 05:17:16 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51181 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab1JMJRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 05:16:58 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <87ty7dl0uh.wl%kuninori.morimoto.gx@renesas.com>
-References: <1318335653.3573.1.camel@phoenix> <87ty7dl0uh.wl%kuninori.morimoto.gx@renesas.com>
+	Thu, 13 Oct 2011 05:17:14 -0400
+Subject: [PATCH] ASoC: ak4535: fixup cache register table
 From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 13 Oct 2011 17:16:37 +0800
-Message-ID: <CAF+7xW=10yL411_ko6GKsYtpy1mwteMPt3bUEikPoWfAae=fWA@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: ak4642: fixup cache register table
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+To: linux-kernel@vger.kernel.org
+Cc: Richard Purdie <rpurdie@rpsys.net>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Oct 2011 17:17:06 +0800
+Message-ID: <1318497427.2857.14.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/13 Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>:
-> ak4642 register was 8bit, but cache table was defined as 16bit.
-> ak4642 doesn't work correctry without this patch.
->
-ak4535 also has the same bug. I'm sending a patch for ak4535.
+ak4535_reg should be 8bit, but cache table is defined as 16bit.
 
-Regards,
-Axel
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/ak4535.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/sound/soc/codecs/ak4535.c b/sound/soc/codecs/ak4535.c
+index 68df32d..95d782d 100644
+--- a/sound/soc/codecs/ak4535.c
++++ b/sound/soc/codecs/ak4535.c
+@@ -39,11 +39,11 @@ struct ak4535_priv {
+ /*
+  * ak4535 register cache
+  */
+-static const u16 ak4535_reg[AK4535_CACHEREGNUM] = {
+-    0x0000, 0x0080, 0x0000, 0x0003,
+-    0x0002, 0x0000, 0x0011, 0x0001,
+-    0x0000, 0x0040, 0x0036, 0x0010,
+-    0x0000, 0x0000, 0x0057, 0x0000,
++static const u8 ak4535_reg[AK4535_CACHEREGNUM] = {
++	0x00, 0x80, 0x00, 0x03,
++	0x02, 0x00, 0x11, 0x01,
++	0x00, 0x40, 0x36, 0x10,
++	0x00, 0x00, 0x57, 0x00,
+ };
+ 
+ static const char *ak4535_mono_gain[] = {"+6dB", "-17dB"};
+-- 
+1.7.4.1
+
+
+
