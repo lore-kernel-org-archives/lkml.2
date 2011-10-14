@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932984Ab1JNN5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:57:21 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:33972 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756043Ab1JNN5T (ORCPT
+	id S932995Ab1JNN6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:58:00 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32642 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab1JNN56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:57:19 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: z3yQSWUVM1lzpxljleN54erjPAkSp4hc3tIkJQcQf4o4Apw
- MTmi7v1vvcHuhpq.bohB6DQvxAvGJdreNGvgRByj_nwqC_5ZB6wDlmC6xOz7
- DxpPV9mjqTt3QKgT0h7XgjpHTVI8MvePGXLqvC_mgPC_Mm2H2yfhFhnQ1HPD
- 3K9z2m2fpA19x7mCYax1eHsAKDnX84SpmNEUBUiS6tfVyekWCSr07GqmOIUI
- gyXK6W.ZFR7bDbtHS5pyo4wOaNv24hyyvYLgU7bp_JWhFBhs4zcAbkygCZUZ
- cz5jI37kYcQ4V3jxP8YkeWfsUvaBEQx1uGCAxQfkcBsSG_ip2LyyQDHA.uWv
- rhcmdQ7.wnE2wgd2A_AhjPkM.kVpwJ9O4jiZApwx12IspLrM-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 14 Oct 2011 08:57:16 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Dimitri Sivanich <sivanich@sgi.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-In-Reply-To: <20111014135055.GA28592@sgi.com>
-Message-ID: <alpine.DEB.2.00.1110140856420.6411@router.home>
-References: <20111012160202.GA18666@sgi.com> <20111012120118.e948f40a.akpm@linux-foundation.org> <alpine.DEB.2.00.1110121452220.31218@router.home> <20111013152355.GB6966@sgi.com> <alpine.DEB.2.00.1110131052300.18473@router.home> <20111013135032.7c2c54cd.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110131602020.26553@router.home> <20111013142434.4d05cbdc.akpm@linux-foundation.org> <20111014122506.GB26737@sgi.com> <20111014135055.GA28592@sgi.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 14 Oct 2011 09:57:58 -0400
+Date: Fri, 14 Oct 2011 09:57:43 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/21] pci: drop unused Kconfig symbol
+Message-ID: <20111014135743.GD4577@phenom.oracle.com>
+References: <1318595439.6132.77.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318595439.6132.77.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E983FE2.0258:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Dimitri Sivanich wrote:
+On Fri, Oct 14, 2011 at 02:30:39PM +0200, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-> Testing on a smaller machine with 46 writer threads in parallel (my original
-> test used 120).
->
-> Looks as though cache-aligning and padding the end of the vm_stat array
-> results in a ~150 MB/sec speedup.  This is a nice improvement for only 46
-> writer threads, though it's not the full ~250 MB/sec speedup I get from
-> setting OVERCOMMIT_NEVER.
+Can you provide a commit message describing why?
 
-Add to this the increase in the deltas for the ZVCs and change the stat
-interval to 10 sec?
+And can you also use scripts/get_maintainer.pl in the future
+to copy the maintainer of this driver as well?
 
+Thanks.
+> ---
+>  drivers/pci/Kconfig |   11 -----------
+>  1 files changed, 0 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+> index 0fa466a..b42798f 100644
+> --- a/drivers/pci/Kconfig
+> +++ b/drivers/pci/Kconfig
+> @@ -51,17 +51,6 @@ config XEN_PCIDEV_FRONTEND
+>            The PCI device frontend driver allows the kernel to import arbitrary
+>            PCI devices from a PCI backend to support PCI driver domains.
+>  
+> -config XEN_PCIDEV_FE_DEBUG
+> -        bool "Xen PCI Frontend debugging"
+> -        depends on XEN_PCIDEV_FRONTEND && PCI_DEBUG
+> -	help
+> -	  Say Y here if you want the Xen PCI frontend to produce a bunch of debug
+> -	  messages to the system log.  Select this if you are having a
+> -	  problem with Xen PCI frontend support and want to see more of what is
+> -	  going on.
+> -
+> -	  When in doubt, say N.
+> -
+>  config HT_IRQ
+>  	bool "Interrupts on hypertransport devices"
+>  	default y
+> -- 
+> 1.7.4.4
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
