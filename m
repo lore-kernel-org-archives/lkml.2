@@ -1,89 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab1JNS4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 14:56:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63961 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab1JNS4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 14:56:20 -0400
-Message-ID: <4E9885CF.1000301@gmail.com>
-Date: Fri, 14 Oct 2011 11:56:15 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <tom.leiming@gmail.com>,
-        Andrei Warkentin <awarkentin@vmware.com>, Greg KH <greg@kroah.com>,
-        Dilan Lee <dilee@nvidia.com>, "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>, Manjunath@jasper.es,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Linux PM List <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-References: <CACxGe6vF6em0-PnJ7UuH0CQ0_StJTfmFKBsktvb9O+ccCx6E8A@mail.gmail.com> <Pine.LNX.4.44L0.1110141229450.2036-100000@iolanthe.rowland.org> <CACxGe6t2Xu5B0AKZJe-6HEpxK6GfuNm0Y2Kb_bs8ZwaTz5XnRg@mail.gmail.com>
-In-Reply-To: <CACxGe6t2Xu5B0AKZJe-6HEpxK6GfuNm0Y2Kb_bs8ZwaTz5XnRg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754842Ab1JNS5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 14:57:13 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33659
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752605Ab1JNS5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 14:57:12 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: Mike Sterling <Mike.Sterling@microsoft.com>,
+        NetDev <netdev@vger.kernel.org>
+Subject: [PATCH] staging: hv: move hv_netvsc out of staging area
+Date: Fri, 14 Oct 2011 12:20:26 -0700
+Message-Id: <1318620026-8349-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 10:20 AM, Grant Likely wrote:
-> On Fri, Oct 14, 2011 at 10:33 AM, Alan Stern<stern@rowland.harvard.edu>  wrote:
->> On Fri, 14 Oct 2011, Grant Likely wrote:
->>
->>>> How can a device acquire children before it has a driver?
->>>
->>> There are a few potential situations in embedded systems (or at least
->>> nothing currently prevents it) where platform setup code constructs a
->>> device hierarchy without the aid of device drivers, and it is still
->>> possible for a parent device to be attached to a driver.  IIUC, SPARC
->>> creates an entire hierarchy of platform_devices from all the nodes in
->>> the OpenFirmware device tree, and any of those devices can be bound to
->>> a driver.  I don't like that approach, but at the very least it needs
->>> to be guarded against.
->>
->> Do these devices ever require deferred probes?
->
-> Yes, they very well might.  However, I'm happy with the limitation
-> that only leaf devices can take advantage of probe deferral.
->
+hv_netvsc has been reviewed on netdev mailing list on 6/09/2011.
+All recommended changes have been made. We are requesting to move
+it out of staging area.
 
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: KY Srinivasan <kys@microsoft.com>
+Signed-off-by: Mike Sterling <Mike.Sterling@microsoft.com>
+Cc: NetDev <netdev@vger.kernel.org>
 
-I have:
+---
+ drivers/net/Kconfig                               |    2 ++
+ drivers/net/Makefile                              |    2 ++
+ drivers/net/hyperv/Kconfig                        |    5 +++++
+ drivers/net/hyperv/Makefile                       |    3 +++
+ drivers/{staging/hv => net/hyperv}/hyperv_net.h   |    0
+ drivers/{staging/hv => net/hyperv}/netvsc.c       |    0
+ drivers/{staging/hv => net/hyperv}/netvsc_drv.c   |    0
+ drivers/{staging/hv => net/hyperv}/rndis_filter.c |    0
+ drivers/staging/hv/Kconfig                        |    6 ------
+ drivers/staging/hv/Makefile                       |    2 --
+ drivers/staging/hv/TODO                           |    1 -
+ 11 files changed, 12 insertions(+), 9 deletions(-)
+ create mode 100644 drivers/net/hyperv/Kconfig
+ create mode 100644 drivers/net/hyperv/Makefile
+ rename drivers/{staging/hv => net/hyperv}/hyperv_net.h (100%)
+ rename drivers/{staging/hv => net/hyperv}/netvsc.c (100%)
+ rename drivers/{staging/hv => net/hyperv}/netvsc_drv.c (100%)
+ rename drivers/{staging/hv => net/hyperv}/rndis_filter.c (100%)
 
-I2C-Bus-A
-   +--Mux-I2C (controlled by parent I2C-Bus-A)
-       +---I2C-Bus-1
-       |      +--GPIO-Expander-A
-       |
-       +---I2C-Bus-2
-              +--GPIO-Expander-B
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index 8d0314d..088c330 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -3451,4 +3451,6 @@ config VMXNET3
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called vmxnet3.
+ 
++source "drivers/net/hyperv/Kconfig"
++
+ endif # NETDEVICES
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index e1eca2a..647c878 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -306,3 +306,5 @@ obj-$(CONFIG_CAIF) += caif/
+ obj-$(CONFIG_OCTEON_MGMT_ETHERNET) += octeon/
+ obj-$(CONFIG_PCH_GBE) += pch_gbe/
+ obj-$(CONFIG_TILE_NET) += tile/
++
++obj-$(CONFIG_HYPERV_NET) += hyperv/
+diff --git a/drivers/net/hyperv/Kconfig b/drivers/net/hyperv/Kconfig
+new file mode 100644
+index 0000000..936968d
+--- /dev/null
++++ b/drivers/net/hyperv/Kconfig
+@@ -0,0 +1,5 @@
++config HYPERV_NET
++	tristate "Microsoft Hyper-V virtual network driver"
++	depends on HYPERV
++	help
++	  Select this option to enable the Hyper-V virtual network driver.
+diff --git a/drivers/net/hyperv/Makefile b/drivers/net/hyperv/Makefile
+new file mode 100644
+index 0000000..c8a6682
+--- /dev/null
++++ b/drivers/net/hyperv/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_HYPERV_NET) += hv_netvsc.o
++
++hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
+diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+similarity index 100%
+rename from drivers/staging/hv/hyperv_net.h
+rename to drivers/net/hyperv/hyperv_net.h
+diff --git a/drivers/staging/hv/netvsc.c b/drivers/net/hyperv/netvsc.c
+similarity index 100%
+rename from drivers/staging/hv/netvsc.c
+rename to drivers/net/hyperv/netvsc.c
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+similarity index 100%
+rename from drivers/staging/hv/netvsc_drv.c
+rename to drivers/net/hyperv/netvsc_drv.c
+diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+similarity index 100%
+rename from drivers/staging/hv/rndis_filter.c
+rename to drivers/net/hyperv/rndis_filter.c
+diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+index 072185e..8a51166 100644
+--- a/drivers/staging/hv/Kconfig
++++ b/drivers/staging/hv/Kconfig
+@@ -4,12 +4,6 @@ config HYPERV_STORAGE
+ 	help
+ 	 Select this option to enable the Hyper-V virtual storage driver.
+ 
+-config HYPERV_NET
+-	tristate "Microsoft Hyper-V virtual network driver"
+-	depends on HYPERV && NET
+-	help
+-	  Select this option to enable the Hyper-V virtual network driver.
+-
+ config HYPERV_MOUSE
+ 	tristate "Microsoft Hyper-V mouse driver"
+ 	depends on HYPERV && HID
+diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
+index e071c12..b536584 100644
+--- a/drivers/staging/hv/Makefile
++++ b/drivers/staging/hv/Makefile
+@@ -1,7 +1,5 @@
+ obj-$(CONFIG_HYPERV)		+= hv_timesource.o
+ obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+-obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
+ obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
+ 
+ hv_storvsc-y := storvsc_drv.o
+-hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
+diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
+index ed4d636..fd080cb 100644
+--- a/drivers/staging/hv/TODO
++++ b/drivers/staging/hv/TODO
+@@ -1,5 +1,4 @@
+ TODO:
+-	- audit the network driver
+ 	- audit the scsi driver
+ 
+ Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
+-- 
+1.7.3.4
 
-These all have a parent/child relationship so no deferral is needed, so 
-far so good.
-
-
-Then this:
-
-MDIO-Bus-A
-    +---Mux-MDIO (controlled by GPIO-Expander-A)
-          +---MDIO-Bus-1
-          |
-          +---MDIO-Bus-2
-                +---PHY-1
-                |
-                +---PHY-2
-
-In this case the driver for Mux-MDIO needs to be deferred until *both* 
-MDIO-Bus-A's driver *and* GPIO-Expander-B's driver are loaded.  A 
-perfect use case for the patch.
-
-Would you consider Mux-MDIO to be a 'leaf device'?  If not, then I have 
-real problems with 'the limitation that only leaf devices can take 
-advantage of probe deferral'
-
-David Daney
