@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933477Ab1JNV6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 17:58:49 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:60885 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab1JNV54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757000Ab1JNV54 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Oct 2011 17:57:56 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:60866 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab1JNV5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 17:57:55 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 09/11] drbd: receive_protocol(): Make the program flow less confusing
-Date: Fri, 14 Oct 2011 23:57:50 +0200
-Message-Id: <1318629472-11110-10-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 01/11] drbd: Correctly handle resources without volumes
+Date: Fri, 14 Oct 2011 23:57:42 +0200
+Message-Id: <1318629472-11110-2-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1318629472-11110-1-git-send-email-philipp.reisner@linbit.com>
 References: <1318629472-11110-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,109 +20,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   73 +++++++++++++++++------------------
- 1 files changed, 35 insertions(+), 38 deletions(-)
+ drivers/block/drbd/drbd_nl.c    |    3 ++-
+ drivers/block/drbd/drbd_state.c |   17 +++++++++++++++--
+ 2 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 11f2e72..06bbf0f 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3083,55 +3083,52 @@ static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 20fa803..a71a5f5 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1119,7 +1119,8 @@ static void conn_reconfig_done(struct drbd_tconn *tconn)
+ {
+ 	bool stop_threads;
+ 	spin_lock_irq(&tconn->req_lock);
+-	stop_threads = conn_all_vols_unconf(tconn);
++	stop_threads = conn_all_vols_unconf(tconn) &&
++		tconn->cstate == C_STANDALONE;
+ 	spin_unlock_irq(&tconn->req_lock);
+ 	if (stop_threads) {
+ 		/* asender is implicitly stopped by receiver
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index c4dd667..eafc195 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -1491,9 +1491,15 @@ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
+ void conn_old_common_state(struct drbd_tconn *tconn, union drbd_state *pcs, enum chg_state_flags *pf)
+ {
+ 	enum chg_state_flags flags = ~0;
+-	union drbd_dev_state os, cs = {}; /* old_state, common_state */
+ 	struct drbd_conf *mdev;
+ 	int vnr, first_vol = 1;
++	union drbd_dev_state os, cs = {
++		{ .role = R_SECONDARY,
++		  .peer = R_UNKNOWN,
++		  .conn = tconn->cstate,
++		  .disk = D_DISKLESS,
++		  .pdsk = D_UNKNOWN,
++		} };
  
- 		synchronize_rcu();
- 		kfree(old_net_conf);
-+	} else {
-+		clear_bit(CONN_DRY_RUN, &tconn->flags);
- 
--		return 0;
--	}
--
--	clear_bit(CONN_DRY_RUN, &tconn->flags);
-+		if (cf & CF_DRY_RUN)
-+			set_bit(CONN_DRY_RUN, &tconn->flags);
- 
--	if (cf & CF_DRY_RUN)
--		set_bit(CONN_DRY_RUN, &tconn->flags);
-+		rcu_read_lock();
-+		nc = rcu_dereference(tconn->net_conf);
- 
--	rcu_read_lock();
--	nc = rcu_dereference(tconn->net_conf);
-+		if (p_proto != nc->wire_protocol) {
-+			conn_err(tconn, "incompatible communication protocols\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (p_proto != nc->wire_protocol) {
--		conn_err(tconn, "incompatible communication protocols\n");
--		goto disconnect_rcu_unlock;
--	}
-+		if (convert_after_sb(p_after_sb_0p) != nc->after_sb_0p) {
-+			conn_err(tconn, "incompatible after-sb-0pri settings\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (convert_after_sb(p_after_sb_0p) != nc->after_sb_0p) {
--		conn_err(tconn, "incompatible after-sb-0pri settings\n");
--		goto disconnect_rcu_unlock;
--	}
-+		if (convert_after_sb(p_after_sb_1p) != nc->after_sb_1p) {
-+			conn_err(tconn, "incompatible after-sb-1pri settings\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (convert_after_sb(p_after_sb_1p) != nc->after_sb_1p) {
--		conn_err(tconn, "incompatible after-sb-1pri settings\n");
--		goto disconnect_rcu_unlock;
--	}
-+		if (convert_after_sb(p_after_sb_2p) != nc->after_sb_2p) {
-+			conn_err(tconn, "incompatible after-sb-2pri settings\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (convert_after_sb(p_after_sb_2p) != nc->after_sb_2p) {
--		conn_err(tconn, "incompatible after-sb-2pri settings\n");
--		goto disconnect_rcu_unlock;
--	}
-+		if (p_discard_my_data && nc->discard_my_data) {
-+			conn_err(tconn, "both sides have the 'discard_my_data' flag set\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (p_discard_my_data && nc->discard_my_data) {
--		conn_err(tconn, "both sides have the 'discard_my_data' flag set\n");
--		goto disconnect_rcu_unlock;
--	}
-+		if (p_two_primaries != nc->two_primaries) {
-+			conn_err(tconn, "incompatible setting of the two-primaries options\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (p_two_primaries != nc->two_primaries) {
--		conn_err(tconn, "incompatible setting of the two-primaries options\n");
--		goto disconnect_rcu_unlock;
--	}
-+		if (strcmp(integrity_alg, nc->integrity_alg)) {
-+			conn_err(tconn, "incompatible setting of the data-integrity-alg\n");
-+			goto disconnect_rcu_unlock;
-+		}
- 
--	if (strcmp(integrity_alg, nc->integrity_alg)) {
--		conn_err(tconn, "incompatible setting of the data-integrity-alg\n");
--		goto disconnect_rcu_unlock;
-+		rcu_read_unlock();
- 	}
--
--	rcu_read_unlock();
--
- 	return 0;
- 
- disconnect_rcu_unlock:
+ 	rcu_read_lock();
+ 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
+@@ -1574,10 +1580,17 @@ void
+ conn_set_state(struct drbd_tconn *tconn, union drbd_state mask, union drbd_state val,
+ 	       union drbd_state *pns_min, union drbd_state *pns_max, enum chg_state_flags flags)
+ {
+-	union drbd_state ns, os, ns_max = { };
++	union drbd_state ns, os, ns_max = {
++		{ .role = R_SECONDARY,
++		  .peer = R_UNKNOWN,
++		  .conn = val.conn,
++		  .disk = D_DISKLESS,
++		  .pdsk = D_UNKNOWN
++		} };
+ 	union drbd_state ns_min = {
+ 		{ .role = R_MASK,
+ 		  .peer = R_MASK,
++		  .conn = val.conn,
+ 		  .disk = D_MASK,
+ 		  .pdsk = D_MASK
+ 		} };
 -- 
 1.7.4.1
 
