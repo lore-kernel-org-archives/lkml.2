@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933031Ab1JNOS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 10:18:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48417 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab1JNOS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 10:18:27 -0400
-Date: Fri, 14 Oct 2011 10:17:01 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
-Message-ID: <20111014141701.GA2433@redhat.com>
-References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
- <1318503245.24856.12.camel@twins>
- <4E971580.6030300@goop.org>
+	id S933038Ab1JNOTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 10:19:25 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:46208 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754632Ab1JNOTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 10:19:23 -0400
+Date: Fri, 14 Oct 2011 09:19:21 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111014141921.GC28592@sgi.com>
+References: <20111012120118.e948f40a.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110121452220.31218@router.home>
+ <20111013152355.GB6966@sgi.com>
+ <alpine.DEB.2.00.1110131052300.18473@router.home>
+ <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110131602020.26553@router.home>
+ <20111013142434.4d05cbdc.akpm@linux-foundation.org>
+ <20111014122506.GB26737@sgi.com>
+ <20111014135055.GA28592@sgi.com>
+ <alpine.DEB.2.00.1110140856420.6411@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E971580.6030300@goop.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <alpine.DEB.2.00.1110140856420.6411@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 09:44:48AM -0700, Jeremy Fitzhardinge wrote:
-> On 10/13/2011 03:54 AM, Peter Zijlstra wrote:
-> > On Wed, 2011-10-12 at 17:51 -0700, Jeremy Fitzhardinge wrote:
-> >> This is is all unnecessary complication if you're not using PV ticket
-> >> locks, it also uses the jump-label machinery to use the standard
-> >> "add"-based unlock in the non-PV case.
-> >>
-> >>         if (TICKET_SLOWPATH_FLAG &&
-> >>             unlikely(static_branch(&paravirt_ticketlocks_enabled))) {
-> >>                 arch_spinlock_t prev;
-> >>
-> >>                 prev = *lock;
-> >>                 add_smp(&lock->tickets.head, TICKET_LOCK_INC);
-> >>
-> >>                 /* add_smp() is a full mb() */
-> >>
-> >>                 if (unlikely(lock->tickets.tail & TICKET_SLOWPATH_FLAG))
-> >>                         __ticket_unlock_slowpath(lock, prev);
-> >>         } else
-> >>                 __add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX); 
-> > Not that I mind the jump_label usage, but didn't paravirt have an
-> > existing alternative() thingy to do things like this? Or is the
-> > alternative() stuff not flexible enough to express this?
+On Fri, Oct 14, 2011 at 08:57:16AM -0500, Christoph Lameter wrote:
+> On Fri, 14 Oct 2011, Dimitri Sivanich wrote:
 > 
-> Yeah, that's a good question.  There are three mechanisms with somewhat
-> overlapping concerns:
+> > Testing on a smaller machine with 46 writer threads in parallel (my original
+> > test used 120).
+> >
+> > Looks as though cache-aligning and padding the end of the vm_stat array
+> > results in a ~150 MB/sec speedup.  This is a nice improvement for only 46
+> > writer threads, though it's not the full ~250 MB/sec speedup I get from
+> > setting OVERCOMMIT_NEVER.
 > 
->   * alternative()
->   * pvops patching
->   * jump_labels
-> 
-> Alternative() is for low-level instruction substitution, and really only
-> makes sense at the assembler level with one or two instructions.
-> 
-> pvops is basically a collection of ordinary _ops structures full of
-> function pointers, but it has a layer of patching to help optimise it. 
-> In the common case, this just replaces an indirect call with a direct
-> one, but in some special cases it can inline code.  This is used for
-> small, extremely performance-critical things like cli/sti, but it
-> awkward to use in general because you have to specify the inlined code
-> as a parameterless asm.
-> 
+> Add to this the increase in the deltas for the ZVCs and change the stat
+> interval to 10 sec?
 
-I haven't look at the pvops patching (probably should), but I was
-wondering if jump labels could be used for it? Or is there something
-that the pvops patching is doing that jump labels can't handle?
+Increasing the ZVC deltas (threshold value in calculate*threshold == 125)
+does -seem- to give a small speedup in this case (maybe as much as 50 MB/sec?).
 
+Changing the stat interval to 10 seconds still has no effect, with or without
+the ZVC delta change.
 
-> Jump_labels is basically an efficient way of doing conditionals
-> predicated on rarely-changed booleans - so it's similar to pvops in that
-> it is effectively a very ordinary C construct optimised by dynamic code
-> patching.
-> 
-
-Another thing is that it can be changed at run-time...Can pvops be
-adjusted at run-time as opposed to just boot-time?
-
-thanks,
-
--Jason
