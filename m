@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933140Ab1JNPJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:09:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41511 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756904Ab1JNPJd (ORCPT
+	id S933163Ab1JNPOP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:14:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33580 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab1JNPOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:09:33 -0400
-Date: Fri, 14 Oct 2011 11:09:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Benson Leung <bleung@chromium.org>
-cc: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        <linux-usb@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HID: usbhid: enable remote wakeup for mice
-In-Reply-To: <CANLzEksars=PfOdx6Uxu-FbmxuXK0DMZoGW0HWbpogQ11YAA1Q@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1110141106270.2036-100000@iolanthe.rowland.org>
+	Fri, 14 Oct 2011 11:14:14 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20111013211145.GA27779@n2100.arm.linux.org.uk>
+References: <4DC53134.8070706@gmail.com>
+	<20110510234526.GC18929@game.jcrosoft.org>
+	<BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
+	<20111013211145.GA27779@n2100.arm.linux.org.uk>
+Date: Fri, 14 Oct 2011 16:14:12 +0100
+Message-ID: <CALp=RoUvAvoONPTqf3H256t1ykWr4VgFL5nd6AuvOr-6BQfJsQ@mail.gmail.com>
+Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
+From: Maxim Osipov <maxim.osipov@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Victor <avictor.za@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Benson Leung wrote:
+Ok, I'll do it. Thanks!
+Maxim
 
-> Thanks for the prompt response.
-> 
-> My initial reasoning was to set as default the wakeup behavior so a
-> mouse button press would wake the system. I am well aware that most if
-> not all mice don't support wake on move, but at least wake on button
-> press would have been more desirable than doing nothing.
-
-I'm sorry, I misunderstood the purpose of the original patch.  Probably 
-read it too quickly -- I thought you were enabling autosuspend rather 
-than wakeup.
-
-Enabling wakeup by default has its own problems.  Some mice do send
-wakeup requests when they are moved.  You wouldn't want a stray motion
-or unintentional touch to wake up a sleeping system.  Or at least, a
-lot of people wouldn't want that.
-
-> Anyway, I'll solve this problem on my system by writing to wakeup
-> property on device attach. Consider my change abandoned.
-
-That seems like the best approach.
-
-Alan Stern
-
+On Thu, Oct 13, 2011 at 10:11 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, May 11, 2011 at 09:44:52AM +0200, Andrew Victor wrote:
+>> hi,
+>>
+>> >> This patch enables external RTC support on AT91 Flexibity board.
+>>
+>> Acked-by: Andrew Victor <linux@maxim.org.za>
+>>
+>> Maxim: You can submit it to Russell's patch system.
+>>
+>>
+>> > looks fine just one comment please add your board to the new at91sam9260_defconfig
+>>
+>> That file does not exist in any mainline kernel.
+>
+> It's been a while since this patch went into the patch system, and it
+> didn't get applied for various reasons, including because it looked
+> like it was sent there without any review (no acked-by's etc added to
+> it.)
+>
+> What's the status of this - and if its still relevant can we have
+> it with the proper attributations please?
+>
