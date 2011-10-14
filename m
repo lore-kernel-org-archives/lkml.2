@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab1JNRqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:46:35 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63081 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1JNRqd (ORCPT
+	id S1755936Ab1JNRvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:51:12 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:38456 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab1JNRvK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:46:33 -0400
-Message-ID: <4E987575.5080509@pobox.com>
-Date: Fri, 14 Oct 2011 13:46:29 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Fri, 14 Oct 2011 13:51:10 -0400
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ata: add CONFIG_SATA_HOST config option
-References: <201110131658.08732.bzolnier@gmail.com>
-In-Reply-To: <201110131658.08732.bzolnier@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Date: Fri, 14 Oct 2011 10:50:41 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321B8F@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Thread-Index: AcyINSYOtu6C9UPLSxSyQ1mXF149eQCYxJmw
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org><1317200618.1573.1765.camel@vkoul-udesk3><CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com><1317295068.1573.1780.camel@vkoul-udesk3><CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com><CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com><CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com><CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com><CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com><CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com><20111003161349.GB28287@flint.arm.linux.org.uk><CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com><CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com><1317966346.1573.2252.camel@vkoul-udesk3><CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com> <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>
+CC: Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
+        Barry Song <21cnbao@gmail.com>, <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 10:58 AM, Bartlomiej Zolnierkiewicz wrote:
-> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> Subject: [PATCH v3] ata: add CONFIG_SATA_HOST config option
->
-> Add CONFIG_SATA_HOST config option (for selecting SATA Host
-> support) to make setup easier on PATA-only systems.
->
-> Additionally move SATA-specific code to libata-sata.c which
-> allows us to save ~11.5k of the output code size (x86-64) on
-> PATA-only systems for CONFIG_SATA_HOST=n:
->
-> CONFIG_SATA_HOST=y:
->     text    data     bss     dec     hex filename
->    44283    6576      57   50916    c6e4 drivers/ata/libata-core.o
->    29054      16       2   29072    7190 drivers/ata/libata-eh.o
->    20085       0      19   20104    4e88 drivers/ata/libata-sff.o
->     8699       0       0    8699    21fb drivers/ata/libata-sata.o
->
-> CONFIG_SATA_HOST=n:
->     text    data     bss     dec     hex filename
->    43754    6576      57   50387    c4d3 drivers/ata/libata-core.o
->    26775      16       2   26793    68a9 drivers/ata/libata-eh.o
->    20144       0      19   20163    4ec3 drivers/ata/libata-sff.o
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> ---
-> v2:
-> - Kconfig fixups per Sergei's comments
-> - add non-SATA version of ata_std_postreset()
-> - drop non-SATA versions of sata_link_[debounce,hardreset,resume](),
->    sata_set_spd(), sata_print_link_status() and ata_tf_from_fis()
-> - move SATA-specific code to libata-sata.c
-> v3:
-> - require SATA_HOST for ata_piix for now
->
-> earlier references:
-> https://lkml.org/lkml/2011/2/9/149
-> https://lkml.org/lkml/2011/2/11/103
->
->   drivers/ata/Kconfig       |   19
->   drivers/ata/Makefile      |    1
->   drivers/ata/libata-core.c |  814 ------------------------------
->   drivers/ata/libata-eh.c   |  412 ---------------
->   drivers/ata/libata-sata.c | 1243 ++++++++++++++++++++++++++++++++++++++++++++++
->   drivers/ata/libata-sff.c  |   32 -
->   drivers/ata/libata.h      |   52 +
->   include/linux/libata.h    |   32 -
->   8 files changed, 1365 insertions(+), 1240 deletions(-)
+On Tue, Oct 11, 2011 at 12:45 PM, Williams, Dan J
+<dan.j.williams@intel.com> wrote:
 
-You did a good job of avoiding the "#ifdef ugliness" problem that often 
-plagues patches like this.
+> Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request
+> api
+> 
+> [ Adding Alexandre ]
+> 
+> On Fri, Oct 7, 2011 at 4:27 AM, Jassi Brar
+<jaswinder.singh@linaro.org>
+> wrote:
+> > On 7 October 2011 11:15, Vinod Koul <vinod.koul@intel.com> wrote:
+> >
+> >> Thru this patch Jassi gave a very good try at merging DMA_SLAVE and
+> >> memcpy, but more we debate this, I am still not convinced about
+> merging
+> >> memcpy and DMA_SLAVE yet.
+> >>
+> > Nobody is merging memcpy and DMA_SLAVE right away.
+> > The api's primary purpose is to support interleave transfers.
+> > Possibility to merge other prepares into this is a side-effect.
+> >
+> >> I would still argue that if we split this on same lines as current
+> >> mechanism, we have clean way to convey all details for both cases.
+> >>
+> > Do you mean to have separate interleaved transfer apis for Slave
+> > and Mem->Mem ? Please clarify.
+> >
+> 
+> This is a tangent, but it would be nice if this API extension also
+> covered the needs of the incoming RapidIO case which wants to specify
+> new device context information per operation (and not once at
+> configuration time, like slave case).  Would it be enough if the
+> transfer template included a (struct device *context) member at the
+> end?  Most dma users could ignore it, but RapidIO could use it to do
+> something like:
+> 
+>    struct rio_dev *rdev = container_of(context, typeof(*rdev),
+device);
+> 
+> That might not be enough, but I'm concerned that making the context a
+> (void *) is too flexible.  I'd rather have something like this than
+> acquiring a lock in rio_dma_prep_slave_sg() and holding it over
+> ->prep().  The alternative is to extend device_prep_slave_sg to take
+> an extra parameter, but that impacts all other slave implementations
+> with a dead parameter.
+> 
 
-However, let's not mix code movement in with the rest of the separation. 
-  Code movement into drivers/ata/libata-sata.c should be a separate, 
-first patch.  Patch #1 should link and behave as before (excepting the 
-addition of libata-sata.c to the build of course).
+Having context limited to the device structure will not be enough for
+RapidIO because of 66-bit target address (dma_addr_t will not work
+here).
+Probably that range is out of practical use at this moment but it is
+defined by RIO specification and I would prefer to deal with it now
+instead of postponing it for future. Passing context using (void *) will
+solve this.
 
-Creating no-op stubs and CONFIG_SATA_HOST is a separate change after 
-code movement.
-
-	Jeff
-
-
+Alex.
 
