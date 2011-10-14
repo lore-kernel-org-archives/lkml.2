@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab1JNPFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:05:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48753 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab1JNPFn (ORCPT
+	id S933127Ab1JNPIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:08:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49470 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756198Ab1JNPIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:05:43 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
-        akpm@linux-foundation.org, toshi.okajima@jp.fujitsu.com
-Subject: Re: [PATCH 10/13] filesystems: add set_nlink()
-References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
-	<1318430946-7091-11-git-send-email-miklos@szeredi.hu>
-	<1318523599.2719.45.camel@menhir>
-Date: Fri, 14 Oct 2011 17:04:49 +0200
-In-Reply-To: <1318523599.2719.45.camel@menhir> (Steven Whitehouse's message of
-	"Thu, 13 Oct 2011 17:33:19 +0100")
-Message-ID: <87fwivaa26.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 14 Oct 2011 11:08:06 -0400
+Date: Fri, 14 Oct 2011 12:07:53 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/6] perf/core fixes and improvements
+Message-ID: <20111014150753.GA19655@ghostprotocols.net>
+References: <1318518504-23299-1-git-send-email-acme@infradead.org>
+ <20111014071610.GA20648@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014071610.GA20648@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Whitehouse <swhiteho@redhat.com> writes:
+Em Fri, Oct 14, 2011 at 09:16:10AM +0200, Ingo Molnar escreveu:
+> Hm, got a segfault with a plain 'perf top' on a 3.0-0.rc7.git3-ish 
+> box:
+> 
+>  ./perf top
+>  Segmentation fault (core dumped)
+> 
+> It took about 20 attempts to reproduce the segfault, and it always 
+> occured right after the first refresh (which, unlike the working 
+> cases showed zero samples):
+> 
+> Program received signal SIGSEGV, Segmentation fault.                                                    
+> [Switching to Thread 0x7ffff13a3700 (LWP 21657)]
+> ui_browser__hists_seek (whence=<optimized out>, offset=0, 
+> self=0x7fffec0008c0)
+>     at util/ui/browsers/hists.c:682
+> 682		h->row_offset = 0;
+> (gdb) 
+> 
+> (gdb) bt
+> #0  ui_browser__hists_seek (whence=<optimized out>, offset=0, self=0x7fffec0008c0)
 
-> Hi,
->
-> On Wed, 2011-10-12 at 16:49 +0200, Miklos Szeredi wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->> 
->> Replace remaining direct i_nlink updates with a new set_nlink()
->> updater function.
->> 
->> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
->> ---
-> [snip]
->
->
->
->> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
->> index da21eca..102cf5e 100644
->> --- a/fs/gfs2/glops.c
->> +++ b/fs/gfs2/glops.c
->> @@ -277,7 +277,7 @@ static void gfs2_set_nlink(struct inode *inode, u32 nlink)
->>  		if (nlink == 0)
->>  			clear_nlink(inode);
->>  		else
->> -			inode->i_nlink = nlink;
->> +			set_nlink(inode, nlink);
->>  	}
->>  }
->
-> So long as it is ok to call set_nlink() with nlink == 0, then the if
-> statement here can be removed and just replaced with set_nlink()
+browser->top was NULL at that point, it was only being initialized in
+the refresh routine, fixed in my tree, please re-pull.
 
-Current patchset will WARN if set_nlink() is called with nlink == 0.  I
-think it's cleaner to keep the two cases separate.
+One can easily trigger it by specifying a seldom ocurring event, which
+will start the browser without samples, then generating such event, I
+used net:netif_rx + ping on my workstation.
 
-Thanks,
-Miklos
+> Btw., a side note: could we try to reset the console on segfaults and 
+> similar crashes? TUI crashes tend to leave the console in a messed up 
+> (blue, etc.) state.
+
+I'll work on that, and also on allowing changing the browser colors,
+say, to look like the stdio one.
+
+- Arnaldo
