@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932962Ab1JNRcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:32:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54146 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab1JNRcM (ORCPT
+	id S1755870Ab1JNRdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:33:11 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53001 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab1JNRdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:32:12 -0400
-Date: Fri, 14 Oct 2011 13:31:43 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pci@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v5)
-Message-ID: <20111014173143.GB15946@hmsreliant.think-freely.org>
-References: <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
- <20110930143211.5ab39c02@stein>
- <20110930153321.GA31760@hmsreliant.think-freely.org>
- <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
- <20110930165403.GB31760@hmsreliant.think-freely.org>
- <20111006083607.2c4eb9a5@jbarnes-desktop>
- <20111006171208.GB22462@hmsreliant.think-freely.org>
- <CAErSpo4bEcubO56hZ+PWZc0SdVEroyOmsxDtc_bBAJrxBKmAOQ@mail.gmail.com>
- <20111006180818.GD22462@hmsreliant.think-freely.org>
- <20111014092148.21158b85@jbarnes-desktop>
+	Fri, 14 Oct 2011 13:33:10 -0400
+Date: Fri, 14 Oct 2011 10:33:04 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@parallels.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
+Message-ID: <20111014173304.GD4294@google.com>
+References: <20111014110416.552685686@openvz.org>
+ <20111014110511.670174429@openvz.org>
+ <20111014171033.GC4294@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111014092148.21158b85@jbarnes-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.2 (-)
+In-Reply-To: <20111014171033.GC4294@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 09:21:48AM -0700, Jesse Barnes wrote:
-> On Thu, 6 Oct 2011 14:08:18 -0400
-> Neil Horman <nhorman@tuxdriver.com> wrote:
-> 
-> > This patch adds a per-pci-device subdirectory in sysfs called:
-> > /sys/bus/pci/devices/<device>/msi_irqs
-> > 
-> > This sub-directory exports the set of msi vectors allocated by a given
-> > pci device, by creating a numbered sub-directory for each vector beneath
-> > msi_irqs.  For each vector various attributes can be exported.  Currently the
-> > only attribute is called mode, which tracks the operational mode of that vector
-> > (msi vs. msix)
-> > 
-> 
-> Ok this adds new ABI in the form of sysfs files so I want to make sure
-> it's ok.
-> 
-> Matthew has dreams of a more sophisticated MSI-X management scheme, but
-> it sounds to me like that will mostly affect the driver interfaces and
-> shouldn't be incompatible with the sysfs scheme you propose here.
-> 
-> If so, great, we can pull this in and maybe one day someone will
-> implement better MSI-X support.
-> 
-> If not, I'd like to hear objections now; Neil has been responsive and
-> fixed several issues.  I don't want to block his patch unless we have
-> something concrete that it conflicts with.
-> 
-> Thanks,
-> -- 
-> Jesse Barnes, Intel Open Source Technology Center
+Hello, again.
 
+On Fri, Oct 14, 2011 at 10:10:33AM -0700, Tejun Heo wrote:
+> I see that you removed zapping to allow restoring multi-threaded
+> process, which seems quite scary to me.  It might be okay, I don't
+> know, but IMHO it just isn't a very good idea to introduce such
+> variation to basic exec behavior for this rather narrow use case.
 
-Thanks Jesse, Greg, Bjorn, I appreciate all the input here.
-Neil
- 
+* It's still calling exec_mmap(), so the exec'ing thread will be on
+  the new mm while other threads would still be on the old one.
+
+* There are operations which assume that the calling task is
+  de-threaded and thus has exclusive access to data structures which
+  can be shared among the thread group (e.g. signal struct).  How are
+  accesses to them synchronized?
+
+* What about properties which should be reset and then shared by
+  threads by inheriting (credentials, comm, self_exec_id and so on)?
+  e.g. new thread follows exec-time imposed rules but old ones keep
+  their original credentials.
+
+So, no, it really doesn't look good.
+
+Thanks.
+
+-- 
+tejun
