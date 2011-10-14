@@ -1,78 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1JNIv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 04:51:29 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:50713 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab1JNIv1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 04:51:27 -0400
+	id S1754842Ab1JNIwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 04:52:24 -0400
+Received: from smail2.alcatel.fr ([64.208.49.57]:46394 "EHLO smail2.alcatel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977Ab1JNIwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 04:52:22 -0400
+Message-ID: <4E97F83F.6050501@alcatel-lucent.com>
+Date: Fri, 14 Oct 2011 10:52:15 +0200
+From: Thanh-Lam NGUYEN <thanh-lam.nguyen@alcatel-lucent.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+O4pC+8SbRqRz2uEnG_JkWcPmV_rCsy1zksHYsCk9HKduZRaA@mail.gmail.com>
-References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
-	<20111012141724.GA17414@suse.de>
-	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
-	<20111012203337.GA14572@suse.de>
-	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
-	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
-	<CAAMvbhFNTQeuJBgsDB9Y5ODc_b2O0X=oP_3uwRpWUREFS9qufA@mail.gmail.com>
-	<CA+O4pCK2=rjqufLetTd=419bDfkN6RRX89Sh5noDnjoBAgoR2A@mail.gmail.com>
-	<CA+O4pCKKOvjRmgpC1fijzmpKOMQGdb1vkKeiSgFTY3Sv7xeaoQ@mail.gmail.com>
-	<79856.1318571233@turing-police.cc.vt.edu>
-	<CA+O4pC+8SbRqRz2uEnG_JkWcPmV_rCsy1zksHYsCk9HKduZRaA@mail.gmail.com>
-Date: Fri, 14 Oct 2011 09:51:26 +0100
-Message-ID: <CAAMvbhFHaX++cX_+CSDHT0Qxf1MeuHnh9oS_rmTHha_fEcMcdQ@mail.gmail.com>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Markus Rechberger <mrechberger@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] binfmt_elf.c: core file shrinking
+References: <4E946279.8090800@alcatel-lucent.com>
+In-Reply-To: <4E946279.8090800@alcatel-lucent.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 October 2011 07:23, Markus Rechberger <mrechberger@gmail.com> wrote:
-> On Fri, Oct 14, 2011 at 7:47 AM,  <Valdis.Kletnieks@vt.edu> wrote:
->> On Fri, 14 Oct 2011 05:42:44 +0200, Markus Rechberger said:
->>
->>> The inflexible device which uses 24064 bytes works with all other
->>> Operating systems by using that value
->>> and gives exactly the same results with other transfer sizes than that.
->>
->> -ENOPARSE.  If it's inflexible,
->
-> the particular device in question is inflexible yes.
->
-Here is what I think the actual situation is.
-Your transfers over the USB are done in 512 Bytes chunks.
-If the device wishes to send 512 bytes, it sends one chunk.
-If the device wishes to send 513 bytes, it sends only one chunk,
-missing one byte.
-if the device wishes to send 1023 bytes, it sends only one chunk,
-missing 511 bytes.
-if the device wishes to send 1024 bytes, it sends two chunks, missing 0 bytes.
-So, the device is sending 1 too few chunks unless the bytes size
-exactly matches the chunk size * n.
-Another constraint is the device sends multiples of 188 bytes.
-So, unless we can find a lowest common multiple of 188 and 512, there
-is no transfer size that will work with this device. The LCM is 24064
-and this is the only value that will work with this device.
+Sorry for upping the patch,
+as it is my first contribution I would like to know if there is any
+problem with it.
 
-Conclusion:
-The hardware on the Linux PC and the kernel on the Linux PC are
-working correctly.
-Your external USB device has an off-by-one error in its
-hardware/embedded software and the hardware/embedded software
-manufacturer is not prepared to fix it.
+Best regard
+Thanh lam NGUYEN
 
-Workaround in software: Increase MAX from 16384 to 24064 or above.
+On 11/10/2011 17:36, Thanh-Lam NGUYEN wrote:
 
-My own feeling, throw away this faulty bit of hardware and use a different part.
-The hardware is not compatible with USB standards.
+> The vma_shrink function looks for the 1st allocated and the last
+> allocated page. Only this part is dumped to the disk (the virual
+> start address and the size are dupdated to reflect the new dumped
+> information).
+> 
+> Signed-off-by: Thanh Lam NGUYEN <thanh-lam.nguyen@alcatel-lucent.com>
+> Signed-off-by: Benjamin ZORES <Benjamin.Zores@alcatel-lucent.com>
+> ---
+>  linux/fs/binfmt_elf.c |   54
+> ++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 55 insertions(+), 4 deletions(-)
+> 
+> --- linux/fs/binfmt_elf.c
+> +++ linux/fs/binfmt_elf.c
+> @@ -1085,6 +1085,48 @@
+>   * Jeremy Fitzhardinge <jeremy@sw.oz.au>
+>   */
+> 
+> +/*
+> + * Search for 1st and last allocated page from vma_start to vma_end.
+> + * Update vma_start and vma_end to reflect the result.
+> + */
+> +void vma_shrink(struct vm_area_struct *vma, unsigned long *vma_start,
+> +		unsigned long *vma_end)
+> +{
+> +	int allocated;
+> +	unsigned long start, addr, end;
+> +
+> +	allocated = 0;
+> +	start = end = *vma_start;
+> +	for (addr = *vma_start; _addr < *vma_end; addr += PAGE_SIZE) {
+> +		struct page *page;
+> +		if (get_user_pages(current, current->mm, addr, 1, 0, 1,
+> +				   &page, NULL) <= 0) {
+> +			/* NO PAGE */
+> +			if (!allocated)
+> +				start = addr;
+> +		} else {
+> +			if (page == ZERO_PAGE(0)) {
+> +				/* ZERO PAGE */
+> +				if (!allocated)
+> +					start = addr;
+> +			} else {
+> +				/* ALLOCATED PAGE */
+> +				if (!allocated)
+> +					start = addr;
+> +				end = addr;
+> +				allocated = 1;
+> +			}
+> +			page_cache_release(page);
+> +		}
+> +	}
+> +	if (end < start)
+> +		end = start;
+> +	if (allocated)
+> +		end += PAGE_SIZE;
+> +	*vma_start = start;
+> +	*vma_end = end;
+> +}
+> +
+>  /*
+>   * Decide what to dump of a segment, part, all or none.
+>   */
+> @@ -1980,13 +2022,19 @@ static int elf_core_dump(struct coredump_params
+> *cprm)
+>  	for (vma = first_vma(current, gate_vma); vma != NULL;
+>  			vma = next_vma(vma, gate_vma)) {
+>  		struct elf_phdr phdr;
+> +		unsigned long start = vma->vm_start;
+> +		unsigned long end = vma->vm_end;
+>   		phdr.p_type = PT_LOAD;
+>  		phdr.p_offset = offset;
+> -		phdr.p_vaddr = vma->vm_start;
+>  		phdr.p_paddr = 0;
+>  		phdr.p_filesz = vma_dump_size(vma, cprm->mm_flags);
+> -		phdr.p_memsz = vma->vm_end - vma->vm_start;
+> +		if (phdr.p_filesz) {
+> +			vma_shrink(vma, &start, &end);
+> +			phdr.p_filesz = end-start;
+> +		}
+> +		phdr.p_vaddr = start;
+> +		phdr.p_memsz = vma->vm_end - phdr.p_vaddr;
+>  		offset += phdr.p_filesz;
+>  		phdr.p_flags = vma->vm_flags & VM_READ ? PF_R : 0;
+>  		if (vma->vm_flags & VM_WRITE)
+> @@ -2018,11 +2066,15 @@ static int elf_core_dump(struct coredump_params
+> *cprm)
+>  	for (vma = first_vma(current, gate_vma); vma != NULL;
+>  			vma = next_vma(vma, gate_vma)) {
+>  		unsigned long addr;
+> +		unsigned long start;
+>  		unsigned long end;
+>  -		end = vma->vm_start + vma_dump_size(vma, cprm->mm_flags);
+> +		start = vma->vm_start;
+> +		end = start + vma_dump_size(vma, cprm->mm_flags);
+> +		if (start < end)
+> +			vma_shrink(vma, &start, &end);
+>  -		for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE) {
+> +		for (addr = start; addr < end; addr += PAGE_SIZE) {
+>  			struct page *page;
+>  			int stop;
+> 
+> ---
+> =~=~=~=~=~=~=~=~=~=~=~=~==~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+> Thanh lam NGUYEN
+> Prestataire externe ALTEN        | ALTEN Subcontractor
+> pour ALCATEL-LUCENT              | in ALCATEL-LUCENT
+> 
+> email: tlnguyen@webmail.alten.fr
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Kind Regards
 
-James
+
+-- 
+=~=~=~=~=~=~=~=~=~=~=~=~==~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+Thanh lam NGUYEN
+Prestataire externe ALTEN        | ALTEN Subcontractor
+pour ALCATEL-LUCENT              | in ALCATEL-LUCENT
+
+Tel: +333906 77095
+
+Equipe/Team: SWINT
+email: tlnguyen@webmail.alten.fr
