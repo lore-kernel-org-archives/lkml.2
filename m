@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab1JNQde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:33:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41589 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933270Ab1JNQdc (ORCPT
+	id S1755123Ab1JNQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:35:58 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63791 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730Ab1JNQf5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:33:32 -0400
-Date: Fri, 14 Oct 2011 12:33:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: Ming Lei <tom.leiming@gmail.com>, Andrei Warkentin <awarkentin@vmware.com>,
-        Greg KH <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>, <Manjunath@jasper.es>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Linux PM List <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-In-Reply-To: <CACxGe6vF6em0-PnJ7UuH0CQ0_StJTfmFKBsktvb9O+ccCx6E8A@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1110141229450.2036-100000@iolanthe.rowland.org>
+	Fri, 14 Oct 2011 12:35:57 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+In-Reply-To: <1318604775.1546.418.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
+	<CAGsJ_4yqdwaTxi=KMcgokb05uWUNi5_7uZDGqA4RsOZkWZ7FQA@mail.gmail.com>
+	<CAJe_ZhfomhARd8EVcR+jCHuFLrAKkNqvaETFHiNtNeijx+5Kxw@mail.gmail.com>
+	<1318599079.1546.395.camel@vkoul-udesk3>
+	<CAGsJ_4zSKwSm-En0TCacMTPhRG_YCaOC=aWcxF7rXWq26JcKuQ@mail.gmail.com>
+	<1318604775.1546.418.camel@vkoul-udesk3>
+Date: Fri, 14 Oct 2011 22:05:55 +0530
+Message-ID: <CAJe_ZheL9EFNvPAU+shAjQG+mhOYQwXkdi1WpZ=kjn+0jWnuaw@mail.gmail.com>
+Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, rmk@arm.linux.org.uk,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Grant Likely wrote:
+On 14 October 2011 20:36, Vinod Koul <vinod.koul@intel.com> wrote:
+>> 2011/10/14 Vinod Koul <vinod.koul@intel.com>:
+>> > On Fri, 2011-10-14 at 17:21 +0530, Jassi Brar wrote:
+>> >> On 14 October 2011 13:02, Barry Song <21cnbao@gmail.com> wrote:
+>> >> >
+>> >> > what if i want a cyclic interleaved transfer? i think the cyclic
+>> >> > interleaved transfer is what i want for audio dma.
+>> >> >
+>> >> ... we need to restore 'bool frm_irq' and add new 'bool cyclic' that
+>> >> would replay the transfer(i.e, reset dma-pointers to src_start & dst_start)
+>> >> after 'numf' frames have been transferred.
+>> > I was thinking more on lines to have this conveyed thru a flag.
+>> >
+>> > Anyway I plan to work on merging device_prep_slave_sg and
+>> > device_prep_cyclic to single API. Think more of device_prep_cyclic as
+>> > special case with sg length one and flag to tell dmac its cyclic.
+>> >
+>> > Similarly here we could use/define this flag to say this transfer is
+>> > also cyclic in nature and dmac then reloads the list again.
+>> > That way any prep can be made cyclic in nature by just using this flag.
+>> >
+>> > @Barry: Why would you need to use interleaved API for audio?
+>>
+>> At first, audio dma is typically cyclic. if no underflow and overflow
+>> happens, it will always be running. underflow and overflow will
+>> trigger the cyclic dma termination.
+> Yes and you terminate dma. Then prepare will be called again and you
+> setup DMA again and on trigger start you start DMA again.
+> No need for interleaving in this case.
+>>
+>> in case audio PCM data is interleaved and saved in dma buffer  as below:
+>>
+>> left (2B)  right (2B)  left (2B)  right (2B)   left (2B)  right (2B)
+>> left (2B)  right (2B)
+>> left (2B)  right (2B)  left (2B)  right (2B)   left (2B)  right (2B)
+>> left (2B)  right (2B)
+>> left (2B)  right (2B)  left (2B)  right (2B)   left (2B)  right (2B)
+>> left (2B)  right (2B)
+>> left (2B)  right (2B)  left (2B)  right (2B)   left (2B)  right (2B)
+>> left (2B)  right (2B)
+>> ,,,,
+>>
+>> and some hardwares need two seperate dma channels to tranfer left and
+>> right audio channel.
+>>
+>> For 1st and 2nd dma channel, they want dma address increases 4bytes
+>> and transfer 2bytes every line.
+>> so it looks to me like a cyclic interleaved dma.
+> Hmmm, do we have sound cards which use this?
+> Nevertheless for this kind of transfers we would need interleaved cyclic
+> DMA as well, Do you have such usage? Can you tell me which codec
+> requires this?
+>
+My proposed 'frm_irq' and 'cyclic' flags are for such requirements.
 
-> > How can a device acquire children before it has a driver?
-> 
-> There are a few potential situations in embedded systems (or at least
-> nothing currently prevents it) where platform setup code constructs a
-> device hierarchy without the aid of device drivers, and it is still
-> possible for a parent device to be attached to a driver.  IIUC, SPARC
-> creates an entire hierarchy of platform_devices from all the nodes in
-> the OpenFirmware device tree, and any of those devices can be bound to
-> a driver.  I don't like that approach, but at the very least it needs
-> to be guarded against.
-
-Do these devices ever require deferred probes?
-
-> On Fri, Oct 14, 2011 at 9:39 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Thu, 13 Oct 2011, Grant Likely wrote:
-> >> I saw those.  I also notice that they are only used by device_move()
-> >> when reparenting a device (which is another wrinkle I hadn't though
-> >> about).  Reparenting a device becomes problematic if the probe order
-> >> is also represented in the list.  If device_move() gets called, then
-> >> any implicit probe-order sorting for that device would be lost.
-> >>
-> >> I also notice that device_move disregards any children when moving a
-> >> device, which could also be a problem.
-> >>
-> >> Although it looks like the only users of device_move are:
-> >>
-> >> drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> >> drivers/s390/cio/device.c
-> >> net/bluetooth/hci_sysfs.c
-> >> net/bluetooth/rfcomm/tty.c
-> >>
-> >> So it may not be significant to adapt.
-> >
-> > I trust that very little will be needed.  I haven't checked the
-> > existing callers, but it's reasonable to require that a device being
-> > moved not have any children.
-> 
-> Yes, that does indeed simplify the issue considerably.  Let's do that.
->  So, for this patch, there will be two bits added.  First, don't allow
-> deferral on devices with children, and second a successful probe
-> (deferred or otherwise) should always move a device to the end of the
-> dap_list if it doesn't have children to guarantee that the list order
-> satisfies both the hierarchical and probe order.  Manjunath, do you
-> think you can prototype this?
-
-I don't think the second part needs to be quite so invasive.  
-Certainly drivers that never defer probes shouldn't require anything to
-be moved.
-
-A deferred probe _should_ move the device to the end of the list.  But
-this needs to happen in the probe routine itself (after it has verified
-that all the other required devices are present and before it has
-registered any children) to prevent races.  It can't be done in a
-central location.
-
-Alan Stern
-
+Consider a 5.1chan I2S controller that employs 3 dma-channels
+each transferring 2 audio-channels to 3 three FIFOs. And the
+pcm-dma driver supports SNDRV_PCM_INFO_INTERLEAVED.
+While I worked with simple single fifo 5.1chan I2S controllers, I don't
+think such 3-fifo controllers can't exist.
