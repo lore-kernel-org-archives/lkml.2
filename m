@@ -1,55 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933240Ab1JNPdx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:33:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60251 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713Ab1JNPdv convert rfc822-to-8bit (ORCPT
+	id S933262Ab1JNPem (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:34:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49946 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933211Ab1JNPek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:33:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=pzKzHbFw7vBitwA+Ay76AVocopoaXl67LKKdXDCprzc84UEx3mef59VcsF4adYtBt
-	Es70Owf87VU690XAJPj7Q==
+	Fri, 14 Oct 2011 11:34:40 -0400
+Date: Fri, 14 Oct 2011 17:35:17 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, m.szyprowski@samsung.com, rob@ti.com,
+        daniel@ffwll.ch, Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
+Message-ID: <20111014152139.GA2908@phenom.ffwll.local>
+Mail-Followup-To: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+	Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+	linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+	linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+	jesse.barker@linaro.org, m.szyprowski@samsung.com, rob@ti.com,
+	Sumit Semwal <sumit.semwal@linaro.org>
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+ <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+ <4E98085A.8080803@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1318605254.3018.20.camel@dabdike.int.hansenpartnership.com>
-References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com> <1318605254.3018.20.camel@dabdike.int.hansenpartnership.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 14 Oct 2011 09:33:28 -0600
-Message-ID: <CAErSpo7d3hHeJU87zYo=yJoG3eqOZ4QggkOyNnu7xuJe8oG9Qg@mail.gmail.com>
-Subject: Re: [PATCH v2 00/29] Create PCI root buses with correct resources
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E98085A.8080803@samsung.com>
+X-Operating-System: Linux phenom 3.0.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 9:14 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Thu, 2011-10-13 at 22:27 -0600, Bjorn Helgaas wrote:
->> The most generic way to create a PCI root bus is with pci_scan_bus(), but
->> that doesn't allow you to specify what resources are available on the bus,
->> i.e., what the host bridge apertures are.
->
-> Do you have an actual tree for this?  The PARISC pieces look a bit
-> non-trivial and I'd like to test them out on the various sba/astro/dino
-> systems.
+On Fri, Oct 14, 2011 at 12:00:58PM +0200, Tomasz Stanislawski wrote:
+> >+/**
+> >+ * struct dma_buf_ops - operations possible on struct dma_buf
+> >+ * @create: creates a struct dma_buf of a fixed size. Actual allocation
+> >+ *	    does not happen here.
+> 
+> The 'create' ops is not present in dma_buf_ops.
+> 
+> >+ * @attach: allows different devices to 'attach' themselves to the given
+> >+ *	    buffer. It might return -EBUSY to signal that backing storage
+> >+ *	    is already allocated and incompatible with the requirements
+> >+ *	    of requesting device. [optional]
+> >+ * @detach: detach a given device from this buffer. [optional]
+> >+ * @get_scatterlist: returns list of scatter pages allocated, increases
+> >+ *		     usecount of the buffer. Requires atleast one attach to be
+> >+ *		     called before. Returned sg list should already be mapped
+> >+ *		     into _device_ address space.
+> 
+> You must add a comment that this call 'may sleep'.
+> 
+> I like the get_scatterlist idea. It allows the exported to create a
+> valid scatterlist for a client in a elegant way.
+> 
+> I do not like this whole attachment idea. The problem is that
+> currently there is no support in DMA framework for allocation for
+> multiple devices. As long as no such a support exists, there is no
+> generic way to handle attribute negotiations and buffer allocations
+> that involve multiple devices. So the exporter drivers would have to
+> implement more or less hacky solutions to handle memory requirements
+> and choosing the device that allocated memory.
+> 
+> Currently, AFAIK there is even no generic way for a driver to
+> acquire its own DMA memory requirements.
+> 
+> Therefore all logic hidden beneath 'attachment' is pointless. I
+> think that support for attach/detach (and related stuff) should be
+> postponed until support for multi-device allocation is added to DMA
+> framework.
 
-I don't yet, but it'd be great if you were willing to test them out,
-so I'll set one up.
+Imo we clearly need this to make the multi-device-driver with insane dma
+requirements work on arm. And rewriting the buffer handling in
+participating subsystem twice isn't really a great plan. I envision that
+on platforms where we need this madness, the driver must call back to the
+dma subsytem to create a dma_buf. The dma subsytem should be already aware
+of all the requirements and hence should be able to handle them..
 
-While this is on your mind, I'm dubious about the pci_enable_bridges()
-call in lba_driver_probe() and the pci_bus_assign_resources() call in
-dino_probe().  These stand out as exceptions because no other arches
-do that.
+> I don't say the attachment list idea is wrong but adding attachment
+> stuff creates an illusion that problem of multi-device allocations
+> is somehow magically solved. We should not force the developers of
+> exporter drivers to solve the problem that is not solvable yet.
 
-If they weren't there, both places could use pci_scan_root_bus() like
-most other arches.
+Well, this is why we need to create a decent support infrastructure for
+platforms (= arm madness) that needs this, so that device drivers and
+subsystem don't need to invent that wheel on their own. Which as you point
+out, they actually can't.
 
-Bjorn
+> The other problem are the APIs. For example, the V4L2 subsystem
+> assumes that memory is allocated after successful VIDIOC_REQBUFS
+> with V4L2_MEMORY_MMAP memory type. Therefore attach would be
+> automatically followed by get_scatterlist, blocking possibility of
+> any buffer migrations in future.
+
+Well, pardon to break the news, but v4l needs to rework the buffer
+handling. If you want to share buffers with a gpu driver, you _have_ to
+life with the fact that gpus do fully dynamic buffer management, meaning:
+- buffers get allocated and destroyed on the fly, meaning static reqbuf
+  just went out the window (we obviously cache buffer objects and reuse
+  them for performance, as long as the processing pipeline doesn't really
+  change).
+- buffers get moved around in memory, meaning you either need full-blown
+  sync-objects with a callback to drivers to tear-down mappings on-demand,
+  or every driver needs to guarnatee to call put_scatterlist in a
+  reasonable short time. The latter is probably the more natural thing for
+  v4l devices.
+
+> The same situation happens if buffer sharing is added to framebuffer API.
+
+You can fix that by using the gem/ttm infrastructure of drm (or whatever
+the blob gpu drivers are using). Which is why I think fb should just die,
+please.
+
+> The buffer sharing mechanism is dedicated to improve cooperation
+> between multiple APIs. Therefore the common denominator strategy
+> should be applied that is buffer-creation == buffer-allocation.
+
+No.
+
+Really, there's just no way gpu's will be moving back to static buffer
+management. And I know, for many use-cases we could get away with a bunch
+of static buffers (e.g. a video processing pipe). But in drm-land even
+scanout-buffers can get moved around - currently only when they're not
+being used, but strictly speaking nothing prevents us from copying the
+scanout to a new location and issueing a pageflip and so even move the
+buffer around even when it's in use.
+
+But let's look quickly at an OpenCL usecase, moving Gb's of date per
+second around between the cpu and a bunch of add-on gpus (or other special
+purpose processing units). We'd also need to extend dma_buf with sync
+objects to make this work well, but there's simply no way this is gonna
+work with statically allocated objects.
+
+Also, gem buffer objects that are currently unused can be swapped out.
+
+Cheers, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
