@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab1JNTdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 15:33:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51747 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752030Ab1JNTdR (ORCPT
+	id S933105Ab1JNTdZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 15:33:25 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43514 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933033Ab1JNTdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 15:33:17 -0400
-Date: Fri, 14 Oct 2011 20:33:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org, zdevai@gmail.com,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
-Message-ID: <20111014193314.GE2931@opensource.wolfsonmicro.com>
-References: <1318333383-17663-1-git-send-email-jic23@cam.ac.uk>
- <1318333383-17663-2-git-send-email-jic23@cam.ac.uk>
- <20111013143224.GO1098@sirena.org.uk>
- <4E96F9AC.9000001@cam.ac.uk>
- <20111013204410.GA17160@sirena.org.uk>
- <4E985C60.9020308@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E985C60.9020308@cam.ac.uk>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Oct 2011 15:33:23 -0400
+Date: Fri, 14 Oct 2011 20:31:38 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Grant Grundler <grundler@google.com>
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Gwendal Grignou `" <gwendal@google.com>
+Subject: Re: [PATCH] libata: fix for transport xfer attributes
+Message-ID: <20111014203138.5d3460d5@lxorguk.ukuu.org.uk>
+In-Reply-To: <CANEJEGtzwQkDG1KmqVizmW8=SWuhYgjH02TgLaQzU-76TYUZZg@mail.gmail.com>
+References: <201110132203.45394.bzolnier@gmail.com>
+	<4E9762DE.1060009@pobox.com>
+	<201110141158.33983.bzolnier@gmail.com>
+	<CANEJEGtzwQkDG1KmqVizmW8=SWuhYgjH02TgLaQzU-76TYUZZg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 04:59:28PM +0100, Jonathan Cameron wrote:
+>     "xfer_mode   Current transfer mode."
+> 
+> I agree with Bartomiej that current behavior is incorrect.
 
-> I'm trying to work out what our equivalent of the clk finding api is.
-
-> The best match pair to match on I can come up with is:
-
-> part name: iio_dev.name
-
-> dev_name of underlying hardware if specified.
-> dev_name(iio_dev->dev.parent)
-> This matching source can be overridden by an optional callback if we
-> unique matching is achievable in some other way for the device.
-
-For the existing APIs doing this the device used for the request is the
-client device, not the providing device.  The APIs then have a mapping
-table (clkdev for most of the clk APIs) which means that boards can then
-assign providers to users without needing either of the drivers to know
-what's going on, though of course they can be coded that way.
+Well we should probably fix the document and add the current transfer
+mode as its own sysfs entry - much less risky.
