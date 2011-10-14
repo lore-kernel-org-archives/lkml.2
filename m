@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab1JNFtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 01:49:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25401 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932431Ab1JNFrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932459Ab1JNFrR (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Oct 2011 01:47:17 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19902 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932431Ab1JNFrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 01:47:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,344,1315206000"; 
-   d="scan'208";a="62487010"
+   d="scan'208";a="62486999"
 From: Vinod Koul <vinod.koul@intel.com>
 To: dan.j.williams@intel.com
 Cc: linux-kernel@vger.kernel.org, jaswinder.singh@linaro.org,
         21cnbao@gmail.com, rmk@arm.linux.org.uk,
         Vinod Koul <vinod.koul@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: [PATCH 04/10] media-video: move to dma_transfer_direction
-Date: Fri, 14 Oct 2011 11:08:19 +0530
-Message-Id: <1318570705-17595-5-git-send-email-vinod.koul@intel.com>
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Boojin Kim <boojin.kim@samsung.com>
+Subject: [PATCH 03/10] plat-samsung: move to dma_transfer_direction
+Date: Fri, 14 Oct 2011 11:08:18 +0530
+Message-Id: <1318570705-17595-4-git-send-email-vinod.koul@intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
 References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
@@ -30,63 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Vinod Koul <vinod.koul@linux.intel.com>
 
 Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Boojin Kim <boojin.kim@samsung.com>
 ---
- drivers/media/video/mx3_camera.c |    2 +-
- drivers/media/video/timblogiw.c  |    2 +-
- drivers/video/mx3fb.c            |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/plat-samsung/dma-ops.c              |    4 ++--
+ arch/arm/plat-samsung/include/plat/dma-ops.h |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/video/mx3_camera.c b/drivers/media/video/mx3_camera.c
-index c045b47..b6ac932 100644
---- a/drivers/media/video/mx3_camera.c
-+++ b/drivers/media/video/mx3_camera.c
-@@ -251,7 +251,7 @@ static int mx3_videobuf_prepare(struct vb2_buffer *vb)
- 		sg_dma_len(sg)		= new_size;
+diff --git a/arch/arm/plat-samsung/dma-ops.c b/arch/arm/plat-samsung/dma-ops.c
+index 6e3d9ab..a044171 100644
+--- a/arch/arm/plat-samsung/dma-ops.c
++++ b/arch/arm/plat-samsung/dma-ops.c
+@@ -35,14 +35,14 @@ static unsigned samsung_dmadev_request(enum dma_ch dma_ch,
  
- 		buf->txd = ichan->dma_chan.device->device_prep_slave_sg(
--			&ichan->dma_chan, sg, 1, DMA_FROM_DEVICE,
-+			&ichan->dma_chan, sg, 1, DEV_TO_MEM,
- 			DMA_PREP_INTERRUPT);
- 		if (!buf->txd)
- 			return -EIO;
-diff --git a/drivers/media/video/timblogiw.c b/drivers/media/video/timblogiw.c
-index 84cd1b6..1940d47 100644
---- a/drivers/media/video/timblogiw.c
-+++ b/drivers/media/video/timblogiw.c
-@@ -564,7 +564,7 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
- 	spin_unlock_irq(&fh->queue_lock);
+ 	chan = dma_request_channel(mask, pl330_filter, (void *)dma_ch);
  
- 	desc = fh->chan->device->device_prep_slave_sg(fh->chan,
--		buf->sg, sg_elems, DMA_FROM_DEVICE,
-+		buf->sg, sg_elems, DEV_TO_MEM,
- 		DMA_PREP_INTERRUPT | DMA_COMPL_SKIP_SRC_UNMAP);
- 	if (!desc) {
- 		spin_lock_irq(&fh->queue_lock);
-diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
-index 7e3a490..7b0232f 100644
---- a/drivers/video/mx3fb.c
-+++ b/drivers/video/mx3fb.c
-@@ -334,7 +334,7 @@ static void sdc_enable_channel(struct mx3fb_info *mx3_fbi)
- 	/* This enables the channel */
- 	if (mx3_fbi->cookie < 0) {
- 		mx3_fbi->txd = dma_chan->device->device_prep_slave_sg(dma_chan,
--		      &mx3_fbi->sg[0], 1, DMA_TO_DEVICE, DMA_PREP_INTERRUPT);
-+		      &mx3_fbi->sg[0], 1, MEM_TO_DEV, DMA_PREP_INTERRUPT);
- 		if (!mx3_fbi->txd) {
- 			dev_err(mx3fb->dev, "Cannot allocate descriptor on %d\n",
- 				dma_chan->chan_id);
-@@ -1104,7 +1104,7 @@ static int mx3fb_pan_display(struct fb_var_screeninfo *var,
- 		async_tx_ack(mx3_fbi->txd);
+-	if (info->direction == DMA_FROM_DEVICE) {
++	if (info->direction == DEV_TO_MEM) {
+ 		memset(&slave_config, 0, sizeof(struct dma_slave_config));
+ 		slave_config.direction = info->direction;
+ 		slave_config.src_addr = info->fifo;
+ 		slave_config.src_addr_width = info->width;
+ 		slave_config.src_maxburst = 1;
+ 		dmaengine_slave_config(chan, &slave_config);
+-	} else if (info->direction == DMA_TO_DEVICE) {
++	} else if (info->direction == MEM_TO_DEV) {
+ 		memset(&slave_config, 0, sizeof(struct dma_slave_config));
+ 		slave_config.direction = info->direction;
+ 		slave_config.dst_addr = info->fifo;
+diff --git a/arch/arm/plat-samsung/include/plat/dma-ops.h b/arch/arm/plat-samsung/include/plat/dma-ops.h
+index 4c1a363..1256115 100644
+--- a/arch/arm/plat-samsung/include/plat/dma-ops.h
++++ b/arch/arm/plat-samsung/include/plat/dma-ops.h
+@@ -17,7 +17,7 @@
  
- 	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg +
--		mx3_fbi->cur_ipu_buf, 1, DMA_TO_DEVICE, DMA_PREP_INTERRUPT);
-+		mx3_fbi->cur_ipu_buf, 1, MEM_TO_DEV, DMA_PREP_INTERRUPT);
- 	if (!txd) {
- 		dev_err(fbi->device,
- 			"Error preparing a DMA transaction descriptor.\n");
+ struct samsung_dma_prep_info {
+ 	enum dma_transaction_type cap;
+-	enum dma_data_direction direction;
++	enum dma_transfer_direction direction;
+ 	dma_addr_t buf;
+ 	unsigned long period;
+ 	unsigned long len;
+@@ -27,7 +27,7 @@ struct samsung_dma_prep_info {
+ 
+ struct samsung_dma_info {
+ 	enum dma_transaction_type cap;
+-	enum dma_data_direction direction;
++	enum dma_transfer_direction direction;
+ 	enum dma_slave_buswidth width;
+ 	dma_addr_t fifo;
+ 	struct s3c2410_dma_client *client;
 -- 
 1.7.0.4
 
