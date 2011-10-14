@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab1JNQHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:07:36 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:56089 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754250Ab1JNQHe (ORCPT
+	id S1754674Ab1JNQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:08:09 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:49293 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754436Ab1JNQIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:07:34 -0400
-Date: Fri, 14 Oct 2011 09:07:27 -0700
+	Fri, 14 Oct 2011 12:08:07 -0400
+Date: Fri, 14 Oct 2011 09:07:58 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, Chris Ball <cjb@laptop.org>,
-        Koji Matsumuro <matsumur@nts.ricoh.co.jp>, stable@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Always check for lower base frequency quirk for
- Ricoh 1180:e823
-Message-ID: <20111014090727.2ad3d774@jbarnes-desktop>
-In-Reply-To: <20111005154449.GA2479@zod.bos.redhat.com>
-References: <20111005154449.GA2479@zod.bos.redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI / PM: Remove unnecessary error variable from
+ acpi_dev_run_wake()
+Message-ID: <20111014090758.23aabe2d@jbarnes-desktop>
+In-Reply-To: <201109282144.36766.rjw@sisk.pl>
+References: <201109280001.28857.rjw@sisk.pl>
+	<CAErSpo4CpEWaKkh280Kb_nNSVWfYKGZ06HQOrpLar=T40TyDZQ@mail.gmail.com>
+	<201109282144.36766.rjw@sisk.pl>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/i8BdW9ooG3Rup.N6E4PEV+k"; protocol="application/pgp-signature"
+ boundary="Sig_/6rdyMPwG+D8DnP8H1820CIX"; protocol="application/pgp-signature"
 X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/i8BdW9ooG3Rup.N6E4PEV+k
+--Sig_/6rdyMPwG+D8DnP8H1820CIX
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 5 Oct 2011 11:44:50 -0400
-Josh Boyer <jwboyer@redhat.com> wrote:
-
-> Commit 15bed0f2f added a quirk for the e823 Ricoh card reader to lower the
-> base frequency.  However, the quirk first checks to see if the proprietary
-> MMC controller is disabled, and returns if so.  On some devices, such as =
-the
-> Lenovo X220, the MMC controller is already disabled by firmware it seems,
-> but the frequency change is still needed so sdhci-pci can talk to the car=
-ds.
-> Since the MMC controller is disabled, the frequency fixup was never being=
- run
-> on these machines.
+On Wed, 28 Sep 2011 21:44:36 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PCI / PM: Return correct result from acpi_dev_run_wake()
 >=20
-> This moves the e823 check above the MMC controller check so that it always
-> gets run.
+> The result returned by acpi_dev_run_wake() is always either -EINVAL
+> or -ENODEV, while obviously it should return 0 on success.  The
+> problem is that the leftover error variable, that's not really used
+> in the function, is initialized with -ENODEV and then returned
+> without modification.
 >=20
-> This fixes https://bugzilla.redhat.com/show_bug.cgi?id=3D722509
+> To fix this issue remove the error variable from acpi_dev_run_wake()
+> and make the function return 0 on success as appropriate.
 >=20
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Applied to linux-next, thanks.  I forgot to cc stable on it though;
-once it hits Linus's tree you may want to make sure it gets backported
-to 3.0.x and 3.1.x.
+Applied to linux-next, thanks.
 
-Thanks,
 --=20
 Jesse Barnes, Intel Open Source Technology Center
 
---Sig_/i8BdW9ooG3Rup.N6E4PEV+k
+--Sig_/6rdyMPwG+D8DnP8H1820CIX
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAEBAgAGBQJOmF4/AAoJEIEoDkX4Qk9hrGgP/0pItQ8b1wKssBGHcjxpUkD2
-mITCoZJvb4FBkRqn2x15nBKHyQThbssTXhRGZ1Ma396o5d7HHmbVvlphky1ip7hx
-2Eg1+ZTcwyjE3ZD/krgb4kl6IY/uHEWfXb6/GLU4ZrPc6JYVBl9OjVS6ywyhD2Oo
-vliGqwogUnEPQzpoC1QsrDRFLmYYiyofsQj5hzaNT37FBinSnRQ7SU48kvtAPyL4
-4+QjFkbq0T68Psk/M1Xi/4yBj35uETMM/dSUe5AH4qepC4B7liWEoI0QYrmjQj2U
-3nXeaiJaTMU/lqXWkUXYO9XEsSqglUfychcGZVMj8FVl50TVYZ9eQEhABtGZUS/x
-SLXj7/jIayjDp2dV7/Cy7iMvbosfAinDI0RWVImUTYBSr8PoTV2Q1rIj+QjgtvnD
-z0MgCamXWZz1uO8w8a4OnfLLQSp5Tfb/NpiJwXJgnjkWwoFNPPLgU9PpILdz16oy
-xreK6I8Ar/azIxilXBLi5hw0cTxp314fY7NUBREJEpmS2A0V5Q9I/x1m/mfWGGFQ
-Qcfa3dRtwk3wyZHSu1J0mmSW4ug5K+l6JoZNvbCf4AMLCkieqMBXkz71VuH00sbp
-9yrMUqUao4AnzDMcjnHQHKfEnNtauWL3Uu1oceApcfZ6hCGzYog/bEKLUQhO6dVA
-qKbkttfqaYHb0jA0OzEq
-=cq2J
+iQIcBAEBAgAGBQJOmF5fAAoJEIEoDkX4Qk9hwBYP/0eBtWd8sfHIhw8mXrbRY+pR
+yBdeS/YhTTB3EZxeV4pi675QcfbIHGvQIjkSKhATKlqVsS1vWLiMWVfFLawZg2Ir
+nL8ZzReQrmiAM3psWWCpkLGy8Du0/KvndyxCdfeGOPsF6ir35QPnx7H6n7cniTVy
+2MOoELuUkmXqtKCw8L/MqNowj+fKf+H1cPDZmH9KqVb+mz8mavwszSC8AGLyGimS
+s83MPeSGPZsA96q/C+jyKl2IDjZUu+KZnogKcPjMaYD6kSfk6s8LK7ANu67qgOj2
+FgKVtZ7VBQ5wmRTfjSa4wb0D5InLpuIYCJdhPJtw01KbsCyLcaQLIQkQn6mPF0+8
++6SZCw9NmTlD6UT3NARMsUEoh2iMEULx1O96FPl7qT94b7YJ2OF/8XbGyFj4SOem
+eVtPTSqB0IaIVTvXFUHDX2DZM/Exs7FEoB/wqorm48iS/jPrgHBguu+HoN4V5suD
+ZKS0FFCpxIj/9rUYcJdG7gSl1KLmitTL4TnIo0ni9Vj7D7yyYRi6q8LuNqQHkYzO
+TmiCsFF9ZSYsYNeqduuDNm9vj/1RfDoo6Up4pI3cF8tvKlp9CJluo/oWMNWujI1K
+wPFc6wukDlvlxzGRUOYK6Ml52VsbPX7/PcviDmihmM+0NRfH+1/REvfsjY7sJeIv
+raq9mFpG7N5ro2XahN7J
+=PtAL
 -----END PGP SIGNATURE-----
 
---Sig_/i8BdW9ooG3Rup.N6E4PEV+k--
+--Sig_/6rdyMPwG+D8DnP8H1820CIX--
