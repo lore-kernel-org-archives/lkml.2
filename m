@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1JNJEh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 05:04:37 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61827 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab1JNJEg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 05:04:36 -0400
-Subject: Re: [PATCH V6] mtd: Add DiskOnChip G3 support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: dwmw2@infradead.org, arnd@arndb.de, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 14 Oct 2011 12:04:03 +0300
-In-Reply-To: <1317820954-24902-1-git-send-email-robert.jarzmik@free.fr>
-References: <1317820954-24902-1-git-send-email-robert.jarzmik@free.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318583051.12351.75.camel@sauron>
-Mime-Version: 1.0
+	id S1755503Ab1JNJI0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:08:26 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:51012 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab1JNJIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 05:08:25 -0400
+From: Corentin Chary <corentincj@iksaif.net>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Anisse Astier <anisse@astier.eu>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Ross <andy.ross@windriver.com>,
+        Corentin Chary <corentincj@iksaif.net>
+Subject: [PATCH 0/8] Pegatron Lucid series for asus-laptop
+Date: Fri, 14 Oct 2011 11:13:34 +0200
+Message-Id: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-05 at 15:22 +0200, Robert Jarzmik wrote:
-> Add support for DiskOnChip G3 chips. The support is quite
-> limited yet :
->  - no flash writes/erases are implemented
->  - ECC fixes are not implemented
->  - powerdown is not implemented
->  - IPL handling is not yet done
-> 
-> On the brighter side, the chip reading does work.
-> 
-> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Hi,
+This is a series of patch that were staging in my tree for
+way too long. I hope they will make it to the next merge window.
+Thanks,
 
-Pushed to l2-mtd-2.6.git, thanks!
+Andy Ross (4):
+  asus-laptop: Platform detection for Pegatron Lucid
+  asus-laptop: Pegatron Lucid ALS sensor
+  asus-laptop: allow boot time control of Pegatron ALS sensor
+  asus-laptop: Pegatron Lucid accelerometer
+
+Anisse Astier (2):
+  asus-laptop: pega_accel - Report accelerometer orientation change
+    through udev
+  asus-laptop: Add rfkill support for Pegatron Lucid tablet
+
+Corentin Chary (2):
+  asus-laptop: hide leds on Pegatron Lucid
+  asus-laptop: fix module description
+
+ drivers/platform/x86/Kconfig       |   19 +-
+ drivers/platform/x86/asus-laptop.c |  366 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 363 insertions(+), 22 deletions(-)
 
 -- 
-Best Regards,
-Artem Bityutskiy
+1.7.3.4
 
