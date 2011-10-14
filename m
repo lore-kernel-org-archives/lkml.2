@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab1JNR6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:58:08 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:38572 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755726Ab1JNR6E (ORCPT
+	id S1756212Ab1JNR6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:58:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60806 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab1JNR6g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:58:04 -0400
-Message-ID: <4E987829.3080104@xenotime.net>
-Date: Fri, 14 Oct 2011 10:58:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Fri, 14 Oct 2011 13:58:36 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>
-Subject: Re: linux-next: Tree for Oct 11 (ata/pata_of_platform.c)
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au> <4E94A920.40503@xenotime.net>
-In-Reply-To: <4E94A920.40503@xenotime.net>
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <alpine.LFD.2.02.1110141348270.17040@xanadu.home>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com>
+	<20111014071500.GP21648@n2100.arm.linux.org.uk>
+	<74CDBE0F657A3D45AFBB94109FB122FF173BE1A260@HQMAIL01.nvidia.com>
+	<201110141729.41515.arnd@arndb.de>
+	<74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com>
+	<alpine.LFD.2.02.1110141348270.17040@xanadu.home>
+Date: Fri, 14 Oct 2011 10:58:35 -0700
+Message-ID: <CAOesGMhm_dD=9dyMWQRfH5AXH4AE42+4ckNwhnMUGaBJEHsumg@mail.gmail.com>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 01:37 PM, Randy Dunlap wrote:
-> On 10/11/11 02:11, Stephen Rothwell wrote:
->> Hi all,
->>
->> The linux-next tree is now available from
->> git://github.com/sfrothwell/linux-next.git as a temporary measure while
->> the kernel.org servers are unavailable.
->>
->> It may also turn up on git.kernel.org (depending on the mirroring).  The
->> patch set is still absent, however.
->>
->> Changes since 20111007:
->>
->> Removed tree: ide (at the maintainer's request)
-> 
-> 
-> drivers/ata/pata_of_platform.c:55:13: error: 'NO_IRQ' undeclared (first use in this function)
+Hi,
+
+On Fri, Oct 14, 2011 at 10:53 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+
+> As I explained yesterday, I'm working on more cleanups that involve
+> reworking the dependencies around ZBOOTROM, AUTO_ZRELADDR and friends,
+> and removing zreladdr for all platforms.  So please do not come up with
+> Tegra specific hacks to fix this up.  So for the time being I'd simply
+> suggest using the minimal fix i.e.:
+>
+>        select AUTO_ZRELADDR if !ZBOOT_ROM
+>
+> And eventually this will disappear entirely in favor of a single global
+> config option which is not platform dependent.
+
+Odd, I'm not seeing any mention of the above on the list (especially
+not posted yesterday), but that sounds good to me.
+
+We've dropped the patch for now, if t30 needs it we can update the
+defconfig when the time comes, and wait for your cleanup for the rest.
 
 
-[adding Author: Anton]
-
-Build error still present in linux-next of 20111014.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-Olof
