@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab1JNBZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 21:25:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7667 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1JNBZK (ORCPT
+	id S1755407Ab1JNBfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 21:35:31 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46771 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab1JNBfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 21:25:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=uPbIaFceB9tpr6hYD6trjvzjZcBeZkjQWtg0mGMbUmTKN4k/s/rxzQCv3e23TkCRc
-	wUSSEWsgjvMmEtvOKS7GA==
-MIME-Version: 1.0
-In-Reply-To: <20110928175947.d3af52f0.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
-	<1317170947-17074-7-git-send-email-walken@google.com>
-	<20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
-	<CANN689GFE_hqtndKY6i4ouBBe+gVU_pqOK2HRrc-U1LJMONaXw@mail.gmail.com>
-	<20110928175947.d3af52f0.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 13 Oct 2011 18:25:06 -0700
-Message-ID: <CANN689HOALiiBKLUHRFuONQEyqp2on0GA1ycEguf0S6WFeuP7w@mail.gmail.com>
-Subject: Re: [PATCH 6/9] kstaled: rate limit pages scanned per second.
-From: Michel Lespinasse <walken@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 13 Oct 2011 21:35:30 -0400
+Subject: [PATCH 1/3] ASoC: alc5623: Convert codec->hw_read to snd_soc_read
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Oct 2011 09:35:20 +0800
+Message-ID: <1318556120.6379.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 1:59 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 28 Sep 2011 01:19:50 -0700
-> Michel Lespinasse <walken@google.com> wrote:
->> It tends to perform worse if we try making it multithreaded. What
->> happens is that the scanning threads call page_referenced() a lot, and
->> if they both try scanning pages that belong to the same file that
->> causes the mapping's i_mmap_mutex lock to bounce. Same things happens
->> if they try scanning pages that belong to the same anon VMA too.
->>
->
-> Hmm. with brief thinking, if you can scan list of page tables,
-> you can set young flags without any locks.
-> For inode pages, you can hook page lookup, I think.
+codec->hw_read is broken now, let's covert to snd_soc_read.
 
-It would be possible to avoid taking rmap locks by instead scanning
-all page tables, and transferring the pte young bits observed there to
-the PageYoung page flag. This is a significant design change, but
-would indeed work.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/alc5623.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Just to clarify the idea, how would you go about finding all page
-tables to scan ? The most straightforward approach would be iterate
-over all processes and scan their address spaces, but I don't think we
-can afford to hold tasklist_lock (even for reads) for so long, so we'd
-have to be a bit smarter than that... I can think of a few different
-ways but I'd like to know if you have something specific in mind
-first.
-
+diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
+index 557b3af..984b14b 100644
+--- a/sound/soc/codecs/alc5623.c
++++ b/sound/soc/codecs/alc5623.c
+@@ -53,8 +53,10 @@ static void alc5623_fill_cache(struct snd_soc_codec *codec)
+ 	u16 *cache = codec->reg_cache;
+ 
+ 	/* not really efficient ... */
++	codec->cache_bypass = 1;
+ 	for (i = 0 ; i < codec->driver->reg_cache_size ; i += step)
+-		cache[i] = codec->hw_read(codec, i);
++		cache[i] = snd_soc_read(codec, i);
++	codec->cache_bypass = 0;
+ }
+ 
+ static inline int alc5623_reset(struct snd_soc_codec *codec)
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.4.1
+
+
+
