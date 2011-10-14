@@ -1,84 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab1JNGXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 02:23:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40785 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab1JNGXL convert rfc822-to-8bit (ORCPT
+	id S932242Ab1JNGY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 02:24:58 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:45906 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab1JNGY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 02:23:11 -0400
+	Fri, 14 Oct 2011 02:24:56 -0400
+Message-ID: <4E97D5B0.60801@linux.vnet.ibm.com>
+Date: Fri, 14 Oct 2011 11:54:48 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <79856.1318571233@turing-police.cc.vt.edu>
-References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
-	<20111012141724.GA17414@suse.de>
-	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
-	<20111012203337.GA14572@suse.de>
-	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
-	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
-	<CAAMvbhFNTQeuJBgsDB9Y5ODc_b2O0X=oP_3uwRpWUREFS9qufA@mail.gmail.com>
-	<CA+O4pCK2=rjqufLetTd=419bDfkN6RRX89Sh5noDnjoBAgoR2A@mail.gmail.com>
-	<CA+O4pCKKOvjRmgpC1fijzmpKOMQGdb1vkKeiSgFTY3Sv7xeaoQ@mail.gmail.com>
-	<79856.1318571233@turing-police.cc.vt.edu>
-Date: Fri, 14 Oct 2011 08:23:10 +0200
-Message-ID: <CA+O4pC+8SbRqRz2uEnG_JkWcPmV_rCsy1zksHYsCk9HKduZRaA@mail.gmail.com>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: James Courtier-Dutton <james.dutton@gmail.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: rdunlap@xenotime.net, len.brown@intel.com, pavel@ucw.cz,
+        a.p.zijlstra@chello.nl, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Documentation/power: Update docs about suspend and CPU
+ hotplug
+References: <20111011201958.10065.78949.stgit@srivatsabhat.in.ibm.com> <201110120002.49278.rjw@sisk.pl> <4E9514C5.8080907@linux.vnet.ibm.com> <201110122119.41027.rjw@sisk.pl> <4E960306.2010602@linux.vnet.ibm.com>
+In-Reply-To: <4E960306.2010602@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11101406-2000-0000-0000-00000057A5E5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 7:47 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Fri, 14 Oct 2011 05:42:44 +0200, Markus Rechberger said:
->
->> The inflexible device which uses 24064 bytes works with all other
->> Operating systems by using that value
->> and gives exactly the same results with other transfer sizes than that.
->
-> -ENOPARSE.  If it's inflexible,
+Update the documentation about the interaction between the suspend (S3) call
+path and the CPU hotplug infrastructure.
+This patch focusses only on the activities of the freezer, cpu hotplug and
+the notifications involved. It outlines how regular CPU hotplug differs from
+the way it is invoked during suspend and also tries to explain the locking
+involved.
 
-the particular device in question is inflexible yes.
+v2: Clarified the question, to emphasize that the document explains only
+    the difference (and similarity) in the two code paths but not what happens
+    when race conditions occur between them.
 
-> how did you get results for other transfer
-> sizes?
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-other transfer sizes are related to another more flexible device, but that
-device has some hardware register to modify the needed transfer buffer size.
+ Documentation/power/00-INDEX                   |    2 
+ Documentation/power/suspend-and-cpuhotplug.txt |  118 ++++++++++++++++++++++++
+ 2 files changed, 120 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/power/suspend-and-cpuhotplug.txt
 
-> And if other transfer sizes give exactly the same results, why can't you
-> just use those instead?
->
+diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+index 45e9d4a..a4d682f 100644
+--- a/Documentation/power/00-INDEX
++++ b/Documentation/power/00-INDEX
+@@ -26,6 +26,8 @@ s2ram.txt
+ 	- How to get suspend to ram working (and debug it when it isn't)
+ states.txt
+ 	- System power management states
++suspend-and-cpuhotplug.txt
++	- Explains the interaction between Suspend-to-RAM (S3) and CPU hotplug
+ swsusp-and-swap-files.txt
+ 	- Using swap files with software suspend (to disk)
+ swsusp-dmcrypt.txt
+diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+new file mode 100644
+index 0000000..be10902
+--- /dev/null
++++ b/Documentation/power/suspend-and-cpuhotplug.txt
+@@ -0,0 +1,118 @@
++Interaction of Suspend code (S3) with the CPU hotplug infrastructure
++   (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>, GPL
++
++
++I. How does the regular CPU hotplug code differ from how the Suspend-to-RAM
++   infrastructure uses it internally? And where do the two of them share
++   common code?
++
++Well, a picture speaks more than a thousand words... So ASCII art follows :-)
++
++[This depicts the current design in the kernel, and focusses only on the
++interactions involving the freezer and cpu hotplug and also tries to explain
++the locking involved. It outlines the notifications involved as well.
++But please note that here, only the call paths are illustrated, with the aim
++of describing where they take different paths and where they share code.
++What happens when regular CPU hotplug and Suspend-to-RAM race with each other
++is not depicted here.]
++
++On a high level, the suspend-resume cycle goes like this:
++
++|Freeze| -> |Disable nonboot| -> |Do suspend| -> |Enable nonboot| -> |Thaw |
++|tasks |    |     cpus      |    |          |    |     cpus     |    |tasks|
++
++
++More details follow:
++
++Regular CPU hotplug                                   Suspend call path
++-------------------                              ---------------------------
++
++Write 0 (or 1) to                                     Write 'mem' to
++/sys/devices/system/cpu/cpu*/online                   /sys/power/state
++     sysfs file                                          syfs file
++         |                                                   |
++         |                                                   v
++         |                                         Acquire pm_mutex lock
++         |                                                   |
++         |                                                   v
++         |                                Send PM_SUSPEND_PREPARE notifications
++         |                                                   |
++         |                                                   v
++         |                                              Freeze tasks
++         |                                                   |
++         |                                                   |
++         v                                                   v
++     cpu_down()                                 disable_nonboot_cpus() /*start*/
++         |                                                   |
++         v                                                   v
++Acquire cpu_add_remove_lock                     Acquire cpu_add_remove_lock
++         |                                                   |
++         v                                                   v
++If cpu_hotplug_disabled is 1                 Iterate over CURRENTLY online CPUs
++   return gracefully                                         |
++         |                                                   |
++         |                                                   |           ----
++         v                                                   v               |
++           \                                               /                 |
++             --------                             --------                   |
++                      \                         /                            |
++                        --------       --------                              |L
++                                 \____/                                      |
++                                   |                                         |
++                                   v                                         |O
++                              _cpu_down()                                    |
++                     [This takes cpuhotplug.lock                             |
++                      before taking down the CPU                             |
++                      and releases it when done]                             |O
++                   While it is at it, notifications                          |
++                   are sent when notable events occur,                       |
++                   by running all registered callbacks.                      |
++                                   |                                         |O
++                                  / \                                        |
++                                 /   \                                       |
++                                <     >                                      |
++        _______________________/       \_____________________                |P
++       |                                                     |               |
++       v                                                     v               |
++Release cpu_add_remove_lock                      Note down these cpus in     |
++[That's it!, for                                     frozen_cpus mask    ----
++ regular CPU hotplug]                                        |
++                                                             v
++                                                  Disable regular cpu hotplug
++                                              by setting cpu_hotplug_disabled=1
++                                                             |
++                                                             v
++                                                Release cpu_add_remove_lock
++                                                             |
++                                                             v
++                                          /* disable_nonboot_cpus() complete */
++                                                             |
++                                                             v
++                                                        Do suspend
++
++
++Resuming back is likewise, with the counterparts being (in the order of
++execution during resume):
++* enable_nonboot_cpus() which involves:
++   |  Acquire cpu_add_remove_lock
++   |  Reset cpu_hotplug_disabled to 0, thereby enabling regular cpu hotplug
++   |  Call _cpu_up() [for all those cpus in the frozen_cpus mask, in a loop]
++   |  Release cpu_add_remove_lock
++   v
++
++* thaw tasks
++* send PM_POST_SUSPEND notifications
++* Release pm_mutex lock.
++
++It is to be noted here that the pm_mutex lock is acquired at the very
++beginning, when we are just starting out to suspend, and then released only
++after the entire cycle is complete (i.e., suspend + resume).
++
++
++Important files and functions/entry points:
++------------------------------------------
++
++kernel/power/process.c : freeze_processes(), thaw_processes()
++kernel/power/suspend.c : suspend_prepare(), suspend_enter(), suspend_finish()
++kernel/cpu.c: cpu_[up|down](), _cpu_[up|down](), [disable|enable]_nonboot_cpus()
++
 
-other transfer sizes for the device with the fixed transfer buffer
-size give exactly the same result with OSX, meaning that it also
-does not work on MacOSX with another size than 24064 bytes.
 
-Final conclusion is still:
-1. those people who used to deal with USB with linux in the past never
-heard about such an option it seems, fact is that the stream corrupts
-the logfiles show up damaged data before it arrives to the application
-so on that side bugs in the application would be unrelated. As a
-crosscheck I also posted a logfile with valid data.
-2. the more flexible device even has hardware registers to modify the
-bulk transfer size (maybe it's a timing related issue on the physical
-usb bus).
-3. if the more flexible device is set to buffers > 16k the data also corrupts
-4. the fixed buffer size device does not accept any other values, even
-twice that requested buffersize corrupts the data.
-5. the patch does not hurt, since devices which request buffer sizes
-below 16k will still be handled the same way as they were handled
-during the last 10 years, it just allows applications to request
-bigger buffers if needed.
-6. BOTH of our devices (the flexible one device A, can work with
-bigger buffers AND a bigger HW register configuration, device B which
-is not so flexible also works flawlessly as seen in the video).
-
-I'm repeating myself over and over here.
-
-Markus
