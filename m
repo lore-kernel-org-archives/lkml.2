@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886Ab1JNMig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:38:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54866 "EHLO
+	id S932928Ab1JNMix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:38:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26675 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab1JNMid (ORCPT
+	with ESMTP id S932766Ab1JNMis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:38:33 -0400
+	Fri, 14 Oct 2011 08:38:48 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=EXWzGf2+6AxCcMAlb54t4gkROMtVfy9LR+cdI9c8O39b9TU5237UE3C7v88CIGrYq
-	7aT91WbXEnlTETkivnQUg==
+	b=wCi2rRcvMmyFZ/Btfuw+9FXnib09Xl97WCkeUHvl4IpFUuw/eJnAmTlRvOXrgsLFg
+	7t8JXke8tEzH+yO3ODdyQ==
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
@@ -19,9 +19,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
         will.deacon@arm.com, paulus@samba.org, benh@kernel.crashing.org,
         rth@twiddle.net, ralf@linux-mips.org, davem@davemloft.net,
         lethal@linux-sh.org
-Subject: [PATCH 03/12] perf_events: add Intel X86 LBR sharing logic (v2)
-Date: Fri, 14 Oct 2011 14:37:04 +0200
-Message-Id: <1318595833-29984-4-git-send-email-eranian@google.com>
+Subject: [PATCH 07/12] perf_events: add LBR software filter support for Intel X86 (v2)
+Date: Fri, 14 Oct 2011 14:37:08 +0200
+Message-Id: <1318595833-29984-8-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1318595833-29984-1-git-send-email-eranian@google.com>
 References: <1318595833-29984-1-git-send-email-eranian@google.com>
@@ -30,213 +30,492 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel LBR on some recent processor is capable
-of filtering branches by type. The filter is configurable
-via the LBR_SELECT MSR register.
+This patch adds an internal sofware filter to complement
+the (optional) LBR hardware filter.
 
-There are limitation on how this register can be used.
+The software filter is necessary:
+- as a substitute when there is no HW LBR filter (e.g., Atom, Core)
+- to complement HW LBR filter in case of errata (e.g., Nehalem/Westmere)
+- to provide finer grain filtering (e.g., all processors)
 
-On Nehalem/Westmere, the LBR_SELECT is shared by the two HT threads
-when HT is on. It is private to each core when HT is off.
+Sometimes, the LBR HW filter cannot distinguish between two types
+of branches. For instance, to capture syscall as CALLS, it is necessary
+to enable the LBR_FAR filter which will also capture JMP instructions.
+Thus, a second pass is necessary to filter those out, this is what the
+SW filter can do.
 
-On SandyBridge, the LBR_SELECT register is private to each thread
-when HT is on. It is private to each core when HT is off.
+The SW filter is built on top of the internal x86 disassembler. It
+is a best effort filter especially for user level code. It is subject
+to the availability of the text page of the program.
 
-The kernel must manage the sharing of LBR_SELECT. It allows
-multiple users on the same logical CPU to use LBR_SELECT as
-long as they program it with the same value. Across sibling
-CPUs (HT threads), the same restriction applies on NHM/WSM.
-
-This patch implements this sharing logic by leveraging the
-mechanism put in place for managing the offcore_response
-shared MSR.
-
-We modify __intel_shared_reg_get_constraints() to cause
-x86_get_event_constraint() to be called because LBR may
-be associated with events that may be counter constrained.
+The SW filter is enabled on all Intel X86 processors. It is bypassed
+when the user is capturing all branches at all priv levels.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    4 ++
- arch/x86/kernel/cpu/perf_event.h       |    4 ++
- arch/x86/kernel/cpu/perf_event_intel.c |   70 ++++++++++++++++++++------------
- 3 files changed, 52 insertions(+), 26 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           |   12 +
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |   12 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |  322 +++++++++++++++++++++++++++-
+ 3 files changed, 326 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6408910..cfef90e 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -428,6 +428,10 @@ static int __x86_pmu_event_init(struct perf_event *event)
- 	/* mark unused */
- 	event->hw.extra_reg.idx = EXTRA_REG_NONE;
- 
-+	/* mark not used */
-+	event->hw.extra_reg.idx = EXTRA_REG_NONE;
-+	event->hw.branch_reg.idx = EXTRA_REG_NONE;
-+
- 	return x86_pmu.hw_config(event);
- }
- 
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index b9698d4..8a5c21f 100644
+index 750c7af..48ed504 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -33,6 +33,7 @@ enum extra_reg_type {
- 
- 	EXTRA_REG_RSP_0 = 0,	/* offcore_response_0 */
- 	EXTRA_REG_RSP_1 = 1,	/* offcore_response_1 */
-+	EXTRA_REG_LBR   = 2,	/* lbr_select */
- 
- 	EXTRA_REG_MAX		/* number of entries needed */
- };
-@@ -129,6 +130,7 @@ struct cpu_hw_events {
- 	void				*lbr_context;
+@@ -131,6 +131,7 @@ struct cpu_hw_events {
  	struct perf_branch_stack	lbr_stack;
  	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
-+	struct er_account		*lbr_sel;
+ 	struct er_account		*lbr_sel;
++	u64				br_sel;
  
  	/*
  	 * Intel host/guest exclude bits
-@@ -296,6 +298,8 @@ struct x86_pmu {
- 	 */
- 	unsigned long	lbr_tos, lbr_from, lbr_to; /* MSR base regs       */
- 	int		lbr_nr;			   /* hardware stack size */
-+	u64		lbr_sel_mask;   	   /* valid bits in LBR_SELECT */
-+	const int	*lbr_sel_map;   	   /* lbr_select mappings */
+@@ -402,6 +403,17 @@ extern struct event_constraint emptyconstraint;
+ 
+ extern struct event_constraint unconstrained;
+ 
++static inline bool kernel_ip(unsigned long ip)
++{
++#ifdef CONFIG_X86_32
++	return ip > PAGE_OFFSET;
++#else
++	return (long)ip < 0;
++#endif
++}
++
++int intel_pmu_setup_lbr_filter(struct perf_event *event);
++
+ #ifdef CONFIG_CPU_SUP_AMD
+ 
+ int amd_pmu_init(void);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index d0197ba..8c17380 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -3,6 +3,7 @@
+ #include <linux/slab.h>
+ 
+ #include <asm/perf_event.h>
++#include <asm/insn.h>
+ 
+ #include "perf_event.h"
+ 
+@@ -470,17 +471,6 @@ void intel_pmu_pebs_disable_all(void)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
+ }
+ 
+-#include <asm/insn.h>
+-
+-static inline bool kernel_ip(unsigned long ip)
+-{
+-#ifdef CONFIG_X86_32
+-	return ip > PAGE_OFFSET;
+-#else
+-	return (long)ip < 0;
+-#endif
+-}
+-
+ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index f4d3fce..3eb47c1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -3,6 +3,7 @@
+ 
+ #include <asm/perf_event.h>
+ #include <asm/msr.h>
++#include <asm/insn.h>
+ 
+ #include "perf_event.h"
+ 
+@@ -60,6 +61,53 @@ enum {
+ 	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
+ 
+ /*
++ * X86 control flow change classification
++ * X86 control flow changes include branches, interrupts, traps, faults
++ */
++enum {
++        X86_BR_NONE    = 0,      /* unknown */
++
++        X86_BR_USER    = 1 << 0, /* branch target is user */
++        X86_BR_KERNEL  = 1 << 1, /* branch target is kernel */
++
++        X86_BR_CALL    = 1 << 2, /* call */
++        X86_BR_RET     = 1 << 3, /* return */
++        X86_BR_SYSCALL = 1 << 4, /* syscall */
++        X86_BR_SYSRET  = 1 << 5, /* syscall return */
++        X86_BR_INT     = 1 << 6, /* sw interrupt */
++        X86_BR_IRET    = 1 << 7, /* return from interrupt */
++        X86_BR_JCC     = 1 << 8, /* conditional */
++        X86_BR_JMP     = 1 << 9, /* jump */
++        X86_BR_IRQ     = 1 << 10,/* hw interrupt or trap or fault */
++        X86_BR_IND_CALL= 1 << 11,/* indirect calls */
++};
++
++#define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
++
++#define X86_BR_ANY       \
++        (X86_BR_CALL    |\
++         X86_BR_RET     |\
++         X86_BR_SYSCALL |\
++         X86_BR_SYSRET  |\
++         X86_BR_INT     |\
++         X86_BR_IRET    |\
++         X86_BR_JCC     |\
++         X86_BR_JMP	 |\
++	 X86_BR_IRQ	 |\
++	 X86_BR_IND_CALL)
++
++#define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
++
++#define X86_BR_ANY_CALL 	 \
++	(X86_BR_CALL		|\
++	 X86_BR_IND_CALL	|\
++	 X86_BR_SYSCALL		|\
++	 X86_BR_IRQ		|\
++	 X86_BR_INT)
++
++static void intel_pmu_lbr_filter(struct cpu_hw_events *cpuc);
++
++/*
+  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
+  * otherwise it becomes near impossible to get a reliable stack.
+  */
+@@ -132,6 +180,7 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 		intel_pmu_lbr_reset();
+ 		cpuc->lbr_context = event->ctx;
+ 	}
++	cpuc->br_sel = event->hw.branch_reg.reg;
+ 
+ 	cpuc->lbr_users++;
+ }
+@@ -253,6 +302,45 @@ void intel_pmu_lbr_read(void)
+ 		intel_pmu_lbr_read_32(cpuc);
+ 	else
+ 		intel_pmu_lbr_read_64(cpuc);
++
++	intel_pmu_lbr_filter(cpuc);
++}
++
++/*
++ * SW filter is used:
++ * - in case there is no HW filter
++ * - in case the HW filter has errata or limitations
++ */
++static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++{
++	u64 br_type = event->attr.branch_sample_type;
++        int mask = 0;
++
++        if (br_type & PERF_SAMPLE_BRANCH_USER)
++                mask |= X86_BR_USER;
++
++        if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
++                mask |= X86_BR_KERNEL;
++
++        if (br_type & PERF_SAMPLE_BRANCH_ANY) {
++                mask |= X86_BR_ANY;
++                goto done;
++        }
++
++        if (br_type & PERF_SAMPLE_BRANCH_ANY_CALL)
++                mask |= X86_BR_ANY_CALL;
++
++        if (br_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
++                mask |= X86_BR_RET | X86_BR_IRET | X86_BR_SYSRET;
++
++        if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
++                mask |= X86_BR_IND_CALL;
++done:
++        /*
++         * stash actual user request into reg, it may
++         * be used by fixup code for some CPU
++         */
++        event->hw.branch_reg.reg = mask;
+ }
+ 
+ /*
+@@ -288,9 +376,9 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static int intel_pmu_setup_lbr_filter(struct perf_event *event)
++int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ {
+-	u64 br_type = event->attr.branch_sample_type;
++	int ret = 0;
  
  	/*
- 	 * Extra registers for events
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index e09ca20..1303732 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1126,17 +1126,17 @@ static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
-  */
- static struct event_constraint *
- __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
--				   struct perf_event *event)
-+				   struct perf_event *event,
-+				   struct hw_perf_event_extra *reg)
- {
- 	struct event_constraint *c = &emptyconstraint;
--	struct hw_perf_event_extra *reg = &event->hw.extra_reg;
- 	struct er_account *era;
- 	unsigned long flags;
- 	int orig_idx = reg->idx;
+ 	 * no LBR on this PMU
+@@ -299,15 +387,210 @@ static int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 		return -EOPNOTSUPP;
  
- 	/* already allocated shared msr */
- 	if (reg->alloc)
--		return &unconstrained;
-+		return NULL; /* call x86_get_event_constraint() */
- 
- again:
- 	era = &cpuc->shared_regs->regs[reg->idx];
-@@ -1159,14 +1159,10 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 		reg->alloc = 1;
- 
- 		/*
--		 * All events using extra_reg are unconstrained.
--		 * Avoids calling x86_get_event_constraints()
--		 *
--		 * Must revisit if extra_reg controlling events
--		 * ever have constraints. Worst case we go through
--		 * the regular event constraint table.
-+		 * need to call x86_get_event_constraint()
-+		 * to check if associated event has constraints
- 		 */
--		c = &unconstrained;
-+		c = NULL;
- 	} else if (intel_try_alt_er(event, orig_idx)) {
- 		raw_spin_unlock(&era->lock);
- 		goto again;
-@@ -1203,11 +1199,23 @@ static struct event_constraint *
- intel_shared_regs_constraints(struct cpu_hw_events *cpuc,
- 			      struct perf_event *event)
- {
--	struct event_constraint *c = NULL;
--
--	if (event->hw.extra_reg.idx != EXTRA_REG_NONE)
--		c = __intel_shared_reg_get_constraints(cpuc, event);
--
-+	struct event_constraint *c = NULL, *d;
-+	struct hw_perf_event_extra *xreg, *breg;
-+
-+	xreg = &event->hw.extra_reg;
-+	if (xreg->idx != EXTRA_REG_NONE) {
-+		c = __intel_shared_reg_get_constraints(cpuc, event, xreg);
-+		if (c == &emptyconstraint)
-+			return c;
-+	}
-+	breg = &event->hw.branch_reg;
-+	if (breg->idx != EXTRA_REG_NONE) {
-+		d = __intel_shared_reg_get_constraints(cpuc, event, breg);
-+		if (d == &emptyconstraint) {
-+			__intel_shared_reg_put_constraints(cpuc, xreg);
-+			c = d;
-+		}
-+	}
- 	return c;
- }
- 
-@@ -1255,6 +1263,10 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
- 	reg = &event->hw.extra_reg;
- 	if (reg->idx != EXTRA_REG_NONE)
- 		__intel_shared_reg_put_constraints(cpuc, reg);
-+
-+	reg = &event->hw.branch_reg;
-+	if (reg->idx != EXTRA_REG_NONE)
-+		__intel_shared_reg_put_constraints(cpuc, reg);
- }
- 
- static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
-@@ -1434,7 +1446,7 @@ static int intel_pmu_cpu_prepare(int cpu)
- {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 
--	if (!x86_pmu.extra_regs)
-+	if (!(x86_pmu.extra_regs || x86_pmu.lbr_sel_map))
- 		return NOTIFY_OK;
- 
- 	cpuc->shared_regs = allocate_shared_regs(cpu);
-@@ -1456,22 +1468,28 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	/*
+-	 * if no LBR HW filter, users can only
+-	 * capture all branches
++	 * setup SW LBR filter
  	 */
- 	intel_pmu_lbr_reset();
- 
--	if (!cpuc->shared_regs || (x86_pmu.er_flags & ERF_NO_HT_SHARING))
-+	cpuc->lbr_sel = NULL;
+-	if (!x86_pmu.lbr_sel_map) {
+-		if (br_type != PERF_SAMPLE_BRANCH_ALL)
+-			return -EOPNOTSUPP;
+-		return 0;
++	intel_pmu_setup_sw_lbr_filter(event);
 +
-+	if (!cpuc->shared_regs)
- 		return;
- 
--	for_each_cpu(i, topology_thread_cpumask(cpu)) {
--		struct intel_shared_regs *pc;
-+	if (!(x86_pmu.er_flags & ERF_NO_HT_SHARING)) {
-+		for_each_cpu(i, topology_thread_cpumask(cpu)) {
-+			struct intel_shared_regs *pc;
- 
--		pc = per_cpu(cpu_hw_events, i).shared_regs;
--		if (pc && pc->core_id == core_id) {
--			cpuc->kfree_on_online = cpuc->shared_regs;
--			cpuc->shared_regs = pc;
--			break;
-+			pc = per_cpu(cpu_hw_events, i).shared_regs;
-+			if (pc && pc->core_id == core_id) {
-+				cpuc->kfree_on_online = cpuc->shared_regs;
-+				cpuc->shared_regs = pc;
-+				break;
-+			}
- 		}
-+		cpuc->shared_regs->core_id = core_id;
-+		cpuc->shared_regs->refcnt++;
++	/*
++	 * setup HW LBR filter, if any
++	 */
++        if (x86_pmu.lbr_sel_map)
++                ret = intel_pmu_setup_hw_lbr_filter(event);
++
++	return ret;
++}
++
++/*
++ * return the type of control flow change at address "from"
++ * intruction is not necessarily a branch (in case of interrupt).
++ *
++ * The branch type returned also includes the priv level of the
++ * target of the control flow change (X86_BR_USER, X86_BR_KERNEL).
++ *
++ * If a branch type is unknown OR the instruction cannot be
++ * decoded (e.g., text page not present), then X86_BR_NONE is
++ * returned.
++ */
++static int branch_type(unsigned long from, unsigned long to)
++{
++	struct insn insn;
++	void *addr;
++	int bytes, size = MAX_INSN_SIZE;
++	int ret = X86_BR_NONE;
++	int ext, to_plm, from_plm;
++	u8 buf[MAX_INSN_SIZE];
++	int is64 = 0;
++
++	to_plm = kernel_ip(to) ? X86_BR_KERNEL : X86_BR_USER;
++	from_plm = kernel_ip(from) ? X86_BR_KERNEL : X86_BR_USER;
++
++	/*
++	 * maybe zero if lbr did not fill up after a reset by the time
++	 * we get a PMU interrupt
++	 */
++	if (from == 0 || to == 0)
++		return X86_BR_NONE;
++
++	if (from_plm == X86_BR_USER) {
++		/*
++		 * can happen if measuring at the user level only
++		 * and we interrupt in a kernel thread, e.g., idle.
++		 */
++		if (!current->mm)
++			return X86_BR_NONE;
++
++		/* may fail if text not present */
++		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
++		if (bytes != size)
++			return X86_BR_NONE;
++
++		addr = buf;
++	} else
++		addr = (void *)from;
++
++	/*
++	 * decoder needs to know the ABI especially
++	 * on 64-bit systems running 32-bit apps
++	 */
++#ifdef CONFIG_X86_64
++	is64 = kernel_ip((unsigned long)addr) || !test_thread_flag(TIF_IA32);
++#endif
++	insn_init(&insn, addr, is64);
++	insn_get_opcode(&insn);
++
++	switch (insn.opcode.bytes[0]) {
++	case 0xf:
++		switch(insn.opcode.bytes[1]) {
++		case 0x05: /* syscall */
++		case 0x34: /* sysenter */
++			ret = X86_BR_SYSCALL;
++			break;
++		case 0x07: /* sysret */
++		case 0x35: /* sysexit */
++			ret = X86_BR_SYSRET;
++			break;
++		case 0x80 ... 0x8f: /* conditional */
++			ret = X86_BR_JCC;
++			break;
++		default:
++			ret = X86_BR_NONE;
++		}
++		break;
++	case 0x70 ... 0x7f: /* conditional */
++		ret = X86_BR_JCC;
++		break;
++	case 0xc2: /* near ret */
++	case 0xc3: /* near ret */
++	case 0xca: /* far ret */
++	case 0xcb: /* far ret */
++		ret = X86_BR_RET;
++		break;
++	case 0xcf: /* iret */
++		ret = X86_BR_IRET;
++		break;
++	case 0xcc ... 0xce: /* int */
++		ret = X86_BR_INT;
++		break;
++	case 0xe8: /* call near rel */
++	case 0x9a: /* call far absolute */
++		ret = X86_BR_CALL;
++		break;
++	case 0xe0 ... 0xe3: /* loop jmp */
++		ret = X86_BR_JCC;
++		break;
++	case 0xe9 ... 0xeb: /* jmp */
++		ret = X86_BR_JMP;
++		break;
++	case 0xff: /* call near absolute, call far absolute ind */
++		insn_get_modrm(&insn);
++		ext = (insn.modrm.bytes[0] >> 3) & 0x7;
++		switch (ext) {
++		case 2: /* near ind call */
++		case 3: /* far ind call */
++			ret = X86_BR_IND_CALL;
++			break;
++		case 4:
++		case 5:
++			ret = X86_BR_JMP;
++			break;
++		}
++		break;
++	default:
++		ret = X86_BR_NONE;
  	}
- 
--	cpuc->shared_regs->core_id = core_id;
--	cpuc->shared_regs->refcnt++;
-+	if (x86_pmu.lbr_sel_map)
-+		cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
+-	return intel_pmu_setup_hw_lbr_filter(event);
++	/*
++	 * interrupts, traps, faults (and thus ring transition) may
++	 * occur on any instructions. Thus, to classify them correctly,
++	 * we need to first look at the from and to priv levels. If they
++	 * are different and to is in the kernel, then it indicates
++	 * a ring transition. If the from instruction is not a ring
++	 * transition instr (syscall, systenter, int), then it means
++	 * it was a irq, trap or fault.
++	 *
++	 * we have no way of detecting kernel to kernel faults.
++	 */
++        if (from_plm == X86_BR_USER && to_plm == X86_BR_KERNEL
++	    && ret != X86_BR_SYSCALL && ret != X86_BR_INT)
++                        ret = X86_BR_IRQ;
++
++	/*
++	 * branch priv level determined by target as
++	 * is done by HW when LBR_SELECT is implemented
++	 */
++	if (ret != X86_BR_NONE)
++		ret |= to_plm;
++
++	return ret;
++}
++
++/*
++ * implement actual branch filter based on user demand.
++ * Hardware may not exactly satisfy that request, thus
++ * we need to inspect opcodes. Mismatched branches are
++ * discarded. Therefore, the number of branches returned
++ * in PERF_SAMPLE_BRANCH_STACK sample may vary.
++ */
++static void
++intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
++{
++	u64 from, to;
++        int br_sel = cpuc->br_sel;
++        int i, j, type;
++        bool compress = false;
++
++        /* if sampling all branches, then nothing to filter */
++        if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
++                return;
++
++        for (i = 0; i < cpuc->lbr_stack.nr; i++) {
++
++		from = cpuc->lbr_entries[i].from;
++		to = cpuc->lbr_entries[i].to;
++
++                type = branch_type(from, to);
++
++                /* if type does not correspond, then discard */
++                if (type == X86_BR_NONE || (br_sel & type) != type) {
++                        cpuc->lbr_entries[i].from = 0;
++                        compress = true;
++                }
++        }
++
++        if (!compress)
++                return;
++
++        /* remove all entries with from=0 */
++        for (i = 0; i < cpuc->lbr_stack.nr; ) {
++                if (!cpuc->lbr_entries[i].from) {
++                        j = i;
++                        while (++j < cpuc->lbr_stack.nr)
++                                cpuc->lbr_entries[j-1] = cpuc->lbr_entries[j];
++                        cpuc->lbr_stack.nr--;
++                        if (!cpuc->lbr_entries[i].from)
++                                continue;
++                }
++                i++;
++        }
  }
  
- static void intel_pmu_cpu_dying(int cpu)
+ /*
+@@ -349,6 +632,10 @@ void intel_pmu_lbr_init_core(void)
+ 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+ 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - compensate for lack of HW filter
++	 */
+ 	pr_cont("4-deep LBR, ");
+ }
+ 
+@@ -363,6 +650,13 @@ void intel_pmu_lbr_init_nhm(void)
+ 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
+ 	x86_pmu.lbr_sel_map  = nhm_lbr_sel_map;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - workaround LBR_SEL errata (see above)
++	 * - support syscall, sysret capture.
++	 *   That requires LBR_FAR but that means far
++	 *   jmp need to be filtered out
++	 */
+ 	pr_cont("16-deep LBR, ");
+ }
+ 
+@@ -377,6 +671,12 @@ void intel_pmu_lbr_init_snb(void)
+ 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
+ 	x86_pmu.lbr_sel_map  = snb_lbr_sel_map;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - support syscall, sysret capture.
++	 *   That requires LBR_FAR but that means far
++	 *   jmp need to be filtered out
++	 */
+ 	pr_cont("16-deep LBR, ");
+ }
+ 
+@@ -398,5 +698,9 @@ void intel_pmu_lbr_init_atom(void)
+ 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+ 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - compensate for lack of HW filter
++	 */
+ 	pr_cont("8-deep LBR, ");
+ }
 -- 
 1.7.1
 
