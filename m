@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab1JNHHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 03:07:37 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44144 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab1JNHHg (ORCPT
+	id S1755865Ab1JNHOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 03:14:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:14280 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab1JNHOT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 03:07:36 -0400
-Date: Fri, 14 Oct 2011 18:07:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: linux-next: build failure after merge of the final tree (security
- tree related)
-Message-Id: <20111014180730.193ed2e210b913c5852e9e39@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Oct_2011_18_07_30_+1100_LSfqP91nsO+fhocK"
+	Fri, 14 Oct 2011 03:14:19 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-0e-4e97e14a1e6f
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+References: <1313463881.16359.2.camel@phoenix>
+In-reply-to: <1313463881.16359.2.camel@phoenix>
+Subject: RE: [PATCH] ARM: S3C2443: Remove redundant s3c_register_clocks call
+ for init_clocks
+Date: Fri, 14 Oct 2011 16:14:18 +0900
+Message-id: <086001cc8a40$e3940350$aabc09f0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcxbwVPSxqJTI7fjTVms3Um8SvQ/6wufQD7g
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Oct_2011_18_07_30_+1100_LSfqP91nsO+fhocK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Axel Lin wrote:
+> 
+> Since commit af337f3e633a198034a99450416257ddf2307497
+> "ARM: S3C2443: Move parts of the clock code to common clock file",
+> the init_clocks array is moved to arch/arm/plat-s3c24xx/s3c2443-clock.c.
+> Now we call s3c_register_clocks for init_clocks in s3c2443_common_init_clocks.
+> 
+> Thus we can remove the empty init_clocks array here and remove the
+> redundant s3c_register_clocks call for init_clocks in s3c2443_init_clocks.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  arch/arm/mach-s3c2443/clock.c |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/mach-s3c2443/clock.c b/arch/arm/mach-s3c2443/clock.c
+> index a1a7176..4018dbe 100644
+> --- a/arch/arm/mach-s3c2443/clock.c
+> +++ b/arch/arm/mach-s3c2443/clock.c
+> @@ -305,9 +305,6 @@ static struct clk init_clocks_off[] = {
+>  	}
+>  };
+> 
+> -static struct clk init_clocks[] = {
+> -};
+> -
+>  /* clocks to add straight away */
+> 
+>  static struct clksrc_clk *clksrcs[] __initdata = {
+> @@ -345,10 +342,6 @@ void __init s3c2443_init_clocks(int xtal)
+>  	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
+>  		s3c_register_clksrc(clksrcs[ptr], 1);
+> 
+> -	/* register clocks from clock array */
+> -
+> -	s3c_register_clocks(init_clocks, ARRAY_SIZE(init_clocks));
+> -
+>  	/* We must be careful disabling the clocks we are not intending to
+>  	 * be using at boot time, as subsystems such as the LCD which do
+>  	 * their own DMA requests to the bus can cause the system to lockup
+> --
+> 1.7.4.1
 
-Hi James,
+Looks ok, applied.
+Thanks.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-security/smack/smack_lsm.c: In function 'smack_bprm_set_creds':
-security/smack/smack_lsm.c:473:21: error: 'PER_CLEAR_ON_SETID' undeclared (=
-first use in this function)
-
-Caused by commit 84088ba23929 ("Smack: domain transition protections
-(v3)"). PER_CLEAR_ON_SETID is defined in linux/personality.h which is not
-directly included by the above file.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__14_Oct_2011_18_07_30_+1100_LSfqP91nsO+fhocK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOl9+yAAoJEECxmPOUX5FEIoQP/1HL3W6djIku187LIs3tI4gK
-eAKUZ1o11OP324tRTSnzvzT55SeJB+XOT+lCByffOMPFM+kQTOWvNtTVi65zwpaM
-5nyE6SGhoMI9gM74+4u6pswv9ikDI8ShAp3aKT4GvHvSE9gqSRCMeBDTIeBdVamS
-ZccDMNc7P41SgeiT5ng7WNCSDZkiAo3vbyNwnLbbpW03jOIQLJp6GDy2ra5Rbz6y
-SeEOFmjUS9BARjuKvUDQ/2KARDgrh9boaxkTSGMxurLKtpP16d3UW6MyuUdc/waI
-bEk4KQnXD8inKVJrn8ikpVqNOBqNJeDzQVp9rcNDaxPxGcZ6MkyujGLrMCq2GqCt
-IpzuuYjymFWDnFPXAV3h1eVVE5xVXNlSXp3mS8EjYD3UcKoIuspgx8s5y4mJlYGG
-S8dkrqmJLyt/0PO4CtK6U8DFhp83lRRi4gOP61n7h2qL2dDBjp930S1mGJ+eawM6
-2MUPynx2fMER//M4MUM+Qyf90IYX5RArGD1c//7FbMCNXSuyA7P9AOPmFRo4LEdC
-OzhCXXBs/JsFhR7aXTpvnKhA5egZRS2WnKkyvsaJqtr/EywwElCf1Eof/QpR4ZUW
-fmACEP+u2PemU4ZuIdPXthzsaUKfjOchfW5JxqGgkEPknHiKPL6xcO9wyTjfAe6Q
-BOLQGWfzf7K/OpGmjDKY
-=cVLk
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Oct_2011_18_07_30_+1100_LSfqP91nsO+fhocK--
