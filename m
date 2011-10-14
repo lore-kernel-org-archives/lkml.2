@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab1JNURy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:17:54 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57904 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933330Ab1JNURw (ORCPT
+	id S1756696Ab1JNUTh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:19:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41711 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753245Ab1JNUTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:17:52 -0400
-Date: Fri, 14 Oct 2011 21:17:37 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@nvidia.com>,
-        Olof Johansson <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        Erik Gilling <konkers@android.com>
-Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-Message-ID: <20111014201737.GW21648@n2100.arm.linux.org.uk>
-References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <201110141729.41515.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com> <201110141827.53906.arnd@arndb.de> <alpine.LFD.2.02.1110141353390.17040@xanadu.home> <20111014192057.GT21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141609510.17040@xanadu.home>
+	Fri, 14 Oct 2011 16:19:35 -0400
+Date: Fri, 14 Oct 2011 16:19:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Johannes Stezenbach <js@sig21.net>
+cc: Markus Rechberger <mrechberger@gmail.com>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+In-Reply-To: <20111014192153.GA18439@sig21.net>
+Message-ID: <Pine.LNX.4.44L0.1110141613420.2036-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110141609510.17040@xanadu.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 04:14:12PM -0400, Nicolas Pitre wrote:
-> On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
-> 
-> > On Fri, Oct 14, 2011 at 02:01:07PM -0400, Nicolas Pitre wrote:
-> > > The way I'm restructuring things around this is that AUTO_ZRELADDR will 
-> > > always be active by default, just like ARM_PATCH_PHYS_VIRT now.  This 
-> > > platform specific exclusion thinking is a step backward so I'd prefer if 
-> > > people would refrain from going there for the moment.
-> > 
-> > Are you expecting everyone to change the way they load the zImage
-> > overnight then?
-> 
-> No, of course.  But adding restrictions in the kernel build because 
-> u-Boot's own image format dictates such restrictions doesn't make sense.  
-> Those restrictions must be pushed towards the uImage encapsulation step, 
-> not higher the kernel config hierarchy.
+On Fri, 14 Oct 2011, Johannes Stezenbach wrote:
 
-You're not understanding again.
+> I don't really want to help Markus with his proprietary, binary-only
+> userspace driver crap, but I wonder why nobody seems to remember
+> how the USB protocol works on the wire?
 
-I'm talking about people who _explicitly_ load the zImage at a different
-address to which the decompressed image ends up.  With AUTO_ZRELADDR=y
-their setup will break unless they stop that behaviour, which takes
-away one of the advantages of using the zImage format.
+I remember it perfectly well.
+
+>  The transfer size is
+> never seen by the device, thus it cannot matter if two small URBs
+> or one large URB are queued.  What matters is the packet size.
+
+That's what I have been saying.  Markus's experience contradicts this,
+however.
+
+> Apparently the device can only handle fixed size packets
+> of either 188 or 2*188 byte, thus it breaks with 12288 or 11776.
+
+No.  The device expects 512-byte packets because it uses a bulk 
+endpoint.
+
+> The endpoint's wMaxPacketSize might reflect this.
+
+For high-speed devices, a bulk endpoint's wMaxPacketSize must always be 
+512.
+
+> I guess a transfer size of e.g. 188*60=11280 would work.
+> See the first mail of this thread.
+
+According to Markus, with this particular device nothing but 24064 
+works.  The discussion is a little difficult to follow because he 
+talked about two different devices without always being clear about 
+which was which.
+
+> See also Sergei's comment in
+> http://lkml.org/lkml/2011/10/12/183
+
+Alan Stern
+
