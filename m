@@ -1,188 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab1JNG4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 02:56:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51481 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab1JNG4j convert rfc822-to-8bit (ORCPT
+	id S1755542Ab1JNHH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 03:07:28 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:56381 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab1JNHH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 02:56:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111013133815.GC2310@localhost.localdomain>
-References: <CAE8kqZKQrDK4SAKc8vK7Wi46dGQBw6_LX2NFvkr-XZr_KmGhrQ@mail.gmail.com>
-	<20111013133815.GC2310@localhost.localdomain>
-Date: Fri, 14 Oct 2011 14:56:37 +0800
-Message-ID: <CAE8kqZJGxra_tX=x-BQhnwKBDAhHLYq04Xon47coQ5JR5+0YmQ@mail.gmail.com>
-Subject: Re: [PATCH] fanotify: to differ file access event from different threads
-From: boyd yang <boyd.yang@gmail.com>
-To: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: eparis@redhat.com, xiyou.wangcong@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 14 Oct 2011 03:07:27 -0400
+Date: Fri, 14 Oct 2011 18:07:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (sparc,
+ ptrace trees related)
+Message-Id: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Oct_2011_18_07_14_+1100_PoOCDQntuJjmze__"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I updated the patch.
-Now it passed checkpatch.pl.
+--Signature=_Fri__14_Oct_2011_18_07_14_+1100_PoOCDQntuJjmze__
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I used the flag you mentioned.
+Hi All,
 
-fanotify: to differ file access event from different threads
-When fanotify is monitoring the whole mount point "/", and multiple
-threads iterate the same direcotry, some thread will hang.
-This patch let fanotify to differ access events from different
-threads, prevent fanotify from merging access events from different
-threads.
-It also hide overflow events to reach user space.
-Signed-off-by: Boyd Yang <boyd.yang@gmail.com>
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
-diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
-linux-3.1-rc4/fs/notify/fanotify/fanotify.c
---- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c	2011-08-29
-12:16:01.000000000 +0800
-+++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c	2011-10-14
-14:17:53.055958000 +0800
-@@ -15,7 +15,8 @@
+arch/sparc/kernel/signal_64.c: In function 'handle_signal':
+arch/sparc/kernel/signal_64.c:482:11: error: unused variable 'blocked' [-We=
+rror=3Dunused-variable]
 
- 	if (old->to_tell == new->to_tell &&
- 	    old->data_type == new->data_type &&
--	    old->tgid == new->tgid) {
-+	    old->tgid == new->tgid &&
-+	    old->pid == new->pid) {
- 		switch (old->data_type) {
- 		case (FSNOTIFY_EVENT_PATH):
- 			if ((old->path.mnt == new->path.mnt) &&
-@@ -144,11 +145,16 @@
- 		return PTR_ERR(notify_event);
+Caused by my merge of commits faddf598f0ba ("sparc: Use
+set_current_blocked()") form the sparc tree and 383fe35697e4 ("sparc: Use
+set_current_blocked() and block_sigmask()") from the ptrace tree.
 
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
--	if (event->mask & FAN_ALL_PERM_EVENTS) {
--		/* if we merged we need to wait on the new event */
--		if (notify_event)
--			event = notify_event;
--		ret = fanotify_get_response_from_access(group, event);
-+	/*if overflow, do not wait for response*/
-+	if (event->mask&FS_Q_OVERFLOW) {
-+		pr_debug("fanotify overflow!\n");
-+	}	else {
-+		if (event->mask & FAN_ALL_PERM_EVENTS) {
-+			/* if we merged we need to wait on the new event */
-+			if (notify_event)
-+				event = notify_event;
-+			ret = fanotify_get_response_from_access(group, event);
-+		}
- 	}
- #endif
+I have added the following merge fix patch for today.
 
-diff -r -u linux-3.1-rc4_orig/fs/notify/notification.c
-linux-3.1-rc4/fs/notify/notification.c
---- linux-3.1-rc4_orig/fs/notify/notification.c	2011-08-29
-12:16:01.000000000 +0800
-+++ linux-3.1-rc4/fs/notify/notification.c	2011-10-14 13:52:36.946608000 +0800
-@@ -95,6 +95,7 @@
- 		BUG_ON(!list_empty(&event->private_data_list));
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 14 Oct 2011 17:58:53 +1100
+Subject: [PATCH] sparc: fix mismerge of signal*.c
 
- 		kfree(event->file_name);
-+		put_pid(event->pid);
- 		put_pid(event->tgid);
- 		kmem_cache_free(fsnotify_event_cachep, event);
- 	}
-@@ -374,6 +375,7 @@
- 			return NULL;
- 		}
- 	}
-+	event->pid = get_pid(old_event->pid);
- 	event->tgid = get_pid(old_event->tgid);
- 	if (event->data_type == FSNOTIFY_EVENT_PATH)
- 		path_get(&event->path);
-@@ -417,6 +419,7 @@
- 		event->name_len = strlen(event->file_name);
- 	}
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/sparc/kernel/signal32.c  |    1 -
+ arch/sparc/kernel/signal_32.c |    1 -
+ arch/sparc/kernel/signal_64.c |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
 
-+	event->pid = get_pid(task_pid(current));
- 	event->tgid = get_pid(task_tgid(current));
- 	event->sync_cookie = cookie;
- 	event->to_tell = to_tell;
-diff -r -u linux-3.1-rc4_orig/include/linux/fsnotify_backend.h
-linux-3.1-rc4/include/linux/fsnotify_backend.h
---- linux-3.1-rc4_orig/include/linux/fsnotify_backend.h	2011-08-29
-12:16:01.000000000 +0800
-+++ linux-3.1-rc4/include/linux/fsnotify_backend.h	2011-10-14
-13:51:50.380168000 +0800
-@@ -238,6 +238,7 @@
- 	u32 sync_cookie;	/* used to corrolate events, namely inotify mv events */
- 	const unsigned char *file_name;
- 	size_t name_len;
-+	struct pid *pid;
- 	struct pid *tgid;
+diff --git a/arch/sparc/kernel/signal32.c b/arch/sparc/kernel/signal32.c
+index 74a5dde..22b7c6a 100644
+--- a/arch/sparc/kernel/signal32.c
++++ b/arch/sparc/kernel/signal32.c
+@@ -776,7 +776,6 @@ static inline int handle_signal32(unsigned long signr, =
+struct k_sigaction *ka,
+ 				  siginfo_t *info,
+ 				  sigset_t *oldset, struct pt_regs *regs)
+ {
+-	sigset_t blocked;
+ 	int err;
+=20
+ 	if (ka->sa.sa_flags & SA_SIGINFO)
+diff --git a/arch/sparc/kernel/signal_32.c b/arch/sparc/kernel/signal_32.c
+index 9e005b6..b3a2229 100644
+--- a/arch/sparc/kernel/signal_32.c
++++ b/arch/sparc/kernel/signal_32.c
+@@ -465,7 +465,6 @@ static inline int
+ handle_signal(unsigned long signr, struct k_sigaction *ka,
+ 	      siginfo_t *info, sigset_t *oldset, struct pt_regs *regs)
+ {
+-	sigset_t blocked;
+ 	int err;
+=20
+ 	if (ka->sa.sa_flags & SA_SIGINFO)
+diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
+index 26560e9..27332cd 100644
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -479,7 +479,6 @@ static inline int handle_signal(unsigned long signr, st=
+ruct k_sigaction *ka,
+ 				siginfo_t *info,
+ 				sigset_t *oldset, struct pt_regs *regs)
+ {
+-	sigset_t blocked;
+ 	int err;
+=20
+ 	err =3D setup_rt_frame(ka, regs, signr, oldset,
+--=20
+1.7.7
 
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__14_Oct_2011_18_07_14_+1100_PoOCDQntuJjmze__
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJOl9+iAAoJEECxmPOUX5FEQ34P/2GWJxJL7z2fmUn+dutQ0mZw
+vVlBTI84cCTHmYYcG+aK9dzI1C/D1uyXOS89PixOVQT5x3lzOOraQlTlm21djOm4
+ijTgbdVw10ZhKyMaAKi33MtINmHIdqbEn4Kd2RNL1uYCXOMq2K2rN4eheJjEzPaN
+K/0J+ZNsiYiuWNcb5glA3Yfv6VPDs5a4eZWFjk9PemVvY45i0HXWa43XoMC6CJBS
+o2VKrGxUuTraHDiJmOGfHNiZ0R01z65RCrForogwwruKh+IUe8PQdzlsZe1FPBH6
+gs8EBpswk8CWZR8pYxnYw2WwM9S07ks1Frw728G4JpGTJqljWGtGM5KkM9Kr1UI/
+RXBZ2b2p3GPHuO8bmJPMKs7Sljovpf6cDUzg63kluuh/lTh62+dt8st24oW5al+/
+3MZxKRrRLQm0oruVwdWSP6xMYco7feZCcX3kPqHyt65HXqxgjFbkNMipiUePFk/6
+aLJ5LCpcDanloeLtKqfPUMZMJIApJMLUnnR9osHM8M0L2BExs7KCcrOk9tnT7ulq
+qnlSRWgM6hAycdESyVdVDxrXIDSE3MaMZPxv1yyDEE8NeGtOd68CieCrQ3f3htow
+n8eeuhsvMjE+YtX0mXA5X+FfuU3q2eOqa97HA/SWdJaLeYlIW2boljplym3vMFjj
+HxUST2eQIxehxwLGtx2A
+=y+i5
+-----END PGP SIGNATURE-----
 
-
-On Thu, Oct 13, 2011 at 9:38 PM, Josef Bacik <josef@redhat.com> wrote:
-> On Thu, Oct 13, 2011 at 04:56:43PM +0800, boyd yang wrote:
->> This patch fixes a hang problem of Eric Paris's fs Notification/fanotify.
->>
->> Fanotify brings a way to intercept file access events.
->> When multiple threadsiterate the same direcotry, some thread will hang.
->> This patch let fanotify to differ access events from different
->> threads, prevent fanotify from merging access events from different
->> threads.
->>
->
-> You need to run this through checkpatch.pl, you have a ton of formatting
-> problems.  Also your email client seems to have word-wrapped parts of this, so
-> use a email client that doesn't word wrap.
->
->> =============================================================
->>
->> diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
->> linux-3.1-rc4/fs/notify/fanotify/fanotify.c
->> --- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c  2011-08-29
->> 12:16:01.000000000 +0800
->> +++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c       2011-10-10
->> 12:28:23.276847000 +0800
->> @@ -15,7 +15,8 @@
->>
->>       if (old->to_tell == new->to_tell &&
->>           old->data_type == new->data_type &&
->> -         old->tgid == new->tgid) {
->> +         old->tgid == new->tgid &&
->> +         old->pid == new->pid) {
->>               switch (old->data_type) {
->>               case (FSNOTIFY_EVENT_PATH):
->>                       if ((old->path.mnt == new->path.mnt) &&
->> @@ -144,11 +145,19 @@
->>               return PTR_ERR(notify_event);
->>
->>  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
->> -     if (event->mask & FAN_ALL_PERM_EVENTS) {
->> -             /* if we merged we need to wait on the new event */
->> -             if (notify_event)
->> -                     event = notify_event;
->> -             ret = fanotify_get_response_from_access(group, event);
->> +     //if overflow, do not wait for response
->> +     if(fsnotify_isoverflow(event))
->> +     {
->> +             pr_debug("fanotify overflow!\n");
->> +     }
->> +     else
->> +     {
->> +             if (event->mask & FAN_ALL_PERM_EVENTS) {
->> +                     /* if we merged we need to wait on the new event */
->> +                     if (notify_event)
->> +                             event = notify_event;
->> +                     ret = fanotify_get_response_from_access(group, event);
->> +             }
->>       }
->
-> The overflow event should only have FS_Q_OVERFLOW set in it's mask right?  So
-> why is this test needed at all?  Thanks,
->
-> Josef
->
+--Signature=_Fri__14_Oct_2011_18_07_14_+1100_PoOCDQntuJjmze__--
