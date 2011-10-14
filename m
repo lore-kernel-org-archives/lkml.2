@@ -1,137 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab1JNPhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:37:43 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41527 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754461Ab1JNPhl (ORCPT
+	id S933266Ab1JNPi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:38:28 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33664 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab1JNPi1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:37:41 -0400
-Date: Fri, 14 Oct 2011 11:37:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: Ming Lei <tom.leiming@gmail.com>, Andrei Warkentin <awarkentin@vmware.com>,
-        Greg KH <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>, <Manjunath@jasper.es>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Linux PM List <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-In-Reply-To: <20111013171539.GA18574@ponder.secretlab.ca>
-Message-ID: <Pine.LNX.4.44L0.1110141126000.2036-100000@iolanthe.rowland.org>
+	Fri, 14 Oct 2011 11:38:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAAMvbhFHaX++cX_+CSDHT0Qxf1MeuHnh9oS_rmTHha_fEcMcdQ@mail.gmail.com>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<CAAMvbhFNTQeuJBgsDB9Y5ODc_b2O0X=oP_3uwRpWUREFS9qufA@mail.gmail.com>
+	<CA+O4pCK2=rjqufLetTd=419bDfkN6RRX89Sh5noDnjoBAgoR2A@mail.gmail.com>
+	<CA+O4pCKKOvjRmgpC1fijzmpKOMQGdb1vkKeiSgFTY3Sv7xeaoQ@mail.gmail.com>
+	<79856.1318571233@turing-police.cc.vt.edu>
+	<CA+O4pC+8SbRqRz2uEnG_JkWcPmV_rCsy1zksHYsCk9HKduZRaA@mail.gmail.com>
+	<CAAMvbhFHaX++cX_+CSDHT0Qxf1MeuHnh9oS_rmTHha_fEcMcdQ@mail.gmail.com>
+Date: Fri, 14 Oct 2011 17:38:26 +0200
+Message-ID: <CA+O4pC+MpAORmYVzMsuDkwi9PXbxzssCnVeggNMt9ygSdtNzxQ@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: James Courtier-Dutton <james.dutton@gmail.com>
+Cc: Valdis.Kletnieks@vt.edu, USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Grant Likely wrote:
+On Fri, Oct 14, 2011 at 10:51 AM, James Courtier-Dutton
+<james.dutton@gmail.com> wrote:
+> On 14 October 2011 07:23, Markus Rechberger <mrechberger@gmail.com> wrote:
+>> On Fri, Oct 14, 2011 at 7:47 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+>>> On Fri, 14 Oct 2011 05:42:44 +0200, Markus Rechberger said:
+>>>
+>>>> The inflexible device which uses 24064 bytes works with all other
+>>>> Operating systems by using that value
+>>>> and gives exactly the same results with other transfer sizes than that.
+>>>
+>>> -ENOPARSE.  If it's inflexible,
+>>
+>> the particular device in question is inflexible yes.
+>>
+> Here is what I think the actual situation is.
+> Your transfers over the USB are done in 512 Bytes chunks.
+> If the device wishes to send 512 bytes, it sends one chunk.
+> If the device wishes to send 513 bytes, it sends only one chunk,
+> missing one byte.
+> if the device wishes to send 1023 bytes, it sends only one chunk,
+> missing 511 bytes.
+> if the device wishes to send 1024 bytes, it sends two chunks, missing 0 bytes.
+> So, the device is sending 1 too few chunks unless the bytes size
+> exactly matches the chunk size * n.
+> Another constraint is the device sends multiples of 188 bytes.
+> So, unless we can find a lowest common multiple of 188 and 512, there
+> is no transfer size that will work with this device. The LCM is 24064
+> and this is the only value that will work with this device.
+>
+> Conclusion:
+> The hardware on the Linux PC and the kernel on the Linux PC are
+> working correctly.
+> Your external USB device has an off-by-one error in its
+> hardware/embedded software and the hardware/embedded software
+> manufacturer is not prepared to fix it.
+>
+> Workaround in software: Increase MAX from 16384 to 24064 or above.
+>
+> My own feeling, throw away this faulty bit of hardware and use a different part.
+> The hardware is not compatible with USB standards.
+>
 
-> For the deferred case; here is an example of the additional
-> constraint.  Consider the following hierarchy:
-> 
-> -A
->  +-B
->  | +-C
->  | +-D
->  |
->  +-E
->    +-F
->    +-G
-> 
-> dpm_list could be ordered in at least the following ways (depending on
-> exactly when devices get registered).  There are many permutation, but
-> children are always be listed after its direct parent.
-> 
-> 1) ABECDFG (breadth first)
-> 2) AEBFGCD (breadth first)
-> 3) ABCDEFG (depth first)
-> 4) AEFGBCD (depth first)
-> 
-> Now, assume that device B depends on device F, and also assume that
-> there is no way either to express that in the hierarchy or even for
-> the constraint to be known at device registration time (the is exactly
-> the situation we're dealing with on embedded platforms).  Only the
-> driver for B knows that it needs a resource provided by F's driver.
-> So, the situation becomes that the ordering of dpm_list must now also
-> be sorted so that non-tree dependencies are also accounted for.  Of
-> the list above, only sort order 4 meets the new constraint.
-> 
-> The question then becomes, how can the dpm_list get resorted
-> dynamically at runtime to ensure that the new constraints are always
-> met without breaking old ones.  Here are some options I can think of:
-> 
-> 1) When a deferred probe succeeds, move the deferred device to the
-> end of the dpm_list.  Then the new sort order might be one of:
-> 
-> 	1) AECDFGB
-> 	2) AEFGCDB
-> 	3) ACDEFGB
-> 	4) AEFGCDB
-> 
-> However, that approach breaks the guarantee that children appear after
-> their parents (C & D appear before B in all cases above)
+I agree with that one, and think this conclusion comes closest to the
+real issue.
+I can imagine that the chip fifo has some issues with that one.
+However the device has been tested for a long time without turning to
+corrupted data so
+the only issue remaining is the buffer alignment.
 
-How can a device acquire children before it has a driver?
+Thanks for having a look at all that, I wish all requests would have
+that kind of review, instead
+of "I don't believe you, not acceptable, not right solution at all"
 
-> 2a) When a deferred probe succeeds, move the deferred device and it's
-> entire child hierarchy to the end of the list to become one of:
-
-This is the same as the above, under the reasonable assumption that
-devices without drivers can't have any children.  Or to be more
-carefully precise, that a device with children won't need to defer a
-probe.
-
-We can check that easily enough: Fail a deferral if the device already 
-has children.
-
-> 2b) alternately, when *any* probe succeeds, move the deferred device
-> and its children to the end of the list.  This continues to maintain
-> the parent-child relationship, and it ensures that the dpm_list is
-> always also sorted in probe-order (devices bound to drivers will
-> collect at the end of the list).
-
-We do not want to move entire hierarchies.  And in fact, even in 1 or
-2a, we would have to do the move from _within_ the deferred probe
-routine, not afterward, to make sure that it occurs before any children
-are added (and after all the prerequisite devices have been 
-registered).
-
-> 3) Add devices to dpm_list after successful probe instead of at
-> device_add time.
-> 
-> Potential problem: this means that only devices with drivers actually
-> get suspend/resume calls.  I don't know nearly enough about the PM
-> subsystem, but I suspect that this is a problem.
-
-Yes, this is no good.
-
-> 4) ignore parent-child relationships entirely and just move devices to
-> the end of the list on successful probe.  If it probed successfully,
-> then it can be successfully suspended regardless of whether it has any
-> children.  That breaks the parent-child ordering, but guarantees the
-> probe order ordering.  Any devices without drivers will end up
-> collecting at the beginning of the list, and will be suspended after
-> all the devices with drivers.
-> 
-> Problem: Same as with 3, I suspect that even devices without drivers
-> need to process PM suspend, which makes this option unworkable.
-> 
-> ...
-> 
-> For my money, I think that option 2b shows the most promise despite
-> the potential O(N^2) complexity.  There may be a better algorithm for
-> doing the runtime reordering that isn't O(N^2) that I haven't thought
-> of.  Having a list that is strongly ordered both on hierarchy *and*
-> probe order I think is the right thing to do, even without deferred
-> probe support.
-
-The answer is 1, but do the move at the appropriate time within the 
-probe routine.
-
-Alan Stern
-
+BR,
+Markus
