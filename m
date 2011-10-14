@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933358Ab1JNQ6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:58:47 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57940 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933288Ab1JNQ6q (ORCPT
+	id S933364Ab1JNQ7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:59:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:37727 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933288Ab1JNQ7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:58:46 -0400
-Message-ID: <1318611542.2223.47.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: RE: Regression in reading /proc/stat in the newer kernels with
- large SMP and NUMA configurations
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>
-Cc: "Seger, Mark" <mark.seger@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
-Date: Fri, 14 Oct 2011 18:59:02 +0200
-In-Reply-To: <8DC664164FA4D1449479E7B36CDCFB1F221F060A92@GVW0676EXC.americas.hpqcorp.net>
-References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
-	 <1318595915.2223.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <9FCE3A46FE7C8045A6207AE4B42E9F9A4EC2E29DD4@GVW1119EXC.americas.hpqcorp.net>
-	 <1318600023.2223.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A48@GVW0676EXC.americas.hpqcorp.net>
-	 <1318610416.2223.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A92@GVW0676EXC.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 14 Oct 2011 12:59:36 -0400
+Date: Fri, 14 Oct 2011 12:59:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Cc: lidongyang@novell.com, joe.jin@oracle.com, Ian.Campbell@citrix.com,
+        lersek@redhat.com, jbeulich@suse.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.2 - blkback and blkfront
+ patches for 3.2
+Message-ID: <20111014165915.GA10538@phenom.oracle.com>
+References: <20111013152157.GA9627@phenom.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013152157.GA9627@phenom.oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
+X-CT-RefId: str=0001.0A090203.4E986A70.0040,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 14 octobre 2011 à 17:52 +0100, Oberman, Laurence (HAS GSE) a
-écrit :
-> Standard RHEL kernel build.
-> What the customer would be using.
-> 
-> [root@linuxbeast boot]# cat config-2.6.32-131.6.1.el6.x86_64 | grep NR
-> CONFIG_NR_CPUS=4096
+>       xen/blkback: Fix the inhibition to map pages when discarding sector ranges.
 
-Then something must be wrong.... what are your nr_cpu_ids /
-nr_cpumask_bits values ?
+And I accidently messed that up. I put in a patch that had == instead of !=.
+
+So on top of these patches I've also stuck this in the git tree:
+
+git 53289f32632cca41c81b71b928f3d126c5564342
+Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date:   Fri Oct 14 12:13:05 2011 -0400
+
+    xen/blkback: Check for proper operation.
+    
+    The patch titled: "xen/blkback: Fix the inhibition to map pages
+    when discarding sector ranges." had the right idea except that
+    it used the wrong comparison operator. It had == instead of !=.
+    
+    This fixes the bug where all operations would have been stalled.
+    
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
 
-dmesg | grep nr_cpu_ids
 
+Please make sure you have that when you pull.
 
-
+Thanks!
