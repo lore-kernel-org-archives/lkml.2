@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab1JNRbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:31:15 -0400
-Received: from ams-iport-2.cisco.com ([144.254.224.141]:32936 "EHLO
-	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab1JNRbO (ORCPT
+	id S932962Ab1JNRcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:32:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54146 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab1JNRcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:31:14 -0400
-X-IronPort-AV: E=Sophos;i="4.69,347,1315180800"; 
-   d="scan'208";a="57827076"
-Date: Fri, 14 Oct 2011 23:01:11 +0530
-From: Maneesh Soni <manesoni@cisco.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Daney <david.daney@cavium.com>, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, ananth@in.ibm.com, kamensky@cisco.com
-Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
-Message-ID: <20111014173111.GB8521@cisco.com>
-Reply-To: manesoni@cisco.com
-References: <20111013090749.GB16761@cisco.com>
- <4E971FD3.2020308@cavium.com>
- <20111013180714.GA7422@linux-mips.org>
+	Fri, 14 Oct 2011 13:32:12 -0400
+Date: Fri, 14 Oct 2011 13:31:43 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-pci@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v5)
+Message-ID: <20111014173143.GB15946@hmsreliant.think-freely.org>
+References: <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+ <20110930143211.5ab39c02@stein>
+ <20110930153321.GA31760@hmsreliant.think-freely.org>
+ <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
+ <20110930165403.GB31760@hmsreliant.think-freely.org>
+ <20111006083607.2c4eb9a5@jbarnes-desktop>
+ <20111006171208.GB22462@hmsreliant.think-freely.org>
+ <CAErSpo4bEcubO56hZ+PWZc0SdVEroyOmsxDtc_bBAJrxBKmAOQ@mail.gmail.com>
+ <20111006180818.GD22462@hmsreliant.think-freely.org>
+ <20111014092148.21158b85@jbarnes-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111013180714.GA7422@linux-mips.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111014092148.21158b85@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -1.2 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 07:07:14PM +0100, Ralf Baechle wrote:
-> On Thu, Oct 13, 2011 at 10:28:51AM -0700, David Daney wrote:
+On Fri, Oct 14, 2011 at 09:21:48AM -0700, Jesse Barnes wrote:
+> On Thu, 6 Oct 2011 14:08:18 -0400
+> Neil Horman <nhorman@tuxdriver.com> wrote:
 > 
-> > Where is the handling for:
+> > This patch adds a per-pci-device subdirectory in sysfs called:
+> > /sys/bus/pci/devices/<device>/msi_irqs
 > > 
-> > 	case cop1_op:
+> > This sub-directory exports the set of msi vectors allocated by a given
+> > pci device, by creating a numbered sub-directory for each vector beneath
+> > msi_irqs.  For each vector various attributes can be exported.  Currently the
+> > only attribute is called mode, which tracks the operational mode of that vector
+> > (msi vs. msix)
 > > 
-> > #ifdef CONFIG_CPU_CAVIUM_OCTEON
-> > 	case lwc2_op: /* This is bbit0 on Octeon */
-> > 	case ldc2_op: /* This is bbit032 on Octeon */
-> > 	case swc2_op: /* This is bbit1 on Octeon */
-> > 	case sdc2_op: /* This is bbit132 on Octeon */
-> > #endif
-> > 
-> > These are all defined in insn_has_delayslot() but not here.
 > 
-> Which is a wonderful demonstration for why duplicating such a large
-> function from branch.c was a baaad thing to do.
+> Ok this adds new ABI in the form of sysfs files so I want to make sure
+> it's ok.
 > 
-> Maneesh, can you refactor the code to share everything that was copied
-> from __compute_return_epc() can be shared with kprobes?  Idealy make
-> everything a two part series, first one patch to refactor branch.c and
-> the 2nd patch to deal with kprobes.
+> Matthew has dreams of a more sophisticated MSI-X management scheme, but
+> it sounds to me like that will mostly affect the driver interfaces and
+> shouldn't be incompatible with the sysfs scheme you propose here.
 > 
+> If so, great, we can pull this in and maybe one day someone will
+> implement better MSI-X support.
+> 
+> If not, I'd like to hear objections now; Neil has been responsive and
+> fixed several issues.  I don't want to block his patch unless we have
+> something concrete that it conflicts with.
+> 
+> Thanks,
+> -- 
+> Jesse Barnes, Intel Open Source Technology Center
 
-Sure.. the branch likely instructions are not make it look good but
-still do it in the next version.
 
-Thanks for the comments.
-
-Regards,
-Maneesh
+Thanks Jesse, Greg, Bjorn, I appreciate all the input here.
+Neil
+ 
