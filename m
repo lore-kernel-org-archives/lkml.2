@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab1JNVNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 17:13:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42476 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab1JNVNc (ORCPT
+	id S1756941Ab1JNVP4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 17:15:56 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:29221 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab1JNVPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 17:13:32 -0400
-Date: Fri, 14 Oct 2011 22:13:11 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@nvidia.com>,
-        Olof Johansson <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        Erik Gilling <konkers@android.com>
-Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-Message-ID: <20111014211311.GY21648@n2100.arm.linux.org.uk>
-References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <201110141729.41515.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com> <201110141827.53906.arnd@arndb.de> <alpine.LFD.2.02.1110141353390.17040@xanadu.home> <20111014192057.GT21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141609510.17040@xanadu.home> <20111014201737.GW21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141628230.17040@xanadu.home>
+	Fri, 14 Oct 2011 17:15:54 -0400
+Message-ID: <4E98A677.6050507@oracle.com>
+Date: Fri, 14 Oct 2011 14:15:35 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110141628230.17040@xanadu.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH v2 06/29] x86/PCI: convert to pci_create_root_bus() and
+ pci_scan_root_bus()
+References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com> <20111014042737.23504.46601.stgit@bhelgaas.mtv.corp.google.com> <4E97C8F0.7030108@oracle.com> <CAErSpo568q-KOk25RaaZ+=erLEEC4rsPwGNy0drCbqpCLKGybQ@mail.gmail.com> <4E989E07.6030404@oracle.com> <CAErSpo4629XKU=TNp0cb6Cxc+Jm_dQcD4244eTna2TC49_EtTw@mail.gmail.com>
+In-Reply-To: <CAErSpo4629XKU=TNp0cb6Cxc+Jm_dQcD4244eTna2TC49_EtTw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
+X-CT-RefId: str=0001.0A090202.4E98A688.009D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 04:31:12PM -0400, Nicolas Pitre wrote:
-> On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
+On 10/14/2011 01:54 PM, Bjorn Helgaas wrote:
+
+> On Fri, Oct 14, 2011 at 2:39 PM, Yinghai Lu <yinghai.lu@oracle.com> wrote:
+>> On 10/14/2011 01:32 PM, Bjorn Helgaas wrote:
+>>
+>>
+>>>>>       int node;
+>>>>> @@ -353,11 +349,18 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+>>>>>               memcpy(bus->sysdata, sd, sizeof(*sd));
+>>>>>               kfree(sd);
+>>>>>       } else {
+>>>>> -             bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd);
+>>>>> -             if (bus) {
+>>>>> -                     get_current_resources(device, busnum, domain, bus);
+>>>>> -                     bus->subordinate = pci_scan_child_bus(bus);
+>>>>> +             INIT_LIST_HEAD(&resources);
+>>>>> +             get_current_resources(device, busnum, domain, &resources);
+>>>>> +             if (!pci_use_crs) {
+>>>>> +                     pci_free_resource_list(&resources);
+>>>>> +                     x86_pci_root_bus_resources(busnum, &resources);
+>>>>>               }
+>>>>
+>>>>
+>>>> You may need to update get_current_resources() to return status about handling _CRS...
+>>>> and check that status insteaf of !pci_use_crs.
+>>>
+>>> Is the current patch broken here?  I don't think it will be simpler to
+>>> have get_current_resources() return a status and check that.  But if
+>>> something's actually broken, I want to fix it, of course.
+>>>
+>>
+>>
+>> yes. if for some reason, _CRS is not handled right, that root bus resources will not get set to default res.
+>>
+>> +             status = get_current_resources(device, busnum, domain, &resources);
+>> +             if (status) {
+>> +                     pci_free_resource_list(&resources);
+>> +                     x86_pci_root_bus_resources(busnum, &resources);
+>>              }
+>>
+>> get_current_resources() will not return 0 if _CRS is not really used.
 > 
-> > On Fri, Oct 14, 2011 at 04:14:12PM -0400, Nicolas Pitre wrote:
-> > > On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
-> > > 
-> > > > On Fri, Oct 14, 2011 at 02:01:07PM -0400, Nicolas Pitre wrote:
-> > > > > The way I'm restructuring things around this is that AUTO_ZRELADDR will 
-> > > > > always be active by default, just like ARM_PATCH_PHYS_VIRT now.  This 
-> > > > > platform specific exclusion thinking is a step backward so I'd prefer if 
-> > > > > people would refrain from going there for the moment.
-> > > > 
-> > > > Are you expecting everyone to change the way they load the zImage
-> > > > overnight then?
-> > > 
-> > > No, of course.  But adding restrictions in the kernel build because 
-> > > u-Boot's own image format dictates such restrictions doesn't make sense.  
-> > > Those restrictions must be pushed towards the uImage encapsulation step, 
-> > > not higher the kernel config hierarchy.
-> > 
-> > You're not understanding again.
-> > 
-> > I'm talking about people who _explicitly_ load the zImage at a different
-> > address to which the decompressed image ends up.  With AUTO_ZRELADDR=y
-> > their setup will break unless they stop that behaviour, which takes
-> > away one of the advantages of using the zImage format.
+> OK.  I think it was that way before, too.  We created the bus with
+> default resources, but the first thing get_current_resources() did was
+> clear them all out.  If there was a problem parsing _CRS, we never
+> went back and put the defaults back in.
+
+
+that means you broke it when you clean up it last time. 
+
 > 
-> Would you care to explain where you got this from?  Because I really do 
-> not understand what you're saying indeed.
+> But I think this will do what you suggest and is nicer than what I had before:
+> 
+>                 INIT_LIST_HEAD(&resources);
+>                 get_current_resources(device, busnum, domain, &resources);
+>                 if (list_empty(&resources))
+>                         x86_pci_root_bus_resources(busnum, &resources);
 
-My I point out that it's you who decided that I was talking about u-boot
-when I said no such thing in my message.  I merely pointed out about
-those people who may be loading the zImage elsewhere in memory and using
-that facility to cut down on the boot time.  u-boot can't load zImages
-directly.
 
-Yet you started nattering on about uboot - which we know is a pile of
-crap for dealing with this stuff.
+yes, that should work.
 
-But ultimately, how people achieve the loading of the zImage is beyond
-the scope of what I stated: whether that's not using u-boot but some
-other boot loader, or maybe using mkimage outside of the kernel build,
-or whatever.
-
-> With AUTO_ZRELADDR=y you _still_ can load zImage to a different location 
-> from where the decompressed kernel ends up.
-
-You are correct for some values of 'different location' but not all -
-and how can we know _what_ people are doing?  We don't.
-
-#ifdef CONFIG_AUTO_ZRELADDR
-                @ determine final kernel image address
-                mov     r4, pc
-                and     r4, r4, #0xf8000000
-                add     r4, r4, #TEXT_OFFSET
-#else
-                ldr     r4, =zreladdr
-#endif
-
-So this means the decompressor _must_ run within the first 128MB chunk
-of memory for the resulting kernel to be correctly placed at expected
-place - at the beginning of system memory + TEXT_OFFSET.
-
-Can we know that this is always the case?  I don't think so.
-Can we expect there to be regressions if we force AUTO_ZRELADDR=y?  We'd
-be stupid not to expect them.
+Yinghai
