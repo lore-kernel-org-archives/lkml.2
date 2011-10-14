@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab1JNEtf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:49:35 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60103 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab1JNEtd (ORCPT
+	id S932288Ab1JNEzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 00:55:53 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34660 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab1JNEzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:49:33 -0400
-Date: Fri, 14 Oct 2011 00:49:15 -0400 (EDT)
-Message-Id: <20111014.004915.1737071409851288288.davem@davemloft.net>
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 14/29] sparc/PCI: convert to pci_create_root_bus()
- for correct root bus resources
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111014.004654.210648346142583443.davem@davemloft.net>
-References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
-	<20111014042818.23504.61318.stgit@bhelgaas.mtv.corp.google.com>
-	<20111014.004654.210648346142583443.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 14 Oct 2011 00:55:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 14 Oct 2011 13:54:04 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 6/9] kstaled: rate limit pages scanned per second.
+Message-Id: <20111014135404.b56bed48.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <CANN689HOALiiBKLUHRFuONQEyqp2on0GA1ycEguf0S6WFeuP7w@mail.gmail.com>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+	<1317170947-17074-7-git-send-email-walken@google.com>
+	<20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
+	<CANN689GFE_hqtndKY6i4ouBBe+gVU_pqOK2HRrc-U1LJMONaXw@mail.gmail.com>
+	<20110928175947.d3af52f0.kamezawa.hiroyu@jp.fujitsu.com>
+	<CANN689HOALiiBKLUHRFuONQEyqp2on0GA1ycEguf0S6WFeuP7w@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 13 Oct 2011 21:49:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Fri, 14 Oct 2011 00:46:54 -0400 (EDT)
+On Thu, 13 Oct 2011 18:25:06 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-> From: Bjorn Helgaas <bhelgaas@google.com>
-> Date: Thu, 13 Oct 2011 22:28:18 -0600
+> On Wed, Sep 28, 2011 at 1:59 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Wed, 28 Sep 2011 01:19:50 -0700
+> > Michel Lespinasse <walken@google.com> wrote:
+> >> It tends to perform worse if we try making it multithreaded. What
+> >> happens is that the scanning threads call page_referenced() a lot, and
+> >> if they both try scanning pages that belong to the same file that
+> >> causes the mapping's i_mmap_mutex lock to bounce. Same things happens
+> >> if they try scanning pages that belong to the same anon VMA too.
+> >>
+> >
+> > Hmm. with brief thinking, if you can scan list of page tables,
+> > you can set young flags without any locks.
+> > For inode pages, you can hook page lookup, I think.
 > 
->> Convert from pci_create_bus() to pci_create_root_bus().  This way the root
->> bus resources are correct immediately.  This patch doesn't fix anything
->> because sparc fixed them before scanning the bus, but it makes it more
->> consistent with other architectures.
->> 
->> I didn't work out where pcibios_fixup_bus() is called.  I don't see a
->> use of pci_scan_bus(), pci_scan_bus_parented(), or pci_scan_child_bus().
->> 
->> CC: David S. Miller <davem@davemloft.net>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> It would be possible to avoid taking rmap locks by instead scanning
+> all page tables, and transferring the pte young bits observed there to
+> the PageYoung page flag. This is a significant design change, but
+> would indeed work.
 > 
-> The pcibios_fixup_bus() case here (sparc64) is an artifact from when
-> we actually probed the PCI config space for device probing on sparc64,
-> and pci_bus_probe() would invoke it.
-> 
-> Unfortunately we can't delete this function now even though it's empty
-> with your changes, because drivers/pci/probe.o is unconditionally
-> linked into the kernel when CONFIG_PCI even when an architecture
-> (such as sparc64) doesn't use the majority of the code in it.
+> Just to clarify the idea, how would you go about finding all page
+> tables to scan ? The most straightforward approach would be iterate
+> over all processes and scan their address spaces, but I don't think we
+> can afford to hold tasklist_lock (even for reads) for so long, so we'd
+> have to be a bit smarter than that... I can think of a few different
+> ways but I'd like to know if you have something specific in mind
+> first.
 
-Sorry, forgot to give this an ACK :-)
+Maybe there are several idea. 
 
-Acked-by: David S. Miller <davem@davemloft.net>
+1. how about chasing "pgd" kmem_cache ?
+   I'm not sure but in x86 it seems all pgds are lined to pgd_list.
+   Now, it's not RCU list but making it as RCU list isn't hard.
+   Note: IIUC, struct page for pgd contains pointer to mm_struct.
+
+2. track dup_mm and do_exec.
+   insert hook and maintain list of mm_struct.(It's not needed to be
+   implemented as list)
+
+3. Like pgd_list, add some flag to pgd pages. Then, you can scan memmap
+   and find 'pgd' page and walk into the page table tree.
+
+Hmm ?
+
+Thanks,
+-Kame
+
+
+
