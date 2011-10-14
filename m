@@ -1,115 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab1JNVHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 17:07:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58212 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754636Ab1JNVHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 17:07:32 -0400
-Date: Sat, 15 Oct 2011 08:07:18 +1100
-From: NeilBrown <neilb@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
- suspend/hibernate interfaces
-Message-ID: <20111015080718.01aef515@notabene.brown>
-In-Reply-To: <Pine.LNX.4.44L0.1110141156040.2036-100000@iolanthe.rowland.org>
-References: <20111014165212.7929243c@notabene.brown>
-	<Pine.LNX.4.44L0.1110141156040.2036-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Jx90OYfelV+OPPjo1c/3rFS"; protocol="application/pgp-signature"
+	id S1756926Ab1JNVNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 17:13:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42476 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab1JNVNc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 17:13:32 -0400
+Date: Fri, 14 Oct 2011 22:13:11 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+Message-ID: <20111014211311.GY21648@n2100.arm.linux.org.uk>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <201110141729.41515.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com> <201110141827.53906.arnd@arndb.de> <alpine.LFD.2.02.1110141353390.17040@xanadu.home> <20111014192057.GT21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141609510.17040@xanadu.home> <20111014201737.GW21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141628230.17040@xanadu.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1110141628230.17040@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Jx90OYfelV+OPPjo1c/3rFS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 14, 2011 at 04:31:12PM -0400, Nicolas Pitre wrote:
+> On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
+> 
+> > On Fri, Oct 14, 2011 at 04:14:12PM -0400, Nicolas Pitre wrote:
+> > > On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
+> > > 
+> > > > On Fri, Oct 14, 2011 at 02:01:07PM -0400, Nicolas Pitre wrote:
+> > > > > The way I'm restructuring things around this is that AUTO_ZRELADDR will 
+> > > > > always be active by default, just like ARM_PATCH_PHYS_VIRT now.  This 
+> > > > > platform specific exclusion thinking is a step backward so I'd prefer if 
+> > > > > people would refrain from going there for the moment.
+> > > > 
+> > > > Are you expecting everyone to change the way they load the zImage
+> > > > overnight then?
+> > > 
+> > > No, of course.  But adding restrictions in the kernel build because 
+> > > u-Boot's own image format dictates such restrictions doesn't make sense.  
+> > > Those restrictions must be pushed towards the uImage encapsulation step, 
+> > > not higher the kernel config hierarchy.
+> > 
+> > You're not understanding again.
+> > 
+> > I'm talking about people who _explicitly_ load the zImage at a different
+> > address to which the decompressed image ends up.  With AUTO_ZRELADDR=y
+> > their setup will break unless they stop that behaviour, which takes
+> > away one of the advantages of using the zImage format.
+> 
+> Would you care to explain where you got this from?  Because I really do 
+> not understand what you're saying indeed.
 
-On Fri, 14 Oct 2011 12:00:59 -0400 (EDT) Alan Stern
-<stern@rowland.harvard.edu> wrote:
+My I point out that it's you who decided that I was talking about u-boot
+when I said no such thing in my message.  I merely pointed out about
+those people who may be loading the zImage elsewhere in memory and using
+that facility to cut down on the boot time.  u-boot can't load zImages
+directly.
 
-> On Fri, 14 Oct 2011, NeilBrown wrote:
->=20
-> > Hi Rafael,
-> >=20
-> >  What do you mean by "too complicated to use in practice"?  What is you
-> >  measure for complexity?
-> >  Using suspend in a race-free way is certainly less complex than - for
-> >  example - configuring bluetooth.
-> >  And in what way is it "inadequate for other reasons"? What reasons?
-> >=20
-> >=20
-> >  The only sane way to handle suspend is for any (suitably privileged) p=
-rocess
-> >  to be able to request that suspend doesn't happen, and then for one pr=
-ocess
-> >  to initiate suspend when no-one is blocking it.
->=20
-> One of the things Rafael didn't mention is that sometimes a kernel=20
-> driver needs to prevent the system from suspending.  This happens when=20
-> recharging over a USB connection.
->=20
-> There's no simple way for such a driver to communicate with a power
-> daemon.  The driver has to use something like the wakeup mechanism --=20
-> but currently that mechanism is optional.
->=20
-> Alan Stern
+Yet you started nattering on about uboot - which we know is a pile of
+crap for dealing with this stuff.
 
-Certainly I don't expect a kernel driver to communicate directly with a
-user-space daemon.  It communicates indirectly through the wakeup_source
-mechanism.
-If user-space wants to block suspend, it talks to the suspend daemon (power
-manager) some how (dbus, lock files, sockets, signals, whatever).
-If the kernel wants to block suspend, it activates a wakeup_source (aka
-caffeine source) which the suspend daemon notices via /sys/power/wakeup_cou=
-nt.
+But ultimately, how people achieve the loading of the zImage is beyond
+the scope of what I stated: whether that's not using u-boot but some
+other boot loader, or maybe using mkimage outside of the kernel build,
+or whatever.
 
-But you say this wakeup mechanism is optional .... I don't see that.
+> With AUTO_ZRELADDR=y you _still_ can load zImage to a different location 
+> from where the decompressed kernel ends up.
 
-It is implemented in drivers/base/power/wakeup.c which is included in the
-kernel if CONFIG_PM_SLEEP which is defined as
+You are correct for some values of 'different location' but not all -
+and how can we know _what_ people are doing?  We don't.
 
-config PM_SLEEP
-	def_bool y
-	depends on SUSPEND || HIBERNATE_CALLBACKS
+#ifdef CONFIG_AUTO_ZRELADDR
+                @ determine final kernel image address
+                mov     r4, pc
+                and     r4, r4, #0xf8000000
+                add     r4, r4, #TEXT_OFFSET
+#else
+                ldr     r4, =zreladdr
+#endif
 
-which seems to mean "enable this unless we don't have suspend and we don't
-have hibernate".
+So this means the decompressor _must_ run within the first 128MB chunk
+of memory for the resulting kernel to be correctly placed at expected
+place - at the beginning of system memory + TEXT_OFFSET.
 
-So it seems that the only time we don't have the wakeup mechanism, we also
-have no risk of ever going to sleep.
-
-What exactly where you saying was "optional"?? I don't understand.
-
-NeilBrown
-
---Sig_/Jx90OYfelV+OPPjo1c/3rFS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTpikhjnsnt1WYoG5AQI3zQ//VZieG1Zjw645KUWgsClYywMjUqP39CdY
-Y8PgQ1fujdAV4Tn4DahvpKZ9n4j93ugW/Fftqt6843ZecLt2rOhJ33jq7HmFgl1T
-3eshZzapCAipb88/Ip51PgggGlZmt9miMcpfAy5C2ple/RBGAWmcCd74+81wd33o
-FI5lp0X+TjGbsQbOy3GaTY14MdSnOgfUH/t20tTc5GCloNGfH0sVkf0O7wsEyMjj
-bDbu9AFDnuJxFabzWKwyjB62lL4lgZ9YIQYGZM77kqJUnJsCddAltgNPerj2m65M
-XF6CuHaiN7zPpn5C9WqRDK5c8VUVd3plYDJO0SpPOMloBlnn+KWWV7kFOZ/PMTbr
-XqfHbjhEU4++fC6JG5/ynbk6qO2NcWb6qkYKmwE3qqnGba5FRZg6fth4e+RioFuP
-57A3/UB/epBJ39wJmaOk5r/Je2OJmXTSowf8DZBVKhRHqlNHne7F+M+QW/e6RJfI
-yIFRJUfdboqZYvWrrkijdGzDhTVwawAydtJX5MH1omIxYDVZcdpMNyLGSj0Asbya
-uI8TytTcombjUEhFEj34jxS7M1Jb6ZJzEk8qQpPQMENKyJ5c4LXOBWTfe1ETFN+P
-wTmx/v2TMQlV+pJQCbVib73GVuOTvLyy2ZDMm+2hBKs2oOXOzIFgK3twy3Cf9YlP
-zm5A9fBGSeA=
-=XyXm
------END PGP SIGNATURE-----
-
---Sig_/Jx90OYfelV+OPPjo1c/3rFS--
+Can we know that this is always the case?  I don't think so.
+Can we expect there to be regressions if we force AUTO_ZRELADDR=y?  We'd
+be stupid not to expect them.
