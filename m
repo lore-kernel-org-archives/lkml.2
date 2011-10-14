@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab1JNBlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 21:41:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59024 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1JNBle convert rfc822-to-8bit (ORCPT
+	id S932152Ab1JNCBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 22:01:55 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:51059 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab1JNCBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 21:41:34 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1318556272.6379.4.camel@phoenix>
-References: <1318556120.6379.1.camel@phoenix> <1318556272.6379.4.camel@phoenix>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Fri, 14 Oct 2011 09:41:13 +0800
-Message-ID: <CAF+7xWkk0D_t0R5BsOBqbTY_GumwbEQNQO+KAri73zREicE+DA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ASoC: wm8991: Convert codec->hw_read to snd_soc_read
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Oct 2011 22:01:54 -0400
+Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+Date: Fri, 14 Oct 2011 13:01:52 +1100
+In-Reply-To: <201110132326.02041.rjw@sisk.pl>
+References: <1317342456.1959.6.camel@shrek.rexursive.com>
+	 <201110062045.48689.rjw@sisk.pl> <2409186928.1003010428@rexursive.com>
+	 <201110132326.02041.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318557712.2027.1.camel@shrek.rexursive.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/14 Axel Lin <axel.lin@gmail.com>:
-> codec->hw_read is broken now, let's covert to snd_soc_read.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/wm8961.c |    4 +++-
+On Thu, 2011-10-13 at 23:26 +0200, Rafael J. Wysocki wrote:
+> If your system is 64-bit, then the patch below may help.
 
-Please ignore this one. the subject line is wrong.
-The correct subject line is " [PATCH 3/3] ASoC: wm8961: Convert
-codec->hw_read to snd_soc_read"
+Unfortunately, it didn't. Got a hang after several hibernate/thaw just
+the same, when KMS was enabled.
 
-Axel
+-- 
+Bojan
+
