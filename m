@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab1JNOa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 10:30:59 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:59718 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab1JNOa6 (ORCPT
+	id S932794Ab1JNOeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 10:34:19 -0400
+Received: from lunge.queued.net ([173.255.254.236]:36764 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab1JNOeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 10:30:58 -0400
-Subject: Re: [PATCH 18/21] pci: drop unused Kconfig symbol
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+	Fri, 14 Oct 2011 10:34:18 -0400
+Date: Fri, 14 Oct 2011 07:33:20 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20111014142254.GA8887@phenom.oracle.com>
-References: <1318595439.6132.77.camel@x61.thuisdomein>
-	 <20111014135743.GD4577@phenom.oracle.com>
-	 <1318601485.6132.91.camel@x61.thuisdomein>
-	 <20111014142254.GA8887@phenom.oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 16:30:49 +0200
-Message-ID: <1318602649.6132.102.camel@x61.thuisdomein>
+Subject: [PATCH v2] mtd: provide an alias for the redboot module name
+Message-ID: <20111014073320.140fb4b2@debxo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 10:22 -0400, Konrad Rzeszutek Wilk wrote:
-> Why? Is it b/c PCI_DEBUG does not exist? How did you determine it is
-> unused?
+parse_mtd_partitions takes a list of partition types; if the driver
+isn't loaded, it attempts to load it, and then it grabs the partition
+parser.  For redboot, the module name is "redboot.ko", while the parser
+name is "RedBoot".  Since modprobe is case-sensitive, attempting to
+modprobe "RedBoot" will never work.  I suspect the embedded systems that
+make use of redboot just always manually loaded redboot prior to loading
+their specific nand chip drivers (or statically compiled it in).
 
-$ git grep -n XEN_PCIDEV_FE_DEBUG
-$
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+Cc: stable@kernel.org
+---
+ drivers/mtd/redboot.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-So there's no other Kconfig symbol that depends in this symbol. Neitehr
-is there anything that uses CONFIG_XEN_PCIDEV_FE_DEBUG.
+v2: instead of renaming the module, use a module_alias.  Duh.  Thanks,
+Artem Bityutskiy!
 
-
-Paul Bolle
+diff --git a/drivers/mtd/redboot.c b/drivers/mtd/redboot.c
+index 7a87d07..4938bd0 100644
+--- a/drivers/mtd/redboot.c
++++ b/drivers/mtd/redboot.c
+@@ -297,6 +297,9 @@ static struct mtd_part_parser redboot_parser = {
+ 	.name = "RedBoot",
+ };
+ 
++/* mtd parsers will request the module by parser name */
++MODULE_ALIAS("RedBoot");
++
+ static int __init redboot_parser_init(void)
+ {
+ 	return register_mtd_parser(&redboot_parser);
+-- 
+1.7.2.5
 
