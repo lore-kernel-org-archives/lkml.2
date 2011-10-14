@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab1JNMaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:30:12 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58455 "EHLO
+	id S932817Ab1JNMaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:30:20 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58509 "EHLO
 	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180Ab1JNMaJ (ORCPT
+	with ESMTP id S932180Ab1JNMaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:30:09 -0400
-Subject: [PATCH 12/21] m68k: drop unused Kconfig symbols
+	Fri, 14 Oct 2011 08:30:14 -0400
+Subject: [PATCH 13/21] openrisc: drop unused Kconfig symbols
 From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 14:29:31 +0200
-Message-ID: <1318595371.6132.70.camel@x61.thuisdomein>
+Date: Fri, 14 Oct 2011 14:29:43 +0200
+Message-ID: <1318595383.6132.71.camel@x61.thuisdomein>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -23,130 +23,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/m68k/Kconfig       |   28 +---------------------------
- arch/m68k/Kconfig.nommu |   44 --------------------------------------------
- 2 files changed, 1 insertions(+), 71 deletions(-)
+ arch/openrisc/Kconfig |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
 
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 9e8ee9d..58c6496 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -149,32 +149,6 @@ config MULTIFACE_III_TTY
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index 4558baf..fe4b912 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -19,9 +19,6 @@ config OPENRISC
+ config MMU
+ 	def_bool y
  
- 	  To compile this driver as a module, choose M here.
+-config WISHBONE_BUS_BIG_ENDIAN
+-	def_bool y
+-
+ config SYMBOL_PREFIX
+         string
+         default ""
+@@ -160,15 +157,6 @@ config JUMP_UPON_UNHANDLED_EXCEPTION
  
--config GVPIOEXT
--	tristate "GVP IO-Extender support"
--	depends on PARPORT=n && ZORRO
--	help
--	  If you want to use a GVP IO-Extender serial card in Linux, say Y.
--	  Otherwise, say N.
--
--config GVPIOEXT_LP
--	tristate "GVP IO-Extender parallel printer support"
--	depends on GVPIOEXT
--	help
--	  Say Y to enable driving a printer from the parallel port on your
--	  GVP IO-Extender card, N otherwise.
--
--config GVPIOEXT_PLIP
--	tristate "GVP IO-Extender PLIP support"
--	depends on GVPIOEXT
--	help
--	  Say Y to enable doing IP over the parallel port on your GVP
--	  IO-Extender card, N otherwise.
--
--config MAC_HID
--	bool
--	depends on INPUT_ADBHID
--	default y
--
- config HPDCA
- 	tristate "HP DCA serial support"
- 	depends on DIO && SERIAL_8250
-@@ -217,7 +191,7 @@ config DN_SERIAL
+ 	  Say Y if you are unsure.
  
- config SERIAL_CONSOLE
- 	bool "Support for serial port console"
--	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO) && (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || GVPIOEXT=y || MULTIFACE_III_TTY=y || SERIAL=y || MVME147_SCC || SERIAL167 || MVME162_SCC || BVME6000_SCC || DN_SERIAL)
-+	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO) && (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || MVME147_SCC || SERIAL167 || MVME162_SCC || BVME6000_SCC || DN_SERIAL)
- 	---help---
- 	  If you say Y here, it will be possible to use a serial port as the
- 	  system console (the system console is the device which receives all
-diff --git a/arch/m68k/Kconfig.nommu b/arch/m68k/Kconfig.nommu
-index ff46383..2b7f1e9 100644
---- a/arch/m68k/Kconfig.nommu
-+++ b/arch/m68k/Kconfig.nommu
-@@ -542,13 +542,6 @@ config SAVANTrosie1
- 	help
- 	  Support for the Savant Rosie1 board.
- 
--config ROMFS_FROM_ROM
--	bool "ROMFS image not RAM resident"
--	depends on (NETtel || SNAPGEAR)
+-config OPENRISC_EXCEPTION_DEBUG
+-	bool "Print processor state at each exception"
+-	default n
 -	help
--	  The ROMfs filesystem will stay resident in the FLASH/ROM, not be
--	  moved into RAM.
+-	  This option will make your kernel unusable for all but kernel
+-	  debugging.
 -
- config PILOT
- 	bool
- 	default y
-@@ -564,21 +557,11 @@ config FREESCALE
- 	default y
- 	depends on (M5206eC3 || M5208EVB || M5235EVB || M5249C3 || M5271EVB || M5272C3 || M5275EVB || M5282EVB || M5307C3 || M5329EVB || M5407C3)
- 
--config HW_FEITH
--	bool
--	default y
--	depends on (CLEOPATRA || CANCam || SCALES)
+-	  Say N if you are unsure.
 -
- config senTec
- 	bool
- 	default y
- 	depends on (COBRA5272 || COBRA5282)
- 	
--config EMAC_INC
--	bool
--	default y
--	depends on (SOM5282EM)
--
- config SNEHA
- 	bool
- 	default y
-@@ -673,33 +656,6 @@ config KERNELBASE
- 	  a system with the RAM based at address 0, and leaving enough room
- 	  for the theoretical maximum number of 256 vectors.
- 
--choice
--	prompt "RAM bus width"
--	default RAMAUTOBIT
--
--config RAMAUTOBIT
--	bool "AUTO"
--	help
--	  Select the physical RAM data bus size. Not needed on most platforms,
--	  so you can generally choose AUTO.
--
--config RAM8BIT
--	bool "8bit"
--	help
--	  Configure RAM bus to be 8 bits wide.
--
--config RAM16BIT
--	bool "16bit"
--	help
--	  Configure RAM bus to be 16 bits wide.
--
--config RAM32BIT
--	bool "32bit"
--	help
--	  Configure RAM bus to be 32 bits wide.
--
--endchoice
--
- comment "ROM configuration"
- 
- config ROM
+ config OPENRISC_ESR_EXCEPTION_BUG_CHECK
+ 	bool "Check for possible ESR exception bug"
+ 	default n
 -- 
 1.7.4.4
 
