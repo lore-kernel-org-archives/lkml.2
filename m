@@ -1,148 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab1JNII3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 04:08:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60431 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1JNII1 (ORCPT
+	id S1752222Ab1JNIKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 04:10:42 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:23470
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751442Ab1JNIKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 04:08:27 -0400
+	Fri, 14 Oct 2011 04:10:39 -0400
+X-SpamScore: -2
+X-BigFish: VS-2(z1039oz1432N98dKzz1202hzz8275bh8275dhz2dh87h2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 14 Oct 2011 16:10:26 +0800
+From: Richard Zhao <richard.zhao@linaro.org>
+To: Mike Turquette <mturquette@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@pwsan.com>,
+        <linaro-dev@lists.linaro.org>, <linus.walleij@stericsson.com>,
+        <patches@linaro.org>, <eric.miao@linaro.org>,
+        <broonie@opensource.wolfsonmicro.com>, <magnus.damm@gmail.com>,
+        <amit.kucheria@linaro.org>, <grant.likely@secretlab.ca>,
+        <dsaxena@linaro.org>, <arnd.bergmann@linaro.org>,
+        <shawn.guo@freescale.com>, <skannan@quicinc.com>,
+        <linux@arm.linux.org.uk>, <jeremy.kerr@canonical.com>,
+        <tglx@linutronix.de>, <linux-arm-kernel@lists.infradead.org>,
+        <sboyd@quiinc.com>
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Message-ID: <20111014081024.GA9485@b20223-02.ap.freescale.net>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-2-git-send-email-mturquette@ti.com>
 MIME-Version: 1.0
-Date: Fri, 14 Oct 2011 10:08:26 +0200
-Message-ID: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com>
-Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
- kernel oops
-From: Elmar Vonlanthen <evonlanthen@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1316730422-20027-2-git-send-email-mturquette@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again
+Hi Mike,
 
-Kernel 3.0.6 is affected as well.
+On Thu, Sep 22, 2011 at 03:26:56PM -0700, Mike Turquette wrote:
+> From: Jeremy Kerr <jeremy.kerr@canonical.com>
+> 
+> We currently have ~21 definitions of struct clk in the ARM architecture,
+> each defined on a per-platform basis. This makes it difficult to define
+> platform- (or architecture-) independent clock sources without making
+> assumptions about struct clk, and impossible to compile two
+> platforms with different struct clks into a single image.
+> 
+> This change is an effort to unify struct clk where possible, by defining
+> a common struct clk, and a set of clock operations. Different clock
+> implementations can set their own operations, and have a standard
+> interface for generic code. The callback interface is exposed to the
+> kernel proper, while the clock implementations only need to be seen by
+> the platform internals.
+> 
+> The interface is split into two halves:
+> 
+>  * struct clk, which is the generic-device-driver interface. This
+>    provides a set of functions which drivers may use to request
+>    enable/disable, query or manipulate in a hardware-independent manner.
+> 
+>  * struct clk_hw and struct clk_hw_ops, which is the hardware-specific
+>    interface. Clock drivers implement the ops, which allow the core
+>    clock code to implement the generic 'struct clk' API.
+> 
+> This allows us to share clock code among platforms, and makes it
+> possible to dynamically create clock devices in platform-independent
+> code.
+> 
+> Platforms can enable the generic struct clock through
+> CONFIG_GENERIC_CLK. In this case, the clock infrastructure consists of a
+> common, opaque struct clk, and a set of clock operations (defined per
+> type of clock):
+> 
+>   struct clk_hw_ops {
+>   	int		(*prepare)(struct clk_hw *);
+>   	void		(*unprepare)(struct clk_hw *);
+>   	int		(*enable)(struct clk_hw *);
+>   	void		(*disable)(struct clk_hw *);
+>   	unsigned long	(*recalc_rate)(struct clk_hw *);
+>   	int		(*set_rate)(struct clk_hw *,
+>   					unsigned long, unsigned long *);
+>   	long		(*round_rate)(struct clk_hw *, unsigned long);
+>   	int		(*set_parent)(struct clk_hw *, struct clk *);
+>   	struct clk *	(*get_parent)(struct clk_hw *);
+>   };
+> 
+> Platform clock code can register a clock through clk_register, passing a
+> set of operations, and a pointer to hardware-specific data:
+> 
+>   struct clk_hw_foo {
+>   	struct clk_hw clk;
+>   	void __iomem *enable_reg;
+>   };
+> 
+>   #define to_clk_foo(c) offsetof(c, clk_hw_foo, clk)
+> 
+>   static int clk_foo_enable(struct clk_hw *clk)
+>   {
+>   	struct clk_foo *foo = to_clk_foo(clk);
+>   	raw_writeb(foo->enable_reg, 1);
+>   	return 0;
+>   }
+> 
+>   struct clk_hw_ops clk_foo_ops = {
+>   	.enable = clk_foo_enable,
+>   };
+> 
+> And in the platform initialisation code:
+> 
+>   struct clk_foo my_clk_foo;
+> 
+>   void init_clocks(void)
+>   {
+>   	my_clk_foo.enable_reg = ioremap(...);
+> 
+>   	clk_register(&clk_foo_ops, &my_clk_foo, NULL);
+>   }
+> 
+> Changes from Thomas Gleixner <tglx@linutronix.de>.
+> 
+> The common clock definitions are based on a development patch from Ben
+> Herrenschmidt <benh@kernel.crashing.org>.
+> 
+> TODO:
+> 
+>  * We don't keep any internal reference to the clock topology at present.
+> 
+> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Signed-off-by: Mike Turquette <mturquette@ti.com>
+> ---
+> Changes since v1:
+> Create a dummy clk_unregister and prototype/document it and clk_register
+> Constify struct clk_hw_ops
+> Remove spinlock.h header, include kernel.h
+> Use EOPNOTSUPP instead of ENOTSUPP
+> Add might_sleep to clk_prepare/clk_unprepare stubs
+> Properly init children hlist and child_node
+> Whitespace and typo fixes
+> 
+>  drivers/clk/Kconfig  |    3 +
+>  drivers/clk/Makefile |    1 +
+>  drivers/clk/clk.c    |  232 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/clkdev.c |    7 ++
+>  include/linux/clk.h  |  140 +++++++++++++++++++++++++++---
+>  5 files changed, 371 insertions(+), 12 deletions(-)
+>  create mode 100644 drivers/clk/clk.c
+> 
+[...]
+> +static void __clk_disable(struct clk *clk)
+> +{
+> +	if (!clk)
+> +		return;
+> +
+> +	if (WARN_ON(clk->enable_count == 0))
+> +		return;
+> +
+> +	if (--clk->enable_count > 0)
+> +		return;
+> +
+> +	if (clk->ops->disable)
+> +		clk->ops->disable(clk->hw);
+> +	__clk_disable(clk->parent);
+> +}
+> +
+> +void clk_disable(struct clk *clk)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&enable_lock, flags);
+> +	__clk_disable(clk);
+> +	spin_unlock_irqrestore(&enable_lock, flags);
+> +}
+> +EXPORT_SYMBOL_GPL(clk_disable);
+> +
+> +static int __clk_enable(struct clk *clk)
+> +{
+> +	int ret;
+> +
+> +	if (!clk)
+> +		return 0;
+> +
+> +	if (WARN_ON(clk->prepare_count == 0))
+> +		return -ESHUTDOWN;
+> +
+> +
+> +	if (clk->enable_count == 0) {
+> +		ret = __clk_enable(clk->parent);
+> +		if (ret)
+> +			return ret;
+> +
+> +		if (clk->ops->enable) {
+> +			ret = clk->ops->enable(clk->hw);
+> +			if (ret) {
+> +				__clk_disable(clk->parent);
+> +				return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	clk->enable_count++;
+> +	return 0;
+> +}
+Could you expose __clk_enable/__clk_disable? I find it hard to implement
+clk group. clk group means, when a major clk enable/disable, it want a set
+of other clks enable/disable accordingly.
+> +
+> +int clk_enable(struct clk *clk)
+> +{
+> +	unsigned long flags;
+> +	int ret;
+> +
+> +	spin_lock_irqsave(&enable_lock, flags);
+> +	ret = __clk_enable(clk);
+> +	spin_unlock_irqrestore(&enable_lock, flags);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_enable);
+> +
+[...]
 
-2011-10-14 09:50:46 chgut11fw01 kernel: skb_over_panic: text:c13059c9
-len:64 put:64 head:c730c400 data:c730c450 tail:0xc730c490
-end:0xc730c480 dev:<NULL>
-2011-10-14 09:50:46 chgut11fw01 kernel: ------------[ cut here ]------------
-2011-10-14 09:50:46 chgut11fw01 kernel: kernel BUG at net/core/skbuff.c:128!
-2011-10-14 09:50:46 chgut11fw01 kernel: invalid opcode: 0000 [#1] SMP
-2011-10-14 09:50:46 chgut11fw01 kernel: Modules linked in: ip_gre gre
-authenc xfrm4_mode_transport deflate zlib_deflate ctr twofish_generic
-twofish_common serpent cryptd aes_i586 aes_generic blowfish cast5 cbc
-ecb rmd160 sha512_generic sha256_generic sha1_generic xfrm_user
-xfrm4_tunnel tunnel4 ipcomp xfrm_ipcomp esp4 ah4 af_key tun ipt_LOG
-xt_limit ipt_REJECT xt_state ipt_REDIRECT ipt_MASQUERADE xt_policy
-xt_TCPMSS xt_tcpmss xt_tcpudp xt_NOTRACK iptable_filter iptable_nat
-xt_mark xt_connmark iptable_mangle iptable_raw ip_tables x_tables
-nf_conntrack_tftp nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
-nf_conntrack_ftp nf_conntrack rtc ppdev parport_pc parport w83792d
-i2c_dev i2c_i801 i2c_core pl2303 usbserial coretemp hwmon usbhid
-ohci_hcd uhci_hcd ehci_hcd usbcore e1000 e1000e aufs ata_piix libata
-2011-10-14 09:50:46 chgut11fw01 kernel:
-2011-10-14 09:50:46 chgut11fw01 kernel: Pid: 6299, comm: ospfd Not
-tainted 3.0.6-SMP #1    /LakePort
-2011-10-14 09:50:46 chgut11fw01 kernel: EIP: 0060:[<c12b6815>] EFLAGS:
-00010292 CPU: 0
-2011-10-14 09:50:46 chgut11fw01 kernel: EIP is at skb_put+0x85/0x90
-2011-10-14 09:50:46 chgut11fw01 kernel: EAX: 00000078 EBX: c13059c9
-ECX: 00000096 EDX: ffffff8b
-2011-10-14 09:50:46 chgut11fw01 kernel: ESI: deac4a80 EDI: 00000040
-EBP: d8979c80 ESP: d8979c58
-2011-10-14 09:50:46 chgut11fw01 kernel: DS: 007b ES: 007b FS: 00d8 GS:
-0033 SS: 0068
-2011-10-14 09:50:46 chgut11fw01 kernel: Process ospfd (pid: 6299,
-ti=d8978000 task=de94ee80 task.ti=d8978000)
-2011-10-14 09:50:46 chgut11fw01 kernel: Stack:
-2011-10-14 09:50:46 chgut11fw01 kernel: c13fd194 c13059c9 00000040
-00000040 c730c400 c730c450 c730c490 c730c480
-2011-10-14 09:50:46 chgut11fw01 kernel: c13fb21c d897da40 d8979d38
-c13059c9 d8979d24 8db04700 00000001 00000001
-2011-10-14 09:50:46 chgut11fw01 kernel: d8979ce4 d8979cc8 c121ce7d
-00000000 000012b5 d8979ecc dbff0c00 c730c450
-2011-10-14 09:50:46 chgut11fw01 kernel: Call Trace:
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c13059c9>] ? raw_sendmsg+0x5a9/0x850
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c13059c9>] raw_sendmsg+0x5a9/0x850
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c121ce7d>] ? extract_entropy+0x5d/0x70
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c1027f73>] ?
-try_to_wake_up+0x173/0x1f0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b2700>] ? release_sock+0xb0/0xd0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c130f222>] inet_sendmsg+0x42/0xa0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c1021407>] ?
-__wake_up_sync_key+0x47/0x60
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12afc07>] sock_sendmsg+0xa7/0xd0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b29f3>] ?
-sock_def_readable+0x33/0x60
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12afc07>] ? sock_sendmsg+0xa7/0xd0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b8e83>] ? verify_iovec+0x53/0xb0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b08e4>] __sys_sendmsg+0x2d4/0x2e0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12afc9e>] ?
-sockfd_lookup_light+0x1e/0x70
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b02fa>] ? sys_sendto+0xaa/0xe0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c102f928>] ? nsecs_to_jiffies+0x8/0x10
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12eaf11>] ? ip_setsockopt+0x41/0xa0
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b0a36>] sys_sendmsg+0x36/0x60
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c12b1669>] sys_socketcall+0xe9/0x280
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c133d8c5>] syscall_call+0x7/0xb
-2011-10-14 09:50:46 chgut11fw01 kernel: [<c1330000>] ?
-packet_recvmsg+0x170/0x440
-2011-10-14 09:50:46 chgut11fw01 kernel: Code: 00 00 89 4c 24 14 8b 88
-a4 00 00 00 89 54 24 0c 89 4c 24 10 8b 40 50 89 5c 24 04 c7 04 24 94
-d1 3f c1 89 44 24 08 e8 b4 4b 08 00 <0f> 0b eb fe b9 1c b2 3f c1 eb ae
-55 89 e5 57 56 89 d6 53 89 c3
-2011-10-14 09:50:46 chgut11fw01 kernel: EIP: [<c12b6815>]
-skb_put+0x85/0x90 SS:ESP 0068:d8979c58
-2011-10-14 09:50:46 chgut11fw01 kernel: ---[ end trace ff341104610beeed ]---
+Thanks
+Richard 
 
-This is the output of "decodecode":
-
-whiskey /usr/src/linux-3.0.6 # scripts/decodecode < oops.txt
-2011-10-14 09:50:46 chgut11fw01 kernel: Code: 00 00 89 4c 24 14 8b 88
-a4 00 00 00 89 54 24 0c 89 4c 24 10 8b 40 50 89 5c 24 04 c7 04 24 94
-d1 3f c1 89 44 24 08 e8 b4 4b 08 00 <0f> 0b eb fe b9 1c b2 3f c1 eb ae
-55 89 e5 57 56 89 d6 53 89 c3
-All code
-========
-   0:   00 00                   add    %al,(%eax)
-   2:   89 4c 24 14             mov    %ecx,0x14(%esp)
-   6:   8b 88 a4 00 00 00       mov    0xa4(%eax),%ecx
-   c:   89 54 24 0c             mov    %edx,0xc(%esp)
-  10:   89 4c 24 10             mov    %ecx,0x10(%esp)
-  14:   8b 40 50                mov    0x50(%eax),%eax
-  17:   89 5c 24 04             mov    %ebx,0x4(%esp)
-  1b:   c7 04 24 94 d1 3f c1    movl   $0xc13fd194,(%esp)
-  22:   89 44 24 08             mov    %eax,0x8(%esp)
-  26:   e8 b4 4b 08 00          call   0x84bdf
-  2b:*  0f 0b                   ud2a        <-- trapping instruction
-  2d:   eb fe                   jmp    0x2d
-  2f:   b9 1c b2 3f c1          mov    $0xc13fb21c,%ecx
-  34:   eb ae                   jmp    0xffffffe4
-  36:   55                      push   %ebp
-  37:   89 e5                   mov    %esp,%ebp
-  39:   57                      push   %edi
-  3a:   56                      push   %esi
-  3b:   89 d6                   mov    %edx,%esi
-  3d:   53                      push   %ebx
-  3e:   89 c3                   mov    %eax,%ebx
-
-Code starting with the faulting instruction
-===========================================
-   0:   0f 0b                   ud2a
-   2:   eb fe                   jmp    0x2
-   4:   b9 1c b2 3f c1          mov    $0xc13fb21c,%ecx
-   9:   eb ae                   jmp    0xffffffb9
-   b:   55                      push   %ebp
-   c:   89 e5                   mov    %esp,%ebp
-   e:   57                      push   %edi
-   f:   56                      push   %esi
-  10:   89 d6                   mov    %edx,%esi
-  12:   53                      push   %ebx
-  13:   89 c3                   mov    %eax,%ebx
-
-Could anyone give me a hint, how I can furher proceed to find the error?
-Thanks.
-
-Best regards
-Elmar
