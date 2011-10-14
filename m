@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab1JNFra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 01:47:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:25401 "EHLO mga14.intel.com"
+	id S932627Ab1JNFsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 01:48:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62630 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429Ab1JNFrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 01:47:23 -0400
+	id S932566Ab1JNFr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 01:47:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,344,1315206000"; 
-   d="scan'208";a="62487030"
+   d="scan'208";a="62487056"
 From: Vinod Koul <vinod.koul@intel.com>
 To: dan.j.williams@intel.com
 Cc: linux-kernel@vger.kernel.org, jaswinder.singh@linaro.org,
         21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Vinod Koul <vinod.koul@linux.intel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: [PATCH 06/10] mmc-host: move to dma_transfer_direction
-Date: Fri, 14 Oct 2011 11:08:21 +0530
-Message-Id: <1318570705-17595-7-git-send-email-vinod.koul@intel.com>
+        Vinod Koul <vinod.koul@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 08/10] sound-soc: move to dma_transfer_direction
+Date: Fri, 14 Oct 2011 11:08:23 +0530
+Message-Id: <1318570705-17595-9-git-send-email-vinod.koul@intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
 References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
@@ -29,220 +28,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Vinod Koul <vinod.koul@linux.intel.com>
 
 Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mmc/host/atmel-mci.c    |    9 ++++++---
- drivers/mmc/host/mmci.c         |   11 +++++++----
- drivers/mmc/host/mxcmmc.c       |   10 +++++++---
- drivers/mmc/host/mxs-mmc.c      |    7 ++++++-
- drivers/mmc/host/sh_mmcif.c     |    4 ++--
- drivers/mmc/host/tmio_mmc_dma.c |    4 ++--
- 6 files changed, 30 insertions(+), 15 deletions(-)
+ sound/atmel/abdac.c             |    2 +-
+ sound/atmel/ac97c.c             |   10 +++++-----
+ sound/soc/ep93xx/ep93xx-pcm.c   |    4 ++--
+ sound/soc/imx/imx-pcm-dma-mx2.c |    6 +++---
+ sound/soc/samsung/dma.c         |    4 ++--
+ sound/soc/sh/siu_pcm.c          |    4 ++--
+ sound/soc/txx9/txx9aclc.c       |    2 +-
+ 7 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index fa8cae1..7c9d28a 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -681,16 +681,19 @@ atmci_prepare_data_dma(struct atmel_mci *host, struct mmc_data *data)
- 	if (atmci_is_mci2())
- 		mci_writel(host, DMA, MCI_DMA_CHKSIZE(3) | MCI_DMAEN);
+diff --git a/sound/atmel/abdac.c b/sound/atmel/abdac.c
+index 6fd9391..4c2d9ae 100644
+--- a/sound/atmel/abdac.c
++++ b/sound/atmel/abdac.c
+@@ -133,7 +133,7 @@ static int atmel_abdac_prepare_dma(struct atmel_abdac *dac,
+ 	period_len = frames_to_bytes(runtime, runtime->period_size);
  
--	if (data->flags & MMC_DATA_READ)
-+	if (data->flags & MMC_DATA_READ) {
- 		direction = DMA_FROM_DEVICE;
--	else
-+		slave_dirn = DEV_TO_MEM;
-+	} else {
- 		direction = DMA_TO_DEVICE;
-+		slave_dirn = MEM_TO_DEV;
-+	}
+ 	cdesc = dw_dma_cyclic_prep(chan, runtime->dma_addr, buffer_len,
+-			period_len, DMA_TO_DEVICE);
++			period_len, MEM_TO_DEV);
+ 	if (IS_ERR(cdesc)) {
+ 		dev_dbg(&dac->pdev->dev, "could not prepare cyclic DMA\n");
+ 		return PTR_ERR(cdesc);
+diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+index 6e5adde..d03663e 100644
+--- a/sound/atmel/ac97c.c
++++ b/sound/atmel/ac97c.c
+@@ -102,7 +102,7 @@ static void atmel_ac97c_dma_capture_period_done(void *arg)
  
- 	sglen = dma_map_sg(chan->device->dev, data->sg,
- 			   data->sg_len, direction);
- 
- 	desc = chan->device->device_prep_slave_sg(chan,
--			data->sg, sglen, direction,
-+			data->sg, sglen, slave_dirn,
- 			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc)
- 		goto unmap_exit;
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 56e9a41..efbc743 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -372,6 +372,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
- 	struct dma_chan *chan;
- 	struct dma_device *device;
- 	struct dma_async_tx_descriptor *desc;
-+	enum dma_data_direction buffer_dirn;
- 	int nr_sg;
- 
- 	/* Check if next job is already prepared */
-@@ -385,10 +386,12 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+ static int atmel_ac97c_prepare_dma(struct atmel_ac97c *chip,
+ 		struct snd_pcm_substream *substream,
+-		enum dma_data_direction direction)
++		enum dma_transfer_direction direction)
+ {
+ 	struct dma_chan			*chan;
+ 	struct dw_cyclic_desc		*cdesc;
+@@ -118,7 +118,7 @@ static int atmel_ac97c_prepare_dma(struct atmel_ac97c *chip,
+ 		return -EINVAL;
  	}
  
- 	if (data->flags & MMC_DATA_READ) {
--		conf.direction = DMA_FROM_DEVICE;
-+		conf.direction = DEV_TO_MEM;
-+		buffer_dirn = DMA_FROM_DEVICE;
- 		chan = host->dma_rx_channel;
+-	if (direction == DMA_TO_DEVICE)
++	if (direction == MEM_TO_DEV)
+ 		chan = chip->dma.tx_chan;
+ 	else
+ 		chan = chip->dma.rx_chan;
+@@ -133,7 +133,7 @@ static int atmel_ac97c_prepare_dma(struct atmel_ac97c *chip,
+ 		return PTR_ERR(cdesc);
+ 	}
+ 
+-	if (direction == DMA_TO_DEVICE) {
++	if (direction == MEM_TO_DEV) {
+ 		cdesc->period_callback = atmel_ac97c_dma_playback_period_done;
+ 		set_bit(DMA_TX_READY, &chip->flags);
  	} else {
--		conf.direction = DMA_TO_DEVICE;
-+		conf.direction = MEM_TO_DEV;
-+		buffer_dirn = DMA_TO_DEVICE;
- 		chan = host->dma_tx_channel;
+@@ -393,7 +393,7 @@ static int atmel_ac97c_playback_prepare(struct snd_pcm_substream *substream)
+ 	if (cpu_is_at32ap7000()) {
+ 		if (!test_bit(DMA_TX_READY, &chip->flags))
+ 			retval = atmel_ac97c_prepare_dma(chip, substream,
+-					DMA_TO_DEVICE);
++					MEM_TO_DEV);
+ 	} else {
+ 		/* Initialize and start the PDC */
+ 		writel(runtime->dma_addr, chip->regs + ATMEL_PDC_TPR);
+@@ -484,7 +484,7 @@ static int atmel_ac97c_capture_prepare(struct snd_pcm_substream *substream)
+ 	if (cpu_is_at32ap7000()) {
+ 		if (!test_bit(DMA_RX_READY, &chip->flags))
+ 			retval = atmel_ac97c_prepare_dma(chip, substream,
+-					DMA_FROM_DEVICE);
++					DEV_TO_MEM);
+ 	} else {
+ 		/* Initialize and start the PDC */
+ 		writel(runtime->dma_addr, chip->regs + ATMEL_PDC_RPR);
+diff --git a/sound/soc/ep93xx/ep93xx-pcm.c b/sound/soc/ep93xx/ep93xx-pcm.c
+index 8dfd3ad..0f9dd1f 100644
+--- a/sound/soc/ep93xx/ep93xx-pcm.c
++++ b/sound/soc/ep93xx/ep93xx-pcm.c
+@@ -113,9 +113,9 @@ static int ep93xx_pcm_open(struct snd_pcm_substream *substream)
+ 	rtd->dma_data.name = dma_params->name;
+ 
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+-		rtd->dma_data.direction = DMA_TO_DEVICE;
++		rtd->dma_data.direction = MEM_TO_DEV;
+ 	else
+-		rtd->dma_data.direction = DMA_FROM_DEVICE;
++		rtd->dma_data.direction = DEV_TO_MEM;
+ 
+ 	rtd->dma_chan = dma_request_channel(mask, ep93xx_pcm_dma_filter,
+ 					    &rtd->dma_data);
+diff --git a/sound/soc/imx/imx-pcm-dma-mx2.c b/sound/soc/imx/imx-pcm-dma-mx2.c
+index 43fdc24..b5eeaa7 100644
+--- a/sound/soc/imx/imx-pcm-dma-mx2.c
++++ b/sound/soc/imx/imx-pcm-dma-mx2.c
+@@ -107,12 +107,12 @@ static int imx_ssi_dma_alloc(struct snd_pcm_substream *substream,
  	}
  
-@@ -401,7 +404,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+-		slave_config.direction = DMA_TO_DEVICE;
++		slave_config.direction = MEM_TO_DEV;
+ 		slave_config.dst_addr = dma_params->dma_addr;
+ 		slave_config.dst_addr_width = buswidth;
+ 		slave_config.dst_maxburst = dma_params->burstsize;
+ 	} else {
+-		slave_config.direction = DMA_FROM_DEVICE;
++		slave_config.direction = DEV_TO_MEM;
+ 		slave_config.src_addr = dma_params->dma_addr;
+ 		slave_config.src_addr_width = buswidth;
+ 		slave_config.src_maxburst = dma_params->burstsize;
+@@ -159,7 +159,7 @@ static int snd_imx_pcm_hw_params(struct snd_pcm_substream *substream,
+ 			iprtd->period_bytes * iprtd->periods,
+ 			iprtd->period_bytes,
+ 			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+-			DMA_TO_DEVICE : DMA_FROM_DEVICE);
++			MEM_TO_DEV : DEV_TO_MEM);
+ 	if (!iprtd->desc) {
+ 		dev_err(&chan->dev->device, "cannot prepare slave dma\n");
  		return -EINVAL;
+diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+index 851346f..47a4093 100644
+--- a/sound/soc/samsung/dma.c
++++ b/sound/soc/samsung/dma.c
+@@ -85,7 +85,7 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
+ 	dma_info.cap = (samsung_dma_has_circular() ? DMA_CYCLIC : DMA_SLAVE);
+ 	dma_info.direction =
+ 		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
+-		? DMA_TO_DEVICE : DMA_FROM_DEVICE);
++		? MEM_TO_DEV : DEV_TO_MEM);
+ 	dma_info.fp = audio_buffdone;
+ 	dma_info.fp_param = substream;
+ 	dma_info.period = prtd->dma_period;
+@@ -170,7 +170,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
+ 		dma_info.client = prtd->params->client;
+ 		dma_info.direction =
+ 			(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
+-			? DMA_TO_DEVICE : DMA_FROM_DEVICE);
++			? MEM_TO_DEV : DEV_TO_MEM);
+ 		dma_info.width = prtd->params->dma_size;
+ 		dma_info.fifo = prtd->params->dma_addr;
+ 		prtd->params->ch = prtd->params->ops->request(
+diff --git a/sound/soc/sh/siu_pcm.c b/sound/soc/sh/siu_pcm.c
+index f8f6816..0b9b323 100644
+--- a/sound/soc/sh/siu_pcm.c
++++ b/sound/soc/sh/siu_pcm.c
+@@ -131,7 +131,7 @@ static int siu_pcm_wr_set(struct siu_port *port_info,
+ 	sg_dma_address(&sg) = buff;
  
- 	device = chan->device;
--	nr_sg = dma_map_sg(device->dev, data->sg, data->sg_len, conf.direction);
-+	nr_sg = dma_map_sg(device->dev, data->sg, data->sg_len, buffer_dirn);
- 	if (nr_sg == 0)
- 		return -EINVAL;
+ 	desc = siu_stream->chan->device->device_prep_slave_sg(siu_stream->chan,
+-		&sg, 1, DMA_TO_DEVICE, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++		&sg, 1, MEM_TO_DEV, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!desc) {
+ 		dev_err(dev, "Failed to allocate a dma descriptor\n");
+ 		return -ENOMEM;
+@@ -181,7 +181,7 @@ static int siu_pcm_rd_set(struct siu_port *port_info,
+ 	sg_dma_address(&sg) = buff;
  
-@@ -424,7 +427,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
-  unmap_exit:
- 	if (!next)
- 		dmaengine_terminate_all(chan);
--	dma_unmap_sg(device->dev, data->sg, data->sg_len, conf.direction);
-+	dma_unmap_sg(device->dev, data->sg, data->sg_len, buffer_dirn);
- 	return -ENOMEM;
- }
- 
-diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-index 14aa213..4115108 100644
---- a/drivers/mmc/host/mxcmmc.c
-+++ b/drivers/mmc/host/mxcmmc.c
-@@ -217,6 +217,7 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
- 	unsigned int blksz = data->blksz;
- 	unsigned int datasize = nob * blksz;
- 	struct scatterlist *sg;
-+	enum dma_transfer_direction slave_dirn;
- 	int i, nents;
- 
- 	if (data->flags & MMC_DATA_STREAM)
-@@ -239,10 +240,13 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
- 		}
- 	}
- 
--	if (data->flags & MMC_DATA_READ)
-+	if (data->flags & MMC_DATA_READ) {
- 		host->dma_dir = DMA_FROM_DEVICE;
--	else
-+		slave_dirn = DEV_TO_MEM;
-+	} else {
- 		host->dma_dir = DMA_TO_DEVICE;
-+		slave_dirn = MEM_TO_DEV;
-+	}
- 
- 	nents = dma_map_sg(host->dma->device->dev, data->sg,
- 				     data->sg_len,  host->dma_dir);
-@@ -250,7 +254,7 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
- 		return -EINVAL;
- 
- 	host->desc = host->dma->device->device_prep_slave_sg(host->dma,
--		data->sg, data->sg_len, host->dma_dir,
-+		data->sg, data->sg_len, slave_dirn,
+ 	desc = siu_stream->chan->device->device_prep_slave_sg(siu_stream->chan,
+-		&sg, 1, DMA_FROM_DEVICE, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++		&sg, 1, DEV_TO_MEM, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!desc) {
+ 		dev_err(dev, "Failed to allocate dma descriptor\n");
+ 		return -ENOMEM;
+diff --git a/sound/soc/txx9/txx9aclc.c b/sound/soc/txx9/txx9aclc.c
+index 3de99af..c3c890a 100644
+--- a/sound/soc/txx9/txx9aclc.c
++++ b/sound/soc/txx9/txx9aclc.c
+@@ -134,7 +134,7 @@ txx9aclc_dma_submit(struct txx9aclc_dmadata *dmadata, dma_addr_t buf_dma_addr)
+ 	sg_dma_address(&sg) = buf_dma_addr;
+ 	desc = chan->device->device_prep_slave_sg(chan, &sg, 1,
+ 		dmadata->substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+-		DMA_TO_DEVICE : DMA_FROM_DEVICE,
++		MEM_TO_DEV : DEV_TO_MEM,
  		DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 
- 	if (!host->desc) {
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index d513d47..c0a3def 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -153,6 +153,7 @@ struct mxs_mmc_host {
- 	struct dma_chan         	*dmach;
- 	struct mxs_dma_data		dma_data;
- 	unsigned int			dma_dir;
-+	enum dma_transfer_direction	slave_dirn;
- 	u32				ssp_pio_words[SSP_PIO_NUM];
- 
- 	unsigned int			version;
-@@ -323,7 +324,7 @@ static struct dma_async_tx_descriptor *mxs_mmc_prep_dma(
- 	}
- 
- 	desc = host->dmach->device->device_prep_slave_sg(host->dmach,
--				sgl, sg_len, host->dma_dir, append);
-+				sgl, sg_len, host->slave_dirn, append);
- 	if (desc) {
- 		desc->callback = mxs_mmc_dma_irq_callback;
- 		desc->callback_param = host;
-@@ -432,6 +433,7 @@ static void mxs_mmc_adtc(struct mxs_mmc_host *host)
- 	int i;
- 
- 	unsigned short dma_data_dir, timeout;
-+	enum dma_transfer_direction slave_dirn;
- 	unsigned int data_size = 0, log2_blksz;
- 	unsigned int blocks = data->blocks;
- 
-@@ -447,9 +449,11 @@ static void mxs_mmc_adtc(struct mxs_mmc_host *host)
- 
- 	if (data->flags & MMC_DATA_WRITE) {
- 		dma_data_dir = DMA_TO_DEVICE;
-+		slave_dirn = MEM_TO_DEV;
- 		read = 0;
- 	} else {
- 		dma_data_dir = DMA_FROM_DEVICE;
-+		slave_dirn = DEV_TO_MEM;
- 		read = BM_SSP_CTRL0_READ;
- 	}
- 
-@@ -517,6 +521,7 @@ static void mxs_mmc_adtc(struct mxs_mmc_host *host)
- 	WARN_ON(host->data != NULL);
- 	host->data = data;
- 	host->dma_dir = dma_data_dir;
-+	host->slave_dirn = slave_dirn;
- 	desc = mxs_mmc_prep_dma(host, 1);
- 	if (!desc)
- 		goto out;
-diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
-index 557886b..7a374c9 100644
---- a/drivers/mmc/host/sh_mmcif.c
-+++ b/drivers/mmc/host/sh_mmcif.c
-@@ -230,7 +230,7 @@ static void sh_mmcif_start_dma_rx(struct sh_mmcif_host *host)
- 	if (ret > 0) {
- 		host->dma_active = true;
- 		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
--			DMA_FROM_DEVICE, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+			DEV_TO_MEM, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	}
- 
- 	if (desc) {
-@@ -278,7 +278,7 @@ static void sh_mmcif_start_dma_tx(struct sh_mmcif_host *host)
- 	if (ret > 0) {
- 		host->dma_active = true;
- 		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
--			DMA_TO_DEVICE, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+			MEM_TO_DEV, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	}
- 
- 	if (desc) {
-diff --git a/drivers/mmc/host/tmio_mmc_dma.c b/drivers/mmc/host/tmio_mmc_dma.c
-index 86f259c..663624c 100644
---- a/drivers/mmc/host/tmio_mmc_dma.c
-+++ b/drivers/mmc/host/tmio_mmc_dma.c
-@@ -77,7 +77,7 @@ static void tmio_mmc_start_dma_rx(struct tmio_mmc_host *host)
- 	ret = dma_map_sg(chan->device->dev, sg, host->sg_len, DMA_FROM_DEVICE);
- 	if (ret > 0)
- 		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
--			DMA_FROM_DEVICE, DMA_CTRL_ACK);
-+			DEV_TO_MEM, DMA_CTRL_ACK);
- 
- 	if (desc) {
- 		cookie = dmaengine_submit(desc);
-@@ -158,7 +158,7 @@ static void tmio_mmc_start_dma_tx(struct tmio_mmc_host *host)
- 	ret = dma_map_sg(chan->device->dev, sg, host->sg_len, DMA_TO_DEVICE);
- 	if (ret > 0)
- 		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
--			DMA_TO_DEVICE, DMA_CTRL_ACK);
-+			MEM_TO_DEV, DMA_CTRL_ACK);
- 
- 	if (desc) {
- 		cookie = dmaengine_submit(desc);
+ 	if (!desc) {
+ 		dev_err(&chan->dev->device, "cannot prepare slave dma\n");
 -- 
 1.7.0.4
 
