@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab1JNUUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:20:11 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57914 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1JNUUJ (ORCPT
+	id S933426Ab1JNUX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:23:27 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58495 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab1JNUX0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:20:09 -0400
-Date: Fri, 14 Oct 2011 21:19:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        Erik Gilling <konkers@android.com>
-Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-Message-ID: <20111014201953.GX21648@n2100.arm.linux.org.uk>
-References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <201110141729.41515.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com> <201110141827.53906.arnd@arndb.de> <CAOesGMgDwMeVmwo1WJ3tU+ZdjCSJ6F8mY42e_KwTmzAkGQsqmg@mail.gmail.com> <20111014192011.GS21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141549160.17040@xanadu.home> <20111014201223.GV21648@n2100.arm.linux.org.uk> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A365@HQMAIL01.nvidia.com>
+	Fri, 14 Oct 2011 16:23:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A365@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
+References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
+	<CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
+	<CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+	<CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
+	<CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
+	<CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+	<CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
+	<CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
+	<20111010114840.GC17079@elte.hu>
+	<CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
+	<20111011062253.GA3589@elte.hu>
+	<4E947BC9.7040805@mit.edu>
+	<CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
+	<CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
+Date: Fri, 14 Oct 2011 22:23:25 +0200
+Message-ID: <CAFLxGvzt+ThLeH2j9A5N1ee4_uYDnF764qdKvLQ2UWgGuCVpfg@mail.gmail.com>
+Subject: Re: [RFC] fixing the UML failure root cause
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 01:16:27PM -0700, Stephen Warren wrote:
-> Russell King wrote at Friday, October 14, 2011 2:12 PM:
-> > I don't think that's so with the various flavours of platform specific
-> > uboot which float around.  For instance, on the OMAP4430 SDP, the
-> > following commands were used as supplied to load a uImage off the SD
-> > card into RAM at a different address to which it was built for, and
-> > execute it at that address:
-> > 
-> > mmcinit 0
-> > fatload mmc 0 0x80300000 uImage
-> > bootm 80300000
-> > 
-> > Whether the 'bootm' command then copied the image and called it there,
-> > or whether it executed it at 0x80300000 I've no idea - but why then
-> > load the image at a different address in the first place?
-> 
-> Yes, U-Boot's image handling looks at the image at 80300000, extracts the
-> "load address" from the image header, memcpy()'s the image to that address,
-> then jumps to the "entry address" in the image header.
+On Fri, Oct 14, 2011 at 10:17 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Fri, Oct 14, 2011 at 12:53 PM, richard -rw- weinberger
+> <richard.weinberger@gmail.com> wrote:
+>> On Tue, Oct 11, 2011 at 7:24 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>> What do you think of this approach?  If it seems good, I'll finish the
+>>> patch and submit it.
+>>>
+>>> With this patch applied, UML appears to work, but it fills the log with
+>>> exploit attempt warnings.  Any ideas on what to do about that?
+>>>
+>>
+>> I can confirm that this patch works.
+>> And I really like vsyscall=emulate because with that UML can trap vsyscalls. :-)
+>
+> Are you sure you don't mean vsyscall=native?  I suspect that UML can't
+> actually trap vsyscalls in emulate mode right now, although that ought
+> to be fixable.
+>
 
-Ah, so specifying that address is just a total waste of space then,
-because you might as well specify an address which results in the
-copy not being necessary.
+Doesn't vsyscall_emu_64.S transform any vsyscall into a real syscall?
+So UML can trap it.
 
-However, I'd expect that uboot is dumb enough to still do the copy
-irrespective of whether its already in the right place.
+-- 
+Thanks,
+//richard
