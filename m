@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab1JNKes (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 06:34:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57363 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab1JNKer (ORCPT
+	id S1756233Ab1JNLBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 07:01:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47911 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab1JNLBG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 06:34:47 -0400
-Message-ID: <1318588503.2223.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Regression in reading /proc/stat in the newer kernels with
- large SMP and NUMA configurations
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Seger, Mark" <mark.seger@hp.com>,
-        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
-Date: Fri, 14 Oct 2011 12:35:03 +0200
-In-Reply-To: <alpine.DEB.2.00.1110140249310.21487@chino.kir.corp.google.com>
-References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
-	 <alpine.DEB.2.00.1110140249310.21487@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 14 Oct 2011 07:01:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <1318570705-17595-10-git-send-email-vinod.koul@intel.com>
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
+	<1318570705-17595-10-git-send-email-vinod.koul@intel.com>
+Date: Fri, 14 Oct 2011 16:31:04 +0530
+Message-ID: <CAJe_Zhdy6gs1xqomhpGH9wrTHq5DhZsSDpzeNFRr84e9VPQEig@mail.gmail.com>
+Subject: Re: [PATCH 09/10] USB: move to dma_transfer_direction
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org, 21cnbao@gmail.com,
+        rmk@arm.linux.org.uk, Vinod Koul <vinod.koul@linux.intel.com>,
+        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 14 octobre 2011 Ã  03:08 -0700, David Rientjes a Ã©crit :
-
-> The overhead is probably in kstat_irqs_cpu() which is called for each 
-> possible irq for each of the 32 possible cpus, and /proc/stat actually 
-> does the sum twice.  You would see the same type of overhead with 
-> /proc/interrupts if it wasn't masked by the locking that it requires to 
-> safely read irq_desc.  "dmesg | grep nr_irqs" will show how many percpu 
-> variables are being read for every cpu twice.
-
-One annoying thing with most HP servers is they claim more possible cpus
-than reality. So each time we have to loop on possible cpus, we waste
-time and memory cache lines.
-
-For example, on this ProLiant BL460c G6, with two quad core cpus
-(2x4x2), 32 'possible' cpus are found, instead of 16 :
-
-setup_percpu: NR_CPUS:64 nr_cpumask_bits:64 nr_cpu_ids:32 nr_node_ids:2
-PERCPU: Embedded 26 pages/cpu @ffff88007dc00000 s76288 r8192 d22016 u131072
-pcpu-alloc: s76288 r8192 d22016 u131072 alloc=1*2097152
-pcpu-alloc: [0] 00 02 04 06 08 10 12 14 17 19 21 23 25 27 29 31 
-pcpu-alloc: [1] 01 03 05 07 09 11 13 15 16 18 20 22 24 26 28 30 
-
-
-
+On 14 October 2011 11:08, Vinod Koul <vinod.koul@intel.com> wrote:
+>
+> diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+> index ef4333f..9587bdd 100644
+> --- a/drivers/usb/musb/ux500_dma.c
+> +++ b/drivers/usb/musb/ux500_dma.c
+> @@ -112,7 +112,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
+>        struct musb_hw_ep *hw_ep = ux500_channel->hw_ep;
+>        struct dma_chan *dma_chan = ux500_channel->dma_chan;
+>        struct dma_async_tx_descriptor *dma_desc;
+> -       enum dma_data_direction direction;
+> +       enum dma_transfer_direction direction;
+>        struct scatterlist sg;
+>        struct dma_slave_config slave_conf;
+>        enum dma_slave_buswidth addr_width;
+> @@ -132,7 +132,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
+>        sg_dma_address(&sg) = dma_addr;
+>        sg_dma_len(&sg) = len;
+>
+> -       direction = ux500_channel->is_tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
+> +       slave_dirn = ux500_channel->is_tx ? MEM_TO_DEV : DEV_TO_MEM;
+>        addr_width = (len & 0x3) ? DMA_SLAVE_BUSWIDTH_1_BYTE :
+>                                        DMA_SLAVE_BUSWIDTH_4_BYTES;
+>
+s/slave_dirn/direction ?
