@@ -1,113 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab1JNTCq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 15:02:46 -0400
-Received: from claw.goop.org ([74.207.240.146]:52983 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab1JNTCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 15:02:45 -0400
-Message-ID: <4E988753.1080201@goop.org>
-Date: Fri, 14 Oct 2011 12:02:43 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755230Ab1JNTDq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 15:03:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45483 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752928Ab1JNTDp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 15:03:45 -0400
+Date: Fri, 14 Oct 2011 20:03:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+Cc: Axel Lin <axel.lin@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ASoC: max98095: Convert codec->hw_write to snd_soc_write
+Message-ID: <20111014190342.GA2931@opensource.wolfsonmicro.com>
+References: <1318563798.9296.1.camel@phoenix>
+ <B2150E1E4418E1438554A300EA5040E40DDFD2E54E@ITSVLEX06.it.maxim-ic.internal>
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        konrad.wilk@oracle.com, rth@redhat.com
-Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
-References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com> <1318503245.24856.12.camel@twins> <4E971580.6030300@goop.org> <20111014141701.GA2433@redhat.com> <4E986B2B.60803@goop.org> <20111014183539.GE2433@redhat.com>
-In-Reply-To: <20111014183539.GE2433@redhat.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B2150E1E4418E1438554A300EA5040E40DDFD2E54E@ITSVLEX06.it.maxim-ic.internal>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 11:35 AM, Jason Baron wrote:
-> On Fri, Oct 14, 2011 at 10:02:35AM -0700, Jeremy Fitzhardinge wrote:
->> On 10/14/2011 07:17 AM, Jason Baron wrote:
->>> On Thu, Oct 13, 2011 at 09:44:48AM -0700, Jeremy Fitzhardinge wrote:
->>>> pvops is basically a collection of ordinary _ops structures full of
->>>> function pointers, but it has a layer of patching to help optimise it. 
->>>> In the common case, this just replaces an indirect call with a direct
->>>> one, but in some special cases it can inline code.  This is used for
->>>> small, extremely performance-critical things like cli/sti, but it
->>>> awkward to use in general because you have to specify the inlined code
->>>> as a parameterless asm.
->>>>
->>> I haven't look at the pvops patching (probably should), but I was
->>> wondering if jump labels could be used for it? Or is there something
->>> that the pvops patching is doing that jump labels can't handle?
->> Jump labels are essentially binary: you can use path A or path B.  pvops
->> are multiway: there's no limit to the number of potential number of
->> paravirtualized hypervisor implementations.  At the moment we have 4:
->> native, Xen, KVM and lguest.
->>
-> Yes, they are binary using the static_branch() interface. But in
-> general, the asm goto() construct, allows branching to any number of
-> labels. I have implemented the boolean static_branch() b/c it seems like
-> the most common interface for jump labels, but I imagine we will
-> introduce new interfaces as time goes on. You could of course nest
-> static_branch() calls, although I can't say I've tried it.
+On Fri, Oct 14, 2011 at 10:40:58AM -0700, Peter Hsiang wrote:
+> On Fri, Oct 14, 2011, Axel Lin wrote:
+> > codec->hw_write is broken now, convert codec->hw_write to
+> > snd_soc_write.
 
-At the moment we're using pvops to optimise things like:
+> The hardware has 2 banks of registers sharing a section in I2C register space.
+> The 1st bank is the primary one and is cached.  
+> The 2nd bank is for loading coefficients only and they do not need cache.
+> These coefficients registers are therefore direct writes.
+> Changing this to a cached write will overwrite the cache.
 
-	(*pv_mmu_ops.set_pte)(...);
-
-To do that with some kind of multiway jump label thing, then that would
-need to expand out to something akin to:
-
-	if (static_branch(is_xen))
-		xen_set_pte(...);
-	else if (static_branch(is_kvm))
-		kvm_set_pte(...);
-	else if (static_branch(is_lguest))
-		lguest_set_pte(...);
-	else
-		native_set_pte(...);
-
-or something similar with an actual jump table.  But I don't see how it
-offers much scope for improvement.
-
-If there were something like:
-
-	STATIC_INDIRECT_CALL(&pv_mmu_ops.set_pte)(...);
-
-where the apparently indirect call is actually patched to be a direct
-call, then that would offer a large subset of what we do with pvops.
-
-However, to completely replace pvops patching, the static branch / jump
-label mechanism would also need to work in assembler code, and be
-capable of actually patching callsites with instructions rather than
-just calls (sti/cli/pushf/popf being the most important).
-
-We also keep track of the live registers at the callsite, and compare
-that to what registers the target functions will clobber in order to
-optimise the amount of register save/restore is needed.  And as a result
-we have some pvops functions with non-standard calling conventions to
-minimise save/restores on critical paths.
-
-> We could have an interface, that allowed static branch(), to specifiy an
-> arbitrary number of no-ops such that call-site itself could look anyway
-> we want, if we don't know the bias at compile time. This, of course
-> means potentially greater than 1 no-op in the fast path. I assume the
-> pvops can have greater than 1 no-op in the fast path. Or is there a
-> better solution here?
-
-See above.  But pvops patching is pretty well tuned for its job.
-
-However, I definitely think its worth investigating some way to reduce
-the number of patching mechanisms, and if pvops patching doesn't stretch
-static jumps in unnatural ways, then perhaps that's the way to go.
-
-Thanks,
-    J
+Writes to the cached region should be done within a cache_bypass flag to
+deal with this.
