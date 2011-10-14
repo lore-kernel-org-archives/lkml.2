@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab1JNNje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:39:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24693 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756577Ab1JNNjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:39:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,346,1315206000"; 
-   d="scan'208";a="78138869"
-Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, rmk@arm.linux.org.uk,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-In-Reply-To: <CAJe_ZhfomhARd8EVcR+jCHuFLrAKkNqvaETFHiNtNeijx+5Kxw@mail.gmail.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
-	 <CAGsJ_4yqdwaTxi=KMcgokb05uWUNi5_7uZDGqA4RsOZkWZ7FQA@mail.gmail.com>
-	 <CAJe_ZhfomhARd8EVcR+jCHuFLrAKkNqvaETFHiNtNeijx+5Kxw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 19:01:19 +0530
-Message-ID: <1318599079.1546.395.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756634Ab1JNNkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:40:35 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:38115 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab1JNNkd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 09:40:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1318595400.6132.73.camel@x61.thuisdomein>
+References: <1318595400.6132.73.camel@x61.thuisdomein>
+Date: Fri, 14 Oct 2011 09:40:33 -0400
+Message-ID: <CA+5PVA5T+XqY8CxoK7+_s0F6FPW+ey2tAssEHMOi7M4vHph+tA@mail.gmail.com>
+Subject: Re: [PATCH 15/21] powerpc: drop unused Kconfig symbols
+From: Josh Boyer <jwboyer@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Matt Porter <mporter@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 17:21 +0530, Jassi Brar wrote:
-> On 14 October 2011 13:02, Barry Song <21cnbao@gmail.com> wrote:
-> >
-> > what if i want a cyclic interleaved transfer? i think the cyclic
-> > interleaved transfer is what i want for audio dma.
-> >
-> ... we need to restore 'bool frm_irq' and add new 'bool cyclic' that
-> would replay the transfer(i.e, reset dma-pointers to src_start & dst_start)
-> after 'numf' frames have been transferred.
-I was thinking more on lines to have this conveyed thru a flag.
+On Fri, Oct 14, 2011 at 8:30 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+>  arch/powerpc/Kconfig                       |   22 ----------------------
+>  arch/powerpc/platforms/40x/Kconfig         |    5 -----
+>  arch/powerpc/platforms/Kconfig.cputype     |    8 --------
+>  arch/powerpc/platforms/embedded6xx/Kconfig |    4 ----
+>  arch/powerpc/platforms/prep/Kconfig        |    9 ---------
+>  arch/powerpc/platforms/wsp/Kconfig         |    5 -----
+>  6 files changed, 0 insertions(+), 53 deletions(-)
 
-Anyway I plan to work on merging device_prep_slave_sg and
-device_prep_cyclic to single API. Think more of device_prep_cyclic as
-special case with sg length one and flag to tell dmac its cyclic.
+For the 40x change:
 
-Similarly here we could use/define this flag to say this transfer is
-also cyclic in nature and dmac then reloads the list again.
-That way any prep can be made cyclic in nature by just using this flag.
+Acked-by: Josh Boyer <jwboyer@gmail.com>
 
-@Barry: Why would you need to use interleaved API for audio?
+josh
 
--- 
-~Vinod
-
+> diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
+> index d733d7c..4bd3a27 100644
+> --- a/arch/powerpc/platforms/40x/Kconfig
+> +++ b/arch/powerpc/platforms/40x/Kconfig
+> @@ -115,11 +115,6 @@ config PPC40x_SIMPLE
+>        help
+>          This option enables the simple PowerPC 40x platform support.
+>
+> -# 40x specific CPU modules, selected based on the board above.
+> -config NP405H
+> -       bool
+> -       #depends on ASH
+> -
+>  # OAK doesn't exist but wanted to keep this around for any future 403GCX boards
+>  config 403GCX
+>        bool
+>
