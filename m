@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab1JNN6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:58:00 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32642 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756043Ab1JNN56 (ORCPT
+	id S933002Ab1JNN63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:58:29 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:53885 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932841Ab1JNN62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:57:58 -0400
-Date: Fri, 14 Oct 2011 09:57:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/21] pci: drop unused Kconfig symbol
-Message-ID: <20111014135743.GD4577@phenom.oracle.com>
-References: <1318595439.6132.77.camel@x61.thuisdomein>
+	Fri, 14 Oct 2011 09:58:28 -0400
+Date: Fri, 14 Oct 2011 09:54:57 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        NeilBrown <neilb@suse.de>, paulmck@linux.vnet.ibm.com,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] cgroups: convert ss->attach to use whole
+ threadgroup flex_array (cpuset, memcontrol)
+Message-ID: <20111014135457.GB3653@ghc17.ghc.andrew.cmu.edu>
+References: <20110727150710.GB5242@unix33.andrew.cmu.edu>
+ <20110727234235.GA2318@linux.vnet.ibm.com>
+ <20110728110813.7ff84b13@notabene.brown>
+ <20110728062616.GC15204@unix33.andrew.cmu.edu>
+ <20110728171345.67d3797d@notabene.brown>
+ <20110729142842.GA8462@unix33.andrew.cmu.edu>
+ <20110815184957.GA16588@redhat.com>
+ <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
+ <20111014122126.GL14968@somewhere>
+ <20111014135323.GA3653@ghc17.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318595439.6132.77.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4E983FE2.0258:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <20111014135323.GA3653@ghc17.ghc.andrew.cmu.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
+X-SMTP-Spam-Clean: 8% (
+ FROM_SAME_AS_TO 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1500_1599 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __FROM_SAME_AS_TO2 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 02:30:39PM +0200, Paul Bolle wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On Fri, Oct 14, 2011 at 09:53:23AM -0400, Ben Blum wrote:
+> On Fri, Oct 14, 2011 at 02:21:30PM +0200, Frederic Weisbecker wrote:
+> > On Thu, Oct 13, 2011 at 08:36:01PM -0400, Ben Blum wrote:
+> > > Convert ss->attach to take a flex_array of tasks instead of just the leader.
+> > > 
+> > > From: Ben Blum <bblum@andrew.cmu.edu>
+> > > 
+> > > This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
+> > > memcontrol) to accurately find the group's mm even when a non-leader does exec
+> > > and leaves the leader with a NULL mm pointer.
+> > > 
+> > > Also converts cpuset and memcontrol to take the flex_array and iterate down it
+> > > until an mm is found, instead of just attempting to use the leader's mm.
+> > > 
+> > > Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+> > 
+> > I think there are patches from Tejun that handle that did that already?
+> > 
+> > https://lkml.org/lkml/2011/8/23/418
+> > 
+> 
+> Yeah, I'm not hoping to preempt them or anything; I'm just presenting
+> this alternate approach, since (1) this way addresses the ss->attach()
+> problem directly without needing to add locking anywhere else, while the
+> focus of the discussion around Tejun's patches seems to have moved to
+> more global concerns, and (2) these patches and his patches ought to be
+> compatible with each other.
 
-Can you provide a commit message describing why?
+though, I did wonder if, given this approach, I shouldn't just get rid
+of attach_task and can_attach_task and use the flex_array for all of
+the calls. would that be nicer?
 
-And can you also use scripts/get_maintainer.pl in the future
-to copy the maintainer of this driver as well?
-
-Thanks.
-> ---
->  drivers/pci/Kconfig |   11 -----------
->  1 files changed, 0 insertions(+), 11 deletions(-)
 > 
-> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-> index 0fa466a..b42798f 100644
-> --- a/drivers/pci/Kconfig
-> +++ b/drivers/pci/Kconfig
-> @@ -51,17 +51,6 @@ config XEN_PCIDEV_FRONTEND
->            The PCI device frontend driver allows the kernel to import arbitrary
->            PCI devices from a PCI backend to support PCI driver domains.
->  
-> -config XEN_PCIDEV_FE_DEBUG
-> -        bool "Xen PCI Frontend debugging"
-> -        depends on XEN_PCIDEV_FRONTEND && PCI_DEBUG
-> -	help
-> -	  Say Y here if you want the Xen PCI frontend to produce a bunch of debug
-> -	  messages to the system log.  Select this if you are having a
-> -	  problem with Xen PCI frontend support and want to see more of what is
-> -	  going on.
-> -
-> -	  When in doubt, say N.
-> -
->  config HT_IRQ
->  	bool "Interrupts on hypertransport devices"
->  	default y
-> -- 
-> 1.7.4.4
+> Ben
 > 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
