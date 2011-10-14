@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab1JNQVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:21:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30423 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730Ab1JNQVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:21:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,347,1315206000"; 
-   d="scan'208";a="62656592"
-Subject: Re: [PATCH 09/10] USB: move to dma_transfer_direction
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org, 21cnbao@gmail.com,
-        rmk@arm.linux.org.uk, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <CAJe_Zhdy6gs1xqomhpGH9wrTHq5DhZsSDpzeNFRr84e9VPQEig@mail.gmail.com>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
-	 <1318570705-17595-10-git-send-email-vinod.koul@intel.com>
-	 <CAJe_Zhdy6gs1xqomhpGH9wrTHq5DhZsSDpzeNFRr84e9VPQEig@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 21:43:31 +0530
-Message-ID: <1318608811.1546.438.camel@vkoul-udesk3>
+	id S932706Ab1JNQV7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:21:59 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:44691 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932444Ab1JNQV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 12:21:57 -0400
+Date: Fri, 14 Oct 2011 09:21:48 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-pci@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v5)
+Message-ID: <20111014092148.21158b85@jbarnes-desktop>
+In-Reply-To: <20111006180818.GD22462@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+	<1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+	<20110930143211.5ab39c02@stein>
+	<20110930153321.GA31760@hmsreliant.think-freely.org>
+	<CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
+	<20110930165403.GB31760@hmsreliant.think-freely.org>
+	<20111006083607.2c4eb9a5@jbarnes-desktop>
+	<20111006171208.GB22462@hmsreliant.think-freely.org>
+	<CAErSpo4bEcubO56hZ+PWZc0SdVEroyOmsxDtc_bBAJrxBKmAOQ@mail.gmail.com>
+	<20111006180818.GD22462@hmsreliant.think-freely.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/HkZaEihl677=9tdGdL5GK9D"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 16:31 +0530, Jassi Brar wrote:
-> On 14 October 2011 11:08, Vinod Koul <vinod.koul@intel.com> wrote:
-> >
-> > diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-> > index ef4333f..9587bdd 100644
-> > --- a/drivers/usb/musb/ux500_dma.c
-> > +++ b/drivers/usb/musb/ux500_dma.c
-> > @@ -112,7 +112,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
-> >        struct musb_hw_ep *hw_ep = ux500_channel->hw_ep;
-> >        struct dma_chan *dma_chan = ux500_channel->dma_chan;
-> >        struct dma_async_tx_descriptor *dma_desc;
-> > -       enum dma_data_direction direction;
-> > +       enum dma_transfer_direction direction;
-> >        struct scatterlist sg;
-> >        struct dma_slave_config slave_conf;
-> >        enum dma_slave_buswidth addr_width;
-> > @@ -132,7 +132,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
-> >        sg_dma_address(&sg) = dma_addr;
-> >        sg_dma_len(&sg) = len;
-> >
-> > -       direction = ux500_channel->is_tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
-> > +       slave_dirn = ux500_channel->is_tx ? MEM_TO_DEV : DEV_TO_MEM;
-> >        addr_width = (len & 0x3) ? DMA_SLAVE_BUSWIDTH_1_BYTE :
-> >                                        DMA_SLAVE_BUSWIDTH_4_BYTES;
-> >
-> s/slave_dirn/direction ?
-Oops, some how much scripts seems to have failed to build usb, hence
-didnt find. Thanks for pointing out.
+--Sig_/HkZaEihl677=9tdGdL5GK9D
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I will revise this and split into two as requested by Filipe
+On Thu, 6 Oct 2011 14:08:18 -0400
+Neil Horman <nhorman@tuxdriver.com> wrote:
 
+> This patch adds a per-pci-device subdirectory in sysfs called:
+> /sys/bus/pci/devices/<device>/msi_irqs
+>=20
+> This sub-directory exports the set of msi vectors allocated by a given
+> pci device, by creating a numbered sub-directory for each vector beneath
+> msi_irqs.  For each vector various attributes can be exported.  Currently=
+ the
+> only attribute is called mode, which tracks the operational mode of that =
+vector
+> (msi vs. msix)
+>=20
 
--- 
-~Vinod
+Ok this adds new ABI in the form of sysfs files so I want to make sure
+it's ok.
 
+Matthew has dreams of a more sophisticated MSI-X management scheme, but
+it sounds to me like that will mostly affect the driver interfaces and
+shouldn't be incompatible with the sysfs scheme you propose here.
+
+If so, great, we can pull this in and maybe one day someone will
+implement better MSI-X support.
+
+If not, I'd like to hear objections now; Neil has been responsive and
+fixed several issues.  I don't want to block his patch unless we have
+something concrete that it conflicts with.
+
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/HkZaEihl677=9tdGdL5GK9D
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOmGGcAAoJEIEoDkX4Qk9hxIEQAKShp5lhKrdco+TOo6FclpEr
+l9bNgLobC61R3+OVlzkYexu9JkRrxZU+lgeyBUUme6uKlJTtQbfBXPIuCCH2fnpH
+RLh8U8c8hJINndjnd57s5atqQDx5xO81UvQdPCIBQXiMk6KtiJdB9xFk9MZFOLlG
+kllhHywtarEmLyQxc7I2N+oTx7+cfO6AhAlcBLpemBEogSGCNtO561bBUg1Lo2Kt
+DSuIL5kqZ/yC4BrihYRW4rzjmjEDKvrf0ZoYdztA/h66as6SIg5p67XBVlNyQHMI
+5jw/B29AAZyQHDLt7z01IO68l6Um+OIx8Wvdm1ie3c6WlQocCgBM09UcMbDnLXo1
+yNhpZQP/ws2M8jwx/zltDwG59Wx9y/KU0/sFEUu++oXGlgGEV/DUUCoKycZ+Ep9S
+NIuTihYHhT6+8tM3VWefkdMCDIrT07z1BBRiKUNUNXlFXxTlN91LGv4X9H0HG+qS
+etL/He0brQVr1W4RfqvfR8EuAUL5wgkj1YV+LCwLpBLr7lYScNeo7n635ekX6gR8
+EE58owvpFRdSWLrImQdvjUHvBEYe5wihRarox7ln2jjWid5ektKvLAmPr87Nh7ns
+/yX+auNR0Drt9QwRSU5VvFXiSZVNibY/e9wkdbGF7IZCMyb6oCVQr5meISsSaKRm
+fHC4hxPQic4LpnGjXZE2
+=+MUU
+-----END PGP SIGNATURE-----
+
+--Sig_/HkZaEihl677=9tdGdL5GK9D--
