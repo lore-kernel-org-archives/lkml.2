@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab1JNM3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:29:20 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58144 "EHLO
+	id S932791Ab1JNM3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:29:36 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58229 "EHLO
 	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756349Ab1JNM3T (ORCPT
+	with ESMTP id S932712Ab1JNM3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:29:19 -0400
-Subject: [PATCH 07/21] score: drop unused Kconfig symbols
+	Fri, 14 Oct 2011 08:29:34 -0400
+Subject: [PATCH 09/21] samples: drop unused Kconfig symbol
 From: Paul Bolle <pebolle@tiscali.nl>
-To: Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 14:28:22 +0200
-Message-ID: <1318595302.6132.64.camel@x61.thuisdomein>
+Date: Fri, 14 Oct 2011 14:28:38 +0200
+Message-ID: <1318595318.6132.66.camel@x61.thuisdomein>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -23,46 +22,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/score/Kconfig |   19 -------------------
- 1 files changed, 0 insertions(+), 19 deletions(-)
+ samples/Kconfig |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-index 288add8..df169e8 100644
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -52,16 +52,6 @@ config GENERIC_CALIBRATE_DELAY
- config GENERIC_CLOCKEVENTS
- 	def_bool y
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 96a7572..41063e7 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -61,10 +61,4 @@ config SAMPLE_KDB
+ 	  Build an example of how to dynamically add the hello
+ 	  command to the kdb shell.
  
--config SCHED_NO_NO_OMIT_FRAME_POINTER
--	def_bool y
--
--config GENERIC_SYSCALL_TABLE
--	def_bool y
--
--config SCORE_L1_CACHE_SHIFT
--	int
--	default "4"
--
- menu "Kernel type"
- 
- config 32BIT
-@@ -96,15 +86,6 @@ config STACKTRACE_SUPPORT
- 
- source "init/Kconfig"
- 
--config PROBE_INITRD_HEADER
--	bool "Probe initrd header created by addinitrd"
--	depends on BLK_DEV_INITRD
+-config SAMPLE_HIDRAW
+-	bool "Build simple hidraw example"
+-	depends on HIDRAW && HEADERS_CHECK
 -	help
--	  Probe initrd header at the last page of kernel image.
--	  Say Y here if you are using arch/score/boot/addinitrd.c to
--	  add initrd or initramfs image to the kernel image.
--	  Otherwise, say N.
+-	  Build an example of how to use hidraw from userspace.
 -
- config MMU
- 	def_bool y
- 
+ endif # SAMPLES
 -- 
 1.7.4.4
 
