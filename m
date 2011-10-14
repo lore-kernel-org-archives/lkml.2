@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab1JNJxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 05:53:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54543 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab1JNJxu (ORCPT
+	id S932331Ab1JNJyU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:54:20 -0400
+Received: from smtp.cmdik.pan.pl ([212.87.26.100]:56737 "EHLO
+	medres.cmdik.pan.pl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932069Ab1JNJyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 05:53:50 -0400
-From: Mihai Maruseac <mihai.maruseac@gmail.com>
-To: davem@davemloft.net
-Cc: eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl, therbert@google.com,
-        jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
-        Mihai Maruseac <mmaruseac@ixiacom.com>
-Subject: [PATCH] dev: use ifindex hash for dev_seq_ops
-Date: Fri, 14 Oct 2011 12:53:37 +0300
-Message-Id: <1318586017-17207-1-git-send-email-mmaruseac@ixiacom.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1318413446-22258-1-git-send-email-mmaruseac@ixiacom.com>
-References: <1318413446-22258-1-git-send-email-mmaruseac@ixiacom.com>
+	Fri, 14 Oct 2011 05:54:19 -0400
+X-Greylist: delayed 5141 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 05:54:18 EDT
+Date: Fri, 14 Oct 2011 10:28:13 +0200
+From: "Uk Nokia Moblie Job Offer" <paulsonwagt@blumail.org>
+Reply-to: "Uk Nokia Moblie Job Offer" <paulsonwagt@blumail.org>
+Subject: ATTENTION!
+X-Priority: 3
+X-Mailer: UebiMiau 2.7.2
+X-Original-IP: 80.87.92.42
+Content-Transfer-Encoding: 8bit
+X-MSMail-Priority: Medium
+Importance: Medium
+Content-Type: text/plain; charset="iso-8859-2";
+MIME-Version: 1.0
+Message-Id: <20111014082813.9BFAB251104@medres.cmdik.pan.pl>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using the dev->next chain and trying to resync at each call to
-dev_seq_start, use the ifindex, keeping the last index in seq->private field.
+ATTENTION!    ATTENTION!!       ATTENTION!!!
+This is to inform the general public that employment is currently going
+on in Nokia mobile company UK
+Nokia mobile company is currently requiting foreigners who are ready to
+work and live in UK into the following department :}
+(1)     Mechanical Engineering……………………………….6000GBP
+(2)     Electrical Engineering……………………………………6000GBP
+(3)     Marketing Department………………………………..4000GBP
+(4)     Receptionist…………………………………..3000GBP
+(5)     Customer Care Department…………………………5000GBP
+(6)     Manufacturing Department…………………………7000GBP
+(7)     Distributor Department……………………………….3500GBP
+(8)     Accounting Department………………………………5000GBP
+(9)     Security Department……………………………….3000GBP
+(10)     Company Drivers Department………………………....3500GBP
+(11)     Medical Department…………………………………7000GBP
+(12)    Machine Operator………………………………400GBP
+(13)    Cleaner…………………………….2500GBP
+(14)    Sales Department………………………….3500GBP
+NOTE:
+All interested candidate are to submit their resume i.e. (CV)   to our
+Human Resources Department.
+Email(jerrysmith0011@live.co.uk) OR (paulsonwagt@blumail.org)
+Mobile +44 (0)7035913051
+Best Regards,
+Jerry Smith.
+designed by Canadian company Research in Motion (RIM).
 
-Tests revealed the following results for ifconfig > /dev/null
-	* 1000 interfaces:
-		* 0.114s without patch
-		* 0.089s with patch
-	* 3000 interfaces:
-		* 0.489s without patch
-		* 0.110s with patch
-	* 5000 interfaces:
-		* 1.363s without patch
-		* 0.250s with patch
-	* 128000 interfaces (other setup):
-		* ~100s without patch
-		* ~30s with patch
 
-Signed-off-by: Mihai Maruseac <mmaruseac@ixiacom.com>
----
- net/core/dev.c |   55 ++++++++++++++++++++++++++++++++++---------------------
- 1 files changed, 34 insertions(+), 21 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 70ecb86..ea24445 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4041,6 +4041,37 @@ static int dev_ifconf(struct net *net, char __user *arg)
- }
- 
- #ifdef CONFIG_PROC_FS
-+
-+struct dev_iter_state {
-+	struct seq_net_private p;
-+	int ifindex;
-+};
-+
-+static struct net_device *__dev_seq_next(struct seq_file *seq, loff_t *pos)
-+{
-+	struct dev_iter_state *state = seq->private;
-+	struct net *net = seq_file_net(seq);
-+	struct net_device *dev;
-+	loff_t off;
-+
-+	dev = dev_get_by_index_rcu(net, state->ifindex);
-+	if (likely(dev))
-+		goto found;
-+
-+	off = 0;
-+	for_each_netdev_rcu(net, dev)
-+		if (off++ == *pos) {
-+			state->ifindex = dev->ifindex;
-+			goto found;
-+		}
-+
-+	return NULL;
-+found:
-+	state->ifindex++;
-+	++*pos;
-+	return dev;
-+}
-+
- /*
-  *	This is invoked by the /proc filesystem handler to display a device
-  *	in detail.
-@@ -4048,33 +4079,15 @@ static int dev_ifconf(struct net *net, char __user *arg)
- void *dev_seq_start(struct seq_file *seq, loff_t *pos)
- 	__acquires(RCU)
- {
--	struct net *net = seq_file_net(seq);
--	loff_t off;
--	struct net_device *dev;
--
- 	rcu_read_lock();
- 	if (!*pos)
- 		return SEQ_START_TOKEN;
--
--	off = 1;
--	for_each_netdev_rcu(net, dev)
--		if (off++ == *pos)
--			return dev;
--
--	return NULL;
-+	return __dev_seq_next(seq, pos);
- }
- 
- void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
--	struct net_device *dev = v;
--
--	if (v == SEQ_START_TOKEN)
--		dev = first_net_device_rcu(seq_file_net(seq));
--	else
--		dev = next_net_device_rcu(dev);
--
--	++*pos;
--	return dev;
-+	return __dev_seq_next(seq, pos);
- }
- 
- void dev_seq_stop(struct seq_file *seq, void *v)
-@@ -4173,7 +4186,7 @@ static const struct seq_operations dev_seq_ops = {
- static int dev_seq_open(struct inode *inode, struct file *file)
- {
- 	return seq_open_net(inode, file, &dev_seq_ops,
--			    sizeof(struct seq_net_private));
-+			    sizeof(struct dev_iter_state));
- }
- 
- static const struct file_operations dev_seq_fops = {
--- 
-1.7.4.1
+________________________________________________
+Message sent using http://mail.cmdik.pan.pl
+
