@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab1JNGON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 02:14:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:32897 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834Ab1JNGOM (ORCPT
+	id S1756400Ab1JNGOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 02:14:52 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:59687 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab1JNGOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 02:14:12 -0400
+	Fri, 14 Oct 2011 02:14:51 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID p9E6EjPM007744, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH] r8169: fix wrong eee setting for rlt8111evl
+Date: Fri, 14 Oct 2011 14:14:37 +0800
+X-BOX-Message-Id: p9E6EjPM007744
+Message-ID: <1318572877-1549-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.6.2
 MIME-Version: 1.0
-In-Reply-To: <1318557712.2027.1.camel@shrek.rexursive.com>
-References: <1317342456.1959.6.camel@shrek.rexursive.com>
-	<201110062045.48689.rjw@sisk.pl>
-	<2409186928.1003010428@rexursive.com>
-	<201110132326.02041.rjw@sisk.pl>
-	<1318557712.2027.1.camel@shrek.rexursive.com>
-Date: Fri, 14 Oct 2011 09:14:11 +0300
-X-Google-Sender-Auth: uCFmfsHHqNronE990b5_j2Tmcic
-Message-ID: <CAOJsxLF2Qo0UK8wCg1mt2Awiv7k=XPA9kHMy808f++FXibi4QA@mail.gmail.com>
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Keith Packard <keithp@keithp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 5:01 AM, Bojan Smojver <bojan@rexursive.com> wrote:
-> On Thu, 2011-10-13 at 23:26 +0200, Rafael J. Wysocki wrote:
->> If your system is 64-bit, then the patch below may help.
->
-> Unfortunately, it didn't. Got a hang after several hibernate/thaw just
-> the same, when KMS was enabled.
+Correct the wrong parameter for setting EEE for RTL8111E-VL.
 
-What debugging options do you have enabled? Rafael, is there some list
-of suggested debugging options that should be enabled when debugging
-hibernation issues?
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/r8169.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Bojan, this is with Intel drivers, right? I'm CC'ing Keith which might
-be able to give some clues how to debug KMS related hibernate/thaw
-issues.
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index c236670..27f7ebc 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -2859,7 +2859,7 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0004);
+ 	rtl_writephy(tp, 0x1f, 0x0007);
+ 	rtl_writephy(tp, 0x1e, 0x0020);
+-	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
++	rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0100);
+ 	rtl_writephy(tp, 0x1f, 0x0002);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ 	rtl_writephy(tp, 0x0d, 0x0007);
+-- 
+1.7.6.2
+
