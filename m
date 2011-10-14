@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1JNHVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 03:21:06 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37363 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932100Ab1JNHVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 03:21:04 -0400
-Date: Fri, 14 Oct 2011 10:20:59 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Vinod Koul <vinod.koul@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 09/10] USB: move to dma_transfer_direction
-Message-ID: <20111014072058.GE20436@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
- <1318570705-17595-10-git-send-email-vinod.koul@intel.com>
+	id S1755917Ab1JNHXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 03:23:34 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37817 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751326Ab1JNHXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 03:23:33 -0400
+Date: Fri, 14 Oct 2011 09:21:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v7
+Message-ID: <20111014072151.GA21913@elte.hu>
+References: <1318546513-2528-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="idY8LE8SD6/8DnRI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318570705-17595-10-git-send-email-vinod.koul@intel.com>
+In-Reply-To: <1318546513-2528-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---idY8LE8SD6/8DnRI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-Hi,
-
-On Fri, Oct 14, 2011 at 11:08:24AM +0530, Vinod Koul wrote:
-> From: Vinod Koul <vinod.koul@linux.intel.com>
-
-please add a description here.
-
-> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> I got a request to make it easier to determine the microcode update level
+> on Intel CPUs. This patch adds a new "microcode" field to /proc/cpuinfo.
+> 
+> The microcode level is also outputed on fatal machine checks together
+> with the other CPUID model information.
+> 
+> I removed the respective code from the microcode update driver, it
+> just reads the field from cpu_data. Also when the microcode is updated
+> it fills in the new values too.
+> 
+> I had to add a memory barrier to native_cpuid to prevent it being
+> optimized away when the result is not used.
+> 
+> This turns out to clean up further code which already got this
+> information manually. This is done in followon patches.
+> 
+> v2:  Lots of updates based on feedback.
+> v3:  Rename cpu_update to microcode. Misc changes from feedback.
+> v4:  minor updates. rebased.
+> v5:  move MSR read to early_intel_init()
+> v6:  Use sync_core() instead of CPUID 1. Drop a white space change.
+> v7:  Add Acked-bys.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Acked-by: H. Peter Anvin <hpa@zytor.com>
 > ---
->  drivers/usb/musb/ux500_dma.c     |    4 ++--
->  drivers/usb/renesas_usbhs/fifo.c |    4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
+>  arch/x86/include/asm/processor.h  |    4 +++-
+>  arch/x86/kernel/cpu/intel.c       |    9 +++++++++
+>  arch/x86/kernel/cpu/mcheck/mce.c  |    9 +++++++--
+>  arch/x86/kernel/cpu/proc.c        |    2 ++
+>  arch/x86/kernel/microcode_intel.c |   14 +++++---------
+>  5 files changed, 26 insertions(+), 12 deletions(-)
 
-can you split this patch into two parts ? One for musb and one renesas ?
+Applied to tip:x86/microcode,
 
---=20
-balbi
+Thanks,
 
---idY8LE8SD6/8DnRI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOl+LZAAoJEIaOsuA1yqRE14MQAIbueVyMOUwrMBXD+vkVJgHb
-o5qhYHzzL1EsIVXokwQPuOzqJ6S6yXO1v7K4FO0bhD4nwtSpWrZEsqdm18DL/yE+
-6nErgpnadFzJFuALoWwi7eThf6Z6LIFZeFalHsHJC1FgAT5yDZ06NCZFqXTpNRdv
-2UdFWCWNBO8jsAF2rVohS3xp2PhDO+w9tDH7N3k7KM/o4HqYm2D3KUFLuOLjHOPm
-bJLhfVoeTxbUxA1g2MOSTjyeSKLti63LdfTw3yiDQjK6Rg5mfCHcIE79qho3f4Cr
-tAtb8SsRyePIc0fbl+EK4lnOBOkuak5nDsjaBChD2ZbmQRfwaCEZRaTi7xKsZ7fH
-8jX+4QJFhkHNY5Q1k5SwfoEyHFjuMc0LgY/Agat//Fh17Q2ZwNltPs0XOcH3CS4T
-OYkOKzNVyEt2yeheeL6cqvMm7YA1hw/rCfUJMsducgfuuyVHX1MYLkEe1Gz2vbIP
-cqND9I53m0pInT1y7ViyWOUDpiCDYfB8bLt5B/YOsyPA9sXFOxvTuETLVvGdqMab
-NWHVfdwdfuWddiiAe9XCWSuB5Aik0bCTbnBtjNXMsPN70+PIS7VnVS2Dm8jxxuCu
-M04HKQLMJI3qEIdqCL+FomhwZ6vUeS5pp4gayGmX2b2owUDsOvYBfQvYHm4c2XL6
-6NT/nT7iZ+QyhCgwWXFX
-=u+1B
------END PGP SIGNATURE-----
-
---idY8LE8SD6/8DnRI--
+	Ingo
