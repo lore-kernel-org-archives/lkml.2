@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab1JNSOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 14:14:41 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:59003 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751751Ab1JNSOk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 14:14:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1316730422-20027-2-git-send-email-mturquette@ti.com>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com> <1316730422-20027-2-git-send-email-mturquette@ti.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Fri, 14 Oct 2011 11:14:19 -0700
-Message-ID: <CAJOA=zM9k7_z_PUoF0tZ_OrgdDTgMjZLftqtW0ra3G9C08Th7g@mail.gmail.com>
-Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
-        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
-        linus.walleij@stericsson.com, amit.kucheria@linaro.org,
-        dsaxena@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
-        paul@pwsan.com, grant.likely@secretlab.ca, sboyd@quicinc.com,
-        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, linux@arm.linux.org.uk, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Mike Turquette <mturquette@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755936Ab1JNSRd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 14:17:33 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38174 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1JNSRb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 14:17:31 -0400
+Date: Fri, 14 Oct 2011 14:17:15 -0400 (EDT)
+Message-Id: <20111014.141715.847854706049881596.davem@davemloft.net>
+To: jgarzik@pobox.com
+Cc: bzolnier@gmail.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] pata_pcmcia/ide-cs: move IDs table to
+ <linux/pata_pcmcia_ids.h>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E986988.6080106@pobox.com>
+References: <201110131312.14498.bzolnier@gmail.com>
+	<4E986988.6080106@pobox.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 14 Oct 2011 11:17:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 3:26 PM, Mike Turquette <mturquette@ti.com> wrote:
-> From: Jeremy Kerr <jeremy.kerr@canonical.com>
->  struct clk_hw_ops {
->        int             (*prepare)(struct clk_hw *);
->        void            (*unprepare)(struct clk_hw *);
->        int             (*enable)(struct clk_hw *);
->        void            (*disable)(struct clk_hw *);
->        unsigned long   (*recalc_rate)(struct clk_hw *);
+From: Jeff Garzik <jgarzik@pobox.com>
+Date: Fri, 14 Oct 2011 12:55:36 -0400
 
-In implementing recalc for divider clocks, I started to wonder, "why
-not just pass struct clk *clk into the clk_hw_ops func ptrs?".
+> On 10/13/2011 07:12 AM, Bartlomiej Zolnierkiewicz wrote:
+>> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+>> Subject: [PATCH] pata_pcmcia/ide-cs: move IDs table
+>> to<linux/pata_pcmcia_ids.h>
+>>
+>> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+>> ---
+>>   drivers/ata/pata_pcmcia.c | 74
+>>   +---------------------------------------
+>>   drivers/ide/ide-cs.c | 74 +---------------------------------------
+>>   include/linux/pata_pcmcia_ids.h | 70
+>>   +++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 75 insertions(+), 143 deletions(-)
+> 
+> I'm torn...  it is an obvious and simple consolidation, but I dislike
+> dropping such a driver-specific turd in include/linux.  I also wonder
+> if we want to continue adding new IDs to ide-cs?
+> 
+> David, any opinions?  I'm basically ok with any option: (a) take
+> Bart's patch as-is (with your acked-by), (b) ignore the patch and set
+> a no-new-ids policy for ide-cs, (c) other?
 
-recalc is an obvious example whereby we need access to parent->rate.
-The code usually ends up looking something like:
-
-unsigned long omap_recalc_rate(struct clk_hw *hw)
-{
-        struct clk *parent;
-        struct clk_hw_omap *oclk;
-
-        parent = hw->clk->parent;
-        oclk = to_clk_omap(hw);
-        ...
-}
-
-That's a bit of a song and dance to have to do in almost every op, and
-often these ops will need access to stuff like clk->rate also.   Is
-there any opposition to just passing in struct clk?  e.g:
-
-unsigned long omap_recalc_rate(struct clk *clk)
-{
-        struct clk *parent;
-        struct clk_hw_omap *oclk;
-
-        parent = clk->parent;
-        oclk = to_clk_omap(clk->hw);
-        ...
-}
-
-It is a small nitpick, but it affects the API for everybody so best to
-get it right now before folks start migrating over to it.
-
-Thanks,
-Mike
-
->        int             (*set_rate)(struct clk_hw *,
->                                        unsigned long, unsigned long *);
->        long            (*round_rate)(struct clk_hw *, unsigned long);
->        int             (*set_parent)(struct clk_hw *, struct clk *);
->        struct clk *    (*get_parent)(struct clk_hw *);
->  };
+Option 'b' please, thanks.
