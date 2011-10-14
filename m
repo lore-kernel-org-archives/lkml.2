@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab1JNMZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:25:11 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:59802 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751423Ab1JNMZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:25:10 -0400
-Date: Fri, 14 Oct 2011 07:25:06 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-Message-ID: <20111014122506.GB26737@sgi.com>
-References: <20111012160202.GA18666@sgi.com>
- <20111012120118.e948f40a.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110121452220.31218@router.home>
- <20111013152355.GB6966@sgi.com>
- <alpine.DEB.2.00.1110131052300.18473@router.home>
- <20111013135032.7c2c54cd.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110131602020.26553@router.home>
- <20111013142434.4d05cbdc.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111013142434.4d05cbdc.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756477Ab1JNM1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:27:21 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:57591 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab1JNM1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 08:27:20 -0400
+Subject: [PATCH 00/21] drop unused Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Oct 2011 14:27:10 +0200
+Message-ID: <1318595230.6132.56.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 02:24:34PM -0700, Andrew Morton wrote:
-> On Thu, 13 Oct 2011 16:02:58 -0500 (CDT)
-> Christoph Lameter <cl@gentwo.org> wrote:
-> 
-> > On Thu, 13 Oct 2011, Andrew Morton wrote:
-> > 
-> > > > If there are no updates occurring for a while (due to increased deltas
-> > > > and/or vmstat updates) then the vm_stat cacheline should be able to stay
-> > > > in shared mode in multiple processors and the performance should increase.
-> > > >
-> > >
-> > > We could cacheline align vm_stat[].  But the thing is pretty small - we
-> > > couild put each entry in its own cacheline.
-> > 
-> > Which in turn would increase the cache footprint of some key kernel
-> > functions (because they need multiple vm_stat entries) and cause eviction
-> > of other cachelines that then reduce overall system performance again.
-> 
-> Sure, but we gain performance by not having different CPUs treading on
-> each other when they update different vmstat fields.  Sometimes one
-> effect will win and other times the other effect will win.  Some
-> engineering is needed..
+This set of patches removes unused Kconfig symbols from Kconfig files
+across the tree. Roughly half of the changes turned out to be in the
+cris architecture.
 
-I think the first step is to determine the role (if any) that false sharing may be playing in this, since that's a simpler fix (cacheline align and pad the array).
+Unused Kconfig symbols were identified using a few silly scripts. I
+actually expected more unused symbols. It's likely I missed a few. Maybe
+I'll discover more in a next iteration using smarter scripts. (If I find
+the courage to do this again, that is.)
 
-Then, if necessary, will look at contention issues within the array.
+Testing was done with "git grep" only. (Well, "git grep" and a lot of
+tedious manual inspection of these Kconfig files.) I lack the
+(intellectual) bandwidth to come up with some reasonable test, given the
+fact that this touches a lot of architectures, subsystems and drivers I
+know absolutely nothing about. Any suggestions?
+
+Paul Bolle (21):
+  alpha: drop unused Kconfig symbol
+  blackfin: drop unused Kconfig symbol
+  sparc: drop unused Kconfig symbol
+  um: drop unused Kconfig symbol
+  sh: drop unused Kconfig symbol
+  unicore32: drop unused Kconfig symbols
+  score: drop unused Kconfig symbols
+  m32r: drop unused Kconfig symbol
+  samples: drop unused Kconfig symbol
+  tomoyo: drop unused Kconfig symbols
+  ARM: drop unused Kconfig symbols
+  m68k: drop unused Kconfig symbols
+  openrisc: drop unused Kconfig symbols
+  mips: drop unused Kconfig symbols
+  powerpc: drop unused Kconfig symbols
+  x86: drop unused Kconfig symbol
+  stmmac: drop unused Kconfig symbol
+  pci: drop unused Kconfig symbol
+  scsi: drop unused Kconfig symbol
+  staging: drop unused Kconfig symbols
+  cris: drop unused Kconfig symbols
+
+ arch/alpha/Kconfig                         |    5 -
+ arch/arm/mach-at91/Kconfig                 |    6 -
+ arch/arm/mach-ixp4xx/Kconfig               |    1 +
+ arch/arm/mach-pxa/Kconfig                  |    3 -
+ arch/blackfin/Kconfig                      |    4 -
+ arch/cris/Kconfig                          |   49 ----
+ arch/cris/arch-v10/drivers/Kconfig         |   23 --
+ arch/cris/arch-v32/drivers/Kconfig         |  380 ----------------------------
+ arch/cris/arch-v32/mach-a3/Kconfig         |    4 -
+ arch/m32r/Kconfig                          |    7 -
+ arch/m68k/Kconfig                          |   28 +--
+ arch/m68k/Kconfig.nommu                    |   44 ----
+ arch/mips/Kconfig                          |   14 -
+ arch/mips/powertv/Kconfig                  |    2 -
+ arch/mips/powertv/asic/Kconfig             |   28 --
+ arch/openrisc/Kconfig                      |   12 -
+ arch/powerpc/Kconfig                       |   22 --
+ arch/powerpc/platforms/40x/Kconfig         |    5 -
+ arch/powerpc/platforms/Kconfig.cputype     |    8 -
+ arch/powerpc/platforms/embedded6xx/Kconfig |    4 -
+ arch/powerpc/platforms/prep/Kconfig        |    9 -
+ arch/powerpc/platforms/wsp/Kconfig         |    5 -
+ arch/score/Kconfig                         |   19 --
+ arch/sh/Kconfig                            |    4 -
+ arch/sparc/Kconfig                         |    7 +-
+ arch/um/Kconfig.x86                        |    3 -
+ arch/unicore32/Kconfig.debug               |   14 -
+ arch/x86/Kconfig                           |    3 -
+ drivers/net/stmmac/Kconfig                 |    9 -
+ drivers/pci/Kconfig                        |   11 -
+ drivers/scsi/Kconfig                       |   14 -
+ drivers/staging/et131x/Kconfig             |    9 -
+ drivers/staging/pohmelfs/Kconfig           |    8 -
+ samples/Kconfig                            |    6 -
+ security/tomoyo/Kconfig                    |   24 --
+ 35 files changed, 3 insertions(+), 791 deletions(-)
+ delete mode 100644 arch/mips/powertv/asic/Kconfig
+
+-- 
+1.7.4.4
+
