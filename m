@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab1JNN47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:56:59 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:37537 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab1JNN45 (ORCPT
+	id S932984Ab1JNN5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:57:21 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:33972 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756043Ab1JNN5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:56:57 -0400
-Date: Fri, 14 Oct 2011 09:53:23 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        NeilBrown <neilb@suse.de>, paulmck@linux.vnet.ibm.com,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] cgroups: convert ss->attach to use whole
- threadgroup flex_array (cpuset, memcontrol)
-Message-ID: <20111014135323.GA3653@ghc17.ghc.andrew.cmu.edu>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
- <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
- <20111014122126.GL14968@somewhere>
+	Fri, 14 Oct 2011 09:57:19 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: z3yQSWUVM1lzpxljleN54erjPAkSp4hc3tIkJQcQf4o4Apw
+ MTmi7v1vvcHuhpq.bohB6DQvxAvGJdreNGvgRByj_nwqC_5ZB6wDlmC6xOz7
+ DxpPV9mjqTt3QKgT0h7XgjpHTVI8MvePGXLqvC_mgPC_Mm2H2yfhFhnQ1HPD
+ 3K9z2m2fpA19x7mCYax1eHsAKDnX84SpmNEUBUiS6tfVyekWCSr07GqmOIUI
+ gyXK6W.ZFR7bDbtHS5pyo4wOaNv24hyyvYLgU7bp_JWhFBhs4zcAbkygCZUZ
+ cz5jI37kYcQ4V3jxP8YkeWfsUvaBEQx1uGCAxQfkcBsSG_ip2LyyQDHA.uWv
+ rhcmdQ7.wnE2wgd2A_AhjPkM.kVpwJ9O4jiZApwx12IspLrM-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 14 Oct 2011 08:57:16 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Dimitri Sivanich <sivanich@sgi.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+In-Reply-To: <20111014135055.GA28592@sgi.com>
+Message-ID: <alpine.DEB.2.00.1110140856420.6411@router.home>
+References: <20111012160202.GA18666@sgi.com> <20111012120118.e948f40a.akpm@linux-foundation.org> <alpine.DEB.2.00.1110121452220.31218@router.home> <20111013152355.GB6966@sgi.com> <alpine.DEB.2.00.1110131052300.18473@router.home> <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110131602020.26553@router.home> <20111013142434.4d05cbdc.akpm@linux-foundation.org> <20111014122506.GB26737@sgi.com> <20111014135055.GA28592@sgi.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014122126.GL14968@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.3.18.170322
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1200_1299 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 02:21:30PM +0200, Frederic Weisbecker wrote:
-> On Thu, Oct 13, 2011 at 08:36:01PM -0400, Ben Blum wrote:
-> > Convert ss->attach to take a flex_array of tasks instead of just the leader.
-> > 
-> > From: Ben Blum <bblum@andrew.cmu.edu>
-> > 
-> > This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
-> > memcontrol) to accurately find the group's mm even when a non-leader does exec
-> > and leaves the leader with a NULL mm pointer.
-> > 
-> > Also converts cpuset and memcontrol to take the flex_array and iterate down it
-> > until an mm is found, instead of just attempting to use the leader's mm.
-> > 
-> > Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
-> 
-> I think there are patches from Tejun that handle that did that already?
-> 
-> https://lkml.org/lkml/2011/8/23/418
-> 
+On Fri, 14 Oct 2011, Dimitri Sivanich wrote:
 
-Yeah, I'm not hoping to preempt them or anything; I'm just presenting
-this alternate approach, since (1) this way addresses the ss->attach()
-problem directly without needing to add locking anywhere else, while the
-focus of the discussion around Tejun's patches seems to have moved to
-more global concerns, and (2) these patches and his patches ought to be
-compatible with each other.
+> Testing on a smaller machine with 46 writer threads in parallel (my original
+> test used 120).
+>
+> Looks as though cache-aligning and padding the end of the vm_stat array
+> results in a ~150 MB/sec speedup.  This is a nice improvement for only 46
+> writer threads, though it's not the full ~250 MB/sec speedup I get from
+> setting OVERCOMMIT_NEVER.
 
-Ben
+Add to this the increase in the deltas for the ZVCs and change the stat
+interval to 10 sec?
+
