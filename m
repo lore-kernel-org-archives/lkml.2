@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab1JNQMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:12:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6554 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab1JNQMa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:12:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 14 Oct 2011 09:12:19 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        Erik Gilling <konkers@android.com>
-Date: Fri, 14 Oct 2011 09:12:18 -0700
-Subject: RE: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-Thread-Topic: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-Thread-Index: AcyKhh2Hsos8aI1KSxeQVVp2NZzzfgABTU0Q
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com>
-References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com>
- <20111014071500.GP21648@n2100.arm.linux.org.uk>
- <74CDBE0F657A3D45AFBB94109FB122FF173BE1A260@HQMAIL01.nvidia.com>
- <201110141729.41515.arnd@arndb.de>
-In-Reply-To: <201110141729.41515.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932170Ab1JNQQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:16:07 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:51126 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754417Ab1JNQQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 12:16:05 -0400
+Date: Fri, 14 Oct 2011 11:16:03 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111014161603.GA30561@sgi.com>
+References: <alpine.DEB.2.00.1110131052300.18473@router.home>
+ <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110131602020.26553@router.home>
+ <20111013142434.4d05cbdc.akpm@linux-foundation.org>
+ <20111014122506.GB26737@sgi.com>
+ <20111014135055.GA28592@sgi.com>
+ <alpine.DEB.2.00.1110140856420.6411@router.home>
+ <20111014141921.GC28592@sgi.com>
+ <alpine.DEB.2.00.1110140932530.6411@router.home>
+ <alpine.DEB.2.00.1110140958550.6411@router.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110140958550.6411@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote at Friday, October 14, 2011 9:30 AM:
-...
-> You mention that tegra30 will require AUTO_ZRELADDR.
+On Fri, Oct 14, 2011 at 10:18:24AM -0500, Christoph Lameter wrote:
+> Also the whole thing could be optimized by concentrating updates to the
+> vm_stat array at one point in time. If any local per cpu differential
+> overflows then update all the counters in the same cacheline for which we have per cpu
+> differentials.
+> 
+> That will defer another acquisition of the cacheline for the next delta
+> overflowing. After an update all the per cpu differentials would be zero.
+> 
+> This could be added to zone_page_state_add....
+> 
+> 
+> Something like this patch? (Restriction of the updates to the same
+> cacheline missing. Just does everything and the zone_page_state may need
+> uninlining now)
 
-Well, just to be clear, here's the situation I think:
+This patch doesn't have much, if any, effect, at least in the 46 writer thread
+case (NR_VM_EVENT_ITEMS-->NR_VM_ZONE_STAT_ITEMS allowed it to boot :) ).
+I applied this with the change to align vm_stat.
 
-Tegra20's SDRAM starts at physical address 0.
+So far cache alignment of vm_data and increasing ZVC delta has the greatest
+effect.
 
-Tegra30's SDRAM starts at physical address 2G.
-
-To support that, we could either:
-
-a) Introduce a new Kconfig variable for Tegra30, make T20/T30 mutually
-exclusive, and update arch/arm/mach-tegra/Makefile.boot to set zreladdr
-etc. based on the new Tegra30 config variable too. Then, there's no need
-for AUTO_ZRELADDR anywhere.
-
-b) Have no new config variable, build a unified T20/T30 kernel, leave
-Makefile.boot untouched, and rely on using AUTO_ZRELADDR for Tegra30 to
-account for the different SDRAM physical addresses.
-
-> Does that mean that with tegra30 merged you would no longer be able
-> to build any tegra kernel?
-
-Sorry, I don't quite understand that question.
-
--- 
-nvpublic
-
+> 
+> ---
+>  include/linux/vmstat.h |   19 ++++++++++++++++---
+>  mm/vmstat.c            |   10 ++++------
+>  2 files changed, 20 insertions(+), 9 deletions(-)
+> 
+> Index: linux-2.6/include/linux/vmstat.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/vmstat.h	2011-10-14 09:58:03.000000000 -0500
+> +++ linux-2.6/include/linux/vmstat.h	2011-10-14 10:08:00.000000000 -0500
+> @@ -90,10 +90,23 @@ static inline void vm_events_fold_cpu(in
+>  extern atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
+> 
+>  static inline void zone_page_state_add(long x, struct zone *zone,
+> -				 enum zone_stat_item item)
+> +				 enum zone_stat_item item, s8 new_value)
+>  {
+> -	atomic_long_add(x, &zone->vm_stat[item]);
+> -	atomic_long_add(x, &vm_stat[item]);
+> +	enum zone_stat_item i;
+> +
+> +	for (i = 0; i < NR_VM_EVENT_ITEMS; i++) {
+> +		long y;
+> +
+> +		if (i == item)
+> +			y = this_cpu_xchg(zone->pageset->vm_stat_diff[i], new_value) + x;
+> +		else
+> +			y = this_cpu_xchg(zone->pageset->vm_stat_diff[i], 0);
+> +
+> +		if (y) {
+> +			atomic_long_add(y, &zone->vm_stat[item]);
+> +			atomic_long_add(y, &vm_stat[item]);
+> +		}
+> +	}
+>  }
+> 
+>  static inline unsigned long global_page_state(enum zone_stat_item item)
+> Index: linux-2.6/mm/vmstat.c
+> ===================================================================
+> --- linux-2.6.orig/mm/vmstat.c	2011-10-14 10:04:20.000000000 -0500
+> +++ linux-2.6/mm/vmstat.c	2011-10-14 10:08:39.000000000 -0500
+> @@ -221,7 +221,7 @@ void __mod_zone_page_state(struct zone *
+>  	t = __this_cpu_read(pcp->stat_threshold);
+> 
+>  	if (unlikely(x > t || x < -t)) {
+> -		zone_page_state_add(x, zone, item);
+> +		zone_page_state_add(x, zone, item, 0);
+>  		x = 0;
+>  	}
+>  	__this_cpu_write(*p, x);
+> @@ -262,8 +262,7 @@ void __inc_zone_state(struct zone *zone,
+>  	if (unlikely(v > t)) {
+>  		s8 overstep = t >> 1;
+> 
+> -		zone_page_state_add(v + overstep, zone, item);
+> -		__this_cpu_write(*p, -overstep);
+> +		zone_page_state_add(v + overstep, zone, item, -overstep);
+>  	}
+>  }
+> 
+> @@ -284,8 +283,7 @@ void __dec_zone_state(struct zone *zone,
+>  	if (unlikely(v < - t)) {
+>  		s8 overstep = t >> 1;
+> 
+> -		zone_page_state_add(v - overstep, zone, item);
+> -		__this_cpu_write(*p, overstep);
+> +		zone_page_state_add(v - overstep, zone, item, overstep);
+>  	}
+>  }
+> 
+> @@ -343,7 +341,7 @@ static inline void mod_state(struct zone
+>  	} while (this_cpu_cmpxchg(*p, o, n) != o);
+> 
+>  	if (z)
+> -		zone_page_state_add(z, zone, item);
+> +		zone_page_state_add(z, zone, item, 0);
+>  }
+> 
+>  void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
