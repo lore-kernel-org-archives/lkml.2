@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab1JNEzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:55:53 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34660 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab1JNEzw (ORCPT
+	id S1752121Ab1JNFIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 01:08:48 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:41089 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab1JNFIr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:55:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 14 Oct 2011 13:54:04 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: Re: [PATCH 6/9] kstaled: rate limit pages scanned per second.
-Message-Id: <20111014135404.b56bed48.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <CANN689HOALiiBKLUHRFuONQEyqp2on0GA1ycEguf0S6WFeuP7w@mail.gmail.com>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
-	<1317170947-17074-7-git-send-email-walken@google.com>
-	<20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
-	<CANN689GFE_hqtndKY6i4ouBBe+gVU_pqOK2HRrc-U1LJMONaXw@mail.gmail.com>
-	<20110928175947.d3af52f0.kamezawa.hiroyu@jp.fujitsu.com>
-	<CANN689HOALiiBKLUHRFuONQEyqp2on0GA1ycEguf0S6WFeuP7w@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Oct 2011 01:08:47 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Fri, 14 Oct 2011 01:06:57 -0400
+Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: AcyJO0Q51kQyq7dgStm5PonHcDYM5wA89Sf9
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB4F747A9@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+ <20110901100650.6d884589.rdunlap@xenotime.net>
+ <20110901152650.7a63cb8b@annuminas.surriel.com>
+ <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+ <20111010153723.6397924f.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+ <20111011125419.2702b5dc.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
+ <20111011135445.f580749b.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
+ <alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516D0EA@USINDEVS02.corp.hds.com>,<alpine.DEB.2.00.1110121654120.30123@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110121654120.30123@chino.kir.corp.google.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110130391
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011 18:25:06 -0700
-Michel Lespinasse <walken@google.com> wrote:
+On 10/12/2011 08:01 PM, David Rientjes wrote:
+>> I understand what you concern. But in some area such as banking,
+>> > stock exchange, train/power/plant control sysemts etc this kind
+>> > of tunable is welcomed because they can tune their systems at
+>> > their own risk.
+>> > 
+> You haven't tried the patch that increases the priority of kswapd when 
+> such a latency sensitive thread triggers background reclaim?
 
-> On Wed, Sep 28, 2011 at 1:59 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Wed, 28 Sep 2011 01:19:50 -0700
-> > Michel Lespinasse <walken@google.com> wrote:
-> >> It tends to perform worse if we try making it multithreaded. What
-> >> happens is that the scanning threads call page_referenced() a lot, and
-> >> if they both try scanning pages that belong to the same file that
-> >> causes the mapping's i_mmap_mutex lock to bounce. Same things happens
-> >> if they try scanning pages that belong to the same anon VMA too.
-> >>
-> >
-> > Hmm. with brief thinking, if you can scan list of page tables,
-> > you can set young flags without any locks.
-> > For inode pages, you can hook page lookup, I think.
-> 
-> It would be possible to avoid taking rmap locks by instead scanning
-> all page tables, and transferring the pte young bits observed there to
-> the PageYoung page flag. This is a significant design change, but
-> would indeed work.
-> 
-> Just to clarify the idea, how would you go about finding all page
-> tables to scan ? The most straightforward approach would be iterate
-> over all processes and scan their address spaces, but I don't think we
-> can afford to hold tasklist_lock (even for reads) for so long, so we'd
-> have to be a bit smarter than that... I can think of a few different
-> ways but I'd like to know if you have something specific in mind
-> first.
-
-Maybe there are several idea. 
-
-1. how about chasing "pgd" kmem_cache ?
-   I'm not sure but in x86 it seems all pgds are lined to pgd_list.
-   Now, it's not RCU list but making it as RCU list isn't hard.
-   Note: IIUC, struct page for pgd contains pointer to mm_struct.
-
-2. track dup_mm and do_exec.
-   insert hook and maintain list of mm_struct.(It's not needed to be
-   implemented as list)
-
-3. Like pgd_list, add some flag to pgd pages. Then, you can scan memmap
-   and find 'pgd' page and walk into the page table tree.
-
-Hmm ?
+No, not yet. I'll try it.
 
 Thanks,
--Kame
-
-
-
+Satoru
