@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab1JNUX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:23:27 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58495 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab1JNUX0 convert rfc822-to-8bit (ORCPT
+	id S933442Ab1JNUYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:24:05 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41959 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756563Ab1JNUYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:23:26 -0400
+	Fri, 14 Oct 2011 16:24:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=BnwZjTtF1N8PBeVcGtMLPQWX7wMBTY4NqYun8Fzm1oG8gSUHskSz4K08oA6BL0//S
+	cnbEwYM+O446+rQfeGxSQ==
+Date: Fri, 14 Oct 2011 13:23:57 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jan Steinke <jan.steinke@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Reporting Kernel Bugs
+In-Reply-To: <loom.20111014T220901-636@post.gmane.org>
+Message-ID: <alpine.DEB.2.00.1110141321250.24783@chino.kir.corp.google.com>
+References: <4E95D7A6.6010603@canonical.com> <alpine.LRH.2.00.1110122011360.29079@twin.jikos.cz> <loom.20111014T220901-636@post.gmane.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
-References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
-	<CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
-	<CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
-	<CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
-	<CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
-	<CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
-	<CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
-	<CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
-	<20111010114840.GC17079@elte.hu>
-	<CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
-	<20111011062253.GA3589@elte.hu>
-	<4E947BC9.7040805@mit.edu>
-	<CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
-	<CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
-Date: Fri, 14 Oct 2011 22:23:25 +0200
-Message-ID: <CAFLxGvzt+ThLeH2j9A5N1ee4_uYDnF764qdKvLQ2UWgGuCVpfg@mail.gmail.com>
-Subject: Re: [RFC] fixing the UML failure root cause
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 10:17 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Fri, Oct 14, 2011 at 12:53 PM, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Tue, Oct 11, 2011 at 7:24 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->>> What do you think of this approach?  If it seems good, I'll finish the
->>> patch and submit it.
->>>
->>> With this patch applied, UML appears to work, but it fills the log with
->>> exploit attempt warnings.  Any ideas on what to do about that?
->>>
->>
->> I can confirm that this patch works.
->> And I really like vsyscall=emulate because with that UML can trap vsyscalls. :-)
->
-> Are you sure you don't mean vsyscall=native?  I suspect that UML can't
-> actually trap vsyscalls in emulate mode right now, although that ought
-> to be fixable.
->
+On Fri, 14 Oct 2011, Jan Steinke wrote:
 
-Doesn't vsyscall_emu_64.S transform any vsyscall into a real syscall?
-So UML can trap it.
+> > Just send an e-mail to appropriate mailinglist and CC 
+> > responsible maintainer(s).
+> > 
+> > That's what many people prefer to bugzilla anyway.
+> > 
+> 
+> How do I know the responsible maintainer(s)? How do I know if the bug is 
+> confirmed or accepted?
+> 
 
--- 
-Thanks,
-//richard
+If you can figure out what subsystem is the likely source of the issue, 
+then you can check the MAINTAINERS file for the appropriate people and 
+mailing list.  If there's a panic or oops, find the source file that is to 
+blame and use ./scripts/get_maintainer.pl -f <file>.  Otherwise, just 
+report some unknown, untriaged error directly to 
+linux-kernel@vger.kernel.org and be sure to cc Andrew Morton 
+<akpm@linux-foundation.org> who used to go through the kernel.org bugzilla 
+quite often and send bug reports in the right direction.
