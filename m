@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab1JNURS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:17:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37659 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753245Ab1JNURR (ORCPT
+	id S933415Ab1JNURc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:17:32 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:54711 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab1JNURb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:17:17 -0400
-Date: Fri, 14 Oct 2011 21:17:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Barry Song <21cnbao@gmail.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 1/2] ASoC: ad193x: Fix define of AD193X_PLL_INPUT_MASK
-Message-ID: <20111014201714.GA20940@opensource.wolfsonmicro.com>
-References: <1318582919.19976.1.camel@phoenix>
- <20111014193823.GM2931@opensource.wolfsonmicro.com>
- <4E989200.6080104@metafoo.de>
- <20111014200733.GA20356@opensource.wolfsonmicro.com>
- <4E9896F2.4070005@metafoo.de>
+	Fri, 14 Oct 2011 16:17:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9896F2.4070005@metafoo.de>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
+References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
+ <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
+ <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+ <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
+ <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
+ <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+ <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
+ <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
+ <20111010114840.GC17079@elte.hu> <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
+ <20111011062253.GA3589@elte.hu> <4E947BC9.7040805@mit.edu> <CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 14 Oct 2011 13:17:11 -0700
+X-Google-Sender-Auth: eGwmByp78fsa0z1M1zy8GQbS9NM
+Message-ID: <CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
+Subject: Re: [RFC] fixing the UML failure root cause
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 10:09:22PM +0200, Lars-Peter Clausen wrote:
+On Fri, Oct 14, 2011 at 12:53 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Tue, Oct 11, 2011 at 7:24 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>> What do you think of this approach?  If it seems good, I'll finish the
+>> patch and submit it.
+>>
+>> With this patch applied, UML appears to work, but it fills the log with
+>> exploit attempt warnings.  Any ideas on what to do about that?
+>>
+>
+> I can confirm that this patch works.
+> And I really like vsyscall=emulate because with that UML can trap vsyscalls. :-)
 
-> If it is ok with you, I'll send it on monday.
+Are you sure you don't mean vsyscall=native?  I suspect that UML can't
+actually trap vsyscalls in emulate mode right now, although that ought
+to be fixable.
 
-Sure, that's fine.
+--Andy
