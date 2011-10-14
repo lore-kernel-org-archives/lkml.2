@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab1JNMil (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:38:41 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54902 "EHLO
+	id S932886Ab1JNMig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:38:36 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54866 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875Ab1JNMif (ORCPT
+	with ESMTP id S932873Ab1JNMid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:38:35 -0400
+	Fri, 14 Oct 2011 08:38:33 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=DYUUlhUtyJuQcwXuSeQVBACdPOqh179csZEV2bJKKvqmABp7gQ4k7wyz9AFws7GTd
-	3uFI0W+nWVdVoomyHgbeA==
+	b=EXWzGf2+6AxCcMAlb54t4gkROMtVfy9LR+cdI9c8O39b9TU5237UE3C7v88CIGrYq
+	7aT91WbXEnlTETkivnQUg==
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
@@ -19,9 +19,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
         will.deacon@arm.com, paulus@samba.org, benh@kernel.crashing.org,
         rth@twiddle.net, ralf@linux-mips.org, davem@davemloft.net,
         lethal@linux-sh.org
-Subject: [PATCH 04/12] perf_events: sync branch stack sampling with X86 precise_sampling (v2)
-Date: Fri, 14 Oct 2011 14:37:05 +0200
-Message-Id: <1318595833-29984-5-git-send-email-eranian@google.com>
+Subject: [PATCH 03/12] perf_events: add Intel X86 LBR sharing logic (v2)
+Date: Fri, 14 Oct 2011 14:37:04 +0200
+Message-Id: <1318595833-29984-4-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1318595833-29984-1-git-send-email-eranian@google.com>
 References: <1318595833-29984-1-git-send-email-eranian@google.com>
@@ -30,65 +30,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If precise sampling is enabled on Intel X86, then perf_event uses PEBS.
-To correct for the off-by-one error of PEBS, perf_event uses LBR when
-precise_sample > 1.
+The Intel LBR on some recent processor is capable
+of filtering branches by type. The filter is configurable
+via the LBR_SELECT MSR register.
 
-On Intel X86 PERF_SAMPLE_BRANCH_STACK is implemented using LBR,
-therefore both features must be coordinated as they may not
-configure LBR the same way.
+There are limitation on how this register can be used.
 
-For PEBS, LBR needs to capture all branches at all priv levels.
-This patch sets this up.
+On Nehalem/Westmere, the LBR_SELECT is shared by the two HT threads
+when HT is on. It is private to each core when HT is off.
 
-The configuration of PERF_SAMPLE_BRANCH_STACK may not be compatible
-in which case an error must be returned.
+On SandyBridge, the LBR_SELECT register is private to each thread
+when HT is on. It is private to each core when HT is off.
+
+The kernel must manage the sharing of LBR_SELECT. It allows
+multiple users on the same logical CPU to use LBR_SELECT as
+long as they program it with the same value. Across sibling
+CPUs (HT threads), the same restriction applies on NHM/WSM.
+
+This patch implements this sharing logic by leveraging the
+mechanism put in place for managing the offcore_response
+shared MSR.
+
+We modify __intel_shared_reg_get_constraints() to cause
+x86_get_event_constraint() to be called because LBR may
+be associated with events that may be counter constrained.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |    4 ++
+ arch/x86/kernel/cpu/perf_event.h       |    4 ++
+ arch/x86/kernel/cpu/perf_event_intel.c |   70 ++++++++++++++++++++------------
+ 3 files changed, 52 insertions(+), 26 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index cfef90e..e2efa90 100644
+index 6408910..cfef90e 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -358,6 +358,7 @@ int x86_setup_perfctr(struct perf_event *event)
- int x86_pmu_hw_config(struct perf_event *event)
- {
- 	if (event->attr.precise_ip) {
-+		u64 *br_type, br_sel;
- 		int precise = 0;
+@@ -428,6 +428,10 @@ static int __x86_pmu_event_init(struct perf_event *event)
+ 	/* mark unused */
+ 	event->hw.extra_reg.idx = EXTRA_REG_NONE;
  
- 		/* Support for constant skid */
-@@ -371,6 +372,27 @@ int x86_pmu_hw_config(struct perf_event *event)
++	/* mark not used */
++	event->hw.extra_reg.idx = EXTRA_REG_NONE;
++	event->hw.branch_reg.idx = EXTRA_REG_NONE;
++
+ 	return x86_pmu.hw_config(event);
+ }
  
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-+		/*
-+		 * check that PEBS LBR correction does not conflict with
-+		 * whatever the user is asking with attr->branch_sample_type
-+		 */
-+		if (event->attr.precise_ip > 1) {
-+
-+			br_type = &event->attr.branch_sample_type;
-+
-+			if (has_branch_stack(event)) {
-+				br_sel = *br_type & PERF_SAMPLE_BRANCH_ANY;
-+				if (br_sel != PERF_SAMPLE_BRANCH_ANY)
-+					return -EOPNOTSUPP;
-+			} else {
-+				/*
-+				 * For PEBS fixups, we capture all
-+				 * the branches at all priv levels
-+				 */
-+				*br_type = PERF_SAMPLE_BRANCH_ANY
-+					 | PERF_SAMPLE_BRANCH_PLM_ALL;
-+			}
-+		}
- 	}
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index b9698d4..8a5c21f 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -33,6 +33,7 @@ enum extra_reg_type {
+ 
+ 	EXTRA_REG_RSP_0 = 0,	/* offcore_response_0 */
+ 	EXTRA_REG_RSP_1 = 1,	/* offcore_response_1 */
++	EXTRA_REG_LBR   = 2,	/* lbr_select */
+ 
+ 	EXTRA_REG_MAX		/* number of entries needed */
+ };
+@@ -129,6 +130,7 @@ struct cpu_hw_events {
+ 	void				*lbr_context;
+ 	struct perf_branch_stack	lbr_stack;
+ 	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
++	struct er_account		*lbr_sel;
  
  	/*
+ 	 * Intel host/guest exclude bits
+@@ -296,6 +298,8 @@ struct x86_pmu {
+ 	 */
+ 	unsigned long	lbr_tos, lbr_from, lbr_to; /* MSR base regs       */
+ 	int		lbr_nr;			   /* hardware stack size */
++	u64		lbr_sel_mask;   	   /* valid bits in LBR_SELECT */
++	const int	*lbr_sel_map;   	   /* lbr_select mappings */
+ 
+ 	/*
+ 	 * Extra registers for events
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index e09ca20..1303732 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1126,17 +1126,17 @@ static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
+  */
+ static struct event_constraint *
+ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+-				   struct perf_event *event)
++				   struct perf_event *event,
++				   struct hw_perf_event_extra *reg)
+ {
+ 	struct event_constraint *c = &emptyconstraint;
+-	struct hw_perf_event_extra *reg = &event->hw.extra_reg;
+ 	struct er_account *era;
+ 	unsigned long flags;
+ 	int orig_idx = reg->idx;
+ 
+ 	/* already allocated shared msr */
+ 	if (reg->alloc)
+-		return &unconstrained;
++		return NULL; /* call x86_get_event_constraint() */
+ 
+ again:
+ 	era = &cpuc->shared_regs->regs[reg->idx];
+@@ -1159,14 +1159,10 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+ 		reg->alloc = 1;
+ 
+ 		/*
+-		 * All events using extra_reg are unconstrained.
+-		 * Avoids calling x86_get_event_constraints()
+-		 *
+-		 * Must revisit if extra_reg controlling events
+-		 * ever have constraints. Worst case we go through
+-		 * the regular event constraint table.
++		 * need to call x86_get_event_constraint()
++		 * to check if associated event has constraints
+ 		 */
+-		c = &unconstrained;
++		c = NULL;
+ 	} else if (intel_try_alt_er(event, orig_idx)) {
+ 		raw_spin_unlock(&era->lock);
+ 		goto again;
+@@ -1203,11 +1199,23 @@ static struct event_constraint *
+ intel_shared_regs_constraints(struct cpu_hw_events *cpuc,
+ 			      struct perf_event *event)
+ {
+-	struct event_constraint *c = NULL;
+-
+-	if (event->hw.extra_reg.idx != EXTRA_REG_NONE)
+-		c = __intel_shared_reg_get_constraints(cpuc, event);
+-
++	struct event_constraint *c = NULL, *d;
++	struct hw_perf_event_extra *xreg, *breg;
++
++	xreg = &event->hw.extra_reg;
++	if (xreg->idx != EXTRA_REG_NONE) {
++		c = __intel_shared_reg_get_constraints(cpuc, event, xreg);
++		if (c == &emptyconstraint)
++			return c;
++	}
++	breg = &event->hw.branch_reg;
++	if (breg->idx != EXTRA_REG_NONE) {
++		d = __intel_shared_reg_get_constraints(cpuc, event, breg);
++		if (d == &emptyconstraint) {
++			__intel_shared_reg_put_constraints(cpuc, xreg);
++			c = d;
++		}
++	}
+ 	return c;
+ }
+ 
+@@ -1255,6 +1263,10 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
+ 	reg = &event->hw.extra_reg;
+ 	if (reg->idx != EXTRA_REG_NONE)
+ 		__intel_shared_reg_put_constraints(cpuc, reg);
++
++	reg = &event->hw.branch_reg;
++	if (reg->idx != EXTRA_REG_NONE)
++		__intel_shared_reg_put_constraints(cpuc, reg);
+ }
+ 
+ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+@@ -1434,7 +1446,7 @@ static int intel_pmu_cpu_prepare(int cpu)
+ {
+ 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+ 
+-	if (!x86_pmu.extra_regs)
++	if (!(x86_pmu.extra_regs || x86_pmu.lbr_sel_map))
+ 		return NOTIFY_OK;
+ 
+ 	cpuc->shared_regs = allocate_shared_regs(cpu);
+@@ -1456,22 +1468,28 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	 */
+ 	intel_pmu_lbr_reset();
+ 
+-	if (!cpuc->shared_regs || (x86_pmu.er_flags & ERF_NO_HT_SHARING))
++	cpuc->lbr_sel = NULL;
++
++	if (!cpuc->shared_regs)
+ 		return;
+ 
+-	for_each_cpu(i, topology_thread_cpumask(cpu)) {
+-		struct intel_shared_regs *pc;
++	if (!(x86_pmu.er_flags & ERF_NO_HT_SHARING)) {
++		for_each_cpu(i, topology_thread_cpumask(cpu)) {
++			struct intel_shared_regs *pc;
+ 
+-		pc = per_cpu(cpu_hw_events, i).shared_regs;
+-		if (pc && pc->core_id == core_id) {
+-			cpuc->kfree_on_online = cpuc->shared_regs;
+-			cpuc->shared_regs = pc;
+-			break;
++			pc = per_cpu(cpu_hw_events, i).shared_regs;
++			if (pc && pc->core_id == core_id) {
++				cpuc->kfree_on_online = cpuc->shared_regs;
++				cpuc->shared_regs = pc;
++				break;
++			}
+ 		}
++		cpuc->shared_regs->core_id = core_id;
++		cpuc->shared_regs->refcnt++;
+ 	}
+ 
+-	cpuc->shared_regs->core_id = core_id;
+-	cpuc->shared_regs->refcnt++;
++	if (x86_pmu.lbr_sel_map)
++		cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
+ }
+ 
+ static void intel_pmu_cpu_dying(int cpu)
 -- 
 1.7.1
 
