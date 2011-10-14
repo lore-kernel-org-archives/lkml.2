@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318Ab1JNQnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:43:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56723 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab1JNQnj (ORCPT
+	id S1755266Ab1JNQoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:44:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63899 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab1JNQog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:43:39 -0400
-Date: Fri, 14 Oct 2011 20:43:33 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 3/5] fs, proc: Add /proc/$pid/tls entry
-Message-ID: <20111014164333.GU14464@moon>
-References: <20111014110416.552685686@openvz.org>
- <20111014110511.416851818@openvz.org>
- <20111014164050.GB4294@google.com>
+	Fri, 14 Oct 2011 12:44:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014164050.GB4294@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <201110141827.53906.arnd@arndb.de>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com>
+	<201110141729.41515.arnd@arndb.de>
+	<74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com>
+	<201110141827.53906.arnd@arndb.de>
+Date: Fri, 14 Oct 2011 09:44:34 -0700
+Message-ID: <CAOesGMgDwMeVmwo1WJ3tU+ZdjCSJ6F8mY42e_KwTmzAkGQsqmg@mail.gmail.com>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+From: Olof Johansson <olof@lixom.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 09:40:50AM -0700, Tejun Heo wrote:
-> On Fri, Oct 14, 2011 at 03:04:19PM +0400, Cyrill Gorcunov wrote:
-> > To be able to restart checkpointed tasks we need
-> > to know TLS status at dumping time. Export this
-> > information by /proc/$pid/tls entry.
-> > 
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> 
-> No objection from me but it would be great if you can go over other
-> archs and see how other archs deal with tls just in case.
-> 
+On Fri, Oct 14, 2011 at 9:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 14 October 2011, Stephen Warren wrote:
+>> Arnd Bergmann wrote at Friday, October 14, 2011 9:30 AM:
+>> ...
+>> > You mention that tegra30 will require AUTO_ZRELADDR.
+>>
+>> Well, just to be clear, here's the situation I think:
+>>
+>> Tegra20's SDRAM starts at physical address 0.
+>>
+>> Tegra30's SDRAM starts at physical address 2G.
+>>
+>> To support that, we could either:
+>>
+>> a) Introduce a new Kconfig variable for Tegra30, make T20/T30 mutually
+>> exclusive, and update arch/arm/mach-tegra/Makefile.boot to set zreladdr
+>> etc. based on the new Tegra30 config variable too. Then, there's no need
+>> for AUTO_ZRELADDR anywhere.
+>>
+>> b) Have no new config variable, build a unified T20/T30 kernel, leave
+>> Makefile.boot untouched, and rely on using AUTO_ZRELADDR for Tegra30 to
+>> account for the different SDRAM physical addresses.
+>
+> Ok, thanks for the explanation, that makes it much clearer. For
+> completeness, you could also do both of the above and make T20/T30 mutually
+> exclusive unless AUTO_ZRELADDR is set. That might be more complex than
+> necessary, I don't know.
 
-I'll check, at moment I found it at x86 only (in thread_info) but definitely
-need to re-check. Thanks Tejun!
+That is likely to get messy.
 
-	Cyrill
+Seems like there could be some use for a (silent) option for a
+platform to indicate that it can do XIP kernel (or zImage), and thus
+not able to use AUTO_ZRELADDR (or other options that require rewriting
+text segment of zImage or kernel).
+
+Language gets awkard though, since it'd be a negative option (or all
+platforms would need to add it). MACH_XIP_UNSUPPORTED perhaps?
+
+
+-Olof
