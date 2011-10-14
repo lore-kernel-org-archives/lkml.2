@@ -1,38 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1JNIfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 04:35:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47380 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab1JNIe6 (ORCPT
+	id S1753776Ab1JNIrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 04:47:53 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:47141 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1JNIrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 04:34:58 -0400
-Subject: Re: [PATCH] mtd: mark block device queue as non-rotational
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Dan McGee <dpmcgee@gmail.com>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+	Fri, 14 Oct 2011 04:47:51 -0400
+Subject: Re: [PATCH] Fix strim() semantics for strings that have only blanks
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: andre.goddard@gmail.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
         linux-kernel@vger.kernel.org
-Date: Fri, 14 Oct 2011 11:34:26 +0300
-In-Reply-To: <1317187302-13380-1-git-send-email-dpmcgee@gmail.com>
-References: <1317187302-13380-1-git-send-email-dpmcgee@gmail.com>
+In-Reply-To: <20111013165431.b84ffab4.akpm@linux-foundation.org>
+References: <1318408317.2891.3.camel@br98xy6r>
+	 <20111013165431.b84ffab4.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318581273.12351.64.camel@sauron>
+Organization: IBM
+Date: Fri, 14 Oct 2011 10:44:17 +0200
+Message-ID: <1318581857.3362.8.camel@br98xy6r>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 00:21 -0500, Dan McGee wrote:
-> This is similar to what the nbd driver does, among others.
+Hello Andrew,
+
+On Thu, 2011-10-13 at 16:54 -0700, Andrew Morton wrote:
+> On Wed, 12 Oct 2011 10:31:57 +0200
+> > Also strim() explicitly does not have "__must_check", in order to use it
+> > without using the return value.
+> > 
 > 
-> Signed-off-by: Dan McGee <dpmcgee@gmail.com>
+> This observation seems to have nothing to do with the patch?
 
-Pushed to l2-mtd-2.6.git, thanks!
+Well, it is just a hint that it was intentionally that the return value
+of strim() can be ignored and therefore I legally can use it like I do
+it ;-)
 
--- 
-Best Regards,
-Artem Bityutskiy
+> I think that strim() _should_ have __must_check annotation (which means
+> that strim() simply disappears, which is good).  It is only safe to
+> ignore the strim() return value if the caller knows that the string
+> started with a non-space.  The number of situations where this is
+> guaranteed are faily small, I suspect.
+
+Everywhere I use that function I know that my string has only trailing
+blanks (or only blanks). Therefore I think we should have a function
+that just removes trailing blanks. Perhaps we should change strim() to:
+
+void strim(char *str);
+
+And change the three users that need the return value to use the
+strstrip() instead:
+
+grep -r " = strim(" linux-2.6
+security/apparmor/lib.c:	char *name = strim(fqname);
+security/apparmor/lsm.c:	args = strim(args);
+security/apparmor/policy.c:	hname = strim((char *)hname);
+
+Michael
 
