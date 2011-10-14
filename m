@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1JNBiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 21:38:00 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36368 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab1JNBh7 (ORCPT
+	id S1756104Ab1JNBjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 21:39:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46153 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab1JNBjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 21:37:59 -0400
-Subject: [PATCH 3/3] ASoC: wm8991: Convert codec->hw_read to snd_soc_read
+	Thu, 13 Oct 2011 21:39:21 -0400
+Subject: [PATCH 3/3] ASoC: wm8961: Convert codec->hw_read to snd_soc_read
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         alsa-devel@alsa-project.org
-In-Reply-To: <1318556120.6379.1.camel@phoenix>
+In-Reply-To: <1318556272.6379.4.camel@phoenix>
 References: <1318556120.6379.1.camel@phoenix>
+	 <1318556272.6379.4.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 09:37:52 +0800
-Message-ID: <1318556272.6379.4.camel@phoenix>
+Date: Fri, 14 Oct 2011 09:39:14 +0800
+Message-ID: <1318556354.6379.5.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
