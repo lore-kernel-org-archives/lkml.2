@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab1JNGQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 02:16:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39574 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932327Ab1JNGQU convert rfc822-to-8bit (ORCPT
+	id S1755431Ab1JNGXN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 02:23:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40785 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab1JNGXL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 02:16:20 -0400
+	Fri, 14 Oct 2011 02:23:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1318570705-17595-2-git-send-email-vinod.koul@intel.com>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com> <1318570705-17595-2-git-send-email-vinod.koul@intel.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 14 Oct 2011 14:15:59 +0800
-Message-ID: <CAGsJ_4yeL7=LbNDGq8R95PUUyaHuYqFe6rrwM527Ux=NcT0FGg@mail.gmail.com>
-Subject: Re: [PATCH 01/10] dmaengine: add new enum dma_transfer_direction
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, rmk@arm.linux.org.uk,
-        Vinod Koul <vinod.koul@linux.intel.com>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <79856.1318571233@turing-police.cc.vt.edu>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<CAAMvbhFNTQeuJBgsDB9Y5ODc_b2O0X=oP_3uwRpWUREFS9qufA@mail.gmail.com>
+	<CA+O4pCK2=rjqufLetTd=419bDfkN6RRX89Sh5noDnjoBAgoR2A@mail.gmail.com>
+	<CA+O4pCKKOvjRmgpC1fijzmpKOMQGdb1vkKeiSgFTY3Sv7xeaoQ@mail.gmail.com>
+	<79856.1318571233@turing-police.cc.vt.edu>
+Date: Fri, 14 Oct 2011 08:23:10 +0200
+Message-ID: <CA+O4pC+8SbRqRz2uEnG_JkWcPmV_rCsy1zksHYsCk9HKduZRaA@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: James Courtier-Dutton <james.dutton@gmail.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/14 Vinod Koul <vinod.koul@intel.com>:
-> From: Vinod Koul <vinod.koul@linux.intel.com>
+On Fri, Oct 14, 2011 at 7:47 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Fri, 14 Oct 2011 05:42:44 +0200, Markus Rechberger said:
 >
-> This new enum removes usage of dma_data_direction for dma direction. The new
-> enum cleans tells the DMA direction and mode
-> This further paves way for merging the dmaengine _prep operations and also for
-> interleaved dma
+>> The inflexible device which uses 24064 bytes works with all other
+>> Operating systems by using that value
+>> and gives exactly the same results with other transfer sizes than that.
 >
-> Suggested-by: Jassi Brar <jaswinder.singh@linaro.org>
-> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+> -ENOPARSE. �If it's inflexible,
 
-Reviewed-by: Barry Song <Baohua.Song@csr.com>
+the particular device in question is inflexible yes.
 
-> ---
->  include/linux/dmaengine.h |   22 +++++++++++++++++-----
->  1 files changed, 17 insertions(+), 5 deletions(-)
+> how did you get results for other transfer
+> sizes?
+
+other transfer sizes are related to another more flexible device, but that
+device has some hardware register to modify the needed transfer buffer size.
+
+> And if other transfer sizes give exactly the same results, why can't you
+> just use those instead?
 >
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index ace51af..24942ad 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -23,7 +23,6 @@
->
->  #include <linux/device.h>
->  #include <linux/uio.h>
-> -#include <linux/dma-direction.h>
->  #include <linux/scatterlist.h>
->
->  /**
-> @@ -75,6 +74,19 @@ enum dma_transaction_type {
->  /* last transaction type for creation of the capabilities mask */
->  #define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
->
-> +/**
-> + * enum dma_transfer_direction - dma transfer mode and direction indicator
-> + * @MEM_TO_MEM: Async/Memcpy mode
-> + * @MEM_TO_DEV: Slave mode & From Memory to Device
-> + * @DEV_TO_MEM: Slave mode & From Device to Memory
-> + * @DEV_TO_DEV: Slave mode & From Device to Device
-> + */
-> +enum dma_transfer_direction {
-> +       MEM_TO_MEM,
-> +       MEM_TO_DEV,
-> +       DEV_TO_MEM,
-> +       DEV_TO_DEV,
-> +};
->
->  /**
->  * enum dma_ctrl_flags - DMA flags to augment operation preparation,
-> @@ -267,7 +279,7 @@ enum dma_slave_buswidth {
->  * struct, if applicable.
->  */
->  struct dma_slave_config {
-> -       enum dma_data_direction direction;
-> +       enum dma_transfer_direction direction;
->        dma_addr_t src_addr;
->        dma_addr_t dst_addr;
->        enum dma_slave_buswidth src_addr_width;
-> @@ -490,11 +502,11 @@ struct dma_device {
->
->        struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
->                struct dma_chan *chan, struct scatterlist *sgl,
-> -               unsigned int sg_len, enum dma_data_direction direction,
-> +               unsigned int sg_len, enum dma_transfer_direction direction,
->                unsigned long flags);
->        struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
->                struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
-> -               size_t period_len, enum dma_data_direction direction);
-> +               size_t period_len, enum dma_transfer_direction direction);
->        int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->                unsigned long arg);
->
-> @@ -520,7 +532,7 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
->
->  static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
->        struct dma_chan *chan, void *buf, size_t len,
-> -       enum dma_data_direction dir, unsigned long flags)
-> +       enum dma_transfer_direction dir, unsigned long flags)
->  {
->        struct scatterlist sg;
->        sg_init_one(&sg, buf, len);
-> --
-> 1.7.0.4
->
->
+
+other transfer sizes for the device with the fixed transfer buffer
+size give exactly the same result with OSX, meaning that it also
+does not work on MacOSX with another size than 24064 bytes.
+
+Final conclusion is still:
+1. those people who used to deal with USB with linux in the past never
+heard about such an option it seems, fact is that the stream corrupts
+the logfiles show up damaged data before it arrives to the application
+so on that side bugs in the application would be unrelated. As a
+crosscheck I also posted a logfile with valid data.
+2. the more flexible device even has hardware registers to modify the
+bulk transfer size (maybe it's a timing related issue on the physical
+usb bus).
+3. if the more flexible device is set to buffers > 16k the data also corrupts
+4. the fixed buffer size device does not accept any other values, even
+twice that requested buffersize corrupts the data.
+5. the patch does not hurt, since devices which request buffer sizes
+below 16k will still be handled the same way as they were handled
+during the last 10 years, it just allows applications to request
+bigger buffers if needed.
+6. BOTH of our devices (the flexible one device A, can work with
+bigger buffers AND a bigger HW register configuration, device B which
+is not so flexible also works flawlessly as seen in the video).
+
+I'm repeating myself over and over here.
+
+Markus
