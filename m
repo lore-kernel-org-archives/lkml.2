@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab1JNPIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:08:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49470 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756198Ab1JNPIG (ORCPT
+	id S933140Ab1JNPJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:09:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41511 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756904Ab1JNPJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:08:06 -0400
-Date: Fri, 14 Oct 2011 12:07:53 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/6] perf/core fixes and improvements
-Message-ID: <20111014150753.GA19655@ghostprotocols.net>
-References: <1318518504-23299-1-git-send-email-acme@infradead.org>
- <20111014071610.GA20648@elte.hu>
+	Fri, 14 Oct 2011 11:09:33 -0400
+Date: Fri, 14 Oct 2011 11:09:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Benson Leung <bleung@chromium.org>
+cc: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        <linux-usb@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: usbhid: enable remote wakeup for mice
+In-Reply-To: <CANLzEksars=PfOdx6Uxu-FbmxuXK0DMZoGW0HWbpogQ11YAA1Q@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1110141106270.2036-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014071610.GA20648@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 14, 2011 at 09:16:10AM +0200, Ingo Molnar escreveu:
-> Hm, got a segfault with a plain 'perf top' on a 3.0-0.rc7.git3-ish 
-> box:
+On Fri, 14 Oct 2011, Benson Leung wrote:
+
+> Thanks for the prompt response.
 > 
->  ./perf top
->  Segmentation fault (core dumped)
-> 
-> It took about 20 attempts to reproduce the segfault, and it always 
-> occured right after the first refresh (which, unlike the working 
-> cases showed zero samples):
-> 
-> Program received signal SIGSEGV, Segmentation fault.                                                    
-> [Switching to Thread 0x7ffff13a3700 (LWP 21657)]
-> ui_browser__hists_seek (whence=<optimized out>, offset=0, 
-> self=0x7fffec0008c0)
->     at util/ui/browsers/hists.c:682
-> 682		h->row_offset = 0;
-> (gdb) 
-> 
-> (gdb) bt
-> #0  ui_browser__hists_seek (whence=<optimized out>, offset=0, self=0x7fffec0008c0)
+> My initial reasoning was to set as default the wakeup behavior so a
+> mouse button press would wake the system. I am well aware that most if
+> not all mice don't support wake on move, but at least wake on button
+> press would have been more desirable than doing nothing.
 
-browser->top was NULL at that point, it was only being initialized in
-the refresh routine, fixed in my tree, please re-pull.
+I'm sorry, I misunderstood the purpose of the original patch.  Probably 
+read it too quickly -- I thought you were enabling autosuspend rather 
+than wakeup.
 
-One can easily trigger it by specifying a seldom ocurring event, which
-will start the browser without samples, then generating such event, I
-used net:netif_rx + ping on my workstation.
+Enabling wakeup by default has its own problems.  Some mice do send
+wakeup requests when they are moved.  You wouldn't want a stray motion
+or unintentional touch to wake up a sleeping system.  Or at least, a
+lot of people wouldn't want that.
 
-> Btw., a side note: could we try to reset the console on segfaults and 
-> similar crashes? TUI crashes tend to leave the console in a messed up 
-> (blue, etc.) state.
+> Anyway, I'll solve this problem on my system by writing to wakeup
+> property on device attach. Consider my change abandoned.
 
-I'll work on that, and also on allowing changing the browser colors,
-say, to look like the stdio one.
+That seems like the best approach.
 
-- Arnaldo
+Alan Stern
+
