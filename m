@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab1JNLE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 07:04:57 -0400
-Received: from furry1.cpalmer.me.uk ([91.84.39.42]:36801 "EHLO
-	furry1.cpalmer.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932068Ab1JNLE4 (ORCPT
+	id S932741Ab1JNLFc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 07:05:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59862 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068Ab1JNLF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 07:04:56 -0400
-X-Greylist: delayed 826 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 07:04:56 EDT
-Message-ID: <4E98175A.8040905@pobox.com>
-Date: Fri, 14 Oct 2011 12:04:58 +0100
-From: Chris Palmer <chris.palmer@pobox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
+	Fri, 14 Oct 2011 07:05:29 -0400
+Message-Id: <20111014110511.157239709@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 14 Oct 2011 15:04:17 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PROBLEM] ASUS Sandybridge motherboards + PCI not working (IRQ n:
- nobody cared)
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Andrew Vagin <avagin@parallels.com>, Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 1/5] proc: Introduce the Children: line in /proc/<pid>/status
+References: <20111014110416.552685686@openvz.org>
+Content-Disposition: inline; filename=cr-proc-add-children
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interrupt handling for *PCI boards with ASUS Sandybridge motherboards*
-seems to be broken.
+From: Pavel Emelyanov <xemul@parallels.com>
 
-It has been seen with network and non-network PCI boards. PCIx network
-boards work OK. And all reports are for ASUS motherboards.
+Although we can get the pids of some task's issue, this is just 
+more convenient to have them this way.
 
-It always results in the infamous "IRQ n: nobody cared" message usually
-within an hour. It is possible to restart things by rmmod/modprobe on
-the appropriate PCI driver.
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ fs/proc/array.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-Andrew Morton kindly took a quick look and thinks it is most likely an
-ACPI bug.
+Index: linux-2.6.git/fs/proc/array.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -158,6 +158,18 @@ static inline const char *get_task_state
+ 	return *p;
+ }
+ 
++static void task_children(struct seq_file *m, struct task_struct *p, struct pid_namespace *ns)
++{
++	struct task_struct *c;
++
++	seq_printf(m, "Children:");
++	read_lock(&tasklist_lock);
++	list_for_each_entry(c, &p->children, sibling)
++		seq_printf(m, " %d", pid_nr_ns(task_pid(c), ns));
++	read_unlock(&tasklist_lock);
++	seq_putc(m, '\n');
++}
++
+ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *p)
+ {
+@@ -192,6 +204,8 @@ static inline void task_state(struct seq
+ 		cred->uid, cred->euid, cred->suid, cred->fsuid,
+ 		cred->gid, cred->egid, cred->sgid, cred->fsgid);
+ 
++	task_children(m, p, ns);
++
+ 	task_lock(p);
+ 	if (p->files)
+ 		fdt = files_fdtable(p->files);
 
-Configuration summary:
- - ASUS P8H67-V/R3 Motherboard (others have problems with similar M/Bs)
- - M/B BIOS 0804 (just updated to that - no change)
- - Core i5/2500K
- - Onboard ethernet (at11c driver - works)
- - Additional PCIx Intel ethernet board (e1000e driver - works)
- - Additional PCI Broadcom BCM5702X ethernet board (tg3 driver - fails)
-	[ Also fails with other PCI boards such as RTL8139 ]
- - Kernel 3.0.6
-
-
-Any help much appreciated...
-
-Previous references:
-
-https://lkml.org/lkml/2011/6/30/197
-https://bugzilla.kernel.org/show_bug.cgi?id=38632
-https://bugzilla.redhat.com/show_bug.cgi?id=713351
-https://bugzilla.kernel.org/show_bug.cgi?id=35332
-https://bugzilla.kernel.org/show_bug.cgi?id=34242
-https://bugzilla.kernel.org/show_bug.cgi?id=32242
-https://bugzilla.kernel.org/show_bug.cgi?id=39122
-
-Chris
