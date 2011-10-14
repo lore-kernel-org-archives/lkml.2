@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab1JNWe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 18:34:28 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:38925 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab1JNWe1 (ORCPT
+	id S1757064Ab1JNWiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 18:38:13 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34758 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878Ab1JNWiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 18:34:27 -0400
-Message-ID: <4E98B751.5070006@panasas.com>
-Date: Sat, 15 Oct 2011 00:27:29 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, Paul Bolle <pebolle@tiscali.nl>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: Problems with Kconfig select across directories
-References: <4E9848C1.8040306@panasas.com> <4E98B19B.6020107@suse.cz>
-In-Reply-To: <4E98B19B.6020107@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Oct 2011 18:38:08 -0400
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org
+Cc: Maxim Uvarov <maxim.uvarov@oracle.com>
+Subject: [PATCH 2/2] xen: Make XEN_MAX_DOMAIN_MEMORY have more sensible defaults for 32-bit builds
+Date: Fri, 14 Oct 2011 15:36:51 -0700
+Message-Id: <1318631811-21559-3-git-send-email-maxim.uvarov@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1318631811-21559-1-git-send-email-maxim.uvarov@oracle.com>
+References: <1318631811-21559-1-git-send-email-maxim.uvarov@oracle.com>
+X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
+X-CT-RefId: str=0001.0A090209.4E98B9CD.0060,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2011 12:03 AM, Michal Marek wrote:
-> On 14.10.2011 16:35, Boaz Harrosh wrote:
->> I have this weird problem with Kconfig.
->>
->> In fs/exofs/Kconfig I have:
->>
->> # Library to be selected by users
->> config ORE
->> 	tristate
->>
->> Then
->> config EXOFS_FS
->> 	tristate "exofs: OSD based file system support"
->> 	depends on SCSI_OSD_ULD
->> 	select ORE
->> 	help ...
->>
->> So far so good. Choosing EXOFS_FS in xmenuconfig works fine as expected.
->> But now I add another user say: (It's more complicated but even below does
->> not work)
->>
->> config NFS_FS
->> 	tristate "NFS client support"
->> 	depends on INET && FILE_LOCKING
->> 	select LOCKD
->> 	select SUNRPC
->> 	select NFS_ACL_SUPPORT if NFS_V3_ACL
->> 	select ORE
->> 	help ...
->>
->> This does not work. The ORE is not compiled and MODPOST complains.
->> (Given EXOFS_FS is not selected since then it will work)
-> 
-> fs/Makefile only visits fs/exofs if CONFIG_EXOFS_FS is set.
-> 
-> Michal
+Which is that 128GB is not going to happen with 32-bit PV DomU.
+Lets use something more realistic.
 
-Bingo. Right on the money. With below patch it works. I'll think
-about it some more and submit.
-
-Thanks
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
-exofs/ore: Select fs/exofs/ folder in Makefile also for ORE only compilation
+ arch/x86/xen/Kconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-If any thing from fs/exofs is set the ORE will be selected. So conditionally
-include fs/exofs in fs/Makefile on ORE set and not EXOFS_FS
-
-Boaz
----
-git diff --stat -p -M
- fs/Makefile    |    2 +-
- fs/nfs/Kconfig |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/fs/Makefile b/fs/Makefile
-index afc1096..d7a88b5 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -120,6 +120,6 @@ obj-$(CONFIG_DEBUG_FS)		+= debugfs/
- obj-$(CONFIG_OCFS2_FS)		+= ocfs2/
- obj-$(CONFIG_BTRFS_FS)		+= btrfs/
- obj-$(CONFIG_GFS2_FS)           += gfs2/
--obj-$(CONFIG_EXOFS_FS)          += exofs/
-+obj-$(CONFIG_ORE)		+= exofs/
- obj-$(CONFIG_CEPH_FS)		+= ceph/
- obj-$(CONFIG_PSTORE)		+= pstore/
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index dbcd821..1c13c34 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -96,6 +96,7 @@ config PNFS_BLOCK
- config PNFS_OBJLAYOUT
- 	tristate
- 	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
-+	select ORE
- 	default m
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 0b452c7..6d90ac8 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -29,7 +29,8 @@ config XEN_PVHVM
  
- config ROOT_NFS
+ config XEN_MAX_DOMAIN_MEMORY
+        int "Maximum allowed size of a domain in gigabytes"
+-       default 128
++       default 128 if X86_64
++       default 64 if X86_32
+        depends on XEN
+        help
+          This only affects the sizing of some bss arrays, the unused
+-- 
+1.7.4.1
 
