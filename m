@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab1JNOPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 10:15:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16421 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab1JNOP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 10:15:29 -0400
-Date: Fri, 14 Oct 2011 10:14:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        crash-utility@redhat.com, kexec@lists.infradead.org,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
- NT_NOCOREDUMP to capture slimdump
-Message-ID: <20111014141450.GB4142@redhat.com>
-References: <20111003070735.GJ2223@in.ibm.com>
- <20111003073203.GA22694@in.ibm.com>
- <20111004140437.GA28306@redhat.com>
- <20111005071844.GB2235@in.ibm.com>
- <20111005152537.GB30146@redhat.com>
- <20111007161218.GA2297@in.ibm.com>
- <20111010070725.GB11577@liondog.tnic>
- <20111011184434.GB32316@in.ibm.com>
- <20111012155144.GC12845@redhat.com>
- <20111014113025.GA20278@in.ibm.com>
+	id S1756840Ab1JNORe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 10:17:34 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:33111
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751113Ab1JNORc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 10:17:32 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz98dKzz1202hzz15d4Rz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LT27P0-01-3D6-02
+X-M-MSG: 
+Date: Fri, 14 Oct 2011 16:17:14 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: KyongHo Cho <pullip.cho@samsung.com>
+CC: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Russell King'" <rmk+kernel@arm.linux.org.uk>,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        "younglak1004.kim@samsung.com" <younglak1004.kim@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+Subject: Re: [PATCH v5 2/2] iommu/exynos: Add iommu driver for Exynos
+ Platforms
+Message-ID: <20111014141714.GD2198@amd.com>
+References: <000501cc897f$fa0204f0$ee060ed0$%cho@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111014113025.GA20278@in.ibm.com>
+In-Reply-To: <000501cc897f$fa0204f0$ee060ed0$%cho@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 05:00:25PM +0530, K.Prasad wrote:
-> On Wed, Oct 12, 2011 at 11:51:44AM -0400, Vivek Goyal wrote:
-> > On Wed, Oct 12, 2011 at 12:14:34AM +0530, K.Prasad wrote:
-> > > On Mon, Oct 10, 2011 at 09:07:25AM +0200, Borislav Petkov wrote:
-> > > > On Fri, Oct 07, 2011 at 09:42:19PM +0530, K.Prasad wrote:
-> [snipped]
-> > > 
-> > > ii) Scenario2: System with PG_hwpoison (or landmine!) pages crashes because
-> > > of a software bug. In this case, kexec kernel would normally reboot because
-> > > of reading the PG_poison page. I'll soon get a new version of the patchset
-> > > implementing this.
-> > > 
-> > > Solution: Maintain a linked list of PFNs when the corresponding 'struct page'
-> > > has been marked PG_hwpoison. We could export/put this list to use in
-> > > quite a few ways.
-> > 
-> > What's the need of a list and why do we have to export anything. Can't
-> > makedumpfile look at the struct page and then just not dump that page if
-> > hwpoison flag is set.
-> >
-> 
-> I'll respond to just this part of the comment for now, since I have a
-> few conflicting thoughts crossing my mind regarding the above suggestion
-> and thought I'll put it across to the community to get that clarified.
-> 
-> Using makedumpfile to actually identify and sidestep PG_hwpoison sounds
-> a bit dangerous. Let's for a moment that makedumpfile has this
-> capability, which is implemented as under.
-> 
-> - The list of nodes (pg_data_t) and all struct page's (through
->   node_mem_map) are sent to makedumpfile using VMCOREINFO_SYMBOL().
-> 
-> - makedumpfile would use this information to go to the old kernel's
->   memory, look at pg_data_t and then into each element of node_mem_map
->   to then lookout for PG_hwpoison inside 'struct page'->flags. (Well,
->   this method works for !SPARSEMEM. I'd like to know if I've overlooked
->   any other better method. pfn_to_page() wouldn't work either, as it will
->   give a 'struct page' of a PFN as seen by the kexec'd kernel and not
->   the crashed kernel).
-> 
-> - If PG_hwpoison flag for the corresponding page is clear, then it
->   will allow the copy operation.
-> 
-> - The problem comes when we actually land on a page with PG_hwpoison
->   while carrying out the above 3 steps. For instance, if the page
->   containing the pg_data_t and node_mem_map data structures themselves
->   are marked hw-poisoned.
+On Thu, Oct 13, 2011 at 04:13:23AM -0400, KyongHo Cho wrote:
+> +struct exynos_iommu_domain {
+> +       struct device *dev;
+> +       unsigned long *pgtable;
+> +       spinlock_t lock;
+> +       spinlock_t pgtablelock;
+> +};
 
-I think it can happen and in that case we don't capture the dump. This
-is similar to possibility of running into a accessing a poisoned page
-while you are trying to same the final note which will contain the
-MCE info or list of poisoned pages.
+Can you please add comments to document what these spinlocks protect?
 
-Even if you export the list successfuly and you find pd_data_t pages
-are poisoned, what would you do? Not do filtering and save tera bytes
-of dump.
+> +static int exynos_iommu_attach_device(struct iommu_domain *domain,
+> +                                  struct device *dev)
+> +{
+> +       struct exynos_iommu_domain *priv = domain->priv;
+> +       int ret;
+> +
+> +       spin_lock(&priv->lock);
+> +
+> +       priv->dev = dev;
+> +
+> +       spin_unlock(&priv->lock);
+> +
+> +       ret = exynos_iommu_enable(domain);
+> +
+> +       return ret;
+> +}
+> +
+> +static void exynos_iommu_detach_device(struct iommu_domain *domain,
+> +                                   struct device *dev)
+> +{
+> +       struct exynos_iommu_domain *priv = domain->priv;
+> +
+> +       spin_lock(&priv->lock);
+> +
+> +       if (priv->dev == dev) {
+> +               priv->dev = NULL;
+> +
+> +               spin_unlock(&priv->lock);
+> +
+> +               exynos_iommu_disable(domain);
+> +       } else {
+> +               spin_unlock(&priv->lock);
+> +       }
+> +}
 
-I think you are just trying to solve every corner case which might
-not even be required in practice. Kdump is our best effort to capture
-the dump and there are so many corner cases where it will not work.
+That looks weird. As I read this code there is a 1-1 mapping between a
+device and a domain. This breaks semantics of the iommu-api where a
+domain can contain multiple devices.
 
-So I would suggest that lets us not make the whole thing too complicated
-now. If the scenario you are describing becomes common enough that
-it start bothering, we can look into exporting the poisoned pages list.
 
-Thanks
-Vivek 
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
