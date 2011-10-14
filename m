@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab1JNNvA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:51:00 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:55905 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab1JNNu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:50:57 -0400
-Date: Fri, 14 Oct 2011 08:50:55 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-Message-ID: <20111014135055.GA28592@sgi.com>
-References: <20111012160202.GA18666@sgi.com>
- <20111012120118.e948f40a.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110121452220.31218@router.home>
- <20111013152355.GB6966@sgi.com>
- <alpine.DEB.2.00.1110131052300.18473@router.home>
- <20111013135032.7c2c54cd.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110131602020.26553@router.home>
- <20111013142434.4d05cbdc.akpm@linux-foundation.org>
- <20111014122506.GB26737@sgi.com>
+	id S1756787Ab1JNNvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:51:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48862 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756282Ab1JNNvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 09:51:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014122506.GB26737@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1318599079.1546.395.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
+	<CAGsJ_4yqdwaTxi=KMcgokb05uWUNi5_7uZDGqA4RsOZkWZ7FQA@mail.gmail.com>
+	<CAJe_ZhfomhARd8EVcR+jCHuFLrAKkNqvaETFHiNtNeijx+5Kxw@mail.gmail.com>
+	<1318599079.1546.395.camel@vkoul-udesk3>
+Date: Fri, 14 Oct 2011 19:21:45 +0530
+Message-ID: <CAJe_ZheA3iTQ2K4aCYccn2N_8fkMkLMPV9MbQG6gHjYWiKdOCQ@mail.gmail.com>
+Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, rmk@arm.linux.org.uk,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 07:25:06AM -0500, Dimitri Sivanich wrote:
-> On Thu, Oct 13, 2011 at 02:24:34PM -0700, Andrew Morton wrote:
-> > On Thu, 13 Oct 2011 16:02:58 -0500 (CDT)
-> > Christoph Lameter <cl@gentwo.org> wrote:
-> > 
-> > > On Thu, 13 Oct 2011, Andrew Morton wrote:
-> > > 
-> > > > > If there are no updates occurring for a while (due to increased deltas
-> > > > > and/or vmstat updates) then the vm_stat cacheline should be able to stay
-> > > > > in shared mode in multiple processors and the performance should increase.
-> > > > >
-> > > >
-> > > > We could cacheline align vm_stat[].  But the thing is pretty small - we
-> > > > couild put each entry in its own cacheline.
-> > > 
-> > > Which in turn would increase the cache footprint of some key kernel
-> > > functions (because they need multiple vm_stat entries) and cause eviction
-> > > of other cachelines that then reduce overall system performance again.
-> > 
-> > Sure, but we gain performance by not having different CPUs treading on
-> > each other when they update different vmstat fields.  Sometimes one
-> > effect will win and other times the other effect will win.  Some
-> > engineering is needed..
-> 
-> I think the first step is to determine the role (if any) that false sharing may be playing in this, since that's a simpler fix (cacheline align and pad the array).
+On 14 October 2011 19:01, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Fri, 2011-10-14 at 17:21 +0530, Jassi Brar wrote:
+>> On 14 October 2011 13:02, Barry Song <21cnbao@gmail.com> wrote:
+>> >
+>> > what if i want a cyclic interleaved transfer? i think the cyclic
+>> > interleaved transfer is what i want for audio dma.
+>> >
+>> ... we need to restore 'bool frm_irq' and add new 'bool cyclic' that
+>> would replay the transfer(i.e, reset dma-pointers to src_start & dst_start)
+>> after 'numf' frames have been transferred.
+> I was thinking more on lines to have this conveyed thru a flag.
 >
+Sorry don't see exactly what you mean.
+frm_irq and numf are independent of each other and could
+cover more cases than a single flag.
 
-Testing on a smaller machine with 46 writer threads in parallel (my original
-test used 120).
+> Anyway I plan to work on merging device_prep_slave_sg and
+> device_prep_cyclic to single API. Think more of device_prep_cyclic as
+> special case with sg length one and flag to tell dmac its cyclic.
+>
+AFAIK, usually the ring buffer is divided into N (>1) different
+periods that need
+to be transferred in endless loop.
 
-Looks as though cache-aligning and padding the end of the vm_stat array
-results in a ~150 MB/sec speedup.  This is a nice improvement for only 46
-writer threads, though it's not the full ~250 MB/sec speedup I get from
-setting OVERCOMMIT_NEVER.
+> Similarly here we could use/define this flag to say this transfer is
+> also cyclic in nature and dmac then reloads the list again.
+> That way any prep can be made cyclic in nature by just using this flag.
+>
+Some cyclic transfers might want callback done after each period/frame
+while some not. We can't cover using just one flag.
