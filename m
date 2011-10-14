@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab1JNMVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:21:36 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60627 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298Ab1JNMVf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:21:35 -0400
-Date: Fri, 14 Oct 2011 14:21:30 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ben Blum <bblum@andrew.cmu.edu>, Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        paulmck@linux.vnet.ibm.com, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] cgroups: convert ss->attach to use whole threadgroup
- flex_array (cpuset, memcontrol)
-Message-ID: <20111014122126.GL14968@somewhere>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
- <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
+	id S1756444Ab1JNMZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:25:11 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:59802 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751423Ab1JNMZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 08:25:10 -0400
+Date: Fri, 14 Oct 2011 07:25:06 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111014122506.GB26737@sgi.com>
+References: <20111012160202.GA18666@sgi.com>
+ <20111012120118.e948f40a.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110121452220.31218@router.home>
+ <20111013152355.GB6966@sgi.com>
+ <alpine.DEB.2.00.1110131052300.18473@router.home>
+ <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110131602020.26553@router.home>
+ <20111013142434.4d05cbdc.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111013142434.4d05cbdc.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 08:36:01PM -0400, Ben Blum wrote:
-> Convert ss->attach to take a flex_array of tasks instead of just the leader.
+On Thu, Oct 13, 2011 at 02:24:34PM -0700, Andrew Morton wrote:
+> On Thu, 13 Oct 2011 16:02:58 -0500 (CDT)
+> Christoph Lameter <cl@gentwo.org> wrote:
 > 
-> From: Ben Blum <bblum@andrew.cmu.edu>
+> > On Thu, 13 Oct 2011, Andrew Morton wrote:
+> > 
+> > > > If there are no updates occurring for a while (due to increased deltas
+> > > > and/or vmstat updates) then the vm_stat cacheline should be able to stay
+> > > > in shared mode in multiple processors and the performance should increase.
+> > > >
+> > >
+> > > We could cacheline align vm_stat[].  But the thing is pretty small - we
+> > > couild put each entry in its own cacheline.
+> > 
+> > Which in turn would increase the cache footprint of some key kernel
+> > functions (because they need multiple vm_stat entries) and cause eviction
+> > of other cachelines that then reduce overall system performance again.
 > 
-> This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
-> memcontrol) to accurately find the group's mm even when a non-leader does exec
-> and leaves the leader with a NULL mm pointer.
-> 
-> Also converts cpuset and memcontrol to take the flex_array and iterate down it
-> until an mm is found, instead of just attempting to use the leader's mm.
-> 
-> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+> Sure, but we gain performance by not having different CPUs treading on
+> each other when they update different vmstat fields.  Sometimes one
+> effect will win and other times the other effect will win.  Some
+> engineering is needed..
 
-I think there are patches from Tejun that handle that did that already?
+I think the first step is to determine the role (if any) that false sharing may be playing in this, since that's a simpler fix (cacheline align and pad the array).
 
-https://lkml.org/lkml/2011/8/23/418
+Then, if necessary, will look at contention issues within the array.
