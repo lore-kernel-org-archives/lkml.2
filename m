@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab1JNEda (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:33:30 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43616 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357Ab1JNEd1 (ORCPT
+	id S932533Ab1JNEd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 00:33:59 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:49811 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932278Ab1JNE1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:33:27 -0400
-Message-ID: <4E97BB8E.3060204@gmail.com>
-Date: Fri, 14 Oct 2011 10:03:18 +0530
-From: Subash Patel <subashrp@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15 ThunderBrowse/3.8
+	Fri, 14 Oct 2011 00:27:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Jh4MMlDbeAbBEavtxUkJZY2pTKf6TMJf3KAlTIxV8WyJ+tOVv+xTAaXdIWQPHquJJ
+	Qb/eFYuJcCV5IZ3smQqxg==
+Subject: [PATCH v2 05/29] x86/PCI: use pci_scan_bus() instead of
+	pci_scan_bus_parented()
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 13 Oct 2011 22:27:32 -0600
+Message-ID: <20111014042732.23504.87730.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
+References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [Linaro-mm-sig] [PATCH 8/9] ARM: integrate CMA with DMA-mapping
- subsystem
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com> <1317909290-29832-10-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1317909290-29832-10-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+This doesn't change any functionality, but it makes a subsequent patch
+slightly simpler.
 
-As informed to you in private over IRC, below piece of code broke during 
-booting EXYNOS4:SMDKV310 with ZONE_DMA enabled.
+pci_scan_bus(NULL, ...) and pci_scan_bus_parented() are identical except
+that pci_scan_bus() also calls pci_bus_add_devices():
 
+  pci_scan_bus_parented
+    pci_create_bus
+    pci_scan_child_bus
 
-On 10/06/2011 07:24 PM, Marek Szyprowski wrote:
-...
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index fbdd12e..9c27fbd 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -21,6 +21,7 @@
->   #include<linux/gfp.h>
->   #include<linux/memblock.h>
->   #include<linux/sort.h>
-> +#include<linux/dma-contiguous.h>
->
->   #include<asm/mach-types.h>
->   #include<asm/prom.h>
-> @@ -371,6 +372,13 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
->   	if (mdesc->reserve)
->   		mdesc->reserve();
->
-> +	/* reserve memory for DMA contigouos allocations */
-> +#ifdef CONFIG_ZONE_DMA
-> +	dma_contiguous_reserve(PHYS_OFFSET + mdesc->dma_zone_size - 1);
-> +#else
-> +	dma_contiguous_reserve(0);
-> +#endif
-> +
->   	memblock_analyze();
->   	memblock_dump_all();
->   }
-Regards,
-Subash
+  pci_scan_bus
+    pci_create_bus
+    pci_scan_child_bus
+    pci_bus_add_devices
+
+All callers of pcibios_scan_root() call pci_bus_add_devices() explicitly,
+and we don't pass a parent device, so we might as well use pci_scan_bus().
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/pci/common.c   |    2 +-
+ arch/x86/pci/legacy.c   |    3 ---
+ arch/x86/pci/numaq_32.c |    2 --
+ 3 files changed, 1 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 92df322..b389a2d 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -456,7 +456,7 @@ struct pci_bus * __devinit pcibios_scan_root(int busnum)
+ 	sd->node = get_mp_bus_to_node(busnum);
+ 
+ 	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busnum);
+-	bus = pci_scan_bus_parented(NULL, busnum, &pci_root_ops, sd);
++	bus = pci_scan_bus(busnum, &pci_root_ops, sd);
+ 	if (!bus)
+ 		kfree(sd);
+ 
+diff --git a/arch/x86/pci/legacy.c b/arch/x86/pci/legacy.c
+index c89266b..6e3f26a 100644
+--- a/arch/x86/pci/legacy.c
++++ b/arch/x86/pci/legacy.c
+@@ -30,9 +30,6 @@ int __init pci_legacy_init(void)
+ 
+ 	printk("PCI: Probing PCI hardware\n");
+ 	pci_root_bus = pcibios_scan_root(0);
+-	if (pci_root_bus)
+-		pci_bus_add_devices(pci_root_bus);
+-
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/pci/numaq_32.c b/arch/x86/pci/numaq_32.c
+index 512a88c..2b94aa9 100644
+--- a/arch/x86/pci/numaq_32.c
++++ b/arch/x86/pci/numaq_32.c
+@@ -153,8 +153,6 @@ int __init pci_numaq_init(void)
+ 	raw_pci_ops = &pci_direct_conf1_mq;
+ 
+ 	pci_root_bus = pcibios_scan_root(0);
+-	if (pci_root_bus)
+-		pci_bus_add_devices(pci_root_bus);
+ 	if (num_online_nodes() > 1)
+ 		for_each_online_node(quad) {
+ 			if (quad == 0)
+
