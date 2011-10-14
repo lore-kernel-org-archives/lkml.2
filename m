@@ -1,183 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab1JNLgv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 07:36:51 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:46859 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315Ab1JNLgu (ORCPT
+	id S1755443Ab1JNLiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 07:38:16 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:57854 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab1JNLiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 07:36:50 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] x86, efi: Calling __pa() with an ioremap'd address is invalid
-Date: Fri, 14 Oct 2011 12:36:45 +0100
-Message-Id: <1318592205-11193-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 14 Oct 2011 07:38:15 -0400
+Date: Fri, 14 Oct 2011 22:38:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, tj@kernel.org, oleg@redhat.com
+Subject: Re: linux-next: build failure after merge of the final tree (sparc,
+ ptrace trees related)
+Message-Id: <20111014223804.c955c49972b7b19b5d3b352f@canb.auug.org.au>
+In-Reply-To: <20111014.035459.2238341687770152474.davem@davemloft.net>
+References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
+	<20111014.035459.2238341687770152474.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__14_Oct_2011_22_38_04_+1100_n1MQAlrRdJl82V0V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+--Signature=_Fri__14_Oct_2011_22_38_04_+1100_n1MQAlrRdJl82V0V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we encounter an efi_memory_desc_t without EFI_MEMORY_WB set in
-->attribute we currently call set_memory_uc(), which in turn calls
-__pa() on a potentially ioremap'd address. On CONFIG_X86_32 this is
-invalid, resulting in the following oops,
+Hi Dave,
 
-  BUG: unable to handle kernel paging request at f7f22280
-  IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
-  *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
-  Oops: 0000 [#1] PREEMPT SMP
-  Modules linked in:
+On Fri, 14 Oct 2011 03:54:59 -0400 (EDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 14 Oct 2011 18:07:14 +1100
+>=20
+> > After merging the final tree, today's linux-next build (sparc64 defconf=
+ig)
+> > failed like this:
+> >=20
+> > arch/sparc/kernel/signal_64.c: In function 'handle_signal':
+> > arch/sparc/kernel/signal_64.c:482:11: error: unused variable 'blocked' =
+[-Werror=3Dunused-variable]
+> >=20
+> > Caused by my merge of commits faddf598f0ba ("sparc: Use
+> > set_current_blocked()") form the sparc tree and 383fe35697e4 ("sparc: U=
+se
+> > set_current_blocked() and block_sigmask()") from the ptrace tree.
+> >=20
+> > I have added the following merge fix patch for today.
+>=20
+> Now you guys are creating conflicts against those fixed up patches in
+> another non-sparc tree, and adding new kinds of build failures as
+> well.
 
-  Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
-   EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
-   EIP is at reserve_ram_pages_type+0x89/0x210
-   EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
-   ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
-   DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-  Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
-  Stack:
-   80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
-   c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
-   00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
-  Call Trace:
-   [<c104f8ca>] ? page_is_ram+0x1a/0x40
-   [<c1025aff>] reserve_memtype+0xdf/0x2f0
-   [<c1024dc9>] set_memory_uc+0x49/0xa0
-   [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
-   [<c19216d4>] start_kernel+0x291/0x2f2
-   [<c19211c7>] ? loglevel+0x1b/0x1b
-   [<c19210bf>] i386_start_kernel+0xbf/0xc8
+To be a little fair, this particular build failure was caused because
+when I did the merge, I didn't notice that the "blocked" variables needed
+to be removed.  But otherwise, I defer to your knowledge.
 
-So, if we're ioremap'ing an address range let's setup the mapping with
-the correct caching attribute instead of modifying it after the fact.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Also, take this opportunity to unify the 32/64-bit efi_ioremap()
-implementations because they can both be implemented with
-ioremap_{cache,nocache}. When asked about the original reason behind
-using init_memory_mapping() for the 64-bit version Huang Ying said,
+--Signature=_Fri__14_Oct_2011_22_38_04_+1100_n1MQAlrRdJl82V0V
+Content-Type: application/pgp-signature
 
-  "The intention of init_memory_mapping() usage is to make EFI virtual
-  address unchanged after kexec.  But in fact, init_memory_mapping()
-  can not handle some memory range, so ioremap_xxx() is introduced as
-  a fix.  Now we decide to use ioremap_xxx() anyway and use some other
-  scheme for kexec support, so init_memory_mapping() here is
-  unnecessary.  IMHO, init_memory_mapping() is not as good as
-  ioremap_xxx() here."
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-And because efi_ioremap() now consists of 4 lines, let's just inline
-it directly into the one callsite in efi_enter_virtual_mode().
+iQIcBAEBCAAGBQJOmB8cAAoJEECxmPOUX5FECsIQAI+EmfQyM8kGOLzpoWT1fMBX
+q/zJM0trell8SRxuSz30icb+8IIJPGLu3Vs5I9nfgrGaLOLcN4OsmXO4ITxx+l0e
+SAkx8SIU26vAQPyvkYSn2AmKXUDFTyc8cdW8rMhV9AhQnixo28K9swW+yoS+GdfQ
+ak7DZjuma5TLP/mkH2FfHmnPF8UeWjobnpURqg+uPktp7eTYngVzBm3oP1D3I84z
+viEyhL/1hBt9fYZZe2MiQ5NpiK452fQ5szdaIKWX83g2G98GjbXnoemN97uPbXhq
+dF2Wt8DPY3CuyQgKpAVUQAaO4D3PKJ5dvWa/fDLr7zQI9Y0CCBaebe7PQ/PIw05H
+dyrSIEZk9BuPbUmjfAXEOJN44/HOQ5WRRjwJWy7t+CknIIxEjEaKgXxGKoKdphpZ
+/8FbXLx4waoHscsq4sHAIJuvAsgH8AYej8gkKxCDtkTEUOIWh3/S15tEEXXxp/6v
+5GELnH5SiyaAdBNJMvWTXDh5Z8+vBV9XycaDJZqBbYrn6fg68pZ754m+jcLLJPv1
+plrqxz63be9x1Eqo7Ri+IZPrNuT+7QmiOgTFwOSIk16Wx++7AeCkpAJiK++1dBqR
+JIBGLUYYLmAV60aKrLWCoNXKK6tF/lBkQAHwwX/7YXHMLGCM0dYXeIYCZoMqeZzu
+chZLUHaBcsRkJ2hCfU7I
+=csLc
+-----END PGP SIGNATURE-----
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Huang Ying <huang.ying.caritas@gmail.com>
-Cc: stable@kernel.org
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/include/asm/efi.h     |    5 -----
- arch/x86/platform/efi/efi.c    |   24 ++++++++++++++----------
- arch/x86/platform/efi/efi_64.c |   17 -----------------
- 3 files changed, 14 insertions(+), 32 deletions(-)
-
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 7093e4a..b8d8bfc 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -33,8 +33,6 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
- #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
- 	efi_call_virt(f, a1, a2, a3, a4, a5, a6)
- 
--#define efi_ioremap(addr, size, type)		ioremap_cache(addr, size)
--
- #else /* !CONFIG_X86_32 */
- 
- extern u64 efi_call0(void *fp);
-@@ -84,9 +82,6 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
- 	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
- 
--extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
--				 u32 type);
--
- #endif /* CONFIG_X86_32 */
- 
- extern int add_efi_memmap;
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 3ae4128..6ea011c 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -670,10 +670,21 @@ void __init efi_enter_virtual_mode(void)
- 		end_pfn = PFN_UP(end);
- 		if (end_pfn <= max_low_pfn_mapped
- 		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
--			&& end_pfn <= max_pfn_mapped))
-+			&& end_pfn <= max_pfn_mapped)) {
- 			va = __va(md->phys_addr);
--		else
--			va = efi_ioremap(md->phys_addr, size, md->type);
-+
-+			if (!(md->attribute & EFI_MEMORY_WB)) {
-+				addr = (u64) (unsigned long)va;
-+				npages = md->num_pages;
-+				memrange_efi_to_native(&addr, &npages);
-+				set_memory_uc(addr, npages);
-+			}
-+		} else {
-+			if (!(md->attribute & EFI_MEMORY_WB))
-+				va = ioremap_nocache(md->phys_addr, size);
-+			else
-+				va = ioremap_cache(md->phys_addr, size);
-+		}
- 
- 		md->virt_addr = (u64) (unsigned long) va;
- 
-@@ -683,13 +694,6 @@ void __init efi_enter_virtual_mode(void)
- 			continue;
- 		}
- 
--		if (!(md->attribute & EFI_MEMORY_WB)) {
--			addr = md->virt_addr;
--			npages = md->num_pages;
--			memrange_efi_to_native(&addr, &npages);
--			set_memory_uc(addr, npages);
--		}
--
- 		systab = (u64) (unsigned long) efi_phys.systab;
- 		if (md->phys_addr <= systab && systab < end) {
- 			systab += md->virt_addr - md->phys_addr;
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index ac3aa54..312250c 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -80,20 +80,3 @@ void __init efi_call_phys_epilog(void)
- 	local_irq_restore(efi_flags);
- 	early_code_mapping_set_exec(0);
- }
--
--void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
--				 u32 type)
--{
--	unsigned long last_map_pfn;
--
--	if (type == EFI_MEMORY_MAPPED_IO)
--		return ioremap(phys_addr, size);
--
--	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
--	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
--		unsigned long top = last_map_pfn << PAGE_SHIFT;
--		efi_ioremap(top, size - (top - phys_addr), type);
--	}
--
--	return (void __iomem *)__va(phys_addr);
--}
--- 
-1.7.4.4
-
+--Signature=_Fri__14_Oct_2011_22_38_04_+1100_n1MQAlrRdJl82V0V--
