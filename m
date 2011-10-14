@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab1JNO6l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 10:58:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40758 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756891Ab1JNO6j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 10:58:39 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=JgTviIHNW8u06/YvBPCRaZSiMito9JcFa7iFzBrZaczqjQD9vgC7Hr1rYDzW3H83Y
-	LProl6GP7lmYeBGYx7ouA==
+	id S933110Ab1JNPEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:04:23 -0400
+Received: from smail2.alcatel.fr ([64.208.49.57]:34628 "EHLO smail2.alcatel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754485Ab1JNPEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 11:04:22 -0400
+Message-ID: <4E984F70.60102@alcatel-lucent.com>
+Date: Fri, 14 Oct 2011 17:04:16 +0200
+From: Thanh-Lam NGUYEN <thanh-lam.nguyen@alcatel-lucent.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1110141559220.14768@pobox.suse.cz>
-References: <Pine.LNX.4.44L0.1110140955030.2036-100000@iolanthe.rowland.org>
-	<alpine.LNX.2.00.1110141559220.14768@pobox.suse.cz>
-Date: Fri, 14 Oct 2011 07:58:37 -0700
-X-Google-Sender-Auth: jRz3g4dQjzw4x4ZTwAr9Lwn8dqg
-Message-ID: <CANLzEksars=PfOdx6Uxu-FbmxuXK0DMZoGW0HWbpogQ11YAA1Q@mail.gmail.com>
-Subject: Re: [PATCH] HID: usbhid: enable remote wakeup for mice
-From: Benson Leung <bleung@chromium.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+To: Hillf Danton <dhillf@gmail.com>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: Re: [PATCH] binfmt_elf.c: core file shrinking
+References: <4E946279.8090800@alcatel-lucent.com> <4E97F83F.6050501@alcatel-lucent.com> <CAJd=RBAR6gy2=NFkEAOqH-K+YcUYQKZhsB9YAJi0-TvWFvEKMg@mail.gmail.com>
+In-Reply-To: <CAJd=RBAR6gy2=NFkEAOqH-K+YcUYQKZhsB9YAJi0-TvWFvEKMg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the prompt response.
+On 14/10/2011 16:45, Hillf Danton wrote:
 
-My initial reasoning was to set as default the wakeup behavior so a
-mouse button press would wake the system. I am well aware that most if
-not all mice don't support wake on move, but at least wake on button
-press would have been more desirable than doing nothing.
+> On Fri, Oct 14, 2011 at 4:52 PM, Thanh-Lam NGUYEN
+> <thanh-lam.nguyen@alcatel-lucent.com> wrote:
+>> Sorry for upping the patch,
+>> as it is my first contribution I would like to know if there is any
+>> problem with it.
+>>
+>> Best regard
+>> Thanh lam NGUYEN
+>>
+>> On 11/10/2011 17:36, Thanh-Lam NGUYEN wrote:
+>>
+>>> The vma_shrink function looks for the 1st allocated and the last
+>>> allocated page. Only this part is dumped to the disk (the virual
+>>> start address and the size are dupdated to reflect the new dumped
+>>> information).
+>>>
+>>> Signed-off-by: Thanh Lam NGUYEN <thanh-lam.nguyen@alcatel-lucent.com>
+>>> Signed-off-by: Benjamin ZORES <Benjamin.Zores@alcatel-lucent.com>
+>>> ---
+>>>  linux/fs/binfmt_elf.c |   54
+>>> ++++++++++++++++++++++++++++++++++++++++++++++----
+> 
+> corrupted message?
+> 
+>>>  1 file changed, 55 insertions(+), 4 deletions(-)
+>>>
+>>> --- linux/fs/binfmt_elf.c
+>>> +++ linux/fs/binfmt_elf.c
+>>> @@ -1085,6 +1085,48 @@
+>>>   * Jeremy Fitzhardinge <jeremy@sw.oz.au>
+>>>   */
+>>>
+>>> +/*
+>>> + * Search for 1st and last allocated page from vma_start to vma_end.
+>>> + * Update vma_start and vma_end to reflect the result.
+>>> + */
+>>> +void vma_shrink(struct vm_area_struct *vma, unsigned long *vma_start,
+>>> +             unsigned long *vma_end)
+>>> +{
+>>> +     int allocated;
+>>> +     unsigned long start, addr, end;
+>>> +
+>>> +     allocated = 0;
+>>> +     start = end = *vma_start;
+>>> +     for (addr = *vma_start; _addr < *vma_end; addr += PAGE_SIZE) {
+>                                         -----^
+>                                         where is _addr from?
+> 
 
-Anyway, I'll solve this problem on my system by writing to wakeup
-property on device attach. Consider my change abandoned.
+My bad, it's addr and not _addr.
 
-Thanks,
-Benson
-
-On Fri, Oct 14, 2011 at 7:00 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Fri, 14 Oct 2011, Alan Stern wrote:
->
->> In addition, unlike keyboards, a lot of mice don't work very well when
->> they are suspended.  For example, many won't wake up when they are
->> moved (especially optical mice) and some don't even wake up when a
->> button is pressed.
->
-> To stress it even more, I have tried with various types and brands of
-> optical mouse, and I haven't encountered a single one that would wake up
-> when moved.
->
->> This patch definitely should not be merged.
->
-> I am not planning to do that.
->
-> Thanks,
->
+>>> +             struct page *page;
+>>> +             if (get_user_pages(current, current->mm, addr, 1, 0, 1,
+>>> +                                &page, NULL) <= 0) {
+>>> +                     /* NO PAGE */
 > --
-> Jiri Kosina
-> SUSE Labs
->
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 
 
 -- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+=~=~=~=~=~=~=~=~=~=~=~=~==~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+Thanh lam NGUYEN
+Prestataire externe ALTEN        | ALTEN Subcontractor
+pour ALCATEL-LUCENT              | in ALCATEL-LUCENT
+
+Tel: +333906 77095
+
+Equipe/Team: SWINT
+email: tlnguyen@webmail.alten.fr
