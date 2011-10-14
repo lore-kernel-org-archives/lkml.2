@@ -1,57 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1JNPty (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:49:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47601 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab1JNPtx convert rfc822-to-8bit (ORCPT
+	id S1752874Ab1JNPvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:51:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48050 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab1JNPvK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:49:53 -0400
+	Fri, 14 Oct 2011 11:51:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <1318595240.6132.57.camel@x61.thuisdomein>
-References: <1318595240.6132.57.camel@x61.thuisdomein>
-From: Matt Turner <mattst88@gmail.com>
-Date: Fri, 14 Oct 2011 11:49:32 -0400
-Message-ID: <CAEdQ38FzXyqoWDO_EykhpAH8msjeEkK9WWrHwGOyeESdAmD10g@mail.gmail.com>
-Subject: Re: [PATCH 01/21] alpha: drop unused Kconfig symbol
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1318605396.1546.424.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+ <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org> <1318605396.1546.424.camel@vkoul-udesk3>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 14 Oct 2011 23:50:49 +0800
+Message-ID: <CAGsJ_4yewc2=6yAWq4HB5trATEf3myEgsaupbLGywi+5J7OmfQ@mail.gmail.com>
+Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, rmk@arm.linux.org.uk
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 8:27 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> �arch/alpha/Kconfig | � �5 -----
-> �1 files changed, 0 insertions(+), 5 deletions(-)
+2011/10/14 Vinod Koul <vinod.koul@intel.com>:
+> On Thu, 2011-10-13 at 12:33 +0530, Jassi Brar wrote:
+>> Define a new api that could be used for doing fancy data transfers
+>> like interleaved to contiguous copy and vice-versa.
+>> Traditional SG_list based transfers tend to be very inefficient in
+>> such cases as where the interleave and chunk are only a few bytes,
+>> which call for a very condensed api to convey pattern of the transfer.
+>> This api supports all 4 variants of scatter-gather and contiguous transfer.
+>>
+>> Of course, neither can this api help transfers that don't lend to DMA by
+>> nature, i.e, scattered tiny read/writes with no periodic pattern.
+>>
+>> Also since now we support SLAVE channels that might not provide
+>> device_prep_slave_sg callback but device_prep_interleaved_dma,
+>> remove the BUG_ON check.
+>>
+>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+>> ---
+>>
+>> Dan,
+>>  After waiting for a reply from you/Alexandre a couple of days I am revising
+>>  my patch without adding a hook for RapidIO case for 2 reasons:
+>>   a) I think the RapidIO requirement is served better by the concept of
+>>      virtual channels, rather than hacking "struct dma_chan" to reach more
+>>      than one device.
+>>   b) If Alexandre comes up with something irresistible, we can always add
+>>      the hook later.
+>>
+>> Changes since v4:
+>> 1) Dropped the 'frm_irq' member.
+>> 2) Renamed 'xfer_direction' to 'dma_transfer_direction'
+>>
+>> Changes since v3:
+>> 1) Added explicit type for source and destination.
+>>
+>> Changes since v2:
+>> 1) Added some notes to documentation.
+>> 2) Removed the BUG_ON check that expects every SLAVE channel to
+>>    provide a prep_slave_sg, as we are now valid otherwise too.
+>> 3) Fixed the DMA_TX_TYPE_END offset - made it last element of enum.
+>> 4) Renamed prep_dma_genxfer to prep_interleaved_dma as Vinod wanted.
+>>
+>> Changes since v1:
+>> 1) Dropped the 'dma_transaction_type' member until we really
+>>    merge another type into this api. Instead added special
+>>    type for this api - DMA_GENXFER in dma_transaction_type.
+>> 2) Renamed 'xfer_template' to 'dmaxfer_template' inorder to
+>>
+>>  Documentation/dmaengine.txt |    8 ++++
+>>  drivers/dma/dmaengine.c     |    4 +-
+>>  include/linux/dmaengine.h   |   82 +++++++++++++++++++++++++++++++++++++++++-
+>>  3 files changed, 90 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+>> index 94b7e0f..962a2d3 100644
+>> --- a/Documentation/dmaengine.txt
+>> +++ b/Documentation/dmaengine.txt
+>> @@ -75,6 +75,10 @@ The slave DMA usage consists of following steps:
+>>     slave_sg  - DMA a list of scatter gather buffers from/to a peripheral
+>>     dma_cyclic        - Perform a cyclic DMA operation from/to a peripheral till the
+>>                 operation is explicitly stopped.
+>> +   interleaved_dma - This is common to Slave as well as M2M clients. For slave
+>> +              address of devices' fifo could be already known to the driver.
+>> +              Various types of operations could be expressed by setting
+>> +              appropriate values to the 'dmaxfer_template' members.
+>>
+>>     A non-NULL return of this transfer API represents a "descriptor" for
+>>     the given transaction.
+>> @@ -89,6 +93,10 @@ The slave DMA usage consists of following steps:
+>>               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>>               size_t period_len, enum dma_data_direction direction);
+>>
+>> +     struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>> +             struct dma_chan *chan, struct dmaxfer_template *xt,
+>> +             unsigned long flags);
+>> +
+>>     The peripheral driver is expected to have mapped the scatterlist for
+>>     the DMA operation prior to calling device_prep_slave_sg, and must
+>>     keep the scatterlist mapped until the DMA operation has completed.
+>> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+>> index b48967b..a6c6051 100644
+>> --- a/drivers/dma/dmaengine.c
+>> +++ b/drivers/dma/dmaengine.c
+>> @@ -693,12 +693,12 @@ int dma_async_device_register(struct dma_device *device)
+>>               !device->device_prep_dma_interrupt);
+>>       BUG_ON(dma_has_cap(DMA_SG, device->cap_mask) &&
+>>               !device->device_prep_dma_sg);
+>> -     BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+>> -             !device->device_prep_slave_sg);
+>>       BUG_ON(dma_has_cap(DMA_CYCLIC, device->cap_mask) &&
+>>               !device->device_prep_dma_cyclic);
+>>       BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+>>               !device->device_control);
+>> +     BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
+>> +             !device->device_prep_interleaved_dma);
+>>
+>>       BUG_ON(!device->device_alloc_chan_resources);
+>>       BUG_ON(!device->device_free_chan_resources);
+>> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+>> index 8fbf40e..ce8c40a 100644
+>> --- a/include/linux/dmaengine.h
+>> +++ b/include/linux/dmaengine.h
+>> @@ -71,11 +71,85 @@ enum dma_transaction_type {
+>>       DMA_ASYNC_TX,
+>>       DMA_SLAVE,
+>>       DMA_CYCLIC,
+>> +     DMA_INTERLEAVE,
+>> +/* last transaction type for creation of the capabilities mask */
+>> +     DMA_TX_TYPE_END,
+>>  };
+>>
+>> -/* last transaction type for creation of the capabilities mask */
+>> -#define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
+>> +enum dma_transfer_direction {
+>> +     MEM_TO_MEM,
+>> +     MEM_TO_DEV,
+>> +     DEV_TO_MEM,
+>> +     DEV_TO_DEV,
+>> +};
+>> +
+>> +/**
+>> + * Interleaved Transfer Request
+>> + * ----------------------------
+>> + * A chunk is collection of contiguous bytes to be transfered.
+>> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+>> + * ICGs may or maynot change between chunks.
+>> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+>> + *  that when repeated an integral number of times, specifies the transfer.
+>> + * A transfer template is specification of a Frame, the number of times
+>> + *  it is to be repeated and other per-transfer attributes.
+>> + *
+>> + * Practically, a client driver would have ready a template for each
+>> + *  type of transfer it is going to need during its lifetime and
+>> + *  set only 'src_start' and 'dst_start' before submitting the requests.
+>> + *
+>> + *
+>> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+>> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+>> + *
+>> + *    ==  Chunk size
+>> + *    ... ICG
+>> + */
+>>
+>> +/**
+>> + * struct data_chunk - Element of scatter-gather list that makes a frame.
+>> + * @size: Number of bytes to read from source.
+>> + *     size_dst := fn(op, size_src), so doesn't mean much for destination.
+>> + * @icg: Number of bytes to jump after last src/dst address of this
+>> + *    chunk and before first src/dst address for next chunk.
+>> + *    Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
+>> + *    Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
+>> + */
+>> +struct data_chunk {
+>> +     size_t size;
+>> +     size_t icg;
+>> +};
+>> +
+>> +/**
+>> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
+>> + *    and attributes.
+>> + * @src_start: Bus address of source for the first chunk.
+>> + * @dst_start: Bus address of destination for the first chunk.
+>> + * @dir: Specifies the type of Source and Destination.
+>> + * @src_inc: If the source address increments after reading from it.
+>> + * @dst_inc: If the destination address increments after writing to it.
+>> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+>> + *           Otherwise, source is read contiguously (icg ignored).
+>> + *           Ignored if src_inc is false.
+>> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+>> + *           Otherwise, destination is filled contiguously (icg ignored).
+>> + *           Ignored if dst_inc is false.
+>> + * @numf: Number of frames in this template.
+>> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
+>> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
+>> + */
+>> +struct dmaxfer_template {
+>> +     dma_addr_t src_start;
+>> +     dma_addr_t dst_start;
+>> +     enum dma_transfer_direction dir;
+>> +     bool src_inc;
+>> +     bool dst_inc;
+>> +     bool src_sgl;
+>> +     bool dst_sgl;
+>> +     size_t numf;
+>> +     size_t frame_size;
+>> +     struct data_chunk sgl[0];
+>> +};
+>>
+>>  /**
+>>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+>> @@ -432,6 +506,7 @@ struct dma_tx_state {
+>>   * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
+>>   *   The function takes a buffer of size buf_len. The callback function will
+>>   *   be called after period_len bytes have been transferred.
+>> + * @device_prep_interleaved_dma: Transfer expression in a generic way.
+>>   * @device_control: manipulate all pending operations on a channel, returns
+>>   *   zero or error code
+>>   * @device_tx_status: poll for transaction completion, the optional
+>> @@ -496,6 +571,9 @@ struct dma_device {
+>>       struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+>>               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>>               size_t period_len, enum dma_data_direction direction);
+>> +     struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>> +             struct dma_chan *chan, struct dmaxfer_template *xt,
+>> +             unsigned long flags);
+>>       int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>>               unsigned long arg);
+>>
+> IMO this looks decent now, we can take this for merge if we don't have
+> any other issues.
+> Ideally would be great if we also need to see the usage for this
+> API .... Barry?. I am okay to host this up on a branch meanwhile.
+
+yes. i am glad to see this merged.
+
+we'll rebase CSR prima2 dma driver to your dma_transfer_direction
+patch, use this new api , fix other commented issues and send v3.
+
 >
-> diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-> index 8bb9362..3d74801 100644
-> --- a/arch/alpha/Kconfig
-> +++ b/arch/alpha/Kconfig
-> @@ -445,11 +445,6 @@ config ALPHA_EV67
-> � � � � �Is this a machine based on the EV67 core? �If in doubt, select N here
-> � � � � �and the machine will be treated as an EV6.
+> Just a minor nitpick, I would have really like dmaxfer_template to be
+> named dma_interleaved_template. I think we are still quite far from
+> generic transfer template. Jassi if you agree I can fix that up while
+> applying, no need to revise for nitpick :)
+
+generic will be something covering all current "non-generic" modes. it
+seems it doesn't for the moment.
+so dma_interleaved_template should be better at least by now.
+
+And when you apply this patch, you might add:
+
+Acked-by: Barry Song <Baohua.Song@csr.com>
+
 >
-> -config ALPHA_EV7
-> - � � � bool
-> - � � � depends on ALPHA_MARVEL
-> - � � � default y
-> -
-> �config ALPHA_MCPCIA
-> � � � �bool
-> � � � �depends on ALPHA_RAWHIDE
 > --
-> 1.7.4.4
+> ~Vinod
 
-Reviewed-by: Matt Turner <mattst88@gmail.com>
-
-I haven't gotten my kernel.org tree set back up yet, so someone else
-might want to take this patch.
-
-Matt
+-barry
