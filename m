@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1JNQL0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:11:26 -0400
-Received: from nm16.access.bullet.mail.mud.yahoo.com ([66.94.237.217]:26506
-	"HELO nm16.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754396Ab1JNQLZ (ORCPT
+	id S932153Ab1JNQMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:12:32 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6554 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab1JNQMa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:11:25 -0400
-X-Yahoo-Newman-Id: 586988.34597.bm@smtp103.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: p0PkK7MVM1nglFovYVoiUb0etBaJQQXDBpVUQgIlhZ96ZDf
- reeCPaPRZZZ9tjefIYGog7tdZTtsNw.FDUZGiFipHGTfGi.g30_6Zx9H5nXV
- zDU0u8dxUSyH7y.j97BTU0U3FczCKqO_p7aEEVHpQ3f3hBPgSYtMODgRmInG
- TRIOoOGoE22AfFhQ6UFpoVKU_uE01gYCwdm9Tjc0nqa5tNBEfsmwxJzM_0Wi
- SBaqRL8hRH2DLqjXXAdzldeNfwc4fqd8hkFHibWRsG4rXNIlu7IXUS6v3Tmt
- fDHlN3HzRYWVlxVRp.dftUR0iHjrEG4x5y_ZCHtykB5pQV93LTxy81M.6Kn0
- ZML.4fHSmDGdipYln73SA9CD8yA2IpAqH9hqMPCxNMdAOwYIzcfnAH8u8yQY
- 2Utz2w6ZdafEimXhBVX5Us3aw5u0Vy64Hsmgt9o7LrGbnrwTalvR_rUVmKuw
- fXhTFP2PwWPiG_lUr0UJGLIbGDhpMxzAzzWeKIFlypRY-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4E985DA8.80608@schaufler-ca.com>
-Date: Fri, 14 Oct 2011 09:04:56 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 14 Oct 2011 12:12:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 14 Oct 2011 09:12:19 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
+Date: Fri, 14 Oct 2011 09:12:18 -0700
+Subject: RE: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+Thread-Topic: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+Thread-Index: AcyKhh2Hsos8aI1KSxeQVVp2NZzzfgABTU0Q
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com>
+ <20111014071500.GP21648@n2100.arm.linux.org.uk>
+ <74CDBE0F657A3D45AFBB94109FB122FF173BE1A260@HQMAIL01.nvidia.com>
+ <201110141729.41515.arnd@arndb.de>
+In-Reply-To: <201110141729.41515.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>,
-        James Morris <jmorris@namei.org>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: compilation fix
-References: <1318587384-2737-1-git-send-email-jarkko.j.sakkinen@gmail.com>
-In-Reply-To: <1318587384-2737-1-git-send-email-jarkko.j.sakkinen@gmail.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 3:16 AM, Jarkko Sakkinen wrote:
-> On some build configurations PER_CLEAR_ON_SETID symbol was not
-> found when compiling smack_lsm.c. This patch fixes the issue by
-> explicitly doing #include <linux/personality.h>.
->
-> Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+Arnd Bergmann wrote at Friday, October 14, 2011 9:30 AM:
+...
+> You mention that tegra30 will require AUTO_ZRELADDR.
 
-Applied to git://gitorious.org/smack-next/kernel.git#master
+Well, just to be clear, here's the situation I think:
 
-James, can you pull for security testing please?
+Tegra20's SDRAM starts at physical address 0.
 
-commit 16014d87509e26d6ed6935adbbf437a571fb5870
+Tegra30's SDRAM starts at physical address 2G.
 
-> ---
->  security/smack/smack_lsm.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index d55b991..7db62b4 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -35,6 +35,7 @@
->  #include <linux/audit.h>
->  #include <linux/magic.h>
->  #include <linux/dcache.h>
-> +#include <linux/personality.h>
->  #include "smack.h"
->  
->  #define task_security(task)	(task_cred_xxx((task), security))
+To support that, we could either:
+
+a) Introduce a new Kconfig variable for Tegra30, make T20/T30 mutually
+exclusive, and update arch/arm/mach-tegra/Makefile.boot to set zreladdr
+etc. based on the new Tegra30 config variable too. Then, there's no need
+for AUTO_ZRELADDR anywhere.
+
+b) Have no new config variable, build a unified T20/T30 kernel, leave
+Makefile.boot untouched, and rely on using AUTO_ZRELADDR for Tegra30 to
+account for the different SDRAM physical addresses.
+
+> Does that mean that with tegra30 merged you would no longer be able
+> to build any tegra kernel?
+
+Sorry, I don't quite understand that question.
+
+-- 
+nvpublic
 
