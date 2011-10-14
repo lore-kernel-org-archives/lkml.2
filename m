@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab1JNVfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 17:35:10 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:39803 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab1JNVfJ (ORCPT
+	id S1756957Ab1JNVqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 17:46:09 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.98]:46452 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294Ab1JNVqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 17:35:09 -0400
-Subject: Re: Problems with Kconfig select across directories
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Michal Marek <mmarek@suse.cz>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>
-In-Reply-To: <4E9848C1.8040306@panasas.com>
-References: <4E9848C1.8040306@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 23:34:29 +0200
-Message-ID: <1318628069.6132.125.camel@x61.thuisdomein>
+	Fri, 14 Oct 2011 17:46:08 -0400
+X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 17:46:08 EDT
+Date: Fri, 14 Oct 2011 23:40:55 +0200
+From: Peter Feuerer <peter@piie.net>
+To: mjg@redhat.com
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <petkovbb@gmail.com>,
+        Peter Feuerer <peter@piie.net>,
+        Clay Carpenter <claycarpenter@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] acerhdf: add support for Aspire 1410 BIOS v1.3314
+Message-Id: <20111014234055.2265c524.peter@piie.net>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: NjUwNDc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 16:35 +0200, Boaz Harrosh wrote:
-> This does not work. The ORE is not compiled and MODPOST complains.
-> (Given EXOFS_FS is not selected since then it will work)
-> 
-> What am I doing wrong? Why can't I "select" in fs/nfs/Kconfig
-> an option in fs/exofs/Kconfig? What can I do different?
+From: Clay Carpenter <claycarpenter@gmail.com>
 
-We're not given much to go by here. So I'll just mention the first thing
-that I could think of: are you sure all NFS_FS's dependencies are met
-(like NETWORK_FILESYSTEMS)?
+Add support for Aspire 1410 BIOS v1.3314.  Fixes the following error:
 
+acerhdf: unknown (unsupported) BIOS version Acer/Aspire 1410/v1.3314,
+please report, aborting!
 
-Paul Bolle
+Signed-off-by: Clay Carpenter <claycarpenter@gmail.com>
+Signed-off-by: Peter Feuerer <peter@piie.net>
+Cc: Borislav Petkov <petkovbb@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/platform/x86/acerhdf.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 760c6d7..698e45c 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -161,6 +161,7 @@ static const struct bios_settings_t bios_tbl[] = {
+ 	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Acer 1810xx */
+ 	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+-- 
+1.7.7
 
