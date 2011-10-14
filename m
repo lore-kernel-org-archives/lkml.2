@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab1JNURc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:17:32 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:54711 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1JNURb convert rfc822-to-8bit (ORCPT
+	id S933439Ab1JNURy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:17:54 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57904 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933330Ab1JNURw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:17:31 -0400
+	Fri, 14 Oct 2011 16:17:52 -0400
+Date: Fri, 14 Oct 2011 21:17:37 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+Message-ID: <20111014201737.GW21648@n2100.arm.linux.org.uk>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <201110141729.41515.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com> <201110141827.53906.arnd@arndb.de> <alpine.LFD.2.02.1110141353390.17040@xanadu.home> <20111014192057.GT21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141609510.17040@xanadu.home>
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
-References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
- <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
- <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
- <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
- <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
- <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
- <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
- <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
- <20111010114840.GC17079@elte.hu> <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
- <20111011062253.GA3589@elte.hu> <4E947BC9.7040805@mit.edu> <CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 14 Oct 2011 13:17:11 -0700
-X-Google-Sender-Auth: eGwmByp78fsa0z1M1zy8GQbS9NM
-Message-ID: <CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
-Subject: Re: [RFC] fixing the UML failure root cause
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1110141609510.17040@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 12:53 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Tue, Oct 11, 2011 at 7:24 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->> What do you think of this approach?  If it seems good, I'll finish the
->> patch and submit it.
->>
->> With this patch applied, UML appears to work, but it fills the log with
->> exploit attempt warnings.  Any ideas on what to do about that?
->>
->
-> I can confirm that this patch works.
-> And I really like vsyscall=emulate because with that UML can trap vsyscalls. :-)
+On Fri, Oct 14, 2011 at 04:14:12PM -0400, Nicolas Pitre wrote:
+> On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
+> 
+> > On Fri, Oct 14, 2011 at 02:01:07PM -0400, Nicolas Pitre wrote:
+> > > The way I'm restructuring things around this is that AUTO_ZRELADDR will 
+> > > always be active by default, just like ARM_PATCH_PHYS_VIRT now.  This 
+> > > platform specific exclusion thinking is a step backward so I'd prefer if 
+> > > people would refrain from going there for the moment.
+> > 
+> > Are you expecting everyone to change the way they load the zImage
+> > overnight then?
+> 
+> No, of course.  But adding restrictions in the kernel build because 
+> u-Boot's own image format dictates such restrictions doesn't make sense.  
+> Those restrictions must be pushed towards the uImage encapsulation step, 
+> not higher the kernel config hierarchy.
 
-Are you sure you don't mean vsyscall=native?  I suspect that UML can't
-actually trap vsyscalls in emulate mode right now, although that ought
-to be fixable.
+You're not understanding again.
 
---Andy
+I'm talking about people who _explicitly_ load the zImage at a different
+address to which the decompressed image ends up.  With AUTO_ZRELADDR=y
+their setup will break unless they stop that behaviour, which takes
+away one of the advantages of using the zImage format.
