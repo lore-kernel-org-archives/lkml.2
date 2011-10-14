@@ -1,185 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab1JNNYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:24:00 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:41327 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744Ab1JNNX7 (ORCPT
+	id S1756600Ab1JNN0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:26:10 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:35314 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753813Ab1JNN0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:23:59 -0400
-X-IronPort-AV: E=Sophos;i="4.69,346,1315180800"; 
-   d="scan'208";a="8397181"
-Subject: Re: xen: IPI interrupts not resumed early enough on suspend/resume
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Fri, 14 Oct 2011 14:23:57 +0100
-In-Reply-To: <1318251990.21903.433.camel@zakaz.uk.xensource.com>
-References: <1317654626.21903.72.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.02.1110032033530.1489@ionos>
-	 <1317668908.11991.20.camel@dagon.hellion.org.uk>
-	 <alpine.LFD.2.02.1110032229250.1489@ionos>
-	 <1318001583.21903.355.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.02.1110071822160.3240@ionos>
-	 <1318251990.21903.433.camel@zakaz.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318598637.21903.889.camel@zakaz.uk.xensource.com>
+	Fri, 14 Oct 2011 09:26:08 -0400
+Message-ID: <4E98385D.4000508@st.com>
+Date: Fri, 14 Oct 2011 15:25:49 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/21] stmmac: drop unused Kconfig symbol
+References: <1318595432.6132.76.camel@x61.thuisdomein>
+In-Reply-To: <1318595432.6132.76.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping? The original issue has made it into longterm-2.6.32.y and then
-onto Debian (bug #644604) so people keep asking me about it...
+Hello Paul
 
-Ian.
+IIRC, I had posted a patch to do this long time ago.
+In any case, the dual mac Kconfig is not useful and it can be removed.
 
-On Mon, 2011-10-10 at 14:06 +0100, Ian Campbell wrote:
-> From dc8a8329f3e97f30e1290c898c816250aa7e8957 Mon Sep 17 00:00:00 2001
-> From: Ian Campbell <ian.campbell@citrix.com>
-> Date: Mon, 3 Oct 2011 15:37:00 +0100
-> Subject: [PATCH] irq: add IRQF_RESUME_EARLY and resume such IRQs earlier in the process
-> 
-> This adds a mechanism to resume selected IRQs during syscore_resume instead of
-> dpm_resume_noirq.
-> 
-> Under Xen we need to resume IRQs associated with IPIs early enough that the
-> resched IPI is unmasked and we can therefore schedule ourselves out of the
-> stop_machine where the suspend/resume takes place.
-> 
-> This issue was introduced by 676dc3cf5bc3 "xen: Use IRQF_FORCE_RESUME".
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: xen-devel <xen-devel@lists.xensource.com>
-> Cc: stable@kernel.org (at least to 2.6.32.y)
+Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+
+On 10/14/2011 2:30 PM, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
->  drivers/xen/events.c      |    2 +-
->  include/linux/interrupt.h |    3 ++
->  kernel/irq/pm.c           |   48 ++++++++++++++++++++++++++++++++++++++------
->  3 files changed, 45 insertions(+), 8 deletions(-)
+>  drivers/net/stmmac/Kconfig |    9 ---------
+>  1 files changed, 0 insertions(+), 9 deletions(-)
 > 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 7523719..44490de 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -1021,7 +1021,7 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
->  	if (irq < 0)
->  		return irq;
+> diff --git a/drivers/net/stmmac/Kconfig b/drivers/net/stmmac/Kconfig
+> index 7df7df4..9e37a9a 100644
+> --- a/drivers/net/stmmac/Kconfig
+> +++ b/drivers/net/stmmac/Kconfig
+> @@ -20,15 +20,6 @@ config STMMAC_DA
+>  	  By default, the DMA arbitration scheme is based on Round-robin
+>  	  (rx:tx priority is 1:1).
 >  
-> -	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME;
-> +	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME | IRQF_EARLY_RESUME;
->  	retval = request_irq(irq, handler, irqflags, devname, dev_id);
->  	if (retval != 0) {
->  		unbind_from_irq(irq);
-> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index a103732..f51a81b 100644
-> --- a/include/linux/interrupt.h
-> +++ b/include/linux/interrupt.h
-> @@ -59,6 +59,8 @@
->   * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
->   * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
->   * IRQF_NO_THREAD - Interrupt cannot be threaded
-> + * IRQF_EARLY_RESUME - Resume IRQ early during syscore instead of at device
-> + *                resume time.
->   */
->  #define IRQF_DISABLED		0x00000020
->  #define IRQF_SAMPLE_RANDOM	0x00000040
-> @@ -72,6 +74,7 @@
->  #define IRQF_NO_SUSPEND		0x00004000
->  #define IRQF_FORCE_RESUME	0x00008000
->  #define IRQF_NO_THREAD		0x00010000
-> +#define IRQF_EARLY_RESUME	0x00020000
->  
->  #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
->  
-> diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-> index f76fc00..86bcd79 100644
-> --- a/kernel/irq/pm.c
-> +++ b/kernel/irq/pm.c
-> @@ -9,6 +9,7 @@
->  #include <linux/irq.h>
->  #include <linux/module.h>
->  #include <linux/interrupt.h>
-> +#include <linux/syscore_ops.h>
->  
->  #include "internals.h"
->  
-> @@ -39,25 +40,58 @@ void suspend_device_irqs(void)
->  }
->  EXPORT_SYMBOL_GPL(suspend_device_irqs);
->  
-> -/**
-> - * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-> - *
-> - * Enable all interrupt lines previously disabled by suspend_device_irqs() that
-> - * have the IRQS_SUSPENDED flag set.
-> - */
-> -void resume_device_irqs(void)
-> +static resume_irqs(bool want_early)
->  {
->  	struct irq_desc *desc;
->  	int irq;
->  
->  	for_each_irq_desc(irq, desc) {
->  		unsigned long flags;
-> +		bool is_early = desc->action &&
-> +			desc->action->flags & IRQF_EARLY_RESUME;
-> +
-> +		if (is_early != want_early)
-> +			continue;
->  
->  		raw_spin_lock_irqsave(&desc->lock, flags);
->  		__enable_irq(desc, irq, true);
->  		raw_spin_unlock_irqrestore(&desc->lock, flags);
->  	}
->  }
-> +
-> +/**
-> + * irq_pm_syscore_ops - enable interrupt lines early
-> + *
-> + * Enable all interrupt lines with %IRQF_EARLY_RESUME set.
-> + */
-> +static void irq_pm_syscore_resume(void)
-> +{
-> +	resume_irqs(true);
-> +}
-> +
-> +static struct syscore_ops irq_pm_syscore_ops = {
-> +	.resume		= irq_pm_syscore_resume,
-> +};
-> +
-> +static int __init irq_pm_init_ops(void)
-> +{
-> +	register_syscore_ops(&irq_pm_syscore_ops);
-> +	return 0;
-> +}
-> +
-> +device_initcall(irq_pm_init_ops);
-> +
-> +/**
-> + * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-> + *
-> + * Enable all non-%IRQF_EARLY_RESUME interrupt lines previously
-> + * disabled by suspend_device_irqs() that have the IRQS_SUSPENDED flag
-> + * set as well as those with %IRQF_FORCE_RESUME.
-> + */
-> +void resume_device_irqs(void)
-> +{
-> +	resume_irqs(false);
-> +}
->  EXPORT_SYMBOL_GPL(resume_device_irqs);
->  
->  /**
-
+> -config STMMAC_DUAL_MAC
+> -	bool "STMMAC: dual mac support (EXPERIMENTAL)"
+> -	default n
+> -        depends on EXPERIMENTAL && STMMAC_ETH && !STMMAC_TIMER
+> -	help
+> -	  Some ST SoCs (for example the stx7141 and stx7200c2) have two
+> -	  Ethernet Controllers. This option turns on the second Ethernet
+> -	  device on this kind of platforms.
+> -
+>  config STMMAC_TIMER
+>  	bool "STMMAC Timer optimisation"
+>  	default n
 
