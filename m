@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab1JNH5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 03:57:10 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42157 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932695Ab1JNH5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 03:57:09 -0400
-Date: Fri, 14 Oct 2011 03:54:59 -0400 (EDT)
-Message-Id: <20111014.035459.2238341687770152474.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        matt.fleming@intel.com, tj@kernel.org, oleg@redhat.com
-Subject: Re: linux-next: build failure after merge of the final tree
- (sparc, ptrace trees related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
-References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 14 Oct 2011 00:55:00 -0700 (PDT)
+	id S932733Ab1JNH6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 03:58:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8334 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932721Ab1JNH6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 03:58:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="62882669"
+Date: Fri, 14 Oct 2011 10:59:27 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: sameo@linux.intel.com
+Cc: alan@linux.intel.com, sameo@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
+        jacob.jun.pan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] x86, mrst: add platform support for MSIC MFD driver
+Message-ID: <20111014075927.GD23578@intel.com>
+References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+ <dfe26ef675afbc2ce21b54f5c23b94cb00fc4032.1315399396.git.mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dfe26ef675afbc2ce21b54f5c23b94cb00fc4032.1315399396.git.mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 14 Oct 2011 18:07:14 +1100
+Hi Samuel,
 
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
+On Wed, Sep 07, 2011 at 04:06:52PM +0300, Mika Westerberg wrote:
+> The MSIC MFD driver creates platform devices for MSIC device drivers so we
+> don't need to create them in platform code anymore.
 > 
-> arch/sparc/kernel/signal_64.c: In function 'handle_signal':
-> arch/sparc/kernel/signal_64.c:482:11: error: unused variable 'blocked' [-Werror=unused-variable]
-> 
-> Caused by my merge of commits faddf598f0ba ("sparc: Use
-> set_current_blocked()") form the sparc tree and 383fe35697e4 ("sparc: Use
-> set_current_blocked() and block_sigmask()") from the ptrace tree.
-> 
-> I have added the following merge fix patch for today.
+> This patch adds a new runtime check which determines whether we are running
+> on a Medfield platform and enables the MSIC MFD driver accordingly.
 
-They didn't build test the original version of the signal patches I
-put into the sparc tree either, which is why I fixed them up and put
-them into the sparc GIT tree.
+There is a fix in 3.1 which conflicts this patch. The fix is 153b19a3b9fd8b
+(x86, mrst: use a temporary variable for SFI irq) which is needed for
+Medfield platforms to get kexec working.
 
-Ptrace folks can we not operate like this?  The only reason I found
-out about the set_current_blocked() transformations was by accident,
-because the original patch was posted to linux-kernel only so it never
-got queued up into sparc patchwork.
-
-Then once Oleg mentioned it to me, it didn't even compile so I fixed
-it up and put the fixed up copy into my tree.  It also didn't
-transform the TS_RESTORE_SIGMASK cases in the sparc signal code, so I
-also added a patch to the sparc tree which took care of that.
-
-Now you guys are creating conflicts against those fixed up patches in
-another non-sparc tree, and adding new kinds of build failures as
-well.
-
-This doesn't work.
+If you like, I can send you an updated version of this patch which doesn't
+conflict. Please let me know.
