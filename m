@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab1JNWDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 18:03:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59424 "EHLO mx2.suse.de"
+	id S1756993Ab1JNWFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 18:05:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49457 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab1JNWDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 18:03:09 -0400
-Message-ID: <4E98B19B.6020107@suse.cz>
-Date: Sat, 15 Oct 2011 00:03:07 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1751367Ab1JNWFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 18:05:34 -0400
+Message-ID: <4E98B088.5030400@zytor.com>
+Date: Fri, 14 Oct 2011 14:58:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: Problems with Kconfig select across directories
-References: <4E9848C1.8040306@panasas.com>
-In-Reply-To: <4E9848C1.8040306@panasas.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Kyle Moffett <kyle@moffetthome.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+References: <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org> <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org> <20111012175702.GA23231@fieldses.org> <CAGZ=bqJxadNqaPCW3HufrMmQ57x082=pCDa6-mWLsdtfxHgdPw@mail.gmail.com> <20111012190452.GA23845@fieldses.org> <CAGZ=bqJjgmtBfyXJ2eK1C0PfzkgBVWFTjkTYkC211ZT+-5f-UQ@mail.gmail.com> <20111014155406.GC13119@thunk.org> <m17h478n5k.fsf@fess.ebiederm.org>
+In-Reply-To: <m17h478n5k.fsf@fess.ebiederm.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.10.2011 16:35, Boaz Harrosh wrote:
-> I have this weird problem with Kconfig.
+On 10/14/2011 11:04 AM, Eric W. Biederman wrote:
 > 
-> In fs/exofs/Kconfig I have:
+> I have found and merged a solution that allows us to name namespaces
+> without needing a namespaces for namespaces.
 > 
-> # Library to be selected by users
-> config ORE
-> 	tristate
-> 
-> Then
-> config EXOFS_FS
-> 	tristate "exofs: OSD based file system support"
-> 	depends on SCSI_OSD_ULD
-> 	select ORE
-> 	help ...
-> 
-> So far so good. Choosing EXOFS_FS in xmenuconfig works fine as expected.
-> But now I add another user say: (It's more complicated but even below does
-> not work)
-> 
-> config NFS_FS
-> 	tristate "NFS client support"
-> 	depends on INET && FILE_LOCKING
-> 	select LOCKD
-> 	select SUNRPC
-> 	select NFS_ACL_SUPPORT if NFS_V3_ACL
-> 	select ORE
-> 	help ...
-> 
-> This does not work. The ORE is not compiled and MODPOST complains.
-> (Given EXOFS_FS is not selected since then it will work)
 
-fs/Makefile only visits fs/exofs if CONFIG_EXOFS_FS is set.
+Something based on UUIDs, perhaps?
 
-Michal
+UUIDs are kind of exactly this, after all... a single namespace designed
+to be large and random enough to be globally unique without a central
+registration authority.
+
+	-hpa
+
