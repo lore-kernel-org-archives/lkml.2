@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab1JNP3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:29:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60236 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755339Ab1JNP3s (ORCPT
+	id S933240Ab1JNPdx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:33:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60251 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab1JNPdv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:29:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-Date: Fri, 14 Oct 2011 17:29:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        Erik Gilling <konkers@android.com>
-References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <20111014071500.GP21648@n2100.arm.linux.org.uk> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A260@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A260@HQMAIL01.nvidia.com>
+	Fri, 14 Oct 2011 11:33:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=pzKzHbFw7vBitwA+Ay76AVocopoaXl67LKKdXDCprzc84UEx3mef59VcsF4adYtBt
+	Es70Owf87VU690XAJPj7Q==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110141729.41515.arnd@arndb.de>
-X-Provags-ID: V02:K0:hK4TJiqsHrhiPfc9FasvIyckgWxtLd0jpIEsH3tmqQD
- 4uUl2n4s1DQA/cad0KEytxvQ5HjOodNqnHsZPwDG7KtAluv1RM
- oaG/loVk1OxIRFISljzdvOvwU9b5c2Vd387sV+TrpgaBx/Xqr5
- ELzPjl56J20YbFYDD6g7TDJ/KzEfZiSw8vgqtVn9XaPS4dPxsh
- JtCCob8AjZl1rCnoK664qcDGmsD5+Z7AnVuwaCtPz9bOp6CEe9
- CVBsRFPewG0Si4akRhD1QUa7XAQsWrlLTSgI971tL6DdHX4OER
- NgcauxkRuki6xddFuBHcHO10NPt4c2GvwBFQmIZy7cxB59v3xM
- 5cYT4ZZN8EL//QhzlqAE=
+In-Reply-To: <1318605254.3018.20.camel@dabdike.int.hansenpartnership.com>
+References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com> <1318605254.3018.20.camel@dabdike.int.hansenpartnership.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 14 Oct 2011 09:33:28 -0600
+Message-ID: <CAErSpo7d3hHeJU87zYo=yJoG3eqOZ4QggkOyNnu7xuJe8oG9Qg@mail.gmail.com>
+Subject: Re: [PATCH v2 00/29] Create PCI root buses with correct resources
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 October 2011, Stephen Warren wrote:
-> Russell King wrote at Friday, October 14, 2011 1:15 AM:
-> > On Thu, Oct 13, 2011 at 04:38:46PM -0700, Olof Johansson wrote:
-> > 
-> > I'll point out that this makes Tegra incompatible with ZBOOT_ROM, which
-> > can still be enabled.  ZBOOT_ROM=y AUTO_ZRELADDR=y is an invalid
-> > configuration at runtime.
-> 
-> I see that at least one machine solves that by doing:
-> 
-> config ARCH_EP93XX
-> ...
->         select AUTO_ZRELADDR if !ZBOOT_ROM
-> 
-> That said, given the way Tegra works, ZBOOT_ROM isn't useful; typically,
-> systems don't use NOR flash for storage of the kernel, so I don't think
-> ZBOOT_ROM is likely to be used. Perhaps we should just depend on !ZBOOT_ROM?
+On Fri, Oct 14, 2011 at 9:14 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Thu, 2011-10-13 at 22:27 -0600, Bjorn Helgaas wrote:
+>> The most generic way to create a PCI root bus is with pci_scan_bus(), but
+>> that doesn't allow you to specify what resources are available on the bus,
+>> i.e., what the host bridge apertures are.
+>
+> Do you have an actual tree for this?  The PARISC pieces look a bit
+> non-trivial and I'd like to test them out on the various sba/astro/dino
+> systems.
 
-That sounds like a correct fix, but also confusing because the top-level
-subarchitecture selection should not depend on too many things that are
-not obvious to someone configuring the kernel. From the perspective
-of least suprise I would think that instead ZBOOTROM should depend on
-!ARCH_TEGRA, but there is no precedent for this in the current Kconfig.
+I don't yet, but it'd be great if you were willing to test them out,
+so I'll set one up.
 
-You mention that tegra30 will require AUTO_ZRELADDR. Does that mean that
-with tegra30 merged you would no longer be able to build any tegra
-kernel? If not, the best solution for now would probably be to
-put AUTO_ZRELADDR into the defconfig for now (provided that tegra20 can
-still boot without it) and make tegra30 depend on AUTO_ZRELADDR within
-the tegra Kconfig.
+While this is on your mind, I'm dubious about the pci_enable_bridges()
+call in lba_driver_probe() and the pci_bus_assign_resources() call in
+dino_probe().  These stand out as exceptions because no other arches
+do that.
 
-This is only a temporary solution I think, because it is one of the
-areas that we will have to revisit once we make it possible to combine
-multiple subarchitectures into a single kernel. I have some ideas how
-I would express that in Kconfig but I'm sure that we will have a lot
-of debate over it before we coem to a solution that works for everyone.
+If they weren't there, both places could use pci_scan_root_bus() like
+most other arches.
 
-	Arnd
+Bjorn
