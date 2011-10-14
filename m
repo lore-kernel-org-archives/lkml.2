@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab1JNMbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:31:15 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58780 "EHLO
+	id S932841Ab1JNMbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:31:21 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58797 "EHLO
 	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab1JNMbM (ORCPT
+	with ESMTP id S932782Ab1JNMbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:31:12 -0400
-Subject: [PATCH 16/21] x86: drop unused Kconfig symbol
+	Fri, 14 Oct 2011 08:31:17 -0400
+Subject: [PATCH 17/21] stmmac: drop unused Kconfig symbol
 From: Paul Bolle <pebolle@tiscali.nl>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+To: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 14:30:23 +0200
-Message-ID: <1318595423.6132.75.camel@x61.thuisdomein>
+Date: Fri, 14 Oct 2011 14:30:32 +0200
+Message-ID: <1318595432.6132.76.camel@x61.thuisdomein>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -24,23 +23,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/x86/Kconfig |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/net/stmmac/Kconfig |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6a47bb2..18f74ed 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -192,9 +192,6 @@ config NEED_PER_CPU_EMBED_FIRST_CHUNK
- config NEED_PER_CPU_PAGE_FIRST_CHUNK
- 	def_bool y
+diff --git a/drivers/net/stmmac/Kconfig b/drivers/net/stmmac/Kconfig
+index 7df7df4..9e37a9a 100644
+--- a/drivers/net/stmmac/Kconfig
++++ b/drivers/net/stmmac/Kconfig
+@@ -20,15 +20,6 @@ config STMMAC_DA
+ 	  By default, the DMA arbitration scheme is based on Round-robin
+ 	  (rx:tx priority is 1:1).
  
--config HAVE_CPUMASK_OF_CPU_MAP
--	def_bool X86_64_SMP
+-config STMMAC_DUAL_MAC
+-	bool "STMMAC: dual mac support (EXPERIMENTAL)"
+-	default n
+-        depends on EXPERIMENTAL && STMMAC_ETH && !STMMAC_TIMER
+-	help
+-	  Some ST SoCs (for example the stx7141 and stx7200c2) have two
+-	  Ethernet Controllers. This option turns on the second Ethernet
+-	  device on this kind of platforms.
 -
- config ARCH_HIBERNATION_POSSIBLE
- 	def_bool y
- 
+ config STMMAC_TIMER
+ 	bool "STMMAC Timer optimisation"
+ 	default n
 -- 
 1.7.4.4
+
+
+
 
