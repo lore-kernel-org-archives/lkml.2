@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab1JNUCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:02:42 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:53731 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab1JNUCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:02:41 -0400
-Message-ID: <4E98955C.706@nod.at>
-Date: Fri, 14 Oct 2011 22:02:36 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/21] um: drop unused Kconfig symbol
-References: <1318595267.6132.60.camel@x61.thuisdomein>
-In-Reply-To: <1318595267.6132.60.camel@x61.thuisdomein>
-X-Enigmail-Version: 1.3.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig3ED4547A5489FA25501A8BD9"
+	id S1756545Ab1JNUGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:06:23 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:48195 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab1JNUGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 16:06:22 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Fri, 14 Oct 2011 16:06:21 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+In-reply-to: <20111014192011.GS21648@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.02.1110141549160.17040@xanadu.home>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com>
+ <201110141729.41515.arnd@arndb.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com>
+ <201110141827.53906.arnd@arndb.de>
+ <CAOesGMgDwMeVmwo1WJ3tU+ZdjCSJ6F8mY42e_KwTmzAkGQsqmg@mail.gmail.com>
+ <20111014192011.GS21648@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig3ED4547A5489FA25501A8BD9
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
 
-Am 14.10.2011 14:27, schrieb Paul Bolle:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
->  arch/um/Kconfig.x86 |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
->=20
-> diff --git a/arch/um/Kconfig.x86 b/arch/um/Kconfig.x86
-> index 21bebe6..1d97bd8 100644
-> --- a/arch/um/Kconfig.x86
-> +++ b/arch/um/Kconfig.x86
-> @@ -57,9 +57,6 @@ config ARCH_HAS_SC_SIGNALS
->  config ARCH_REUSE_HOST_VSYSCALL_AREA
->  	def_bool !64BIT
-> =20
-> -config SMP_BROKEN
-> -	def_bool 64BIT
-> -
->  config GENERIC_HWEIGHT
->  	def_bool y
-> =20
+> But... one thing to note is that it _is_ common to load the decompressor
+> at a _different_ address to that where the kernel ultimately ends up
+> residing to avoid the additional copy in the decompressor.  My experience
+> shows that this is quite common on the platforms I had supplied.  This
+> means that if we default to AUTO_ZRELADDR for !ZBOOT_ROM, we end up
+> having to have developers change their uboot setups to avoid unexpected
+> results.
 
-Acked-by: Richard Weinberger <richard@nod.at>
+Currently, U-Boot insists on having a uImage with a fixed absolute load 
+address.  This is currently provided by the zreladdr value, whether or 
+not AUTO_ZRELADDR is set.  I consider this as a persisting uImage 
+limitation.
+
+Either u-Boot gets fixed so it can work with plain zImage (and this 
+certainly will happen once the pressure from people wanting a single 
+kernel to work on targets with different load addresses increase.  
+Tegra is one such example.
+
+Or we create a u-Boot specific Kconfig menu for uImage options that 
+would be common to all architectures and kick it out from the ARM 
+specific makefile.  This is not solving the u-Boot limitation though.
+
+In either cases this is a u-Boot problem that needs fixing on the u-Boot 
+side in the end.
 
 
---------------enig3ED4547A5489FA25501A8BD9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOmJVcAAoJEN9758yqZn9eUFwH+gLv65mYRHF+fkZyHCVHI72h
-f2lFxzywwgF7kB0/REBK4ZTu4kaxrvxFBf8K8pbKcYk0RmbVPkTH+TlwMFmk3eGM
-rlYJC7xhEBPjSCIzsREB57kCYbHQMF9OtIPTUVUfdm0CM8rGYHsHeqGLeCWmuRgF
-bO/aVcP99Vq7xNQnAQxEtXhiBWNsrmQLLVqq0UfPEEEEoMnscmf3K+d14BHsfmVj
-+nlBmZZeE8gBZA73H5Q5jzMLpD6EfVKnAuXYbx7LFUmY7+Ty0nkVcpxP70pit9Gi
-WibMN7fAeDP01ZjBOrRvUq6wUH0gz4yw55uiBLR+xJcsnxiUhWhP+R5/j/k4g4o=
-=9eXL
------END PGP SIGNATURE-----
-
---------------enig3ED4547A5489FA25501A8BD9--
+Nicolas
