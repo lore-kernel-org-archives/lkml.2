@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab1JNQAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:00:34 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:33770 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752583Ab1JNQAd (ORCPT
+	id S1753960Ab1JNQBC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:01:02 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41570 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753814Ab1JNQBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:00:33 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [PATCH RESEND] regulator: Fix possible nullpointer dereference in regulator_enable()
-Date: Fri, 14 Oct 2011 18:00:29 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+	Fri, 14 Oct 2011 12:01:00 -0400
+Date: Fri, 14 Oct 2011 12:00:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
+ interfaces
+In-Reply-To: <20111014165212.7929243c@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1110141156040.2036-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110141800.29440.heiko@sntech.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case where _regulator_enable returns an error it was not checked
-if a supplying regulator exists before trying to disable it, leading
-to a null pointer-dereference if no supplying regulator existed.
+On Fri, 14 Oct 2011, NeilBrown wrote:
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Hi Rafael,
+> 
+>  What do you mean by "too complicated to use in practice"?  What is you
+>  measure for complexity?
+>  Using suspend in a race-free way is certainly less complex than - for
+>  example - configuring bluetooth.
+>  And in what way is it "inadequate for other reasons"? What reasons?
+> 
+> 
+>  The only sane way to handle suspend is for any (suitably privileged) process
+>  to be able to request that suspend doesn't happen, and then for one process
+>  to initiate suspend when no-one is blocking it.
 
----
-no changes, except adding the ack from Mark Brown from 2011-09-19
-and including the relevant (and forgotten in the first try) LKML
+One of the things Rafael didn't mention is that sometimes a kernel 
+driver needs to prevent the system from suspending.  This happens when 
+recharging over a USB connection.
 
- drivers/regulator/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+There's no simple way for such a driver to communicate with a power
+daemon.  The driver has to use something like the wakeup mechanism -- 
+but currently that mechanism is optional.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 026f3d4..c9dd19c 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1425,7 +1425,7 @@ int regulator_enable(struct regulator *regulator)
- 	ret = _regulator_enable(rdev);
- 	mutex_unlock(&rdev->mutex);
- 
--	if (ret != 0)
-+	if (ret != 0 && rdev->supply)
- 		regulator_disable(rdev->supply);
- 
- 	return ret;
--- 
-1.7.2.3
+Alan Stern
 
