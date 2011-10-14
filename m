@@ -1,149 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab1JNPev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:34:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45454 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933221Ab1JNPem convert rfc822-to-8bit (ORCPT
+	id S1756959Ab1JNPhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:37:43 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41527 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754461Ab1JNPhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:34:42 -0400
+	Fri, 14 Oct 2011 11:37:41 -0400
+Date: Fri, 14 Oct 2011 11:37:40 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Ming Lei <tom.leiming@gmail.com>, Andrei Warkentin <awarkentin@vmware.com>,
+        Greg KH <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        "G, Manjunath Kondaiah" <manjugk@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>, <Manjunath@jasper.es>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Linux PM List <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+In-Reply-To: <20111013171539.GA18574@ponder.secretlab.ca>
+Message-ID: <Pine.LNX.4.44L0.1110141126000.2036-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <4E98085A.8080803@samsung.com>
-References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
-	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
-	<4E98085A.8080803@samsung.com>
-Date: Fri, 14 Oct 2011 10:34:40 -0500
-X-Google-Sender-Auth: GVXtFYmtZEAP7Ak2occuKQwWFD8
-Message-ID: <CAF6AEGv-YEs74Y3fcDmG=aqGaGAio8OQnheiddzNndEux1QC+w@mail.gmail.com>
-Subject: Re: [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
-From: Rob Clark <rob@ti.com>
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, daniel@ffwll.ch,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 5:00 AM, Tomasz Stanislawski
-<t.stanislaws@samsung.com> wrote:
->> + * @attach: allows different devices to 'attach' themselves to the given
->> + *         buffer. It might return -EBUSY to signal that backing storage
->> + *         is already allocated and incompatible with the requirements
->> + *         of requesting device. [optional]
->> + * @detach: detach a given device from this buffer. [optional]
->> + * @get_scatterlist: returns list of scatter pages allocated, increases
->> + *                  usecount of the buffer. Requires atleast one attach
->> to be
->> + *                  called before. Returned sg list should already be
->> mapped
->> + *                  into _device_ address space.
->
-> You must add a comment that this call 'may sleep'.
->
-> I like the get_scatterlist idea. It allows the exported to create a valid
-> scatterlist for a client in a elegant way.
->
-> I do not like this whole attachment idea. The problem is that currently
-> there is no support in DMA framework for allocation for multiple devices. As
-> long as no such a support exists, there is no generic way to handle
-> attribute negotiations and buffer allocations that involve multiple devices.
-> So the exporter drivers would have to implement more or less hacky solutions
-> to handle memory requirements and choosing the device that allocated memory.
->
-> Currently, AFAIK there is even no generic way for a driver to acquire its
-> own DMA memory requirements.
+On Thu, 13 Oct 2011, Grant Likely wrote:
 
-dev->dma_params (struct device_dma_parameters).. for example
+> For the deferred case; here is an example of the additional
+> constraint.  Consider the following hierarchy:
+> 
+> -A
+>  +-B
+>  | +-C
+>  | +-D
+>  |
+>  +-E
+>    +-F
+>    +-G
+> 
+> dpm_list could be ordered in at least the following ways (depending on
+> exactly when devices get registered).  There are many permutation, but
+> children are always be listed after its direct parent.
+> 
+> 1) ABECDFG (breadth first)
+> 2) AEBFGCD (breadth first)
+> 3) ABCDEFG (depth first)
+> 4) AEFGBCD (depth first)
+> 
+> Now, assume that device B depends on device F, and also assume that
+> there is no way either to express that in the hierarchy or even for
+> the constraint to be known at device registration time (the is exactly
+> the situation we're dealing with on embedded platforms).  Only the
+> driver for B knows that it needs a resource provided by F's driver.
+> So, the situation becomes that the ordering of dpm_list must now also
+> be sorted so that non-tree dependencies are also accounted for.  Of
+> the list above, only sort order 4 meets the new constraint.
+> 
+> The question then becomes, how can the dpm_list get resorted
+> dynamically at runtime to ensure that the new constraints are always
+> met without breaking old ones.  Here are some options I can think of:
+> 
+> 1) When a deferred probe succeeds, move the deferred device to the
+> end of the dpm_list.  Then the new sort order might be one of:
+> 
+> 	1) AECDFGB
+> 	2) AEFGCDB
+> 	3) ACDEFGB
+> 	4) AEFGCDB
+> 
+> However, that approach breaks the guarantee that children appear after
+> their parents (C & D appear before B in all cases above)
 
-it would need to be expanded a bit to have a way to say "it needs to
-be physically contiguous"..
+How can a device acquire children before it has a driver?
 
+> 2a) When a deferred probe succeeds, move the deferred device and it's
+> entire child hierarchy to the end of the list to become one of:
 
-> Therefore all logic hidden beneath 'attachment' is pointless. I think that
-> support for attach/detach (and related stuff) should be postponed until
-> support for multi-device allocation is added to DMA framework.
->
-> I don't say the attachment list idea is wrong but adding attachment stuff
-> creates an illusion that problem of multi-device allocations is somehow
-> magically solved. We should not force the developers of exporter drivers to
-> solve the problem that is not solvable yet.
->
-> The other problem are the APIs. For example, the V4L2 subsystem assumes that
-> memory is allocated after successful VIDIOC_REQBUFS with V4L2_MEMORY_MMAP
-> memory type. Therefore attach would be automatically followed by
-> get_scatterlist, blocking possibility of any buffer migrations in future.
+This is the same as the above, under the reasonable assumption that
+devices without drivers can't have any children.  Or to be more
+carefully precise, that a device with children won't need to defer a
+probe.
 
-But this problem really only applies if v4l is your buffer allocator.
-I don't think a v4l limitation is a valid argument to remove the
-attachment stuff.
+We can check that easily enough: Fail a deferral if the device already 
+has children.
 
-> The same situation happens if buffer sharing is added to framebuffer API.
->
-> The buffer sharing mechanism is dedicated to improve cooperation between
-> multiple APIs. Therefore the common denominator strategy should be applied
-> that is buffer-creation == buffer-allocation.
+> 2b) alternately, when *any* probe succeeds, move the deferred device
+> and its children to the end of the list.  This continues to maintain
+> the parent-child relationship, and it ensures that the dpm_list is
+> always also sorted in probe-order (devices bound to drivers will
+> collect at the end of the list).
 
-I think it would be sufficient if buffer creators that cannot defer
-the allocation just take a worst-case approach and allocate physically
-contiguous buffers.  No need to penalize other potential buffer
-allocators.  This allows buffer creators with more flexibility the
-option for deferring the allocation until it knows whether the buffer
-really needs to be contiguous.
+We do not want to move entire hierarchies.  And in fact, even in 1 or
+2a, we would have to do the move from _within_ the deferred probe
+routine, not afterward, to make sure that it occurs before any children
+are added (and after all the prerequisite devices have been 
+registered).
 
->> + * @put_scatterlist: decreases usecount of buffer, might deallocate
->> scatter
->> + *                  pages.
->> + * @mmap: memory map this buffer - optional.
->> + * @release: release this buffer; to be called after the last
->> dma_buf_put.
->> + * @sync_sg_for_cpu: sync the sg list for cpu.
->> + * @sync_sg_for_device: synch the sg list for device.
->> + */
->> +struct dma_buf_ops {
->> +       int (*attach)(struct dma_buf *, struct device *,
->> +                       struct dma_buf_attachment *);
->> +
->> +       void (*detach)(struct dma_buf *, struct dma_buf_attachment *);
->> +
->> +       /* For {get,put}_scatterlist below, any specific buffer attributes
->> +        * required should get added to device_dma_parameters accessible
->> +        * via dev->dma_params.
->> +        */
->> +       struct scatterlist * (*get_scatterlist)(struct dma_buf_attachment
->> *,
->> +                                               enum dma_data_direction,
->> +                                               int *nents);
->> +       void (*put_scatterlist)(struct dma_buf_attachment *,
->> +                                               struct scatterlist *,
->> +                                               int nents);
->> +       /* TODO: Add interruptible and interruptible_timeout versions */
->
-> I don't agree the interruptible and interruptible_timeout versions are
-> needed. I think that get_scatterlist should alway be interruptible. You can
-> add try_get_scatterlist callback that returns ERR_PTR(-EBUSY) if the call
-> would be blocking.
->
->> +
->> +       /* allow mmap optionally for devices that need it */
->> +       int (*mmap)(struct dma_buf *, struct vm_area_struct *);
->
-> The mmap is not needed for inital version. It could be added at any time in
-> the future. The dmabuf client should not be allowed to create mapping of the
-> dmabuf from the scatterlist.
+> 3) Add devices to dpm_list after successful probe instead of at
+> device_add time.
+> 
+> Potential problem: this means that only devices with drivers actually
+> get suspend/resume calls.  I don't know nearly enough about the PM
+> subsystem, but I suspect that this is a problem.
 
-fwiw, this wasn't intended for allowing the client to create the
-mapping.. the intention was that the buffer creator always be the one
-that implements the mmap'ing.  This was just to implement fops->mmap()
-for the dmabuf handle, ie. so userspace could mmap the buffer without
-having to know *who* allocated it.  Otherwise you have to also pass
-around the fd of the allocator and an offset.
+Yes, this is no good.
 
-BR,
--R
+> 4) ignore parent-child relationships entirely and just move devices to
+> the end of the list on successful probe.  If it probed successfully,
+> then it can be successfully suspended regardless of whether it has any
+> children.  That breaks the parent-child ordering, but guarantees the
+> probe order ordering.  Any devices without drivers will end up
+> collecting at the beginning of the list, and will be suspended after
+> all the devices with drivers.
+> 
+> Problem: Same as with 3, I suspect that even devices without drivers
+> need to process PM suspend, which makes this option unworkable.
+> 
+> ...
+> 
+> For my money, I think that option 2b shows the most promise despite
+> the potential O(N^2) complexity.  There may be a better algorithm for
+> doing the runtime reordering that isn't O(N^2) that I haven't thought
+> of.  Having a list that is strongly ordered both on hierarchy *and*
+> probe order I think is the right thing to do, even without deferred
+> probe support.
+
+The answer is 1, but do the move at the appropriate time within the 
+probe routine.
+
+Alan Stern
+
