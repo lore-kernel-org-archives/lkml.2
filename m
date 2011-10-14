@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab1JNKcq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 06:32:46 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23026 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756240Ab1JNKcp (ORCPT
+	id S1756398Ab1JNKes (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 06:34:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57363 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab1JNKer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 06:32:45 -0400
-X-SpamScore: -2
-X-BigFish: VS-2(z1039oz1432N98dKzz1202hzz8275dhz2dh87h2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 14 Oct 2011 18:32:33 +0800
-From: Richard Zhao <richard.zhao@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <jeremy.kerr@canonical.com>, <paul@pwsan.com>,
-        <linaro-dev@lists.linaro.org>, <linus.walleij@stericsson.com>,
-        <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>,
-        <magnus.damm@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <eric.miao@linaro.org>, <grant.likely@secretlab.ca>,
-        <dsaxena@linaro.org>, <tglx@linutronix.de>, <amit.kucheria@linaro.org>,
-        <linux@arm.linux.org.uk>, <arnd.bergmann@linaro.org>,
-        <sboyd@quiinc.com>, <skannan@quicinc.com>, <shawn.guo@freescale.com>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
-Message-ID: <20111014103233.GB9485@b20223-02.ap.freescale.net>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-2-git-send-email-mturquette@ti.com>
- <20111014081024.GA9485@b20223-02.ap.freescale.net>
- <20111014100504.GC2966@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111014100504.GC2966@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Fri, 14 Oct 2011 06:34:47 -0400
+Message-ID: <1318588503.2223.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: Regression in reading /proc/stat in the newer kernels with
+ large SMP and NUMA configurations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Seger, Mark" <mark.seger@hp.com>,
+        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
+Date: Fri, 14 Oct 2011 12:35:03 +0200
+In-Reply-To: <alpine.DEB.2.00.1110140249310.21487@chino.kir.corp.google.com>
+References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
+	 <alpine.DEB.2.00.1110140249310.21487@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 11:05:04AM +0100, Mark Brown wrote:
-> On Fri, Oct 14, 2011 at 04:10:26PM +0800, Richard Zhao wrote:
-> > On Thu, Sep 22, 2011 at 03:26:56PM -0700, Mike Turquette wrote:
-> 
-> snip essentially Mike's entire mail - *please* delete irrelevant quotes
-> from your replies, it makes it very much easier to find the new text in
-> your mail and is much more friendly to people reading mail on mobile
-> devices.
-I snip not enough? sorry for that. I'll be carefull.
-> 
-> > > +static int __clk_enable(struct clk *clk)
-> > > +{
-> 
-> > Could you expose __clk_enable/__clk_disable? I find it hard to implement
-> > clk group. clk group means, when a major clk enable/disable, it want a set
-> > of other clks enable/disable accordingly.
-> 
-> Shouldn't this be something the core is implementing?  I'd strongly
-> expect that the clock drivers are relatively dumb and delegate all the
-> decision making to the core API.  Otherwise it's going to be hard for
-> the core to implement any logic that involves working with more than one
-> clock like rate change notification, or guarantee that driver requests
-> made through the API are satisfied, as the state of the clocks will be
-> changing underneath it.
->From my point of view, the first step of generic clk can be, easy to adopt
-features of clocks in current mainline git.
-Back to the clk group, I have a patch based on Sascha's work. 
-http://git.linaro.org/gitweb?p=people/riczhao/linux-2.6.git;a=shortlog;h=refs/heads/imx-clk
+Le vendredi 14 octobre 2011 à 03:08 -0700, David Rientjes a écrit :
 
-Thanks
-Richard
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+> The overhead is probably in kstat_irqs_cpu() which is called for each 
+> possible irq for each of the 32 possible cpus, and /proc/stat actually 
+> does the sum twice.  You would see the same type of overhead with 
+> /proc/interrupts if it wasn't masked by the locking that it requires to 
+> safely read irq_desc.  "dmesg | grep nr_irqs" will show how many percpu 
+> variables are being read for every cpu twice.
+
+One annoying thing with most HP servers is they claim more possible cpus
+than reality. So each time we have to loop on possible cpus, we waste
+time and memory cache lines.
+
+For example, on this ProLiant BL460c G6, with two quad core cpus
+(2x4x2), 32 'possible' cpus are found, instead of 16 :
+
+setup_percpu: NR_CPUS:64 nr_cpumask_bits:64 nr_cpu_ids:32 nr_node_ids:2
+PERCPU: Embedded 26 pages/cpu @ffff88007dc00000 s76288 r8192 d22016 u131072
+pcpu-alloc: s76288 r8192 d22016 u131072 alloc=1*2097152
+pcpu-alloc: [0] 00 02 04 06 08 10 12 14 17 19 21 23 25 27 29 31 
+pcpu-alloc: [1] 01 03 05 07 09 11 13 15 16 18 20 22 24 26 28 30 
+
+
 
