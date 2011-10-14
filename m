@@ -1,241 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab1JNAja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 20:39:30 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:35183 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab1JNAj3 (ORCPT
+	id S1755745Ab1JNBDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 21:03:09 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:33282 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab1JNBDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 20:39:29 -0400
-Date: Thu, 13 Oct 2011 20:36:01 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Cc: Ben Blum <bblum@andrew.cmu.edu>, NeilBrown <neilb@suse.de>,
-        paulmck@linux.vnet.ibm.com, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 2/2] cgroups: convert ss->attach to use whole threadgroup
- flex_array (cpuset, memcontrol)
-Message-ID: <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
+	Thu, 13 Oct 2011 21:03:07 -0400
+Date: Thu, 13 Oct 2011 19:03:06 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Subject: Re: [PATCH 2/5 v14] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+In-Reply-To: <alpine.DEB.2.00.1110131227270.24155@utopia.booyaka.com>
+Message-ID: <alpine.DEB.2.00.1110131857350.24155@utopia.booyaka.com>
+References: <1318319355-20168-1-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1110131227270.24155@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815184957.GA16588@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_6000_6999 0, BODY_SIZE_7000_LESS 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert ss->attach to take a flex_array of tasks instead of just the leader.
 
-From: Ben Blum <bblum@andrew.cmu.edu>
+Hi
 
-This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
-memcontrol) to accurately find the group's mm even when a non-leader does exec
-and leaves the leader with a NULL mm pointer.
+I probably shouldn't have, but I've gone ahead and fixed a bunch of issues 
+with this patch locally.  Modified patch below.  Please give it a test and 
+ensure that it works for you. 
 
-Also converts cpuset and memcontrol to take the flex_array and iterate down it
-until an mm is found, instead of just attempting to use the leader's mm.
 
-Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+- Paul
+
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+Date: Thu, 13 Oct 2011 17:27:28 -0600
+Subject: [PATCH] ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3
+
+Following 2 hwmod structures are added
+    1. usb_host_hs
+         The hwmod of usbhs with uhh, ehci and ohci base addresses
+         functional clock and ehci, ohci irqs
+
+    2. usb_tll_hs
+          hwmod of usbhs with the TLL base address and irq.
+
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+Reviewed-by: Partha Basak <parthab@india.ti.com>
+[paul@pwsan.com: fixed whitespace; removed nonexistent TLL->L4 CORE interface;
+ added master & slave for L4 CORE->TLL interface; skip registration on
+ 3430ES1; fixed multiline comment style; updated to apply on Tony's cleanup
+ branch]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 ---
- Documentation/cgroups/cgroups.txt |    7 ++++++-
- include/linux/cgroup.h            |    4 +++-
- kernel/cgroup.c                   |   16 +++++++++++++---
- kernel/cpuset.c                   |   16 ++++++++++++++--
- mm/memcontrol.c                   |   17 +++++++++++++++--
- 5 files changed, 51 insertions(+), 9 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  221 ++++++++++++++++++++++++++++
+ 1 files changed, 221 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 3fa646f..8e900ec 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -637,12 +637,17 @@ For any non-per-thread attachment work that needs to happen before
- attach_task. Needed by cpuset.
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index ab35acb..060543e 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
++static struct omap_hwmod omap3xxx_usb_host_hs_hwmod;
++static struct omap_hwmod omap3xxx_usb_tll_hs_hwmod;
  
- void attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
--	    struct cgroup *old_cgrp, struct task_struct *task)
-+	    struct cgroup *old_cgrp, struct flex_array *group,
-+	    int group_size)
- (cgroup_mutex held by caller)
+ /* L3 -> L4_CORE interface */
+ static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
+@@ -3123,6 +3125,218 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
+ 	.class		= &omap34xx_mmc_class,
+ };
  
- Called after the task has been attached to the cgroup, to allow any
- post-attachment activity that requires memory allocations or blocking.
- 
-+The flex_array contains pointers to every task_struct being moved, so
-+that subsystems can, for example, iterate over a threadgroup's tasks to
-+find one with an mm that needs to be moved.
++/*
++ * 'usb_host_hs' class
++ * high-speed multi-port usb host controller
++ */
++static struct omap_hwmod_ocp_if omap3xxx_usb_host_hs__l3_main_2 = {
++	.master		= &omap3xxx_usb_host_hs_hwmod,
++	.slave		= &omap3xxx_l3_main_hwmod,
++	.clk		= "core_l3_ick",
++	.user		= OCP_USER_MPU,
++};
 +
- void attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
- 		 struct task_struct *tsk);
- (cgroup_mutex held by caller)
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ddc13eb..2f97a3b 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -25,6 +25,7 @@ struct cgroupfs_root;
- struct inode;
- struct cgroup;
- struct css_id;
-+struct flex_array;
- 
- extern int cgroup_init_early(void);
- extern int cgroup_init(void);
-@@ -481,7 +482,8 @@ struct cgroup_subsys {
- 	void (*attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp,
- 			    struct task_struct *tsk);
- 	void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
--		       struct cgroup *old_cgrp, struct task_struct *tsk);
-+		       struct cgroup *old_cgrp, struct flex_array *group,
-+		       int group_size);
- 	int (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
- 	void (*exit)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			struct cgroup *old_cgrp, struct task_struct *task);
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 32fb4c8..f5fc882 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1824,10 +1824,18 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 	struct cgroup *oldcgrp;
- 	struct cgroupfs_root *root = cgrp->root;
- 
-+	/* Singleton array, for ss->attach (see cgroup_attach_proc). */
-+	struct flex_array *group = flex_array_alloc(sizeof(tsk), 1, GFP_KERNEL);
-+	if (!group)
-+		return -ENOMEM;
-+	retval = flex_array_put_ptr(group, 0, tsk, GFP_KERNEL);
-+	if (retval < 0)
-+		goto out_free_array;
++static struct omap_hwmod_class_sysconfig omap3xxx_usb_host_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_CLOCKACTIVITY |
++			   SYSC_HAS_SIDLEMODE | SYSC_HAS_ENAWAKEUP |
++			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
 +
- 	/* Nothing to do if the task is already in that cgroup */
- 	oldcgrp = task_cgroup_from_root(tsk, root);
- 	if (cgrp == oldcgrp)
--		return 0;
-+		goto out_free_array;
- 
- 	for_each_subsys(root, ss) {
- 		if (ss->can_attach) {
-@@ -1862,7 +1870,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 		if (ss->attach_task)
- 			ss->attach_task(cgrp, oldcgrp, tsk);
- 		if (ss->attach)
--			ss->attach(ss, cgrp, oldcgrp, tsk);
-+			ss->attach(ss, cgrp, oldcgrp, group, 1);
- 	}
- 
- 	synchronize_rcu();
-@@ -1890,6 +1898,8 @@ out:
- 				ss->cancel_attach(ss, cgrp, tsk);
- 		}
- 	}
-+out_free_array:
-+	flex_array_free(group);
- 	return retval;
- }
- 
-@@ -2164,7 +2174,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 */
- 	for_each_subsys(root, ss) {
- 		if (ss->attach)
--			ss->attach(ss, cgrp, oldcgrp, leader);
-+			ss->attach(ss, cgrp, oldcgrp, group, group_size);
- 	}
- 
- 	/*
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 00b3430..fce7841 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -59,6 +59,7 @@
- #include <linux/mutex.h>
- #include <linux/workqueue.h>
- #include <linux/cgroup.h>
-+#include <linux/flex_array.h>
- 
- /*
-  * Workqueue for cpuset related tasks.
-@@ -1440,11 +1441,13 @@ static void cpuset_attach_task(struct cgroup *cont, struct cgroup *old,
- }
- 
- static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
--			  struct cgroup *oldcont, struct task_struct *tsk)
-+			  struct cgroup *oldcont, struct flex_array *group,
-+			  int group_size)
- {
- 	struct mm_struct *mm;
- 	struct cpuset *cs = cgroup_cs(cont);
- 	struct cpuset *oldcs = cgroup_cs(oldcont);
-+	int i;
- 
- 	/*
- 	 * Change mm, possibly for multiple threads in a threadgroup. This is
-@@ -1452,7 +1455,16 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 	 */
- 	cpuset_attach_nodemask_from = oldcs->mems_allowed;
- 	cpuset_attach_nodemask_to = cs->mems_allowed;
--	mm = get_task_mm(tsk);
-+	/*
-+	 * Find the first task in the group that still has its mm. (This could
-+	 * be not the first one if another did exec() and the leader exited.
-+	 */
-+	for (i = 0; i < group_size; i++) {
-+		struct task_struct *tsk = flex_array_get_ptr(group, i);
-+		mm = get_task_mm(tsk);
-+		if (mm)
-+			break;
-+	}
- 	if (mm) {
- 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
- 		if (is_memory_migrate(cs))
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6aff93c..f951a9c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -49,6 +49,7 @@
- #include <linux/page_cgroup.h>
- #include <linux/cpu.h>
- #include <linux/oom.h>
-+#include <linux/flex_array.h>
- #include "internal.h"
- 
- #include <asm/uaccess.h>
-@@ -5455,9 +5456,21 @@ retry:
- static void mem_cgroup_move_task(struct cgroup_subsys *ss,
- 				struct cgroup *cont,
- 				struct cgroup *old_cont,
--				struct task_struct *p)
-+				struct flex_array *group, int group_size)
- {
--	struct mm_struct *mm = get_task_mm(p);
-+	struct mm_struct *mm;
-+	int i;
++static struct omap_hwmod_class omap3xxx_usb_host_hs_hwmod_class = {
++	.name = "usb_host_hs",
++	.sysc = &omap3xxx_usb_host_hs_sysc,
++};
++
++static struct omap_hwmod_ocp_if *omap3xxx_usb_host_hs_masters[] = {
++	&omap3xxx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod_addr_space omap3xxx_usb_host_hs_addrs[] = {
++	{
++		.name		= "uhh",
++		.pa_start	= 0x48064000,
++		.pa_end		= 0x480643ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.name		= "ohci",
++		.pa_start	= 0x48064400,
++		.pa_end		= 0x480647ff,
++	},
++	{
++		.name		= "ehci",
++		.pa_start	= 0x48064800,
++		.pa_end		= 0x48064cff,
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap3xxx_l4_core__usb_host_hs = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap3xxx_usb_host_hs_hwmod,
++	.clk		= "usbhost_ick",
++	.addr		= omap3xxx_usb_host_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap3xxx_usb_host_hs_slaves[] = {
++	&omap3xxx_l4_core__usb_host_hs,
++};
++
++static struct omap_hwmod_opt_clk omap3xxx_usb_host_hs_opt_clks[] = {
++	  { .role = "ehci_logic_fck", .clk = "usbhost_120m_fck", },
++};
++
++static struct omap_hwmod_irq_info omap3xxx_usb_host_hs_irqs[] = {
++	{ .name = "ohci-irq", .irq = 76 },
++	{ .name = "ehci-irq", .irq = 77 },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod omap3xxx_usb_host_hs_hwmod = {
++	.name		= "usb_host_hs",
++	.class		= &omap3xxx_usb_host_hs_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.mpu_irqs	= omap3xxx_usb_host_hs_irqs,
++	.main_clk	= "usbhost_48m_fck",
++	.prcm = {
++		.omap2 = {
++			.module_offs = OMAP3430ES2_USBHOST_MOD,
++			.prcm_reg_id = 1,
++			.module_bit = OMAP3430ES2_EN_USBHOST1_SHIFT,
++			.idlest_reg_id = 1,
++			.idlest_idle_bit = OMAP3430ES2_ST_USBHOST_IDLE_SHIFT,
++			.idlest_stdby_bit = OMAP3430ES2_ST_USBHOST_STDBY_SHIFT,
++		},
++	},
++	.opt_clks	= omap3xxx_usb_host_hs_opt_clks,
++	.opt_clks_cnt	= ARRAY_SIZE(omap3xxx_usb_host_hs_opt_clks),
++	.slaves		= omap3xxx_usb_host_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap3xxx_usb_host_hs_slaves),
++	.masters	= omap3xxx_usb_host_hs_masters,
++	.masters_cnt	= ARRAY_SIZE(omap3xxx_usb_host_hs_masters),
 +
 +	/*
-+	 * Find the first task in the group that still has its mm. (This could
-+	 * be not the first one if another did exec() and the leader exited.
++	 * Errata: USBHOST Configured In Smart-Idle Can Lead To a Deadlock
++	 * id: i660
++	 *
++	 * Description:
++	 * In the following configuration :
++	 * - USBHOST module is set to smart-idle mode
++	 * - PRCM asserts idle_req to the USBHOST module ( This typically
++	 *   happens when the system is going to a low power mode : all ports
++	 *   have been suspended, the master part of the USBHOST module has
++	 *   entered the standby state, and SW has cut the functional clocks)
++	 * - an USBHOST interrupt occurs before the module is able to answer
++	 *   idle_ack, typically a remote wakeup IRQ.
++	 * Then the USB HOST module will enter a deadlock situation where it
++	 * is no more accessible nor functional.
++	 *
++	 * Workaround:
++	 * Don't use smart idle; use only force idle, hence HWMOD_SWSUP_SIDLE
 +	 */
-+	for (i = 0; i < group_size; i++) {
-+		struct task_struct *tsk = flex_array_get_ptr(group, i);
-+		mm = get_task_mm(tsk);
-+		if (mm)
-+			break;
-+	}
++
++	/*
++	 * Errata: USB host EHCI may stall when entering smart-standby mode
++	 * Id: i571
++	 *
++	 * Description:
++	 * When the USBHOST module is set to smart-standby mode, and when it is
++	 * ready to enter the standby state (i.e. all ports are suspended and
++	 * all attached devices are in suspend mode), then it can wrongly assert
++	 * the Mstandby signal too early while there are still some residual OCP
++	 * transactions ongoing. If this condition occurs, the internal state
++	 * machine may go to an undefined state and the USB link may be stuck
++	 * upon the next resume.
++	 *
++	 * Workaround:
++	 * Don't use smart standby; use only force standby,
++	 * hence HWMOD_SWSUP_MSTANDBY
++	 */
++
++	/*
++	 * During system boot; If the hwmod framework resets the module
++	 * the module will have smart idle settings; which can lead to deadlock
++	 * (above Errata Id:i660); so, dont reset the module during boot;
++	 * Use HWMOD_INIT_NO_RESET.
++	 */
++
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
++			  HWMOD_INIT_NO_RESET,
++};
++
++/*
++ * 'usb_tll_hs' class
++ * usb_tll_hs module is the adapter on the usb_host_hs ports
++ */
++static struct omap_hwmod_class_sysconfig omap3xxx_usb_tll_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_CLOCKACTIVITY | SYSC_HAS_SIDLEMODE |
++			   SYSC_HAS_ENAWAKEUP | SYSC_HAS_SOFTRESET |
++			   SYSC_HAS_AUTOIDLE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap3xxx_usb_tll_hs_hwmod_class = {
++	.name = "usb_tll_hs",
++	.sysc = &omap3xxx_usb_tll_hs_sysc,
++};
++
++static struct omap_hwmod_irq_info omap3xxx_usb_tll_hs_irqs[] = {
++	{ .name = "tll-irq", .irq = 78 },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap3xxx_usb_tll_hs_addrs[] = {
++	{
++		.name		= "tll",
++		.pa_start	= 0x48062000,
++		.pa_end		= 0x48062fff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap3xxx_l4_core__usb_tll_hs = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap3xxx_usb_tll_hs_hwmod,
++	.clk		= "usbtll_ick",
++	.addr		= omap3xxx_usb_tll_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap3xxx_usb_tll_hs_slaves[] = {
++	&omap3xxx_l4_core__usb_tll_hs,
++};
++
++static struct omap_hwmod omap3xxx_usb_tll_hs_hwmod = {
++	.name		= "usb_tll_hs",
++	.class		= &omap3xxx_usb_tll_hs_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.mpu_irqs	= omap3xxx_usb_tll_hs_irqs,
++	.main_clk	= "usbtll_fck",
++	.prcm = {
++		.omap2 = {
++			.module_offs = CORE_MOD,
++			.prcm_reg_id = 3,
++			.module_bit = OMAP3430ES2_EN_USBTLL_SHIFT,
++			.idlest_reg_id = 3,
++			.idlest_idle_bit = OMAP3430ES2_ST_USBTLL_SHIFT,
++		},
++	},
++	.slaves		= omap3xxx_usb_tll_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap3xxx_usb_tll_hs_slaves),
++};
++
+ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	&omap3xxx_l3_main_hwmod,
+ 	&omap3xxx_l4_core_hwmod,
+@@ -3151,6 +3365,7 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	&omap3xxx_uart1_hwmod,
+ 	&omap3xxx_uart2_hwmod,
+ 	&omap3xxx_uart3_hwmod,
++
+ 	/* dss class */
+ 	&omap3xxx_dss_dispc_hwmod,
+ 	&omap3xxx_dss_dsi1_hwmod,
+@@ -3206,6 +3421,8 @@ static __initdata struct omap_hwmod *omap3430es1_hwmods[] = {
+ static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
+ 	&omap3xxx_dss_core_hwmod,
+ 	&omap3xxx_usbhsotg_hwmod,
++	&omap3xxx_usb_host_hs_hwmod,
++	&omap3xxx_usb_tll_hs_hwmod,
+ 	NULL
+ };
  
- 	if (mm) {
- 		if (mc.to)
+@@ -3223,12 +3440,16 @@ static __initdata struct omap_hwmod *omap36xx_hwmods[] = {
+ 	&omap36xx_sr1_hwmod,
+ 	&omap36xx_sr2_hwmod,
+ 	&omap3xxx_usbhsotg_hwmod,
++	&omap3xxx_usb_host_hs_hwmod,
++	&omap3xxx_usb_tll_hs_hwmod,
+ 	NULL
+ };
+ 
+ static __initdata struct omap_hwmod *am35xx_hwmods[] = {
+ 	&omap3xxx_dss_core_hwmod, /* XXX ??? */
+ 	&am35xx_usbhsotg_hwmod,
++	&omap3xxx_usb_host_hs_hwmod,
++	&omap3xxx_usb_tll_hs_hwmod,
+ 	NULL
+ };
+ 
+-- 
+1.7.7
+
