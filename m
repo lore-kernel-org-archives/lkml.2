@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab1JNXek (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 19:34:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51994 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab1JNXej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 19:34:39 -0400
-Message-ID: <4E98C6CE.4020508@oracle.com>
-Date: Fri, 14 Oct 2011 16:33:34 -0700
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S1757081Ab1JNXet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 19:34:49 -0400
+Received: from shutemov.name ([188.40.19.243]:36391 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754319Ab1JNXeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 19:34:46 -0400
+Date: Sat, 15 Oct 2011 02:34:45 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, lennart@poettering.net,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Message-ID: <20111014233445.GA28092@shutemov.name>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+ <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+ <20111014154348.ae6267aa.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH] XEN_DOMAIN_MEMORY options.
-References: <1318631811-21559-1-git-send-email-maxim.uvarov@oracle.com> <4E98BEF5.10801@goop.org>
-In-Reply-To: <4E98BEF5.10801@goop.org>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
-X-CT-RefId: str=0001.0A090209.4E98C70C.00D4,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014154348.ae6267aa.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 04:00 PM, Jeremy Fitzhardinge wrote:
-> On 10/14/2011 03:36 PM, Maxim Uvarov wrote:
->> Hello,
->>
->> Please find here patches for XEN_MAX_DOMAIN_MEMORY:
->>
->> [PATCH 1/2] xen: Fix XEN_MAX_DOMAIN_MEMORY to be selectable
->> [PATCH 2/2] xen: Make XEN_MAX_DOMAIN_MEMORY have more sensible defaults for 32-bit builds
->
-> What's the rationale?
->
->      J
+On Fri, Oct 14, 2011 at 03:43:48PM -0700, Andrew Morton wrote:
+> On Tue, 11 Oct 2011 19:15:29 +0300
+> "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+> 
+> > Every task_struct has timer_slack_ns value. This value uses to round up
+> > poll() and select() timeout values. This feature can be useful in
+> > mobile environment where combined wakeups are desired.
+> > 
+> > Originally, prctl() was the only way to change timer slack value of
+> > a process. So you was not able change timer slack value of another
+> > process.
+> > 
+> > cgroup subsys "timer_slack" implements timer slack controller. It
+> > provides a way to set minimal timer slack value for a group of tasks.
+> > If a task belongs to a cgroup with minimal timer slack value higher than
+> > task's value, cgroup's value will be applied.
+> > 
+> > Timer slack controller allows to implement setting timer slack value of
+> > a process based on a policy. For example, you can create foreground and
+> > background cgroups and move tasks between them based on system state.
+> 
+> I'm having trouble understanding the value of this feature.  Users can
+> presently control the timer-slack of a group of processes via
+> inherit-over-fork.
+> 
+> Perhaps there's a case for providing a way for process A to set process
+> B's slack.  And perhaps B's children.  That would be a simpler patch
+> and would have the considerable advantage that it doesn't require
+> cgroups.
+> 
+> So.... why should we merge this?
 
-The first patch is actually bug fix. You can not define just "int" 
-without description in Kconfig. As the result this option will not be 
-visible in menuconfig. Even if you will change it in .config make 
-oldconfig will set it up for default value. So you need to add any 
-description to it as all others int options have.
+Putting a task to a cgroup isn't change task's timer slack, it may affect
+"effective timer slack", if min timer slack for the cgroup > task's timer
+slack.
 
-Second patch is more optional and it's just suggestion to use for 32 bit 
-more corresponding value.
+Since we don't touch task's slack value we can drag tasks between cgroups
+and always get the most relaxed slack value for a task without
+saving/restoring it in userspace.
 
-Maxim.
+-- 
+ Kirill A. Shutemov
