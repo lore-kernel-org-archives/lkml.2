@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab1JNUYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 16:24:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:41959 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563Ab1JNUYD (ORCPT
+	id S1756733Ab1JNU0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 16:26:50 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:19790 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab1JNU0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 16:24:03 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=BnwZjTtF1N8PBeVcGtMLPQWX7wMBTY4NqYun8Fzm1oG8gSUHskSz4K08oA6BL0//S
-	cnbEwYM+O446+rQfeGxSQ==
-Date: Fri, 14 Oct 2011 13:23:57 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jan Steinke <jan.steinke@gmail.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: Reporting Kernel Bugs
-In-Reply-To: <loom.20111014T220901-636@post.gmane.org>
-Message-ID: <alpine.DEB.2.00.1110141321250.24783@chino.kir.corp.google.com>
-References: <4E95D7A6.6010603@canonical.com> <alpine.LRH.2.00.1110122011360.29079@twin.jikos.cz> <loom.20111014T220901-636@post.gmane.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Fri, 14 Oct 2011 16:26:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Fri, 14 Oct 2011 16:26:46 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+In-reply-to: <20111014201223.GV21648@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.02.1110141617380.17040@xanadu.home>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com>
+ <201110141729.41515.arnd@arndb.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com>
+ <201110141827.53906.arnd@arndb.de>
+ <CAOesGMgDwMeVmwo1WJ3tU+ZdjCSJ6F8mY42e_KwTmzAkGQsqmg@mail.gmail.com>
+ <20111014192011.GS21648@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.02.1110141549160.17040@xanadu.home>
+ <20111014201223.GV21648@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Jan Steinke wrote:
+On Fri, 14 Oct 2011, Russell King - ARM Linux wrote:
 
-> > Just send an e-mail to appropriate mailinglist and CC 
-> > responsible maintainer(s).
+> On Fri, Oct 14, 2011 at 04:06:21PM -0400, Nicolas Pitre wrote:
+> > Currently, U-Boot insists on having a uImage with a fixed absolute load 
+> > address.  This is currently provided by the zreladdr value, whether or 
+> > not AUTO_ZRELADDR is set.  I consider this as a persisting uImage 
+> > limitation.
 > > 
-> > That's what many people prefer to bugzilla anyway.
+> > Either u-Boot gets fixed so it can work with plain zImage (and this 
+> > certainly will happen once the pressure from people wanting a single 
+> > kernel to work on targets with different load addresses increase.  
+> > Tegra is one such example.
 > > 
+> > Or we create a u-Boot specific Kconfig menu for uImage options that 
+> > would be common to all architectures and kick it out from the ARM 
+> > specific makefile.  This is not solving the u-Boot limitation though.
+> > 
+> > In either cases this is a u-Boot problem that needs fixing on the u-Boot 
+> > side in the end.
 > 
-> How do I know the responsible maintainer(s)? How do I know if the bug is 
-> confirmed or accepted?
+> I don't think that's so with the various flavours of platform specific
+> uboot which float around.  For instance, on the OMAP4430 SDP, the
+> following commands were used as supplied to load a uImage off the SD
+> card into RAM at a different address to which it was built for, and
+> execute it at that address:
 > 
+> mmcinit 0
+> fatload mmc 0 0x80300000 uImage
+> bootm 80300000
+> 
+> Whether the 'bootm' command then copied the image and called it there,
+> or whether it executed it at 0x80300000 I've no idea - but why then
+> load the image at a different address in the first place?
 
-If you can figure out what subsystem is the likely source of the issue, 
-then you can check the MAINTAINERS file for the appropriate people and 
-mailing list.  If there's a panic or oops, find the source file that is to 
-blame and use ./scripts/get_maintainer.pl -f <file>.  Otherwise, just 
-report some unknown, untriaged error directly to 
-linux-kernel@vger.kernel.org and be sure to cc Andrew Morton 
-<akpm@linux-foundation.org> who used to go through the kernel.org bugzilla 
-quite often and send bug reports in the right direction.
+Maybe because the lower memory is already in use by other u-Boot related 
+things, or more likely for no specific reasons at all.  But u-Boot 
+_will_ relocate the image if it is not lot loaded at the address being 
+recorded in its header as specified by the -a argument of mkimage.  And 
+currently we use zreladdr for that when "make uImage" is used, meaning 
+that by default no one is currently benefiting from the kernel 
+decompressor relocation avoidance optimization on u-Boot.
+
+Of course the u-Boot people are also claiming that u-Boot should take 
+care of the kernel decompression not zImage, which I personally disagree 
+with.
+
+
+Nicolas
