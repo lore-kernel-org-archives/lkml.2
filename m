@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab1JNQIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:08:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58996 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab1JNQIQ (ORCPT
+	id S932133Ab1JNQIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:08:32 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:35572 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754448Ab1JNQIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:08:16 -0400
-Date: Fri, 14 Oct 2011 20:08:09 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?= =?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111014160809.GT14464@moon>
-References: <1317943022.1095.25.camel@mop>
- <20111011161600.6145aa6b.akpm@linux-foundation.org>
- <20111012005935.GD14968@somewhere>
- <20111012174014.GE6281@google.com>
- <20111012181641.GZ15413@moon>
- <20111014153844.GP14968@somewhere>
- <20111014160110.GS14464@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014160110.GS14464@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Oct 2011 12:08:18 -0400
+Date: Fri, 14 Oct 2011 09:08:10 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI / PM: Extend PME polling to all PCI devices
+Message-ID: <20111014090810.7d34906a@jbarnes-desktop>
+In-Reply-To: <201110032316.33786.rjw@sisk.pl>
+References: <201110032316.33786.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/K_gsFGF1fqbFWQmNvdaEaHM"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 08:01:10PM +0400, Cyrill Gorcunov wrote:
-...
-> > Well, wouldn't it be better to pull that complexity to userspace?
-> > After all, moving tasks from a cgroup to another is not a performance
-> > critical operation so that probably doesn't need to be all handled by
-> > the kernel.
-> > 
-> > If one worries about concurrent clone/fork while moving tasks, then
-> > freezing the cgroup and moving its tasks away from userspace could
-> > be enough?
-> 
-> Well, it's not that problem to make it task-by-task, still I think
-> it's just a convenient shortcut :)
-> 
+--Sig_/K_gsFGF1fqbFWQmNvdaEaHM
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Frederic, don't get me wrong, but when I've tried cgroups and freezer for
-first time (and I did it not by any script but by hands rather) it makes
-me scream out that once I've moved a number of tasks to some freezer cgroup
-now I need to move them back again. Of course there is a way to write some
-script of whatever but I thought we had some echo -1 shortcut. Anyway,
-I can live with it ;)
+On Mon, 3 Oct 2011 23:16:33 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-	Cyrill
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>=20
+> The land of PCI power management is a land of sorrow and ugliness,
+> especially in the area of signaling events by devices.  There are
+> devices that set their PME Status bits, but don't really bother
+> to send a PME message or assert PME#.  There are hardware vendors
+> who don't connect PME# lines to the system core logic (they know
+> who they are).  There are PCI Express Root Ports that don't bother
+> to trigger interrupts when they receive PME messages from the devices
+> below.  There are ACPI BIOSes that forget to provide _PRW methods for
+> devices capable of signaling wakeup.  Finally, there are BIOSes that
+> do provide _PRW methods for such devices, but then don't bother to
+> call Notify() for those devices from the corresponding _Lxx/_Exx
+> GPE-handling methods.  In all of these cases the kernel doesn't have
+> a chance to receive a proper notification that it should wake up a
+> device, so devices stay in low-power states forever.  Worse yet, in
+> some cases they continuously send PME Messages that are silently
+> ignored, because the kernel simply doesn't know that it should clear
+> the device's PME Status bit.
+>=20
+> This problem was first observed for "parallel" (non-Express) PCI
+> devices on add-on cards and Matthew Garrett addressed it by adding
+> code that polls PME Status bits of such devices, if they are enabled
+> to signal PME, to the kernel.  Recently, however, it has turned out
+> that PCI Express devices are also affected by this issue and that it
+> is not limited to add-on devices, so it seems necessary to extend
+> the PME polling to all PCI devices, including PCI Express and planar
+> ones.  Still, it would be wasteful to poll the PME Status bits of
+> devices that are known to receive proper PME notifications, so make
+> the kernel (1) poll the PME Status bits of all PCI and PCIe devices
+> enabled to signal PME and (2) disable the PME Status polling for
+> devices for which correct PME notifications are received.
+>=20
+> Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+
+Applied to linux-next, thanks.
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/K_gsFGF1fqbFWQmNvdaEaHM
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOmF5qAAoJEIEoDkX4Qk9hVowQALJN9VFseqKrP5tvWJx/ie5N
+PG3AO3W6uo7axFF6xJ5s/4hfPIryfZFsX/04fq3/8DOybJX+A8rXX9o6ws002nyF
+35SkCbwTwhKVqB2gNh/hmo4brcYD4uED/W3Ft0qQF7N00bpCpVRv8b4o2RJiVCqN
+QeGuzkT9aQHtvFBbJseR+9ie5ulVg1uBUZl2757VRaZjVQOoVQdzLjD//WTc3F4c
+NzavnchUv+YiizHAhNFA7wpi/QwzTTfb1O7ppPCC1AjiFtalyPRrwjoylDQ+dt2H
+R2gX7JU1TX5csOba37K+FP8HF2YRqJ9S0+xz7IVUqiAeCZLBM1INsRplvacbIE4I
+JtnXkvm5NXfjOdmRY0m5W8S7UJ9X7U/FQTnyMdvRgUyeJENZBuQkqZ7NAuSr9e5v
+HGHTckJXdUQumjBRVBfE96Sd4C3FkeBYy+V6Pef4HeUcwenv6Bo70TfRIkTIHOjB
+LM6Rh75qt8TaE/tJR5boh3QFAgl0Rt0Wu8NDO1ZRUnVbOiuLDvDLU8y59IbiViwH
+lXpDurlhcEkK7UWi/d9pHtyR8bEJHTIYusRS31YUNlSIX9+OopC6D9jboEDiE9Vo
+J697ZI+eS1xUt6xC1GOOhxLuViJTM4hvkPt16fuWFiJvVBHMYhY3E+x6fenm3Qds
+HOgfiKOjndlLMDNCe+O5
+=ESmF
+-----END PGP SIGNATURE-----
+
+--Sig_/K_gsFGF1fqbFWQmNvdaEaHM--
