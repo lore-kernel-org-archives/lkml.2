@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab1JNEay (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:30:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50492 "EHLO
+	id S932500Ab1JNE2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 00:28:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21295 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932460Ab1JNE3M (ORCPT
+	with ESMTP id S932433Ab1JNE2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:29:12 -0400
+	Fri, 14 Oct 2011 00:28:38 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=odaLRetLaZfgLXUtJFRtJ+8i65UYUb1NmcvAJWiTjEm0iQbuUBM/xdEIqsESUG8Ki
-	X9IXL3tXhf3+sOuE01/0w==
-Subject: [PATCH v2 24/29] alpha/PCI: convert to pci_scan_root_bus() for
+	b=cKL5BmkrgTuotg63A5pV5CeFiRenhi9Qt8tRN64ECrt7VblUT4uxuHspChoJqF1WO
+	lJ+fhcuFedKdWTE6qMvQg==
+Subject: [PATCH v2 17/29] ia64/PCI: convert to pci_create_root_bus() for
 	correct root bus resources
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 13 Oct 2011 22:29:09 -0600
-Message-ID: <20111014042909.23504.29138.stgit@bhelgaas.mtv.corp.google.com>
+Cc: linux-arch@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Oct 2011 22:28:33 -0600
+Message-ID: <20111014042833.23504.81310.stgit@bhelgaas.mtv.corp.google.com>
 In-Reply-To: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
 References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -31,74 +32,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert from pci_scan_bus() to pci_scan_root_bus() and remove root bus
-resource fixups.  This fixes the problem of "early" and "header" quirks
-seeing incorrect root bus resources.
+Convert from pci_create_bus() to pci_create_root_bus().  This way the root
+bus resources are correct immediately.  This fixes the problem of "early"
+and "header" quirks seeing incorrect root bus resources.
 
+We can't use pci_scan_root_bus() because, like x86, ACPI hotplug currently
+requires pci_bus_add_devices() in a separate host bridge .start() method.
+
+CC: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/alpha/kernel/pci.c |   37 ++++++++++++++++++++-----------------
- 1 files changed, 20 insertions(+), 17 deletions(-)
+ arch/ia64/pci/pci.c |   39 ++++++++++++++-------------------------
+ 1 files changed, 14 insertions(+), 25 deletions(-)
 
-diff --git a/arch/alpha/kernel/pci.c b/arch/alpha/kernel/pci.c
-index c9ab94e..e9e78a2 100644
---- a/arch/alpha/kernel/pci.c
-+++ b/arch/alpha/kernel/pci.c
-@@ -286,22 +286,7 @@ pcibios_fixup_bus(struct pci_bus *bus)
- 	struct pci_controller *hose = bus->sysdata;
- 	struct pci_dev *dev = bus->self;
- 
--	if (!dev) {
--		/* Root bus. */
--		u32 pci_mem_end;
--		u32 sg_base = hose->sg_pci ? hose->sg_pci->dma_base : ~0;
--		unsigned long end;
--
--		bus->resource[0] = hose->io_space;
--		bus->resource[1] = hose->mem_space;
--
--		/* Adjust hose mem_space limit to prevent PCI allocations
--		   in the iommu windows. */
--		pci_mem_end = min((u32)__direct_map_base, sg_base) - 1;
--		end = hose->mem_space->start + pci_mem_end;
--		if (hose->mem_space->end > end)
--			hose->mem_space->end = end;
-- 	} else if (pci_probe_only &&
-+	if (pci_probe_only && dev &&
-  		   (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI) {
-  		pci_read_bridge_bases(bus);
-  		pcibios_fixup_device_resources(dev, bus);
-@@ -414,13 +399,31 @@ void __init
- common_init_pci(void)
- {
- 	struct pci_controller *hose;
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index d7e47a9..a7949b5 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -133,6 +133,7 @@ alloc_pci_controller (int seg)
+ struct pci_root_info {
+ 	struct acpi_device *bridge;
+ 	struct pci_controller *controller;
 +	struct list_head resources;
- 	struct pci_bus *bus;
- 	int next_busno;
- 	int need_domain_info = 0;
-+	u32 pci_mem_end;
-+	u32 sg_base;
-+	unsigned long end;
+ 	char *name;
+ };
  
- 	/* Scan all of the recorded PCI controllers.  */
- 	for (next_busno = 0, hose = hose_head; hose; hose = hose->next) {
--		bus = pci_scan_bus(next_busno, alpha_mv.pci_ops, hose);
-+		sg_base = hose->sg_pci ? hose->sg_pci->dma_base : ~0;
-+
-+		/* Adjust hose mem_space limit to prevent PCI allocations
-+		   in the iommu windows. */
-+		pci_mem_end = min((u32)__direct_map_base, sg_base) - 1;
-+		end = hose->mem_space->start + pci_mem_end;
-+		if (hose->mem_space->end > end)
-+			hose->mem_space->end = end;
-+
-+		INIT_LIST_HEAD(&resources);
-+		pci_add_resource(&resources, &hose->io_space);
-+		pci_add_resource(&resources, &hose->mem_space);
-+
-+		bus = pci_scan_root_bus(NULL, next_busno, alpha_mv.pci_ops,
-+					hose, &resources);
- 		hose->bus = bus;
- 		hose->need_domain_info = need_domain_info;
- 		next_busno = bus->subordinate + 1;
+@@ -314,24 +315,13 @@ static __devinit acpi_status add_window(struct acpi_resource *res, void *data)
+ 				 &window->resource);
+ 	}
+ 
+-	return AE_OK;
+-}
++	/* HP's firmware has a hack to work around a Windows bug.
++	 * Ignore these tiny memory ranges */
++	if (!((res->flags & IORESOURCE_MEM) &&
++	      (res->end - res->start < 16)))
++		pci_add_resource(&info->resources, &window->resource);
+ 
+-static void __devinit
+-pcibios_setup_root_windows(struct pci_bus *bus, struct pci_controller *ctrl)
+-{
+-	int i;
+-
+-	pci_bus_remove_resources(bus);
+-	for (i = 0; i < ctrl->windows; i++) {
+-		struct resource *res = &ctrl->window[i].resource;
+-		/* HP's firmware has a hack to work around a Windows bug.
+-		 * Ignore these tiny memory ranges */
+-		if ((res->flags & IORESOURCE_MEM) &&
+-		    (res->end - res->start < 16))
+-			continue;
+-		pci_bus_add_resource(bus, res, 0);
+-	}
++	return AE_OK;
+ }
+ 
+ struct pci_bus * __devinit
+@@ -342,6 +332,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	int bus = root->secondary.start;
+ 	struct pci_controller *controller;
+ 	unsigned int windows = 0;
++	struct pci_root_info info;
+ 	struct pci_bus *pbus;
+ 	char *name;
+ 	int pxm;
+@@ -358,11 +349,10 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		controller->node = pxm_to_node(pxm);
+ #endif
+ 
++	INIT_LIST_HEAD(&info.resources);
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_window,
+ 			&windows);
+ 	if (windows) {
+-		struct pci_root_info info;
+-
+ 		controller->window =
+ 			kmalloc_node(sizeof(*controller->window) * windows,
+ 				     GFP_KERNEL, controller->node);
+@@ -386,9 +376,12 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	 * should handle the case here, but it appears that IA64 hasn't
+ 	 * such quirk. So we just ignore the case now.
+ 	 */
+-	pbus = pci_create_bus(NULL, bus, &pci_root_ops, controller, NULL);
+-	if (!pbus)
++	pbus = pci_create_root_bus(NULL, bus, &pci_root_ops, controller,
++				   &info.resources);
++	if (!pbus) {
++		pci_free_resource_list(&info.resources);
+ 		return NULL;
++	}
+ 
+ 	pbus->subordinate = pci_scan_child_bus(pbus);
+ 	return pbus;
+@@ -506,14 +499,10 @@ pcibios_fixup_bus (struct pci_bus *b)
+ 	if (b->self) {
+ 		pci_read_bridge_bases(b);
+ 		pcibios_fixup_bridge_resources(b->self);
+-	} else {
+-		pcibios_setup_root_windows(b, b->sysdata);
+ 	}
+ 	list_for_each_entry(dev, &b->devices, bus_list)
+ 		pcibios_fixup_device_resources(dev);
+ 	platform_pci_fixup_bus(b);
+-
+-	return;
+ }
+ 
+ void __devinit
 
