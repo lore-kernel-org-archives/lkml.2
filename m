@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab1JNI4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 04:56:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50126 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab1JNI4j (ORCPT
+	id S1755344Ab1JNJCO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:02:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64194 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab1JNJCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 04:56:39 -0400
-Subject: Re: [PATCH] mtd: rename the redboot module to RedBoot
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andres Salomon <dilinger@queued.net>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 14 Oct 2011 11:56:07 +0300
-In-Reply-To: <20111003222346.5ac48654@queued.net>
-References: <20111003222346.5ac48654@queued.net>
+	Fri, 14 Oct 2011 05:02:12 -0400
+Subject: [PATCH 1/2] ASoC: ad193x: Fix define of AD193X_PLL_INPUT_MASK
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Barry Song <21cnbao@gmail.com>, alsa-devel@alsa-project.org
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318582575.12351.74.camel@sauron>
+Date: Fri, 14 Oct 2011 17:01:59 +0800
+Message-ID: <1318582919.19976.1.camel@phoenix>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 22:23 -0700, Andres Salomon wrote:
-> parse_mtd_partitions takes a list of partition types; if the driver
-> isn't loaded, it attempts to load it, and then it grabs the partition
-> parser.  For redboot, the module name is "redboot.ko", while the parser
-> name is "RedBoot".  Since modprobe is case-sensitive, attempting to
-> modprobe "RedBoot" will never work.  I suspect the embedded systems that
-> make use of redboot just always manually loaded redboot prior to loading
-> their specific nand chip drivers (or statically compiled it in).
-> 
-> Alternatives include renaming the parser to "redboot", changing
-> parse_mtd_partitions to accept pairs of strings, or changing modprobe
-> to be case-insensitive.  Renaming the module seems like the easy,
-> obvious solution. :)
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  drivers/mtd/Makefile  |    2 +-
->  drivers/mtd/RedBoot.c |  315 +++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/mtd/redboot.c |  315 -------------------------------------------------
->  3 files changed, 316 insertions(+), 316 deletions(-)
->  create mode 100644 drivers/mtd/RedBoot.c
->  delete mode 100644 drivers/mtd/redboot.c
+Current code defines AD193X_PLL_INPUT_MASK as (~0x6) which is quite
+different from other MASK defines.
+To make it consistent with other mask defines, define AD193X_PLL_INPUT_MASK
+as 0x6 and change the code accordingly.
+I think this change improves the readability.
 
-Could you please use MODULE_ALIAS(RedBoot) instead?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/ad193x.c |    2 +-
+ sound/soc/codecs/ad193x.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
+index f934670..39056ce 100644
+--- a/sound/soc/codecs/ad193x.c
++++ b/sound/soc/codecs/ad193x.c
+@@ -298,7 +298,7 @@ static int ad193x_hw_params(struct snd_pcm_substream *substream,
+ 	}
+ 
+ 	reg = snd_soc_read(codec, AD193X_PLL_CLK_CTRL0);
+-	reg = (reg & AD193X_PLL_INPUT_MASK) | master_rate;
++	reg = (reg & (~AD193X_PLL_INPUT_MASK)) | master_rate;
+ 	snd_soc_write(codec, AD193X_PLL_CLK_CTRL0, reg);
+ 
+ 	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
+diff --git a/sound/soc/codecs/ad193x.h b/sound/soc/codecs/ad193x.h
+index 536e5f2..1507eaa 100644
+--- a/sound/soc/codecs/ad193x.h
++++ b/sound/soc/codecs/ad193x.h
+@@ -11,7 +11,7 @@
+ 
+ #define AD193X_PLL_CLK_CTRL0    0x00
+ #define AD193X_PLL_POWERDOWN           0x01
+-#define AD193X_PLL_INPUT_MASK   (~0x6)
++#define AD193X_PLL_INPUT_MASK   0x6
+ #define AD193X_PLL_INPUT_256    (0 << 1)
+ #define AD193X_PLL_INPUT_384    (1 << 1)
+ #define AD193X_PLL_INPUT_512    (2 << 1)
 -- 
-Best Regards,
-Artem Bityutskiy
+1.7.4.1
+
+
 
