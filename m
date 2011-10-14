@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab1JNEcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:32:52 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:50002 "EHLO
+	id S932337Ab1JNE15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 00:27:57 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21007 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab1JNE2G (ORCPT
+	with ESMTP id S932238Ab1JNE1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:28:06 -0400
+	Fri, 14 Oct 2011 00:27:53 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=ssvW/5Lh1ec2DWcZmkqhLp83CZI/wQtgwYCpZKkQHjMLgjjtUq9PXHbum+VG4ZrJl
-	jjL013IARlg9Z9k8W2Z3A==
-Subject: [PATCH v2 11/29] microblaze/PCI: make pcibios_setup_phb_resources()
-	static
+	b=fWfNvmqFbQsy1WyeS3yn6nMRjli5lmCYQ5Vaw93DvUGRd/GGY0mwDHd3x5Gvr2dto
+	hj2w0FG41QeS1nX8U2lTw==
+Subject: [PATCH v2 08/29] powerpc/PCI: split PHB part out of
+	pcibios_map_io_space()
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-arch@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+Cc: linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-kernel@vger.kernel.org
-Date: Thu, 13 Oct 2011 22:28:03 -0600
-Message-ID: <20111014042803.23504.11906.stgit@bhelgaas.mtv.corp.google.com>
+Date: Thu, 13 Oct 2011 22:27:47 -0600
+Message-ID: <20111014042747.23504.28856.stgit@bhelgaas.mtv.corp.google.com>
 In-Reply-To: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
 References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -32,36 +33,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Michal Simek <monstr@monstr.eu>
+No functional change.  This is so we can use pcibios_phb_map_io_space()
+before we have a struct pci_bus.
+
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/microblaze/include/asm/pci-bridge.h |    1 -
- arch/microblaze/pci/pci-common.c         |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/pci_64.c |   40 +++++++++++++++++++++-------------------
+ 1 files changed, 21 insertions(+), 19 deletions(-)
 
-diff --git a/arch/microblaze/include/asm/pci-bridge.h b/arch/microblaze/include/asm/pci-bridge.h
-index 32764cd..e9834b2 100644
---- a/arch/microblaze/include/asm/pci-bridge.h
-+++ b/arch/microblaze/include/asm/pci-bridge.h
-@@ -140,7 +140,6 @@ extern void pci_process_bridge_OF_ranges(struct pci_controller *hose,
- /* Allocate & free a PCI host bridge structure */
- extern struct pci_controller *pcibios_alloc_controller(struct device_node *dev);
- extern void pcibios_free_controller(struct pci_controller *phb);
--extern void pcibios_setup_phb_resources(struct pci_controller *hose);
+diff --git a/arch/powerpc/kernel/pci_64.c b/arch/powerpc/kernel/pci_64.c
+index ab34046..4401425 100644
+--- a/arch/powerpc/kernel/pci_64.c
++++ b/arch/powerpc/kernel/pci_64.c
+@@ -130,30 +130,13 @@ EXPORT_SYMBOL_GPL(pcibios_unmap_io_space);
  
- #endif	/* __KERNEL__ */
- #endif	/* _ASM_MICROBLAZE_PCI_BRIDGE_H */
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 9df5e5b..9dde153 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -1507,7 +1507,7 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
- 	return pci_enable_resources(dev, mask);
+ #endif /* CONFIG_HOTPLUG */
+ 
+-int __devinit pcibios_map_io_space(struct pci_bus *bus)
++static int __devinit pcibios_map_phb_io_space(struct pci_controller *hose)
+ {
+ 	struct vm_struct *area;
+ 	unsigned long phys_page;
+ 	unsigned long size_page;
+ 	unsigned long io_virt_offset;
+-	struct pci_controller *hose;
+-
+-	WARN_ON(bus == NULL);
+-
+-	/* If this not a PHB, nothing to do, page tables still exist and
+-	 * thus HPTEs will be faulted in when needed
+-	 */
+-	if (bus->self) {
+-		pr_debug("IO mapping for PCI-PCI bridge %s\n",
+-			 pci_name(bus->self));
+-		pr_debug("  virt=0x%016llx...0x%016llx\n",
+-			 bus->resource[0]->start + _IO_BASE,
+-			 bus->resource[0]->end + _IO_BASE);
+-		return 0;
+-	}
+ 
+-	/* Get the host bridge */
+-	hose = pci_bus_to_host(bus);
+ 	phys_page = _ALIGN_DOWN(hose->io_base_phys, PAGE_SIZE);
+ 	size_page = _ALIGN_UP(hose->pci_io_size, PAGE_SIZE);
+ 
+@@ -197,11 +180,30 @@ int __devinit pcibios_map_io_space(struct pci_bus *bus)
+ 
+ 	return 0;
+ }
++
++int __devinit pcibios_map_io_space(struct pci_bus *bus)
++{
++	WARN_ON(bus == NULL);
++
++	/* If this not a PHB, nothing to do, page tables still exist and
++	 * thus HPTEs will be faulted in when needed
++	 */
++	if (bus->self) {
++		pr_debug("IO mapping for PCI-PCI bridge %s\n",
++			 pci_name(bus->self));
++		pr_debug("  virt=0x%016llx...0x%016llx\n",
++			 bus->resource[0]->start + _IO_BASE,
++			 bus->resource[0]->end + _IO_BASE);
++		return 0;
++	}
++
++	return pcibios_phb_map_phb_io_space(pci_bus_to_host(bus));
++}
+ EXPORT_SYMBOL_GPL(pcibios_map_io_space);
+ 
+ void __devinit pcibios_setup_phb_io_space(struct pci_controller *hose)
+ {
+-	pcibios_map_io_space(hose->bus);
++	pcibios_map_phb_io_space(hose);
  }
  
--void __devinit pcibios_setup_phb_resources(struct pci_controller *hose)
-+static void __devinit pcibios_setup_phb_resources(struct pci_controller *hose)
- {
- 	struct pci_bus *bus = hose->bus;
- 	struct resource *res;
+ #define IOBASE_BRIDGE_NUMBER	0
 
