@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1JNFdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 01:33:19 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:50471 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab1JNFdR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 01:33:17 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Date: Fri, 14 Oct 2011 01:32:08 -0400
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Index: AcyJagQkhSm7WT0YQw6oYzRPau78SQAyJl0F
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB4F747AA@USINDEVS02.corp.hds.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
-	<20111010153723.6397924f.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-	<20111011125419.2702b5dc.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
-	<20111011135445.f580749b.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
-	<alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516D0EA@USINDEVS02.corp.hds.com>
-	<alpine.DEB.2.00.1110121654120.30123@chino.kir.corp.google.com>,<20111013143501.a59efa5c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111013143501.a59efa5c.kamezawa.hiroyu@jp.fujitsu.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110130396
+	id S1755340Ab1JNFqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 01:46:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59716 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754759Ab1JNFqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 01:46:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,344,1315206000"; 
+   d="scan'208";a="62486916"
+From: Vinod Koul <vinod.koul@intel.com>
+To: dan.j.williams@intel.com
+Cc: linux-kernel@vger.kernel.org, jaswinder.singh@linaro.org,
+        21cnbao@gmail.com, rmk@arm.linux.org.uk,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [PATCH 00/10] dmaengine: move to enum dma_transfer_direction
+Date: Fri, 14 Oct 2011 11:08:15 +0530
+Message-Id: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 01:35 AM, KAMEZAWA Hiroyuki wrote:
-> 
-> I don't read full story but....how about adding a new syscall like
-> 
-> ==
-> sys_mem_shrink(int nid, int nr_scan_pages, int flags)
-> 
-> This system call scans LRU of specified nodes and free pages on LRU.
-> This scan nr_scan_pages in LRU and returns the number of successfully
-> freed pages.
-> ==
-> 
-> Then, running this progam in SCHED_IDLE, a user can make free pages while
-> the system is idle. If running in the highest priority, a user can keep
-> free pages as he want. If a user run this under a memcg, user can free
-> pages in a memcg. 
+From: Vinod Koul <vinod.koul@linux.intel.com>
 
-This is interesting. We can make userspace kswapd as we like with
-this syscall. But it seems harder to be accepted...
+As discussed recently on new interleaved dma patchset, the direction in
+dmaengine needs improvement and as suggested by Jassi, this patchset move
+dmaengine and dmacs, clients to use new enum dma_transfer_direction to indicate
+the dma direction and mode
 
-Regards,
-Satoru
+Vinod Koul (10):
+  dmaengine: add new enum dma_transfer_direction
+  dmaengine: move drivers to dma_transfer_direction
+  plat-samsung: move to dma_transfer_direction
+  media-video: move to dma_transfer_direction
+  carma: move to dma_transfer_direction
+  mmc-host: move to dma_transfer_direction
+  spi, serial: move to dma_transfer_direction
+  sound-soc: move to dma_transfer_direction
+  USB: move to dma_transfer_direction
+  net-ks8842: move to dma_transfer_direction
+
+ arch/arm/mach-ep93xx/include/mach/dma.h        |    6 ++--
+ arch/arm/plat-nomadik/include/plat/ste_dma40.h |    4 +-
+ arch/arm/plat-samsung/dma-ops.c                |    4 +-
+ arch/arm/plat-samsung/include/plat/dma-ops.h   |    4 +-
+ drivers/dma/amba-pl08x.c                       |   24 +++++++++++-----------
+ drivers/dma/at_hdmac.c                         |   22 ++++++++++----------
+ drivers/dma/coh901318.c                        |   12 +++++-----
+ drivers/dma/coh901318_lli.c                    |   23 ++++++++++-----------
+ drivers/dma/coh901318_lli.h                    |    4 +-
+ drivers/dma/dw_dmac.c                          |   14 ++++++------
+ drivers/dma/ep93xx_dma.c                       |   22 ++++++++++----------
+ drivers/dma/fsldma.c                           |    4 +-
+ drivers/dma/imx-dma.c                          |   10 ++++----
+ drivers/dma/imx-sdma.c                         |   10 ++++----
+ drivers/dma/intel_mid_dma.c                    |   14 ++++++------
+ drivers/dma/intel_mid_dma_regs.h               |    2 +-
+ drivers/dma/ipu/ipu_idmac.c                    |    4 +-
+ drivers/dma/mxs-dma.c                          |    8 +++---
+ drivers/dma/pch_dma.c                          |   12 +++++-----
+ drivers/dma/pl330.c                            |   18 ++++++++--------
+ drivers/dma/shdma.c                            |   25 +++++++++++------------
+ drivers/dma/ste_dma40.c                        |   26 ++++++++++++------------
+ drivers/dma/timb_dma.c                         |   18 ++++++++--------
+ drivers/dma/txx9dmac.c                         |   12 +++++-----
+ drivers/media/video/mx3_camera.c               |    2 +-
+ drivers/media/video/timblogiw.c                |    2 +-
+ drivers/misc/carma/carma-fpga-program.c        |    2 +-
+ drivers/mmc/host/atmel-mci.c                   |    9 +++++--
+ drivers/mmc/host/mmci.c                        |   11 ++++++---
+ drivers/mmc/host/mxcmmc.c                      |   10 ++++++--
+ drivers/mmc/host/mxs-mmc.c                     |    7 +++++-
+ drivers/mmc/host/sh_mmcif.c                    |    4 +-
+ drivers/mmc/host/tmio_mmc_dma.c                |    4 +-
+ drivers/net/ks8842.c                           |    4 +-
+ drivers/spi/spi-dw-mid.c                       |    8 +++---
+ drivers/spi/spi-ep93xx.c                       |    5 +++-
+ drivers/spi/spi-pl022.c                        |    8 +++---
+ drivers/spi/spi-topcliff-pch.c                 |    4 +-
+ drivers/tty/serial/amba-pl011.c                |    8 +++---
+ drivers/tty/serial/pch_uart.c                  |    4 +-
+ drivers/tty/serial/sh-sci.c                    |    4 +-
+ drivers/usb/musb/ux500_dma.c                   |    4 +-
+ drivers/usb/renesas_usbhs/fifo.c               |    4 +-
+ drivers/video/mx3fb.c                          |    4 +-
+ include/linux/amba/pl08x.h                     |    4 +-
+ include/linux/dmaengine.h                      |   22 +++++++++++++++----
+ include/linux/dw_dmac.h                        |    2 +-
+ include/linux/sh_dma.h                         |    2 +-
+ sound/atmel/abdac.c                            |    2 +-
+ sound/atmel/ac97c.c                            |   10 ++++----
+ sound/soc/ep93xx/ep93xx-pcm.c                  |    4 +-
+ sound/soc/imx/imx-pcm-dma-mx2.c                |    6 ++--
+ sound/soc/samsung/dma.c                        |    4 +-
+ sound/soc/sh/siu_pcm.c                         |    4 +-
+ sound/soc/txx9/txx9aclc.c                      |    2 +-
+ 55 files changed, 250 insertions(+), 222 deletions(-)
+
