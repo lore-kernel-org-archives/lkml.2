@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab1JNOXa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 10:23:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44983 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933013Ab1JNOX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 10:23:29 -0400
-Subject: Re: [PATCH] jffs2: allow disabling of compression schemes at runtime
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andres Salomon <dilinger@queued.net>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 14 Oct 2011 17:22:59 +0300
-In-Reply-To: <20111014071416.5278051d@debxo>
-References: <20111003191624.7efd3dce@queued.net>
-	 <1318582244.12351.73.camel@sauron> <20111014071416.5278051d@debxo>
+	id S1756858Ab1JNO0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 10:26:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48378 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab1JNO0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 10:26:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,346,1315206000"; 
+   d="scan'208";a="78151614"
+Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, rmk@arm.linux.org.uk,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+In-Reply-To: <1318601113.1546.409.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
+	 <CAGsJ_4yqdwaTxi=KMcgokb05uWUNi5_7uZDGqA4RsOZkWZ7FQA@mail.gmail.com>
+	 <CAJe_ZhfomhARd8EVcR+jCHuFLrAKkNqvaETFHiNtNeijx+5Kxw@mail.gmail.com>
+	 <1318599079.1546.395.camel@vkoul-udesk3>
+	 <CAJe_ZheA3iTQ2K4aCYccn2N_8fkMkLMPV9MbQG6gHjYWiKdOCQ@mail.gmail.com>
+	 <1318601113.1546.409.camel@vkoul-udesk3>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318602186.12351.141.camel@sauron>
+Date: Fri, 14 Oct 2011 19:48:29 +0530
+Message-ID: <1318601909.1546.410.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 07:14 -0700, Andres Salomon wrote:
-> On Fri, 14 Oct 2011 11:50:37 +0300
-> Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> 
-> > On Mon, 2011-10-03 at 19:16 -0700, Andres Salomon wrote:
-> > > Currently jffs2 has compile-time constants (and .config options)
-> > > regarding whether or not the various compression/decompression
-> > > drivers are built in and enabled.  This is fine for embedded
-> > > systems, but it clashes with distribution kernels.  Distro kernels
-> > > tend to turn on everything; this causes OpenFirmware to fall
-> > > over, as it only supports ZLIB decompression.  Booting a kernel
-> > > that has LZO compression enabled, writing to the boot partition,
-> > > and then rebooting causes OFW to fail to read the kernel from
-> > > the filesystem.  This is because LZO compression has priority
-> > > when writing new data to jffs2, if LZO is enabled.
-> > > 
-> > > To get around that, this patch adds jffs2 module params for each
-> > > compressor type that isn't decompression-only.  That means I can run
-> > > a kernel that has support for LZO and ZLIB decompression (allowing
-> > > me to read LZO data off of the root partition), while  disabling
-> > > LZO compression writes (jffs2.disable_lzo=1) so that the boot
-> > > partition stays compatible with OFW.
-> > > 
-> > > Signed-off-by: Andres Salomon <dilinger@queued.net>
+On Fri, 2011-10-14 at 19:35 +0530, Vinod Koul wrote:
+> On Fri, 2011-10-14 at 19:21 +0530, Jassi Brar wrote:
+> > >> ... we need to restore 'bool frm_irq' and add new 'bool cyclic' that
+> > >> would replay the transfer(i.e, reset dma-pointers to src_start & dst_start)
+> > >> after 'numf' frames have been transferred.
+> > > I was thinking more on lines to have this conveyed thru a flag.
+> > >
+> > Sorry don't see exactly what you mean.
+> > frm_irq and numf are independent of each other and could
+> > cover more cases than a single flag.
 > > 
-> > You should use mount options instead. Invent nice mount options to
-> > configure compression strategy of JFFS2.
-> 
-> I thought about it, but currently jffs2 doesn't support parsing
-> mount options.  It seemed like a lot of extra code for such an obscure
-> feature, on a filesystem that's merely in maintenance mode (I don't know
-> if anyone else has run into the same issue that I have).  However, I can
-> do that if desired.
+> > > Anyway I plan to work on merging device_prep_slave_sg and
+> > > device_prep_cyclic to single API. Think more of device_prep_cyclic as
+> > > special case with sg length one and flag to tell dmac its cyclic.
+> > >
+> > AFAIK, usually the ring buffer is divided into N (>1) different
+> > periods that need
+> > to be transferred in endless loop.
+> But that is not interleaved dma, we have a cyclic API, barry should be
+> using that
+> > 
+> > > Similarly here we could use/define this flag to say this transfer is
+> > > also cyclic in nature and dmac then reloads the list again.
+> > > That way any prep can be made cyclic in nature by just using this flag.
+> > >
+> > Some cyclic transfers might want callback done after each period/frame
+> > while some not. We can't cover using just one flag.
+> Again, we would typically have two cases:
+> 1) notification at end of each list
+> 2) notification at end of each frame and complete list
+> If we use ACK flag along with callback field we can achieve above by
+> defining rules as 
+> - if callback is set, notify after list completion (this is set in
+> descriptor for this purpose)
+> - if ACK is set, then call for each frame as well
+> If we agree then, we should add this info to documentation and fix
+> existing behavior
+Sorry meant DMA_PREP_INTERRUPT flag above :)
 
-Yeah, but module parameter for FS is very unusual thing. It should not
-be very difficult to introduce an option, really. Mount and remount just
-give you the string where you can find every non-standard mount option.
-And you can copypaste parts UBIFS code and tweak it.
 
 -- 
-Best Regards,
-Artem Bityutskiy
+~Vinod
 
