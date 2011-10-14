@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab1JNTN1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 15:13:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47685 "EHLO mail.zytor.com"
+	id S1756196Ab1JNTNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 15:13:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4872 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755361Ab1JNTN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 15:13:26 -0400
-Message-ID: <4E9889AF.1050106@zytor.com>
-Date: Fri, 14 Oct 2011 12:12:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755361Ab1JNTNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 15:13:53 -0400
+Date: Fri, 14 Oct 2011 21:09:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Miller <davem@davemloft.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, tj@kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+	(sparc, ptrace trees related)
+Message-ID: <20111014190950.GA10791@redhat.com>
+References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au> <20111014.035459.2238341687770152474.davem@davemloft.net>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
-References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com> <1318503245.24856.12.camel@twins> <4E971580.6030300@goop.org> <20111014141701.GA2433@redhat.com> <4E986B2B.60803@goop.org> <4E98815F.6080105@zytor.com> <4E988929.8040801@goop.org>
-In-Reply-To: <4E988929.8040801@goop.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014.035459.2238341687770152474.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 12:10 PM, Jeremy Fitzhardinge wrote:
-> 
-> We probably don't want all those implementations (near) inline, so they
-> would end up being plain function calls anyway.
-> 
+On 10/14, David Miller wrote:
+>
+> Now you guys are creating conflicts against those fixed up patches in
+> another non-sparc tree, and adding new kinds of build failures as
+> well.
+>
+> This doesn't work.
 
-I would not object if the native one was closer, though; especially in
-term of source text (the current level of macroization of some
-operations is horrific.)
+Sorry David and Stephen.
 
-	-hpa
+Stephen, could you please temporary remove ptrace from linux-next?
 
+I'll send you another email once I fix the conflicts, can't do this
+right now.
+
+Oleg.
 
