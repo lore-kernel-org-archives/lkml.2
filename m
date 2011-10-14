@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab1JNWnx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 18:43:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57054 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab1JNWnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 18:43:52 -0400
-Date: Fri, 14 Oct 2011 15:43:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, lennart@poettering.net,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-Message-Id: <20111014154348.ae6267aa.akpm@linux-foundation.org>
-In-Reply-To: <1318349729-3108-4-git-send-email-kirill@shutemov.name>
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
-	<1318349729-3108-4-git-send-email-kirill@shutemov.name>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933499Ab1JNWpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 18:45:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60220 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752958Ab1JNWpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 18:45:49 -0400
+Message-ID: <4E98BB9B.2080203@suse.cz>
+Date: Sat, 15 Oct 2011 00:45:47 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        NFS list <linux-nfs@vger.kernel.org>
+Subject: Re: Problems with Kconfig select across directories
+References: <4E9848C1.8040306@panasas.com> <4E98B19B.6020107@suse.cz> <4E98B751.5070006@panasas.com>
+In-Reply-To: <4E98B751.5070006@panasas.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011 19:15:29 +0300
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-
-> Every task_struct has timer_slack_ns value. This value uses to round up
-> poll() and select() timeout values. This feature can be useful in
-> mobile environment where combined wakeups are desired.
+On 15.10.2011 00:27, Boaz Harrosh wrote:
+> On 10/15/2011 12:03 AM, Michal Marek wrote:
+>> On 14.10.2011 16:35, Boaz Harrosh wrote:
+>>> This does not work. The ORE is not compiled and MODPOST complains.
+>>> (Given EXOFS_FS is not selected since then it will work)
+>>
+>> fs/Makefile only visits fs/exofs if CONFIG_EXOFS_FS is set.
 > 
-> Originally, prctl() was the only way to change timer slack value of
-> a process. So you was not able change timer slack value of another
-> process.
+> Bingo. Right on the money. With below patch it works. I'll think
+> about it some more and submit.
 > 
-> cgroup subsys "timer_slack" implements timer slack controller. It
-> provides a way to set minimal timer slack value for a group of tasks.
-> If a task belongs to a cgroup with minimal timer slack value higher than
-> task's value, cgroup's value will be applied.
+> Thanks
+> ---
+> exofs/ore: Select fs/exofs/ folder in Makefile also for ORE only compilation
 > 
-> Timer slack controller allows to implement setting timer slack value of
-> a process based on a policy. For example, you can create foreground and
-> background cgroups and move tasks between them based on system state.
+> If any thing from fs/exofs is set the ORE will be selected. So conditionally
+> include fs/exofs in fs/Makefile on ORE set and not EXOFS_FS
+...
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -120,6 +120,6 @@ obj-$(CONFIG_DEBUG_FS)		+= debugfs/
+>  obj-$(CONFIG_OCFS2_FS)		+= ocfs2/
+>  obj-$(CONFIG_BTRFS_FS)		+= btrfs/
+>  obj-$(CONFIG_GFS2_FS)           += gfs2/
+> -obj-$(CONFIG_EXOFS_FS)          += exofs/
+> +obj-$(CONFIG_ORE)		+= exofs/
 
-I'm having trouble understanding the value of this feature.  Users can
-presently control the timer-slack of a group of processes via
-inherit-over-fork.
+Note that changing it to obj-y is also valid. And perhaps more obvious.
 
-Perhaps there's a case for providing a way for process A to set process
-B's slack.  And perhaps B's children.  That would be a simpler patch
-and would have the considerable advantage that it doesn't require
-cgroups.
-
-So.... why should we merge this?
+Michal
