@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab1JNS2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 14:28:08 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55610 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab1JNS2C (ORCPT
+	id S1753671Ab1JNS2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 14:28:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60450 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab1JNS2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Oct 2011 14:28:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/5] perf annotate browser: Allow toggling the visualization of source code lines
-Date: Fri, 14 Oct 2011 15:27:52 -0300
-Message-Id: <1318616873-26739-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/5] perf hists browser: Invalidate ui_browser->top after timer calls
+Date: Fri, 14 Oct 2011 15:27:49 -0300
+Message-Id: <1318616873-26739-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1318616873-26739-1-git-send-email-acme@infradead.org>
 References: <1318616873-26739-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,164 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Just press 'S' on any assembly line and the source code will be hidden
-while the current line remains selected. Press 'S' again to show them
-back.
+With underlying dynamic data structures we need to invalidate pointers
+to them after a timer, as that entry may have vanished (decayed in top,
+for instance).
 
+I forgot about browser_ui->top. Fix it by resetting it to null after a
+timer. The seek operation from SEEK_SET will then set it to a valid
+entry because it starts from rb_first(&hists->entries).
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-efmxm5etouebb7es0kkyqqwa@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-2ssjm0ouh9tsz4dwkcu7c40n@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/annotate.c |   76 +++++++++++++++++++++++++++++--
- 1 files changed, 71 insertions(+), 5 deletions(-)
+ tools/perf/util/ui/browser.c        |    1 +
+ tools/perf/util/ui/browsers/hists.c |   15 +++++++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index 84315c9..eb2712e 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -21,12 +21,16 @@ struct annotate_browser {
- 	struct rb_root	  entries;
- 	struct rb_node	  *curr_hot;
- 	struct objdump_line *selection;
-+	int		    nr_asm_entries;
-+	int		    nr_entries;
-+	bool		    hide_src_code;
- };
- 
- struct objdump_line_rb_node {
- 	struct rb_node	rb_node;
- 	double		percent;
- 	u32		idx;
-+	int		idx_asm;
- };
- 
- static inline
-@@ -35,10 +39,22 @@ struct objdump_line_rb_node *objdump_line__rb(struct objdump_line *self)
- 	return (struct objdump_line_rb_node *)(self + 1);
- }
- 
-+static bool objdump_line__filter(struct ui_browser *browser, void *entry)
-+{
-+	struct annotate_browser *ab = container_of(browser, struct annotate_browser, b);
-+
-+	if (ab->hide_src_code) {
-+		struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
-+		return ol->offset == -1;
-+	}
-+
-+	return false;
-+}
-+
- static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
- {
- 	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
--	struct objdump_line *ol = rb_entry(entry, struct objdump_line, node);
-+	struct objdump_line *ol = list_entry(entry, struct objdump_line, node);
- 	bool current_entry = ui_browser__is_current_entry(self, row);
- 	int width = self->width;
- 
-@@ -168,6 +184,45 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
- 	browser->curr_hot = rb_last(&browser->entries);
- }
- 
-+static bool annotate_browser__toggle_source(struct annotate_browser *browser)
-+{
-+	struct objdump_line *ol;
-+	struct objdump_line_rb_node *olrb;
-+	off_t offset = browser->b.index - browser->b.top_idx;
-+
-+	browser->b.seek(&browser->b, offset, SEEK_CUR);
-+	ol = list_entry(browser->b.top, struct objdump_line, node);
-+	olrb = objdump_line__rb(ol);
-+
-+	if (browser->hide_src_code) {
-+		if (olrb->idx_asm < offset)
-+			offset = olrb->idx;
-+
-+		browser->b.nr_entries = browser->nr_entries;
-+		browser->hide_src_code = false;
-+		browser->b.seek(&browser->b, -offset, SEEK_CUR);
-+		browser->b.top_idx = olrb->idx - offset;
-+		browser->b.index = olrb->idx;
-+	} else {
-+		if (olrb->idx_asm < 0) {
-+			ui_helpline__puts("Only available for assembly lines.");
-+			browser->b.seek(&browser->b, -offset, SEEK_CUR);
-+			return false;
-+		}
-+
-+		if (olrb->idx_asm < offset)
-+			offset = olrb->idx_asm;
-+
-+		browser->b.nr_entries = browser->nr_asm_entries;
-+		browser->hide_src_code = true;
-+		browser->b.seek(&browser->b, -offset, SEEK_CUR);
-+		browser->b.top_idx = olrb->idx_asm - offset;
-+		browser->b.index = olrb->idx_asm;
-+	}
-+
-+	return true;
-+}
-+
- static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 				 int nr_events, void(*timer)(void *arg),
- 				 void *arg, int delay_secs)
-@@ -175,11 +230,12 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 	struct rb_node *nd = NULL;
- 	struct map_symbol *ms = self->b.priv;
- 	struct symbol *sym = ms->sym;
-+	const char *help = "<-, ESC: exit, TAB/shift+TAB: cycle hottest lines, "
-+			   "H: Hottest, -> Line action, S -> Toggle source "
-+			   "code view";
- 	int key;
- 
--	if (ui_browser__show(&self->b, sym->name,
--			     "<- or ESC: exit, TAB/shift+TAB: "
--			     "cycle hottest lines, H: Hottest, -> Line action") < 0)
-+	if (ui_browser__show(&self->b, sym->name, help) < 0)
- 		return -1;
- 
- 	annotate_browser__calc_percent(self, evidx);
-@@ -234,6 +290,10 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 		case 'H':
- 			nd = self->curr_hot;
- 			break;
-+		case 'S':
-+			if (annotate_browser__toggle_source(self))
-+				ui_helpline__puts(help);
-+			continue;
- 		case NEWT_KEY_ENTER:
- 		case NEWT_KEY_RIGHT:
- 			if (self->selection == NULL) {
-@@ -324,6 +384,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			.refresh = ui_browser__list_head_refresh,
- 			.seek	 = ui_browser__list_head_seek,
- 			.write	 = annotate_browser__write,
-+			.filter  = objdump_line__filter,
- 			.priv	 = &ms,
- 		},
- 	};
-@@ -351,9 +412,14 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 		if (browser.b.width < line_len)
- 			browser.b.width = line_len;
- 		rbpos = objdump_line__rb(pos);
--		rbpos->idx = browser.b.nr_entries++;
-+		rbpos->idx = browser.nr_entries++;
-+		if (pos->offset != -1)
-+			rbpos->idx_asm = browser.nr_asm_entries++;
-+		else
-+			rbpos->idx_asm = -1;
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 2923c49..078ceaf 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -249,6 +249,7 @@ void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries)
+ 		browser->top_idx += offset;
  	}
  
-+	browser.b.nr_entries = browser.nr_entries;
- 	browser.b.entries = &notes->src->source,
- 	browser.b.width += 18; /* Percentage */
- 	ret = annotate_browser__run(&browser, evidx, nr_events,
++	browser->top = NULL;
+ 	browser->seek(browser, browser->top_idx, SEEK_SET);
+ }
+ 
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 4a3a7c9..b144b10 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -600,14 +600,23 @@ static int hist_browser__show_entry(struct hist_browser *self,
+ 	return printed;
+ }
+ 
++static void ui_browser__hists_init_top(struct ui_browser *browser)
++{
++	if (browser->top == NULL) {
++		struct hist_browser *hb;
++
++		hb = container_of(browser, struct hist_browser, b);
++		browser->top = rb_first(&hb->hists->entries);
++	}
++}
++
+ static unsigned int hist_browser__refresh(struct ui_browser *self)
+ {
+ 	unsigned row = 0;
+ 	struct rb_node *nd;
+ 	struct hist_browser *hb = container_of(self, struct hist_browser, b);
+ 
+-	if (self->top == NULL)
+-		self->top = rb_first(&hb->hists->entries);
++	ui_browser__hists_init_top(self);
+ 
+ 	for (nd = self->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+@@ -659,6 +668,8 @@ static void ui_browser__hists_seek(struct ui_browser *self,
+ 	if (self->nr_entries == 0)
+ 		return;
+ 
++	ui_browser__hists_init_top(self);
++
+ 	switch (whence) {
+ 	case SEEK_SET:
+ 		nd = hists__filter_entries(rb_first(self->entries));
 -- 
 1.6.2.5
 
