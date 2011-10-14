@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab1JNNur (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:50:47 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44016 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1JNNuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:50:44 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: Re: [PATCH v2 2/4] ata_piix: unify code for programming PIO and MWDMA timings
-Date: Fri, 14 Oct 2011 15:43:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9-0.7-desktop-00073-g37cf951-dirty; KDE/4.6.0; x86_64; ; )
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201110131539.11190.bzolnier@gmail.com> <4E9824AC.6020902@mvista.com>
-In-Reply-To: <4E9824AC.6020902@mvista.com>
+	id S1756764Ab1JNNvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:51:00 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:55905 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621Ab1JNNu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 09:50:57 -0400
+Date: Fri, 14 Oct 2011 08:50:55 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111014135055.GA28592@sgi.com>
+References: <20111012160202.GA18666@sgi.com>
+ <20111012120118.e948f40a.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110121452220.31218@router.home>
+ <20111013152355.GB6966@sgi.com>
+ <alpine.DEB.2.00.1110131052300.18473@router.home>
+ <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110131602020.26553@router.home>
+ <20111013142434.4d05cbdc.akpm@linux-foundation.org>
+ <20111014122506.GB26737@sgi.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110141543.27060.bzolnier@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014122506.GB26737@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergei Shtylyov wrote:
+On Fri, Oct 14, 2011 at 07:25:06AM -0500, Dimitri Sivanich wrote:
+> On Thu, Oct 13, 2011 at 02:24:34PM -0700, Andrew Morton wrote:
+> > On Thu, 13 Oct 2011 16:02:58 -0500 (CDT)
+> > Christoph Lameter <cl@gentwo.org> wrote:
+> > 
+> > > On Thu, 13 Oct 2011, Andrew Morton wrote:
+> > > 
+> > > > > If there are no updates occurring for a while (due to increased deltas
+> > > > > and/or vmstat updates) then the vm_stat cacheline should be able to stay
+> > > > > in shared mode in multiple processors and the performance should increase.
+> > > > >
+> > > >
+> > > > We could cacheline align vm_stat[].  But the thing is pretty small - we
+> > > > couild put each entry in its own cacheline.
+> > > 
+> > > Which in turn would increase the cache footprint of some key kernel
+> > > functions (because they need multiple vm_stat entries) and cause eviction
+> > > of other cachelines that then reduce overall system performance again.
+> > 
+> > Sure, but we gain performance by not having different CPUs treading on
+> > each other when they update different vmstat fields.  Sometimes one
+> > effect will win and other times the other effect will win.  Some
+> > engineering is needed..
+> 
+> I think the first step is to determine the role (if any) that false sharing may be playing in this, since that's a simpler fix (cacheline align and pad the array).
+>
 
-> Hello.
-> 
-> On 13-10-2011 17:39, Bartlomiej Zolnierkiewicz wrote:
-> 
-> > From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> > Subject: [PATCH v2] ata_piix: unify code for programming PIO and MWDMA timings
-> 
-> > Besides making things noticably simpler it results in ~2% decrease in
-> > the driver LOC count and also ~2% decrease in the driver binary size
-> > (as measured on x86-32).
-> 
-> > Fix piix_set_piomode() documentation while at it.
-> 
-> > Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> 
->     I'm still inclined to NAK this patch.
-> 
-> > ---
-> > v2: remove use_mwdma variable and fix comment style
-> 
-> > earlier references:
-> > https://lkml.org/lkml/2011/2/8/99
-> >
-> >   drivers/ata/ata_piix.c |  111 ++++++++++++++++---------------------------------
-> >   1 file changed, 38 insertions(+), 73 deletions(-)
-> 
-> > Index: b/drivers/ata/ata_piix.c
-> > ===================================================================
-> > --- a/drivers/ata/ata_piix.c
-> > +++ b/drivers/ata/ata_piix.c
-> [...]
-> > @@ -811,31 +822,20 @@ static void do_pata_set_dmamode(struct a
-> [...]
-> > -	if (ap->udma_mask)
-> > -		pci_read_config_byte(dev, 0x48,&udma_enable);
-> 
->     Don't think you should remove this.
-> 
-> > -
-> >   	if (speed>= XFER_UDMA_0) {
-> > -		unsigned int udma = adev->dma_mode - XFER_UDMA_0;
-> > +		unsigned int udma = speed - XFER_UDMA_0;
-> >   		u16 udma_timing;
-> >   		u16 ideconf;
-> >   		int u_clock, u_speed;
-> >
-> > +		spin_lock_irqsave(&piix_lock, flags);
-> > +
-> > +		pci_read_config_byte(dev, 0x48, &udma_enable);
-> 
->     But you should also clear the UDMA enable bit when setting an MWDMA mode, no?
-> 
-> > +
-> >   		/*
-> >   		 * UDMA is handled by a combination of clock switching and
-> >   		 * selection of dividers
-> > @@ -868,56 +868,21 @@ static void do_pata_set_dmamode(struct a
-> >   			   performance (WR_PingPong_En) */
-> >   			pci_write_config_word(dev, 0x54, ideconf);
-> >   		}
-> > +
-> > +		pci_write_config_byte(dev, 0x48, udma_enable);
-> > +
-> > +		spin_unlock_irqrestore(&piix_lock, flags);
-> >   	} else {
-> > -		/*
-> > -		 * MWDMA is driven by the PIO timings. We must also enable
-> > -		 * IORDY unconditionally along with TIME1. PPE has already
-> > -		 * been set when the PIO timing was set.
-> > -		 */
-> > -		unsigned int mwdma	= adev->dma_mode - XFER_MW_DMA_0;
-> > -		unsigned int control;
-> > -		u8 slave_data;
-> > +		/* MWDMA is driven by the PIO timings. */
-> > +		unsigned int mwdma = speed - XFER_MW_DMA_0;
-> >   		const unsigned int needed_pio[3] = {
-> >   			XFER_PIO_0, XFER_PIO_3, XFER_PIO_4
-> >   		};
-> >   		int pio = needed_pio[mwdma] - XFER_PIO_0;
-> >
-> [...]
-> > -		if (ap->udma_mask)
-> > -			udma_enable&= ~(1<<  devid);
-> 
->     Still don't understand why you're removing this code.
-> 
-> > -
-> > -		pci_write_config_word(dev, master_port, master_data);
-> > +		/* XFER_PIO_0 is never used currently */
-> > +		piix_set_timings(ap, adev, pio);
-> >   	}
-> > -	/* Don't scribble on 0x48 if the controller does not support UDMA */
-> > -	if (ap->udma_mask)
-> > -		pci_write_config_byte(dev, 0x48, udma_enable);
-> 
->     Should have kept this one too...
+Testing on a smaller machine with 46 writer threads in parallel (my original
+test used 120).
 
-We still have following code at the end of piix_set_timings():
-
-	/* Ensure the UDMA bit is off - it will be turned back on if
-	   UDMA is selected */
-
-	if (ap->udma_mask) {
-		pci_read_config_byte(dev, 0x48, &udma_enable);
-		udma_enable &= ~(1 << (2 * ap->port_no + adev->devno));
-		pci_write_config_byte(dev, 0x48, udma_enable);
-	}
-
-so everything should be OK.
-
+Looks as though cache-aligning and padding the end of the vm_stat array
+results in a ~150 MB/sec speedup.  This is a nice improvement for only 46
+writer threads, though it's not the full ~250 MB/sec speedup I get from
+setting OVERCOMMIT_NEVER.
