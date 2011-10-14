@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab1JNE15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:27:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21007 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab1JNE1x (ORCPT
+	id S932554Ab1JNEda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 00:33:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43616 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932357Ab1JNEd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:27:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=fWfNvmqFbQsy1WyeS3yn6nMRjli5lmCYQ5Vaw93DvUGRd/GGY0mwDHd3x5Gvr2dto
-	hj2w0FG41QeS1nX8U2lTw==
-Subject: [PATCH v2 08/29] powerpc/PCI: split PHB part out of
-	pcibios_map_io_space()
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Oct 2011 22:27:47 -0600
-Message-ID: <20111014042747.23504.28856.stgit@bhelgaas.mtv.corp.google.com>
-In-Reply-To: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
-References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Fri, 14 Oct 2011 00:33:27 -0400
+Message-ID: <4E97BB8E.3060204@gmail.com>
+Date: Fri, 14 Oct 2011 10:03:18 +0530
+From: Subash Patel <subashrp@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15 ThunderBrowse/3.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 8/9] ARM: integrate CMA with DMA-mapping
+ subsystem
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com> <1317909290-29832-10-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1317909290-29832-10-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change.  This is so we can use pcibios_phb_map_io_space()
-before we have a struct pci_bus.
+Hi Marek,
 
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/powerpc/kernel/pci_64.c |   40 +++++++++++++++++++++-------------------
- 1 files changed, 21 insertions(+), 19 deletions(-)
+As informed to you in private over IRC, below piece of code broke during 
+booting EXYNOS4:SMDKV310 with ZONE_DMA enabled.
 
-diff --git a/arch/powerpc/kernel/pci_64.c b/arch/powerpc/kernel/pci_64.c
-index ab34046..4401425 100644
---- a/arch/powerpc/kernel/pci_64.c
-+++ b/arch/powerpc/kernel/pci_64.c
-@@ -130,30 +130,13 @@ EXPORT_SYMBOL_GPL(pcibios_unmap_io_space);
- 
- #endif /* CONFIG_HOTPLUG */
- 
--int __devinit pcibios_map_io_space(struct pci_bus *bus)
-+static int __devinit pcibios_map_phb_io_space(struct pci_controller *hose)
- {
- 	struct vm_struct *area;
- 	unsigned long phys_page;
- 	unsigned long size_page;
- 	unsigned long io_virt_offset;
--	struct pci_controller *hose;
--
--	WARN_ON(bus == NULL);
--
--	/* If this not a PHB, nothing to do, page tables still exist and
--	 * thus HPTEs will be faulted in when needed
--	 */
--	if (bus->self) {
--		pr_debug("IO mapping for PCI-PCI bridge %s\n",
--			 pci_name(bus->self));
--		pr_debug("  virt=0x%016llx...0x%016llx\n",
--			 bus->resource[0]->start + _IO_BASE,
--			 bus->resource[0]->end + _IO_BASE);
--		return 0;
--	}
- 
--	/* Get the host bridge */
--	hose = pci_bus_to_host(bus);
- 	phys_page = _ALIGN_DOWN(hose->io_base_phys, PAGE_SIZE);
- 	size_page = _ALIGN_UP(hose->pci_io_size, PAGE_SIZE);
- 
-@@ -197,11 +180,30 @@ int __devinit pcibios_map_io_space(struct pci_bus *bus)
- 
- 	return 0;
- }
-+
-+int __devinit pcibios_map_io_space(struct pci_bus *bus)
-+{
-+	WARN_ON(bus == NULL);
-+
-+	/* If this not a PHB, nothing to do, page tables still exist and
-+	 * thus HPTEs will be faulted in when needed
-+	 */
-+	if (bus->self) {
-+		pr_debug("IO mapping for PCI-PCI bridge %s\n",
-+			 pci_name(bus->self));
-+		pr_debug("  virt=0x%016llx...0x%016llx\n",
-+			 bus->resource[0]->start + _IO_BASE,
-+			 bus->resource[0]->end + _IO_BASE);
-+		return 0;
-+	}
-+
-+	return pcibios_phb_map_phb_io_space(pci_bus_to_host(bus));
-+}
- EXPORT_SYMBOL_GPL(pcibios_map_io_space);
- 
- void __devinit pcibios_setup_phb_io_space(struct pci_controller *hose)
- {
--	pcibios_map_io_space(hose->bus);
-+	pcibios_map_phb_io_space(hose);
- }
- 
- #define IOBASE_BRIDGE_NUMBER	0
 
+On 10/06/2011 07:24 PM, Marek Szyprowski wrote:
+...
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index fbdd12e..9c27fbd 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -21,6 +21,7 @@
+>   #include<linux/gfp.h>
+>   #include<linux/memblock.h>
+>   #include<linux/sort.h>
+> +#include<linux/dma-contiguous.h>
+>
+>   #include<asm/mach-types.h>
+>   #include<asm/prom.h>
+> @@ -371,6 +372,13 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+>   	if (mdesc->reserve)
+>   		mdesc->reserve();
+>
+> +	/* reserve memory for DMA contigouos allocations */
+> +#ifdef CONFIG_ZONE_DMA
+> +	dma_contiguous_reserve(PHYS_OFFSET + mdesc->dma_zone_size - 1);
+> +#else
+> +	dma_contiguous_reserve(0);
+> +#endif
+> +
+>   	memblock_analyze();
+>   	memblock_dump_all();
+>   }
+Regards,
+Subash
