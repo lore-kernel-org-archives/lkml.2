@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab1JNRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:03:16 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:45483 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab1JNRDP (ORCPT
+	id S933376Ab1JNREE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:04:04 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62797 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab1JNREB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:03:15 -0400
-From: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "Seger, Mark" <mark.seger@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
-Date: Fri, 14 Oct 2011 18:02:16 +0100
-Subject: RE: Regression in reading /proc/stat in the newer kernels with
- large SMP and NUMA configurations
-Thread-Topic: Regression in reading /proc/stat in the newer kernels with
- large SMP and NUMA configurations
-Thread-Index: AcyKkpBGBr00LwCHTo6XbMuC8Y0O1wAABydw
-Message-ID: <8DC664164FA4D1449479E7B36CDCFB1F221F060AC2@GVW0676EXC.americas.hpqcorp.net>
-References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
-	 <1318595915.2223.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <9FCE3A46FE7C8045A6207AE4B42E9F9A4EC2E29DD4@GVW1119EXC.americas.hpqcorp.net>
-	 <1318600023.2223.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A48@GVW0676EXC.americas.hpqcorp.net>
-	 <1318610416.2223.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A92@GVW0676EXC.americas.hpqcorp.net>
- <1318611542.2223.47.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1318611542.2223.47.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 14 Oct 2011 13:04:01 -0400
 MIME-Version: 1.0
+X-Originating-IP: [46.116.27.118]
+In-Reply-To: <20111014133510.GC2198@amd.com>
+References: <20110927131222.GL2138@amd.com> <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
+ <20110927181438.GM2138@amd.com> <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
+ <20111010094738.GW2138@amd.com> <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
+ <20111010153609.GB2138@amd.com> <CAK=WgbbnuO67X46sqS87q2vw2TWq3Ekvw5p1PmXvXinQXMyowg@mail.gmail.com>
+ <20111011103820.GF2138@amd.com> <CAK=WgbYOUZNX0OmRwZNO1mMG+3DZXwff+S60ESWixf04HOcbtw@mail.gmail.com>
+ <20111014133510.GC2198@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 14 Oct 2011 19:03:39 +0200
+Message-ID: <CAK=Wgbar+z_Nm1cDM4bJgrP5yWbjCsVBW=orfYwsZsT7uET8ng@mail.gmail.com>
+Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
+ supported by the hardware
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9EH3NT2020339
 
-Hi Eric,
+On Fri, Oct 14, 2011 at 3:35 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> This patch looks good. Please include it in the page-size patch-set.
 
-Just FYI, the same behavior is seen on multiple hardware platforms so it is definitely kernel changes. The earlier kernel on the DL785 platform was returning reads within 60 microseconds.
-I have measured it on multiple platforms.
+will do.
 
-In this case we have a DL980 with HT enabled so you will see 128 CPUS. If I shut off HT, it does not make a difference.
+> Hmm, I'd like to constify the iommu_ops structures in the future. This
+> wouldn't work then anymore. How about renaming it to io_page_size
+> (because it is the base page-size of the iommu) and let the driver set
+> it?
 
-[root@linuxbeast boot]# dmesg | grep nr_cpu_ids
-NR_CPUS:4096 nr_cpumask_bits:128 nr_cpu_ids:128 nr_node_ids:8
+Sure, that'd work. Though asking the driver to provide this feels a
+bit redundant, as it already provided this info in the supported page
+sizes.
 
------Original Message-----
-From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
-Sent: Friday, October 14, 2011 12:59 PM
-To: Oberman, Laurence (HAS GSE)
-Cc: Seger, Mark; linux-kernel@vger.kernel.org; Cabaniols, Sebastien
-Subject: RE: Regression in reading /proc/stat in the newer kernels with large SMP and NUMA configurations
+I guess a cleaner solution might be allocating a 'struct iommu' in
+which drivers will set a 'const struct iommu_ops *' member. That new
+struct would then contain the base page-size and any other state the
+iommu core would ever need.
 
-Le vendredi 14 octobre 2011 Ã  17:52 +0100, Oberman, Laurence (HAS GSE) a
-Ã©crit :
-> Standard RHEL kernel build.
-> What the customer would be using.
-> 
-> [root@linuxbeast boot]# cat config-2.6.32-131.6.1.el6.x86_64 | grep NR
-> CONFIG_NR_CPUS=4096
+This whole thing is quite marginal though and also very easy to change
+later, so we can start with the "driver-provided io_page_size"
+approach for now.
 
-Then something must be wrong.... what are your nr_cpu_ids /
-nr_cpumask_bits values ?
+> This needs to be (left > 0). The drivers are allowed to unmap more then
+> requested, so this value may turn negative.
 
+Good point. 'left' is size_t though, so i'll fix this a bit differently.
 
-dmesg | grep nr_cpu_ids
+> Btw, how have you tested this code?
 
+Of course. Every patch I send is always tested on both OMAP3 (with
+omap3isp) and OMAP4 (with rpmsg/remoteproc). In addition, everyone who
+uses my wip rpmsg tree (there are several developers who do) is always
+testing this without even knowing, as I'm always rebasing that tree on
+the latest iommu patches (my wip branches are not linear).
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Ohad.
