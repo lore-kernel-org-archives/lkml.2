@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1JNGmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 02:42:45 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:52772
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab1JNGmo (ORCPT
+	id S1754597Ab1JNGvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 02:51:04 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:40455 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab1JNGvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 02:42:44 -0400
-Message-ID: <4E97D9E4.4090202@kernel.dk>
-Date: Fri, 14 Oct 2011 08:42:44 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	Fri, 14 Oct 2011 02:51:01 -0400
+Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
+Date: Fri, 14 Oct 2011 17:50:54 +1100
+From: "Bojan Smojver" <bojan@rexursive.com>
+To: penberg@cs.helsinki.fi
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        keithp@keithp.com
 MIME-Version: 1.0
-To: Ian Campbell <ian.campbell@citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: add a "struct page_frag" type containing a page,
- offset and length
-References: <1318500176-10728-1-git-send-email-ian.campbell@citrix.com>
-In-Reply-To: <1318500176-10728-1-git-send-email-ian.campbell@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Mailer: LCG ProfiMail 3.48
+Message-ID: <0123092430.1003081854@rexursive.com>
+References: <1317342456.1959.6.camel@shrek.rexursive.com> <201110062045.48689.rjw@sisk.pl> <2409186928.1003010428@rexursive.com> <201110132326.02041.rjw@sisk.pl> <1318557712.2027.1.camel@shrek.rexursive.com> <CAOJsxLF2Qo0UK8wCg1mt2Awiv7k=XPA9kHMy808f++FXibi4QA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-13 12:02, Ian Campbell wrote:
-> A few network drivers currently use skb_frag_struct for this purpose but I have
-> patches which add additional fields and semantics there which these other uses
-> do not want.
-> 
-> A structure for reference sub-page regions seems like a generally useful thing
-> so do so instead of adding a network subsystem specific structure.
+------- Original message -------
+> From: Pekka Enberg
 
-Looks good to me, I can switch struct bio_vec over to this once it's in.
+> What debugging options do you have enabled?
 
-Acked-by: Jens Axboe <axboe@kernel.dk>
+Not sure to be honest. Just copied Fedora kernel config file and built with 
+that. Will check.
 
--- 
-Jens Axboe
+> Bojan, this is with Intel drivers, right?
 
+Correct. But note that I had similar trouble on a box that has radeon 
+graphics. Essentially, if I pass nomodeset to the kernel, I can hibernate 
+thaw 100+ times with no issues (after all these cycles, the box is healthy, 
+runs programs with no trouble etc.).
+
+> I'm CC'ing Keith which might
+> be able to give some clues how to debug KMS related hibernate/thaw
+> issues.
+
+I am already on intel-gfx list where I asked the same questions, got some 
+suggestions and eventually opened a bug to track the issue. My last message 
+to that list was that I think the problem may be in common KMS code, given 
+I get similar touble with intel and radeon graphics, 32 and 64 bit machines 
+and with or without my patch.
+
+--
+Bojan 
