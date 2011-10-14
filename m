@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933499Ab1JNWpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 18:45:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60220 "EHLO mx2.suse.de"
+	id S933531Ab1JNWpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 18:45:53 -0400
+Received: from bar.sig21.net ([80.81.252.164]:49788 "EHLO bar.sig21.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab1JNWpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 18:45:49 -0400
-Message-ID: <4E98BB9B.2080203@suse.cz>
-Date: Sat, 15 Oct 2011 00:45:47 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S933501Ab1JNWpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 18:45:52 -0400
+Date: Sat, 15 Oct 2011 00:45:49 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Markus Rechberger <mrechberger@gmail.com>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+Message-ID: <20111014224549.GA22810@sig21.net>
+References: <20111014192153.GA18439@sig21.net>
+ <Pine.LNX.4.44L0.1110141613420.2036-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: Problems with Kconfig select across directories
-References: <4E9848C1.8040306@panasas.com> <4E98B19B.6020107@suse.cz> <4E98B751.5070006@panasas.com>
-In-Reply-To: <4E98B751.5070006@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1110141613420.2036-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -1.0 (-)
+X-Spam-21-Report: No, score=-1.0 required=5.0 tests=ALL_TRUSTED=-1,BAYES_20=-0.001 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.10.2011 00:27, Boaz Harrosh wrote:
-> On 10/15/2011 12:03 AM, Michal Marek wrote:
->> On 14.10.2011 16:35, Boaz Harrosh wrote:
->>> This does not work. The ORE is not compiled and MODPOST complains.
->>> (Given EXOFS_FS is not selected since then it will work)
->>
->> fs/Makefile only visits fs/exofs if CONFIG_EXOFS_FS is set.
+On Fri, Oct 14, 2011 at 04:19:34PM -0400, Alan Stern wrote:
+> On Fri, 14 Oct 2011, Johannes Stezenbach wrote:
 > 
-> Bingo. Right on the money. With below patch it works. I'll think
-> about it some more and submit.
+> > I don't really want to help Markus with his proprietary, binary-only
+> > userspace driver crap, but I wonder why nobody seems to remember
+> > how the USB protocol works on the wire?
 > 
-> Thanks
-> ---
-> exofs/ore: Select fs/exofs/ folder in Makefile also for ORE only compilation
-> 
-> If any thing from fs/exofs is set the ORE will be selected. So conditionally
-> include fs/exofs in fs/Makefile on ORE set and not EXOFS_FS
-...
-> --- a/fs/Makefile
-> +++ b/fs/Makefile
-> @@ -120,6 +120,6 @@ obj-$(CONFIG_DEBUG_FS)		+= debugfs/
->  obj-$(CONFIG_OCFS2_FS)		+= ocfs2/
->  obj-$(CONFIG_BTRFS_FS)		+= btrfs/
->  obj-$(CONFIG_GFS2_FS)           += gfs2/
-> -obj-$(CONFIG_EXOFS_FS)          += exofs/
-> +obj-$(CONFIG_ORE)		+= exofs/
+> I remember it perfectly well.
 
-Note that changing it to obj-y is also valid. And perhaps more obvious.
+My bad, I'm sorry for hitting the wrong tone.
 
-Michal
+What I meant to say is Markus' statement that the device only
+works at a certain transfer size cannot be true since
+this size is not visible to the device via the USB bus.
+
+> > Apparently the device can only handle fixed size packets
+> > of either 188 or 2*188 byte, thus it breaks with 12288 or 11776.
+> 
+> No.  The device expects 512-byte packets because it uses a bulk 
+> endpoint.
+> 
+> > The endpoint's wMaxPacketSize might reflect this.
+> 
+> For high-speed devices, a bulk endpoint's wMaxPacketSize must always be 
+> 512.
+
+OK, after re-reading the USB spec I see you are right
+and I stand corrected.
+
+> > I guess a transfer size of e.g. 188*60=11280 would work.
+> > See the first mail of this thread.
+> 
+> According to Markus, with this particular device nothing but 24064 
+> works.  The discussion is a little difficult to follow because he 
+> talked about two different devices without always being clear about 
+> which was which.
+
+If you queue two URBs, one 12288 and 11776 bytes, the device
+does not see any difference to one URB with 24064.  It's just not
+in the USB wire protocol.  It would make a difference if the
+device violated the spec and sent 188 byte packets. However, the
+spec says a short packet terminates the transfer.  But I wonder
+if this is really the case?
+
+
+Johannes
