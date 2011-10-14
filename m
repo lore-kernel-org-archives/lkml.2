@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1JNS2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 14:28:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60448 "EHLO
+	id S1752605Ab1JNS2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 14:28:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60447 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab1JNS2B (ORCPT
+	with ESMTP id S1752028Ab1JNS2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 14:28:01 -0400
+	Fri, 14 Oct 2011 14:28:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/5] perf annotate browser: Exit when pressing ESC or the left arrow
-Date: Fri, 14 Oct 2011 15:27:50 -0300
-Message-Id: <1318616873-26739-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 5/5] perf buildid: Fix possible unterminated readlink() result buffer
+Date: Fri, 14 Oct 2011 15:27:53 -0300
+Message-Id: <1318616873-26739-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1318616873-26739-1-git-send-email-acme@infradead.org>
 References: <1318616873-26739-1-git-send-email-acme@infradead.org>
@@ -27,35 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-We lost that functionality on ed7e566, restore it.
+The readlink function doesn't guarantee that a '\0' will be put at the
+end of the provided buffer if there is no space left.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-z8eb8af2x46x42lgpn1ustid@git.kernel.org
+No need to do "buf[len] = '\0';" since the buffer is allocated with
+zalloc().
+
+Link: http://lkml.kernel.org/r/4E986ABF.9040706@intra2net.com
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browsers/annotate.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/util/header.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index cbefb4f..84315c9 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -285,6 +285,8 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 						     timer, arg, delay_secs);
- 			}
- 			break;
-+		case NEWT_KEY_LEFT:
-+		case NEWT_KEY_ESCAPE:
- 		case 'q':
- 		case CTRL('c'):
- 			goto out;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index f2ceb0f..2143a32 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1289,7 +1289,7 @@ int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
+ 	if (access(linkname, F_OK))
+ 		goto out_free;
+ 
+-	if (readlink(linkname, filename, size) < 0)
++	if (readlink(linkname, filename, size - 1) < 0)
+ 		goto out_free;
+ 
+ 	if (unlink(linkname))
 -- 
 1.6.2.5
 
