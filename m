@@ -1,86 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab1JNNXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:23:38 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42657 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab1JNNXh (ORCPT
+	id S932867Ab1JNNYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:24:00 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:41327 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab1JNNX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:23:37 -0400
-Date: Fri, 14 Oct 2011 06:23:32 -0700
-From: mark gross <markgross@thegnar.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: mark gross <markgross@thegnar.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>, arve@android.com,
-        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
-Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
- blocking (aka more wakelock stuff)]
-Message-ID: <20111014132332.GB27295@mgross-G62>
-Reply-To: markgross@thegnar.org
-References: <20111013030742.GB893@mgross-G62>
- <Pine.LNX.4.44L0.1110131101420.2026-100000@iolanthe.rowland.org>
+	Fri, 14 Oct 2011 09:23:59 -0400
+X-IronPort-AV: E=Sophos;i="4.69,346,1315180800"; 
+   d="scan'208";a="8397181"
+Subject: Re: xen: IPI interrupts not resumed early enough on suspend/resume
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        xen-devel <xen-devel@lists.xensource.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Fri, 14 Oct 2011 14:23:57 +0100
+In-Reply-To: <1318251990.21903.433.camel@zakaz.uk.xensource.com>
+References: <1317654626.21903.72.camel@zakaz.uk.xensource.com>
+	 <alpine.LFD.2.02.1110032033530.1489@ionos>
+	 <1317668908.11991.20.camel@dagon.hellion.org.uk>
+	 <alpine.LFD.2.02.1110032229250.1489@ionos>
+	 <1318001583.21903.355.camel@zakaz.uk.xensource.com>
+	 <alpine.LFD.2.02.1110071822160.3240@ionos>
+	 <1318251990.21903.433.camel@zakaz.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318598637.21903.889.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1110131101420.2026-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 11:06:35AM -0400, Alan Stern wrote:
-> On Wed, 12 Oct 2011, mark gross wrote:
+Ping? The original issue has made it into longterm-2.6.32.y and then
+onto Debian (bug #644604) so people keep asking me about it...
+
+Ian.
+
+On Mon, 2011-10-10 at 14:06 +0100, Ian Campbell wrote:
+> From dc8a8329f3e97f30e1290c898c816250aa7e8957 Mon Sep 17 00:00:00 2001
+> From: Ian Campbell <ian.campbell@citrix.com>
+> Date: Mon, 3 Oct 2011 15:37:00 +0100
+> Subject: [PATCH] irq: add IRQF_RESUME_EARLY and resume such IRQs earlier in the process
 > 
-> > > > > sometimes devices that are not wake up sources need critical sections
-> > > > > where suspend is a problem.
-> > > 
-> > > Mark, can you give some examples?  This isn't the same as the firmware 
-> > > update thing, is it?  That deserves to be handled by a completely 
-> > > separate mechanism.
-> > 
-> > The biggest example I know of is any usb gadget implementation while
-> > connected to a USB host.  If the device is connected to the USB bus then
-> > it needs to not suspend because it cannot respond to the USB commands
-> > for bus power.  i.e. if its connected to a laptop and the suspend the
-> > laptop the gadget needs to handle the USB protocol packets.
-> > 
-> > Also, when charging battery under OS control we don't want to suspend
-> > because it will be hard to respond to thermal events  or changing
-> > battery conditions if the system is in suspend.
+> This adds a mechanism to resume selected IRQs during syscore_resume instead of
+> dpm_resume_noirq.
 > 
-> This is like the firmware update problem -- it has nothing to do with 
-> wakeups.  It could be handled very easily either by abusing a wakeup 
-> source as Neil suggested or by adding a different mechanism for 
-> preventing system sleeps.
-
-yes.  This is just another mechanism to prevent sleeps.
-
-> > > Although many of these problems could be solved by adopting a suitable
-> > > protocol in userspace, currently there is no such protocol.  Even if
-> > > one did exist, the process of getting all the relevant programs to
-> > > adopt it would take quite a while.  This is a case where a problem can
-> > > be solved either in the kernel or in userspace, and the in-kernel
-> > > solution may be simpler.
-> > 
-> > I do think a better solution would involve some kernel coordination.
-> > 
-> > I don't want to split hairs on if its 100% possible to implement a
-> > correct solution only in user mode.  but, I think there are corner cases
-> > that may be hard or impossible to get right with only user mode.  See
-> > gadget issue above.  Not all gadgets have a user mode daemon backing up
-> > the kernel part do they?
+> Under Xen we need to resume IRQs associated with IPIs early enough that the
+> resched IPI is unmasked and we can therefore schedule ourselves out of the
+> stop_machine where the suspend/resume takes place.
 > 
-> I don't know.  But if they don't have some sort of userspace component
-> for power management then they never go into suspend, because the
-> kernel doesn't initiate suspends by itself.
+> This issue was introduced by 676dc3cf5bc3 "xen: Use IRQF_FORCE_RESUME".
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel <xen-devel@lists.xensource.com>
+> Cc: stable@kernel.org (at least to 2.6.32.y)
+> ---
+>  drivers/xen/events.c      |    2 +-
+>  include/linux/interrupt.h |    3 ++
+>  kernel/irq/pm.c           |   48 ++++++++++++++++++++++++++++++++++++++------
+>  3 files changed, 45 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 7523719..44490de 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -1021,7 +1021,7 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
+>  	if (irq < 0)
+>  		return irq;
+>  
+> -	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME;
+> +	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME | IRQF_EARLY_RESUME;
+>  	retval = request_irq(irq, handler, irqflags, devname, dev_id);
+>  	if (retval != 0) {
+>  		unbind_from_irq(irq);
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index a103732..f51a81b 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -59,6 +59,8 @@
+>   * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
+>   * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
+>   * IRQF_NO_THREAD - Interrupt cannot be threaded
+> + * IRQF_EARLY_RESUME - Resume IRQ early during syscore instead of at device
+> + *                resume time.
+>   */
+>  #define IRQF_DISABLED		0x00000020
+>  #define IRQF_SAMPLE_RANDOM	0x00000040
+> @@ -72,6 +74,7 @@
+>  #define IRQF_NO_SUSPEND		0x00004000
+>  #define IRQF_FORCE_RESUME	0x00008000
+>  #define IRQF_NO_THREAD		0x00010000
+> +#define IRQF_EARLY_RESUME	0x00020000
+>  
+>  #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
+>  
+> diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+> index f76fc00..86bcd79 100644
+> --- a/kernel/irq/pm.c
+> +++ b/kernel/irq/pm.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/module.h>
+>  #include <linux/interrupt.h>
+> +#include <linux/syscore_ops.h>
+>  
+>  #include "internals.h"
+>  
+> @@ -39,25 +40,58 @@ void suspend_device_irqs(void)
+>  }
+>  EXPORT_SYMBOL_GPL(suspend_device_irqs);
+>  
+> -/**
+> - * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
+> - *
+> - * Enable all interrupt lines previously disabled by suspend_device_irqs() that
+> - * have the IRQS_SUSPENDED flag set.
+> - */
+> -void resume_device_irqs(void)
+> +static resume_irqs(bool want_early)
+>  {
+>  	struct irq_desc *desc;
+>  	int irq;
+>  
+>  	for_each_irq_desc(irq, desc) {
+>  		unsigned long flags;
+> +		bool is_early = desc->action &&
+> +			desc->action->flags & IRQF_EARLY_RESUME;
+> +
+> +		if (is_early != want_early)
+> +			continue;
+>  
+>  		raw_spin_lock_irqsave(&desc->lock, flags);
+>  		__enable_irq(desc, irq, true);
+>  		raw_spin_unlock_irqrestore(&desc->lock, flags);
+>  	}
+>  }
+> +
+> +/**
+> + * irq_pm_syscore_ops - enable interrupt lines early
+> + *
+> + * Enable all interrupt lines with %IRQF_EARLY_RESUME set.
+> + */
+> +static void irq_pm_syscore_resume(void)
+> +{
+> +	resume_irqs(true);
+> +}
+> +
+> +static struct syscore_ops irq_pm_syscore_ops = {
+> +	.resume		= irq_pm_syscore_resume,
+> +};
+> +
+> +static int __init irq_pm_init_ops(void)
+> +{
+> +	register_syscore_ops(&irq_pm_syscore_ops);
+> +	return 0;
+> +}
+> +
+> +device_initcall(irq_pm_init_ops);
+> +
+> +/**
+> + * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
+> + *
+> + * Enable all non-%IRQF_EARLY_RESUME interrupt lines previously
+> + * disabled by suspend_device_irqs() that have the IRQS_SUSPENDED flag
+> + * set as well as those with %IRQF_FORCE_RESUME.
+> + */
+> +void resume_device_irqs(void)
+> +{
+> +	resume_irqs(false);
+> +}
+>  EXPORT_SYMBOL_GPL(resume_device_irqs);
+>  
+>  /**
 
-yes, but the kernel can / does block user initiated suspends from
-various user mode initiators.  All this is for is to block suspend entry
-until the driver is ok with it.  this patch is nothing more than that
-really.
 
---mark
