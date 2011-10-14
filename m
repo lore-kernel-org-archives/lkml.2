@@ -1,76 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab1JNG4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 02:56:07 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:25126 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab1JNG4F (ORCPT
+	id S1755351Ab1JNG4l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 02:56:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51481 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab1JNG4j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 02:56:05 -0400
-X-IronPort-AV: E=Sophos;i="4.69,344,1315180800"; 
-   d="scan'208";a="8387800"
-Subject: Re: [PATCH] mm: add a "struct page_frag" type containing a page,
- offset and length
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Miller <davem@davemloft.net>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <20111013142201.355f9afc.akpm@linux-foundation.org>
-References: <alpine.DEB.2.00.1110131327470.24853@chino.kir.corp.google.com>
-	 <20111013.163708.1319779926961023813.davem@davemloft.net>
-	 <alpine.DEB.2.00.1110131348310.24853@chino.kir.corp.google.com>
-	 <20111013.165148.64222593458932960.davem@davemloft.net>
-	 <20111013142201.355f9afc.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Fri, 14 Oct 2011 07:56:02 +0100
-Message-ID: <1318575363.11016.8.camel@dagon.hellion.org.uk>
+	Fri, 14 Oct 2011 02:56:39 -0400
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111013133815.GC2310@localhost.localdomain>
+References: <CAE8kqZKQrDK4SAKc8vK7Wi46dGQBw6_LX2NFvkr-XZr_KmGhrQ@mail.gmail.com>
+	<20111013133815.GC2310@localhost.localdomain>
+Date: Fri, 14 Oct 2011 14:56:37 +0800
+Message-ID: <CAE8kqZJGxra_tX=x-BQhnwKBDAhHLYq04Xon47coQ5JR5+0YmQ@mail.gmail.com>
+Subject: Re: [PATCH] fanotify: to differ file access event from different threads
+From: boyd yang <boyd.yang@gmail.com>
+To: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: eparis@redhat.com, xiyou.wangcong@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-13 at 22:22 +0100, Andrew Morton wrote:
-> Looks OK to me.  I'm surprised we don't already have such a thing.
-> 
-> Review comments:
-> 
-> 
-> > +struct page_frag {
-> > +	struct page *page;
-> > +#if (BITS_PER_LONG > 32) || (PAGE_SIZE >= 65536)
-> 
-> It does add risk that people will add compile warnings and bugs by
-> failing to consider or test the other case.
+Thanks, I updated the patch.
+Now it passed checkpatch.pl.
+
+I used the flag you mentioned.
+
+fanotify: to differ file access event from different threads
+When fanotify is monitoring the whole mount point "/", and multiple
+threads iterate the same direcotry, some thread will hang.
+This patch let fanotify to differ access events from different
+threads, prevent fanotify from merging access events from different
+threads.
+It also hide overflow events to reach user space.
+Signed-off-by: Boyd Yang <boyd.yang@gmail.com>
+
+diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+--- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c	2011-08-29
+12:16:01.000000000 +0800
++++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c	2011-10-14
+14:17:53.055958000 +0800
+@@ -15,7 +15,8 @@
+
+ 	if (old->to_tell == new->to_tell &&
+ 	    old->data_type == new->data_type &&
+-	    old->tgid == new->tgid) {
++	    old->tgid == new->tgid &&
++	    old->pid == new->pid) {
+ 		switch (old->data_type) {
+ 		case (FSNOTIFY_EVENT_PATH):
+ 			if ((old->path.mnt == new->path.mnt) &&
+@@ -144,11 +145,16 @@
+ 		return PTR_ERR(notify_event);
+
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+-	if (event->mask & FAN_ALL_PERM_EVENTS) {
+-		/* if we merged we need to wait on the new event */
+-		if (notify_event)
+-			event = notify_event;
+-		ret = fanotify_get_response_from_access(group, event);
++	/*if overflow, do not wait for response*/
++	if (event->mask&FS_Q_OVERFLOW) {
++		pr_debug("fanotify overflow!\n");
++	}	else {
++		if (event->mask & FAN_ALL_PERM_EVENTS) {
++			/* if we merged we need to wait on the new event */
++			if (notify_event)
++				event = notify_event;
++			ret = fanotify_get_response_from_access(group, event);
++		}
+ 	}
+ #endif
+
+diff -r -u linux-3.1-rc4_orig/fs/notify/notification.c
+linux-3.1-rc4/fs/notify/notification.c
+--- linux-3.1-rc4_orig/fs/notify/notification.c	2011-08-29
+12:16:01.000000000 +0800
++++ linux-3.1-rc4/fs/notify/notification.c	2011-10-14 13:52:36.946608000 +0800
+@@ -95,6 +95,7 @@
+ 		BUG_ON(!list_empty(&event->private_data_list));
+
+ 		kfree(event->file_name);
++		put_pid(event->pid);
+ 		put_pid(event->tgid);
+ 		kmem_cache_free(fsnotify_event_cachep, event);
+ 	}
+@@ -374,6 +375,7 @@
+ 			return NULL;
+ 		}
+ 	}
++	event->pid = get_pid(old_event->pid);
+ 	event->tgid = get_pid(old_event->tgid);
+ 	if (event->data_type == FSNOTIFY_EVENT_PATH)
+ 		path_get(&event->path);
+@@ -417,6 +419,7 @@
+ 		event->name_len = strlen(event->file_name);
+ 	}
+
++	event->pid = get_pid(task_pid(current));
+ 	event->tgid = get_pid(task_tgid(current));
+ 	event->sync_cookie = cookie;
+ 	event->to_tell = to_tell;
+diff -r -u linux-3.1-rc4_orig/include/linux/fsnotify_backend.h
+linux-3.1-rc4/include/linux/fsnotify_backend.h
+--- linux-3.1-rc4_orig/include/linux/fsnotify_backend.h	2011-08-29
+12:16:01.000000000 +0800
++++ linux-3.1-rc4/include/linux/fsnotify_backend.h	2011-10-14
+13:51:50.380168000 +0800
+@@ -238,6 +238,7 @@
+ 	u32 sync_cookie;	/* used to corrolate events, namely inotify mv events */
+ 	const unsigned char *file_name;
+ 	size_t name_len;
++	struct pid *pid;
+ 	struct pid *tgid;
+
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+
+
+
+
+
+On Thu, Oct 13, 2011 at 9:38 PM, Josef Bacik <josef@redhat.com> wrote:
+> On Thu, Oct 13, 2011 at 04:56:43PM +0800, boyd yang wrote:
+>> This patch fixes a hang problem of Eric Paris's fs Notification/fanotify.
+>>
+>> Fanotify brings a way to intercept file access events.
+>> When multiple threadsiterate the same direcotry, some thread will hang.
+>> This patch let fanotify to differ access events from different
+>> threads, prevent fanotify from merging access events from different
+>> threads.
+>>
 >
-> We could reduce that risk by doing
-> 
->    #if (PAGE_SIZE >= 65536)
-> 
-> but then the 32-bit version would hardly ever be tested at all.
-
-Indeed. The first variant has the benefit that most 32-bit arches will
-test one case and most 64-bit ones the other.
-
-Perhaps the need to keep this struct small is not so acute as it is for
-the skb_frag_t I nicked it from and just using __u32 unconditionally is
-sufficient?
-
-> 
-> > +	__u32 page_offset;
-> 
-> I suggest this be called simply "offset".
-
-ACK.
-
-Thanks,
-
-Ian.
-
-
+> You need to run this through checkpatch.pl, you have a ton of formatting
+> problems.  Also your email client seems to have word-wrapped parts of this, so
+> use a email client that doesn't word wrap.
+>
+>> =============================================================
+>>
+>> diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+>> linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+>> --- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c  2011-08-29
+>> 12:16:01.000000000 +0800
+>> +++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c       2011-10-10
+>> 12:28:23.276847000 +0800
+>> @@ -15,7 +15,8 @@
+>>
+>>       if (old->to_tell == new->to_tell &&
+>>           old->data_type == new->data_type &&
+>> -         old->tgid == new->tgid) {
+>> +         old->tgid == new->tgid &&
+>> +         old->pid == new->pid) {
+>>               switch (old->data_type) {
+>>               case (FSNOTIFY_EVENT_PATH):
+>>                       if ((old->path.mnt == new->path.mnt) &&
+>> @@ -144,11 +145,19 @@
+>>               return PTR_ERR(notify_event);
+>>
+>>  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+>> -     if (event->mask & FAN_ALL_PERM_EVENTS) {
+>> -             /* if we merged we need to wait on the new event */
+>> -             if (notify_event)
+>> -                     event = notify_event;
+>> -             ret = fanotify_get_response_from_access(group, event);
+>> +     //if overflow, do not wait for response
+>> +     if(fsnotify_isoverflow(event))
+>> +     {
+>> +             pr_debug("fanotify overflow!\n");
+>> +     }
+>> +     else
+>> +     {
+>> +             if (event->mask & FAN_ALL_PERM_EVENTS) {
+>> +                     /* if we merged we need to wait on the new event */
+>> +                     if (notify_event)
+>> +                             event = notify_event;
+>> +                     ret = fanotify_get_response_from_access(group, event);
+>> +             }
+>>       }
+>
+> The overflow event should only have FS_Q_OVERFLOW set in it's mask right?  So
+> why is this test needed at all?  Thanks,
+>
+> Josef
+>
