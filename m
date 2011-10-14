@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab1JNJ1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 05:27:10 -0400
-Received: from ezo.ezono.com ([50.22.105.208]:43352 "EHLO ezo.ezono.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab1JNJ1I convert rfc822-to-8bit (ORCPT
+	id S932140Ab1JNJ1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:27:13 -0400
+Received: from mga05.intel.com ([192.55.52.89]:39609 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755915Ab1JNJ1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 05:27:08 -0400
-Message-ID: <4E980065.3090509@ezono.com>
-Date: Fri, 14 Oct 2011 11:27:01 +0200
-From: Abdelghani Ouchabane <abdelghani@ezono.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Subject: Re: PCIe can not rescan for new PCIe device ( FPGA board )
-References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com> <4E8F2758.3040408@ezono.com> <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com> <4E93FA07.306@ezono.com> <CAErSpo7c8pgBUxLGC5rKrBbkSsf+MSGhXuEZAyrPkRj8X2YpBA@mail.gmail.com> <4E954251.5020801@ezono.com> <4E9549E5.4090405@ezono.com> <CAErSpo5Q22-VtNd23-rmCUsJdQmN7VdmSAM806-_Po7=KK9Y0g@mail.gmail.com>
-In-Reply-To: <CAErSpo5Q22-VtNd23-rmCUsJdQmN7VdmSAM806-_Po7=KK9Y0g@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ezo.ezono.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - ezono.com
+	Fri, 14 Oct 2011 05:27:10 -0400
+Subject: Re: linux-next: build failure after merge of the final tree
+ (sparc, ptrace trees related)
+From: Matt Fleming <matt.fleming@intel.com>
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org, oleg@redhat.com,
+        linux-arch <linux-arch@vger.kernel.org>
+In-Reply-To: <20111014.035459.2238341687770152474.davem@davemloft.net>
+References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
+	 <20111014.035459.2238341687770152474.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Fri, 14 Oct 2011 10:27:02 +0100
+Message-ID: <1318584422.23581.118.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-10-14 at 03:54 -0400, David Miller wrote:
+> Ptrace folks can we not operate like this?  The only reason I found
+> out about the set_current_blocked() transformations was by accident,
+> because the original patch was posted to linux-kernel only so it never
+> got queued up into sparc patchwork.
+> 
+> Then once Oleg mentioned it to me, it didn't even compile so I fixed
+> it up and put the fixed up copy into my tree.  It also didn't
+> transform the TS_RESTORE_SIGMASK cases in the sparc signal code, so I
+> also added a patch to the sparc tree which took care of that.
+> 
+> Now you guys are creating conflicts against those fixed up patches in
+> another non-sparc tree, and adding new kinds of build failures as
+> well.
+> 
+> This doesn't work.
 
-> Thanks for the details.
->
-> If I understand correctly:
->
->    A - fails (card not present at power-on, added later)
->    B - works (card always present)
->    C - works (card present at power-on, later removed and re-added,
-> requires manual rescan)
->
-> I see this note in section 9.4.8 (BIOS setup) of the conga-BAF User's Guide:
->
->      Note: Unless the hotplug support for this port is enabled as well,
-> an unpopulated
->      port will still be disabled if no PCI Express device is connected.
->
-> If you don't have hotplug enabled in the BIOS setup, it sounds like it
-> might result in the behavior you're seeing.  Do you have that enabled?
->
-> Bjorn
+Sorry David, this is my fault.
 
-Hallo Bjorn & Kenji,
+The reason that these patches couldn't be taken through the arch trees
+was because they were dependent on the non-arch patch that introduced
+block_sigmask(). I figured it would make more sense to put all the
+patches through Oleg's tree. It's now pretty clear I was wrong about
+that.
 
-    the hot-plug was enabled, but today I have received a new BIOS from 
-Congatec which solves the problem.
+In hindsight, what I should have done was got the first patch that
+introduced block_sigmask() into 3.1, then waited till the next release
+cycle and sent out all the arch patches to the arch maintainers. That
+way the patches could have been pulled into the respective arch trees.
 
-Among the fix is:
-
-_BBRAR009 to BBRAR110:_
-
-2. Enabled PCIExpress / ExpressCard basic hotplug support. Enabled event 
-handling support.
-
-Now after the manual rescan my FPGA board gets detect correctly and I 
-can access its registers in the correct way.
-
-
-Many thanks for all your supports.
-
-My best regards,
-Ghani
-
-
+Guys, how did you want to sort this out? Should we get the first patch
+into 3.1, then get all the arch maintainers to pick up their patches?
 
