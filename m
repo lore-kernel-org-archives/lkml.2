@@ -1,151 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1JNS5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 14:57:13 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33659
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752605Ab1JNS5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 14:57:12 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, kys@microsoft.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: Mike Sterling <Mike.Sterling@microsoft.com>,
-        NetDev <netdev@vger.kernel.org>
-Subject: [PATCH] staging: hv: move hv_netvsc out of staging area
-Date: Fri, 14 Oct 2011 12:20:26 -0700
-Message-Id: <1318620026-8349-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755179Ab1JNS74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 14:59:56 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:44579 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab1JNS7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 14:59:55 -0400
+Subject: [PATCH] linux-m32r is moderated for non-subscribers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Oct 2011 20:59:45 +0200
+Message-ID: <1318618785.6132.115.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hv_netvsc has been reviewed on netdev mailing list on 6/09/2011.
-All recommended changes have been made. We are requesting to move
-it out of staging area.
-
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: KY Srinivasan <kys@microsoft.com>
-Signed-off-by: Mike Sterling <Mike.Sterling@microsoft.com>
-Cc: NetDev <netdev@vger.kernel.org>
-
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/net/Kconfig                               |    2 ++
- drivers/net/Makefile                              |    2 ++
- drivers/net/hyperv/Kconfig                        |    5 +++++
- drivers/net/hyperv/Makefile                       |    3 +++
- drivers/{staging/hv => net/hyperv}/hyperv_net.h   |    0
- drivers/{staging/hv => net/hyperv}/netvsc.c       |    0
- drivers/{staging/hv => net/hyperv}/netvsc_drv.c   |    0
- drivers/{staging/hv => net/hyperv}/rndis_filter.c |    0
- drivers/staging/hv/Kconfig                        |    6 ------
- drivers/staging/hv/Makefile                       |    2 --
- drivers/staging/hv/TODO                           |    1 -
- 11 files changed, 12 insertions(+), 9 deletions(-)
- create mode 100644 drivers/net/hyperv/Kconfig
- create mode 100644 drivers/net/hyperv/Makefile
- rename drivers/{staging/hv => net/hyperv}/hyperv_net.h (100%)
- rename drivers/{staging/hv => net/hyperv}/netvsc.c (100%)
- rename drivers/{staging/hv => net/hyperv}/netvsc_drv.c (100%)
- rename drivers/{staging/hv => net/hyperv}/rndis_filter.c (100%)
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 8d0314d..088c330 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -3451,4 +3451,6 @@ config VMXNET3
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called vmxnet3.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5483e0c..12a337e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4067,7 +4067,7 @@ S:	Maintained
  
-+source "drivers/net/hyperv/Kconfig"
-+
- endif # NETDEVICES
-diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index e1eca2a..647c878 100644
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -306,3 +306,5 @@ obj-$(CONFIG_CAIF) += caif/
- obj-$(CONFIG_OCTEON_MGMT_ETHERNET) += octeon/
- obj-$(CONFIG_PCH_GBE) += pch_gbe/
- obj-$(CONFIG_TILE_NET) += tile/
-+
-+obj-$(CONFIG_HYPERV_NET) += hyperv/
-diff --git a/drivers/net/hyperv/Kconfig b/drivers/net/hyperv/Kconfig
-new file mode 100644
-index 0000000..936968d
---- /dev/null
-+++ b/drivers/net/hyperv/Kconfig
-@@ -0,0 +1,5 @@
-+config HYPERV_NET
-+	tristate "Microsoft Hyper-V virtual network driver"
-+	depends on HYPERV
-+	help
-+	  Select this option to enable the Hyper-V virtual network driver.
-diff --git a/drivers/net/hyperv/Makefile b/drivers/net/hyperv/Makefile
-new file mode 100644
-index 0000000..c8a6682
---- /dev/null
-+++ b/drivers/net/hyperv/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_HYPERV_NET) += hv_netvsc.o
-+
-+hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
-diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-similarity index 100%
-rename from drivers/staging/hv/hyperv_net.h
-rename to drivers/net/hyperv/hyperv_net.h
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/net/hyperv/netvsc.c
-similarity index 100%
-rename from drivers/staging/hv/netvsc.c
-rename to drivers/net/hyperv/netvsc.c
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-similarity index 100%
-rename from drivers/staging/hv/netvsc_drv.c
-rename to drivers/net/hyperv/netvsc_drv.c
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-similarity index 100%
-rename from drivers/staging/hv/rndis_filter.c
-rename to drivers/net/hyperv/rndis_filter.c
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index 072185e..8a51166 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -4,12 +4,6 @@ config HYPERV_STORAGE
- 	help
- 	 Select this option to enable the Hyper-V virtual storage driver.
- 
--config HYPERV_NET
--	tristate "Microsoft Hyper-V virtual network driver"
--	depends on HYPERV && NET
--	help
--	  Select this option to enable the Hyper-V virtual network driver.
--
- config HYPERV_MOUSE
- 	tristate "Microsoft Hyper-V mouse driver"
- 	depends on HYPERV && HID
-diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
-index e071c12..b536584 100644
---- a/drivers/staging/hv/Makefile
-+++ b/drivers/staging/hv/Makefile
-@@ -1,7 +1,5 @@
- obj-$(CONFIG_HYPERV)		+= hv_timesource.o
- obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
--obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
- obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
- 
- hv_storvsc-y := storvsc_drv.o
--hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
-diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
-index ed4d636..fd080cb 100644
---- a/drivers/staging/hv/TODO
-+++ b/drivers/staging/hv/TODO
-@@ -1,5 +1,4 @@
- TODO:
--	- audit the network driver
- 	- audit the scsi driver
- 
- Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
+ M32R ARCHITECTURE
+ M:	Hirokazu Takata <takata@linux-m32r.org>
+-L:	linux-m32r@ml.linux-m32r.org
++L:	linux-m32r@ml.linux-m32r.org (moderated for non-subscribers)
+ L:	linux-m32r-ja@ml.linux-m32r.org (in Japanese)
+ W:	http://www.linux-m32r.org/
+ S:	Maintained
 -- 
-1.7.3.4
+1.7.4.4
+
+
 
