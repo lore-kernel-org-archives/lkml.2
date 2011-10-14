@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933406Ab1JNROB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:14:01 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:50950 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab1JNRN7 (ORCPT
+	id S1755721Ab1JNRRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:17:04 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:45880 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752733Ab1JNRRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:13:59 -0400
-X-Greylist: delayed 9346 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 13:13:59 EDT
-Date: Fri, 14 Oct 2011 13:13:58 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] crypto: ghash: Avoid null pointer dereference if no key
- is set.
-Message-ID: <20111014171358.GA15626@elliptictech.com>
-References: <1318603040-1360-1-git-send-email-nbowler@elliptictech.com>
+	Fri, 14 Oct 2011 13:17:01 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: .Onmi2EVM1nYWmaGs_PG9ljLeCAaOpKaIMnotrcoD2NR2W7
+ P6wOc_6_uI30g7iKIMV6SvA5OgWVvQG5M97ZtduTvEJKKV47Q__GRWoR0IvS
+ 7YoKBjNazmi0jFaQyPb5Gjr8.NzPVADEH5W7JROPa9p8UPSGuFSZFQoQy1oP
+ Htyle3O7yR1p4STwuESrsJSCJs9YERhMbP2v7FgEeNq6UBb.lp1FqVtcDVmr
+ __bynyHLMkqMO1i55nXpTZAoqMjE0L.xaEzNv255z5tenriuZcSGS5WXZeJP
+ PZt1Bu4PlR84zPb6UVd9.BZH0I84hsXm2dS2I_YWFn31iNA9aECsORs2XTeF
+ aIoF3QUXmudOeUSHhoeQk2rPIJBTXwyx6yeQFYwzLGN.Ls7w-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 14 Oct 2011 12:16:58 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Thomas Jarosch <thomas.jarosch@intra2net.com>
+cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [slabinfo PATCH] Fix off-by-one after readlink() call
+In-Reply-To: <4E9869B4.6080702@intra2net.com>
+Message-ID: <alpine.DEB.2.00.1110141214270.6411@router.home>
+References: <4E9869B4.6080702@intra2net.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318603040-1360-1-git-send-email-nbowler@elliptictech.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-14 10:37 -0400, Nick Bowler wrote:
-> The ghash_update function passes a pointer to gf128mul_4k_lle which will
-> be NULL if ghash_setkey is not called or if the most recent call to
-> ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
-> up by returning an error code in the null case.
-> 
-> This is trivially triggered from unpriviliged userspace through the
-> AF_ALG interface by simply writing to the socket without setting a key.
+On Fri, 14 Oct 2011, Thomas Jarosch wrote:
 
-It looks like this can also happen in ghash_final if an evil user calls
-setkey, update with a length that's not a multiple of the block size,
-then setkey again (this time failing due to an allocation failure) then
-final.  Thus, I suppose that final needs the same check.
+> index 868cc93..cc1a378 100644
+> --- a/tools/slub/slabinfo.c
+> +++ b/tools/slub/slabinfo.c
+> @@ -1145,7 +1145,7 @@ static void read_slab_dir(void)
+>  		switch (de->d_type) {
+>  		   case DT_LNK:
+>  			alias->name = strdup(de->d_name);
+> -			count = readlink(de->d_name, buffer, sizeof(buffer));
+> +			count = readlink(de->d_name, buffer, sizeof(buffer)-1);
+>
 
-v2 forthcoming...
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+readlink required that the buffer size be specified.
+
+READLINK(2)                                              Linux Programmer's Manual                                              READLINK(2)
+
+NAME
+       readlink - read value of a symbolic link
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t readlink(const char *path, char *buf, size_t bufsiz);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       readlink(): _BSD_SOURCE || _XOPEN_SOURCE >= 500 || _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       readlink()  places  the  contents  of the symbolic link path in the buffer buf, which has size bufsiz.  readlink() does not append a
+       null byte to buf.  It will truncate the contents (to a length of bufsiz characters), in case the buffer is too small to hold all  of
+       the contents.
+
+
