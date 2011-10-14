@@ -1,172 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab1JNSrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 14:47:00 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:50434 "EHLO www.hansjkoch.de"
+	id S1754770Ab1JNSvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 14:51:50 -0400
+Received: from claw.goop.org ([74.207.240.146]:52938 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071Ab1JNSrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 14:47:00 -0400
-Date: Fri, 14 Oct 2011 20:46:36 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Greg KH <gregkh@suse.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Kumar Gala <galak@kernel.crashing.org>,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Kai Jiang <Kai.Jiang@freescale.com>
-Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
-Message-ID: <20111014184636.GA6466@local>
-References: <1318521058-15662-1-git-send-email-galak@kernel.crashing.org>
- <20111014183144.GD28556@local>
- <20111014183633.GA30068@suse.de>
+	id S1752113Ab1JNSvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 14:51:49 -0400
+Message-ID: <4E9884C2.3090803@goop.org>
+Date: Fri, 14 Oct 2011 11:51:46 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014183633.GA30068@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        konrad.wilk@oracle.com, rth@redhat.com
+Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
+References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com> <1318503245.24856.12.camel@twins> <4E971580.6030300@goop.org> <20111014141701.GA2433@redhat.com> <4E986B2B.60803@goop.org> <20111014183539.GE2433@redhat.com> <4E9881A6.9050106@zytor.com>
+In-Reply-To: <4E9881A6.9050106@zytor.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 12:36:33PM -0600, Greg KH wrote:
-> On Fri, Oct 14, 2011 at 08:31:45PM +0200, Hans J. Koch wrote:
-> > On Thu, Oct 13, 2011 at 10:50:58AM -0500, Kumar Gala wrote:
-> > > From: Kai Jiang <Kai.Jiang@freescale.com>
-> > > 
-> > > To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
-> > > extend the width of 'addr' in struct uio_mem.  Numerous platforms like
-> > > embedded PPC, ARM, and X86 have support for systems with larger physical
-> > > address than logical.
-> > > 
-> > > Since 'addr' may contain a physical, logical, or virtual address the
-> > > easiest solution is to just change the type to 'phys_addr_t' which
-> > > should always be greater than or equal to the sizeof(void *) such that
-> > > it can properly hold any of the address types.
-> > > 
-> > > For physical address we can support up to a 44-bit physical address on a
-> > > typical 32-bit system as we utilize remap_pfn_range() for the mapping of
-> > > the memory region and pfn's are represnted by shifting the address by
-> > > the page size (typically 4k).
-> > > 
-> > > Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
-> > > Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
-> > > Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
-> > 
-> > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-> > 
-> > That looks good to me. There's an unnecessary cast (see below), but I fixed that
-> > on the way.
-> > 
-> > Greg, please pull this from branch uio-for-gregkh from
-> > 
-> > git://hansjkoch.de/git/linux-hjk
-> 
-> Care to send it as an email?  I can apply it easier that way as I have
-> limited internet access while on the road.
-> 
-> greg k-h
+On 10/14/2011 11:38 AM, H. Peter Anvin wrote:
+> On 10/14/2011 11:35 AM, Jason Baron wrote:
+>> A nice featuer of jump labels, is that it allows the various branches
+>> (currently we only support 2), to be written in c code (as opposed to asm),
+>> which means you can write your code as you normally would and access any
+>> parameters as you normally would - hopefully, making the code pretty
+>> readable as well.
+>>
+>> I hope this better clarifies the use-cases for the various mechanisms.
+>>
+> There is an important subcase which might be handy which would be to
+> allow direct patching of call instructions instead of using indirect calls.
 
+Right, that's how the pvops patching is primarily used.
 
->From b00f4ca33322a48928624ae3c34dc5fe9d2f40ff Mon Sep 17 00:00:00 2001
-From: Kai Jiang <Kai.Jiang@freescale.com>
-Date: Fri, 14 Oct 2011 20:04:43 +0200
-Subject: [PATCH] uio: Support physical addresses >32 bits on 32-bit systems
-
-From: Kai Jiang <Kai.Jiang@freescale.com>
-
-To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
-extend the width of 'addr' in struct uio_mem.  Numerous platforms like
-embedded PPC, ARM, and X86 have support for systems with larger physical
-address than logical.
-
-Since 'addr' may contain a physical, logical, or virtual address the
-easiest solution is to just change the type to 'phys_addr_t' which
-should always be greater than or equal to the sizeof(void *) such that
-it can properly hold any of the address types.
-
-For physical address we can support up to a 44-bit physical address on a
-typical 32-bit system as we utilize remap_pfn_range() for the mapping of
-the memory region and pfn's are represnted by shifting the address by
-the page size (typically 4k).
-
-Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
-Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
-Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
----
- Documentation/DocBook/uio-howto.tmpl |    2 +-
- drivers/uio/uio.c                    |    7 +++----
- include/linux/uio_driver.h           |    7 +++++--
- 3 files changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
-index 7c4b514d..54883de 100644
---- a/Documentation/DocBook/uio-howto.tmpl
-+++ b/Documentation/DocBook/uio-howto.tmpl
-@@ -529,7 +529,7 @@ memory (e.g. allocated with <function>kmalloc()</function>). There's also
- </para></listitem>
- 
- <listitem><para>
--<varname>unsigned long addr</varname>: Required if the mapping is used.
-+<varname>phys_addr_t addr</varname>: Required if the mapping is used.
- Fill in the address of your memory block. This address is the one that
- appears in sysfs.
- </para></listitem>
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index d2efe82..c0626ea 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -69,7 +69,7 @@ static ssize_t map_name_show(struct uio_mem *mem, char *buf)
- 
- static ssize_t map_addr_show(struct uio_mem *mem, char *buf)
- {
--	return sprintf(buf, "0x%lx\n", mem->addr);
-+	return sprintf(buf, "0x%llx\n", (unsigned long long)mem->addr);
- }
- 
- static ssize_t map_size_show(struct uio_mem *mem, char *buf)
-@@ -79,7 +79,7 @@ static ssize_t map_size_show(struct uio_mem *mem, char *buf)
- 
- static ssize_t map_offset_show(struct uio_mem *mem, char *buf)
- {
--	return sprintf(buf, "0x%lx\n", mem->addr & ~PAGE_MASK);
-+	return sprintf(buf, "0x%llx\n", (unsigned long long)mem->addr & ~PAGE_MASK);
- }
- 
- struct map_sysfs_entry {
-@@ -634,8 +634,7 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (idev->info->mem[mi].memtype == UIO_MEM_LOGICAL)
- 		page = virt_to_page(idev->info->mem[mi].addr + offset);
- 	else
--		page = vmalloc_to_page((void *)idev->info->mem[mi].addr
--							+ offset);
-+		page = vmalloc_to_page((void *)idev->info->mem[mi].addr + offset);
- 	get_page(page);
- 	vmf->page = page;
- 	return 0;
-diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index 665517c..fd99ff9 100644
---- a/include/linux/uio_driver.h
-+++ b/include/linux/uio_driver.h
-@@ -23,7 +23,10 @@ struct uio_map;
- /**
-  * struct uio_mem - description of a UIO memory region
-  * @name:		name of the memory region for identification
-- * @addr:		address of the device's memory
-+ * @addr:		address of the device's memory (phys_addr is used since
-+ * 			addr can be logical, virtual, or physical & phys_addr_t
-+ * 			should always be large enough to handle any of the
-+ * 			address types)
-  * @size:		size of IO
-  * @memtype:		type of memory addr points to
-  * @internal_addr:	ioremap-ped version of addr, for driver internal use
-@@ -31,7 +34,7 @@ struct uio_map;
-  */
- struct uio_mem {
- 	const char		*name;
--	unsigned long		addr;
-+	phys_addr_t		addr;
- 	unsigned long		size;
- 	int			memtype;
- 	void __iomem		*internal_addr;
--- 
-1.7.6.3
-
+    J
