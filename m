@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391Ab1JNRMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:12:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4901 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933349Ab1JNRMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:12:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,347,1315206000"; 
-   d="scan'208";a="62672866"
-Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, rmk@arm.linux.org.uk,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-In-Reply-To: <CAJe_ZheL9EFNvPAU+shAjQG+mhOYQwXkdi1WpZ=kjn+0jWnuaw@mail.gmail.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org>
-	 <CAGsJ_4yqdwaTxi=KMcgokb05uWUNi5_7uZDGqA4RsOZkWZ7FQA@mail.gmail.com>
-	 <CAJe_ZhfomhARd8EVcR+jCHuFLrAKkNqvaETFHiNtNeijx+5Kxw@mail.gmail.com>
-	 <1318599079.1546.395.camel@vkoul-udesk3>
-	 <CAGsJ_4zSKwSm-En0TCacMTPhRG_YCaOC=aWcxF7rXWq26JcKuQ@mail.gmail.com>
-	 <1318604775.1546.418.camel@vkoul-udesk3>
-	 <CAJe_ZheL9EFNvPAU+shAjQG+mhOYQwXkdi1WpZ=kjn+0jWnuaw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Oct 2011 22:34:05 +0530
-Message-ID: <1318611845.23438.3.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933406Ab1JNROB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:14:01 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:50950 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933334Ab1JNRN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 13:13:59 -0400
+X-Greylist: delayed 9346 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 13:13:59 EDT
+Date: Fri, 14 Oct 2011 13:13:58 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] crypto: ghash: Avoid null pointer dereference if no key
+ is set.
+Message-ID: <20111014171358.GA15626@elliptictech.com>
+References: <1318603040-1360-1-git-send-email-nbowler@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318603040-1360-1-git-send-email-nbowler@elliptictech.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 22:05 +0530, Jassi Brar wrote:
-> >> and some hardwares need two seperate dma channels to tranfer left
-> and
-> >> right audio channel.
-> >>
-> >> For 1st and 2nd dma channel, they want dma address increases 4bytes
-> >> and transfer 2bytes every line.
-> >> so it looks to me like a cyclic interleaved dma.
-> > Hmmm, do we have sound cards which use this?
-> > Nevertheless for this kind of transfers we would need interleaved
-> cyclic
-> > DMA as well, Do you have such usage? Can you tell me which codec
-> > requires this?
-> >
-> My proposed 'frm_irq' and 'cyclic' flags are for such requirements.
+On 2011-10-14 10:37 -0400, Nick Bowler wrote:
+> The ghash_update function passes a pointer to gf128mul_4k_lle which will
+> be NULL if ghash_setkey is not called or if the most recent call to
+> ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
+> up by returning an error code in the null case.
 > 
-> Consider a 5.1chan I2S controller that employs 3 dma-channels
-> each transferring 2 audio-channels to 3 three FIFOs. And the
-> pcm-dma driver supports SNDRV_PCM_INFO_INTERLEAVED.
-> While I worked with simple single fifo 5.1chan I2S controllers, I
-> don't
-> think such 3-fifo controllers can't exist. 
-I am not against cyclic, and yes 3 fifos can exist but one would
-question why we need 3 controller, 3 sets of ports and pins and
-associated analog stuff when one can do with one :)
+> This is trivially triggered from unpriviliged userspace through the
+> AF_ALG interface by simply writing to the socket without setting a key.
 
-Nevertheless, cyclic should be supported for all dmaengine APIs (but not
-adding new APIs for cyclic) and in consistent manner by having a generic
-cyclic flag and caps.
+It looks like this can also happen in ghash_final if an evil user calls
+setkey, update with a length that's not a multiple of the block size,
+then setkey again (this time failing due to an allocation failure) then
+final.  Thus, I suppose that final needs the same check.
 
+v2 forthcoming...
 -- 
-~Vinod
-
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
