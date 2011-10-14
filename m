@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1JNIrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 04:47:53 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:47141 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab1JNIrv (ORCPT
+	id S1754128Ab1JNIvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 04:51:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35743 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab1JNIvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 04:47:51 -0400
-Subject: Re: [PATCH] Fix strim() semantics for strings that have only blanks
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: andre.goddard@gmail.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+	Fri, 14 Oct 2011 04:51:09 -0400
+Subject: Re: [PATCH] jffs2: allow disabling of compression schemes at runtime
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andres Salomon <dilinger@queued.net>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20111013165431.b84ffab4.akpm@linux-foundation.org>
-References: <1318408317.2891.3.camel@br98xy6r>
-	 <20111013165431.b84ffab4.akpm@linux-foundation.org>
+Date: Fri, 14 Oct 2011 11:50:37 +0300
+In-Reply-To: <20111003191624.7efd3dce@queued.net>
+References: <20111003191624.7efd3dce@queued.net>
 Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 14 Oct 2011 10:44:17 +0200
-Message-ID: <1318581857.3362.8.camel@br98xy6r>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1318582244.12351.73.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
-
-On Thu, 2011-10-13 at 16:54 -0700, Andrew Morton wrote:
-> On Wed, 12 Oct 2011 10:31:57 +0200
-> > Also strim() explicitly does not have "__must_check", in order to use it
-> > without using the return value.
-> > 
+On Mon, 2011-10-03 at 19:16 -0700, Andres Salomon wrote:
+> Currently jffs2 has compile-time constants (and .config options)
+> regarding whether or not the various compression/decompression
+> drivers are built in and enabled.  This is fine for embedded
+> systems, but it clashes with distribution kernels.  Distro kernels
+> tend to turn on everything; this causes OpenFirmware to fall
+> over, as it only supports ZLIB decompression.  Booting a kernel
+> that has LZO compression enabled, writing to the boot partition,
+> and then rebooting causes OFW to fail to read the kernel from
+> the filesystem.  This is because LZO compression has priority
+> when writing new data to jffs2, if LZO is enabled.
 > 
-> This observation seems to have nothing to do with the patch?
+> To get around that, this patch adds jffs2 module params for each
+> compressor type that isn't decompression-only.  That means I can run
+> a kernel that has support for LZO and ZLIB decompression (allowing
+> me to read LZO data off of the root partition), while  disabling
+> LZO compression writes (jffs2.disable_lzo=1) so that the boot
+> partition stays compatible with OFW.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-Well, it is just a hint that it was intentionally that the return value
-of strim() can be ignored and therefore I legally can use it like I do
-it ;-)
+You should use mount options instead. Invent nice mount options to
+configure compression strategy of JFFS2.
 
-> I think that strim() _should_ have __must_check annotation (which means
-> that strim() simply disappears, which is good).  It is only safe to
-> ignore the strim() return value if the caller knows that the string
-> started with a non-space.  The number of situations where this is
-> guaranteed are faily small, I suspect.
+Or you can simply implement the same option as UBIFS has: compr=xxx.
 
-Everywhere I use that function I know that my string has only trailing
-blanks (or only blanks). Therefore I think we should have a function
-that just removes trailing blanks. Perhaps we should change strim() to:
+See Documentation/filesystems/ubifs.txt
 
-void strim(char *str);
+With this option you set the default compressor which is use when
+writing, and on reading all decompression are supported, seems like
+exactly what you want. You can also look how it is implemented in UBIFS
+for reference.
 
-And change the three users that need the return value to use the
-strstrip() instead:
-
-grep -r " = strim(" linux-2.6
-security/apparmor/lib.c:	char *name = strim(fqname);
-security/apparmor/lsm.c:	args = strim(args);
-security/apparmor/policy.c:	hname = strim((char *)hname);
-
-Michael
+-- 
+Best Regards,
+Artem Bityutskiy
 
