@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab1JNNnR (ORCPT <rfc822;w@1wt.eu>);
+	id S1756758Ab1JNNnr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:43:47 -0400
+Received: from mga12.intel.com ([143.182.124.36]:55925 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756649Ab1JNNnR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Oct 2011 09:43:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61310 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756657Ab1JNNnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:43:13 -0400
 From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         zohar@linux.vnet.ibm.com, dhowells@redhat.com,
         herbert@gondor.hengli.com.au
-Subject: [PATCH v2.1 4/7] crypto: GnuPG based MPI lib - additional sources (part 4)
-Date: Fri, 14 Oct 2011 16:45:22 +0300
-Message-Id: <81f834dca8feb889e2acbc666e730cf89b5d5c41.1318598705.git.dmitry.kasatkin@intel.com>
+Subject: [PATCH v2.1 2/7] crypto: GnuPG based MPI lib - header files (part 2)
+Date: Fri, 14 Oct 2011 16:45:20 +0300
+Message-Id: <4ae7b41f6ce218250edad4ab6438c54deadc8990.1318598705.git.dmitry.kasatkin@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1318598705.git.dmitry.kasatkin@intel.com>
 References: <cover.1318598705.git.dmitry.kasatkin@intel.com>
@@ -33,106 +34,36 @@ used in IMA/EVM integrity protection subsystem.
 
 Due to patch size limitation, the patch is divided into 4 parts.
 
-This code is unnecessary for RSA digital signature verification,
-but for completeness it is included here and can be compiled,
-if CONFIG_MPILIB_EXTRA is enabled.
-
 Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 ---
- lib/Kconfig                    |   10 ++
- lib/mpi/Makefile               |   12 ++
- lib/mpi/generic_mpi-asm-defs.h |    4 +
- lib/mpi/generic_udiv-w-sdiv.c  |  106 +++++++++++++
- lib/mpi/mpi-add.c              |  234 ++++++++++++++++++++++++++++
- lib/mpi/mpi-cmp.c              |   68 ++++++++
- lib/mpi/mpi-div.c              |  333 ++++++++++++++++++++++++++++++++++++++++
- lib/mpi/mpi-gcd.c              |   59 +++++++
- lib/mpi/mpi-inline.c           |   31 ++++
- lib/mpi/mpi-inv.c              |  187 ++++++++++++++++++++++
- lib/mpi/mpi-mpow.c             |  133 ++++++++++++++++
- lib/mpi/mpi-mul.c              |  194 +++++++++++++++++++++++
- lib/mpi/mpi-scan.c             |  136 ++++++++++++++++
- 13 files changed, 1507 insertions(+), 0 deletions(-)
- create mode 100644 lib/mpi/generic_mpi-asm-defs.h
- create mode 100644 lib/mpi/generic_udiv-w-sdiv.c
- create mode 100644 lib/mpi/mpi-add.c
- create mode 100644 lib/mpi/mpi-cmp.c
- create mode 100644 lib/mpi/mpi-div.c
- create mode 100644 lib/mpi/mpi-gcd.c
- create mode 100644 lib/mpi/mpi-inline.c
- create mode 100644 lib/mpi/mpi-inv.c
- create mode 100644 lib/mpi/mpi-mpow.c
- create mode 100644 lib/mpi/mpi-mul.c
- create mode 100644 lib/mpi/mpi-scan.c
+ include/linux/mpi.h    |  146 +++++
+ lib/mpi/longlong.h     | 1478 ++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/mpi/mpi-inline.h   |  122 ++++
+ lib/mpi/mpi-internal.h |  261 +++++++++
+ 4 files changed, 2007 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/mpi.h
+ create mode 100644 lib/mpi/longlong.h
+ create mode 100644 lib/mpi/mpi-inline.h
+ create mode 100644 lib/mpi/mpi-internal.h
 
-diff --git a/lib/Kconfig b/lib/Kconfig
-index f69ce08..b5dd7ef 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -286,4 +286,14 @@ config MPILIB
- 	  It is used to implement RSA digital signature verification,
- 	  which is used by IMA/EVM digital signature extension.
- 
-+config MPILIB_EXTRA
-+	bool "Multiprecision maths library - additional sources"
-+	depends on MPILIB
-+	help
-+	  Multiprecision maths library from GnuPG.
-+	  It is used to implement RSA digital signature verification,
-+	  which is used by IMA/EVM digital signature extension.
-+	  This code in unnecessary for RSA digital signature verification,
-+	  and can be compiled if needed.	  
-+
- endmenu
-diff --git a/lib/mpi/Makefile b/lib/mpi/Makefile
-index 0c1c6c3..6ce238b 100644
---- a/lib/mpi/Makefile
-+++ b/lib/mpi/Makefile
-@@ -20,3 +20,15 @@ mpi-y = \
- 	mpi-pow.o			\
- 	mpiutil.o
- 
-+mpi-$(CONFIG_MPILIB_EXTRA) += \
-+	generic_udiv-w-sdiv.o		\
-+	mpi-add.o			\
-+	mpi-div.o			\
-+	mpi-cmp.o			\
-+	mpi-gcd.o			\
-+	mpi-inline.o			\
-+	mpi-inv.o			\
-+	mpi-mpow.o			\
-+	mpi-mul.o			\
-+	mpi-scan.o			\
-+
-diff --git a/lib/mpi/generic_mpi-asm-defs.h b/lib/mpi/generic_mpi-asm-defs.h
+diff --git a/include/linux/mpi.h b/include/linux/mpi.h
 new file mode 100644
-index 0000000..047d1f5
+index 0000000..06f8899
 --- /dev/null
-+++ b/lib/mpi/generic_mpi-asm-defs.h
-@@ -0,0 +1,4 @@
-+/* This file defines some basic constants for the MPI machinery.  We
-+ * need to define the types on a per-CPU basis, so it is done with
-+ * this file here.  */
-+#define BYTES_PER_MPI_LIMB  (SIZEOF_UNSIGNED_LONG)
-diff --git a/lib/mpi/generic_udiv-w-sdiv.c b/lib/mpi/generic_udiv-w-sdiv.c
-new file mode 100644
-index 0000000..cb8f5f0
---- /dev/null
-+++ b/lib/mpi/generic_udiv-w-sdiv.c
-@@ -0,0 +1,106 @@
-+/* mpihelp_udiv_w_sdiv -- implement udiv_qrnnd on machines with only signed
-+ *			  division.
-+ * Copyright (C) 1992, 1994, 1996, 1998 Free Software Foundation, Inc.
-+ * Contributed by Peter L. Montgomery.
++++ b/include/linux/mpi.h
+@@ -0,0 +1,146 @@
++/* mpi.h  -  Multi Precision Integers
++ *	Copyright (C) 1994, 1996, 1998, 1999,
++ *                    2000, 2001 Free Software Foundation, Inc.
 + *
-+ * This file is part of GnuPG.
++ * This file is part of GNUPG.
 + *
-+ * GnuPG is free software; you can redistribute it and/or modify
++ * GNUPG is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
 + * the Free Software Foundation; either version 2 of the License, or
 + * (at your option) any later version.
 + *
-+ * GnuPG is distributed in the hope that it will be useful,
++ * GNUPG is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
@@ -140,1521 +71,2012 @@ index 0000000..cb8f5f0
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
 + */
 +
-+#include "mpi-internal.h"
-+#include "longlong.h"
++#ifndef G10_MPI_H
++#define G10_MPI_H
 +
-+#if 0				/* not yet ported to MPI */
++#include <linux/types.h>
 +
-+mpi_limb_t
-+mpihelp_udiv_w_sdiv(mpi_limp_t *rp,
-+		    mpi_limp_t *a1, mpi_limp_t *a0, mpi_limp_t *d)
-+{
-+	mp_limb_t q, r;
-+	mp_limb_t c0, c1, b1;
++/* DSI defines */
 +
-+	if ((mpi_limb_signed_t) d >= 0) {
-+		if (a1 < d - a1 - (a0 >> (BITS_PER_MP_LIMB - 1))) {
-+			/* dividend, divisor, and quotient are nonnegative */
-+			sdiv_qrnnd(q, r, a1, a0, d);
-+		} else {
-+			/* Compute c1*2^32 + c0 = a1*2^32 + a0 - 2^31*d */
-+			sub_ddmmss(c1, c0, a1, a0, d >> 1,
-+				   d << (BITS_PER_MP_LIMB - 1));
-+			/* Divide (c1*2^32 + c0) by d */
-+			sdiv_qrnnd(q, r, c1, c0, d);
-+			/* Add 2^31 to quotient */
-+			q += (mp_limb_t) 1 << (BITS_PER_MP_LIMB - 1);
-+		}
-+	} else {
-+		b1 = d >> 1;	/* d/2, between 2^30 and 2^31 - 1 */
-+		c1 = a1 >> 1;	/* A/2 */
-+		c0 = (a1 << (BITS_PER_MP_LIMB - 1)) + (a0 >> 1);
++#define SHA1_DIGEST_LENGTH   20
 +
-+		if (a1 < b1) {	/* A < 2^32*b1, so A/2 < 2^31*b1 */
-+			sdiv_qrnnd(q, r, c1, c0, b1);	/* (A/2) / (d/2) */
++/*end of DSI defines */
 +
-+			r = 2 * r + (a0 & 1);	/* Remainder from A/(2*b1) */
-+			if ((d & 1) != 0) {
-+				if (r >= q)
-+					r = r - q;
-+				else if (q - r <= d) {
-+					r = r - q + d;
-+					q--;
-+				} else {
-+					r = r - q + 2 * d;
-+					q -= 2;
-+				}
-+			}
-+		} else if (c1 < b1) {	/* So 2^31 <= (A/2)/b1 < 2^32 */
-+			c1 = (b1 - 1) - c1;
-+			c0 = ~c0;	/* logical NOT */
++#define BYTES_PER_MPI_LIMB	(BITS_PER_LONG / 8)
++#define BITS_PER_MPI_LIMB	BITS_PER_LONG
 +
-+			sdiv_qrnnd(q, r, c1, c0, b1);	/* (A/2) / (d/2) */
++typedef unsigned long int mpi_limb_t;
++typedef signed long int mpi_limb_signed_t;
 +
-+			q = ~q;	/* (A/2)/b1 */
-+			r = (b1 - 1) - r;
++struct gcry_mpi {
++	int alloced;		/* array size (# of allocated limbs) */
++	int nlimbs;		/* number of valid limbs */
++	int nbits;		/* the real number of valid bits (info only) */
++	int sign;		/* indicates a negative number */
++	unsigned flags;		/* bit 0: array must be allocated in secure memory space */
++	/* bit 1: not used */
++	/* bit 2: the limb is a pointer to some m_alloced data */
++	mpi_limb_t *d;		/* array with the limbs */
++};
 +
-+			r = 2 * r + (a0 & 1);	/* A/(2*b1) */
++typedef struct gcry_mpi *MPI;
 +
-+			if ((d & 1) != 0) {
-+				if (r >= q)
-+					r = r - q;
-+				else if (q - r <= d) {
-+					r = r - q + d;
-+					q--;
-+				} else {
-+					r = r - q + 2 * d;
-+					q -= 2;
-+				}
-+			}
-+		} else {	/* Implies c1 = b1 */
-+			/* Hence a1 = d - 1 = 2*b1 - 1 */
-+			if (a0 >= -d) {
-+				q = -1;
-+				r = a0 + d;
-+			} else {
-+				q = -2;
-+				r = a0 + 2 * d;
-+			}
-+		}
-+	}
++#define MPI_NULL NULL
 +
-+	*rp = r;
-+	return q;
-+}
++#define mpi_get_nlimbs(a)     ((a)->nlimbs)
++#define mpi_is_neg(a)	      ((a)->sign)
 +
++/*-- mpiutil.c --*/
++MPI mpi_alloc(unsigned nlimbs);
++MPI mpi_alloc_secure(unsigned nlimbs);
++MPI mpi_alloc_like(MPI a);
++void mpi_free(MPI a);
++int mpi_resize(MPI a, unsigned nlimbs);
++int mpi_copy(MPI *copy, const MPI a);
++void mpi_clear(MPI a);
++int mpi_set(MPI w, MPI u);
++int mpi_set_ui(MPI w, ulong u);
++MPI mpi_alloc_set_ui(unsigned long u);
++void mpi_m_check(MPI a);
++void mpi_swap(MPI a, MPI b);
++
++/*-- mpicoder.c --*/
++MPI do_encode_md(const void *sha_buffer, unsigned nbits);
++MPI mpi_read_from_buffer(const void *buffer, unsigned *ret_nread);
++int mpi_fromstr(MPI val, const char *str);
++u32 mpi_get_keyid(MPI a, u32 *keyid);
++void *mpi_get_buffer(MPI a, unsigned *nbytes, int *sign);
++void *mpi_get_secure_buffer(MPI a, unsigned *nbytes, int *sign);
++int mpi_set_buffer(MPI a, const void *buffer, unsigned nbytes, int sign);
++
++#define log_mpidump g10_log_mpidump
++
++/*-- mpi-add.c --*/
++int mpi_add_ui(MPI w, MPI u, ulong v);
++int mpi_add(MPI w, MPI u, MPI v);
++int mpi_addm(MPI w, MPI u, MPI v, MPI m);
++int mpi_sub_ui(MPI w, MPI u, ulong v);
++int mpi_sub(MPI w, MPI u, MPI v);
++int mpi_subm(MPI w, MPI u, MPI v, MPI m);
++
++/*-- mpi-mul.c --*/
++int mpi_mul_ui(MPI w, MPI u, ulong v);
++int mpi_mul_2exp(MPI w, MPI u, ulong cnt);
++int mpi_mul(MPI w, MPI u, MPI v);
++int mpi_mulm(MPI w, MPI u, MPI v, MPI m);
++
++/*-- mpi-div.c --*/
++ulong mpi_fdiv_r_ui(MPI rem, MPI dividend, ulong divisor);
++int mpi_fdiv_r(MPI rem, MPI dividend, MPI divisor);
++int mpi_fdiv_q(MPI quot, MPI dividend, MPI divisor);
++int mpi_fdiv_qr(MPI quot, MPI rem, MPI dividend, MPI divisor);
++int mpi_tdiv_r(MPI rem, MPI num, MPI den);
++int mpi_tdiv_qr(MPI quot, MPI rem, MPI num, MPI den);
++int mpi_tdiv_q_2exp(MPI w, MPI u, unsigned count);
++int mpi_divisible_ui(const MPI dividend, ulong divisor);
++
++/*-- mpi-gcd.c --*/
++int mpi_gcd(MPI g, const MPI a, const MPI b);
++
++/*-- mpi-pow.c --*/
++int mpi_pow(MPI w, MPI u, MPI v);
++int mpi_powm(MPI res, MPI base, MPI exp, MPI mod);
++
++/*-- mpi-mpow.c --*/
++int mpi_mulpowm(MPI res, MPI *basearray, MPI *exparray, MPI mod);
++
++/*-- mpi-cmp.c --*/
++int mpi_cmp_ui(MPI u, ulong v);
++int mpi_cmp(MPI u, MPI v);
++
++/*-- mpi-scan.c --*/
++int mpi_getbyte(MPI a, unsigned idx);
++void mpi_putbyte(MPI a, unsigned idx, int value);
++unsigned mpi_trailing_zeros(MPI a);
++
++/*-- mpi-bit.c --*/
++void mpi_normalize(MPI a);
++unsigned mpi_get_nbits(MPI a);
++int mpi_test_bit(MPI a, unsigned n);
++int mpi_set_bit(MPI a, unsigned n);
++int mpi_set_highbit(MPI a, unsigned n);
++void mpi_clear_highbit(MPI a, unsigned n);
++void mpi_clear_bit(MPI a, unsigned n);
++int mpi_rshift(MPI x, MPI a, unsigned n);
++
++/*-- mpi-inv.c --*/
++int mpi_invm(MPI x, MPI u, MPI v);
++
++#endif /*G10_MPI_H */
+diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
+new file mode 100644
+index 0000000..b87487b
+--- /dev/null
++++ b/lib/mpi/longlong.h
+@@ -0,0 +1,1478 @@
++/* longlong.h -- definitions for mixed size 32/64 bit arithmetic.
++ * Note: I added some stuff for use with gnupg
++ *
++ * Copyright (C) 1991, 1992, 1993, 1994, 1996, 1998,
++ *	2000, 2001, 2002, 2003 Free Software Foundation, Inc.
++ *
++ * This file is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU Library General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * This file is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
++ * License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public License
++ * along with this file; see the file COPYING.LIB.  If not, write to
++ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
++ * MA 02111-1307, USA. */
++
++/* You have to define the following before including this file:
++ *
++ * UWtype -- An unsigned type, default type for operations (typically a "word")
++ * UHWtype -- An unsigned type, at least half the size of UWtype.
++ * UDWtype -- An unsigned type, at least twice as large a UWtype
++ * W_TYPE_SIZE -- size in bits of UWtype
++ *
++ * SItype, USItype -- Signed and unsigned 32 bit types.
++ * DItype, UDItype -- Signed and unsigned 64 bit types.
++ *
++ * On a 32 bit machine UWtype should typically be USItype;
++ * on a 64 bit machine, UWtype should typically be UDItype.
++*/
++
++#define __BITS4 (W_TYPE_SIZE / 4)
++#define __ll_B ((UWtype) 1 << (W_TYPE_SIZE / 2))
++#define __ll_lowpart(t) ((UWtype) (t) & (__ll_B - 1))
++#define __ll_highpart(t) ((UWtype) (t) >> (W_TYPE_SIZE / 2))
++
++/* This is used to make sure no undesirable sharing between different libraries
++	that use this file takes place.  */
++#ifndef __MPN
++#define __MPN(x) __##x
 +#endif
-diff --git a/lib/mpi/mpi-add.c b/lib/mpi/mpi-add.c
-new file mode 100644
-index 0000000..f56b9ba
---- /dev/null
-+++ b/lib/mpi/mpi-add.c
-@@ -0,0 +1,234 @@
-+/* mpi-add.c  -  MPI functions
-+ *	Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
++
++/* Define auxiliary asm macros.
 + *
-+ * This file is part of GnuPG.
++ * 1) umul_ppmm(high_prod, low_prod, multipler, multiplicand) multiplies two
++ * UWtype integers MULTIPLER and MULTIPLICAND, and generates a two UWtype
++ * word product in HIGH_PROD and LOW_PROD.
 + *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * 2) __umulsidi3(a,b) multiplies two UWtype integers A and B, and returns a
++ * UDWtype product.  This is just a variant of umul_ppmm.
++
++ * 3) udiv_qrnnd(quotient, remainder, high_numerator, low_numerator,
++ * denominator) divides a UDWtype, composed by the UWtype integers
++ * HIGH_NUMERATOR and LOW_NUMERATOR, by DENOMINATOR and places the quotient
++ * in QUOTIENT and the remainder in REMAINDER.	HIGH_NUMERATOR must be less
++ * than DENOMINATOR for correct operation.  If, in addition, the most
++ * significant bit of DENOMINATOR must be 1, then the pre-processor symbol
++ * UDIV_NEEDS_NORMALIZATION is defined to 1.
++ * 4) sdiv_qrnnd(quotient, remainder, high_numerator, low_numerator,
++ * denominator).  Like udiv_qrnnd but the numbers are signed.  The quotient
++ * is rounded towards 0.
 + *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * 5) count_leading_zeros(count, x) counts the number of zero-bits from the
++ * msb to the first non-zero bit in the UWtype X.  This is the number of
++ * steps X needs to be shifted left to set the msb.  Undefined for X == 0,
++ * unless the symbol COUNT_LEADING_ZEROS_0 is defined to some value.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ * 6) count_trailing_zeros(count, x) like count_leading_zeros, but counts
++ * from the least significant end.
 + *
-+ * Note: This code is heavily based on the GNU MP Library.
-+ *	 Actually it's the same code with only minor changes in the
-+ *	 way the data is stored; this is to support the abstraction
-+ *	 of an optional secure memory allocation which may be used
-+ *	 to avoid revealing of sensitive data due to paging etc.
-+ *	 The GNU MP Library itself is published under the LGPL;
-+ *	 however I decided to publish this code under the plain GPL.
-+ */
-+
-+#include "mpi-internal.h"
-+
-+/****************
-+ * Add the unsigned integer V to the mpi-integer U and store the
-+ * result in W. U and V may be the same.
-+ */
-+int mpi_add_ui(MPI w, const MPI u, unsigned long v)
-+{
-+	mpi_ptr_t wp, up;
-+	mpi_size_t usize, wsize;
-+	int usign, wsign;
-+
-+	usize = u->nlimbs;
-+	usign = u->sign;
-+	wsign = 0;
-+
-+	/* If not space for W (and possible carry), increase space.  */
-+	wsize = usize + 1;
-+	if (w->alloced < wsize)
-+		if (mpi_resize(w, wsize) < 0)
-+			return -ENOMEM;
-+
-+	/* These must be after realloc (U may be the same as W).  */
-+	up = u->d;
-+	wp = w->d;
-+
-+	if (!usize) {		/* simple */
-+		wp[0] = v;
-+		wsize = v ? 1 : 0;
-+	} else if (!usign) {	/* mpi is not negative */
-+		mpi_limb_t cy;
-+		cy = mpihelp_add_1(wp, up, usize, v);
-+		wp[usize] = cy;
-+		wsize = usize + cy;
-+	} else {		/* The signs are different.  Need exact comparison to determine
-+				 * which operand to subtract from which.  */
-+		if (usize == 1 && up[0] < v) {
-+			wp[0] = v - up[0];
-+			wsize = 1;
-+		} else {
-+			mpihelp_sub_1(wp, up, usize, v);
-+			/* Size can decrease with at most one limb. */
-+			wsize = usize - (wp[usize - 1] == 0);
-+			wsign = 1;
-+		}
-+	}
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+int mpi_add(MPI w, MPI u, MPI v)
-+{
-+	mpi_ptr_t wp, up, vp;
-+	mpi_size_t usize, vsize, wsize;
-+	int usign, vsign, wsign;
-+
-+	if (u->nlimbs < v->nlimbs) {	/* Swap U and V. */
-+		usize = v->nlimbs;
-+		usign = v->sign;
-+		vsize = u->nlimbs;
-+		vsign = u->sign;
-+		wsize = usize + 1;
-+		if (RESIZE_IF_NEEDED(w, wsize) < 0)
-+			return -ENOMEM;
-+		/* These must be after realloc (u or v may be the same as w).  */
-+		up = v->d;
-+		vp = u->d;
-+	} else {
-+		usize = u->nlimbs;
-+		usign = u->sign;
-+		vsize = v->nlimbs;
-+		vsign = v->sign;
-+		wsize = usize + 1;
-+		if (RESIZE_IF_NEEDED(w, wsize) < 0)
-+			return -ENOMEM;
-+		/* These must be after realloc (u or v may be the same as w).  */
-+		up = u->d;
-+		vp = v->d;
-+	}
-+	wp = w->d;
-+	wsign = 0;
-+
-+	if (!vsize) {		/* simple */
-+		MPN_COPY(wp, up, usize);
-+		wsize = usize;
-+		wsign = usign;
-+	} else if (usign != vsign) {	/* different sign */
-+		/* This test is right since USIZE >= VSIZE */
-+		if (usize != vsize) {
-+			mpihelp_sub(wp, up, usize, vp, vsize);
-+			wsize = usize;
-+			MPN_NORMALIZE(wp, wsize);
-+			wsign = usign;
-+		} else if (mpihelp_cmp(up, vp, usize) < 0) {
-+			mpihelp_sub_n(wp, vp, up, usize);
-+			wsize = usize;
-+			MPN_NORMALIZE(wp, wsize);
-+			if (!usign)
-+				wsign = 1;
-+		} else {
-+			mpihelp_sub_n(wp, up, vp, usize);
-+			wsize = usize;
-+			MPN_NORMALIZE(wp, wsize);
-+			if (usign)
-+				wsign = 1;
-+		}
-+	} else {		/* U and V have same sign. Add them. */
-+		mpi_limb_t cy = mpihelp_add(wp, up, usize, vp, vsize);
-+		wp[usize] = cy;
-+		wsize = usize + cy;
-+		if (usign)
-+			wsign = 1;
-+	}
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+/****************
-+ * Subtract the unsigned integer V from the mpi-integer U and store the
-+ * result in W.
-+ */
-+int mpi_sub_ui(MPI w, MPI u, unsigned long v)
-+{
-+	mpi_ptr_t wp, up;
-+	mpi_size_t usize, wsize;
-+	int usign, wsign;
-+
-+	usize = u->nlimbs;
-+	usign = u->sign;
-+	wsign = 0;
-+
-+	/* If not space for W (and possible carry), increase space.  */
-+	wsize = usize + 1;
-+	if (w->alloced < wsize)
-+		if (mpi_resize(w, wsize) < 0)
-+			return -ENOMEM;
-+
-+	/* These must be after realloc (U may be the same as W).  */
-+	up = u->d;
-+	wp = w->d;
-+
-+	if (!usize) {		/* simple */
-+		wp[0] = v;
-+		wsize = v ? 1 : 0;
-+		wsign = 1;
-+	} else if (usign) {	/* mpi and v are negative */
-+		mpi_limb_t cy;
-+		cy = mpihelp_add_1(wp, up, usize, v);
-+		wp[usize] = cy;
-+		wsize = usize + cy;
-+	} else {		/* The signs are different.  Need exact comparison to determine
-+				 * which operand to subtract from which.  */
-+		if (usize == 1 && up[0] < v) {
-+			wp[0] = v - up[0];
-+			wsize = 1;
-+			wsign = 1;
-+		} else {
-+			mpihelp_sub_1(wp, up, usize, v);
-+			/* Size can decrease with at most one limb. */
-+			wsize = usize - (wp[usize - 1] == 0);
-+		}
-+	}
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+int mpi_sub(MPI w, MPI u, MPI v)
-+{
-+	int rc;
-+
-+	if (w == v) {
-+		MPI vv;
-+		if (mpi_copy(&vv, v) < 0)
-+			return -ENOMEM;
-+		vv->sign = !vv->sign;
-+		rc = mpi_add(w, u, vv);
-+		mpi_free(vv);
-+	} else {
-+		/* fixme: this is not thread-save (we temp. modify v) */
-+		v->sign = !v->sign;
-+		rc = mpi_add(w, u, v);
-+		v->sign = !v->sign;
-+	}
-+	return rc;
-+}
-+
-+int mpi_addm(MPI w, MPI u, MPI v, MPI m)
-+{
-+	if (mpi_add(w, u, v) < 0 || mpi_fdiv_r(w, w, m) < 0)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
-+int mpi_subm(MPI w, MPI u, MPI v, MPI m)
-+{
-+	if (mpi_sub(w, u, v) < 0 || mpi_fdiv_r(w, w, m) < 0)
-+		return -ENOMEM;
-+	return 0;
-+}
-diff --git a/lib/mpi/mpi-cmp.c b/lib/mpi/mpi-cmp.c
-new file mode 100644
-index 0000000..914bc42
---- /dev/null
-+++ b/lib/mpi/mpi-cmp.c
-@@ -0,0 +1,68 @@
-+/* mpi-cmp.c  -  MPI functions
-+ * Copyright (C) 1998, 1999 Free Software Foundation, Inc.
++ * 7) add_ssaaaa(high_sum, low_sum, high_addend_1, low_addend_1,
++ * high_addend_2, low_addend_2) adds two UWtype integers, composed by
++ * HIGH_ADDEND_1 and LOW_ADDEND_1, and HIGH_ADDEND_2 and LOW_ADDEND_2
++ * respectively.  The result is placed in HIGH_SUM and LOW_SUM.  Overflow
++ * (i.e. carry out) is not stored anywhere, and is lost.
 + *
-+ * This file is part of GnuPG.
++ * 8) sub_ddmmss(high_difference, low_difference, high_minuend, low_minuend,
++ * high_subtrahend, low_subtrahend) subtracts two two-word UWtype integers,
++ * composed by HIGH_MINUEND_1 and LOW_MINUEND_1, and HIGH_SUBTRAHEND_2 and
++ * LOW_SUBTRAHEND_2 respectively.  The result is placed in HIGH_DIFFERENCE
++ * and LOW_DIFFERENCE.	Overflow (i.e. carry out) is not stored anywhere,
++ * and is lost.
 + *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * If any of these macros are left undefined for a particular CPU,
++ * C macros are used.  */
++
++/* The CPUs come in alphabetical order below.
 + *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+
-+int mpi_cmp_ui(MPI u, unsigned long v)
-+{
-+	mpi_limb_t limb = v;
-+
-+	mpi_normalize(u);
-+	if (!u->nlimbs && !limb)
-+		return 0;
-+	if (u->sign)
-+		return -1;
-+	if (u->nlimbs > 1)
-+		return 1;
-+
-+	if (u->d[0] == limb)
-+		return 0;
-+	else if (u->d[0] > limb)
-+		return 1;
-+	else
-+		return -1;
-+}
-+
-+int mpi_cmp(MPI u, MPI v)
-+{
-+	mpi_size_t usize, vsize;
-+	int cmp;
-+
-+	mpi_normalize(u);
-+	mpi_normalize(v);
-+	usize = u->nlimbs;
-+	vsize = v->nlimbs;
-+	if (!u->sign && v->sign)
-+		return 1;
-+	if (u->sign && !v->sign)
-+		return -1;
-+	if (usize != vsize && !u->sign && !v->sign)
-+		return usize - vsize;
-+	if (usize != vsize && u->sign && v->sign)
-+		return vsize + usize;
-+	if (!usize)
-+		return 0;
-+	cmp = mpihelp_cmp(u->d, v->d, usize);
-+	if (!cmp)
-+		return 0;
-+	if ((cmp < 0 ? 1 : 0) == (u->sign ? 1 : 0))
-+		return 1;
-+	return -1;
-+}
-diff --git a/lib/mpi/mpi-div.c b/lib/mpi/mpi-div.c
-new file mode 100644
-index 0000000..c3087d1
---- /dev/null
-+++ b/lib/mpi/mpi-div.c
-@@ -0,0 +1,333 @@
-+/* mpi-div.c  -  MPI functions
-+ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
-+ *	Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ *
-+ * Note: This code is heavily based on the GNU MP Library.
-+ *	 Actually it's the same code with only minor changes in the
-+ *	 way the data is stored; this is to support the abstraction
-+ *	 of an optional secure memory allocation which may be used
-+ *	 to avoid revealing of sensitive data due to paging etc.
-+ *	 The GNU MP Library itself is published under the LGPL;
-+ *	 however I decided to publish this code under the plain GPL.
-+ */
-+
-+#include <linux/string.h>
-+#include "mpi-internal.h"
-+#include "longlong.h"
-+
-+int mpi_fdiv_r(MPI rem, MPI dividend, MPI divisor)
-+{
-+	int rc = -ENOMEM;
-+	int divisor_sign = divisor->sign;
-+	MPI temp_divisor = NULL;
-+
-+	/* We need the original value of the divisor after the remainder has been
-+	 * preliminary calculated.      We have to copy it to temporary space if it's
-+	 * the same variable as REM.  */
-+	if (rem == divisor) {
-+		if (mpi_copy(&temp_divisor, divisor) < 0)
-+			goto nomem;
-+		divisor = temp_divisor;
-+	}
-+
-+	if (mpi_tdiv_qr(NULL, rem, dividend, divisor) < 0)
-+		goto nomem;
-+	if (((divisor_sign ? 1 : 0) ^ (dividend->sign ? 1 : 0)) && rem->nlimbs)
-+		if (mpi_add(rem, rem, divisor) < 0)
-+			goto nomem;
-+
-+	rc = 0;
-+
-+nomem:
-+	if (temp_divisor)
-+		mpi_free(temp_divisor);
-+	return rc;
-+}
-+
-+/****************
-+ * Division rounding the quotient towards -infinity.
-+ * The remainder gets the same sign as the denominator.
-+ * rem is optional
-+ */
-+
-+ulong mpi_fdiv_r_ui(MPI rem, MPI dividend, ulong divisor)
-+{
-+	mpi_limb_t rlimb;
-+
-+	rlimb = mpihelp_mod_1(dividend->d, dividend->nlimbs, divisor);
-+	if (rlimb && dividend->sign)
-+		rlimb = divisor - rlimb;
-+
-+	if (rem) {
-+		rem->d[0] = rlimb;
-+		rem->nlimbs = rlimb ? 1 : 0;
-+	}
-+	return rlimb;
-+}
-+
-+int mpi_fdiv_q(MPI quot, MPI dividend, MPI divisor)
-+{
-+	MPI tmp = mpi_alloc(mpi_get_nlimbs(quot));
-+	if (!tmp)
-+		return -ENOMEM;
-+	mpi_fdiv_qr(quot, tmp, dividend, divisor);
-+	mpi_free(tmp);
-+	return 0;
-+}
-+
-+int mpi_fdiv_qr(MPI quot, MPI rem, MPI dividend, MPI divisor)
-+{
-+	int divisor_sign = divisor->sign;
-+	MPI temp_divisor = NULL;
-+
-+	if (quot == divisor || rem == divisor) {
-+		if (mpi_copy(&temp_divisor, divisor) < 0)
-+			return -ENOMEM;
-+		divisor = temp_divisor;
-+	}
-+
-+	if (mpi_tdiv_qr(quot, rem, dividend, divisor) < 0)
-+		goto nomem;
-+
-+	if ((divisor_sign ^ dividend->sign) && rem->nlimbs) {
-+		if (mpi_sub_ui(quot, quot, 1) < 0)
-+			goto nomem;
-+		if (mpi_add(rem, rem, divisor) < 0)
-+			goto nomem;
-+	}
-+
-+	if (temp_divisor)
-+		mpi_free(temp_divisor);
-+
-+	return 0;
-+
-+nomem:
-+	mpi_free(temp_divisor);
-+	return -ENOMEM;
-+}
-+
-+/* If den == quot, den needs temporary storage.
-+ * If den == rem, den needs temporary storage.
-+ * If num == quot, num needs temporary storage.
-+ * If den has temporary storage, it can be normalized while being copied,
-+ *   i.e no extra storage should be allocated.
-+ */
-+
-+int mpi_tdiv_r(MPI rem, MPI num, MPI den)
-+{
-+	return mpi_tdiv_qr(NULL, rem, num, den);
-+}
-+
-+int mpi_tdiv_qr(MPI quot, MPI rem, MPI num, MPI den)
-+{
-+	int rc = -ENOMEM;
-+	mpi_ptr_t np, dp;
-+	mpi_ptr_t qp, rp;
-+	mpi_size_t nsize = num->nlimbs;
-+	mpi_size_t dsize = den->nlimbs;
-+	mpi_size_t qsize, rsize;
-+	mpi_size_t sign_remainder = num->sign;
-+	mpi_size_t sign_quotient = num->sign ^ den->sign;
-+	unsigned normalization_steps;
-+	mpi_limb_t q_limb;
-+	mpi_ptr_t marker[5];
-+	int markidx = 0;
-+
-+	memset(marker, 0, sizeof(marker));
-+
-+	/* Ensure space is enough for quotient and remainder.
-+	 * We need space for an extra limb in the remainder, because it's
-+	 * up-shifted (normalized) below.  */
-+	rsize = nsize + 1;
-+	if (mpi_resize(rem, rsize) < 0)
-+		goto nomem;
-+
-+	qsize = rsize - dsize;	/* qsize cannot be bigger than this.  */
-+	if (qsize <= 0) {
-+		if (num != rem) {
-+			rem->nlimbs = num->nlimbs;
-+			rem->sign = num->sign;
-+			MPN_COPY(rem->d, num->d, nsize);
-+		}
-+		if (quot) {
-+			/* This needs to follow the assignment to rem, in case the
-+			 * numerator and quotient are the same.  */
-+			quot->nlimbs = 0;
-+			quot->sign = 0;
-+		}
-+		return 0;
-+	}
-+
-+	if (quot)
-+		if (mpi_resize(quot, qsize) < 0)
-+			goto nomem;
-+
-+	/* Read pointers here, when reallocation is finished.  */
-+	np = num->d;
-+	dp = den->d;
-+	rp = rem->d;
-+
-+	/* Optimize division by a single-limb divisor.  */
-+	if (dsize == 1) {
-+		mpi_limb_t rlimb;
-+		if (quot) {
-+			qp = quot->d;
-+			rlimb = mpihelp_divmod_1(qp, np, nsize, dp[0]);
-+			qsize -= qp[qsize - 1] == 0;
-+			quot->nlimbs = qsize;
-+			quot->sign = sign_quotient;
-+		} else
-+			rlimb = mpihelp_mod_1(np, nsize, dp[0]);
-+		rp[0] = rlimb;
-+		rsize = rlimb != 0 ? 1 : 0;
-+		rem->nlimbs = rsize;
-+		rem->sign = sign_remainder;
-+		return 0;
-+	}
-+
-+	if (quot) {
-+		qp = quot->d;
-+		/* Make sure QP and NP point to different objects.  Otherwise the
-+		 * numerator would be gradually overwritten by the quotient limbs.  */
-+		if (qp == np) {	/* Copy NP object to temporary space.  */
-+			np = marker[markidx++] = mpi_alloc_limb_space(nsize);
-+			MPN_COPY(np, qp, nsize);
-+		}
-+	} else			/* Put quotient at top of remainder. */
-+		qp = rp + dsize;
-+
-+	count_leading_zeros(normalization_steps, dp[dsize - 1]);
-+
-+	/* Normalize the denominator, i.e. make its most significant bit set by
-+	 * shifting it NORMALIZATION_STEPS bits to the left.  Also shift the
-+	 * numerator the same number of steps (to keep the quotient the same!).
-+	 */
-+	if (normalization_steps) {
-+		mpi_ptr_t tp;
-+		mpi_limb_t nlimb;
-+
-+		/* Shift up the denominator setting the most significant bit of
-+		 * the most significant word.  Use temporary storage not to clobber
-+		 * the original contents of the denominator.  */
-+		tp = marker[markidx++] = mpi_alloc_limb_space(dsize);
-+		if (!tp)
-+			goto nomem;
-+		mpihelp_lshift(tp, dp, dsize, normalization_steps);
-+		dp = tp;
-+
-+		/* Shift up the numerator, possibly introducing a new most
-+		 * significant word.  Move the shifted numerator in the remainder
-+		 * meanwhile.  */
-+		nlimb = mpihelp_lshift(rp, np, nsize, normalization_steps);
-+		if (nlimb) {
-+			rp[nsize] = nlimb;
-+			rsize = nsize + 1;
-+		} else
-+			rsize = nsize;
-+	} else {
-+		/* The denominator is already normalized, as required.  Copy it to
-+		 * temporary space if it overlaps with the quotient or remainder.  */
-+		if (dp == rp || (quot && (dp == qp))) {
-+			mpi_ptr_t tp;
-+
-+			tp = marker[markidx++] = mpi_alloc_limb_space(dsize);
-+			if (!tp)
-+				goto nomem;
-+			MPN_COPY(tp, dp, dsize);
-+			dp = tp;
-+		}
-+
-+		/* Move the numerator to the remainder.  */
-+		if (rp != np)
-+			MPN_COPY(rp, np, nsize);
-+
-+		rsize = nsize;
-+	}
-+
-+	q_limb = mpihelp_divrem(qp, 0, rp, rsize, dp, dsize);
-+
-+	if (quot) {
-+		qsize = rsize - dsize;
-+		if (q_limb) {
-+			qp[qsize] = q_limb;
-+			qsize += 1;
-+		}
-+
-+		quot->nlimbs = qsize;
-+		quot->sign = sign_quotient;
-+	}
-+
-+	rsize = dsize;
-+	MPN_NORMALIZE(rp, rsize);
-+
-+	if (normalization_steps && rsize) {
-+		mpihelp_rshift(rp, rp, rsize, normalization_steps);
-+		rsize -= rp[rsize - 1] == 0 ? 1 : 0;
-+	}
-+
-+	rem->nlimbs = rsize;
-+	rem->sign = sign_remainder;
-+
-+	rc = 0;
-+nomem:
-+	while (markidx)
-+		mpi_free_limb_space(marker[--markidx]);
-+	return rc;
-+}
-+
-+int mpi_tdiv_q_2exp(MPI w, MPI u, unsigned count)
-+{
-+	mpi_size_t usize, wsize;
-+	mpi_size_t limb_cnt;
-+
-+	usize = u->nlimbs;
-+	limb_cnt = count / BITS_PER_MPI_LIMB;
-+	wsize = usize - limb_cnt;
-+	if (limb_cnt >= usize)
-+		w->nlimbs = 0;
-+	else {
-+		mpi_ptr_t wp;
-+		mpi_ptr_t up;
-+
-+		if (RESIZE_IF_NEEDED(w, wsize) < 0)
-+			return -ENOMEM;
-+		wp = w->d;
-+		up = u->d;
-+
-+		count %= BITS_PER_MPI_LIMB;
-+		if (count) {
-+			mpihelp_rshift(wp, up + limb_cnt, wsize, count);
-+			wsize -= !wp[wsize - 1];
-+		} else {
-+			MPN_COPY_INCR(wp, up + limb_cnt, wsize);
-+		}
-+
-+		w->nlimbs = wsize;
-+	}
-+	return 0;
-+}
-+
-+/****************
-+ * Check whether dividend is divisible by divisor
-+ * (note: divisor must fit into a limb)
-+ */
-+int mpi_divisible_ui(MPI dividend, ulong divisor)
-+{
-+	return !mpihelp_mod_1(dividend->d, dividend->nlimbs, divisor);
-+}
-diff --git a/lib/mpi/mpi-gcd.c b/lib/mpi/mpi-gcd.c
-new file mode 100644
-index 0000000..13c48ae
---- /dev/null
-+++ b/lib/mpi/mpi-gcd.c
-@@ -0,0 +1,59 @@
-+/* mpi-gcd.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+
-+/****************
-+ * Find the greatest common divisor G of A and B.
-+ * Return: true if this 1, false in all other cases
-+ */
-+int mpi_gcd(MPI g, const MPI xa, const MPI xb)
-+{
-+	MPI a = NULL, b = NULL;
-+
-+	if (mpi_copy(&a, xa) < 0)
-+		goto nomem;
-+
-+	if (mpi_copy(&b, xb) < 0)
-+		goto nomem;
-+
-+	/* TAOCP Vol II, 4.5.2, Algorithm A */
-+	a->sign = 0;
-+	b->sign = 0;
-+	while (mpi_cmp_ui(b, 0)) {
-+		if (mpi_fdiv_r(g, a, b) < 0)	/* g used as temorary variable */
-+			goto nomem;
-+		if (mpi_set(a, b) < 0)
-+			goto nomem;
-+		if (mpi_set(b, g) < 0)
-+			goto nomem;
-+	}
-+	if (mpi_set(g, a) < 0)
-+		goto nomem;
-+
-+	mpi_free(a);
-+	mpi_free(b);
-+	return !mpi_cmp_ui(g, 1);
-+
-+nomem:
-+	mpi_free(a);
-+	mpi_free(b);
-+	return -ENOMEM;
-+}
-diff --git a/lib/mpi/mpi-inline.c b/lib/mpi/mpi-inline.c
-new file mode 100644
-index 0000000..654f68a
---- /dev/null
-+++ b/lib/mpi/mpi-inline.c
-@@ -0,0 +1,31 @@
-+/* mpi-inline.c
-+ * Copyright (C) 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+/* put the inline functions as real functions into the lib */
-+#define G10_MPI_INLINE_DECL
-+
-+#include "mpi-internal.h"
-+
-+/* always include the header becuase it is only
-+ * included by mpi-internal if __GCC__ is defined but we
-+ * need it here in all cases and the above definition of
-+ * of the macro allows us to do so
-+ */
-+#include "mpi-inline.h"
-diff --git a/lib/mpi/mpi-inv.c b/lib/mpi/mpi-inv.c
-new file mode 100644
-index 0000000..0951f98
---- /dev/null
-+++ b/lib/mpi/mpi-inv.c
-@@ -0,0 +1,187 @@
-+/* mpi-inv.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+
-+/****************
-+ * Calculate the multiplicative inverse X of A mod N
-+ * That is: Find the solution x for
-+ *		1 = (a*x) mod n
-+ */
-+int mpi_invm(MPI x, const MPI a, const MPI n)
-+{
-+	/* Extended Euclid's algorithm (See TAOPC Vol II, 4.5.2, Alg X)
-+	 * modified according to Michael Penk's solution for Exercice 35
-+	 * with further enhancement */
-+	MPI u = NULL, v = NULL;
-+	MPI u1 = NULL, u2 = NULL, u3 = NULL;
-+	MPI v1 = NULL, v2 = NULL, v3 = NULL;
-+	MPI t1 = NULL, t2 = NULL, t3 = NULL;
-+	unsigned k;
-+	int sign;
-+	int odd = 0;
-+	int rc = -ENOMEM;
-+
-+	if (mpi_copy(&u, a) < 0)
-+		goto cleanup;
-+	if (mpi_copy(&v, n) < 0)
-+		goto cleanup;
-+
-+	for (k = 0; !mpi_test_bit(u, 0) && !mpi_test_bit(v, 0); k++) {
-+		if (mpi_rshift(u, u, 1) < 0)
-+			goto cleanup;
-+		if (mpi_rshift(v, v, 1) < 0)
-+			goto cleanup;
-+	}
-+	odd = mpi_test_bit(v, 0);
-+
-+	u1 = mpi_alloc_set_ui(1);
-+	if (!u1)
-+		goto cleanup;
-+	if (!odd) {
-+		u2 = mpi_alloc_set_ui(0);
-+		if (!u2)
-+			goto cleanup;
-+	}
-+	if (mpi_copy(&u3, u) < 0)
-+		goto cleanup;
-+	if (mpi_copy(&v1, v) < 0)
-+		goto cleanup;
-+	if (!odd) {
-+		v2 = mpi_alloc(mpi_get_nlimbs(u));
-+		if (!v2)
-+			goto cleanup;
-+		if (mpi_sub(v2, u1, u) < 0)
-+			goto cleanup;	/* U is used as const 1 */
-+	}
-+	if (mpi_copy(&v3, v) < 0)
-+		goto cleanup;
-+	if (mpi_test_bit(u, 0)) {	/* u is odd */
-+		t1 = mpi_alloc_set_ui(0);
-+		if (!t1)
-+			goto cleanup;
-+		if (!odd) {
-+			t2 = mpi_alloc_set_ui(1);
-+			if (!t2)
-+				goto cleanup;
-+			t2->sign = 1;
-+		}
-+		if (mpi_copy(&t3, v) < 0)
-+			goto cleanup;
-+		t3->sign = !t3->sign;
-+		goto Y4;
-+	} else {
-+		t1 = mpi_alloc_set_ui(1);
-+		if (!t1)
-+			goto cleanup;
-+		if (!odd) {
-+			t2 = mpi_alloc_set_ui(0);
-+			if (!t2)
-+				goto cleanup;
-+		}
-+		if (mpi_copy(&t3, u) < 0)
-+			goto cleanup;
-+	}
-+	do {
-+		do {
-+			if (!odd) {
-+				if (mpi_test_bit(t1, 0) || mpi_test_bit(t2, 0)) {	/* one is odd */
-+					if (mpi_add(t1, t1, v) < 0)
-+						goto cleanup;
-+					if (mpi_sub(t2, t2, u) < 0)
-+						goto cleanup;
-+				}
-+				if (mpi_rshift(t1, t1, 1) < 0)
-+					goto cleanup;
-+				if (mpi_rshift(t2, t2, 1) < 0)
-+					goto cleanup;
-+				if (mpi_rshift(t3, t3, 1) < 0)
-+					goto cleanup;
-+			} else {
-+				if (mpi_test_bit(t1, 0))
-+					if (mpi_add(t1, t1, v) < 0)
-+						goto cleanup;
-+				if (mpi_rshift(t1, t1, 1) < 0)
-+					goto cleanup;
-+				if (mpi_rshift(t3, t3, 1) < 0)
-+					goto cleanup;
-+			}
-+Y4:
-+			;
-+		} while (!mpi_test_bit(t3, 0));	/* while t3 is even */
-+
-+		if (!t3->sign) {
-+			if (mpi_set(u1, t1) < 0)
-+				goto cleanup;
-+			if (!odd)
-+				if (mpi_set(u2, t2) < 0)
-+					goto cleanup;
-+			if (mpi_set(u3, t3) < 0)
-+				goto cleanup;
-+		} else {
-+			if (mpi_sub(v1, v, t1) < 0)
-+				goto cleanup;
-+			sign = u->sign;
-+			u->sign = !u->sign;
-+			if (!odd)
-+				if (mpi_sub(v2, u, t2) < 0)
-+					goto cleanup;
-+			u->sign = sign;
-+			sign = t3->sign;
-+			t3->sign = !t3->sign;
-+			if (mpi_set(v3, t3) < 0)
-+				goto cleanup;
-+			t3->sign = sign;
-+		}
-+		if (mpi_sub(t1, u1, v1) < 0)
-+			goto cleanup;
-+		if (!odd)
-+			if (mpi_sub(t2, u2, v2) < 0)
-+				goto cleanup;
-+		if (mpi_sub(t3, u3, v3) < 0)
-+			goto cleanup;
-+		if (t1->sign) {
-+			if (mpi_add(t1, t1, v) < 0)
-+				goto cleanup;
-+			if (!odd)
-+				if (mpi_sub(t2, t2, u) < 0)
-+					goto cleanup;
-+		}
-+	} while (mpi_cmp_ui(t3, 0));	/* while t3 != 0 */
-+	/* mpi_lshift( u3, k ); */
-+	rc = mpi_set(x, u1);
-+
-+cleanup:
-+	mpi_free(u1);
-+	mpi_free(v1);
-+	mpi_free(t1);
-+	if (!odd) {
-+		mpi_free(u2);
-+		mpi_free(v2);
-+		mpi_free(t2);
-+	}
-+	mpi_free(u3);
-+	mpi_free(v3);
-+	mpi_free(t3);
-+
-+	mpi_free(u);
-+	mpi_free(v);
-+	return rc;
-+}
-diff --git a/lib/mpi/mpi-mpow.c b/lib/mpi/mpi-mpow.c
-new file mode 100644
-index 0000000..4cc7593
---- /dev/null
-+++ b/lib/mpi/mpi-mpow.c
-@@ -0,0 +1,133 @@
-+/* mpi-mpow.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+#include "longlong.h"
-+
-+static int build_index(const MPI *exparray, int k, int i, int t)
-+{
-+	int j, bitno;
-+	int index = 0;
-+
-+	bitno = t - i;
-+	for (j = k - 1; j >= 0; j--) {
-+		index <<= 1;
-+		if (mpi_test_bit(exparray[j], bitno))
-+			index |= 1;
-+	}
-+	return index;
-+}
-+
-+/****************
-+ * RES = (BASE[0] ^ EXP[0]) *  (BASE[1] ^ EXP[1]) * ... * mod M
-+ */
-+int mpi_mulpowm(MPI res, MPI *basearray, MPI *exparray, MPI m)
-+{
-+	int rc = -ENOMEM;
-+	int k;			/* number of elements */
-+	int t;			/* bit size of largest exponent */
-+	int i, j, idx;
-+	MPI *G = NULL;		/* table with precomputed values of size 2^k */
-+	MPI tmp = NULL;
-+
-+	for (k = 0; basearray[k]; k++)
-+		;
-+	if (!k) {
-+		pr_emerg("mpi_mulpowm: assert(k) failed\n");
-+		BUG();
-+	}
-+	for (t = 0, i = 0; (tmp = exparray[i]); i++) {
-+		j = mpi_get_nbits(tmp);
-+		if (j > t)
-+			t = j;
-+	}
-+	if (i != k) {
-+		pr_emerg("mpi_mulpowm: assert(i==k) failed\n");
-+		BUG();
-+	}
-+	if (!t) {
-+		pr_emerg("mpi_mulpowm: assert(t) failed\n");
-+		BUG();
-+	}
-+	if (k >= 10) {
-+		pr_emerg("mpi_mulpowm: assert(k<10) failed\n");
-+		BUG();
-+	}
-+
-+	G = kzalloc((1 << k) * sizeof *G, GFP_KERNEL);
-+	if (!G)
-+		goto nomem;
-+
-+	/* and calculate */
-+	tmp = mpi_alloc(mpi_get_nlimbs(m) + 1);
-+	if (!tmp)
-+		goto nomem;
-+	if (mpi_set_ui(res, 1) < 0)
-+		goto nomem;
-+	for (i = 1; i <= t; i++) {
-+		if (mpi_mulm(tmp, res, res, m) < 0)
-+			goto nomem;
-+		idx = build_index(exparray, k, i, t);
-+		if (!(idx >= 0 && idx < (1 << k))) {
-+			pr_emerg("mpi_mulpowm: assert(idx >= 0 && idx < (1<<k)) failed\n");
-+			BUG();
-+		}
-+		if (!G[idx]) {
-+			if (!idx) {
-+				G[0] = mpi_alloc_set_ui(1);
-+				if (!G[0])
-+					goto nomem;
-+			} else {
-+				for (j = 0; j < k; j++) {
-+					if ((idx & (1 << j))) {
-+						if (!G[idx]) {
-+							if (mpi_copy
-+							    (&G[idx],
-+							     basearray[j]) < 0)
-+								goto nomem;
-+						} else {
-+							if (mpi_mulm
-+							    (G[idx], G[idx],
-+							     basearray[j],
-+							     m) < 0)
-+								goto nomem;
-+						}
-+					}
-+				}
-+				if (!G[idx]) {
-+					G[idx] = mpi_alloc(0);
-+					if (!G[idx])
-+						goto nomem;
-+				}
-+			}
-+		}
-+		if (mpi_mulm(res, tmp, G[idx], m) < 0)
-+			goto nomem;
-+	}
-+
-+	rc = 0;
-+nomem:
-+	/* cleanup */
-+	mpi_free(tmp);
-+	for (i = 0; i < (1 << k); i++)
-+		mpi_free(G[i]);
-+	kfree(G);
-+	return rc;
-+}
-diff --git a/lib/mpi/mpi-mul.c b/lib/mpi/mpi-mul.c
-new file mode 100644
-index 0000000..1f3219e
---- /dev/null
-+++ b/lib/mpi/mpi-mul.c
-@@ -0,0 +1,194 @@
-+/* mpi-mul.c  -  MPI functions
-+ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
-+ *	Copyright (C) 1998, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ *
-+ * Note: This code is heavily based on the GNU MP Library.
-+ *	 Actually it's the same code with only minor changes in the
-+ *	 way the data is stored; this is to support the abstraction
-+ *	 of an optional secure memory allocation which may be used
-+ *	 to avoid revealing of sensitive data due to paging etc.
-+ *	 The GNU MP Library itself is published under the LGPL;
-+ *	 however I decided to publish this code under the plain GPL.
-+ */
-+
-+#include "mpi-internal.h"
-+
-+int mpi_mul_ui(MPI prod, MPI mult, unsigned long small_mult)
-+{
-+	mpi_size_t size, prod_size;
-+	mpi_ptr_t prod_ptr;
-+	mpi_limb_t cy;
-+	int sign;
-+
-+	size = mult->nlimbs;
-+	sign = mult->sign;
-+
-+	if (!size || !small_mult) {
-+		prod->nlimbs = 0;
-+		prod->sign = 0;
-+		return 0;
-+	}
-+
-+	prod_size = size + 1;
-+	if (prod->alloced < prod_size)
-+		if (mpi_resize(prod, prod_size) < 0)
-+			return -ENOMEM;
-+	prod_ptr = prod->d;
-+
-+	cy = mpihelp_mul_1(prod_ptr, mult->d, size, (mpi_limb_t) small_mult);
-+	if (cy)
-+		prod_ptr[size++] = cy;
-+	prod->nlimbs = size;
-+	prod->sign = sign;
-+	return 0;
-+}
-+
-+int mpi_mul_2exp(MPI w, MPI u, unsigned long cnt)
-+{
-+	mpi_size_t usize, wsize, limb_cnt;
-+	mpi_ptr_t wp;
-+	mpi_limb_t wlimb;
-+	int usign, wsign;
-+
-+	usize = u->nlimbs;
-+	usign = u->sign;
-+
-+	if (!usize) {
-+		w->nlimbs = 0;
-+		w->sign = 0;
-+		return 0;
-+	}
-+
-+	limb_cnt = cnt / BITS_PER_MPI_LIMB;
-+	wsize = usize + limb_cnt + 1;
-+	if (w->alloced < wsize)
-+		if (mpi_resize(w, wsize) < 0)
-+			return -ENOMEM;
-+	wp = w->d;
-+	wsize = usize + limb_cnt;
-+	wsign = usign;
-+
-+	cnt %= BITS_PER_MPI_LIMB;
-+	if (cnt) {
-+		wlimb = mpihelp_lshift(wp + limb_cnt, u->d, usize, cnt);
-+		if (wlimb) {
-+			wp[wsize] = wlimb;
-+			wsize++;
-+		}
-+	} else {
-+		MPN_COPY_DECR(wp + limb_cnt, u->d, usize);
-+	}
-+
-+	/* Zero all whole limbs at low end.  Do it here and not before calling
-+	 * mpn_lshift, not to lose for U == W.  */
-+	MPN_ZERO(wp, limb_cnt);
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+int mpi_mul(MPI w, MPI u, MPI v)
-+{
-+	int rc = -ENOMEM;
-+	mpi_size_t usize, vsize, wsize;
-+	mpi_ptr_t up, vp, wp;
-+	mpi_limb_t cy;
-+	int usign, vsign, sign_product;
-+	int assign_wp = 0;
-+	mpi_ptr_t tmp_limb = NULL;
-+
-+	if (u->nlimbs < v->nlimbs) {	/* Swap U and V. */
-+		usize = v->nlimbs;
-+		usign = v->sign;
-+		up = v->d;
-+		vsize = u->nlimbs;
-+		vsign = u->sign;
-+		vp = u->d;
-+	} else {
-+		usize = u->nlimbs;
-+		usign = u->sign;
-+		up = u->d;
-+		vsize = v->nlimbs;
-+		vsign = v->sign;
-+		vp = v->d;
-+	}
-+	sign_product = usign ^ vsign;
-+	wp = w->d;
-+
-+	/* Ensure W has space enough to store the result.  */
-+	wsize = usize + vsize;
-+	if (w->alloced < (size_t) wsize) {
-+		if (wp == up || wp == vp) {
-+			wp = mpi_alloc_limb_space(wsize);
-+			if (!wp)
-+				goto nomem;
-+			assign_wp = 1;
-+		} else {
-+			if (mpi_resize(w, wsize) < 0)
-+				goto nomem;
-+			wp = w->d;
-+		}
-+	} else {		/* Make U and V not overlap with W.      */
-+		if (wp == up) {
-+			/* W and U are identical.  Allocate temporary space for U.      */
-+			up = tmp_limb = mpi_alloc_limb_space(usize);
-+			if (!up)
-+				goto nomem;
-+			/* Is V identical too?  Keep it identical with U.  */
-+			if (wp == vp)
-+				vp = up;
-+			/* Copy to the temporary space.  */
-+			MPN_COPY(up, wp, usize);
-+		} else if (wp == vp) {
-+			/* W and V are identical.  Allocate temporary space for V.      */
-+			vp = tmp_limb = mpi_alloc_limb_space(vsize);
-+			if (!vp)
-+				goto nomem;
-+			/* Copy to the temporary space.  */
-+			MPN_COPY(vp, wp, vsize);
-+		}
-+	}
-+
-+	if (!vsize)
-+		wsize = 0;
-+	else {
-+		if (mpihelp_mul(wp, up, usize, vp, vsize, &cy) < 0)
-+			goto nomem;
-+		wsize -= cy ? 0 : 1;
-+	}
-+
-+	if (assign_wp)
-+		mpi_assign_limb_space(w, wp, wsize);
-+
-+	w->nlimbs = wsize;
-+	w->sign = sign_product;
-+	rc = 0;
-+nomem:
-+	if (tmp_limb)
-+		mpi_free_limb_space(tmp_limb);
-+	return rc;
-+}
-+
-+int mpi_mulm(MPI w, MPI u, MPI v, MPI m)
-+{
-+	if (mpi_mul(w, u, v) < 0)
-+		return -ENOMEM;
-+	return mpi_fdiv_r(w, w, m);
-+}
-diff --git a/lib/mpi/mpi-scan.c b/lib/mpi/mpi-scan.c
-new file mode 100644
-index 0000000..b2da5ad
---- /dev/null
-+++ b/lib/mpi/mpi-scan.c
-@@ -0,0 +1,136 @@
-+/* mpi-scan.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+#include "longlong.h"
-+
-+/****************
-+ * Scan through an mpi and return byte for byte. a -1 is returned to indicate
-+ * the end of the mpi. Scanning is done from the lsb to the msb, returned
-+ * values are in the range of 0 .. 255.
-+ *
-+ * FIXME: This code is VERY ugly!
-+ */
-+int mpi_getbyte(const MPI a, unsigned idx)
-+{
-+	int i, j;
-+	unsigned n;
-+	mpi_ptr_t ap;
-+	mpi_limb_t limb;
-+
-+	ap = a->d;
-+	for (n = 0, i = 0; i < a->nlimbs; i++) {
-+		limb = ap[i];
-+		for (j = 0; j < BYTES_PER_MPI_LIMB; j++, n++)
-+			if (n == idx)
-+				return (limb >> j * 8) & 0xff;
-+	}
-+	return -1;
-+}
-+
-+/****************
-+ * Put a value at position IDX into A. idx counts from lsb to msb
-+ */
-+void mpi_putbyte(MPI a, unsigned idx, int xc)
-+{
-+	int i, j;
-+	unsigned n;
-+	mpi_ptr_t ap;
-+	mpi_limb_t limb, c;
-+
-+	c = xc & 0xff;
-+	ap = a->d;
-+	for (n = 0, i = 0; i < a->alloced; i++) {
-+		limb = ap[i];
-+		for (j = 0; j < BYTES_PER_MPI_LIMB; j++, n++)
-+			if (n == idx) {
-+#if BYTES_PER_MPI_LIMB == 4
-+				if (j == 0)
-+					limb = (limb & 0xffffff00) | c;
-+				else if (j == 1)
-+					limb = (limb & 0xffff00ff) | (c << 8);
-+				else if (j == 2)
-+					limb = (limb & 0xff00ffff) | (c << 16);
-+				else
-+					limb = (limb & 0x00ffffff) | (c << 24);
-+#elif BYTES_PER_MPI_LIMB == 8
-+				if (j == 0)
-+					limb = (limb & 0xffffffffffffff00) | c;
-+				else if (j == 1)
-+					limb =
-+					    (limb & 0xffffffffffff00ff) | (c <<
-+									   8);
-+				else if (j == 2)
-+					limb =
-+					    (limb & 0xffffffffff00ffff) | (c <<
-+									   16);
-+				else if (j == 3)
-+					limb =
-+					    (limb & 0xffffffff00ffffff) | (c <<
-+									   24);
-+				else if (j == 4)
-+					limb =
-+					    (limb & 0xffffff00ffffffff) | (c <<
-+									   32);
-+				else if (j == 5)
-+					limb =
-+					    (limb & 0xffff00ffffffffff) | (c <<
-+									   40);
-+				else if (j == 6)
-+					limb =
-+					    (limb & 0xff00ffffffffffff) | (c <<
-+									   48);
-+				else
-+					limb =
-+					    (limb & 0x00ffffffffffffff) | (c <<
-+									   56);
++ * Please add support for more CPUs here, or improve the current support
++ * for the CPUs below!	*/
++
++#if defined(__GNUC__) && !defined(NO_ASM)
++
++/* We sometimes need to clobber "cc" with gcc2, but that would not be
++	understood by gcc1.	Use cpp to avoid major code duplication.  */
++#if __GNUC__ < 2
++#define __CLOBBER_CC
++#define __AND_CLOBBER_CC
++#else /* __GNUC__ >= 2 */
++#define __CLOBBER_CC : "cc"
++#define __AND_CLOBBER_CC , "cc"
++#endif /* __GNUC__ < 2 */
++
++/***************************************
++	**************  A29K  *****************
++	***************************************/
++#if (defined(__a29k__) || defined(_AM29K)) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("add %1,%4,%5\n" \
++		"addc %0,%2,%3" \
++	: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++	: "%r" ((USItype)(ah)), \
++		"rI" ((USItype)(bh)), \
++		"%r" ((USItype)(al)), \
++		"rI" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("sub %1,%4,%5\n" \
++		"subc %0,%2,%3" \
++	: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++	: "r" ((USItype)(ah)), \
++		"rI" ((USItype)(bh)), \
++		"r" ((USItype)(al)), \
++		"rI" ((USItype)(bl)))
++#define umul_ppmm(xh, xl, m0, m1) \
++do { \
++		USItype __m0 = (m0), __m1 = (m1); \
++		__asm__ ("multiplu %0,%1,%2" \
++		: "=r" ((USItype)(xl)) \
++		: "r" (__m0), \
++			"r" (__m1)); \
++		__asm__ ("multmu %0,%1,%2" \
++		: "=r" ((USItype)(xh)) \
++		: "r" (__m0), \
++			"r" (__m1)); \
++} while (0)
++#define udiv_qrnnd(q, r, n1, n0, d) \
++	__asm__ ("dividu %0,%3,%4" \
++	: "=r" ((USItype)(q)), \
++		"=q" ((USItype)(r)) \
++	: "1" ((USItype)(n1)), \
++		"r" ((USItype)(n0)), \
++		"r" ((USItype)(d)))
++
++#define count_leading_zeros(count, x) \
++	__asm__ ("clz %0,%1" \
++	: "=r" ((USItype)(count)) \
++	: "r" ((USItype)(x)))
++#define COUNT_LEADING_ZEROS_0 32
++#endif /* __a29k__ */
++
++#if defined(__alpha) && W_TYPE_SIZE == 64
++#define umul_ppmm(ph, pl, m0, m1) \
++do { \
++		UDItype __m0 = (m0), __m1 = (m1); \
++		__asm__ ("umulh %r1,%2,%0" \
++		: "=r" ((UDItype) ph) \
++		: "%rJ" (__m0), \
++			"rI" (__m1)); \
++		(pl) = __m0 * __m1; \
++	} while (0)
++#define UMUL_TIME 46
++#ifndef LONGLONG_STANDALONE
++#define udiv_qrnnd(q, r, n1, n0, d) \
++do { UDItype __r; \
++	(q) = __udiv_qrnnd(&__r, (n1), (n0), (d)); \
++	(r) = __r; \
++} while (0)
++extern UDItype __udiv_qrnnd();
++#define UDIV_TIME 220
++#endif /* LONGLONG_STANDALONE */
++#endif /* __alpha */
++
++/***************************************
++	**************  ARM  ******************
++	***************************************/
++#if defined(__arm__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("adds %1, %4, %5\n" \
++		"adc  %0, %2, %3" \
++	: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++	: "%r" ((USItype)(ah)), \
++		"rI" ((USItype)(bh)), \
++		"%r" ((USItype)(al)), \
++		"rI" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("subs %1, %4, %5\n" \
++		"sbc  %0, %2, %3" \
++	: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++	: "r" ((USItype)(ah)), \
++		"rI" ((USItype)(bh)), \
++		"r" ((USItype)(al)), \
++		"rI" ((USItype)(bl)))
++#if defined __ARM_ARCH_2__ || defined __ARM_ARCH_3__
++#define umul_ppmm(xh, xl, a, b) \
++	__asm__ ("%@ Inlined umul_ppmm\n" \
++		"mov	%|r0, %2, lsr #16		@ AAAA\n" \
++		"mov	%|r2, %3, lsr #16		@ BBBB\n" \
++		"bic	%|r1, %2, %|r0, lsl #16		@ aaaa\n" \
++		"bic	%0, %3, %|r2, lsl #16		@ bbbb\n" \
++		"mul	%1, %|r1, %|r2			@ aaaa * BBBB\n" \
++		"mul	%|r2, %|r0, %|r2		@ AAAA * BBBB\n" \
++		"mul	%|r1, %0, %|r1			@ aaaa * bbbb\n" \
++		"mul	%0, %|r0, %0			@ AAAA * bbbb\n" \
++		"adds	%|r0, %1, %0			@ central sum\n" \
++		"addcs	%|r2, %|r2, #65536\n" \
++		"adds	%1, %|r1, %|r0, lsl #16\n" \
++		"adc	%0, %|r2, %|r0, lsr #16" \
++	: "=&r" ((USItype)(xh)), \
++		"=r" ((USItype)(xl)) \
++	: "r" ((USItype)(a)), \
++		"r" ((USItype)(b)) \
++	: "r0", "r1", "r2")
 +#else
-+#error please enhance this function, its ugly - i know.
++#define umul_ppmm(xh, xl, a, b) \
++	__asm__ ("%@ Inlined umul_ppmm\n" \
++		"umull %r1, %r0, %r2, %r3" \
++	: "=&r" ((USItype)(xh)), \
++			"=r" ((USItype)(xl)) \
++	: "r" ((USItype)(a)), \
++			"r" ((USItype)(b)) \
++	: "r0", "r1")
 +#endif
-+				if (a->nlimbs <= i)
-+					a->nlimbs = i + 1;
-+				ap[i] = limb;
-+				return;
-+			}
-+	}
-+	log_bug("index out of range\n");
-+}
++#define UMUL_TIME 20
++#define UDIV_TIME 100
++#endif /* __arm__ */
 +
-+/****************
-+ * Count the number of zerobits at the low end of A
++/***************************************
++	**************  CLIPPER  **************
++	***************************************/
++#if defined(__clipper__) && W_TYPE_SIZE == 32
++#define umul_ppmm(w1, w0, u, v) \
++	({union {UDItype __ll; \
++		struct {USItype __l, __h; } __i; \
++	} __xx; \
++	__asm__ ("mulwux %2,%0" \
++	: "=r" (__xx.__ll) \
++	: "%0" ((USItype)(u)), \
++		"r" ((USItype)(v))); \
++	(w1) = __xx.__i.__h; (w0) = __xx.__i.__l; })
++#define smul_ppmm(w1, w0, u, v) \
++	({union {DItype __ll; \
++		struct {SItype __l, __h; } __i; \
++	} __xx; \
++	__asm__ ("mulwx %2,%0" \
++	: "=r" (__xx.__ll) \
++	: "%0" ((SItype)(u)), \
++		"r" ((SItype)(v))); \
++	(w1) = __xx.__i.__h; (w0) = __xx.__i.__l; })
++#define __umulsidi3(u, v) \
++	({UDItype __w; \
++	__asm__ ("mulwux %2,%0" \
++	: "=r" (__w) \
++	: "%0" ((USItype)(u)), \
++		"r" ((USItype)(v))); \
++	__w; })
++#endif /* __clipper__ */
++
++/***************************************
++	**************  GMICRO  ***************
++	***************************************/
++#if defined(__gmicro__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("add.w %5,%1\n" \
++		"addx %3,%0" \
++	: "=g" ((USItype)(sh)), \
++		"=&g" ((USItype)(sl)) \
++	: "%0" ((USItype)(ah)), \
++		"g" ((USItype)(bh)), \
++		"%1" ((USItype)(al)), \
++		"g" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("sub.w %5,%1\n" \
++		"subx %3,%0" \
++	: "=g" ((USItype)(sh)), \
++		"=&g" ((USItype)(sl)) \
++	: "0" ((USItype)(ah)), \
++		"g" ((USItype)(bh)), \
++		"1" ((USItype)(al)), \
++		"g" ((USItype)(bl)))
++#define umul_ppmm(ph, pl, m0, m1) \
++	__asm__ ("mulx %3,%0,%1" \
++	: "=g" ((USItype)(ph)), \
++		"=r" ((USItype)(pl)) \
++	: "%0" ((USItype)(m0)), \
++		"g" ((USItype)(m1)))
++#define udiv_qrnnd(q, r, nh, nl, d) \
++	__asm__ ("divx %4,%0,%1" \
++	: "=g" ((USItype)(q)), \
++		"=r" ((USItype)(r)) \
++	: "1" ((USItype)(nh)), \
++		"0" ((USItype)(nl)), \
++		"g" ((USItype)(d)))
++#define count_leading_zeros(count, x) \
++	__asm__ ("bsch/1 %1,%0" \
++	: "=g" (count) \
++	: "g" ((USItype)(x)), \
++	     "0" ((USItype)0))
++#endif
++
++/***************************************
++	**************  HPPA  *****************
++	***************************************/
++#if defined(__hppa) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("add %4,%5,%1\n" \
++		   "addc %2,%3,%0" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "%rM" ((USItype)(ah)), \
++	     "rM" ((USItype)(bh)), \
++	     "%rM" ((USItype)(al)), \
++	     "rM" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("sub %4,%5,%1\n" \
++	   "subb %2,%3,%0" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "rM" ((USItype)(ah)), \
++	     "rM" ((USItype)(bh)), \
++	     "rM" ((USItype)(al)), \
++	     "rM" ((USItype)(bl)))
++#if defined(_PA_RISC1_1)
++#define umul_ppmm(wh, wl, u, v) \
++do { \
++	union {UDItype __ll; \
++	struct {USItype __h, __l; } __i; \
++	} __xx; \
++	__asm__ ("xmpyu %1,%2,%0" \
++	: "=*f" (__xx.__ll) \
++	: "*f" ((USItype)(u)), \
++	       "*f" ((USItype)(v))); \
++	(wh) = __xx.__i.__h; \
++	(wl) = __xx.__i.__l; \
++} while (0)
++#define UMUL_TIME 8
++#define UDIV_TIME 60
++#else
++#define UMUL_TIME 40
++#define UDIV_TIME 80
++#endif
++#ifndef LONGLONG_STANDALONE
++#define udiv_qrnnd(q, r, n1, n0, d) \
++do { USItype __r; \
++	(q) = __udiv_qrnnd(&__r, (n1), (n0), (d)); \
++	(r) = __r; \
++} while (0)
++extern USItype __udiv_qrnnd();
++#endif /* LONGLONG_STANDALONE */
++#define count_leading_zeros(count, x) \
++do { \
++	USItype __tmp; \
++	__asm__ ( \
++	"ldi             1,%0\n" \
++	"extru,=	%1,15,16,%%r0  ; Bits 31..16 zero?\n" \
++	"extru,tr	%1,15,16,%1    ; No.  Shift down, skip add.\n" \
++	"ldo		16(%0),%0      ; Yes.	Perform add.\n" \
++	"extru,=	%1,23,8,%%r0   ; Bits 15..8 zero?\n" \
++	"extru,tr	%1,23,8,%1     ; No.  Shift down, skip add.\n" \
++	"ldo		8(%0),%0       ; Yes.	Perform add.\n" \
++	"extru,=	%1,27,4,%%r0   ; Bits 7..4 zero?\n" \
++	"extru,tr	%1,27,4,%1     ; No.  Shift down, skip add.\n" \
++	"ldo		4(%0),%0       ; Yes.	Perform add.\n" \
++	"extru,=	%1,29,2,%%r0   ; Bits 3..2 zero?\n" \
++	"extru,tr	%1,29,2,%1     ; No.  Shift down, skip add.\n" \
++	"ldo		2(%0),%0       ; Yes.	Perform add.\n" \
++	"extru		%1,30,1,%1     ; Extract bit 1.\n" \
++	"sub		%0,%1,%0       ; Subtract it.              " \
++	: "=r" (count), "=r" (__tmp) : "1" (x)); \
++} while (0)
++#endif /* hppa */
++
++/***************************************
++	**************  I370  *****************
++	***************************************/
++#if (defined(__i370__) || defined(__mvs__)) && W_TYPE_SIZE == 32
++#define umul_ppmm(xh, xl, m0, m1) \
++do { \
++	union {UDItype __ll; \
++	   struct {USItype __h, __l; } __i; \
++	} __xx; \
++	USItype __m0 = (m0), __m1 = (m1); \
++	__asm__ ("mr %0,%3" \
++	: "=r" (__xx.__i.__h), \
++	       "=r" (__xx.__i.__l) \
++	: "%1" (__m0), \
++	       "r" (__m1)); \
++	(xh) = __xx.__i.__h; (xl) = __xx.__i.__l; \
++	(xh) += ((((SItype) __m0 >> 31) & __m1) \
++	     + (((SItype) __m1 >> 31) & __m0)); \
++} while (0)
++#define smul_ppmm(xh, xl, m0, m1) \
++do { \
++	union {DItype __ll; \
++	   struct {USItype __h, __l; } __i; \
++	} __xx; \
++	__asm__ ("mr %0,%3" \
++	: "=r" (__xx.__i.__h), \
++	       "=r" (__xx.__i.__l) \
++	: "%1" (m0), \
++	       "r" (m1)); \
++	(xh) = __xx.__i.__h; (xl) = __xx.__i.__l; \
++} while (0)
++#define sdiv_qrnnd(q, r, n1, n0, d) \
++do { \
++	union {DItype __ll; \
++	   struct {USItype __h, __l; } __i; \
++	} __xx; \
++	__xx.__i.__h = n1; __xx.__i.__l = n0; \
++	__asm__ ("dr %0,%2" \
++	: "=r" (__xx.__ll) \
++	: "0" (__xx.__ll), "r" (d)); \
++	(q) = __xx.__i.__l; (r) = __xx.__i.__h; \
++} while (0)
++#endif
++
++/***************************************
++	**************  I386  *****************
++	***************************************/
++#undef __i386__
++#if (defined(__i386__) || defined(__i486__)) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("addl %5,%1\n" \
++	   "adcl %3,%0" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "%0" ((USItype)(ah)), \
++	     "g" ((USItype)(bh)), \
++	     "%1" ((USItype)(al)), \
++	     "g" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("subl %5,%1\n" \
++	   "sbbl %3,%0" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "0" ((USItype)(ah)), \
++	     "g" ((USItype)(bh)), \
++	     "1" ((USItype)(al)), \
++	     "g" ((USItype)(bl)))
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("mull %3" \
++	: "=a" ((USItype)(w0)), \
++	     "=d" ((USItype)(w1)) \
++	: "%0" ((USItype)(u)), \
++	     "rm" ((USItype)(v)))
++#define udiv_qrnnd(q, r, n1, n0, d) \
++	__asm__ ("divl %4" \
++	: "=a" ((USItype)(q)), \
++	     "=d" ((USItype)(r)) \
++	: "0" ((USItype)(n0)), \
++	     "1" ((USItype)(n1)), \
++	     "rm" ((USItype)(d)))
++#define count_leading_zeros(count, x) \
++do { \
++	USItype __cbtmp; \
++	__asm__ ("bsrl %1,%0" \
++	: "=r" (__cbtmp) : "rm" ((USItype)(x))); \
++	(count) = __cbtmp ^ 31; \
++} while (0)
++#define count_trailing_zeros(count, x) \
++	__asm__ ("bsfl %1,%0" : "=r" (count) : "rm" ((USItype)(x)))
++#ifndef UMUL_TIME
++#define UMUL_TIME 40
++#endif
++#ifndef UDIV_TIME
++#define UDIV_TIME 40
++#endif
++#endif /* 80x86 */
++
++/***************************************
++	**************  I860  *****************
++	***************************************/
++#if defined(__i860__) && W_TYPE_SIZE == 32
++#define rshift_rhlc(r, h, l, c) \
++	__asm__ ("shr %3,r0,r0\n" \
++	"shrd %1,%2,%0" \
++	   "=r" (r) : "r" (h), "r" (l), "rn" (c))
++#endif /* i860 */
++
++/***************************************
++	**************  I960  *****************
++	***************************************/
++#if defined(__i960__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("cmpo 1,0\n" \
++	"addc %5,%4,%1\n" \
++	"addc %3,%2,%0" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "%dI" ((USItype)(ah)), \
++	     "dI" ((USItype)(bh)), \
++	     "%dI" ((USItype)(al)), \
++	     "dI" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("cmpo 0,0\n" \
++	"subc %5,%4,%1\n" \
++	"subc %3,%2,%0" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "dI" ((USItype)(ah)), \
++	     "dI" ((USItype)(bh)), \
++	     "dI" ((USItype)(al)), \
++	     "dI" ((USItype)(bl)))
++#define umul_ppmm(w1, w0, u, v) \
++	({union {UDItype __ll; \
++	   struct {USItype __l, __h; } __i; \
++	} __xx; \
++	__asm__ ("emul        %2,%1,%0" \
++	: "=d" (__xx.__ll) \
++	: "%dI" ((USItype)(u)), \
++	     "dI" ((USItype)(v))); \
++	(w1) = __xx.__i.__h; (w0) = __xx.__i.__l; })
++#define __umulsidi3(u, v) \
++	({UDItype __w; \
++	__asm__ ("emul      %2,%1,%0" \
++	: "=d" (__w) \
++	: "%dI" ((USItype)(u)), \
++	       "dI" ((USItype)(v))); \
++	__w; })
++#define udiv_qrnnd(q, r, nh, nl, d) \
++do { \
++	union {UDItype __ll; \
++	   struct {USItype __l, __h; } __i; \
++	} __nn; \
++	__nn.__i.__h = (nh); __nn.__i.__l = (nl); \
++	__asm__ ("ediv %d,%n,%0" \
++	: "=d" (__rq.__ll) \
++	: "dI" (__nn.__ll), \
++	     "dI" ((USItype)(d))); \
++	(r) = __rq.__i.__l; (q) = __rq.__i.__h; \
++} while (0)
++#define count_leading_zeros(count, x) \
++do { \
++	USItype __cbtmp; \
++	__asm__ ("scanbit %1,%0" \
++	: "=r" (__cbtmp) \
++	: "r" ((USItype)(x))); \
++	(count) = __cbtmp ^ 31; \
++} while (0)
++#define COUNT_LEADING_ZEROS_0 (-32)	/* sic */
++#if defined(__i960mx)		/* what is the proper symbol to test??? */
++#define rshift_rhlc(r, h, l, c) \
++do { \
++	union {UDItype __ll; \
++	   struct {USItype __l, __h; } __i; \
++	} __nn; \
++	__nn.__i.__h = (h); __nn.__i.__l = (l); \
++	__asm__ ("shre %2,%1,%0" \
++	: "=d" (r) : "dI" (__nn.__ll), "dI" (c)); \
++}
++#endif /* i960mx */
++#endif /* i960 */
++
++/***************************************
++	**************  68000	****************
++	***************************************/
++#if (defined(__mc68000__) || defined(__mc68020__) || defined(__NeXT__) || defined(mc68020)) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("add%.l %5,%1\n" \
++	   "addx%.l %3,%0" \
++	: "=d" ((USItype)(sh)), \
++	     "=&d" ((USItype)(sl)) \
++	: "%0" ((USItype)(ah)), \
++	     "d" ((USItype)(bh)), \
++	     "%1" ((USItype)(al)), \
++	     "g" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("sub%.l %5,%1\n" \
++	   "subx%.l %3,%0" \
++	: "=d" ((USItype)(sh)), \
++	     "=&d" ((USItype)(sl)) \
++	: "0" ((USItype)(ah)), \
++	     "d" ((USItype)(bh)), \
++	     "1" ((USItype)(al)), \
++	     "g" ((USItype)(bl)))
++#if (defined(__mc68020__) || defined(__NeXT__) || defined(mc68020))
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("mulu%.l %3,%1:%0" \
++	: "=d" ((USItype)(w0)), \
++	     "=d" ((USItype)(w1)) \
++	: "%0" ((USItype)(u)), \
++	     "dmi" ((USItype)(v)))
++#define UMUL_TIME 45
++#define udiv_qrnnd(q, r, n1, n0, d) \
++	__asm__ ("divu%.l %4,%1:%0" \
++	: "=d" ((USItype)(q)), \
++	     "=d" ((USItype)(r)) \
++	: "0" ((USItype)(n0)), \
++	     "1" ((USItype)(n1)), \
++	     "dmi" ((USItype)(d)))
++#define UDIV_TIME 90
++#define sdiv_qrnnd(q, r, n1, n0, d) \
++	__asm__ ("divs%.l %4,%1:%0" \
++	: "=d" ((USItype)(q)), \
++	     "=d" ((USItype)(r)) \
++	: "0" ((USItype)(n0)), \
++	     "1" ((USItype)(n1)), \
++	     "dmi" ((USItype)(d)))
++#define count_leading_zeros(count, x) \
++	__asm__ ("bfffo %1{%b2:%b2},%0" \
++	: "=d" ((USItype)(count)) \
++	: "od" ((USItype)(x)), "n" (0))
++#define COUNT_LEADING_ZEROS_0 32
++#else /* not mc68020 */
++#define umul_ppmm(xh, xl, a, b) \
++do { USItype __umul_tmp1, __umul_tmp2; \
++	__asm__ ("| Inlined umul_ppmm\n" \
++	"move%.l %5,%3\n" \
++	"move%.l %2,%0\n" \
++	"move%.w %3,%1\n" \
++	"swap	%3\n" \
++	"swap	%0\n" \
++	"mulu	%2,%1\n" \
++	"mulu	%3,%0\n" \
++	"mulu	%2,%3\n" \
++	"swap	%2\n" \
++	"mulu	%5,%2\n" \
++	"add%.l	%3,%2\n" \
++	"jcc	1f\n" \
++	"add%.l	%#0x10000,%0\n" \
++	"1:	move%.l %2,%3\n" \
++	"clr%.w	%2\n" \
++	"swap	%2\n" \
++	"swap	%3\n" \
++	"clr%.w	%3\n" \
++	"add%.l	%3,%1\n" \
++	"addx%.l %2,%0\n" \
++	"| End inlined umul_ppmm" \
++	: "=&d" ((USItype)(xh)), "=&d" ((USItype)(xl)), \
++		"=d" (__umul_tmp1), "=&d" (__umul_tmp2) \
++	: "%2" ((USItype)(a)), "d" ((USItype)(b))); \
++} while (0)
++#define UMUL_TIME 100
++#define UDIV_TIME 400
++#endif /* not mc68020 */
++#endif /* mc68000 */
++
++/***************************************
++	**************  88000	****************
++	***************************************/
++#if defined(__m88000__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("addu.co %1,%r4,%r5\n" \
++	   "addu.ci %0,%r2,%r3" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "%rJ" ((USItype)(ah)), \
++	     "rJ" ((USItype)(bh)), \
++	     "%rJ" ((USItype)(al)), \
++	     "rJ" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("subu.co %1,%r4,%r5\n" \
++	   "subu.ci %0,%r2,%r3" \
++	: "=r" ((USItype)(sh)), \
++	     "=&r" ((USItype)(sl)) \
++	: "rJ" ((USItype)(ah)), \
++	     "rJ" ((USItype)(bh)), \
++	     "rJ" ((USItype)(al)), \
++	     "rJ" ((USItype)(bl)))
++#define count_leading_zeros(count, x) \
++do { \
++	USItype __cbtmp; \
++	__asm__ ("ff1 %0,%1" \
++	: "=r" (__cbtmp) \
++	: "r" ((USItype)(x))); \
++	(count) = __cbtmp ^ 31; \
++} while (0)
++#define COUNT_LEADING_ZEROS_0 63	/* sic */
++#if defined(__m88110__)
++#define umul_ppmm(wh, wl, u, v) \
++do { \
++	union {UDItype __ll; \
++	   struct {USItype __h, __l; } __i; \
++	} __x; \
++	__asm__ ("mulu.d %0,%1,%2" : "=r" (__x.__ll) : "r" (u), "r" (v)); \
++	(wh) = __x.__i.__h; \
++	(wl) = __x.__i.__l; \
++} while (0)
++#define udiv_qrnnd(q, r, n1, n0, d) \
++	({union {UDItype __ll; \
++	   struct {USItype __h, __l; } __i; \
++	} __x, __q; \
++	__x.__i.__h = (n1); __x.__i.__l = (n0); \
++	__asm__ ("divu.d %0,%1,%2" \
++	: "=r" (__q.__ll) : "r" (__x.__ll), "r" (d)); \
++	(r) = (n0) - __q.__l * (d); (q) = __q.__l; })
++#define UMUL_TIME 5
++#define UDIV_TIME 25
++#else
++#define UMUL_TIME 17
++#define UDIV_TIME 150
++#endif /* __m88110__ */
++#endif /* __m88000__ */
++
++/***************************************
++	**************  MIPS  *****************
++	***************************************/
++#if defined(__mips__) && W_TYPE_SIZE == 32
++#if __GNUC__ > 2 || __GNUC_MINOR__ >= 7
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("multu %2,%3" \
++	: "=l" ((USItype)(w0)), \
++	     "=h" ((USItype)(w1)) \
++	: "d" ((USItype)(u)), \
++	     "d" ((USItype)(v)))
++#else
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("multu %2,%3\n" \
++	   "mflo %0\n" \
++	   "mfhi %1" \
++	: "=d" ((USItype)(w0)), \
++	     "=d" ((USItype)(w1)) \
++	: "d" ((USItype)(u)), \
++	     "d" ((USItype)(v)))
++#endif
++#define UMUL_TIME 10
++#define UDIV_TIME 100
++#endif /* __mips__ */
++
++/***************************************
++	**************  MIPS/64  **************
++	***************************************/
++#if (defined(__mips) && __mips >= 3) && W_TYPE_SIZE == 64
++#if __GNUC__ > 2 || __GNUC_MINOR__ >= 7
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("dmultu %2,%3" \
++	: "=l" ((UDItype)(w0)), \
++	     "=h" ((UDItype)(w1)) \
++	: "d" ((UDItype)(u)), \
++	     "d" ((UDItype)(v)))
++#else
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("dmultu %2,%3\n" \
++	   "mflo %0\n" \
++	   "mfhi %1" \
++	: "=d" ((UDItype)(w0)), \
++	     "=d" ((UDItype)(w1)) \
++	: "d" ((UDItype)(u)), \
++	     "d" ((UDItype)(v)))
++#endif
++#define UMUL_TIME 20
++#define UDIV_TIME 140
++#endif /* __mips__ */
++
++/***************************************
++	**************  32000	****************
++	***************************************/
++#if defined(__ns32000__) && W_TYPE_SIZE == 32
++#define umul_ppmm(w1, w0, u, v) \
++	({union {UDItype __ll; \
++	   struct {USItype __l, __h; } __i; \
++	} __xx; \
++	__asm__ ("meid %2,%0" \
++	: "=g" (__xx.__ll) \
++	: "%0" ((USItype)(u)), \
++	     "g" ((USItype)(v))); \
++	(w1) = __xx.__i.__h; (w0) = __xx.__i.__l; })
++#define __umulsidi3(u, v) \
++	({UDItype __w; \
++	__asm__ ("meid %2,%0" \
++	: "=g" (__w) \
++	: "%0" ((USItype)(u)), \
++	       "g" ((USItype)(v))); \
++	__w; })
++#define udiv_qrnnd(q, r, n1, n0, d) \
++	({union {UDItype __ll; \
++	   struct {USItype __l, __h; } __i; \
++	} __xx; \
++	__xx.__i.__h = (n1); __xx.__i.__l = (n0); \
++	__asm__ ("deid %2,%0" \
++	: "=g" (__xx.__ll) \
++	: "0" (__xx.__ll), \
++	     "g" ((USItype)(d))); \
++	(r) = __xx.__i.__l; (q) = __xx.__i.__h; })
++#define count_trailing_zeros(count, x) \
++do { \
++	__asm__("ffsd      %2,%0" \
++	: "=r"((USItype) (count)) \
++	: "0"((USItype) 0), "r"((USItype) (x))); \
++	} while (0)
++#endif /* __ns32000__ */
++
++/***************************************
++	**************  PPC  ******************
++	***************************************/
++#if (defined(_ARCH_PPC) || defined(_IBMR2)) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++do { \
++	if (__builtin_constant_p(bh) && (bh) == 0) \
++		__asm__ ("{a%I4|add%I4c} %1,%3,%4\n\t{aze|addze} %0,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "%r" ((USItype)(ah)), \
++		"%r" ((USItype)(al)), \
++		"rI" ((USItype)(bl))); \
++	else if (__builtin_constant_p(bh) && (bh) == ~(USItype) 0) \
++		__asm__ ("{a%I4|add%I4c} %1,%3,%4\n\t{ame|addme} %0,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "%r" ((USItype)(ah)), \
++		"%r" ((USItype)(al)), \
++		"rI" ((USItype)(bl))); \
++	else \
++		__asm__ ("{a%I5|add%I5c} %1,%4,%5\n\t{ae|adde} %0,%2,%3" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "%r" ((USItype)(ah)), \
++		"r" ((USItype)(bh)), \
++		"%r" ((USItype)(al)), \
++		"rI" ((USItype)(bl))); \
++} while (0)
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++do { \
++	if (__builtin_constant_p(ah) && (ah) == 0) \
++		__asm__ ("{sf%I3|subf%I3c} %1,%4,%3\n\t{sfze|subfze} %0,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "r" ((USItype)(bh)), \
++		"rI" ((USItype)(al)), \
++		"r" ((USItype)(bl))); \
++	else if (__builtin_constant_p(ah) && (ah) == ~(USItype) 0) \
++		__asm__ ("{sf%I3|subf%I3c} %1,%4,%3\n\t{sfme|subfme} %0,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "r" ((USItype)(bh)), \
++		"rI" ((USItype)(al)), \
++		"r" ((USItype)(bl))); \
++	else if (__builtin_constant_p(bh) && (bh) == 0) \
++		__asm__ ("{sf%I3|subf%I3c} %1,%4,%3\n\t{ame|addme} %0,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "r" ((USItype)(ah)), \
++		"rI" ((USItype)(al)), \
++		"r" ((USItype)(bl))); \
++	else if (__builtin_constant_p(bh) && (bh) == ~(USItype) 0) \
++		__asm__ ("{sf%I3|subf%I3c} %1,%4,%3\n\t{aze|addze} %0,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "r" ((USItype)(ah)), \
++		"rI" ((USItype)(al)), \
++		"r" ((USItype)(bl))); \
++	else \
++		__asm__ ("{sf%I4|subf%I4c} %1,%5,%4\n\t{sfe|subfe} %0,%3,%2" \
++		: "=r" ((USItype)(sh)), \
++		"=&r" ((USItype)(sl)) \
++		: "r" ((USItype)(ah)), \
++		"r" ((USItype)(bh)), \
++		"rI" ((USItype)(al)), \
++		"r" ((USItype)(bl))); \
++} while (0)
++#define count_leading_zeros(count, x) \
++	__asm__ ("{cntlz|cntlzw} %0,%1" \
++	: "=r" ((USItype)(count)) \
++	: "r" ((USItype)(x)))
++#define COUNT_LEADING_ZEROS_0 32
++#if defined(_ARCH_PPC)
++#define umul_ppmm(ph, pl, m0, m1) \
++do { \
++	USItype __m0 = (m0), __m1 = (m1); \
++	__asm__ ("mulhwu %0,%1,%2" \
++	: "=r" ((USItype) ph) \
++	: "%r" (__m0), \
++	"r" (__m1)); \
++	(pl) = __m0 * __m1; \
++} while (0)
++#define UMUL_TIME 15
++#define smul_ppmm(ph, pl, m0, m1) \
++do { \
++	SItype __m0 = (m0), __m1 = (m1); \
++	__asm__ ("mulhw %0,%1,%2" \
++	: "=r" ((SItype) ph) \
++	: "%r" (__m0), \
++	"r" (__m1)); \
++	(pl) = __m0 * __m1; \
++} while (0)
++#define SMUL_TIME 14
++#define UDIV_TIME 120
++#else
++#define umul_ppmm(xh, xl, m0, m1) \
++do { \
++	USItype __m0 = (m0), __m1 = (m1); \
++	__asm__ ("mul %0,%2,%3" \
++	: "=r" ((USItype)(xh)), \
++	"=q" ((USItype)(xl)) \
++	: "r" (__m0), \
++	"r" (__m1)); \
++	(xh) += ((((SItype) __m0 >> 31) & __m1) \
++	+ (((SItype) __m1 >> 31) & __m0)); \
++} while (0)
++#define UMUL_TIME 8
++#define smul_ppmm(xh, xl, m0, m1) \
++	__asm__ ("mul %0,%2,%3" \
++	: "=r" ((SItype)(xh)), \
++	"=q" ((SItype)(xl)) \
++	: "r" (m0), \
++	"r" (m1))
++#define SMUL_TIME 4
++#define sdiv_qrnnd(q, r, nh, nl, d) \
++	__asm__ ("div %0,%2,%4" \
++	: "=r" ((SItype)(q)), "=q" ((SItype)(r)) \
++	: "r" ((SItype)(nh)), "1" ((SItype)(nl)), "r" ((SItype)(d)))
++#define UDIV_TIME 100
++#endif
++#endif /* Power architecture variants.  */
++
++/***************************************
++	**************  PYR  ******************
++	***************************************/
++#if defined(__pyr__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("addw        %5,%1\n" \
++	"addwc	%3,%0" \
++	: "=r" ((USItype)(sh)), \
++	"=&r" ((USItype)(sl)) \
++	: "%0" ((USItype)(ah)), \
++	"g" ((USItype)(bh)), \
++	"%1" ((USItype)(al)), \
++	"g" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("subw        %5,%1\n" \
++	"subwb	%3,%0" \
++	: "=r" ((USItype)(sh)), \
++	"=&r" ((USItype)(sl)) \
++	: "0" ((USItype)(ah)), \
++	"g" ((USItype)(bh)), \
++	"1" ((USItype)(al)), \
++	"g" ((USItype)(bl)))
++	/* This insn works on Pyramids with AP, XP, or MI CPUs, but not with SP.  */
++#define umul_ppmm(w1, w0, u, v) \
++	({union {UDItype __ll; \
++	struct {USItype __h, __l; } __i; \
++	} __xx; \
++	__asm__ ("movw %1,%R0\n" \
++	"uemul %2,%0" \
++	: "=&r" (__xx.__ll) \
++	: "g" ((USItype) (u)), \
++	"g" ((USItype)(v))); \
++	(w1) = __xx.__i.__h; (w0) = __xx.__i.__l; })
++#endif /* __pyr__ */
++
++/***************************************
++	**************  RT/ROMP  **************
++	***************************************/
++#if defined(__ibm032__) /* RT/ROMP */	&& W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("a %1,%5\n" \
++	"ae %0,%3" \
++	: "=r" ((USItype)(sh)), \
++	"=&r" ((USItype)(sl)) \
++	: "%0" ((USItype)(ah)), \
++	"r" ((USItype)(bh)), \
++	"%1" ((USItype)(al)), \
++	"r" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("s %1,%5\n" \
++	"se %0,%3" \
++	: "=r" ((USItype)(sh)), \
++	"=&r" ((USItype)(sl)) \
++	: "0" ((USItype)(ah)), \
++	"r" ((USItype)(bh)), \
++	"1" ((USItype)(al)), \
++	"r" ((USItype)(bl)))
++#define umul_ppmm(ph, pl, m0, m1) \
++do { \
++	USItype __m0 = (m0), __m1 = (m1); \
++	__asm__ ( \
++	"s       r2,r2\n" \
++	"mts	r10,%2\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"m	r2,%3\n" \
++	"cas	%0,r2,r0\n" \
++	"mfs	r10,%1" \
++	: "=r" ((USItype)(ph)), \
++	"=r" ((USItype)(pl)) \
++	: "%r" (__m0), \
++	"r" (__m1) \
++	: "r2"); \
++	(ph) += ((((SItype) __m0 >> 31) & __m1) \
++	+ (((SItype) __m1 >> 31) & __m0)); \
++} while (0)
++#define UMUL_TIME 20
++#define UDIV_TIME 200
++#define count_leading_zeros(count, x) \
++do { \
++	if ((x) >= 0x10000) \
++		__asm__ ("clz     %0,%1" \
++		: "=r" ((USItype)(count)) \
++		: "r" ((USItype)(x) >> 16)); \
++	else { \
++		__asm__ ("clz   %0,%1" \
++		: "=r" ((USItype)(count)) \
++		: "r" ((USItype)(x))); \
++		(count) += 16; \
++	} \
++} while (0)
++#endif /* RT/ROMP */
++
++/***************************************
++	**************  SH2  ******************
++	***************************************/
++#if (defined(__sh2__) || defined(__sh3__) || defined(__SH4__)) \
++	&& W_TYPE_SIZE == 32
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ( \
++	"dmulu.l %2,%3\n" \
++	"sts	macl,%1\n" \
++	"sts	mach,%0" \
++	: "=r" ((USItype)(w1)), \
++	"=r" ((USItype)(w0)) \
++	: "r" ((USItype)(u)), \
++	"r" ((USItype)(v)) \
++	: "macl", "mach")
++#define UMUL_TIME 5
++#endif
++
++/***************************************
++	**************  SPARC	****************
++	***************************************/
++#if defined(__sparc__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("addcc %r4,%5,%1\n" \
++	"addx %r2,%3,%0" \
++	: "=r" ((USItype)(sh)), \
++	"=&r" ((USItype)(sl)) \
++	: "%rJ" ((USItype)(ah)), \
++	"rI" ((USItype)(bh)), \
++	"%rJ" ((USItype)(al)), \
++	"rI" ((USItype)(bl)) \
++	__CLOBBER_CC)
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("subcc %r4,%5,%1\n" \
++	"subx %r2,%3,%0" \
++	: "=r" ((USItype)(sh)), \
++	"=&r" ((USItype)(sl)) \
++	: "rJ" ((USItype)(ah)), \
++	"rI" ((USItype)(bh)), \
++	"rJ" ((USItype)(al)), \
++	"rI" ((USItype)(bl)) \
++	__CLOBBER_CC)
++#if defined(__sparc_v8__)
++/* Don't match immediate range because, 1) it is not often useful,
++	2) the 'I' flag thinks of the range as a 13 bit signed interval,
++	while we want to match a 13 bit interval, sign extended to 32 bits,
++	but INTERPRETED AS UNSIGNED.  */
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("umul %2,%3,%1;rd %%y,%0" \
++	: "=r" ((USItype)(w1)), \
++	"=r" ((USItype)(w0)) \
++	: "r" ((USItype)(u)), \
++	"r" ((USItype)(v)))
++#define UMUL_TIME 5
++#ifndef SUPERSPARC		/* SuperSPARC's udiv only handles 53 bit dividends */
++#define udiv_qrnnd(q, r, n1, n0, d) \
++do { \
++	USItype __q; \
++	__asm__ ("mov %1,%%y;nop;nop;nop;udiv %2,%3,%0" \
++	: "=r" ((USItype)(__q)) \
++	: "r" ((USItype)(n1)), \
++	"r" ((USItype)(n0)), \
++	"r" ((USItype)(d))); \
++	(r) = (n0) - __q * (d); \
++	(q) = __q; \
++} while (0)
++#define UDIV_TIME 25
++#endif /* SUPERSPARC */
++#else /* ! __sparc_v8__ */
++#if defined(__sparclite__)
++/* This has hardware multiply but not divide.  It also has two additional
++	instructions scan (ffs from high bit) and divscc.  */
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("umul %2,%3,%1;rd %%y,%0" \
++	: "=r" ((USItype)(w1)), \
++	"=r" ((USItype)(w0)) \
++	: "r" ((USItype)(u)), \
++	"r" ((USItype)(v)))
++#define UMUL_TIME 5
++#define udiv_qrnnd(q, r, n1, n0, d) \
++	__asm__ ("! Inlined udiv_qrnnd\n" \
++	"wr	%%g0,%2,%%y	! Not a delayed write for sparclite\n" \
++	"tst	%%g0\n" \
++	"divscc	%3,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%%g1\n" \
++	"divscc	%%g1,%4,%0\n" \
++	"rd	%%y,%1\n" \
++	"bl,a 1f\n" \
++	"add	%1,%4,%1\n" \
++	"1:	! End of inline udiv_qrnnd" \
++	: "=r" ((USItype)(q)), \
++	"=r" ((USItype)(r)) \
++	: "r" ((USItype)(n1)), \
++	"r" ((USItype)(n0)), \
++	"rI" ((USItype)(d)) \
++	: "%g1" __AND_CLOBBER_CC)
++#define UDIV_TIME 37
++#define count_leading_zeros(count, x) \
++	__asm__ ("scan %1,0,%0" \
++	: "=r" ((USItype)(x)) \
++	: "r" ((USItype)(count)))
++/* Early sparclites return 63 for an argument of 0, but they warn that future
++	implementations might change this.  Therefore, leave COUNT_LEADING_ZEROS_0
++	undefined.  */
++#endif /* __sparclite__ */
++#endif /* __sparc_v8__ */
++	/* Default to sparc v7 versions of umul_ppmm and udiv_qrnnd.  */
++#ifndef umul_ppmm
++#define umul_ppmm(w1, w0, u, v) \
++	__asm__ ("! Inlined umul_ppmm\n" \
++	"wr	%%g0,%2,%%y	! SPARC has 0-3 delay insn after a wr\n" \
++	"sra	%3,31,%%g2	! Don't move this insn\n" \
++	"and	%2,%%g2,%%g2	! Don't move this insn\n" \
++	"andcc	%%g0,0,%%g1	! Don't move this insn\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,%3,%%g1\n" \
++	"mulscc	%%g1,0,%%g1\n" \
++	"add	%%g1,%%g2,%0\n" \
++	"rd	%%y,%1" \
++	: "=r" ((USItype)(w1)), \
++	"=r" ((USItype)(w0)) \
++	: "%rI" ((USItype)(u)), \
++	"r" ((USItype)(v)) \
++	: "%g1", "%g2" __AND_CLOBBER_CC)
++#define UMUL_TIME 39		/* 39 instructions */
++#endif
++#ifndef udiv_qrnnd
++#ifndef LONGLONG_STANDALONE
++#define udiv_qrnnd(q, r, n1, n0, d) \
++do { USItype __r; \
++	(q) = __udiv_qrnnd(&__r, (n1), (n0), (d)); \
++	(r) = __r; \
++} while (0)
++	extern USItype __udiv_qrnnd();
++#define UDIV_TIME 140
++#endif /* LONGLONG_STANDALONE */
++#endif /* udiv_qrnnd */
++#endif /* __sparc__ */
++
++/***************************************
++	**************  VAX  ******************
++	***************************************/
++#if defined(__vax__) && W_TYPE_SIZE == 32
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("addl2 %5,%1\n" \
++	"adwc %3,%0" \
++	: "=g" ((USItype)(sh)), \
++	"=&g" ((USItype)(sl)) \
++	: "%0" ((USItype)(ah)), \
++	"g" ((USItype)(bh)), \
++	"%1" ((USItype)(al)), \
++	"g" ((USItype)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("subl2 %5,%1\n" \
++	"sbwc %3,%0" \
++	: "=g" ((USItype)(sh)), \
++	"=&g" ((USItype)(sl)) \
++	: "0" ((USItype)(ah)), \
++	"g" ((USItype)(bh)), \
++	"1" ((USItype)(al)), \
++	"g" ((USItype)(bl)))
++#define umul_ppmm(xh, xl, m0, m1) \
++do { \
++	union {UDItype __ll; \
++	struct {USItype __l, __h; } __i; \
++	} __xx; \
++	USItype __m0 = (m0), __m1 = (m1); \
++	__asm__ ("emul %1,%2,$0,%0" \
++	: "=g" (__xx.__ll) \
++	: "g" (__m0), \
++	"g" (__m1)); \
++	(xh) = __xx.__i.__h; (xl) = __xx.__i.__l; \
++	(xh) += ((((SItype) __m0 >> 31) & __m1) \
++	+ (((SItype) __m1 >> 31) & __m0)); \
++} while (0)
++#define sdiv_qrnnd(q, r, n1, n0, d) \
++do { \
++	union {DItype __ll; \
++	struct {SItype __l, __h; } __i; \
++	} __xx; \
++	__xx.__i.__h = n1; __xx.__i.__l = n0; \
++	__asm__ ("ediv %3,%2,%0,%1" \
++	: "=g" (q), "=g" (r) \
++	: "g" (__xx.__ll), "g" (d)); \
++} while (0)
++#endif /* __vax__ */
++
++/***************************************
++	**************  Z8000	****************
++	***************************************/
++#if defined(__z8000__) && W_TYPE_SIZE == 16
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++	__asm__ ("add %H1,%H5\n\tadc  %H0,%H3" \
++	: "=r" ((unsigned int)(sh)), \
++	"=&r" ((unsigned int)(sl)) \
++	: "%0" ((unsigned int)(ah)), \
++	"r" ((unsigned int)(bh)), \
++	"%1" ((unsigned int)(al)), \
++	"rQR" ((unsigned int)(bl)))
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++	__asm__ ("sub %H1,%H5\n\tsbc  %H0,%H3" \
++	: "=r" ((unsigned int)(sh)), \
++	"=&r" ((unsigned int)(sl)) \
++	: "0" ((unsigned int)(ah)), \
++	"r" ((unsigned int)(bh)), \
++	"1" ((unsigned int)(al)), \
++	"rQR" ((unsigned int)(bl)))
++#define umul_ppmm(xh, xl, m0, m1) \
++do { \
++	union {long int __ll; \
++	struct {unsigned int __h, __l; } __i; \
++	} __xx; \
++	unsigned int __m0 = (m0), __m1 = (m1); \
++	__asm__ ("mult      %S0,%H3" \
++	: "=r" (__xx.__i.__h), \
++	"=r" (__xx.__i.__l) \
++	: "%1" (__m0), \
++	"rQR" (__m1)); \
++	(xh) = __xx.__i.__h; (xl) = __xx.__i.__l; \
++	(xh) += ((((signed int) __m0 >> 15) & __m1) \
++	+ (((signed int) __m1 >> 15) & __m0)); \
++} while (0)
++#endif /* __z8000__ */
++
++#endif /* __GNUC__ */
++
++/***************************************
++	***********  Generic Versions	********
++	***************************************/
++#if !defined(umul_ppmm) && defined(__umulsidi3)
++#define umul_ppmm(ph, pl, m0, m1) \
++{ \
++	UDWtype __ll = __umulsidi3(m0, m1); \
++	ph = (UWtype) (__ll >> W_TYPE_SIZE); \
++	pl = (UWtype) __ll; \
++}
++#endif
++
++#if !defined(__umulsidi3)
++#define __umulsidi3(u, v) \
++	({UWtype __hi, __lo; \
++	umul_ppmm(__hi, __lo, u, v); \
++	((UDWtype) __hi << W_TYPE_SIZE) | __lo; })
++#endif
++
++	/* If this machine has no inline assembler, use C macros.  */
++
++#if !defined(add_ssaaaa)
++#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
++do { \
++	UWtype __x; \
++	__x = (al) + (bl); \
++	(sh) = (ah) + (bh) + (__x < (al)); \
++	(sl) = __x; \
++} while (0)
++#endif
++
++#if !defined(sub_ddmmss)
++#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
++do { \
++	UWtype __x; \
++	__x = (al) - (bl); \
++	(sh) = (ah) - (bh) - (__x > (al)); \
++	(sl) = __x; \
++} while (0)
++#endif
++
++#if !defined(umul_ppmm)
++#define umul_ppmm(w1, w0, u, v) \
++do { \
++	UWtype __x0, __x1, __x2, __x3; \
++	UHWtype __ul, __vl, __uh, __vh; \
++	UWtype __u = (u), __v = (v); \
++	\
++	__ul = __ll_lowpart(__u); \
++	__uh = __ll_highpart(__u); \
++	__vl = __ll_lowpart(__v); \
++	__vh = __ll_highpart(__v); \
++	\
++	__x0 = (UWtype) __ul * __vl; \
++	__x1 = (UWtype) __ul * __vh; \
++	__x2 = (UWtype) __uh * __vl; \
++	__x3 = (UWtype) __uh * __vh; \
++	\
++	__x1 += __ll_highpart(__x0);/* this can't give carry */ \
++	__x1 += __x2;		/* but this indeed can */ \
++	if (__x1 < __x2)		/* did we get it? */ \
++	__x3 += __ll_B;		/* yes, add it in the proper pos. */ \
++	\
++	(w1) = __x3 + __ll_highpart(__x1); \
++	(w0) = (__ll_lowpart(__x1) << W_TYPE_SIZE/2) + __ll_lowpart(__x0); \
++} while (0)
++#endif
++
++#if !defined(umul_ppmm)
++#define smul_ppmm(w1, w0, u, v) \
++do { \
++	UWtype __w1; \
++	UWtype __m0 = (u), __m1 = (v); \
++	umul_ppmm(__w1, w0, __m0, __m1); \
++	(w1) = __w1 - (-(__m0 >> (W_TYPE_SIZE - 1)) & __m1) \
++	- (-(__m1 >> (W_TYPE_SIZE - 1)) & __m0); \
++} while (0)
++#endif
++
++	/* Define this unconditionally, so it can be used for debugging.  */
++#define __udiv_qrnnd_c(q, r, n1, n0, d) \
++do { \
++	UWtype __d1, __d0, __q1, __q0, __r1, __r0, __m; \
++	__d1 = __ll_highpart(d); \
++	__d0 = __ll_lowpart(d); \
++	\
++	__r1 = (n1) % __d1; \
++	__q1 = (n1) / __d1; \
++	__m = (UWtype) __q1 * __d0; \
++	__r1 = __r1 * __ll_B | __ll_highpart(n0); \
++	if (__r1 < __m) { \
++		__q1--, __r1 += (d); \
++		if (__r1 >= (d)) /* i.e. we didn't get carry when adding to __r1 */ \
++		if (__r1 < __m) \
++			__q1--, __r1 += (d); \
++	} \
++	__r1 -= __m; \
++	\
++	__r0 = __r1 % __d1; \
++	__q0 = __r1 / __d1; \
++	__m = (UWtype) __q0 * __d0; \
++	__r0 = __r0 * __ll_B | __ll_lowpart(n0); \
++	if (__r0 < __m) { \
++		__q0--, __r0 += (d); \
++		if (__r0 >= (d)) \
++			if (__r0 < __m) \
++				__q0--, __r0 += (d); \
++	} \
++	__r0 -= __m; \
++	\
++	(q) = (UWtype) __q1 * __ll_B | __q0; \
++	(r) = __r0; \
++} while (0)
++
++/* If the processor has no udiv_qrnnd but sdiv_qrnnd, go through
++	__udiv_w_sdiv (defined in libgcc or elsewhere).  */
++#if !defined(udiv_qrnnd) && defined(sdiv_qrnnd)
++#define udiv_qrnnd(q, r, nh, nl, d) \
++do { \
++	UWtype __r; \
++	(q) = __MPN(udiv_w_sdiv) (&__r, nh, nl, d); \
++	(r) = __r; \
++} while (0)
++#endif
++
++	/* If udiv_qrnnd was not defined for this processor, use __udiv_qrnnd_c.  */
++#if !defined(udiv_qrnnd)
++#define UDIV_NEEDS_NORMALIZATION 1
++#define udiv_qrnnd __udiv_qrnnd_c
++#endif
++
++#undef count_leading_zeros
++#if !defined(count_leading_zeros)
++	extern
++#ifdef __STDC__
++			const
++#endif
++			unsigned char __clz_tab[];
++#define count_leading_zeros(count, x) \
++do { \
++	UWtype __xr = (x); \
++	UWtype __a; \
++	\
++	if (W_TYPE_SIZE <= 32) { \
++		__a = __xr < ((UWtype) 1 << 2*__BITS4) \
++		? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
++		: (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
++	} \
++	else { \
++		for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
++			if (((__xr >> __a) & 0xff) != 0) \
++				break; \
++	} \
++	\
++	(count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
++} while (0)
++	/* This version gives a well-defined value for zero. */
++#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
++#endif
++
++#if !defined(count_trailing_zeros)
++/* Define count_trailing_zeros using count_leading_zeros.  The latter might be
++	defined in asm, but if it is not, the C version above is good enough.  */
++#define count_trailing_zeros(count, x) \
++do { \
++	UWtype __ctz_x = (x); \
++	UWtype __ctz_c; \
++	count_leading_zeros(__ctz_c, __ctz_x & -__ctz_x); \
++	(count) = W_TYPE_SIZE - 1 - __ctz_c; \
++} while (0)
++#endif
++
++#ifndef UDIV_NEEDS_NORMALIZATION
++#define UDIV_NEEDS_NORMALIZATION 0
++#endif
+diff --git a/lib/mpi/mpi-inline.h b/lib/mpi/mpi-inline.h
+new file mode 100644
+index 0000000..e2b3985
+--- /dev/null
++++ b/lib/mpi/mpi-inline.h
+@@ -0,0 +1,122 @@
++/* mpi-inline.h  -  Internal to the Multi Precision Integers
++ *	Copyright (C) 1994, 1996, 1998, 1999 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
 + */
-+unsigned mpi_trailing_zeros(const MPI a)
++
++#ifndef G10_MPI_INLINE_H
++#define G10_MPI_INLINE_H
++
++#ifndef G10_MPI_INLINE_DECL
++#define G10_MPI_INLINE_DECL  extern inline
++#endif
++
++G10_MPI_INLINE_DECL mpi_limb_t
++mpihelp_add_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++	      mpi_size_t s1_size, mpi_limb_t s2_limb)
 +{
-+	unsigned n, count = 0;
++	mpi_limb_t x;
 +
-+	for (n = 0; n < a->nlimbs; n++) {
-+		if (a->d[n]) {
-+			unsigned nn;
-+			mpi_limb_t alimb = a->d[n];
-+
-+			count_trailing_zeros(nn, alimb);
-+			count += nn;
-+			break;
++	x = *s1_ptr++;
++	s2_limb += x;
++	*res_ptr++ = s2_limb;
++	if (s2_limb < x) {	/* sum is less than the left operand: handle carry */
++		while (--s1_size) {
++			x = *s1_ptr++ + 1;	/* add carry */
++			*res_ptr++ = x;	/* and store */
++			if (x)	/* not 0 (no overflow): we can stop */
++				goto leave;
 +		}
-+		count += BITS_PER_MPI_LIMB;
++		return 1;	/* return carry (size of s1 to small) */
 +	}
-+	return count;
 +
++leave:
++	if (res_ptr != s1_ptr) {	/* not the same variable */
++		mpi_size_t i;	/* copy the rest */
++		for (i = 0; i < s1_size - 1; i++)
++			res_ptr[i] = s1_ptr[i];
++	}
++	return 0;		/* no carry */
 +}
++
++G10_MPI_INLINE_DECL mpi_limb_t
++mpihelp_add(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
++	    mpi_ptr_t s2_ptr, mpi_size_t s2_size)
++{
++	mpi_limb_t cy = 0;
++
++	if (s2_size)
++		cy = mpihelp_add_n(res_ptr, s1_ptr, s2_ptr, s2_size);
++
++	if (s1_size - s2_size)
++		cy = mpihelp_add_1(res_ptr + s2_size, s1_ptr + s2_size,
++				   s1_size - s2_size, cy);
++	return cy;
++}
++
++G10_MPI_INLINE_DECL mpi_limb_t
++mpihelp_sub_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++	      mpi_size_t s1_size, mpi_limb_t s2_limb)
++{
++	mpi_limb_t x;
++
++	x = *s1_ptr++;
++	s2_limb = x - s2_limb;
++	*res_ptr++ = s2_limb;
++	if (s2_limb > x) {
++		while (--s1_size) {
++			x = *s1_ptr++;
++			*res_ptr++ = x - 1;
++			if (x)
++				goto leave;
++		}
++		return 1;
++	}
++
++leave:
++	if (res_ptr != s1_ptr) {
++		mpi_size_t i;
++		for (i = 0; i < s1_size - 1; i++)
++			res_ptr[i] = s1_ptr[i];
++	}
++	return 0;
++}
++
++G10_MPI_INLINE_DECL mpi_limb_t
++mpihelp_sub(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
++	    mpi_ptr_t s2_ptr, mpi_size_t s2_size)
++{
++	mpi_limb_t cy = 0;
++
++	if (s2_size)
++		cy = mpihelp_sub_n(res_ptr, s1_ptr, s2_ptr, s2_size);
++
++	if (s1_size - s2_size)
++		cy = mpihelp_sub_1(res_ptr + s2_size, s1_ptr + s2_size,
++				   s1_size - s2_size, cy);
++	return cy;
++}
++
++#endif /*G10_MPI_INLINE_H */
+diff --git a/lib/mpi/mpi-internal.h b/lib/mpi/mpi-internal.h
+new file mode 100644
+index 0000000..77adcf6
+--- /dev/null
++++ b/lib/mpi/mpi-internal.h
+@@ -0,0 +1,261 @@
++/* mpi-internal.h  -  Internal to the Multi Precision Integers
++ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
++ *	Copyright (C) 1998, 2000 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#ifndef G10_MPI_INTERNAL_H
++#define G10_MPI_INTERNAL_H
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/mpi.h>
++#include <linux/errno.h>
++
++#define log_debug printk
++#define log_bug printk
++
++#define assert(x) \
++	do { \
++		if (!x) \
++			log_bug("failed assertion\n"); \
++	} while (0);
++
++/* If KARATSUBA_THRESHOLD is not already defined, define it to a
++ * value which is good on most machines.  */
++
++/* tested 4, 16, 32 and 64, where 16 gave the best performance when
++ * checking a 768 and a 1024 bit ElGamal signature.
++ * (wk 22.12.97) */
++#ifndef KARATSUBA_THRESHOLD
++#define KARATSUBA_THRESHOLD 16
++#endif
++
++/* The code can't handle KARATSUBA_THRESHOLD smaller than 2.  */
++#if KARATSUBA_THRESHOLD < 2
++#undef KARATSUBA_THRESHOLD
++#define KARATSUBA_THRESHOLD 2
++#endif
++
++typedef mpi_limb_t *mpi_ptr_t;	/* pointer to a limb */
++typedef int mpi_size_t;		/* (must be a signed type) */
++
++#define ABS(x) (x >= 0 ? x : -x)
++#define MIN(l, o) ((l) < (o) ? (l) : (o))
++#define MAX(h, i) ((h) > (i) ? (h) : (i))
++
++static inline int RESIZE_IF_NEEDED(MPI a, unsigned b)
++{
++	if (a->alloced < b)
++		return mpi_resize(a, b);
++	return 0;
++}
++
++/* Copy N limbs from S to D.  */
++#define MPN_COPY(d, s, n) \
++	do {					\
++		mpi_size_t _i;			\
++		for (_i = 0; _i < (n); _i++)	\
++			(d)[_i] = (s)[_i];	\
++	} while (0)
++
++#define MPN_COPY_INCR(d, s, n) \
++	do {					\
++		mpi_size_t _i;			\
++		for (_i = 0; _i < (n); _i++)	\
++			(d)[_i] = (d)[_i];	\
++	} while (0)
++
++#define MPN_COPY_DECR(d, s, n) \
++	do {					\
++		mpi_size_t _i;			\
++		for (_i = (n)-1; _i >= 0; _i--) \
++			(d)[_i] = (s)[_i];	\
++	} while (0)
++
++/* Zero N limbs at D */
++#define MPN_ZERO(d, n) \
++	do {					\
++		int  _i;			\
++		for (_i = 0; _i < (n); _i++)	\
++			(d)[_i] = 0;		\
++	} while (0)
++
++#define MPN_NORMALIZE(d, n)  \
++	do {					\
++		while ((n) > 0) {		\
++			if ((d)[(n)-1])		\
++				break;		\
++			(n)--;			\
++		}				\
++	} while (0)
++
++#define MPN_NORMALIZE_NOT_ZERO(d, n) \
++	do {				\
++		for (;;) {		\
++			if ((d)[(n)-1])	\
++				break;	\
++			(n)--;		\
++		}			\
++	} while (0)
++
++#define MPN_MUL_N_RECURSE(prodp, up, vp, size, tspace) \
++	do {							\
++		if ((size) < KARATSUBA_THRESHOLD)		\
++			mul_n_basecase(prodp, up, vp, size);	\
++		else						\
++			mul_n(prodp, up, vp, size, tspace);	\
++	} while (0);
++
++/* Divide the two-limb number in (NH,,NL) by D, with DI being the largest
++ * limb not larger than (2**(2*BITS_PER_MP_LIMB))/D - (2**BITS_PER_MP_LIMB).
++ * If this would yield overflow, DI should be the largest possible number
++ * (i.e., only ones).  For correct operation, the most significant bit of D
++ * has to be set.  Put the quotient in Q and the remainder in R.
++ */
++#define UDIV_QRNND_PREINV(q, r, nh, nl, d, di) \
++	do {								\
++		mpi_limb_t _q, _ql, _r;					\
++		mpi_limb_t _xh, _xl;					\
++		umul_ppmm(_q, _ql, (nh), (di));				\
++		_q += (nh);	/* DI is 2**BITS_PER_MPI_LIMB too small */ \
++		umul_ppmm(_xh, _xl, _q, (d));				\
++		sub_ddmmss(_xh, _r, (nh), (nl), _xh, _xl);		\
++		if (_xh) {						\
++			sub_ddmmss(_xh, _r, _xh, _r, 0, (d));		\
++			_q++;						\
++			if (_xh) {					\
++				sub_ddmmss(_xh, _r, _xh, _r, 0, (d));	\
++				_q++;					\
++			}						\
++		}							\
++		if (_r >= (d)) {					\
++			_r -= (d);					\
++			_q++;						\
++		}							\
++		(r) = _r;						\
++		(q) = _q;						\
++	} while (0)
++
++/*-- mpiutil.c --*/
++mpi_ptr_t mpi_alloc_limb_space(unsigned nlimbs);
++void mpi_free_limb_space(mpi_ptr_t a);
++void mpi_assign_limb_space(MPI a, mpi_ptr_t ap, unsigned nlimbs);
++
++/*-- mpi-bit.c --*/
++void mpi_rshift_limbs(MPI a, unsigned int count);
++int mpi_lshift_limbs(MPI a, unsigned int count);
++
++/*-- mpihelp-add.c --*/
++mpi_limb_t mpihelp_add_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			 mpi_size_t s1_size, mpi_limb_t s2_limb);
++mpi_limb_t mpihelp_add_n(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			 mpi_ptr_t s2_ptr, mpi_size_t size);
++mpi_limb_t mpihelp_add(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
++		       mpi_ptr_t s2_ptr, mpi_size_t s2_size);
++
++/*-- mpihelp-sub.c --*/
++mpi_limb_t mpihelp_sub_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			 mpi_size_t s1_size, mpi_limb_t s2_limb);
++mpi_limb_t mpihelp_sub_n(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			 mpi_ptr_t s2_ptr, mpi_size_t size);
++mpi_limb_t mpihelp_sub(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
++		       mpi_ptr_t s2_ptr, mpi_size_t s2_size);
++
++/*-- mpihelp-cmp.c --*/
++int mpihelp_cmp(mpi_ptr_t op1_ptr, mpi_ptr_t op2_ptr, mpi_size_t size);
++
++/*-- mpihelp-mul.c --*/
++
++struct karatsuba_ctx {
++	struct karatsuba_ctx *next;
++	mpi_ptr_t tspace;
++	mpi_size_t tspace_size;
++	mpi_ptr_t tp;
++	mpi_size_t tp_size;
++};
++
++void mpihelp_release_karatsuba_ctx(struct karatsuba_ctx *ctx);
++
++mpi_limb_t mpihelp_addmul_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			    mpi_size_t s1_size, mpi_limb_t s2_limb);
++mpi_limb_t mpihelp_submul_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			    mpi_size_t s1_size, mpi_limb_t s2_limb);
++int mpihelp_mul_n(mpi_ptr_t prodp, mpi_ptr_t up, mpi_ptr_t vp, mpi_size_t size);
++int mpihelp_mul(mpi_ptr_t prodp, mpi_ptr_t up, mpi_size_t usize,
++		mpi_ptr_t vp, mpi_size_t vsize, mpi_limb_t *_result);
++void mpih_sqr_n_basecase(mpi_ptr_t prodp, mpi_ptr_t up, mpi_size_t size);
++void mpih_sqr_n(mpi_ptr_t prodp, mpi_ptr_t up, mpi_size_t size,
++		mpi_ptr_t tspace);
++
++int mpihelp_mul_karatsuba_case(mpi_ptr_t prodp,
++			       mpi_ptr_t up, mpi_size_t usize,
++			       mpi_ptr_t vp, mpi_size_t vsize,
++			       struct karatsuba_ctx *ctx);
++
++/*-- mpihelp-mul_1.c (or xxx/cpu/ *.S) --*/
++mpi_limb_t mpihelp_mul_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++			 mpi_size_t s1_size, mpi_limb_t s2_limb);
++
++/*-- mpihelp-div.c --*/
++mpi_limb_t mpihelp_mod_1(mpi_ptr_t dividend_ptr, mpi_size_t dividend_size,
++			 mpi_limb_t divisor_limb);
++mpi_limb_t mpihelp_divrem(mpi_ptr_t qp, mpi_size_t qextra_limbs,
++			  mpi_ptr_t np, mpi_size_t nsize,
++			  mpi_ptr_t dp, mpi_size_t dsize);
++mpi_limb_t mpihelp_divmod_1(mpi_ptr_t quot_ptr,
++			    mpi_ptr_t dividend_ptr, mpi_size_t dividend_size,
++			    mpi_limb_t divisor_limb);
++
++/*-- mpihelp-shift.c --*/
++mpi_limb_t mpihelp_lshift(mpi_ptr_t wp, mpi_ptr_t up, mpi_size_t usize,
++			  unsigned cnt);
++mpi_limb_t mpihelp_rshift(mpi_ptr_t wp, mpi_ptr_t up, mpi_size_t usize,
++			  unsigned cnt);
++
++/* Define stuff for longlong.h.  */
++#define W_TYPE_SIZE BITS_PER_MPI_LIMB
++typedef mpi_limb_t UWtype;
++typedef unsigned int UHWtype;
++#if defined(__GNUC__)
++typedef unsigned int UQItype __attribute__ ((mode(QI)));
++typedef int SItype __attribute__ ((mode(SI)));
++typedef unsigned int USItype __attribute__ ((mode(SI)));
++typedef int DItype __attribute__ ((mode(DI)));
++typedef unsigned int UDItype __attribute__ ((mode(DI)));
++#else
++typedef unsigned char UQItype;
++typedef long SItype;
++typedef unsigned long USItype;
++#endif
++
++#ifdef __GNUC__
++#include "mpi-inline.h"
++#endif
++
++#endif /*G10_MPI_INTERNAL_H */
 -- 
 1.7.4.1
 
