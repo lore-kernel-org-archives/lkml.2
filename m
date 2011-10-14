@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab1JNCMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 22:12:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9586 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab1JNCMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 22:12:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="63103002"
-From: Andi Kleen <andi@firstfloor.org>
-To: David Miller <davem@davemloft.net>
-Cc: glommer@parallels.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        paul@paulmenage.org, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name, avagin@parallels.com,
-        devel@openvz.org
-Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
-References: <1318511382-31051-1-git-send-email-glommer@parallels.com>
-	<20111013.160031.605700447623532119.davem@davemloft.net>
-Date: Thu, 13 Oct 2011 19:12:29 -0700
-In-Reply-To: <20111013.160031.605700447623532119.davem@davemloft.net> (David
-	Miller's message of "Thu, 13 Oct 2011 16:00:31 -0400 (EDT)")
-Message-ID: <m2d3e01fua.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755976Ab1JNCr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 22:47:57 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39272 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab1JNCr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Oct 2011 22:47:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAAMvbhFNTQeuJBgsDB9Y5ODc_b2O0X=oP_3uwRpWUREFS9qufA@mail.gmail.com>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<CAAMvbhFNTQeuJBgsDB9Y5ODc_b2O0X=oP_3uwRpWUREFS9qufA@mail.gmail.com>
+Date: Fri, 14 Oct 2011 04:47:55 +0200
+Message-ID: <CA+O4pCK2=rjqufLetTd=419bDfkN6RRX89Sh5noDnjoBAgoR2A@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: James Courtier-Dutton <james.dutton@gmail.com>
+Cc: USB list <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
->
-> Make this evaluate into exactly the same exact code stream we have
-> now when the memory cgroup feature is not in use, which will be the
-> majority of users.
+On Fri, Oct 14, 2011 at 12:19 AM, James Courtier-Dutton
+<james.dutton@gmail.com> wrote:
+> Why don't you try a bulk size of 12032 instead of 24064 and not try 12288 as
+> you appear to be doing in the logs. Post the logs for that.
 
-One possible way may be to guard it with static_branch() for 
-no limit per cgroup set. That should be as near as practically
-possible to the original code.
+I tried that earlier already of course it fails. If I could pick a
+smaller transfer size I would be happy since
+the device would work with all 2.6.x kernels out of the box and I
+wouldn't have to waste my time with it.
+Unfortunately it requires the 24064 bytes.
+The more flexible device A which is mentioned here confirms that there
+can be some impact on the
+bulk transfer size.
+However to learn about this it's needed to look at the bottom line of
+USB on the physical layer.
 
-BTW the thing that usually worries me more is the cache line behaviour
-when the feature is in use. In the past some of the namespace patches
-have created some extremly hot global cache lines, that hurt on larger
-systems (for example the Unix socket regression from uid namespaces that
-is still not completly fixed). It would be good to double check that all
-important state is distributed properly.
+And I disagree with Alan Cox it's not about being a crappy device or
+not, it's more like about something
+that is not well understood here. Most people are familiar with
+Software only here and not with the physical
+USB bottom Layer, otherwise the fact that the devices can have an
+impact on this wouldn't be such a surprise.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Markus
