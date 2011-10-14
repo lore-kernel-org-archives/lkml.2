@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab1JNHOU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 03:14:20 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14280 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080Ab1JNHOT convert rfc822-to-8bit (ORCPT
+	id S1755872Ab1JNHPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 03:15:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34715 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab1JNHPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 03:14:19 -0400
-X-AuditID: cbfee61b-b7b7fae000005864-0e-4e97e14a1e6f
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-References: <1313463881.16359.2.camel@phoenix>
-In-reply-to: <1313463881.16359.2.camel@phoenix>
-Subject: RE: [PATCH] ARM: S3C2443: Remove redundant s3c_register_clocks call
- for init_clocks
-Date: Fri, 14 Oct 2011 16:14:18 +0900
-Message-id: <086001cc8a40$e3940350$aabc09f0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcxbwVPSxqJTI7fjTVms3Um8SvQ/6wufQD7g
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 14 Oct 2011 03:15:20 -0400
+Date: Fri, 14 Oct 2011 08:15:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>,
+        Erik Gilling <konkers@android.com>,
+        "Arnd Bergmann (arnd@arndb.de)" <arnd@arndb.de>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+Message-ID: <20111014071500.GP21648@n2100.arm.linux.org.uk>
+References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <74CDBE0F657A3D45AFBB94109FB122FF173955580F@HQMAIL01.nvidia.com> <CAOesGMiuzF47kdmaaFny9Fg1ieox6a75tMFfLRAptvDxz_QPMg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOesGMiuzF47kdmaaFny9Fg1ieox6a75tMFfLRAptvDxz_QPMg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin wrote:
+On Thu, Oct 13, 2011 at 04:38:46PM -0700, Olof Johansson wrote:
+> Hi,
 > 
-> Since commit af337f3e633a198034a99450416257ddf2307497
-> "ARM: S3C2443: Move parts of the clock code to common clock file",
-> the init_clocks array is moved to arch/arm/plat-s3c24xx/s3c2443-clock.c.
-> Now we call s3c_register_clocks for init_clocks in s3c2443_common_init_clocks.
+> On Wed, Sep 28, 2011 at 10:50 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> > Peter De Schrijver wrote at Tuesday, September 27, 2011 7:08 PM:
+> >> This patch causes the kernel uncompressor to determine the physical address
+> >> of the SDRAM at runtime. This allows the kernel to boot on both tegra20 and
+> >> tegra30 even though SDRAM is at different physical addresses on both SoCs.
+> >>
+> >> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> >
+> > An alternative would be to simply add that config option to the relevant
+> > defconfig/.config file. I see both cases in use in the kernel. Still, the
+> > code change this enables looks fine to just turn on all the time, and will
+> > be needed for Tegra30 support, so I'm fine just selecting it as you have.
+> >
+> > Acked-by: Stephen Warren <swarren@nvidia.com>
+> >
+> >> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> >> index 472a7f8..474737b 100644
+> >> --- a/arch/arm/Kconfig
+> >> +++ b/arch/arm/Kconfig
+> >> @@ -596,6 +596,7 @@ config ARCH_TEGRA
+> >>       select HAVE_CLK
+> >>       select HAVE_SCHED_CLOCK
+> >>       select ARCH_HAS_CPUFREQ
+> >> +     select AUTO_ZRELADDR
+> >>       help
+> >>         This enables support for NVIDIA Tegra based systems (Tegra APX,
+> >>         Tegra 6xx and Tegra 2 series).
+> >
+> > P.S. Since this patch relates to Tegra, you should CC the Tegra maintainers
+> > and list; I've done so on this message. I also added Arnd; he might take
+> > this through the arm-soc tree.
 > 
-> Thus we can remove the empty init_clocks array here and remove the
-> redundant s3c_register_clocks call for init_clocks in s3c2443_init_clocks.
+> While it does touch a file outside of arch/arm/mach-tegra, it's for
+> the tegra options and is not likely to cause conflicts upstream. I'll
+> apply it with the rest of tegra patches for 3.2 here.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  arch/arm/mach-s3c2443/clock.c |    7 -------
->  1 files changed, 0 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2443/clock.c b/arch/arm/mach-s3c2443/clock.c
-> index a1a7176..4018dbe 100644
-> --- a/arch/arm/mach-s3c2443/clock.c
-> +++ b/arch/arm/mach-s3c2443/clock.c
-> @@ -305,9 +305,6 @@ static struct clk init_clocks_off[] = {
->  	}
->  };
-> 
-> -static struct clk init_clocks[] = {
-> -};
-> -
->  /* clocks to add straight away */
-> 
->  static struct clksrc_clk *clksrcs[] __initdata = {
-> @@ -345,10 +342,6 @@ void __init s3c2443_init_clocks(int xtal)
->  	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
->  		s3c_register_clksrc(clksrcs[ptr], 1);
-> 
-> -	/* register clocks from clock array */
-> -
-> -	s3c_register_clocks(init_clocks, ARRAY_SIZE(init_clocks));
-> -
->  	/* We must be careful disabling the clocks we are not intending to
->  	 * be using at boot time, as subsystems such as the LCD which do
->  	 * their own DMA requests to the bus can cause the system to lockup
-> --
-> 1.7.4.1
+> So: Applied, thanks.
 
-Looks ok, applied.
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+I'll point out that this makes Tegra incompatible with ZBOOT_ROM, which
+can still be enabled.  ZBOOT_ROM=y AUTO_ZRELADDR=y is an invalid
+configuration at runtime.
