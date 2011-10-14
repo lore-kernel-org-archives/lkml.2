@@ -1,232 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab1JNQCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 12:02:15 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58238 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab1JNQCN (ORCPT
+	id S1754215Ab1JNQDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 12:03:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42895 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753763Ab1JNQDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 12:02:13 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19MxROZsy5fbPjqAheorfLK
-Date: Fri, 14 Oct 2011 09:02:09 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] initial omap DT support for v3.2 merge window (Re:
- [PATCH 26/30] ARM: omap: add board autoselection)
-Message-ID: <20111014160209.GA27515@atomide.com>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
- <201110040944.13205.arnd@arndb.de>
- <20111004155752.GT6324@atomide.com>
- <2340307.S2RzXdHlIz@wuerfel>
- <20111005010550.GX6324@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111005010550.GX6324@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Oct 2011 12:03:08 -0400
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Steffen Maier <maier@linux.vnet.ibm.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <4E96E2FF.6070601@linux.vnet.ibm.com>
+References: <201109221318.p8MDIXPP020015@pentland.suse.de>
+	 <20110928004722.GA27421@kernel.dk>
+	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
+	 <4E82751C.9050908@kernel.dk>
+	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
+	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
+	 <4E832A55.30709@kernel.dk>
+	 <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
+	 <4E832BD2.50409@kernel.dk>  <4E96E2FF.6070601@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Oct 2011 11:03:04 -0500
+Message-ID: <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+On Thu, 2011-10-13 at 15:09 +0200, Steffen Maier wrote:
+> This fix also went into 3.0.5 via
+> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob;f=releases/3.0.5/block-free-queue-resources-at-blk_release_queue.patch
+> (originated at http://marc.info/?l=linux-scsi&m=131669751909474&w=2 and 
+> http://marc.info/?l=linux-scsi&m=131669414205696&w=2)
+> 
+> However, it seems we still have a use-after-free bug, now causing the 
+> following oops with kernel 3.0.6 when removing paths to storage while 
+> generating load on device-mapper multipath disks:
+> 
+> > Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
+> > Oops: 0038 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> > Modules linked in: iptable_filter ip_tables x_tables dm_round_robin sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
+> > CPU: 1 Not tainted 3.0.6-50.x.20111006-s390xdefault #1
+> > Process blast.LzS_64_SL (pid: 26613, task: 0000000063e2a398, ksp: 0000000064de3560)
+> > Krnl PSW : 0704100180000000 000000000048a038 (scsi_print_command+0x44/0xf8)
+> >            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:1 PM:0 EA:3
+> > Krnl GPRS: 000000000000006b 6b6b6b6b6b6b6b6b 000000006717f800 000000000094f2e0
+> >            000000000061242e 000000000062bd88 0000000066fb90d8 0000000065391ad7
+> >            000000006717f800 000000006717f800 000000006716a090 000000006717f800
+> >            0000000000000004 0000000000672f88 0000000064de3838 0000000064de3808
+> > Krnl Code: 000000000048a026: f0b80004ebbf        srp     4(12,%r0),3007(%r14),8
+> >            000000000048a02c: f0a0000407f4        srp     4(11,%r0),2036,0
+> >            000000000048a032: e31020800004        lg      %r1,128(%r2)
+> >           >000000000048a038: e31010b00004        lg      %r1,176(%r1)
+> >            000000000048a03e: b9020011            ltgr    %r1,%r1
+> >            000000000048a042: a7840032            brc     8,48a0a6
+> >            000000000048a046: e33020000004        lg      %r3,0(%r2)
+> >            000000000048a04c: c04000182f4c        larl    %r4,78fee4
+> > Call Trace:
+> > ([<000000006717f800>] 0x6717f800)
+> >  [<0000000000487f28>] scsi_log_send+0xf0/0x130
+> >  [<000000000048824c>] scsi_dispatch_cmd+0xc8/0x4bc
+> >  [<0000000000490694>] scsi_request_fn+0x3b8/0x480
 
-* Tony Lindgren <tony@atomide.com> [111004 17:32]:
-> * Arnd Bergmann <arnd@arndb.de> [111004 11:55]:
-> > On Tuesday 04 October 2011 08:57:52 Tony Lindgren wrote:
-> > > * Arnd Bergmann <arnd@arndb.de> [111004 00:10]:
-> > > > On Monday 03 October 2011, Tony Lindgren wrote:
-> > > >
-> > > > > Yes please leave out the list so we don't need to constantly update it.
-> > > > > Let's just always build in MACH_OMAP_GENERIC.
-> > > > 
-> > > > That's what I had initially, but now that board file has become
-> > > > omap2-specific and no longer works on omap3-only or omap4-only
-> > > > configurations.
-> > > 
-> > > Will send a pull request for basic DT bootstrap support from Benoit
-> > > that fixes that. So maybe let's sort that out first, then always
-> > > select it?
-> > 
-> > Yes, sounds good. That is certainly the better solution in the long run.
-> 
-> Here you are. We had to rebase it earlier today because of the
-> SOB update in fixes branch for the musb related fix that's needed
-> here to avoid a merge conflict.
-> 
-> This series pretty much depends and conflicts with all the ealier
-> branches, so I created a new dt-base branch to deal with the merge
-> conflicts. If you prefer some other base, please let me know.
-> 
-> If you prefer to build some other merge base yourself, see the
-> attached patch that's needed to avoid two build warnings after
-> merging the various base branches together.
-> 
-> The dt-base I did is a merge of cleanup-part3, voltage, dmtimer
-> and l3 into fixes. You may not yet have l3 and fixes pulled in,
-> I sent pull requests for those yesterday. The others you have
-> already pulled I believe.
-> 
-> Despite using the merge base this will cause a minor merge conflict
-> in board-generic.c with Nicolas Pitre's earlier patch titled
-> "ARM: mach-omap2: convert boot_params to atag_offset". The 
-> atag_offset can be just left out, as the default will work.
+Correct me if I'm wrong, but this seems to be saying that struct
+scsi_cmnd was used after free.  This looks to be a different problem
+because the command has a separate refcounting model which wasn't
+impacted by the change ... it could be we've just exposed yet another
+refcounting problem outside of the queue one.
 
-Ping, any news on merging these? It would be nice to get these out of
-the way so we have something to base other branches on without having
-constant merge conflicts.
- 
-> Regards,
-> 
-> Tony
-> 
-> 
-> The following changes since commit c541c15fb5ab48c47bc9b90121538fd30d152f23:
->   Tony Lindgren (1):
->         Merge branches 'cleanup-part3', 'voltage', 'dmtimer' and 'l3' into dt-base
-> 
-> are available in the git repository at:
-> 
->   git://github.com/tmlind/linux.git dt
-> 
-> Benoit Cousson (18):
->       ARM: OMAP3: beagle-board: Use the omap_hwmod_name_get_dev API
->       ARM: OMAP2+: pm: Use hwmod name instead of dev pointer
->       ARM: OMAP2+: pm: Remove static devices variable for mpu, dsp, iva and l3 PM
->       ARM: OMAP: omap_device: Create a default omap_device_pm_latency
->       ARM: OMAP2+: devices: Remove all omap_device_pm_latency structures
->       of: Add helpers to get one string in multiple strings property
->       ARM: OMAP: omap_device: Add omap_device_[alloc|delete] for DT integration
->       ARM: OMAP: omap_device: Add a method to build an omap_device from a DT node
->       arm/dts: Add initial device tree support for OMAP4 SoC
->       arm/dts: Add support for OMAP4 PandaBoard
->       arm/dts: Add support for OMAP4 SDP board
->       arm/dts: Add initial device tree support for OMAP3 SoC
->       arm/dts: Add support for OMAP3 Beagle board
->       ARM: OMAP2+: board-generic: Add DT support to generic board
->       ARM: OMAP2+: board-generic: Add i2c static init
->       ARM: OMAP2+: l3-noc: Add support for device-tree
->       arm/dts: OMAP4: Add a main ocp entry bound to l3-noc driver
->       arm/dts: OMAP3+: Add mpu, dsp and iva nodes
-> 
-> Nishanth Menon (1):
->       ARM: OMAP: omap_device: Add omap_device_get_by_hwmod_name
-> 
-> Tony Lindgren (1):
->       Merge branch 'for_3.2/3_omap_devicetree' of git://gitorious.org/omap-pm/linux into dt
-> 
->  Documentation/devicetree/bindings/arm/omap/dsp.txt |   14 +
->  Documentation/devicetree/bindings/arm/omap/iva.txt |   19 ++
->  .../devicetree/bindings/arm/omap/l3-noc.txt        |   19 ++
->  Documentation/devicetree/bindings/arm/omap/mpu.txt |   27 ++
->  .../devicetree/bindings/arm/omap/omap.txt          |   43 +++
->  arch/arm/boot/dts/omap3-beagle.dts                 |   29 ++
->  arch/arm/boot/dts/omap3.dtsi                       |   63 ++++
->  arch/arm/boot/dts/omap4-panda.dts                  |   29 ++
->  arch/arm/boot/dts/omap4-sdp.dts                    |   29 ++
->  arch/arm/boot/dts/omap4.dtsi                       |  103 +++++++
->  arch/arm/mach-omap2/Kconfig                        |    8 +-
->  arch/arm/mach-omap2/board-generic.c                |  156 ++++++++---
->  arch/arm/mach-omap2/board-omap3beagle.c            |    4 +-
->  arch/arm/mach-omap2/devices.c                      |   51 +---
->  arch/arm/mach-omap2/display.c                      |   11 +-
->  arch/arm/mach-omap2/dma.c                          |   11 +-
->  arch/arm/mach-omap2/gpio.c                         |   12 +-
->  arch/arm/mach-omap2/hsmmc.c                        |   18 +-
->  arch/arm/mach-omap2/hwspinlock.c                   |   12 +-
->  arch/arm/mach-omap2/mcbsp.c                        |   11 +-
->  arch/arm/mach-omap2/omap_l3_noc.c                  |   25 ++-
->  arch/arm/mach-omap2/pm.c                           |   72 ++---
->  arch/arm/mach-omap2/serial.c                       |   25 +--
->  arch/arm/mach-omap2/sr_device.c                    |   11 +-
->  arch/arm/mach-omap2/usb-musb.c                     |   11 +-
->  arch/arm/plat-omap/i2c.c                           |   10 +-
->  arch/arm/plat-omap/include/plat/omap_device.h      |    1 +
->  arch/arm/plat-omap/omap_device.c                   |  313 +++++++++++++++++---
->  drivers/of/base.c                                  |   84 ++++++
->  include/linux/of.h                                 |   18 ++
->  30 files changed, 929 insertions(+), 310 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/omap/dsp.txt
->  create mode 100644 Documentation/devicetree/bindings/arm/omap/iva.txt
->  create mode 100644 Documentation/devicetree/bindings/arm/omap/l3-noc.txt
->  create mode 100644 Documentation/devicetree/bindings/arm/omap/mpu.txt
->  create mode 100644 Documentation/devicetree/bindings/arm/omap/omap.txt
->  create mode 100644 arch/arm/boot/dts/omap3-beagle.dts
->  create mode 100644 arch/arm/boot/dts/omap3.dtsi
->  create mode 100644 arch/arm/boot/dts/omap4-panda.dts
->  create mode 100644 arch/arm/boot/dts/omap4-sdp.dts
->  create mode 100644 arch/arm/boot/dts/omap4.dtsi
+If I had to guess, I'd say a bio got cloned with a SCSI command already
+attached, but the ref count on the SCSI command wasn't correctly
+adjusted.
 
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -434,7 +434,7 @@ static int __init omap_timer_init(struct omap_hwmod *oh, void *unused)
->  	int ret = 0;
->  	char *name = "omap_timer";
->  	struct dmtimer_platform_data *pdata;
-> -	struct omap_device *od;
-> +	struct platform_device *pdev;
->  	struct omap_timer_capability_dev_attr *timer_dev_attr;
->  	struct powerdomain *pwrdm;
->  
-> @@ -476,12 +476,12 @@ static int __init omap_timer_init(struct omap_hwmod *oh, void *unused)
->  #ifdef CONFIG_PM
->  	pdata->get_context_loss_count = omap_pm_get_dev_context_loss_count;
->  #endif
-> -	od = omap_device_build(name, id, oh, pdata, sizeof(*pdata),
-> +	pdev = omap_device_build(name, id, oh, pdata, sizeof(*pdata),
->  			omap2_dmtimer_latency,
->  			ARRAY_SIZE(omap2_dmtimer_latency),
->  			0);
->  
-> -	if (IS_ERR(od)) {
-> +	if (IS_ERR(pdev)) {
->  		pr_err("%s: Can't build omap_device for %s: %s.\n",
->  			__func__, name, oh->name);
->  		ret = -EINVAL;
-> --- a/arch/arm/mach-omap2/usb-musb.c
-> +++ b/arch/arm/mach-omap2/usb-musb.c
-> @@ -115,7 +115,6 @@ static struct omap_musb_board_data musb_default_board_data = {
->  void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
->  {
->  	struct omap_hwmod		*oh;
-> -	struct omap_device		*od;
->  	struct platform_device		*pdev;
->  	struct device			*dev;
->  	int				bus_id = -1;
-> @@ -145,22 +144,20 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
->  		name = "musb-omap2430";
->  	}
->  
-> -	oh = omap_hwmod_lookup(oh_name);
-> -	if (!oh) {
-> -		pr_err("Could not look up %s\n", oh_name);
-> -		return;
-> -	}
-> +        oh = omap_hwmod_lookup(oh_name);
-> +        if (WARN(!oh, "%s: could not find omap_hwmod for %s\n",
-> +                 __func__, oh_name))
-> +                return;
->  
-> -	od = omap_device_build(name, bus_id, oh, &musb_plat,
-> +	pdev = omap_device_build(name, bus_id, oh, &musb_plat,
->  			       sizeof(musb_plat), omap_musb_latency,
->  			       ARRAY_SIZE(omap_musb_latency), false);
-> -	if (IS_ERR(od)) {
-> +	if (IS_ERR(pdev)) {
->  		pr_err("Could not build omap_device for %s %s\n",
->  						name, oh_name);
->  		return;
->  	}
->  
-> -	pdev = &od->pdev;
->  	dev = &pdev->dev;
->  	get_device(dev);
->  	dev->dma_mask = &musb_dmamask;
+James
+
 
