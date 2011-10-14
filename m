@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab1JNRyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:54:50 -0400
-Received: from antispam02.maxim-ic.com ([205.153.101.183]:48516 "EHLO
-	antispam02.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854Ab1JNRyr (ORCPT
+	id S1756057Ab1JNR4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:56:02 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65441 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1JNR4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:54:47 -0400
-X-Greylist: delayed 824 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 13:54:47 EDT
-X-ASG-Debug-ID: 1318614061-02256b132520be10001-xx1T2L
-X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
-From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 14 Oct 2011 10:40:58 -0700
-Subject: RE: [PATCH] ASoC: max98095: Convert codec->hw_write to snd_soc_write
-Thread-Topic: [PATCH] ASoC: max98095: Convert codec->hw_write to
- snd_soc_write
-X-ASG-Orig-Subj: RE: [PATCH] ASoC: max98095: Convert codec->hw_write to snd_soc_write
-Thread-Index: AcyKI2/P3/ExAcMKQ4Cm3qLzY+4O0gAcUxng
-Message-ID: <B2150E1E4418E1438554A300EA5040E40DDFD2E54E@ITSVLEX06.it.maxim-ic.internal>
-References: <1318563798.9296.1.camel@phoenix>
-In-Reply-To: <1318563798.9296.1.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 14 Oct 2011 13:56:01 -0400
+Date: Fri, 14 Oct 2011 10:55:56 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, JBeulich@novell.com
+Subject: Re: WARNING: at arch/x86/kernel/apic/apic.c:1239
+ setup_local_APIC+...
+Message-ID: <20111014175556.GE4294@google.com>
+References: <20111014135516.GC11990@aftab>
+ <20111014165604.GA14286@aftab>
 MIME-Version: 1.0
-X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
-X-Barracuda-Start-Time: 1318614061
-X-Barracuda-URL: http://192.168.10.183:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.02
-X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.77326
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
-	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014165604.GA14286@aftab>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9EHt9lB020566
 
-On Fri, Oct 14, 2011, Axel Lin wrote:
-> codec->hw_write is broken now, convert codec->hw_write to
-> snd_soc_write.
+Hello,
+
+(cc'ing Jan Beulich)
+
+On Fri, Oct 14, 2011 at 06:56:04PM +0200, Borislav Petkov wrote:
+> On Fri, Oct 14, 2011 at 09:55:16AM -0400, Borislav Petkov wrote:
+> > So, in the end, and AFAICR, the warning triggers because we're comparing
+> > logical APIC IDs from the APIC Logical Destination Register (0xD0) which
+> > have been assigned by BIOS with "1 << cpu" shifted values which wrap on
+> > 32-bit.
+> > 
+> > I'd very much like to know why?
 > 
+> Update: upon a second thought, we think we know why: The WARN_ON
+> cannot stomach the switch to bigsmp apic because, on the one hand,
+> bigsmp_init_apic_ldr() "normalizes" the APIC ids by using the BIOS
+> values (x86_bios_cpu_apicid) but OTOH, x86_cpu_to_logical_apicid
+> contains the early percpu value which got assigned by the default apic,
+> i.e. the shifting thing as it is spec'ed for the LDR register.
+> 
+> So, the way we see it, the WARN_ON should know whether we switched apics
+> or should be removed completely. Btw, why was it added in the first
+> place, the commit message doesn't quite explain why.
 
-The hardware has 2 banks of registers sharing a section in I2C register space.
-The 1st bank is the primary one and is cached.  
-The 2nd bank is for loading coefficients only and they do not need cache.
-These coefficients registers are therefore direct writes.
-Changing this to a cached write will overwrite the cache.
+Jan hit similar problem a while back.
 
-Peter
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+  http://thread.gmane.org/gmane.linux.kernel/1180954
+
+I can't seem to find the patch in mainline.  Jan, Ingo?  Borislav,
+would the patch there resolve the warning you're seeing too?
+
+Anyways, to summarize, the early apic thing isn't necessary anymore
+and can be ripped out and the warning is pretty much bogus at this
+point.  I'll rip it out soonish.
+
+Thank you.
+
+-- 
+tejun
