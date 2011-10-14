@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab1JNAJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 20:09:25 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:35038 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab1JNAJY (ORCPT
+	id S1752913Ab1JNAKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 20:10:00 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:51199 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab1JNAJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 20:09:24 -0400
-Date: Thu, 13 Oct 2011 20:09:13 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        linux-kernel@vger.kernel.org, bblum@andrew.cmu.edu
-Subject: BUG: cgroup_task_counter subsys may crash with whole-threadgroup
- move
-Message-ID: <20111014000913.GA22527@ghc17.ghc.andrew.cmu.edu>
+	Thu, 13 Oct 2011 20:09:58 -0400
+Date: Thu, 13 Oct 2011 18:09:57 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Felipe Balbi <balbi@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, khilman@ti.com, b-cousson@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
+        tony@atomide.com, johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 5/5 v14] omap: usb: host: Replace usbhs core driver APIs
+ by Runtime pm APIs
+In-Reply-To: <Pine.LNX.4.44L0.1110131408440.2026-100000@iolanthe.rowland.org>
+Message-ID: <alpine.DEB.2.00.1110131809290.24155@utopia.booyaka.com>
+References: <Pine.LNX.4.44L0.1110131408440.2026-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_900_999 0, __ANY_URI 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was testing some patches for cgroup_attach_proc and managed to cause a
-crash with the following usage pattern:
+On Thu, 13 Oct 2011, Alan Stern wrote:
 
-    mount -t cgroup none -o tasks /dev/cgroup
-    cd /dev/cgroup
-    mkdir foo
-    echo $PID > foo/cgroup.procs
-    echo $PID > tasks
-    echo $PID > foo/cgroup.procs
+> To keep things simple, this patch should go through the same submission 
+> path as the others in the series.  I view it more as an OMAP thing than 
+> an EHCI thing anyway.  For the record:
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Where $PID is the thread ID of a member of a multithreaded process (my
-test program just does CLONE_THREAD 8 times and then all threads sleep).
-(It doesn't matter if the thread is the group leader or not, but a
-single-threaded process doesn't crash.)
+Thanks, either I and/or Tony will take it from here, after we get 
+Samuel's ack.
 
-And get the following kernel panic:
-http://maximegalon.andrew.cmu.edu/cgroup-taskstats/panic.txt
 
-It's deterministic, and happens only when the "tasks" subsystem is
-mounted.
-
-I'm using user-mode linux to test, with the following config:
-http://maximegalon.andrew.cmu.edu/cgroup-taskstats/config.txt
-
-and I ran it in GDB to get the following backtrace:
-http://maximegalon.andrew.cmu.edu/cgroup-taskstats/bt.txt
-
-Thanks,
-Ben
+- Paul
