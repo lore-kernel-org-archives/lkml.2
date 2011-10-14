@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab1JNMic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:38:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26512 "EHLO
+	id S932901Ab1JNMil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:38:41 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54902 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932854Ab1JNMi1 (ORCPT
+	with ESMTP id S932875Ab1JNMif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:38:27 -0400
+	Fri, 14 Oct 2011 08:38:35 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=UkGgBCdANjNLmLK0kzb1irK4y9TG0mcDHm+bcUB/Iclr/TjtoD30uV+1tyIb2q4r/
-	EaAdVfWHpUDxBVKG1V+YQ==
+	b=DYUUlhUtyJuQcwXuSeQVBACdPOqh179csZEV2bJKKvqmABp7gQ4k7wyz9AFws7GTd
+	3uFI0W+nWVdVoomyHgbeA==
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
@@ -19,9 +19,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
         will.deacon@arm.com, paulus@samba.org, benh@kernel.crashing.org,
         rth@twiddle.net, ralf@linux-mips.org, davem@davemloft.net,
         lethal@linux-sh.org
-Subject: [PATCH 02/12] perf_events: add Intel LBR MSR definitions (v2)
-Date: Fri, 14 Oct 2011 14:37:03 +0200
-Message-Id: <1318595833-29984-3-git-send-email-eranian@google.com>
+Subject: [PATCH 04/12] perf_events: sync branch stack sampling with X86 precise_sampling (v2)
+Date: Fri, 14 Oct 2011 14:37:05 +0200
+Message-Id: <1318595833-29984-5-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1318595833-29984-1-git-send-email-eranian@google.com>
 References: <1318595833-29984-1-git-send-email-eranian@google.com>
@@ -30,71 +30,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the LBR definitions for NHM/WSM/SNB and Core.
-It also adds the definitions for the architected LBR MSR:
-LBR_SELECT, LBRT_TOS.
+If precise sampling is enabled on Intel X86, then perf_event uses PEBS.
+To correct for the off-by-one error of PEBS, perf_event uses LBR when
+precise_sample > 1.
+
+On Intel X86 PERF_SAMPLE_BRANCH_STACK is implemented using LBR,
+therefore both features must be coordinated as they may not
+configure LBR the same way.
+
+For PEBS, LBR needs to capture all branches at all priv levels.
+This patch sets this up.
+
+The configuration of PERF_SAMPLE_BRANCH_STACK may not be compatible
+in which case an error must be returned.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/include/asm/msr-index.h           |    7 +++++++
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++---------
- 2 files changed, 16 insertions(+), 9 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index d52609a..e8f5fbf 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -56,6 +56,13 @@
- #define MSR_OFFCORE_RSP_0		0x000001a6
- #define MSR_OFFCORE_RSP_1		0x000001a7
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index cfef90e..e2efa90 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -358,6 +358,7 @@ int x86_setup_perfctr(struct perf_event *event)
+ int x86_pmu_hw_config(struct perf_event *event)
+ {
+ 	if (event->attr.precise_ip) {
++		u64 *br_type, br_sel;
+ 		int precise = 0;
  
-+#define MSR_LBR_SELECT			0x000001c8
-+#define MSR_LBR_TOS			0x000001c9
-+#define MSR_LBR_NHM_FROM		0x00000680
-+#define MSR_LBR_NHM_TO			0x000006c0
-+#define MSR_LBR_CORE_FROM		0x00000040
-+#define MSR_LBR_CORE_TO			0x00000060
+ 		/* Support for constant skid */
+@@ -371,6 +372,27 @@ int x86_pmu_hw_config(struct perf_event *event)
+ 
+ 		if (event->attr.precise_ip > precise)
+ 			return -EOPNOTSUPP;
++		/*
++		 * check that PEBS LBR correction does not conflict with
++		 * whatever the user is asking with attr->branch_sample_type
++		 */
++		if (event->attr.precise_ip > 1) {
 +
- #define MSR_IA32_PEBS_ENABLE		0x000003f1
- #define MSR_IA32_DS_AREA		0x00000600
- #define MSR_IA32_PERF_CAPABILITIES	0x00000345
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index b07e051..e9ac6e9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -205,23 +205,23 @@ void intel_pmu_lbr_read(void)
- void intel_pmu_lbr_init_core(void)
- {
- 	x86_pmu.lbr_nr     = 4;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x40;
--	x86_pmu.lbr_to     = 0x60;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- }
++			br_type = &event->attr.branch_sample_type;
++
++			if (has_branch_stack(event)) {
++				br_sel = *br_type & PERF_SAMPLE_BRANCH_ANY;
++				if (br_sel != PERF_SAMPLE_BRANCH_ANY)
++					return -EOPNOTSUPP;
++			} else {
++				/*
++				 * For PEBS fixups, we capture all
++				 * the branches at all priv levels
++				 */
++				*br_type = PERF_SAMPLE_BRANCH_ANY
++					 | PERF_SAMPLE_BRANCH_PLM_ALL;
++			}
++		}
+ 	}
  
- void intel_pmu_lbr_init_nhm(void)
- {
- 	x86_pmu.lbr_nr     = 16;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x680;
--	x86_pmu.lbr_to     = 0x6c0;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
- }
- 
- void intel_pmu_lbr_init_atom(void)
- {
- 	x86_pmu.lbr_nr	   = 8;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x40;
--	x86_pmu.lbr_to     = 0x60;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- }
+ 	/*
 -- 
 1.7.1
 
