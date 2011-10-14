@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367Ab1JNRCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:02:42 -0400
-Received: from claw.goop.org ([74.207.240.146]:52646 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755302Ab1JNRCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:02:40 -0400
-Message-ID: <4E986B2B.60803@goop.org>
-Date: Fri, 14 Oct 2011 10:02:35 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755612Ab1JNRDQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:03:16 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:45483 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab1JNRDP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 13:03:15 -0400
+From: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "Seger, Mark" <mark.seger@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
+Date: Fri, 14 Oct 2011 18:02:16 +0100
+Subject: RE: Regression in reading /proc/stat in the newer kernels with
+ large SMP and NUMA configurations
+Thread-Topic: Regression in reading /proc/stat in the newer kernels with
+ large SMP and NUMA configurations
+Thread-Index: AcyKkpBGBr00LwCHTo6XbMuC8Y0O1wAABydw
+Message-ID: <8DC664164FA4D1449479E7B36CDCFB1F221F060AC2@GVW0676EXC.americas.hpqcorp.net>
+References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
+	 <1318595915.2223.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <9FCE3A46FE7C8045A6207AE4B42E9F9A4EC2E29DD4@GVW1119EXC.americas.hpqcorp.net>
+	 <1318600023.2223.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A48@GVW0676EXC.americas.hpqcorp.net>
+	 <1318610416.2223.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A92@GVW0676EXC.americas.hpqcorp.net>
+ <1318611542.2223.47.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1318611542.2223.47.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        konrad.wilk@oracle.com
-Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
-References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com> <1318503245.24856.12.camel@twins> <4E971580.6030300@goop.org> <20111014141701.GA2433@redhat.com>
-In-Reply-To: <20111014141701.GA2433@redhat.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9EH3NT2020339
 
-On 10/14/2011 07:17 AM, Jason Baron wrote:
-> On Thu, Oct 13, 2011 at 09:44:48AM -0700, Jeremy Fitzhardinge wrote:
->> pvops is basically a collection of ordinary _ops structures full of
->> function pointers, but it has a layer of patching to help optimise it. 
->> In the common case, this just replaces an indirect call with a direct
->> one, but in some special cases it can inline code.  This is used for
->> small, extremely performance-critical things like cli/sti, but it
->> awkward to use in general because you have to specify the inlined code
->> as a parameterless asm.
->>
-> I haven't look at the pvops patching (probably should), but I was
-> wondering if jump labels could be used for it? Or is there something
-> that the pvops patching is doing that jump labels can't handle?
+Hi Eric,
 
-Jump labels are essentially binary: you can use path A or path B.  pvops
-are multiway: there's no limit to the number of potential number of
-paravirtualized hypervisor implementations.  At the moment we have 4:
-native, Xen, KVM and lguest.
+Just FYI, the same behavior is seen on multiple hardware platforms so it is definitely kernel changes. The earlier kernel on the DL785 platform was returning reads within 60 microseconds.
+I have measured it on multiple platforms.
 
-As I said, pvops patching is very general since it allows a particular
-op site to be either patched with a direct call/jump to the target code,
-or have code inserted inline at the site.  In fact, it probably wouldn't
-take very much to allow it to implement jump labels.
+In this case we have a DL980 with HT enabled so you will see 128 CPUS. If I shut off HT, it does not make a difference.
 
-And the pvops patching mechanism is certainly general to any *ops style
-structure which is initialized once (or rarely) and could be optimised. 
-LSM, perhaps?
+[root@linuxbeast boot]# dmesg | grep nr_cpu_ids
+NR_CPUS:4096 nr_cpumask_bits:128 nr_cpu_ids:128 nr_node_ids:8
 
->> Jump_labels is basically an efficient way of doing conditionals
->> predicated on rarely-changed booleans - so it's similar to pvops in that
->> it is effectively a very ordinary C construct optimised by dynamic code
->> patching.
->>
-> Another thing is that it can be changed at run-time...Can pvops be
-> adjusted at run-time as opposed to just boot-time?
+-----Original Message-----
+From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
+Sent: Friday, October 14, 2011 12:59 PM
+To: Oberman, Laurence (HAS GSE)
+Cc: Seger, Mark; linux-kernel@vger.kernel.org; Cabaniols, Sebastien
+Subject: RE: Regression in reading /proc/stat in the newer kernels with large SMP and NUMA configurations
 
-No.  In general that wouldn't really make sense, because once you've
-booted on one hypervisor you're stuck there (though hypothetically you
-could consider migration between machines with different hypervisors). 
-In some cases it might make sense though, such as switching on PV
-ticketlocks if the host system becomes overcommitted, but leaving the
-native ticketlocks enabled if not.
+Le vendredi 14 octobre 2011 Ã  17:52 +0100, Oberman, Laurence (HAS GSE) a
+Ã©crit :
+> Standard RHEL kernel build.
+> What the customer would be using.
+> 
+> [root@linuxbeast boot]# cat config-2.6.32-131.6.1.el6.x86_64 | grep NR
+> CONFIG_NR_CPUS=4096
 
-    J
+Then something must be wrong.... what are your nr_cpu_ids /
+nr_cpumask_bits values ?
+
+
+dmesg | grep nr_cpu_ids
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
