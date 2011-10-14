@@ -1,263 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1JNPvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:51:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48050 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab1JNPvK convert rfc822-to-8bit (ORCPT
+	id S1753006Ab1JNPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:54:09 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1763 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab1JNPyH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:51:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318605396.1546.424.camel@vkoul-udesk3>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
- <1318489410-3182-1-git-send-email-jaswinder.singh@linaro.org> <1318605396.1546.424.camel@vkoul-udesk3>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 14 Oct 2011 23:50:49 +0800
-Message-ID: <CAGsJ_4yewc2=6yAWq4HB5trATEf3myEgsaupbLGywi+5J7OmfQ@mail.gmail.com>
-Subject: Re: [PATCHv5] DMAEngine: Define interleaved transfer request api
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, rmk@arm.linux.org.uk
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 Oct 2011 11:54:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 14 Oct 2011 08:53:34 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stijn Devriendt <highguy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>
+Date: Fri, 14 Oct 2011 08:53:33 -0700
+Subject: RE: pinctrl_config APIs, and other pinmux questions
+Thread-Topic: pinctrl_config APIs, and other pinmux questions
+Thread-Index: AcyKgFuNg5UZqe9xTCy0UzuaN/5DDgABVzhg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A275@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A166@HQMAIL01.nvidia.com>
+ <20111014145900.GA28728@S2100-06.ap.freescale.net>
+In-Reply-To: <20111014145900.GA28728@S2100-06.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/14 Vinod Koul <vinod.koul@intel.com>:
-> On Thu, 2011-10-13 at 12:33 +0530, Jassi Brar wrote:
->> Define a new api that could be used for doing fancy data transfers
->> like interleaved to contiguous copy and vice-versa.
->> Traditional SG_list based transfers tend to be very inefficient in
->> such cases as where the interleave and chunk are only a few bytes,
->> which call for a very condensed api to convey pattern of the transfer.
->> This api supports all 4 variants of scatter-gather and contiguous transfer.
->>
->> Of course, neither can this api help transfers that don't lend to DMA by
->> nature, i.e, scattered tiny read/writes with no periodic pattern.
->>
->> Also since now we support SLAVE channels that might not provide
->> device_prep_slave_sg callback but device_prep_interleaved_dma,
->> remove the BUG_ON check.
->>
->> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->> ---
->>
->> Dan,
->>  After waiting for a reply from you/Alexandre a couple of days I am revising
->>  my patch without adding a hook for RapidIO case for 2 reasons:
->>   a) I think the RapidIO requirement is served better by the concept of
->>      virtual channels, rather than hacking "struct dma_chan" to reach more
->>      than one device.
->>   b) If Alexandre comes up with something irresistible, we can always add
->>      the hook later.
->>
->> Changes since v4:
->> 1) Dropped the 'frm_irq' member.
->> 2) Renamed 'xfer_direction' to 'dma_transfer_direction'
->>
->> Changes since v3:
->> 1) Added explicit type for source and destination.
->>
->> Changes since v2:
->> 1) Added some notes to documentation.
->> 2) Removed the BUG_ON check that expects every SLAVE channel to
->>    provide a prep_slave_sg, as we are now valid otherwise too.
->> 3) Fixed the DMA_TX_TYPE_END offset - made it last element of enum.
->> 4) Renamed prep_dma_genxfer to prep_interleaved_dma as Vinod wanted.
->>
->> Changes since v1:
->> 1) Dropped the 'dma_transaction_type' member until we really
->>    merge another type into this api. Instead added special
->>    type for this api - DMA_GENXFER in dma_transaction_type.
->> 2) Renamed 'xfer_template' to 'dmaxfer_template' inorder to
->>
->>  Documentation/dmaengine.txt |    8 ++++
->>  drivers/dma/dmaengine.c     |    4 +-
->>  include/linux/dmaengine.h   |   82 +++++++++++++++++++++++++++++++++++++++++-
->>  3 files changed, 90 insertions(+), 4 deletions(-)
->>
->> diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
->> index 94b7e0f..962a2d3 100644
->> --- a/Documentation/dmaengine.txt
->> +++ b/Documentation/dmaengine.txt
->> @@ -75,6 +75,10 @@ The slave DMA usage consists of following steps:
->>     slave_sg  - DMA a list of scatter gather buffers from/to a peripheral
->>     dma_cyclic        - Perform a cyclic DMA operation from/to a peripheral till the
->>                 operation is explicitly stopped.
->> +   interleaved_dma - This is common to Slave as well as M2M clients. For slave
->> +              address of devices' fifo could be already known to the driver.
->> +              Various types of operations could be expressed by setting
->> +              appropriate values to the 'dmaxfer_template' members.
->>
->>     A non-NULL return of this transfer API represents a "descriptor" for
->>     the given transaction.
->> @@ -89,6 +93,10 @@ The slave DMA usage consists of following steps:
->>               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
->>               size_t period_len, enum dma_data_direction direction);
->>
->> +     struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->> +             struct dma_chan *chan, struct dmaxfer_template *xt,
->> +             unsigned long flags);
->> +
->>     The peripheral driver is expected to have mapped the scatterlist for
->>     the DMA operation prior to calling device_prep_slave_sg, and must
->>     keep the scatterlist mapped until the DMA operation has completed.
->> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
->> index b48967b..a6c6051 100644
->> --- a/drivers/dma/dmaengine.c
->> +++ b/drivers/dma/dmaengine.c
->> @@ -693,12 +693,12 @@ int dma_async_device_register(struct dma_device *device)
->>               !device->device_prep_dma_interrupt);
->>       BUG_ON(dma_has_cap(DMA_SG, device->cap_mask) &&
->>               !device->device_prep_dma_sg);
->> -     BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
->> -             !device->device_prep_slave_sg);
->>       BUG_ON(dma_has_cap(DMA_CYCLIC, device->cap_mask) &&
->>               !device->device_prep_dma_cyclic);
->>       BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
->>               !device->device_control);
->> +     BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
->> +             !device->device_prep_interleaved_dma);
->>
->>       BUG_ON(!device->device_alloc_chan_resources);
->>       BUG_ON(!device->device_free_chan_resources);
->> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
->> index 8fbf40e..ce8c40a 100644
->> --- a/include/linux/dmaengine.h
->> +++ b/include/linux/dmaengine.h
->> @@ -71,11 +71,85 @@ enum dma_transaction_type {
->>       DMA_ASYNC_TX,
->>       DMA_SLAVE,
->>       DMA_CYCLIC,
->> +     DMA_INTERLEAVE,
->> +/* last transaction type for creation of the capabilities mask */
->> +     DMA_TX_TYPE_END,
->>  };
->>
->> -/* last transaction type for creation of the capabilities mask */
->> -#define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
->> +enum dma_transfer_direction {
->> +     MEM_TO_MEM,
->> +     MEM_TO_DEV,
->> +     DEV_TO_MEM,
->> +     DEV_TO_DEV,
->> +};
->> +
->> +/**
->> + * Interleaved Transfer Request
->> + * ----------------------------
->> + * A chunk is collection of contiguous bytes to be transfered.
->> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
->> + * ICGs may or maynot change between chunks.
->> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
->> + *  that when repeated an integral number of times, specifies the transfer.
->> + * A transfer template is specification of a Frame, the number of times
->> + *  it is to be repeated and other per-transfer attributes.
->> + *
->> + * Practically, a client driver would have ready a template for each
->> + *  type of transfer it is going to need during its lifetime and
->> + *  set only 'src_start' and 'dst_start' before submitting the requests.
->> + *
->> + *
->> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
->> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
->> + *
->> + *    ==  Chunk size
->> + *    ... ICG
->> + */
->>
->> +/**
->> + * struct data_chunk - Element of scatter-gather list that makes a frame.
->> + * @size: Number of bytes to read from source.
->> + *     size_dst := fn(op, size_src), so doesn't mean much for destination.
->> + * @icg: Number of bytes to jump after last src/dst address of this
->> + *    chunk and before first src/dst address for next chunk.
->> + *    Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
->> + *    Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
->> + */
->> +struct data_chunk {
->> +     size_t size;
->> +     size_t icg;
->> +};
->> +
->> +/**
->> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
->> + *    and attributes.
->> + * @src_start: Bus address of source for the first chunk.
->> + * @dst_start: Bus address of destination for the first chunk.
->> + * @dir: Specifies the type of Source and Destination.
->> + * @src_inc: If the source address increments after reading from it.
->> + * @dst_inc: If the destination address increments after writing to it.
->> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
->> + *           Otherwise, source is read contiguously (icg ignored).
->> + *           Ignored if src_inc is false.
->> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
->> + *           Otherwise, destination is filled contiguously (icg ignored).
->> + *           Ignored if dst_inc is false.
->> + * @numf: Number of frames in this template.
->> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
->> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
->> + */
->> +struct dmaxfer_template {
->> +     dma_addr_t src_start;
->> +     dma_addr_t dst_start;
->> +     enum dma_transfer_direction dir;
->> +     bool src_inc;
->> +     bool dst_inc;
->> +     bool src_sgl;
->> +     bool dst_sgl;
->> +     size_t numf;
->> +     size_t frame_size;
->> +     struct data_chunk sgl[0];
->> +};
->>
->>  /**
->>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
->> @@ -432,6 +506,7 @@ struct dma_tx_state {
->>   * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
->>   *   The function takes a buffer of size buf_len. The callback function will
->>   *   be called after period_len bytes have been transferred.
->> + * @device_prep_interleaved_dma: Transfer expression in a generic way.
->>   * @device_control: manipulate all pending operations on a channel, returns
->>   *   zero or error code
->>   * @device_tx_status: poll for transaction completion, the optional
->> @@ -496,6 +571,9 @@ struct dma_device {
->>       struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
->>               struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
->>               size_t period_len, enum dma_data_direction direction);
->> +     struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->> +             struct dma_chan *chan, struct dmaxfer_template *xt,
->> +             unsigned long flags);
->>       int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->>               unsigned long arg);
->>
-> IMO this looks decent now, we can take this for merge if we don't have
-> any other issues.
-> Ideally would be great if we also need to see the usage for this
-> API .... Barry?. I am okay to host this up on a branch meanwhile.
-
-yes. i am glad to see this merged.
-
-we'll rebase CSR prima2 dma driver to your dma_transfer_direction
-patch, use this new api , fix other commented issues and send v3.
-
+Shawn Guo wrote at Friday, October 14, 2011 8:59 AM:
+> It might be a good place for me to catch up the pinctrl subsystem
+> discussion, as far as imx migration concerned.
+> 
+> I have not read the backlog of all the previous discussion, so please
+> excuse me if something I put here have been discussed.
+> 
+> On Thu, Oct 13, 2011 at 01:59:55PM -0700, Stephen Warren wrote:
+> > Linus, (and other people interested in pinmux!)
+> >
+> > I've started to look at porting the Tegra pinmux driver to your pinctrl
+> > subsystem. In order to replace the existing pinmux driver, I need a way
+> > to support configuring options such as tri-state, pull-up/down, drive-
+> > strength, etc.
+...
+> > 2) Enhance the pin controller subsystem to support configuring these
+> > properties.
 >
-> Just a minor nitpick, I would have really like dmaxfer_template to be
-> named dma_interleaved_template. I think we are still quite far from
-> generic transfer template. Jassi if you agree I can fix that up while
-> applying, no need to revise for nitpick :)
+> Yeah.  I remember Linus.W originally named the subsystem pinmux and
+> changed it to pinctrl later for that he wants to cover not only pinmux
+> but also pin/pad configuration with this subsystem.
 
-generic will be something covering all current "non-generic" modes. it
-seems it doesn't for the moment.
-so dma_interleaved_template should be better at least by now.
+AIUI, the pin control subsystem is intended to encompass both pin muxing
+and pin configuration, it's just that the pin configuration part isn't
+fleshed out yet, and will be via a separate ops structure that the overall
+driver can provide.
 
-And when you apply this patch, you might add:
+...
+> > I propose adding the following to pinctrl_ops:
+> >
+> > int (*pin_config)(unsigned pin, u32 param, u32 data);
+> > int (*group_config)(unsigned group, u32 param, u32 data);
+...
+> > Having both config_pin and config_group functions:
+> >
+> > Tegra at least has settings that are applicable to groups. Most (all??)
+> > other SoCs apply configurations to individual pins. I think we need
+> > separate functions to make this explicit, so the function knows if it's
+> > looking up selector as a pin name (ID) or a group name (ID).
+> >
+> The "group" defined in this subsystem does not necessarily require
+> multiple pins be controlled by single register at hardware level.
+> A group of pins muxed for given function can be controlled by hardware
+> in the way of individual pin.  Similar to pinmux, I guess that the
+> interface between pincfg and core can take group only, and leave the
+> mapping between group and pins to the driver.  Single-pin function can
+> be a particular case of group-pins.
 
-Acked-by: Barry Song <Baohua.Song@csr.com>
+That's true; we could define a group for each pin, which no function uses
+as a legal group/position, but does allow config() to be used.
 
+> > Issue 2: Do we need a new "pin settings" table passed from the board to
+> > the pin controller core?
+> >
+> > Issue 3: Do we need to change "pin settings" on-the-fly, or only at boot?
+...
+> > However, if we ever want things to change dynamically (say, suspend/
+> > resume), or only be activated when a device initializes (just like the
+> > mux settings), we need to enhance struct pinmux_map to contain either
+> > mux settings or config settings; perhaps rework it as follows:
 >
-> --
-> ~Vinod
+> I would think that we need to enhance pinmux_map to contain both mux
+> *and* config settings.  To me, the mapping seems to be a group of pins
+> with specific mux and config settings for a given function.
+> 
+> > enum pinmux_map_type {
+> >     MUX,
+> >     PIN_CONFIG,
+> >     GROUP_CONFIG
+> > };
+> >
+> > struct pinmux_map {
+> >         const char *name;
+> >         struct device *ctrl_dev;
+> >         const char *ctrl_dev_name;
+> >         enum pinmux_map_type type;
+> >         union {
+> >             struct {
+> >                 const char *function;
+> >                 const char *group;
+> >             } mux;
+> >             struct {
+> >                 u32 param;
+> >                 u32 data;
+> >             } config;
+> >         } data;
+> >         struct device *dev;
+> >         const char *dev_name;
+> >         const bool hog_on_boot;
+> > };
+> 
+> If the config has limited number of possible settings for given
+> function, we can probably enumerate it in pinctrl driver just like
+> what we are doing with pinmux option, and add parameter "config" to
+> pinmux_map to select pincfg option for given mapping.
+> 
+> @@ -46,6 +46,7 @@ struct pinmux_map {
+>         const char *ctrl_dev_name;
+>         const char *function;
+>         const char *group;
+> +       const char *config;
+>         struct device *dev;
+>         const char *dev_name;
+>         const bool hog_on_boot;
+> 
+> > Such that pinmux_enable would both activate all the mux settings, and
+> > also call pin/group_config based on the mapping table.
 
--barry
+Having the driver expose a list of all possible combinations of pin
+configurations seems impractical, for the same reason as I objected to
+the original proposal for how the driver listed functions; there are
+simply far too many pin config parameters and legal value to list the
+entire set of combinations.
+
+Listing legal values for each param individual option might be OK, but
+at least on Tegra, there are some interactions between them (e.g. for
+low drive strength, I think some of the faster slew rates aren't available
+or something like that). I'd tend to avoid the pinmux core defining any
+format for validation of config values requested in the mapping table,
+and have the driver or HW do that if required.
+
+However, I like your idea above of simply adding one extra "config" field
+to the mapping table, rather than adding extra rows each detailing one
+config value. However, instead, of a "char *" pointing at an enumerated
+named config, perhaps just point at a board-/dt-defined (rather than
+driver-defined) list of config values:
+
+struct pinmux_config {
+    u32 param;
+    u32 value;
+};
+
+Then add the following to each mapping table entry:
+
+struct pinmux_map {
+	...
+	struct pinmux_config *configs;
+	int                   nconfigs;
+
+
+> > Issue 5: Suspend/resume, and other state changes
+...
+> > The pinmux API currently conflates two different things:
+> >
+> > a) A device's ownership of certain pins.
+> >
+> > b) The configuration of those pins.
+> >
+> > I think we should aim for some mechanism of teasing those two concepts
+> > apart, and allowing dynamic transitioning between different configurations
+> > for the owned pins without completely releasing them.
+> >
+> > There's also the slight issue that if you put() a mapping to change to
+> > another one, there's a small window where the driver doesn't own the pins,
+> > which might show up in a pinmux debug file, or allow another driver to
+> > take ownership of them.
+> >
+> I agree with above observations.  For my example on imx6q usdhc, when
+> changing from one mapping to another with only pincfg differences, we
+> should manage pinctrl core not release the pins.  I'm not sure that the
+> following solution is optimal though, as the changes to the API seems
+> significant.
+
+It true that I proposed quite a change to the API.
+
+That said, I think most of the difference in my example was naming.
+Re-writing my proposal with existing names, and modifying it to just
+add parameters to existing functions rather than introducing a new set
+of functions might end up with:
+
+Driver mapping_name configuration group  mux  config
+--------------------------------------------------------------------
+i2c    -            active        i2cp   i2c  tristate = false, ...
+i2c    -            suspend       i2cp   i2c  tristate = true, ...
+
+Driver probe():
+
+pmx = pinmux_get(device, NULL /* mapping_name */)
+pinmux_enable(pmx, "active"); // All we do is add a new parameter here
+
+Driver suspend():
+
+// Within this call, the pinmux driver doesn't have to program safe values
+// into HW, because it knows that any future programming on pins relevant
+// to the driver can only be driven by mapping table entries for same
+// reserved "pmx", and we assume the person creating those mapping table
+// entries didn't set up some problematic configuration.
+//
+// The mapping tables may be set up so the only difference is some pin/
+// group_config values here
+//
+// Enable acts like enable or switch-to-new-config depending on whether
+// it was previously called or not.
+pinmux_enable(pmx, "suspend")
+
+Driver resume():
+
+pinmux_enable(pmx, "active")
+
+Driver remove():
+
+// Within this call, the pinmux driver programs the safe values into HW,
+// since the ownership of the pins is released; some other driver may
+// start using the pins or mux'd HW modules now.
+pinmux_disable(pmx)
+pinmux_put(pmx)
+
+-- 
+nvpublic
+
