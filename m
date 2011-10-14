@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab1JNPoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:44:20 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:54337 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab1JNPoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:44:18 -0400
-Message-ID: <4E9858CB.7080005@linux.vnet.ibm.com>
-Date: Fri, 14 Oct 2011 10:44:11 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1751749Ab1JNPov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:44:51 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41560 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751332Ab1JNPot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 11:44:49 -0400
+Date: Fri, 14 Oct 2011 11:44:48 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <rdunlap@xenotime.net>,
+        <len.brown@intel.com>, <pavel@ucw.cz>, <a.p.zijlstra@chello.nl>,
+        <linux-pm@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] Documentation/power: Update docs about suspend and
+ CPU hotplug
+In-Reply-To: <4E97D5B0.60801@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1110141140080.2036-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH 0/3] PCI: Rework config space locking, add INTx masking
- services
-References: <cover.1315846441.git.jan.kiszka@siemens.com> <20111006084853.033d8d0f@jbarnes-desktop>
-In-Reply-To: <20111006084853.033d8d0f@jbarnes-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2011 10:48 AM, Jesse Barnes wrote:
-> On Mon, 12 Sep 2011 18:54:01 +0200
-> Jan Kiszka <jan.kiszka@siemens.com> wrote:
-> 
->> This series tries to heal the currently broken locking scheme around PCI
->> config space accesses.
->>
->> We have an interface lock out access via sysfs, but that service wrongly
->> assumes it is only called by one instance at a time for some device. So
->> two loops doing
->>
->> echo 1 > /sys/bus/pci/devices/<some-device>/reset
->>
->> in parallel will trigger a kernel BUG at the moment.
->>
->> Besides synchronizing with user space, we also need to manage config
->> space access of generic PCI drivers. They need to mask legacy interrupt
->> lines while the specific driver runs in user space or a guest OS.
->>
->> The approach taken here is provide mutex-like locking for general
->> access - which still requires a special mechanism due to requirements of
->> the IBM Power RAID SCSI driver. Furthermore, INTx masking is now
->> available via the PCI core and synchronized via the internal pci_lock.
->>
->> Not sure who may want to take this, so I'm CC'ing broadly.
-> 
-> ISTR a bunch of discussion about this (just back from lots of work
-> travel and vacation, sorry I missed most of it).
-> 
-> Is this the agreed upon way of handling it?  If so, can I get some
-> Reviewed/Acked-bys from people?
+On Fri, 14 Oct 2011, Srivatsa S. Bhat wrote:
 
-Acked-by: Brian King <brking@linux.vnet.ibm.com>
+> Update the documentation about the interaction between the suspend (S3) call
+> path and the CPU hotplug infrastructure.
+> This patch focusses only on the activities of the freezer, cpu hotplug and
+> the notifications involved. It outlines how regular CPU hotplug differs from
+> the way it is invoked during suspend and also tries to explain the locking
+> involved.
+> 
+> v2: Clarified the question, to emphasize that the document explains only
+>     the difference (and similarity) in the two code paths but not what happens
+>     when race conditions occur between them.
 
--- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
+Drawing the two diagrams in parallel, the way this does, carries a very
+strong implication that the events being described happen in parallel.  
+It really would be much better to have two separate diagrams and point
+out the common portions.
 
+Also, the document should discuss the issues involved in CPU hotplug.  
+In particular, what happens if the CPUs are not all the same, or if the 
+requiring differing microcodes.  And whether or not the microcode needs 
+to get reloaded (presumably only after hibernation, not after suspend).
+And what happens when a CPU is hot-unplugged and replaced with a 
+differeing CPU which is then hot-plugged.
+
+Alan Stern
 
