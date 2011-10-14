@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715Ab1JNTQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 15:16:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932477Ab1JNTQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 15:16:13 -0400
-Date: Fri, 14 Oct 2011 13:16:05 -0600
-From: Greg KH <gregkh@suse.de>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: kys@microsoft.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        Mike Sterling <Mike.Sterling@microsoft.com>,
-        NetDev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] staging: hv: move hv_netvsc out of staging area
-Message-ID: <20111014191605.GA31039@suse.de>
-References: <1318620026-8349-1-git-send-email-haiyangz@microsoft.com>
+	id S1756227Ab1JNTUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 15:20:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36972 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753661Ab1JNTUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 15:20:11 -0400
+Date: Fri, 14 Oct 2011 20:20:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v3 2/8] ASoC: da7210: Add support for DAPM
+Message-ID: <20111014192008.GD2931@opensource.wolfsonmicro.com>
+References: <1318590098.12107.509.camel@matrix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318620026-8349-1-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <1318590098.12107.509.camel@matrix>
+X-Cookie: Chess tonight.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 12:20:26PM -0700, Haiyang Zhang wrote:
-> hv_netvsc has been reviewed on netdev mailing list on 6/09/2011.
-> All recommended changes have been made. We are requesting to move
-> it out of staging area.
-> 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: KY Srinivasan <kys@microsoft.com>
-> Signed-off-by: Mike Sterling <Mike.Sterling@microsoft.com>
-> Cc: NetDev <netdev@vger.kernel.org>
-> 
-> ---
->  drivers/net/Kconfig                               |    2 ++
->  drivers/net/Makefile                              |    2 ++
->  drivers/net/hyperv/Kconfig                        |    5 +++++
->  drivers/net/hyperv/Makefile                       |    3 +++
->  drivers/{staging/hv => net/hyperv}/hyperv_net.h   |    0
->  drivers/{staging/hv => net/hyperv}/netvsc.c       |    0
->  drivers/{staging/hv => net/hyperv}/netvsc_drv.c   |    0
->  drivers/{staging/hv => net/hyperv}/rndis_filter.c |    0
+On Fri, Oct 14, 2011 at 04:31:38PM +0530, Ashish Chavan wrote:
 
-Because of renames, the network developers really can't review this.  I
-suggest posting a new patch, that just adds the driver to the
-drivers/net/ directory, and have the network developer review it that
-way.
+> +	/* ADCs */
+> +	SND_SOC_DAPM_ADC("ADC Left", "Capture", DA7210_STARTUP3, 5, 1),
+> +	SND_SOC_DAPM_ADC("ADC Right", "Capture", DA7210_STARTUP3, 6, 1),
+> +
+> +	/* Output Side */
+> +	/* DACs */
+> +	SND_SOC_DAPM_DAC("DAC Left", "Playback", DA7210_STARTUP2, 5, 1),
+> +	SND_SOC_DAPM_DAC("DAC Right", "Playback", DA7210_STARTUP2, 6, 1),
 
-Then, when it is accepted, I can delete the version in the staging
-directory.  We've done it this way for other drivers and it is the best
-way to get proper reviews as well as handling cross-subsystem merge
-issues.
-
-thanks,
-
-greg k-h
+These are also being enabled in the probe() function using completely
+different registers - there the registers used are _ADC and _DAC.
+What's going on there?  It's good to see the stuff in the startup()
+function gone but almost all of the probe() just shouldn't be there in a
+properly written driver and much of it looks like stuff that DAPM should
+be taking care of.
