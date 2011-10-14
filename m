@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab1JNLBH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 07:01:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47911 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab1JNLBG convert rfc822-to-8bit (ORCPT
+	id S932644Ab1JNLE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 07:04:57 -0400
+Received: from furry1.cpalmer.me.uk ([91.84.39.42]:36801 "EHLO
+	furry1.cpalmer.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068Ab1JNLE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 07:01:06 -0400
+	Fri, 14 Oct 2011 07:04:56 -0400
+X-Greylist: delayed 826 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 07:04:56 EDT
+Message-ID: <4E98175A.8040905@pobox.com>
+Date: Fri, 14 Oct 2011 12:04:58 +0100
+From: Chris Palmer <chris.palmer@pobox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1318570705-17595-10-git-send-email-vinod.koul@intel.com>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
-	<1318570705-17595-10-git-send-email-vinod.koul@intel.com>
-Date: Fri, 14 Oct 2011 16:31:04 +0530
-Message-ID: <CAJe_Zhdy6gs1xqomhpGH9wrTHq5DhZsSDpzeNFRr84e9VPQEig@mail.gmail.com>
-Subject: Re: [PATCH 09/10] USB: move to dma_transfer_direction
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org, 21cnbao@gmail.com,
-        rmk@arm.linux.org.uk, Vinod Koul <vinod.koul@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Subject: [PROBLEM] ASUS Sandybridge motherboards + PCI not working (IRQ n:
+ nobody cared)
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 October 2011 11:08, Vinod Koul <vinod.koul@intel.com> wrote:
->
-> diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-> index ef4333f..9587bdd 100644
-> --- a/drivers/usb/musb/ux500_dma.c
-> +++ b/drivers/usb/musb/ux500_dma.c
-> @@ -112,7 +112,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
->        struct musb_hw_ep *hw_ep = ux500_channel->hw_ep;
->        struct dma_chan *dma_chan = ux500_channel->dma_chan;
->        struct dma_async_tx_descriptor *dma_desc;
-> -       enum dma_data_direction direction;
-> +       enum dma_transfer_direction direction;
->        struct scatterlist sg;
->        struct dma_slave_config slave_conf;
->        enum dma_slave_buswidth addr_width;
-> @@ -132,7 +132,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
->        sg_dma_address(&sg) = dma_addr;
->        sg_dma_len(&sg) = len;
->
-> -       direction = ux500_channel->is_tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
-> +       slave_dirn = ux500_channel->is_tx ? MEM_TO_DEV : DEV_TO_MEM;
->        addr_width = (len & 0x3) ? DMA_SLAVE_BUSWIDTH_1_BYTE :
->                                        DMA_SLAVE_BUSWIDTH_4_BYTES;
->
-s/slave_dirn/direction ?
+Interrupt handling for *PCI boards with ASUS Sandybridge motherboards*
+seems to be broken.
+
+It has been seen with network and non-network PCI boards. PCIx network
+boards work OK. And all reports are for ASUS motherboards.
+
+It always results in the infamous "IRQ n: nobody cared" message usually
+within an hour. It is possible to restart things by rmmod/modprobe on
+the appropriate PCI driver.
+
+Andrew Morton kindly took a quick look and thinks it is most likely an
+ACPI bug.
+
+Configuration summary:
+ - ASUS P8H67-V/R3 Motherboard (others have problems with similar M/Bs)
+ - M/B BIOS 0804 (just updated to that - no change)
+ - Core i5/2500K
+ - Onboard ethernet (at11c driver - works)
+ - Additional PCIx Intel ethernet board (e1000e driver - works)
+ - Additional PCI Broadcom BCM5702X ethernet board (tg3 driver - fails)
+	[ Also fails with other PCI boards such as RTL8139 ]
+ - Kernel 3.0.6
+
+
+Any help much appreciated...
+
+Previous references:
+
+https://lkml.org/lkml/2011/6/30/197
+https://bugzilla.kernel.org/show_bug.cgi?id=38632
+https://bugzilla.redhat.com/show_bug.cgi?id=713351
+https://bugzilla.kernel.org/show_bug.cgi?id=35332
+https://bugzilla.kernel.org/show_bug.cgi?id=34242
+https://bugzilla.kernel.org/show_bug.cgi?id=32242
+https://bugzilla.kernel.org/show_bug.cgi?id=39122
+
+Chris
