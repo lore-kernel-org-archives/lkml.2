@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420Ab1JNRVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:21:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60929 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab1JNRVs convert rfc822-to-8bit (ORCPT
+	id S1752893Ab1JNR0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:26:12 -0400
+Received: from re04.intra2net.com ([82.165.46.26]:44270 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab1JNR0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:21:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=uDK6VHSlzM6Jr8/bADQVSQEqVBVV7xcPF806qOPBvlPtDkr9PLueE9IBWv42b0q9Z
-	8oUH6z5Lla5HC8cY61sRQ==
+	Fri, 14 Oct 2011 13:26:11 -0400
+X-Greylist: delayed 1784 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Oct 2011 13:26:11 EDT
+Message-ID: <4E9870A8.2010905@intra2net.com>
+Date: Fri, 14 Oct 2011 19:26:00 +0200
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <1318607132.3018.30.camel@dabdike.int.hansenpartnership.com>
-References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
- <1318605254.3018.20.camel@dabdike.int.hansenpartnership.com>
- <CAErSpo7d3hHeJU87zYo=yJoG3eqOZ4QggkOyNnu7xuJe8oG9Qg@mail.gmail.com> <1318607132.3018.30.camel@dabdike.int.hansenpartnership.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 14 Oct 2011 11:21:26 -0600
-Message-ID: <CAErSpo7HKLHUcFBO9=--C4X3casDvtTpwRTq3up_mfOBJ+zbjw@mail.gmail.com>
-Subject: Re: [PATCH v2 00/29] Create PCI root buses with correct resources
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Christoph Lameter <cl@gentwo.org>
+CC: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [slabinfo PATCH] Fix off-by-one after readlink() call
+References: <4E9869B4.6080702@intra2net.com> <alpine.DEB.2.00.1110141214270.6411@router.home>
+In-Reply-To: <alpine.DEB.2.00.1110141214270.6411@router.home>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 9:45 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Fri, 2011-10-14 at 09:33 -0600, Bjorn Helgaas wrote:
->> On Fri, Oct 14, 2011 at 9:14 AM, James Bottomley
->> <James.Bottomley@hansenpartnership.com> wrote:
->> > On Thu, 2011-10-13 at 22:27 -0600, Bjorn Helgaas wrote:
->> >> The most generic way to create a PCI root bus is with pci_scan_bus(), but
->> >> that doesn't allow you to specify what resources are available on the bus,
->> >> i.e., what the host bridge apertures are.
->> >
->> > Do you have an actual tree for this?  The PARISC pieces look a bit
->> > non-trivial and I'd like to test them out on the various sba/astro/dino
->> > systems.
+On 10/14/2011 07:16 PM, Christoph Lameter wrote:
+>> index 868cc93..cc1a378 100644
+>> --- a/tools/slub/slabinfo.c
+>> +++ b/tools/slub/slabinfo.c
+>> @@ -1145,7 +1145,7 @@ static void read_slab_dir(void)
+>>  		switch (de->d_type) {
+>>  		   case DT_LNK:
+>>  			alias->name = strdup(de->d_name);
+>> -			count = readlink(de->d_name, buffer, sizeof(buffer));
+>> +			count = readlink(de->d_name, buffer, sizeof(buffer)-1);
 >>
->> I don't yet, but it'd be great if you were willing to test them out,
->> so I'll set one up.
->>
->> While this is on your mind, I'm dubious about the pci_enable_bridges()
->> call in lba_driver_probe() and the pci_bus_assign_resources() call in
->> dino_probe().  These stand out as exceptions because no other arches
->> do that.
->>
->> If they weren't there, both places could use pci_scan_root_bus() like
->> most other arches.
->
-> Right, the dino code actually has to rearrange some of the PCI resources
-> to make sure we get our apertures correct.  That's the specific bit I
-> was planning to test.  I think it's only relevant for dino SBA cards
-> where the bridge doesn't set up the card correctly so we have to do it
-> after the fact.
+> 
+> DESCRIPTION
+>        readlink()  places  the  contents  of the symbolic link path in the buffer buf, which has size bufsiz.  readlink() does not append a
+>        null byte to buf.  It will truncate the contents (to a length of bufsiz characters), in case the buffer is too small to hold all  of
+>        the contents.
 
-I put these patches here: git://github.com/bjorn-helgaas/linux.git on
-the "pci-scan" branch.
+The problem is the line after the readlink() call:
 
-Bjorn
+buffer[count] = '\0';
+
+The common technique is to reduce the buffer size by one.
+Another fix would be to check
+
+"
+if (count < 0 || count == sizeof(buffer))
+    fatal();
+"
+
+Reducing the buffer size by one is easier IMHO.
+
+Cheers,
+Thomas
