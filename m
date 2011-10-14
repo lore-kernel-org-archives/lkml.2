@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab1JNJIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 05:08:36 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:51320 "EHLO smtp5-g21.free.fr"
+	id S1755948Ab1JNJIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:08:44 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:51724 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755542Ab1JNJId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 05:08:33 -0400
+	id S1755731Ab1JNJIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 05:08:42 -0400
 From: Corentin Chary <corentincj@iksaif.net>
 To: Matthew Garrett <mjg@redhat.com>
 Cc: Anisse Astier <anisse@astier.eu>, acpi4asus-user@lists.sourceforge.net,
         platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
         Andy Ross <andy.ross@windriver.com>,
         Corentin Chary <corentin.chary@gmail.com>
-Subject: [PATCH 2/8] asus-laptop: Pegatron Lucid ALS sensor
-Date: Fri, 14 Oct 2011 11:13:36 +0200
-Message-Id: <1318583622-23518-3-git-send-email-corentincj@iksaif.net>
+Subject: [PATCH 4/8] asus-laptop: Pegatron Lucid accelerometer
+Date: Fri, 14 Oct 2011 11:13:38 +0200
+Message-Id: <1318583622-23518-5-git-send-email-corentincj@iksaif.net>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
 References: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
@@ -24,166 +24,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andy Ross <andy.ross@windriver.com>
 
-Ambient light sensor for Pegatron Lucid.  Supports pre-existing
-ls_switch sysfs interface to en/disable automatic control, and exports
-the brightness from the device as "ls_value".
+Support the built-in accelerometer on the Lucid tablets as a standard
+3-axis input device.
 
 Signed-off-by: Andy Ross <andy.ross@windriver.com>
 Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 ---
- drivers/platform/x86/asus-laptop.c |   80 +++++++++++++++++++++++++++++++++--
- 1 files changed, 75 insertions(+), 5 deletions(-)
+ drivers/platform/x86/Kconfig       |    9 ++-
+ drivers/platform/x86/asus-laptop.c |  129 +++++++++++++++++++++++++++++++++++-
+ 2 files changed, 133 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 4e5623e..0d4146c 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -69,10 +69,11 @@ config ASUS_LAPTOP
+ 	  This is a driver for Asus laptops, Lenovo SL and the Pegatron
+ 	  Lucid tablet. It may also support some MEDION, JVC or VICTOR
+ 	  laptops. It makes all the extra buttons generate standard
+-	  ACPI events and input events. It also adds support for video
+-	  output switching, LCD backlight control, Bluetooth and Wlan
+-	  control, and most importantly, allows you to blink those
+-	  fancy LEDs.
++	  ACPI events and input events, and on the Lucid the built-in
++	  accelerometer appears as an input device.  It also adds
++	  support for video output switching, LCD backlight control,
++	  Bluetooth and Wlan control, and most importantly, allows you
++	  to blink those fancy LEDs.
+ 
+ 	  For more information see <http://acpi4asus.sf.net>.
+ 
 diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
-index c08f4c2..afed9ff 100644
+index e892a43..7fe5aa5 100644
 --- a/drivers/platform/x86/asus-laptop.c
 +++ b/drivers/platform/x86/asus-laptop.c
-@@ -177,9 +177,15 @@ MODULE_PARM_DESC(wwan_status, "Set the wireless status on boot "
+@@ -193,6 +193,14 @@ MODULE_PARM_DESC(als_status, "Set the ALS status on boot "
+ #define PEGA_READ_ALS_H	0x02
+ #define PEGA_READ_ALS_L	0x03
  
- /* For Pegatron Lucid tablet */
- #define DEVICE_NAME_PEGA	"Lucid"
++#define PEGA_ACCEL_NAME "pega_accel"
++#define PEGA_ACCEL_DESC "Pegatron Lucid Tablet Accelerometer"
++#define METHOD_XLRX "XLRX"
++#define METHOD_XLRY "XLRY"
++#define METHOD_XLRZ "XLRZ"
++#define PEGA_ACC_CLAMP 512 /* 1G accel is reported as ~256, so clamp to 2G */
++#define PEGA_ACC_RETRIES 3
 +
- #define METHOD_PEGA_ENABLE	"ENPR"
- #define METHOD_PEGA_DISABLE	"DAPR"
-+#define PEGA_ALS	0x04
-+#define PEGA_ALS_POWER	0x05
-+
- #define METHOD_PEGA_READ	"RDLN"
-+#define PEGA_READ_ALS_H	0x02
-+#define PEGA_READ_ALS_L	0x03
- 
  /*
   * Define a specific led structure to keep the main structure clean
-@@ -340,6 +346,12 @@ static bool asus_check_pega_lucid(struct asus_laptop *asus)
- 	   !acpi_check_handle(asus->handle, METHOD_PEGA_READ, NULL);
+  */
+@@ -218,6 +226,7 @@ struct asus_laptop {
+ 
+ 	struct input_dev *inputdev;
+ 	struct key_entry *keymap;
++	struct input_polled_dev *pega_accel_poll;
+ 
+ 	struct asus_led mled;
+ 	struct asus_led tled;
+@@ -230,6 +239,10 @@ struct asus_laptop {
+ 	int wireless_status;
+ 	bool have_rsts;
+ 	bool is_pega_lucid;
++	bool pega_acc_live;
++	int pega_acc_x;
++	int pega_acc_y;
++	int pega_acc_z;
+ 
+ 	struct rfkill *gps_rfkill;
+ 
+@@ -358,6 +371,113 @@ static int asus_pega_lucid_set(struct asus_laptop *asus, int unit, bool enable)
+ 	return write_acpi_int(asus->handle, method, unit);
  }
  
-+static int asus_pega_lucid_set(struct asus_laptop *asus, int unit, bool enable)
++static int pega_acc_axis(struct asus_laptop *asus, int curr, char *method)
 +{
-+	char *method = enable ? METHOD_PEGA_ENABLE : METHOD_PEGA_DISABLE;
-+	return write_acpi_int(asus->handle, method, unit);
++	int i, delta;
++	unsigned long long val;
++	for (i = 0; i < PEGA_ACC_RETRIES; i++) {
++		acpi_evaluate_integer(asus->handle, method, NULL, &val);
++
++		/* The output is noisy.  From reading the ASL
++		 * dissassembly, timeout errors are returned with 1's
++		 * in the high word, and the lack of locking around
++		 * thei hi/lo byte reads means that a transition
++		 * between (for example) -1 and 0 could be read as
++		 * 0xff00 or 0x00ff. */
++		delta = abs(curr - (short)val);
++		if (delta < 128 && !(val & ~0xffff))
++			break;
++	}
++	return clamp_val((short)val, -PEGA_ACC_CLAMP, PEGA_ACC_CLAMP);
++}
++
++static void pega_accel_poll(struct input_polled_dev *ipd)
++{
++	struct device *parent = ipd->input->dev.parent;
++	struct asus_laptop *asus = dev_get_drvdata(parent);
++
++	/* In some cases, the very first call to poll causes a
++	 * recursive fault under the polldev worker.  This is
++	 * apparently related to very early userspace access to the
++	 * device, and perhaps a firmware bug. Fake the first report. */
++	if (!asus->pega_acc_live) {
++		asus->pega_acc_live = true;
++		input_report_abs(ipd->input, ABS_X, 0);
++		input_report_abs(ipd->input, ABS_Y, 0);
++		input_report_abs(ipd->input, ABS_Z, 0);
++		input_sync(ipd->input);
++		return;
++	}
++
++	asus->pega_acc_x = pega_acc_axis(asus, asus->pega_acc_x, METHOD_XLRX);
++	asus->pega_acc_y = pega_acc_axis(asus, asus->pega_acc_y, METHOD_XLRY);
++	asus->pega_acc_z = pega_acc_axis(asus, asus->pega_acc_z, METHOD_XLRZ);
++
++	/* Note transform, convert to "right/up/out" in the native
++	 * landscape orientation (i.e. the vector is the direction of
++	 * "real up" in the device's cartiesian coordinates). */
++	input_report_abs(ipd->input, ABS_X, -asus->pega_acc_x);
++	input_report_abs(ipd->input, ABS_Y, -asus->pega_acc_y);
++	input_report_abs(ipd->input, ABS_Z,  asus->pega_acc_z);
++	input_sync(ipd->input);
++}
++
++static void pega_accel_exit(struct asus_laptop *asus)
++{
++	if (asus->pega_accel_poll) {
++		input_unregister_polled_device(asus->pega_accel_poll);
++		input_free_polled_device(asus->pega_accel_poll);
++	}
++	asus->pega_accel_poll = NULL;
++}
++
++static int pega_accel_init(struct asus_laptop *asus)
++{
++	int err;
++	struct input_polled_dev *ipd;
++
++	if (!asus->is_pega_lucid)
++		return -ENODEV;
++
++	if (acpi_check_handle(asus->handle, METHOD_XLRX, NULL) ||
++	    acpi_check_handle(asus->handle, METHOD_XLRY, NULL) ||
++	    acpi_check_handle(asus->handle, METHOD_XLRZ, NULL))
++		return -ENODEV;
++
++	ipd = input_allocate_polled_device();
++	if (!ipd)
++		return -ENOMEM;
++
++	ipd->poll = pega_accel_poll;
++	ipd->poll_interval = 125;
++	ipd->poll_interval_min = 50;
++	ipd->poll_interval_max = 2000;
++
++	ipd->input->name = PEGA_ACCEL_DESC;
++	ipd->input->phys = PEGA_ACCEL_NAME "/input0";
++	ipd->input->dev.parent = &asus->platform_device->dev;
++	ipd->input->id.bustype = BUS_HOST;
++
++	set_bit(EV_ABS, ipd->input->evbit);
++	input_set_abs_params(ipd->input, ABS_X,
++			     -PEGA_ACC_CLAMP, PEGA_ACC_CLAMP, 0, 0);
++	input_set_abs_params(ipd->input, ABS_Y,
++			     -PEGA_ACC_CLAMP, PEGA_ACC_CLAMP, 0, 0);
++	input_set_abs_params(ipd->input, ABS_Z,
++			     -PEGA_ACC_CLAMP, PEGA_ACC_CLAMP, 0, 0);
++
++	err = input_register_polled_device(ipd);
++	if (err)
++		goto exit;
++
++	asus->pega_accel_poll = ipd;
++	return 0;
++
++exit:
++	input_free_polled_device(ipd);
++	return err;
 +}
 +
  /* Generic LED function */
  static int asus_led_set(struct asus_laptop *asus, const char *method,
  			 int value)
-@@ -924,8 +936,18 @@ static ssize_t store_disp(struct device *dev, struct device_attribute *attr,
-  */
- static void asus_als_switch(struct asus_laptop *asus, int value)
- {
--	if (write_acpi_int(asus->handle, METHOD_ALS_CONTROL, value))
--		pr_warn("Error setting light sensor switch\n");
-+	int ret;
-+
-+	if (asus->is_pega_lucid) {
-+		ret = asus_pega_lucid_set(asus, PEGA_ALS, value);
-+		if (!ret)
-+			ret = asus_pega_lucid_set(asus, PEGA_ALS_POWER, value);
-+	} else {
-+		ret = write_acpi_int(asus->handle, METHOD_ALS_CONTROL, value);
-+	}
-+	if (ret)
-+		pr_warning("Error setting light sensor switch\n");
-+
- 	asus->light_switch = value;
- }
+@@ -1348,7 +1468,7 @@ static struct platform_driver platform_driver = {
+ 	.driver = {
+ 		.name = ASUS_LAPTOP_FILE,
+ 		.owner = THIS_MODULE,
+-	}
++	},
+ };
  
-@@ -981,6 +1003,35 @@ static ssize_t store_lslvl(struct device *dev, struct device_attribute *attr,
- 	return rv;
- }
- 
-+static int pega_int_read(struct asus_laptop *asus, int arg, int *result)
-+{
-+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-+	int err = write_acpi_int_ret(asus->handle, METHOD_PEGA_READ, arg,
-+				     &buffer);
-+	if (!err) {
-+		union acpi_object *obj = buffer.pointer;
-+		if (obj && obj->type == ACPI_TYPE_INTEGER)
-+			*result = obj->integer.value;
-+		else
-+			err = -EIO;
-+	}
-+	return err;
-+}
-+
-+static ssize_t show_lsvalue(struct device *dev,
-+			    struct device_attribute *attr, char *buf)
-+{
-+	struct asus_laptop *asus = dev_get_drvdata(dev);
-+	int err, hi, lo;
-+
-+	err = pega_int_read(asus, PEGA_READ_ALS_H, &hi);
-+	if (!err)
-+		err = pega_int_read(asus, PEGA_READ_ALS_L, &lo);
-+	if (!err)
-+		return sprintf(buf, "%d\n", 10 * hi + lo);
-+	return err;
-+}
-+
  /*
-  * GPS
-  */
-@@ -1169,6 +1220,7 @@ static DEVICE_ATTR(wimax, S_IRUGO | S_IWUSR, show_wimax, store_wimax);
- static DEVICE_ATTR(wwan, S_IRUGO | S_IWUSR, show_wwan, store_wwan);
- static DEVICE_ATTR(display, S_IWUSR, NULL, store_disp);
- static DEVICE_ATTR(ledd, S_IRUGO | S_IWUSR, show_ledd, store_ledd);
-+static DEVICE_ATTR(ls_value, S_IRUGO, show_lsvalue, NULL);
- static DEVICE_ATTR(ls_level, S_IRUGO | S_IWUSR, show_lslvl, store_lslvl);
- static DEVICE_ATTR(ls_switch, S_IRUGO | S_IWUSR, show_lssw, store_lssw);
- static DEVICE_ATTR(gps, S_IRUGO | S_IWUSR, show_gps, store_gps);
-@@ -1181,6 +1233,7 @@ static struct attribute *asus_attributes[] = {
- 	&dev_attr_wwan.attr,
- 	&dev_attr_display.attr,
- 	&dev_attr_ledd.attr,
-+	&dev_attr_ls_value.attr,
- 	&dev_attr_ls_level.attr,
- 	&dev_attr_ls_switch.attr,
- 	&dev_attr_gps.attr,
-@@ -1197,6 +1250,19 @@ static mode_t asus_sysfs_is_visible(struct kobject *kobj,
- 	acpi_handle handle = asus->handle;
- 	bool supported;
+@@ -1558,9 +1678,15 @@ static int __devinit asus_acpi_add(struct acpi_device *device)
+ 	if (result)
+ 		goto fail_rfkill;
  
-+	if (asus->is_pega_lucid) {
-+		/* no ls_level interface on the Lucid */
-+		if (attr == &dev_attr_ls_switch.attr)
-+			supported = true;
-+		else if (attr == &dev_attr_ls_level.attr)
-+			supported = false;
-+		else
-+			goto normal;
++	result = pega_accel_init(asus);
++	if (result && result != -ENODEV)
++		goto fail_pega_accel;
 +
-+		return supported;
-+	}
-+
-+normal:
- 	if (attr == &dev_attr_wlan.attr) {
- 		supported = !acpi_check_handle(handle, METHOD_WLAN, NULL);
+ 	asus_device_present = true;
+ 	return 0;
  
-@@ -1219,7 +1285,9 @@ static mode_t asus_sysfs_is_visible(struct kobject *kobj,
- 	} else if (attr == &dev_attr_ls_switch.attr ||
- 		   attr == &dev_attr_ls_level.attr) {
- 		supported = !acpi_check_handle(handle, METHOD_ALS_CONTROL, NULL) &&
--			    !acpi_check_handle(handle, METHOD_ALS_LEVEL, NULL);
-+			!acpi_check_handle(handle, METHOD_ALS_LEVEL, NULL);
-+	} else if (attr == &dev_attr_ls_value.attr) {
-+		supported = asus->is_pega_lucid;
- 	} else if (attr == &dev_attr_gps.attr) {
- 		supported = !acpi_check_handle(handle, METHOD_GPS_ON, NULL) &&
- 			    !acpi_check_handle(handle, METHOD_GPS_OFF, NULL) &&
-@@ -1407,8 +1475,10 @@ static int __devinit asus_acpi_init(struct asus_laptop *asus)
- 	asus->light_switch = 0;	/* Default to light sensor disabled */
- 	asus->light_level = 5;	/* level 5 for sensor sensitivity */
++fail_pega_accel:
++	asus_rfkill_exit(asus);
+ fail_rfkill:
+ 	asus_led_exit(asus);
+ fail_led:
+@@ -1584,6 +1710,7 @@ static int asus_acpi_remove(struct acpi_device *device, int type)
+ 	asus_rfkill_exit(asus);
+ 	asus_led_exit(asus);
+ 	asus_input_exit(asus);
++	pega_accel_exit(asus);
+ 	asus_platform_exit(asus);
  
--	if (!acpi_check_handle(asus->handle, METHOD_ALS_CONTROL, NULL) &&
--	    !acpi_check_handle(asus->handle, METHOD_ALS_LEVEL, NULL)) {
-+	if (asus->is_pega_lucid) {
-+		asus_als_switch(asus, asus->light_switch);
-+	} else if (!acpi_check_handle(asus->handle, METHOD_ALS_CONTROL, NULL) &&
-+		   !acpi_check_handle(asus->handle, METHOD_ALS_LEVEL, NULL)) {
- 		asus_als_switch(asus, asus->light_switch);
- 		asus_als_level(asus, asus->light_level);
- 	}
+ 	kfree(asus->name);
 -- 
 1.7.3.4
 
