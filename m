@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab1JNTNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 15:13:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755361Ab1JNTNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 15:13:53 -0400
-Date: Fri, 14 Oct 2011 21:09:50 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Miller <davem@davemloft.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        matt.fleming@intel.com, tj@kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-	(sparc, ptrace trees related)
-Message-ID: <20111014190950.GA10791@redhat.com>
-References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au> <20111014.035459.2238341687770152474.davem@davemloft.net>
+	id S1756169Ab1JNTOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 15:14:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52676 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab1JNTOt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 15:14:49 -0400
+Date: Fri, 14 Oct 2011 20:14:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v3 3/8] ASoC: da7210: Add support for line
+ out and DAC
+Message-ID: <20111014191445.GC2931@opensource.wolfsonmicro.com>
+References: <1318590245.12107.514.camel@matrix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111014.035459.2238341687770152474.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1318590245.12107.514.camel@matrix>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14, David Miller wrote:
->
-> Now you guys are creating conflicts against those fixed up patches in
-> another non-sparc tree, and adding new kinds of build failures as
-> well.
->
-> This doesn't work.
+On Fri, Oct 14, 2011 at 04:34:05PM +0530, Ashish Chavan wrote:
 
-Sorry David and Stephen.
+> +	/* Enable Line out amplifiers */
+> +	snd_soc_write(codec, DA7210_OUT1_L, DA7210_OUT1_L_EN);
+> +	snd_soc_write(codec, DA7210_OUT1_R, DA7210_OUT1_R_EN);
+> +	snd_soc_write(codec, DA7210_OUT2, DA7210_OUT2_EN |
+> +		     DA7210_OUT2_OUTMIX_L | DA7210_OUT2_OUTMIX_R);
+> +
 
-Stephen, could you please temporary remove ptrace from linux-next?
-
-I'll send you another email once I fix the conflicts, can't do this
-right now.
-
-Oleg.
-
+So, part of the reason I was complaining about you having the DAPM
+conversion patch last is that in a driver using DAPM I'd really not
+expect to see code like this which open codes register writes to enable
+outputs, I'd expect the enables to be being done using DAPM.
