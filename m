@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314Ab1JNPjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:39:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41548 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933250Ab1JNPjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:39:17 -0400
-Date: Fri, 14 Oct 2011 11:39:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: Ming Lei <tom.leiming@gmail.com>, Andrei Warkentin <awarkentin@vmware.com>,
-        Greg KH <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>, <Manjunath@jasper.es>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Linux PM List <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-In-Reply-To: <20111013182827.GL18574@ponder.secretlab.ca>
-Message-ID: <Pine.LNX.4.44L0.1110141137460.2036-100000@iolanthe.rowland.org>
+	id S1751539Ab1JNPoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:44:20 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:54337 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717Ab1JNPoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 11:44:18 -0400
+Message-ID: <4E9858CB.7080005@linux.vnet.ibm.com>
+Date: Fri, 14 Oct 2011 10:44:11 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
+Subject: Re: [PATCH 0/3] PCI: Rework config space locking, add INTx masking
+ services
+References: <cover.1315846441.git.jan.kiszka@siemens.com> <20111006084853.033d8d0f@jbarnes-desktop>
+In-Reply-To: <20111006084853.033d8d0f@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Oct 2011, Grant Likely wrote:
+On 10/06/2011 10:48 AM, Jesse Barnes wrote:
+> On Mon, 12 Sep 2011 18:54:01 +0200
+> Jan Kiszka <jan.kiszka@siemens.com> wrote:
+> 
+>> This series tries to heal the currently broken locking scheme around PCI
+>> config space accesses.
+>>
+>> We have an interface lock out access via sysfs, but that service wrongly
+>> assumes it is only called by one instance at a time for some device. So
+>> two loops doing
+>>
+>> echo 1 > /sys/bus/pci/devices/<some-device>/reset
+>>
+>> in parallel will trigger a kernel BUG at the moment.
+>>
+>> Besides synchronizing with user space, we also need to manage config
+>> space access of generic PCI drivers. They need to mask legacy interrupt
+>> lines while the specific driver runs in user space or a guest OS.
+>>
+>> The approach taken here is provide mutex-like locking for general
+>> access - which still requires a special mechanism due to requirements of
+>> the IBM Power RAID SCSI driver. Furthermore, INTx masking is now
+>> available via the PCI core and synchronized via the internal pci_lock.
+>>
+>> Not sure who may want to take this, so I'm CC'ing broadly.
+> 
+> ISTR a bunch of discussion about this (just back from lots of work
+> travel and vacation, sorry I missed most of it).
+> 
+> Is this the agreed upon way of handling it?  If so, can I get some
+> Reviewed/Acked-bys from people?
 
-> > However it's worth pointing out right at the start that we already have
-> > device_pm_move_before(), device_pm_move_after(), and
-> > device_pm_move_last().  They are intended specifically to provide
-> > drivers with a way of making sure that dpm_list is in the right order 
-> > -- people have been aware of these issues for some time.
-> 
-> I saw those.  I also notice that they are only used by device_move()
-> when reparenting a device (which is another wrinkle I hadn't though
-> about).  Reparenting a device becomes problematic if the probe order
-> is also represented in the list.  If device_move() gets called, then
-> any implicit probe-order sorting for that device would be lost.
-> 
-> I also notice that device_move disregards any children when moving a
-> device, which could also be a problem.
-> 
-> Although it looks like the only users of device_move are:
-> 
-> drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> drivers/s390/cio/device.c
-> net/bluetooth/hci_sysfs.c
-> net/bluetooth/rfcomm/tty.c
-> 
-> So it may not be significant to adapt.
+Acked-by: Brian King <brking@linux.vnet.ibm.com>
 
-I trust that very little will be needed.  I haven't checked the 
-existing callers, but it's reasonable to require that a device being 
-moved not have any children.
+-- 
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
 
-Alan Stern
 
