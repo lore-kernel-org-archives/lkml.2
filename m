@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab1JNAEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Oct 2011 20:04:39 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:50454 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab1JNAEh (ORCPT
+	id S1752398Ab1JNAJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Oct 2011 20:09:25 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:35038 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab1JNAJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Oct 2011 20:04:37 -0400
-Date: Fri, 14 Oct 2011 11:04:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Please include const-sections into linux-next
-Message-Id: <20111014110425.ce5b966f8f8882114028a23d@canb.auug.org.au>
-In-Reply-To: <20111013233818.GB26654@one.firstfloor.org>
-References: <20111013233818.GB26654@one.firstfloor.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__14_Oct_2011_11_04_25_+1100_BVWE1sgvs6u9IbVC"
+	Thu, 13 Oct 2011 20:09:24 -0400
+Date: Thu, 13 Oct 2011 20:09:13 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Frederic Weisbecker <fweisbec@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Menage <paul@paulmenage.org>,
+        linux-kernel@vger.kernel.org, bblum@andrew.cmu.edu
+Subject: BUG: cgroup_task_counter subsys may crash with whole-threadgroup
+ move
+Message-ID: <20111014000913.GA22527@ghc17.ghc.andrew.cmu.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
+X-SMTP-Spam-Clean: 8% (
+ BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_900_999 0, __ANY_URI 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_WWW 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Oct_2011_11_04_25_+1100_BVWE1sgvs6u9IbVC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I was testing some patches for cgroup_attach_proc and managed to cause a
+crash with the following usage pattern:
 
-Hi Andi,
+    mount -t cgroup none -o tasks /dev/cgroup
+    cd /dev/cgroup
+    mkdir foo
+    echo $PID > foo/cgroup.procs
+    echo $PID > tasks
+    echo $PID > foo/cgroup.procs
 
-On Fri, 14 Oct 2011 01:38:18 +0200 Andi Kleen <andi@firstfloor.org> wrote:
->
-> Please include=20
-> git://github.com/andikleen/linux-misc.git const-sections
-> in linux-next. This has a tree sweep to fix all kind of constant=20
-> section issues.
->=20
-> I intend to send Linus a pull request next cycle and would like=20
-> to get some testing in next first.
+Where $PID is the thread ID of a member of a multithreaded process (my
+test program just does CLONE_THREAD 8 times and then all threads sleep).
+(It doesn't matter if the thread is the group leader or not, but a
+single-threaded process doesn't crash.)
 
-You picked a bad time unfortunately.  Today will amost certainly be the
-last linux-next tree before the merge window opens (since I will be on
-vacation until kernel summit) so if it breaks the tree, it will impact on
-others testing (and there won't be a followup tree to correct the problem).
+And get the following kernel panic:
+http://maximegalon.andrew.cmu.edu/cgroup-taskstats/panic.txt
 
-Also, the commit messages are still very terse (as a few people pointed
-out) and I have seen no response to Thomas' remarks either.
+It's deterministic, and happens only when the "tasks" subsystem is
+mounted.
 
-> I got various acks last time it was posted and added them all.
-> In general it falls more in the "trivial" category, but it's=20
-> rather large and all over so I may have made a mistake.
+I'm using user-mode linux to test, with the following config:
+http://maximegalon.andrew.cmu.edu/cgroup-taskstats/config.txt
 
-It really isn't trivial because we have had various problems with init
-and const in the past with various toolchains (and even different
-problems on different architectures with the "same" toolchain).
+and I ran it in GDB to get the following backtrace:
+http://maximegalon.andrew.cmu.edu/cgroup-taskstats/bt.txt
 
-Linus or Andrew may still want to take these, but I don't think I can add
-it to linux-next right now, sorry.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__14_Oct_2011_11_04_25_+1100_BVWE1sgvs6u9IbVC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOl3yJAAoJEECxmPOUX5FE32QP/Rkc5yeAo1xT9uCuCdIsi2p4
-PznXKlYgWs8bwlae+BeBOGU5avVih9zs2VS85NuM+1MKWV6Ec/dXQ2eH0O7S35oB
-lTRz0N6M2INdX2MXqI1i59UmUhZT2fDqMUcwbnA8KoSwfShkcue2SkRFXlzJuJkH
-1JxAaMWyyi4pP5teij2ARw/k1eIKFHKRs1wSxAK7a/nMVU4gC8WD+H35XByeTxcm
-YVQXTkLIBLTousKKshQX6J4oTRN4f494AzD3DX34eX0NjTUQsZWWuNL6lefcPXk5
-z8uUgj2B63QEoQkf1fK8q8/4oOhCvWN5FMd+rfIcaKeWziR6h25CRjbkbIn4eaSi
-rWV6z3TIdXfu4dKkr4FRiRuK2A9odJ0zO6YxBW5MaqXY23olHfMC1eTCg7TBA2Yu
-7hyvDFd07C7rtCEbiHcy1/eZt3M13+XOd2FC0l8gMuY37c/UHEOGBaYQ7ujbJIeP
-5ifwUl3FDv21qUArevwOw6QxZMYwH7QWL8//cQWAfaNt0/w2JsPJG6LNraYFC+9v
-gwFaD/CEkV3BxMp0W6nwgKQjD8pKbXR9gU8IVD/8gT749ifM8Vjt6XfmXkjrLYJR
-uHAh9lS5FwU3joGYmvfLOGxlPI2d+lh4TPGxQk9CGSFFoO/RbU/4fEbNkMJQ3yKj
-1g0emSYDVVdOopDmpOHB
-=mdEI
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Oct_2011_11_04_25_+1100_BVWE1sgvs6u9IbVC--
+Thanks,
+Ben
