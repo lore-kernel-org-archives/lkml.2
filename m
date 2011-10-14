@@ -1,99 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1JNLaq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 07:30:46 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56083 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab1JNLap (ORCPT
+	id S1755273Ab1JNLgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 07:36:51 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46859 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751315Ab1JNLgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 07:30:45 -0400
-Date: Fri, 14 Oct 2011 17:00:25 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        crash-utility@redhat.com, kexec@lists.infradead.org,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
- NT_NOCOREDUMP to capture slimdump
-Message-ID: <20111014113025.GA20278@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20111003070735.GJ2223@in.ibm.com>
- <20111003073203.GA22694@in.ibm.com>
- <20111004140437.GA28306@redhat.com>
- <20111005071844.GB2235@in.ibm.com>
- <20111005152537.GB30146@redhat.com>
- <20111007161218.GA2297@in.ibm.com>
- <20111010070725.GB11577@liondog.tnic>
- <20111011184434.GB32316@in.ibm.com>
- <20111012155144.GC12845@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111012155144.GC12845@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Oct 2011 07:36:50 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] x86, efi: Calling __pa() with an ioremap'd address is invalid
+Date: Fri, 14 Oct 2011 12:36:45 +0100
+Message-Id: <1318592205-11193-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 11:51:44AM -0400, Vivek Goyal wrote:
-> On Wed, Oct 12, 2011 at 12:14:34AM +0530, K.Prasad wrote:
-> > On Mon, Oct 10, 2011 at 09:07:25AM +0200, Borislav Petkov wrote:
-> > > On Fri, Oct 07, 2011 at 09:42:19PM +0530, K.Prasad wrote:
-[snipped]
-> > 
-> > ii) Scenario2: System with PG_hwpoison (or landmine!) pages crashes because
-> > of a software bug. In this case, kexec kernel would normally reboot because
-> > of reading the PG_poison page. I'll soon get a new version of the patchset
-> > implementing this.
-> > 
-> > Solution: Maintain a linked list of PFNs when the corresponding 'struct page'
-> > has been marked PG_hwpoison. We could export/put this list to use in
-> > quite a few ways.
-> 
-> What's the need of a list and why do we have to export anything. Can't
-> makedumpfile look at the struct page and then just not dump that page if
-> hwpoison flag is set.
->
+From: Matt Fleming <matt.fleming@intel.com>
 
-I'll respond to just this part of the comment for now, since I have a
-few conflicting thoughts crossing my mind regarding the above suggestion
-and thought I'll put it across to the community to get that clarified.
+If we encounter an efi_memory_desc_t without EFI_MEMORY_WB set in
+->attribute we currently call set_memory_uc(), which in turn calls
+__pa() on a potentially ioremap'd address. On CONFIG_X86_32 this is
+invalid, resulting in the following oops,
 
-Using makedumpfile to actually identify and sidestep PG_hwpoison sounds
-a bit dangerous. Let's for a moment that makedumpfile has this
-capability, which is implemented as under.
+  BUG: unable to handle kernel paging request at f7f22280
+  IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
+  *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
+  Oops: 0000 [#1] PREEMPT SMP
+  Modules linked in:
 
-- The list of nodes (pg_data_t) and all struct page's (through
-  node_mem_map) are sent to makedumpfile using VMCOREINFO_SYMBOL().
+  Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
+   EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
+   EIP is at reserve_ram_pages_type+0x89/0x210
+   EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
+   ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
+   DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+  Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
+  Stack:
+   80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
+   c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
+   00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
+  Call Trace:
+   [<c104f8ca>] ? page_is_ram+0x1a/0x40
+   [<c1025aff>] reserve_memtype+0xdf/0x2f0
+   [<c1024dc9>] set_memory_uc+0x49/0xa0
+   [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
+   [<c19216d4>] start_kernel+0x291/0x2f2
+   [<c19211c7>] ? loglevel+0x1b/0x1b
+   [<c19210bf>] i386_start_kernel+0xbf/0xc8
 
-- makedumpfile would use this information to go to the old kernel's
-  memory, look at pg_data_t and then into each element of node_mem_map
-  to then lookout for PG_hwpoison inside 'struct page'->flags. (Well,
-  this method works for !SPARSEMEM. I'd like to know if I've overlooked
-  any other better method. pfn_to_page() wouldn't work either, as it will
-  give a 'struct page' of a PFN as seen by the kexec'd kernel and not
-  the crashed kernel).
+So, if we're ioremap'ing an address range let's setup the mapping with
+the correct caching attribute instead of modifying it after the fact.
 
-- If PG_hwpoison flag for the corresponding page is clear, then it
-  will allow the copy operation.
+Also, take this opportunity to unify the 32/64-bit efi_ioremap()
+implementations because they can both be implemented with
+ioremap_{cache,nocache}. When asked about the original reason behind
+using init_memory_mapping() for the 64-bit version Huang Ying said,
 
-- The problem comes when we actually land on a page with PG_hwpoison
-  while carrying out the above 3 steps. For instance, if the page
-  containing the pg_data_t and node_mem_map data structures themselves
-  are marked hw-poisoned.
+  "The intention of init_memory_mapping() usage is to make EFI virtual
+  address unchanged after kexec.  But in fact, init_memory_mapping()
+  can not handle some memory range, so ioremap_xxx() is introduced as
+  a fix.  Now we decide to use ioremap_xxx() anyway and use some other
+  scheme for kexec support, so init_memory_mapping() here is
+  unnecessary.  IMHO, init_memory_mapping() is not as good as
+  ioremap_xxx() here."
 
-It's analogous to stepping inside a landmine territory to retrieve a map
-containing the placement of landmines (we better have a copy of the map
-before we enter :-)).
+And because efi_ioremap() now consists of 4 lines, let's just inline
+it directly into the one callsite in efi_enter_virtual_mode().
 
-If we agree that this is going to be unsafe, then the question that
-needs to be answered: "Is there a need for the kernel to allow read
-operations on a page marked PG_hwpoison? If not, why doesn't the kernel
-make it a policy to fail/disallow the read operations".
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Huang Ying <huang.ying.caritas@gmail.com>
+Cc: stable@kernel.org
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/include/asm/efi.h     |    5 -----
+ arch/x86/platform/efi/efi.c    |   24 ++++++++++++++----------
+ arch/x86/platform/efi/efi_64.c |   17 -----------------
+ 3 files changed, 14 insertions(+), 32 deletions(-)
 
-Thanks,
-K.Prasad
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 7093e4a..b8d8bfc 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -33,8 +33,6 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
+ #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
+ 	efi_call_virt(f, a1, a2, a3, a4, a5, a6)
+ 
+-#define efi_ioremap(addr, size, type)		ioremap_cache(addr, size)
+-
+ #else /* !CONFIG_X86_32 */
+ 
+ extern u64 efi_call0(void *fp);
+@@ -84,9 +82,6 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
+ 	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
+ 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
+ 
+-extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+-				 u32 type);
+-
+ #endif /* CONFIG_X86_32 */
+ 
+ extern int add_efi_memmap;
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 3ae4128..6ea011c 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -670,10 +670,21 @@ void __init efi_enter_virtual_mode(void)
+ 		end_pfn = PFN_UP(end);
+ 		if (end_pfn <= max_low_pfn_mapped
+ 		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped))
++			&& end_pfn <= max_pfn_mapped)) {
+ 			va = __va(md->phys_addr);
+-		else
+-			va = efi_ioremap(md->phys_addr, size, md->type);
++
++			if (!(md->attribute & EFI_MEMORY_WB)) {
++				addr = (u64) (unsigned long)va;
++				npages = md->num_pages;
++				memrange_efi_to_native(&addr, &npages);
++				set_memory_uc(addr, npages);
++			}
++		} else {
++			if (!(md->attribute & EFI_MEMORY_WB))
++				va = ioremap_nocache(md->phys_addr, size);
++			else
++				va = ioremap_cache(md->phys_addr, size);
++		}
+ 
+ 		md->virt_addr = (u64) (unsigned long) va;
+ 
+@@ -683,13 +694,6 @@ void __init efi_enter_virtual_mode(void)
+ 			continue;
+ 		}
+ 
+-		if (!(md->attribute & EFI_MEMORY_WB)) {
+-			addr = md->virt_addr;
+-			npages = md->num_pages;
+-			memrange_efi_to_native(&addr, &npages);
+-			set_memory_uc(addr, npages);
+-		}
+-
+ 		systab = (u64) (unsigned long) efi_phys.systab;
+ 		if (md->phys_addr <= systab && systab < end) {
+ 			systab += md->virt_addr - md->phys_addr;
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index ac3aa54..312250c 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -80,20 +80,3 @@ void __init efi_call_phys_epilog(void)
+ 	local_irq_restore(efi_flags);
+ 	early_code_mapping_set_exec(0);
+ }
+-
+-void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+-				 u32 type)
+-{
+-	unsigned long last_map_pfn;
+-
+-	if (type == EFI_MEMORY_MAPPED_IO)
+-		return ioremap(phys_addr, size);
+-
+-	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
+-	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
+-		unsigned long top = last_map_pfn << PAGE_SHIFT;
+-		efi_ioremap(top, size - (top - phys_addr), type);
+-	}
+-
+-	return (void __iomem *)__va(phys_addr);
+-}
+-- 
+1.7.4.4
 
