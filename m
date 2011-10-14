@@ -1,74 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab1JNXet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 19:34:49 -0400
-Received: from shutemov.name ([188.40.19.243]:36391 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319Ab1JNXeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 19:34:46 -0400
-Date: Sat, 15 Oct 2011 02:34:45 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, lennart@poettering.net,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-Message-ID: <20111014233445.GA28092@shutemov.name>
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
- <1318349729-3108-4-git-send-email-kirill@shutemov.name>
- <20111014154348.ae6267aa.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014154348.ae6267aa.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757068Ab1JNXfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 19:35:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64126 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab1JNXfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 19:35:20 -0400
+Date: Fri, 14 Oct 2011 16:35:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 3/9] mm: alloc_contig_range() added
+Message-Id: <20111014163516.7d19a61a.akpm@linux-foundation.org>
+In-Reply-To: <1317909290-29832-4-git-send-email-m.szyprowski@samsung.com>
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+	<1317909290-29832-4-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 03:43:48PM -0700, Andrew Morton wrote:
-> On Tue, 11 Oct 2011 19:15:29 +0300
-> "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-> 
-> > Every task_struct has timer_slack_ns value. This value uses to round up
-> > poll() and select() timeout values. This feature can be useful in
-> > mobile environment where combined wakeups are desired.
-> > 
-> > Originally, prctl() was the only way to change timer slack value of
-> > a process. So you was not able change timer slack value of another
-> > process.
-> > 
-> > cgroup subsys "timer_slack" implements timer slack controller. It
-> > provides a way to set minimal timer slack value for a group of tasks.
-> > If a task belongs to a cgroup with minimal timer slack value higher than
-> > task's value, cgroup's value will be applied.
-> > 
-> > Timer slack controller allows to implement setting timer slack value of
-> > a process based on a policy. For example, you can create foreground and
-> > background cgroups and move tasks between them based on system state.
-> 
-> I'm having trouble understanding the value of this feature.  Users can
-> presently control the timer-slack of a group of processes via
-> inherit-over-fork.
-> 
-> Perhaps there's a case for providing a way for process A to set process
-> B's slack.  And perhaps B's children.  That would be a simpler patch
-> and would have the considerable advantage that it doesn't require
-> cgroups.
-> 
-> So.... why should we merge this?
+On Thu, 06 Oct 2011 15:54:43 +0200
+Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 
-Putting a task to a cgroup isn't change task's timer slack, it may affect
-"effective timer slack", if min timer slack for the cgroup > task's timer
-slack.
+> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> 
+> This commit adds the alloc_contig_range() function which tries
+> to allocate given range of pages.  It tries to migrate all
+> already allocated pages that fall in the range thus freeing them.
+> Once all pages in the range are freed they are removed from the
+> buddy system thus allocated for the caller to use.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: renamed some variables for easier code reading]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Since we don't touch task's slack value we can drag tasks between cgroups
-and always get the most relaxed slack value for a task without
-saving/restoring it in userspace.
+Where-is: Mel Gorman <mel@csn.ul.ie>
 
--- 
- Kirill A. Shutemov
+> +#define MIGRATION_RETRY	5
+> +static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+> +{
+> +	int migration_failed = 0, ret;
+> +	unsigned long pfn = start;
+> +
+> +	/*
+> +	 * Some code "borrowed" from KAMEZAWA Hiroyuki's
+> +	 * __alloc_contig_pages().
+> +	 */
+> +
+> +	/* drop all pages in pagevec and pcp list */
+> +	lru_add_drain_all();
+> +	drain_all_pages();
+
+These operations are sometimes wrong ;) Have you confirmed that we
+really need to perform them here?  If so, a little comment explaining
+why we're using them here would be good.
+
+> +	for (;;) {
+> +		pfn = scan_lru_pages(pfn, end);
+> +		if (!pfn || pfn >= end)
+> +			break;
+> +
+> +		ret = do_migrate_range(pfn, end);
+> +		if (!ret) {
+> +			migration_failed = 0;
+> +		} else if (ret != -EBUSY
+> +			|| ++migration_failed >= MIGRATION_RETRY) {
+
+Sigh, magic numbers.
+
+Have you ever seen this retry loop actually expire in testing?
+
+migrate_pages() tries ten times.  This code tries five times.  Is there
+any science to all of this?
+
+> +			return ret;
+> +		} else {
+> +			/* There are unstable pages.on pagevec. */
+> +			lru_add_drain_all();
+> +			/*
+> +			 * there may be pages on pcplist before
+> +			 * we mark the range as ISOLATED.
+> +			 */
+> +			drain_all_pages();
+> +		}
+> +		cond_resched();
+> +	}
+> +
+> +	if (!migration_failed) {
+> +		/* drop all pages in pagevec and pcp list */
+> +		lru_add_drain_all();
+> +		drain_all_pages();
+
+hm.
+
+> +	}
+> +
+> +	/* Make sure all pages are isolated */
+> +	if (WARN_ON(test_pages_isolated(start, end)))
+> +		return -EBUSY;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * alloc_contig_range() -- tries to allocate given range of pages
+> + * @start:	start PFN to allocate
+> + * @end:	one-past-the-last PFN to allocate
+> + * @flags:	flags passed to alloc_contig_freed_pages().
+> + *
+> + * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
+> + * aligned, hovewer it's callers responsibility to guarantee that we
+
+"however"
+
+"however it is the caller's responsibility.."
+
+> + * are the only thread that changes migrate type of pageblocks the
+> + * pages fall in.
+> + *
+> + * Returns zero on success or negative error code.  On success all
+> + * pages which PFN is in (start, end) are allocated for the caller and
+> + * need to be freed with free_contig_pages().
+> + */
+>
+> ...
+>
+
