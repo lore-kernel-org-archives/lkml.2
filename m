@@ -1,200 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1JNJJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 05:09:08 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:52679 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932146Ab1JNJJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 05:09:02 -0400
-From: Corentin Chary <corentincj@iksaif.net>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Anisse Astier <anisse@astier.eu>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Ross <andy.ross@windriver.com>,
-        Corentin Chary <corentincj@iksaif.net>
-Subject: [PATCH 8/8] asus-laptop: Add rfkill support for Pegatron Lucid tablet
-Date: Fri, 14 Oct 2011 11:13:42 +0200
-Message-Id: <1318583622-23518-9-git-send-email-corentincj@iksaif.net>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
-References: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
+	id S1755598Ab1JNJM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:12:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47267 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1JNJM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 05:12:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdY3scxhAw8dKENq=u0GNpSrkdpe5vKCemG7EWGvmFYxQg@mail.gmail.com>
+References: <1317629862-13549-1-git-send-email-linus.walleij@stericsson.com>
+	<CAPTzV16bKaHxoyWEv1H8HGyY_CZhY9orXAuWA-wa0yb2NZ5UcA@mail.gmail.com>
+	<CACRpkdY3scxhAw8dKENq=u0GNpSrkdpe5vKCemG7EWGvmFYxQg@mail.gmail.com>
+Date: Fri, 14 Oct 2011 18:12:24 +0900
+Message-ID: <CAPTzV15nEaE7kyH9XR36hTdg4xDRDsnnpTdqQ+2HSCEAQX=LvA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drivers: create a pin control subsystem v9
+From: Chanho Park <parkch98@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Stijn Devriendt <highguy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anisse Astier <anisse@astier.eu>
+2011/10/13 Linus Walleij <linus.walleij@linaro.org>:
+> On Thu, Oct 13, 2011 at 2:55 AM, Chanho Park <parkch98@gmail.com> wrote:
+>
+>> Some gpio-ranges doesn't match with pin numbers.
+>> For example, gpio_range_b starts gpio 48.
+>> However, a pin base number of gpio_range_b is 96. It isn't same with gpio base.
+>> A pinctrl driver must know this pin_space-gpio_range mappings.
+>
+> The GPIO pin space is one global space, and the only thing
+> the struct pinctrl_gpio_range does is to say that this pin range
+> is handled by this chip. You can register several ranges to the
+> same pin controller.
+>
+> Then the pin control driver gets called like this:
+>
+> pin_request(pctldev, pin, gpiostr, true, range);
+> ops->gpio_request_enable(pctldev, gpio_range, pin);
+>
+> In this case you know that pin is an index into the range
+> supplied, note that we always get the range into the driver.
+>
+> These ranges are defined by the driver as well, and it has
+> an .id field. Thus the driver shall add/subtract whatever offset
+> it needs to map that GPIO pin into a proper pin number,
+> there can be so many strange ways of doing this that the
+> pin control framework is not dealing with it.
+>
+> So I think this should be done by the driver, and a clever
+> way is to use the .id field of the range as index to offset
+> arrays etc.
+>
 
-Add three new rfkill switches in this driver that are specific to
-Pegatron Lucid tablet.
-Please note that you might not need all three switches. For example if
-you don't have a 3G module inside your tablet.
+The pinmux_request_gpio function requires a gpio number.
+The function converts the gpio number to the proper pin number.
+I considered offset array to convert gpio-pin mapping in the my pinmux driver.
+However, the pinmux_request_gpio function checks
+whether pin is requested by converted pin number.
 
-Also, on my device, the gpio for the wifi/bt module is connected to the
-bluetooth line. Therefore to activate your wireless lan interface, you
-need to use the "pega-bt" rfkill switch.
+For example, I have three gpio ranges.
 
-Finally, the rfkill switch only works before the wireless module is
-loaded the first time. Unloading ath9k doesn't help, a reboot is
-necessary.
+static struct pinctrl_gpio_range gpio_range0 = {
+	.name = "MYGPIO*",
+	.id = 0,
+	.base = 0,
+	.npins = 32,
+};
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/platform/x86/asus-laptop.c |  103 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 103 insertions(+), 0 deletions(-)
+static struct pinctrl_gpio_range gpio_range1 = {
+	.name = "MYGPIO*",
+	.id = 1,
+	.base = 32,
+	.npins = 8,
+};
 
-diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
-index 0dfd162..58b69b7 100644
---- a/drivers/platform/x86/asus-laptop.c
-+++ b/drivers/platform/x86/asus-laptop.c
-@@ -186,6 +186,9 @@ MODULE_PARM_DESC(als_status, "Set the ALS status on boot "
- 
- #define METHOD_PEGA_ENABLE	"ENPR"
- #define METHOD_PEGA_DISABLE	"DAPR"
-+#define PEGA_WLAN	0x00
-+#define PEGA_BLUETOOTH	0x01
-+#define PEGA_WWAN	0x02
- #define PEGA_ALS	0x04
- #define PEGA_ALS_POWER	0x05
- 
-@@ -213,6 +216,15 @@ struct asus_led {
- };
- 
- /*
-+ * Same thing for rfkill
-+ */
-+struct asus_pega_rfkill {
-+	int control_id;		/* type of control. Maps to PEGA_* values */
-+	struct rfkill *rfkill;
-+	struct asus_laptop *asus;
-+};
-+
-+/*
-  * This is the main structure, we can use it to store anything interesting
-  * about the hotk device
-  */
-@@ -246,6 +258,10 @@ struct asus_laptop {
- 
- 	struct rfkill *gps_rfkill;
- 
-+	struct asus_pega_rfkill wlanrfk;
-+	struct asus_pega_rfkill btrfk;
-+	struct asus_pega_rfkill wwanrfk;
-+
- 	acpi_handle handle;	/* the handle of the hotk device */
- 	u32 ledd_status;	/* status of the LED display */
- 	u8 light_level;		/* light sensor level */
-@@ -1263,6 +1279,86 @@ static int asus_rfkill_init(struct asus_laptop *asus)
- 	return result;
- }
- 
-+static int pega_rfkill_set(void *data, bool blocked)
-+{
-+	struct asus_pega_rfkill *pega_rfk = data;
-+
-+	int ret = asus_pega_lucid_set(pega_rfk->asus, pega_rfk->control_id, !blocked);
-+	pr_warn("Setting rfkill %d, to %d; returned %d\n", pega_rfk->control_id, !blocked, ret);
-+
-+	return ret;
-+}
-+
-+static const struct rfkill_ops pega_rfkill_ops = {
-+	.set_block = pega_rfkill_set,
-+};
-+
-+static void pega_rfkill_terminate(struct asus_pega_rfkill *pega_rfk)
-+{
-+	pr_warn("Terminating %d\n", pega_rfk->control_id);
-+	if (pega_rfk->rfkill) {
-+		rfkill_unregister(pega_rfk->rfkill);
-+		rfkill_destroy(pega_rfk->rfkill);
-+		pega_rfk->rfkill = NULL;
-+	}
-+}
-+
-+static void pega_rfkill_exit(struct asus_laptop *asus)
-+{
-+	pega_rfkill_terminate(&asus->wwanrfk);
-+	pega_rfkill_terminate(&asus->btrfk);
-+	pega_rfkill_terminate(&asus->wlanrfk);
-+}
-+
-+static int pega_rfkill_setup(struct asus_laptop *asus, struct asus_pega_rfkill *pega_rfk,
-+		const char *name, int controlid, int rfkill_type)
-+{
-+	int result;
-+
-+	pr_warn("Setting up rfk %s, control %d, type %d\n", name, controlid, rfkill_type);
-+	pega_rfk->control_id = controlid;
-+	pega_rfk->asus = asus;
-+	pega_rfk->rfkill = rfkill_alloc(name, &asus->platform_device->dev,
-+					rfkill_type, &pega_rfkill_ops, pega_rfk);
-+	if (!pega_rfk->rfkill)
-+		return -EINVAL;
-+
-+	result = rfkill_register(pega_rfk->rfkill);
-+	if (result) {
-+		rfkill_destroy(pega_rfk->rfkill);
-+		pega_rfk->rfkill = NULL;
-+	}
-+
-+	return result;
-+}
-+
-+static int pega_rfkill_init(struct asus_laptop *asus)
-+{
-+	int ret = 0;
-+
-+	if(!asus->is_pega_lucid)
-+		return -ENODEV;
-+
-+	ret = pega_rfkill_setup(asus, &asus->wlanrfk, "pega-wlan", PEGA_WLAN, RFKILL_TYPE_WLAN);
-+	if(ret)
-+		return ret;
-+	ret = pega_rfkill_setup(asus, &asus->btrfk, "pega-bt", PEGA_BLUETOOTH, RFKILL_TYPE_BLUETOOTH);
-+	if(ret)
-+		goto err_btrfk;
-+	ret = pega_rfkill_setup(asus, &asus->wwanrfk, "pega-wwan", PEGA_WWAN, RFKILL_TYPE_WWAN);
-+	if(ret)
-+		goto err_wwanrfk;
-+
-+	pr_warn("Pega rfkill init succeeded\n");
-+	return 0;
-+err_wwanrfk:
-+	pega_rfkill_terminate(&asus->btrfk);
-+err_btrfk:
-+	pega_rfkill_terminate(&asus->wlanrfk);
-+
-+	return ret;
-+}
-+
- /*
-  * Input device (i.e. hotkeys)
-  */
-@@ -1697,9 +1793,15 @@ static int __devinit asus_acpi_add(struct acpi_device *device)
- 	if (result && result != -ENODEV)
- 		goto fail_pega_accel;
- 
-+	result = pega_rfkill_init(asus);
-+	if (result && result != -ENODEV)
-+		goto fail_pega_rfkill;
-+
- 	asus_device_present = true;
- 	return 0;
- 
-+fail_pega_rfkill:
-+	pega_accel_exit(asus);
- fail_pega_accel:
- 	asus_rfkill_exit(asus);
- fail_rfkill:
-@@ -1726,6 +1828,7 @@ static int asus_acpi_remove(struct acpi_device *device, int type)
- 	asus_led_exit(asus);
- 	asus_input_exit(asus);
- 	pega_accel_exit(asus);
-+	pega_rfkill_exit(asus);
- 	asus_platform_exit(asus);
- 
- 	kfree(asus->name);
+static struct pinctrl_gpio_range gpio_range2 = {
+	.name = "MYGPIO*",
+	.id = 2,
+	.base = 40,
+	.npins = 16,
+};
+
+A gpio base number of gpio_range0 is 0 and pin base number is also 0.
+Converting gpio-pin number is no problem about the gpio_range0.
+A gpio base number of gpio_range1 is 32 but pin base number is 40(not 32).
+
+Let's suppose pin number 32 is already requested previously.
+If you want to request gpio 32(pin number : 40),
+it is failed because the pinmux_request_gpio converts gpio 32 to pin number 32.
+
++	pin = gpio - range->base;
+
+Thus we require to convert a requested gpio number to a proper pin number
+before the pinmux driver does it.
+
 -- 
-1.7.3.4
-
+Best Regards,
+Chanho Park
