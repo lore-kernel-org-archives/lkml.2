@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab1JNPtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:49:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49060 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1JNPtO (ORCPT
+	id S1752768Ab1JNPty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:49:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47601 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1JNPtx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:49:14 -0400
-Message-ID: <4E9859F7.3030700@gmail.com>
-Date: Fri, 14 Oct 2011 09:49:11 -0600
-From: "Berck E. Nash" <flyboy@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Icedove/3.1.15
+	Fri, 14 Oct 2011 11:49:53 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Evict NULL pointer dereference in 3.0.4
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/mixed;
- boundary="------------060709040801060808030001"
+In-Reply-To: <1318595240.6132.57.camel@x61.thuisdomein>
+References: <1318595240.6132.57.camel@x61.thuisdomein>
+From: Matt Turner <mattst88@gmail.com>
+Date: Fri, 14 Oct 2011 11:49:32 -0400
+Message-ID: <CAEdQ38FzXyqoWDO_EykhpAH8msjeEkK9WWrHwGOyeESdAmD10g@mail.gmail.com>
+Subject: Re: [PATCH 01/21] alpha: drop unused Kconfig symbol
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060709040801060808030001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+On Fri, Oct 14, 2011 at 8:27 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+>  arch/alpha/Kconfig |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+> index 8bb9362..3d74801 100644
+> --- a/arch/alpha/Kconfig
+> +++ b/arch/alpha/Kconfig
+> @@ -445,11 +445,6 @@ config ALPHA_EV67
+>          Is this a machine based on the EV67 core?  If in doubt, select N here
+>          and the machine will be treated as an EV6.
+>
+> -config ALPHA_EV7
+> -       bool
+> -       depends on ALPHA_MARVEL
+> -       default y
+> -
+>  config ALPHA_MCPCIA
+>        bool
+>        depends on ALPHA_RAWHIDE
+> --
+> 1.7.4.4
 
-I'm unable to determine what triggers this.  It's been occurring on my
-machine almost every night, but I'm not able to reproduce it at will.
-Let me know if I can do anything to provide more useful information...
+Reviewed-by: Matt Turner <mattst88@gmail.com>
 
-Berck Nash
+I haven't gotten my kernel.org tree set back up yet, so someone else
+might want to take this patch.
 
---------------060709040801060808030001
-Content-Type: text/plain;
- name="evict-bug"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="evict-bug"
-
-WzI1Nzc1LjMwMjgxM10gQlVHOiB1bmFibGUgdG8gaGFuZGxlIGtlcm5lbCBOVUxMIHBvaW50
-ZXIgZGVyZWZlcmVuY2UgYXQgMDAwMDAwMDAwMDAwMDAyOApbMjU3NzUuMzEwODgzXSBJUDog
-WzxmZmZmZmZmZjgxMGI1Y2NkPl0gZXZpY3QrMHg2NC8weDEwZApbMjU3NzUuMzE2MjA4XSBQ
-R0QgMApbMjU3NzUuMzE4Mzg2XSBPb3BzOiAwMDAwIFsjMV0gU01QClsyNTc3NS4zMjE3NDZd
-IENQVSAzClsyNTc3NS4zMjM2MDJdIE1vZHVsZXMgbGlua2VkIGluOiBub3V2ZWF1IHR0bSBk
-cm1fa21zX2hlbHBlciBkcm0gaTJjX2FsZ29fYml0IHZpZGVvIGJyaWRnZSBzdHAgbGxjIHR1
-biBuZnNkIG5mcyBsb2NrZCBhdXRoX3JwY2dzcyBuZnNfYWNsIHN1bnJwYyBoaWRfYXBwbGUg
-YWNwaV9pcG1pIGlwbWlfbXNnaGFuZGxlciB1aGNpX2hjZCBpMmNfc2NtaSBpMmNfZGV2IGhm
-c3BsdXMgdXNiaGlkIGt2bV9pbnRlbCBrdm0gZnVzZSB3ODM2MjdlaGYgaHdtb25fdmlkIHNu
-ZF9oZGFfY29kZWNfcmVhbHRlayBteG1fd21pIHNuZF9oZGFfaW50ZWwgc25kX2hkYV9jb2Rl
-YyBzbmRfaHdkZXAgc25kX3BjbSBzbmRfc2VxIHNuZF90aW1lciBzbmRfc2VxX2RldmljZSBp
-MmNfaTgwMSByODE2OSBtaWkgeGhjaV9oY2Qgc25kIGVoY2lfaGNkIHdtaSB1c2Jjb3JlIHNv
-dW5kY29yZSBzbmRfcGFnZV9hbGxvYwpbMjU3NzUuMzY1Mjg0XQpbMjU3NzUuMzY2Nzk3XSBQ
-aWQ6IDQ3LCBjb21tOiBrc3dhcGQwIE5vdCB0YWludGVkIDMuMC40ICMxMiBUbyBCZSBGaWxs
-ZWQgQnkgTy5FLk0uIFRvIEJlIEZpbGxlZCBCeSBPLkUuTS4vUDY3IEV4dHJlbWU2ClsyNTc3
-NS4zNzczOTFdIFJJUDogMDAxMDpbPGZmZmZmZmZmODEwYjVjY2Q+XSAgWzxmZmZmZmZmZjgx
-MGI1Y2NkPl0gZXZpY3QrMHg2NC8weDEwZApbMjU3NzUuMzg0OTQ1XSBSU1A6IDAwMTg6ZmZm
-Zjg4MDIzNWI4ZGMwMCAgRUZMQUdTOiAwMDAxMDI4NgpbMjU3NzUuMzkwMjkyXSBSQVg6IGZm
-ZmY4ODAwNGM1ZWQzNTggUkJYOiBmZmZmODgwMDRjNWVkMmQwIFJDWDogZmZmZjg4MDA0YzVl
-ZDZhOApbMjU3NzUuMzk3NDc1XSBSRFg6IGZmZmY4ODAwNGM1ZjBkODggUlNJOiBmZmZmODgw
-MDRjNWVkMmY4IFJESTogZmZmZmZmZmY4MTRkZTMwMApbMjU3NzUuNDA0NjM5XSBSQlA6IDAw
-MDAwMDAwMDAwMDAwMDAgUjA4OiBmZmZmODgwMDRjNWVkMzM4IFIwOTogN2ZmZmZmZmZmZmZm
-ZmZmZgpbMjU3NzUuNDExODExXSBSMTA6IDdmZmZmZmZmZmZmZmZmZmYgUjExOiBmZmZmODgw
-MDRjNWVmZTQwIFIxMjogZmZmZjg4MDA0YzVlODI0MApbMjU3NzUuNDE4OTgzXSBSMTM6IGZm
-ZmY4ODAwNGM1ZWQyZDAgUjE0OiBmZmZmODgwMDg3ZGU1MjkwIFIxNTogZmZmZjg4MDIzNTEw
-YjRkOApbMjU3NzUuNDI2MTY1XSBGUzogIDAwMDAwMDAwMDAwMDAwMDAoMDAwMCkgR1M6ZmZm
-Zjg4MDIzZjRjMDAwMCgwMDAwKSBrbmxHUzowMDAwMDAwMDAwMDAwMDAwClsyNTc3NS40MzQz
-MDZdIENTOiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAwODAwNTAwM2IK
-WzI1Nzc1LjQ0MDEwNF0gQ1IyOiAwMDAwMDAwMDAwMDAwMDI4IENSMzogMDAwMDAwMDAwMTRk
-ZjAwMCBDUjQ6IDAwMDAwMDAwMDAwNDA2ZTAKWzI1Nzc1LjQ0NzI1MV0gRFIwOiAwMDAwMDAw
-MDAwMDAwMDAwIERSMTogMDAwMDAwMDAwMDAwMDAwMCBEUjI6IDAwMDAwMDAwMDAwMDAwMDAK
-WzI1Nzc1LjQ1NDQwNl0gRFIzOiAwMDAwMDAwMDAwMDAwMDAwIERSNjogMDAwMDAwMDBmZmZm
-MGZmMCBEUjc6IDAwMDAwMDAwMDAwMDA0MDAKWzI1Nzc1LjQ2MTU4MV0gUHJvY2VzcyBrc3dh
-cGQwIChwaWQ6IDQ3LCB0aHJlYWRpbmZvIGZmZmY4ODAyMzViOGMwMDAsIHRhc2sgZmZmZjg4
-MDIzNWI2Mjg4MCkKWzI1Nzc1LjQ2OTc5OV0gU3RhY2s6ClsyNTc3NS40NzE4MzldICA3ZmZm
-ZmZmZmZmZmZmZmZmIGZmZmY4ODAwNGM1ZWZlNDAgZmZmZjg4MDA0YzVlZDJkMCBmZmZmZmZm
-ZjgxMGIzMjczClsyNTc3NS40NzkzNDZdICBmZmZmODgwMDRjNWVmZTQwIGZmZmY4ODAwNGM1
-ZTgyNDAgZmZmZjg4MDIzNWI4ZGM5MCBmZmZmZmZmZjgxMGIzM2Q5ClsyNTc3NS40ODY4NjZd
-ICBmZmZmZWEwMDA3MTk0NzQ4IGZmZmY4ODAwNGM1ZWZkNDAgZmZmZjg4MDIzNTEwYjQwMCBm
-ZmZmODgwMjM1YjhkY2VjClsyNTc3NS40OTQzOTNdIENhbGwgVHJhY2U6ClsyNTc3NS40OTY4
-NDFdICBbPGZmZmZmZmZmODEwYjMyNzM+XSA/IGRfa2lsbCsweGUxLzB4ZjYKWzI1Nzc1LjUw
-MTg4N10gIFs8ZmZmZmZmZmY4MTBiMzNkOT5dID8gc2hyaW5rX2RlbnRyeV9saXN0KzB4MTUx
-LzB4MTZmClsyNTc3NS41MDgxMDFdICBbPGZmZmZmZmZmODEwYjM1YmQ+XSA/IF9fc2hyaW5r
-X2RjYWNoZV9zYisweDEzZC8weDE1MApbMjU3NzUuNTE0MzE1XSAgWzxmZmZmZmZmZjgxMGIz
-NmIxPl0gPyBzaHJpbmtfZGNhY2hlX21lbW9yeSsweGUxLzB4MTViClsyNTc3NS41MjA2MjJd
-ICBbPGZmZmZmZmZmODEwN2JhYWY+XSA/IHNocmlua19zbGFiKzB4ZTMvMHgxNTMKWzI1Nzc1
-LjUyNjE1Ml0gIFs8ZmZmZmZmZmY4MTA3ZGU1MT5dID8gYmFsYW5jZV9wZ2RhdCsweDI1Ny8w
-eDQ5OApbMjU3NzUuNTMxOTY4XSAgWzxmZmZmZmZmZjgxMDdlMjljPl0gPyBrc3dhcGQrMHgy
-MGEvMHgyMjMKWzI1Nzc1LjUzNzEzNl0gIFs8ZmZmZmZmZmY4MTA0YWMyZj5dID8gYWJvcnRf
-ZXhjbHVzaXZlX3dhaXQrMHg3OS8weDc5ClsyNTc3NS41NDMzNzBdICBbPGZmZmZmZmZmODEw
-N2UwOTI+XSA/IGJhbGFuY2VfcGdkYXQrMHg0OTgvMHg0OTgKWzI1Nzc1LjU0OTEzMV0gIFs8
-ZmZmZmZmZmY4MTA0YTY2NT5dID8ga3RocmVhZCsweDc2LzB4N2UKWzI1Nzc1LjU1NDIxM10g
-IFs8ZmZmZmZmZmY4MTM3YTc1ND5dID8ga2VybmVsX3RocmVhZF9oZWxwZXIrMHg0LzB4MTAK
-WzI1Nzc1LjU2MDM1OF0gIFs8ZmZmZmZmZmY4MTA0YTVlZj5dID8ga3RocmVhZF93b3JrZXJf
-Zm4rMHgxMDQvMHgxMDQKWzI1Nzc1LjU2NjUxOV0gIFs8ZmZmZmZmZmY4MTM3YTc1MD5dID8g
-Z3NfY2hhbmdlKzB4Yi8weGIKWzI1Nzc1LjU3MTU5MV0gQ29kZTogMDAgMDAgNDggOGQgODMg
-ODggMDAgMDAgMDAgNDggOGIgOTMgOTAgMDAgMDAgMDAgNDggODkgNTEgMDggNDggODkgMGEg
-NDggODkgODMgODggMDAgMDAgMDAgNDggODkgODMgOTAgMDAgMDAgMDAgZmUgMDUgMzMgODYg
-NDIgMDAKWzI1Nzc1LjU4NTQwOV0gIDhiIDQ1IDI4IDQ4IDg1IGMwIDc0IDA3IDQ4IDg5IGRm
-IGZmIGQwIGViIDIwIDQ4IDgzIGJiIGE4IDAxClsyNTc3NS41OTI3NjRdIFJJUCAgWzxmZmZm
-ZmZmZjgxMGI1Y2NkPl0gZXZpY3QrMHg2NC8weDEwZApbMjU3NzUuNTk3OTQ4XSAgUlNQIDxm
-ZmZmODgwMjM1YjhkYzAwPgpbMjU3NzUuNjAxNDU2XSBDUjI6IDAwMDAwMDAwMDAwMDAwMjgK
-WzI1Nzc1LjYyOTI0OF0gLS0tWyBlbmQgdHJhY2UgYmY4ZDQ4Yjk5N2IyMmE5ZCBdLS0tCgo=
---------------060709040801060808030001--
+Matt
