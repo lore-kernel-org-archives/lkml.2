@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab1JNTKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 15:10:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38272 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753462Ab1JNTKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 15:10:02 -0400
-Date: Fri, 14 Oct 2011 20:10:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Barry Song <21cnbao@gmail.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 2/2] ASoC: ad193x: Use snd_soc_update_bits for
- read-modify-write
-Message-ID: <20111014191000.GB2931@opensource.wolfsonmicro.com>
-References: <1318582919.19976.1.camel@phoenix>
- <1318582987.19976.2.camel@phoenix>
+	id S932477Ab1JNTKg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 15:10:36 -0400
+Received: from claw.goop.org ([74.207.240.146]:53011 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755785Ab1JNTKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 15:10:35 -0400
+Message-ID: <4E988929.8040801@goop.org>
+Date: Fri, 14 Oct 2011 12:10:33 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318582987.19976.2.camel@phoenix>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
+References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com> <1318503245.24856.12.camel@twins> <4E971580.6030300@goop.org> <20111014141701.GA2433@redhat.com> <4E986B2B.60803@goop.org> <4E98815F.6080105@zytor.com>
+In-Reply-To: <4E98815F.6080105@zytor.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 05:03:07PM +0800, Axel Lin wrote:
+On 10/14/2011 11:37 AM, H. Peter Anvin wrote:
+> On 10/14/2011 10:02 AM, Jeremy Fitzhardinge wrote:
+>> Jump labels are essentially binary: you can use path A or path B.  pvops
+>> are multiway: there's no limit to the number of potential number of
+>> paravirtualized hypervisor implementations.  At the moment we have 4:
+>> native, Xen, KVM and lguest.
+>>
+> This isn't (or shouldn't be) really true... it should be possible to do
+> an N-way jump label even if the current mechanism doesn't.
 
->  	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
-> -	reg = (mute > 0) ? reg | AD193X_DAC_MASTER_MUTE : reg &
-> -		(~AD193X_DAC_MASTER_MUTE);
-> +	if (mute)
-> +		reg |= AD193X_DAC_MASTER_MUTE;
-> +	else
-> +		reg &= ~AD193X_DAC_MASTER_MUTE;
->  	snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
+We probably don't want all those implementations (near) inline, so they
+would end up being plain function calls anyway.
 
-This is still using snd_soc_read() and snd_soc_write() (though it is a
-cleanup).
+    J
