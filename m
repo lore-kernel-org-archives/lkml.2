@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab1JNJ1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 05:27:13 -0400
-Received: from mga05.intel.com ([192.55.52.89]:39609 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755915Ab1JNJ1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 05:27:10 -0400
-Subject: Re: linux-next: build failure after merge of the final tree
- (sparc, ptrace trees related)
-From: Matt Fleming <matt.fleming@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, oleg@redhat.com,
-        linux-arch <linux-arch@vger.kernel.org>
-In-Reply-To: <20111014.035459.2238341687770152474.davem@davemloft.net>
-References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
-	 <20111014.035459.2238341687770152474.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Fri, 14 Oct 2011 10:27:02 +0100
-Message-ID: <1318584422.23581.118.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756036Ab1JNJaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 05:30:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50511 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753951Ab1JNJaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 05:30:21 -0400
+Date: Fri, 14 Oct 2011 11:30:20 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Terry Lambert <tlambert@chromium.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Driver for Primax keyboards violating USB HID spec
+In-Reply-To: <CAA_E9NHi4mS+J5VrxS915S3TD-157D=hMG7b-PMT2c1RYvnwVQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1110141127240.14768@pobox.suse.cz>
+References: <1318548517-5289-1-git-send-email-tlambert@chromium.org> <alpine.LNX.2.00.1110140134200.14768@pobox.suse.cz> <CAA_E9NHi4mS+J5VrxS915S3TD-157D=hMG7b-PMT2c1RYvnwVQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 03:54 -0400, David Miller wrote:
-> Ptrace folks can we not operate like this?  The only reason I found
-> out about the set_current_blocked() transformations was by accident,
-> because the original patch was posted to linux-kernel only so it never
-> got queued up into sparc patchwork.
+On Thu, 13 Oct 2011, Terry Lambert wrote:
+
+> Hi Jiri; thanks for looking so promptly!
 > 
-> Then once Oleg mentioned it to me, it didn't even compile so I fixed
-> it up and put the fixed up copy into my tree.  It also didn't
-> transform the TS_RESTORE_SIGMASK cases in the sparc signal code, so I
-> also added a patch to the sparc tree which took care of that.
-> 
-> Now you guys are creating conflicts against those fixed up patches in
-> another non-sparc tree, and adding new kinds of build failures as
-> well.
-> 
-> This doesn't work.
+> The routine right now just caches the hi->input for later look up
+> during the raw input report, which I suppose could be done inline on
+> each report with a couple function calls.
 
-Sorry David, this is my fault.
+Well yes, but even in px_raw_event() the px_device *px is only 
+initialized, but never used. So I'd just remove the whole px_device thing 
+altogether, I don't think it's needed.
 
-The reason that these patches couldn't be taken through the arch trees
-was because they were dependent on the non-arch patch that introduced
-block_sigmask(). I figured it would make more sense to put all the
-patches through Oleg's tree. It's now pretty clear I was wrong about
-that.
+> I don't have one of the folding keyboards people are complaining about
+> not being able to use for Android tablets on hand, or the unhappy Dell
+> Inspiron laptop, both of which use the controller   That's to explain
+> why the remapping code and the product ID for them are missing from
+> this patch.
 
-In hindsight, what I should have done was got the first patch that
-introduced block_sigmask() into 3.1, then waited till the next release
-cycle and sent out all the arch patches to the arch maintainers. That
-way the patches could have been pulled into the respective arch trees.
+I see.
 
-Guys, how did you want to sort this out? Should we get the first patch
-into 3.1, then get all the arch maintainers to pick up their patches?
+I'd like to ask you though to only submit patches containing code that is 
+actually used. Whenever the remapping part is needed for some other 
+keyboard, we'll just add it at the very time it's needed.
 
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
