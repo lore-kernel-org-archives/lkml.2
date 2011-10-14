@@ -1,111 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab1JNR2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 13:28:35 -0400
-Received: from ams-iport-3.cisco.com ([144.254.224.146]:65070 "EHLO
-	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1JNR2e (ORCPT
+	id S933029Ab1JNR2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 13:28:52 -0400
+Received: from re04.intra2net.com ([82.165.46.26]:47328 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170Ab1JNR2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 13:28:34 -0400
-X-IronPort-AV: E=Sophos;i="4.69,347,1315180800"; 
-   d="scan'208";a="1047933"
-Date: Fri, 14 Oct 2011 22:58:31 +0530
-From: Maneesh Soni <manesoni@cisco.com>
-To: David Daney <david.daney@cavium.com>
-Cc: ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, ananth@in.ibm.com, kamensky@cisco.com
-Subject: Re: [PATCH] MIPS Kprobes: Support branch instructions probing
-Message-ID: <20111014172831.GA8521@cisco.com>
-Reply-To: manesoni@cisco.com
-References: <20111013090749.GB16761@cisco.com>
- <4E971FD3.2020308@cavium.com>
+	Fri, 14 Oct 2011 13:28:50 -0400
+Message-ID: <4E9869B4.6080702@intra2net.com>
+Date: Fri, 14 Oct 2011 18:56:20 +0200
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E971FD3.2020308@cavium.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: linux-kernel@vger.kernel.org
+Subject: [slabinfo PATCH] Fix off-by-one after readlink() call
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 10:28:51AM -0700, David Daney wrote:
-> On 10/13/2011 02:07 AM, Maneesh Soni wrote:
-> >
-> >From: Maneesh Soni<manesoni@cisco.com>
-> >
-> >This patch provides support for kprobes on branch instructions. The branch
-> >instruction at the probed address is actually emulated and not executed
-> >out-of-line like other normal instructions. Instead the delay-slot instruction
-> >is copied and single stepped out of line.
-> >
-> >At the time of probe hit, the original branch instruction is evaluated
-> >and the target cp0_epc is computed similar to compute_retrun_epc(). It
-> >is also checked if the delay slot instruction can be skipped, which is
-> >true if there is a NOP in delay slot or branch is taken in case of
-> >branch likely instructions. Once the delay slot instruction is single
-> >stepped the normal execution resume with the cp0_epc updated the earlier
-> >computed cp0_epc as per the branch instructions.
-> >
-> 
-> I haven't tested it but...
-> 
-> 
-> >Signed-off-by: Maneesh Soni<manesoni@cisco.com>
-> >---
-> >  arch/mips/include/asm/kprobes.h |    7 +
-> >  arch/mips/kernel/kprobes.c      |  341 +++++++++++++++++++++++++++++++++++----
-> >  2 files changed, 320 insertions(+), 28 deletions(-)
-> >
-> [...]
-> >+static int evaluate_branch_instruction(struct kprobe *p, struct pt_regs *regs,
-> >+					struct kprobe_ctlblk *kcb)
-> >  {
-> >+	union mips_instruction insn = p->opcode;
-> >+	unsigned int dspcontrol;
-> >+	long epc;
-> >+
-> >+	epc = regs->cp0_epc;
-> >+	if (epc&  3)
-> >+		goto unaligned;
-> >+
-> >+	if (p->ainsn.insn->word == 0)
-> >+		kcb->flags |= SKIP_DELAYSLOT;
-> >+	else
-> >+		kcb->flags&= ~SKIP_DELAYSLOT;
-> >+
-> >+	switch (insn.i_format.opcode) {
-> >+	/*
-> >+	 * jr and jalr are in r_format format.
-> >+	 */
-> >+	case spec_op:
-> [...]
-> >+	case bgtzl_op:
-> >+		/* rt field assumed to be zero */
-> >+		if ((long)regs->regs[insn.i_format.rs]>  0) {
-> >+			epc = epc + 4 + (insn.i_format.simmediate<<  2);
-> >+			kcb->flags |= SKIP_DELAYSLOT;
-> >+		} else
-> >+			epc += 8;
-> >+		regs->cp0_epc = epc;
-> >+		break;
-> 
-> 
-> 
-> Where is the handling for:
-> 
-> 	case cop1_op:
-> 
-> #ifdef CONFIG_CPU_CAVIUM_OCTEON
-> 	case lwc2_op: /* This is bbit0 on Octeon */
-> 	case ldc2_op: /* This is bbit032 on Octeon */
-> 	case swc2_op: /* This is bbit1 on Octeon */
-> 	case sdc2_op: /* This is bbit132 on Octeon */
-> #endif
-> 
-> These are all defined in insn_has_delayslot() but not here.
 
-My bad.. will include them as well. Actually as Ralf suggested,
-will keep this as common code.
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+---
+ tools/slub/slabinfo.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks
-Maneesh
+diff --git a/tools/slub/slabinfo.c b/tools/slub/slabinfo.c
+index 868cc93..cc1a378 100644
+--- a/tools/slub/slabinfo.c
++++ b/tools/slub/slabinfo.c
+@@ -1145,7 +1145,7 @@ static void read_slab_dir(void)
+ 		switch (de->d_type) {
+ 		   case DT_LNK:
+ 			alias->name = strdup(de->d_name);
+-			count = readlink(de->d_name, buffer, sizeof(buffer));
++			count = readlink(de->d_name, buffer, sizeof(buffer)-1);
+ 
+ 			if (count < 0)
+ 				fatal("Cannot read symlink %s\n", de->d_name);
+-- 
+1.7.6.4
+
