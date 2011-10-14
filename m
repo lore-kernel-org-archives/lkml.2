@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab1JNOtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 10:49:04 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:28365 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab1JNOtB (ORCPT
+	id S1756895Ab1JNOyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 10:54:12 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:58443 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab1JNOyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 10:49:01 -0400
-Message-ID: <4E984BD2.6090907@siemens.com>
-Date: Fri, 14 Oct 2011 16:48:50 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/3] PCI: Rework config space locking, add INTx masking
- services
-References: <cover.1315846441.git.jan.kiszka@siemens.com> <20111006084853.033d8d0f@jbarnes-desktop>
-In-Reply-To: <20111006084853.033d8d0f@jbarnes-desktop>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Oct 2011 10:54:11 -0400
+Subject: Re: [PATCH 18/21] pci: drop unused Kconfig symbol
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+In-Reply-To: <20111014144208.GB12349@phenom.oracle.com>
+References: <1318595439.6132.77.camel@x61.thuisdomein>
+	 <20111014135743.GD4577@phenom.oracle.com>
+	 <1318601485.6132.91.camel@x61.thuisdomein>
+	 <20111014142254.GA8887@phenom.oracle.com>
+	 <1318602649.6132.102.camel@x61.thuisdomein>
+	 <20111014144208.GB12349@phenom.oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Oct 2011 16:53:55 +0200
+Message-ID: <1318604035.6132.109.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-06 17:48, Jesse Barnes wrote:
-> On Mon, 12 Sep 2011 18:54:01 +0200
-> Jan Kiszka <jan.kiszka@siemens.com> wrote:
+On Fri, 2011-10-14 at 10:42 -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Oct 14, 2011 at 04:30:49PM +0200, Paul Bolle wrote:
+> > So there's no other Kconfig symbol that depends in this symbol. Neitehr
+> > is there anything that uses CONFIG_XEN_PCIDEV_FE_DEBUG.
 > 
->> This series tries to heal the currently broken locking scheme around PCI
->> config space accesses.
->>
->> We have an interface lock out access via sysfs, but that service wrongly
->> assumes it is only called by one instance at a time for some device. So
->> two loops doing
->>
->> echo 1 > /sys/bus/pci/devices/<some-device>/reset
->>
->> in parallel will trigger a kernel BUG at the moment.
->>
->> Besides synchronizing with user space, we also need to manage config
->> space access of generic PCI drivers. They need to mask legacy interrupt
->> lines while the specific driver runs in user space or a guest OS.
->>
->> The approach taken here is provide mutex-like locking for general
->> access - which still requires a special mechanism due to requirements of
->> the IBM Power RAID SCSI driver. Furthermore, INTx masking is now
->> available via the PCI core and synchronized via the internal pci_lock.
->>
->> Not sure who may want to take this, so I'm CC'ing broadly.
-> 
-> ISTR a bunch of discussion about this (just back from lots of work
-> travel and vacation, sorry I missed most of it).
-> 
-> Is this the agreed upon way of handling it?  If so, can I get some
-> Reviewed/Acked-bys from people?
+> Excellent. Can you include that in the description please then.
 
-I hope this is acceptable. These changes are required for further
-improvements of the KVM device assignment support (INTx sharing). So I
-would appreciate any ack or whatever feedback as well.
+Sure (minus my typos, of course).
 
-Thanks,
-Jan
+> And you can also include 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>'
+> on that patch.
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Sure. That will be in a week or so. The current plan is to see what gets
+NAKed and what gets merged and send the rest (with the tags they
+collected in that week) to Michal Marek, who will handle the remaining
+patches from there on.
+
+
+Paul Bolle
+
