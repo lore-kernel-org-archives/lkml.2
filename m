@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1JNPyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 11:54:19 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48336 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1JNPyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 11:54:16 -0400
-Date: Fri, 14 Oct 2011 11:54:06 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Linux Containers <containers@lists.osdl.org>,
-        Linux Containers <lxc-devel@lists.sourceforge.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: Detecting if you are running in a container
-Message-ID: <20111014155406.GC13119@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Kyle Moffett <kyle@moffetthome.net>,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Matt Helsley <matthltc@us.ibm.com>,
-	Lennart Poettering <mzxreary@0pointer.de>,
-	Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-	harald@redhat.com, david@fubar.dk, greg@kroah.com,
-	Linux Containers <containers@lists.osdl.org>,
-	Linux Containers <lxc-devel@lists.sourceforge.net>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Daniel Lezcano <daniel.lezcano@free.fr>,
-	Paul Menage <paul@paulmenage.org>
-References: <20111011013201.GA7948@thunk.org>
- <20111011020530.GG16723@count0.beaverton.ibm.com>
- <20111011032523.GB7948@thunk.org>
- <m1ty7ghvvn.fsf@fess.ebiederm.org>
- <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu>
- <m17h4bfcuv.fsf@fess.ebiederm.org>
- <20111012175702.GA23231@fieldses.org>
- <CAGZ=bqJxadNqaPCW3HufrMmQ57x082=pCDa6-mWLsdtfxHgdPw@mail.gmail.com>
- <20111012190452.GA23845@fieldses.org>
- <CAGZ=bqJjgmtBfyXJ2eK1C0PfzkgBVWFTjkTYkC211ZT+-5f-UQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGZ=bqJjgmtBfyXJ2eK1C0PfzkgBVWFTjkTYkC211ZT+-5f-UQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1753094Ab1JNP7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 11:59:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50426 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab1JNP7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 11:59:15 -0400
+From: Olof Johansson <olof@lixom.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ccross@android.com, arnd@arndb.de,
+        swarren@nvidia.com, pdeschrijver@nvidia.com,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH] ARM: mutually exclude ZBOOT_ROM and AUTO_ZRELADDR
+Date: Fri, 14 Oct 2011 08:59:05 -0700
+Message-Id: <1318607945-6807-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20111014071500.GP21648@n2100.arm.linux.org.uk>
+References: <20111014071500.GP21648@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 03:12:34PM -0400, Kyle Moffett wrote:
-> Well, you're going to need to introduce a bunch of new xattrs to
-> handle the namespacing anyways.
-> 
-> As I understand it you can use RichACLs to grant all the same
-> privileges as owner and group, so you can simply map the real
-> namespaced owner and group into RichACLs (or another xattr) and force
-> the inode uid/gid to be root/root (or maybe nobody/nogroup or
-> something).
+This way platforms that want it can select AUTO_ZRELADDR without issues caused by
+someone manually also enabling ZBOOT_ROM.
 
-It's going to be all about mapping tables, and whether the mapping is
-done in userspace or kernel space.  For example, you might want to
-take a Kerberos principal name, and mapping it to a 128bit identifier
-(64 bit realm id + 64 bit user id), and that in turn might require
-mapping to some 32-bit Linux uid namespace.
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ arch/arm/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-If people want to support multiple 32-bit Linux uid namespaces, then
-it's a question of how you name these uid name spaces, and how to
-manage the mapping tables outside of kernel, and how the mapping
-tables get loaded into the kernel.
 
-> I am of course making it sound a million times easier than it's
-> actually likely to be, but I do think it's possible without too many
-> odd corner cases.
+Russell King wrote at Friday, October 14, 2011 1:15 AM:
 
-It's not the corner cases, it's all of the different name spaces that
-different system administrators and their sites are going to want to
-use, and how to support them all....
+> I'll point out that this makes Tegra incompatible with ZBOOT_ROM, which
+> can still be enabled.  ZBOOT_ROM=y AUTO_ZRELADDR=y is an invalid
+> configuration at runtime.
 
-And of course, once we start naming uid name spaces, eventually
-someone will want to virtualize containers, and then we will have
-namespaces for namespaces.  (It's turtles all the way down!  :-)
+Ah, looks like the dependency is only one-way. Since they are mutually
+exclusive, how about the below?
 
-						- Ted
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 82973b2..2ad58e8 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1814,6 +1814,7 @@ config ZBOOT_ROM_BSS
+ config ZBOOT_ROM
+ 	bool "Compressed boot loader in ROM/flash"
+ 	depends on ZBOOT_ROM_TEXT != ZBOOT_ROM_BSS
++	depends on !AUTO_ZRELADDR
+ 	help
+ 	  Say Y here if you intend to execute your compressed kernel image
+ 	  (zImage) directly from ROM or flash.  If unsure, say N.
+-- 
+1.7.4.1
+
