@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933485Ab1JNWGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 18:06:09 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58764 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332Ab1JNWGH (ORCPT
+	id S1757010Ab1JNWRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 18:17:50 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:45863 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab1JNWRt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 18:06:07 -0400
-Message-ID: <4E98B24A.2070408@gmail.com>
-Date: Fri, 14 Oct 2011 17:06:02 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: Nicolas Pitre <nico@fluxnic.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Erik Gilling <konkers@android.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
+	Fri, 14 Oct 2011 18:17:49 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Colin Cross (ccross@android.com)" <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
-References: <1317172068-14872-1-git-send-email-pdeschrijver@nvidia.com> <201110141729.41515.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A283@HQMAIL01.nvidia.com> <201110141827.53906.arnd@arndb.de> <CAOesGMgDwMeVmwo1WJ3tU+ZdjCSJ6F8mY42e_KwTmzAkGQsqmg@mail.gmail.com> <20111014192011.GS21648@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1110141549160.17040@xanadu.home> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A362@HQMAIL01.nvidia.com> <alpine.LFD.2.02.1110141631530.17040@xanadu.home> <74CDBE0F657A3D45AFBB94109FB122FF173BE1A3A6@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A3A6@HQMAIL01.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Fri, 14 Oct 2011 18:16:57 -0400
+Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: AcyJ6oAPC5pDCSZQRDqc2xMRcl3KdQA1HzjO
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB4F747AC@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+ <20110901100650.6d884589.rdunlap@xenotime.net>
+ <20110901152650.7a63cb8b@annuminas.surriel.com>
+ <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+ <20111010153723.6397924f.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+ <20111011125419.2702b5dc.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
+ <20111011135445.f580749b.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
+ <alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516D0EA@USINDEVS02.corp.hds.com>
+ <alpine.DEB.2.00.1110121654120.30123@chino.kir.corp.google.com>
+ <20111013143501.a59efa5c.kamezawa.hiroyu@jp.fujitsu.com>,<alpine.DEB.2.00.1110131351270.24853@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110131351270.24853@chino.kir.corp.google.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110140286
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 04:01 PM, Stephen Warren wrote:
-> Nicolas Pitre wrote at Friday, October 14, 2011 2:45 PM:
->> On Fri, 14 Oct 2011, Stephen Warren wrote:
-> ...
->>> I did originally briefly look into getting U-Boot to boot a zImage, but
->>> that looked like a far more invasive patch. There were rumours of some
->>> chip's custom U-Boot already having such support, but I couldn't find
->>> it, nor any evidence of such support in mainline U-Boot.
->>
->> FRom my clone of the u-Boot repo:
->>
->> $ git grep -l zImage
->> README
->> arch/sh/lib/zimageboot.c
->> arch/x86/lib/zimage.c
->> ...
->>
->> Even the name of some of those files clearly hints zImage support.
->>
->> In any case, loading zImage should be even simpler than loading uImage.
->> It is the same as loading uImage except that you just have to skip the
->> checking and relocating steps.
+On 10/13/2011 04:55 PM, David Rientjes wrote:
 > 
-> Just by way of background in case anyone is wondering why I wrote the
-> patch I did:
-> 
-> Those files both implement custom commands "zimageboot" and "zboot". I
-> was looking for integration with the existing "bootm" command.
-> 
-> The advantage of re-using "bootm" for this is that it already supports
-> all the stuff like setting up kernel command-lines, initrds, knowing how
-> to pass the FDT to the kernel, and whatever other OS-specific setup might
-> be required.
-> 
-> The disadvantage of adding zImage support to bootm is that I'd have to
-> teach a bunch of U-Boot image handling code about a new image format; it
-> already knows about "legacy uImage", "FIT" images, and I'd have to add a
-> third "zImage" format. Doing so would at least require adding a lot of
-> "case IMAGE_FORMAT_ZIMAGE" everywhere, but it'd probably be best to add
-> some kind of vtable for image formats to move all the image-format
-> knowledge into format-specific files, leaving the users of the images
-> with much smaller code.
-> 
-> I didn't feel like making such a large change. Hence, I chose to make a
-> small change to the existing uImage support.
-> 
-> Now admittedly I did say I didn't find any traces of zImage support, which
-> isn't what I'm saying here; I guess I forgot about the stuff I did find
-> soon after I chose the path of modifying the uImage formats.
-> 
+> Satoru was specifically talking about the VM using free memory for 
+> pagecache,
 
-FYI, this exact topic has been discussed on the Linaro weekly
-boot-architecture call and list. The discussion has been more general in
-terms of what can be done to make installing and updating kernels
-easier/work for distros.
+Yes, because we can't stop increasing pagecache and it 
+occupies RAM where some people want to keep free for bursty
+memory requirement. Usually it works fine but sometimes like
+my test case doesn't work well.
 
-https://wiki.linaro.org/OfficeofCTO/BootArchitecture
+> so doing echo echo 1 > /proc/sys/vm/drop_caches can mitigate 
+> that almost immediately.  
 
-Rob
+I know it and some admins use that kind of tuning. But is it
+proper way? Should we exec the script like above periodically?
+I believe that we should use it for debug only.
+
+> I think the key to the discussion, though, is 
+> that even the application doesn't know it's bursty memory behavior before 
+> it happens and the kernel entering direct reclaim hurts latency-sensitive 
+> applications.
+>
+> If there were a change to increase the space significantly between the 
+> high and min watermark when min_free_kbytes changes, that would fix the 
+> problem. 
+
+Right. But min_free_kbytes changes both thresholds, foregroud reclaim
+and background reclaim. I'd like to configure them separately like
+dirty_bytes and dirty_background_bytes for flexibility.
+
+> The problem is two-fold: that comes at a penalty for systems 
+> or workloads that don't need to reclaim the additional memory, and it's 
+> not clear how much space should exist between those watermarks.
+
+The required size depends on a system architacture such as kernel,
+applications, storage etc. and so admin who care the whole system
+should configure it based on tests by his own risk.
+
+Regards,
+Satoru
