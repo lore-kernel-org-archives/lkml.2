@@ -1,638 +1,444 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab1JNNd6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 09:33:58 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:47985 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101Ab1JNNd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 09:33:57 -0400
-Date: Fri, 14 Oct 2011 15:33:54 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 21/21] cris: drop unused Kconfig symbols
-Message-ID: <20111014133354.GE9412@axis.com>
-References: <1318595467.6132.80.camel@x61.thuisdomein>
+	id S932918Ab1JNNgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 09:36:03 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:54082 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab1JNNf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 09:35:59 -0400
+X-SpamScore: -31
+X-BigFish: VPS-31(zz9371K179dN1432N98dK4015Lzz1202hzz15d4R8275bhz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LT25RT-02-8HI-02
+X-M-MSG: 
+Date: Fri, 14 Oct 2011 15:35:10 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
+ supported by the hardware
+Message-ID: <20111014133510.GC2198@amd.com>
+References: <20110927131222.GL2138@amd.com>
+ <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
+ <20110927181438.GM2138@amd.com>
+ <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
+ <20111010094738.GW2138@amd.com>
+ <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
+ <20111010153609.GB2138@amd.com>
+ <CAK=WgbbnuO67X46sqS87q2vw2TWq3Ekvw5p1PmXvXinQXMyowg@mail.gmail.com>
+ <20111011103820.GF2138@amd.com>
+ <CAK=WgbYOUZNX0OmRwZNO1mMG+3DZXwff+S60ESWixf04HOcbtw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1318595467.6132.80.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAK=WgbYOUZNX0OmRwZNO1mMG+3DZXwff+S60ESWixf04HOcbtw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmmm... NAK on that. Lots of these configs are actually used, but in drivers
-not upstream yet (serial port, ethernet and usb drivers for ARTPEC-3).
+On Tue, Oct 11, 2011 at 01:01:23PM -0400, Ohad Ben-Cohen wrote:
+> On Tue, Oct 11, 2011 at 12:38 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> > You need to make sure that you don;t pass larger regions then requested
+> > to the low-level driver. Some logic like in the iommu_map function
+> > should do it.
+> 
+> You're right. But the solution IMHO should be getting rid of that size
+> -> order -> size conversion which we do back and forth, as it's kinda
+> pointless.
 
-However, the following seem to truly be unused:
+Right.
 
-ETRAX_NANDFLASH_BUSWIDTH
-ETRAX_PA_BUTTON_BITMASK
-ETRAX_DDR
-
-If you send a modified patch with just those configs I will be happy. :-)
-
-Thanks,
-
-/Jesper
-
-On Fri, Oct 14, 2011 at 02:31:07PM +0200, Paul Bolle wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> 
+> > Please use PAGE_SIZE instead of 0x1000UL.
+> 
+> This one would go away too if we remove the size -> order -> size
+> conversions. In fact, iommu_unmap() just becomes so much simpler when
+> we do that.
+> 
+> I'm attaching two patches: first one that removes the
+> size->order->size conversions we have, and then the usual pgsize patch
+> rebased to it.
+> 
+> Please take a look,
+> 
+> Thanks,
+> Ohad.
+> 
+> >From 7102bda53a425872591f14f850ab031b1ca5dae1 Mon Sep 17 00:00:00 2001
+> From: Ohad Ben-Cohen <ohad@wizery.com>
+> Date: Tue, 11 Oct 2011 16:50:38 +0200
+> Subject: [PATCH 1/2] iommu/core: stop converting bytes to page order
+> back and forth
+> 
+> Express sizes in bytes rather than in page order, to eliminate the
+> size->order->size conversions we have whenever the IOMMU API is calling
+> the low level drivers' map/unmap methods.
+> 
+> Adopt all existing drivers.
+> 
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 > ---
->  arch/cris/Kconfig                  |   49 -----
->  arch/cris/arch-v10/drivers/Kconfig |   23 ---
->  arch/cris/arch-v32/drivers/Kconfig |  380 ------------------------------------
->  arch/cris/arch-v32/mach-a3/Kconfig |    4 -
->  4 files changed, 0 insertions(+), 456 deletions(-)
+>  drivers/iommu/amd_iommu.c   |   13 +++++--------
+>  drivers/iommu/intel-iommu.c |   11 ++++-------
+>  drivers/iommu/iommu.c       |    8 +++++---
+>  drivers/iommu/msm_iommu.c   |   19 +++++++------------
+>  drivers/iommu/omap-iommu.c  |   14 +++++---------
+>  include/linux/iommu.h       |    6 +++---
+>  6 files changed, 29 insertions(+), 42 deletions(-)
+
+This patch looks good. Please include it in the page-size patch-set.
+
+>  drivers/iommu/iommu.c      |  112 +++++++++++++++++++++++++++++++++++++++----
+>  drivers/iommu/omap-iovmm.c |   17 ++----
+>  include/linux/iommu.h      |   24 ++++++++-
+>  virt/kvm/iommu.c           |    8 ++--
+>  4 files changed, 132 insertions(+), 29 deletions(-)
 > 
-> diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
-> index 17addac..6a0dc11 100644
-> --- a/arch/cris/Kconfig
-> +++ b/arch/cris/Kconfig
-> @@ -98,9 +98,6 @@ config ETRAX_KMALLOCED_MODULES
->         help
->           Enable module allocation with kmalloc instead of vmalloc.
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index 5d042e8..9355632 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -16,6 +16,8 @@
+>   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+>   */
 > 
-> -config OOM_REBOOT
-> -       bool "Enable reboot at out of memory"
-> -
->  source "kernel/Kconfig.preempt"
+> +#define pr_fmt(fmt)    "%s: " fmt, __func__
+> +
+>  #include <linux/device.h>
+>  #include <linux/kernel.h>
+>  #include <linux/bug.h>
+> @@ -47,6 +49,19 @@ int bus_set_iommu(struct bus_type *bus, struct
+> iommu_ops *ops)
+>         if (bus->iommu_ops != NULL)
+>                 return -EBUSY;
 > 
->  source mm/Kconfig
-> @@ -177,12 +174,6 @@ config ETRAX_FLASH_BUSWIDTH
->         help
->           Width in bytes of the NOR Flash bus (1, 2 or 4). Is usually 2.
+> +       /*
+> +        * Set the default pgsize values, which retain the existing
+> +        * IOMMU API behavior: drivers will be called to map
+> +        * regions that are sized/aligned to order of 4KiB pages.
+> +        *
+> +        * This will be removed once all drivers are migrated.
+> +        */
+> +       if (!ops->pgsize_bitmap)
+> +               ops->pgsize_bitmap = ~0xFFFUL;
+> +
+> +       /* find out the minimum page size only once */
+> +       ops->min_pagesz = 1 << __ffs(ops->pgsize_bitmap);
+
+Hmm, I'd like to constify the iommu_ops structures in the future. This
+wouldn't work then anymore. How about renaming it to io_page_size
+(because it is the base page-size of the iommu) and let the driver set
+it?
+
+
+> +
+>         bus->iommu_ops = ops;
 > 
-> -config ETRAX_NANDFLASH_BUSWIDTH
-> -       int "Buswidth of NAND flash in bytes"
-> -       default "1"
-> -       help
-> -         Width in bytes of the NAND flash (1 or 2).
-> -
->  config ETRAX_FLASH1_SIZE
->         int "FLASH1 size (dec, in MB. 0 = Unknown)"
->         default "0"
-> @@ -581,26 +572,6 @@ config ETRAX_SERIAL_PORT3_DMA5_IN
->         depends on ETRAX_ARCH_V10
->         bool "DMA 5"
+>         /* Do IOMMU specific setup for this bus-type */
+> @@ -157,35 +172,110 @@ int iommu_domain_has_cap(struct iommu_domain *domain,
+>  EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
 > 
-> -config ETRAX_SERIAL_PORT3_DMA9_IN
-> -       bool "Ser3 uses DMA9 for input"
-> -       depends on ETRAXFS
-> -       help
-> -         Enables the DMA9 input channel for ser3 (ttyS3).
-> -         If you do not enable DMA, an interrupt for each character will be
-> -         used when receiving data.
-> -         Normally you want to use DMA, unless you use the DMA channel for
-> -         something else.
-> -
-> -config ETRAX_SERIAL_PORT3_DMA3_IN
-> -       bool "Ser3 uses DMA3 for input"
-> -       depends on CRIS_MACH_ARTPEC3
-> -       help
-> -         Enables the DMA3 input channel for ser3 (ttyS3).
-> -         If you do not enable DMA, an interrupt for each character will be
-> -         used when receiving data.
-> -         Normally you want to use DMA, unless you use the DMA channel for
-> -         something else.
-> -
->  endchoice
+>  int iommu_map(struct iommu_domain *domain, unsigned long iova,
+> -             phys_addr_t paddr, int gfp_order, int prot)
+> +             phys_addr_t paddr, size_t size, int prot)
+>  {
+> -       size_t size;
+> +       unsigned long orig_iova = iova;
+> +       size_t orig_size = size;
+> +       int ret = 0;
 > 
->  choice
-> @@ -618,26 +589,6 @@ config ETRAX_SERIAL_PORT3_DMA4_OUT
->         depends on ETRAX_ARCH_V10
->         bool "DMA 4"
+>         if (unlikely(domain->ops->map == NULL))
+>                 return -ENODEV;
 > 
-> -config ETRAX_SERIAL_PORT3_DMA8_OUT
-> -       bool "Ser3 uses DMA8 for output"
-> -       depends on ETRAXFS
-> -       help
-> -         Enables the DMA8 output channel for ser3 (ttyS3).
-> -         If you do not enable DMA, an interrupt for each character will be
-> -         used when transmitting data.
-> -         Normally you want to use DMA, unless you use the DMA channel for
-> -         something else.
-> -
-> -config ETRAX_SERIAL_PORT3_DMA2_OUT
-> -       bool "Ser3 uses DMA2 for output"
-> -       depends on CRIS_MACH_ARTPEC3
-> -       help
-> -         Enables the DMA2 output channel for ser3 (ttyS3).
-> -         If you do not enable DMA, an interrupt for each character will be
-> -         used when transmitting data.
-> -         Normally you want to use DMA, unless you use the DMA channel for
-> -         something else.
-> -
->  endchoice
+> -       size         = PAGE_SIZE << gfp_order;
+> +       /*
+> +        * both the virtual address and the physical one, as well as
+> +        * the size of the mapping, must be aligned (at least) to the
+> +        * size of the smallest page supported by the hardware
+> +        */
+> +       if (!IS_ALIGNED(iova | paddr | size, domain->ops->min_pagesz)) {
+> +               pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%x min_pagesz "
+> +                       "0x%x\n", iova, (unsigned long)paddr,
+> +                       size, domain->ops->min_pagesz);
+> +               return -EINVAL;
+> +       }
+> +
+> +       pr_debug("map: iova 0x%lx pa 0x%lx size 0x%x\n", iova,
+> +                               (unsigned long)paddr, size);
+> +
+> +       while (size) {
+> +               unsigned long pgsize, addr_merge = iova | paddr;
+> +               unsigned int pgsize_idx;
+> +
+> +               /* Max page size that still fits into 'size' */
+> +               pgsize_idx = __fls(size);
+> +
+> +               /* need to consider alignment requirements ? */
+> +               if (likely(addr_merge)) {
+> +                       /* Max page size allowed by both iova and paddr */
+> +                       unsigned int align_pgsize_idx = __ffs(addr_merge);
+> +
+> +                       pgsize_idx = min(pgsize_idx, align_pgsize_idx);
+> +               }
+> +
+> +               /* build a mask of acceptable page sizes */
+> +               pgsize = (1UL << (pgsize_idx + 1)) - 1;
 > 
->  endmenu
-> diff --git a/arch/cris/arch-v10/drivers/Kconfig b/arch/cris/arch-v10/drivers/Kconfig
-> index 0d72217..12f2f04 100644
-> --- a/arch/cris/arch-v10/drivers/Kconfig
-> +++ b/arch/cris/arch-v10/drivers/Kconfig
-> @@ -418,16 +418,6 @@ config ETRAX_USB_HOST
->            for CTRL and BULK traffic only, INTR traffic may work as well
->            however (depending on the requirements of timeliness).
+> -       BUG_ON(!IS_ALIGNED(iova | paddr, size));
+> +               /* throw away page sizes not supported by the hardware */
+> +               pgsize &= domain->ops->pgsize_bitmap;
 > 
-> -config ETRAX_USB_HOST_PORT1
-> -       bool "USB port 1 enabled"
-> -       depends on ETRAX_USB_HOST
-> -       default n
-> -
-> -config ETRAX_USB_HOST_PORT2
-> -       bool "USB port 2 enabled"
-> -       depends on ETRAX_USB_HOST
-> -       default n
-> -
->  config ETRAX_PTABLE_SECTOR
->         int "Byte-offset of partition table sector"
->         depends on ETRAX_AXISFLASHMAP
-> @@ -528,19 +518,6 @@ config ETRAX_GPIO
->           Remember that you need to setup the port directions appropriately in
->           the General configuration.
+> -       return domain->ops->map(domain, iova, paddr, size, prot);
+> +               /* make sure we're still sane */
+> +               BUG_ON(!pgsize);
+> +
+> +               /* pick the biggest page */
+> +               pgsize_idx = __fls(pgsize);
+> +               pgsize = 1UL << pgsize_idx;
+> +
+> +               pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
+> +                                       (unsigned long)paddr, pgsize);
+> +
+> +               ret = domain->ops->map(domain, iova, paddr, pgsize, prot);
+> +               if (ret)
+> +                       break;
+> +
+> +               iova += pgsize;
+> +               paddr += pgsize;
+> +               size -= pgsize;
+> +       }
+> +
+> +       /* unroll mapping in case something went wrong */
+> +       if (ret)
+> +               iommu_unmap(domain, orig_iova, orig_size - size);
+> +
+> +       return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_map);
 > 
-> -config ETRAX_PA_BUTTON_BITMASK
-> -       hex "PA-buttons bitmask"
-> -       depends on ETRAX_GPIO
-> -       default "02"
-> -       help
-> -         This is a bitmask with information about what bits on PA that
-> -         are used for buttons.
-> -         Most products has a so called TEST button on PA1, if that's true
-> -         use 02 here.
-> -         Use 00 if there are no buttons on PA.
-> -         If the bitmask is <> 00 a button driver will be included in the gpio
-> -         driver. ETRAX general I/O support must be enabled.
-> -
->  config ETRAX_PA_CHANGEABLE_DIR
->         hex "PA user changeable dir mask"
->         depends on ETRAX_GPIO
-> diff --git a/arch/cris/arch-v32/drivers/Kconfig b/arch/cris/arch-v32/drivers/Kconfig
-> index 41a2732..3488a79 100644
-> --- a/arch/cris/arch-v32/drivers/Kconfig
-> +++ b/arch/cris/arch-v32/drivers/Kconfig
-> @@ -28,56 +28,6 @@ config ETRAX_ETHERNET_IFACE1
->         depends on (ETRAX_ETHERNET && ETRAXFS)
->         bool "Enable network interface 1 (uses DMA6 and DMA7)"
+> -int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
+> +size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+> size_t size)
+>  {
+> -       size_t size, unmapped;
+> +       size_t unmapped, left = size;
 > 
-> -config ETRAX_ETHERNET_GBIT
-> -       depends on (ETRAX_ETHERNET && CRIS_MACH_ARTPEC3)
-> -       bool "Enable gigabit Ethernet support"
-> -
-> -choice
-> -       prompt "Eth0 led group"
-> -       depends on ETRAX_ETHERNET_IFACE0
-> -       default ETRAX_ETH0_USE_LEDGRP0
-> -
-> -config ETRAX_ETH0_USE_LEDGRP0
-> -       bool "Use LED grp 0"
-> -       depends on ETRAX_NBR_LED_GRP_ONE || ETRAX_NBR_LED_GRP_TWO
-> -       help
-> -         Use LED grp 0 for eth0
-> -
-> -config ETRAX_ETH0_USE_LEDGRP1
-> -       bool "Use LED grp 1"
-> -       depends on ETRAX_NBR_LED_GRP_TWO
-> -       help
-> -         Use LED grp 1 for eth0
-> -
-> -config ETRAX_ETH0_USE_LEDGRPNULL
-> -       bool "Use no LEDs for eth0"
-> -       help
-> -         Use no LEDs for eth0
-> -endchoice
-> -
-> -choice
-> -       prompt "Eth1 led group"
-> -       depends on ETRAX_ETHERNET_IFACE1
-> -       default ETRAX_ETH1_USE_LEDGRP1
-> -
-> -config ETRAX_ETH1_USE_LEDGRP0
-> -       bool "Use LED grp 0"
-> -       depends on ETRAX_NBR_LED_GRP_ONE || ETRAX_NBR_LED_GRP_TWO
-> -       help
-> -         Use LED grp 0 for eth1
-> -
-> -config ETRAX_ETH1_USE_LEDGRP1
-> -       bool "Use LED grp 1"
-> -       depends on ETRAX_NBR_LED_GRP_TWO
-> -       help
-> -         Use LED grp 1 for eth1
-> -
-> -config ETRAX_ETH1_USE_LEDGRPNULL
-> -       bool "Use no LEDs for eth1"
-> -       help
-> -         Use no LEDs for eth1
-> -endchoice
-> -
->  config ETRAXFS_SERIAL
->         bool "Serial-port support"
->         depends on ETRAX_ARCH_V32
-> @@ -109,261 +59,30 @@ config ETRAX_SERIAL_PORT0
->           if you do not need DMA to something else.
->           ser0 can use dma4 or dma6 for output and dma5 or dma7 for input.
+>         if (unlikely(domain->ops->unmap == NULL))
+>                 return -ENODEV;
 > 
-> -choice
-> -       prompt "Ser0 default port type "
-> -       depends on ETRAX_SERIAL_PORT0
-> -       default ETRAX_SERIAL_PORT0_TYPE_232
-> -       help
-> -         Type of serial port.
-> -
-> -config ETRAX_SERIAL_PORT0_TYPE_232
-> -       bool "Ser0 is a RS-232 port"
-> -       help
-> -         Configure serial port 0 to be a RS-232 port.
-> -
-> -config ETRAX_SERIAL_PORT0_TYPE_485HD
-> -       bool "Ser0 is a half duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 0 to be a half duplex (two wires) RS-485 port.
-> -
-> -config ETRAX_SERIAL_PORT0_TYPE_485FD
-> -       bool "Ser0 is a full duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 0 to be a full duplex (four wires) RS-485 port.
-> -endchoice
-> -
-> -config ETRAX_SER0_DTR_BIT
-> -       string "Ser 0 DTR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT0
-> -
-> -config ETRAX_SER0_RI_BIT
-> -       string "Ser 0 RI bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT0
-> -
-> -config ETRAX_SER0_DSR_BIT
-> -       string "Ser 0 DSR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT0
-> -
-> -config ETRAX_SER0_CD_BIT
-> -       string "Ser 0 CD bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT0
-> -
->  config ETRAX_SERIAL_PORT1
->         bool "Serial port 1 enabled"
->         depends on ETRAXFS_SERIAL
->         help
->           Enables the ETRAX FS serial driver for ser1 (ttyS1).
+> -       size         = PAGE_SIZE << gfp_order;
+> +       /*
+> +        * The virtual address, as well as the size of the mapping, must be
+> +        * aligned (at least) to the size of the smallest page supported
+> +        * by the hardware
+> +        */
+> +       if (!IS_ALIGNED(iova | size, domain->ops->min_pagesz)) {
+> +               pr_err("unaligned: iova 0x%lx size 0x%x min_pagesz 0x%x\n",
+> +                       iova, size, domain->ops->min_pagesz);
+> +               return -EINVAL;
+> +       }
+> +
+> +       pr_debug("unmap this: iova 0x%lx size 0x%x\n", iova, size);
+> +
+> +       while (left) {
+
+This needs to be (left > 0). The drivers are allowed to unmap more then
+requested, so this value may turn negative.
+
+> +               unmapped = domain->ops->unmap(domain, iova, left);
+> +               if (!unmapped)
+> +                       break;
 > 
-> -choice
-> -       prompt "Ser1 default port type"
-> -       depends on ETRAX_SERIAL_PORT1
-> -       default ETRAX_SERIAL_PORT1_TYPE_232
-> -       help
-> -         Type of serial port.
-> -
-> -config ETRAX_SERIAL_PORT1_TYPE_232
-> -       bool "Ser1 is a RS-232 port"
-> -       help
-> -         Configure serial port 1 to be a RS-232 port.
-> -
-> -config ETRAX_SERIAL_PORT1_TYPE_485HD
-> -       bool "Ser1 is a half duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 1 to be a half duplex (two wires) RS-485 port.
-> -
-> -config ETRAX_SERIAL_PORT1_TYPE_485FD
-> -       bool "Ser1 is a full duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 1 to be a full duplex (four wires) RS-485 port.
-> -endchoice
-> -
-> -config ETRAX_SER1_DTR_BIT
-> -       string "Ser 1 DTR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT1
-> -
-> -config ETRAX_SER1_RI_BIT
-> -       string "Ser 1 RI bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT1
-> -
-> -config ETRAX_SER1_DSR_BIT
-> -       string "Ser 1 DSR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT1
-> -
-> -config ETRAX_SER1_CD_BIT
-> -       string "Ser 1 CD bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT1
-> -
->  config ETRAX_SERIAL_PORT2
->         bool "Serial port 2 enabled"
->         depends on ETRAXFS_SERIAL
->         help
->           Enables the ETRAX FS serial driver for ser2 (ttyS2).
+> -       BUG_ON(!IS_ALIGNED(iova, size));
+> +               pr_debug("unmapped: iova 0x%lx size %u\n", iova, unmapped);
 > 
-> -choice
-> -       prompt "Ser2 default port type"
-> -       depends on ETRAX_SERIAL_PORT2
-> -       default ETRAX_SERIAL_PORT2_TYPE_232
-> -       help
-> -         What DMA channel to use for ser2
-> -
-> -config ETRAX_SERIAL_PORT2_TYPE_232
-> -       bool "Ser2 is a RS-232 port"
-> -       help
-> -         Configure serial port 2 to be a RS-232 port.
-> -
-> -config ETRAX_SERIAL_PORT2_TYPE_485HD
-> -       bool "Ser2 is a half duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 2 to be a half duplex (two wires) RS-485 port.
-> -
-> -config ETRAX_SERIAL_PORT2_TYPE_485FD
-> -       bool "Ser2 is a full duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 2 to be a full duplex (four wires) RS-485 port.
-> -endchoice
-> -
-> -
-> -config ETRAX_SER2_DTR_BIT
-> -       string "Ser 2 DTR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT2
-> -
-> -config ETRAX_SER2_RI_BIT
-> -       string "Ser 2 RI bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT2
-> -
-> -config ETRAX_SER2_DSR_BIT
-> -       string "Ser 2 DSR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT2
-> -
-> -config ETRAX_SER2_CD_BIT
-> -       string "Ser 2 CD bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT2
-> -
->  config ETRAX_SERIAL_PORT3
->         bool "Serial port 3 enabled"
->         depends on ETRAXFS_SERIAL
->         help
->           Enables the ETRAX FS serial driver for ser3 (ttyS3).
+> -       unmapped = domain->ops->unmap(domain, iova, size);
+> +               iova += unmapped;
+> +               left -= unmapped;
+> +       }
 > 
-> -choice
-> -       prompt "Ser3 default port type"
-> -       depends on ETRAX_SERIAL_PORT3
-> -       default ETRAX_SERIAL_PORT3_TYPE_232
-> -       help
-> -         What DMA channel to use for ser3.
-> -
-> -config ETRAX_SERIAL_PORT3_TYPE_232
-> -       bool "Ser3 is a RS-232 port"
-> -       help
-> -         Configure serial port 3 to be a RS-232 port.
-> -
-> -config ETRAX_SERIAL_PORT3_TYPE_485HD
-> -       bool "Ser3 is a half duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 3 to be a half duplex (two wires) RS-485 port.
-> -
-> -config ETRAX_SERIAL_PORT3_TYPE_485FD
-> -       bool "Ser3 is a full duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 3 to be a full duplex (four wires) RS-485 port.
-> -endchoice
-> -
-> -config ETRAX_SER3_DTR_BIT
-> -       string "Ser 3 DTR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT3
-> -
-> -config ETRAX_SER3_RI_BIT
-> -       string "Ser 3 RI bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT3
-> -
-> -config ETRAX_SER3_DSR_BIT
-> -       string "Ser 3 DSR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT3
-> -
-> -config ETRAX_SER3_CD_BIT
-> -       string "Ser 3 CD bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT3
-> -
->  config ETRAX_SERIAL_PORT4
->         bool "Serial port 4 enabled"
->         depends on ETRAXFS_SERIAL && CRIS_MACH_ARTPEC3
->         help
->           Enables the ETRAX FS serial driver for ser4 (ttyS4).
+> -       return get_order(unmapped);
+> +       return size - left;
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_unmap);
 > 
-> -choice
-> -       prompt "Ser4 default port type"
-> -       depends on ETRAX_SERIAL_PORT4
-> -       default ETRAX_SERIAL_PORT4_TYPE_232
-> -       help
-> -         What DMA channel to use for ser4.
-> -
-> -config ETRAX_SERIAL_PORT4_TYPE_232
-> -       bool "Ser4 is a RS-232 port"
-> -       help
-> -         Configure serial port 4 to be a RS-232 port.
-> -
-> -config ETRAX_SERIAL_PORT4_TYPE_485HD
-> -       bool "Ser4 is a half duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 4 to be a half duplex (two wires) RS-485 port.
-> -
-> -config ETRAX_SERIAL_PORT4_TYPE_485FD
-> -       bool "Ser4 is a full duplex RS-485 port"
-> -       depends on ETRAX_RS485
-> -       help
-> -         Configure serial port 4 to be a full duplex (four wires) RS-485 port.
-> -endchoice
-> -
-> -choice
-> -       prompt "Ser4 DMA in channel "
-> -       depends on ETRAX_SERIAL_PORT4
-> -       default ETRAX_SERIAL_PORT4_NO_DMA_IN
-> -       help
-> -         What DMA channel to use for ser4.
-> -
-> -
-> -config ETRAX_SERIAL_PORT4_NO_DMA_IN
-> -       bool "Ser4 uses no DMA for input"
-> -       help
-> -         Do not use DMA for ser4 input.
-> -
-> -config ETRAX_SERIAL_PORT4_DMA9_IN
-> -       bool "Ser4 uses DMA9 for input"
-> -       depends on ETRAX_SERIAL_PORT4
-> -       help
-> -         Enables the DMA9 input channel for ser4 (ttyS4).
-> -         If you do not enable DMA, an interrupt for each character will be
-> -         used when receiving data.
-> -         Normally you want to use DMA, unless you use the DMA channel for
-> -         something else.
-> -
-> -endchoice
-> -
-> -config ETRAX_SER4_DTR_BIT
-> -       string "Ser 4 DTR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT4
-> -
-> -config ETRAX_SER4_RI_BIT
-> -       string "Ser 4 RI bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT4
-> -
-> -config ETRAX_SER4_DSR_BIT
-> -       string "Ser 4 DSR bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT4
-> -
-> -config ETRAX_SER4_CD_BIT
-> -       string "Ser 4 CD bit (empty = not used)"
-> -       depends on ETRAX_SERIAL_PORT4
-> -
->  config ETRAX_SYNCHRONOUS_SERIAL
->         bool "Synchronous serial-port support"
->         depends on ETRAX_ARCH_V32
-> @@ -708,32 +427,6 @@ config ETRAX_SPI_SSER0
->           want to build it as a module, which will be named spi_crisv32_sser.
->           (You need to select MMC separately.)
+> diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
+> index e8fdb88..0b7b14c 100644
+> --- a/drivers/iommu/omap-iovmm.c
+> +++ b/drivers/iommu/omap-iovmm.c
+> @@ -409,7 +409,6 @@ static int map_iovm_area(struct iommu_domain
+> *domain, struct iovm_struct *new,
+>         unsigned int i, j;
+>         struct scatterlist *sg;
+>         u32 da = new->da_start;
+> -       int order;
 > 
-> -config ETRAX_SPI_SSER0_DMA
-> -       bool "DMA for SPI on sser0 enabled"
-> -       depends on ETRAX_SPI_SSER0
-> -       depends on !ETRAX_SERIAL_PORT1_DMA4_OUT && !ETRAX_SERIAL_PORT1_DMA5_IN
-> -       default y
-> -       help
-> -         Say Y if using DMA (dma4/dma5) for SPI on synchronous serial port 0.
-> -
-> -config ETRAX_SPI_MMC_CD_SSER0_PIN
-> -       string "MMC/SD card detect pin for SPI on sser0"
-> -       depends on ETRAX_SPI_SSER0 && MMC_SPI
-> -       default "pd11"
-> -       help
-> -         The pin to use for SD/MMC card detect.  This pin should be pulled up
-> -         and grounded when a card is present.  If defined as " " (space), no
-> -         pin is selected.  A card must then always be inserted for proper
-> -         action.
-> -
-> -config ETRAX_SPI_MMC_WP_SSER0_PIN
-> -       string "MMC/SD card write-protect pin for SPI on sser0"
-> -       depends on ETRAX_SPI_SSER0 && MMC_SPI
-> -       default "pd10"
-> -       help
-> -         The pin to use for the SD/MMC write-protect signal for a memory
-> -         card.  If defined as " " (space), the card is considered writable.
-> -
->  config ETRAX_SPI_SSER1
->         tristate "SPI using synchronous serial port 1 (sser1)"
->         depends on ETRAX_SPI_MMC
-> @@ -747,32 +440,6 @@ config ETRAX_SPI_SSER1
->           want to build it as a module, which will be named spi_crisv32_sser.
->           (You need to select MMC separately.)
+>         if (!domain || !sgt)
+>                 return -EINVAL;
+> @@ -428,12 +427,10 @@ static int map_iovm_area(struct iommu_domain
+> *domain, struct iovm_struct *new,
+>                 if (bytes_to_iopgsz(bytes) < 0)
+>                         goto err_out;
 > 
-> -config ETRAX_SPI_SSER1_DMA
-> -       bool "DMA for SPI on sser1 enabled"
-> -       depends on ETRAX_SPI_SSER1 && !ETRAX_ETHERNET_IFACE1
-> -       depends on !ETRAX_SERIAL_PORT0_DMA6_OUT && !ETRAX_SERIAL_PORT0_DMA7_IN
-> -       default y
-> -       help
-> -         Say Y if using DMA (dma6/dma7) for SPI on synchronous serial port 1.
+> -               order = get_order(bytes);
 > -
-> -config ETRAX_SPI_MMC_CD_SSER1_PIN
-> -       string "MMC/SD card detect pin for SPI on sser1"
-> -       depends on ETRAX_SPI_SSER1 && MMC_SPI
-> -       default "pd12"
-> -       help
-> -         The pin to use for SD/MMC card detect.  This pin should be pulled up
-> -         and grounded when a card is present.  If defined as " " (space), no
-> -         pin is selected.  A card must then always be inserted for proper
-> -         action.
-> -
-> -config ETRAX_SPI_MMC_WP_SSER1_PIN
-> -       string "MMC/SD card write-protect pin for SPI on sser1"
-> -       depends on ETRAX_SPI_SSER1 && MMC_SPI
-> -       default "pd9"
-> -       help
-> -         The pin to use for the SD/MMC write-protect signal for a memory
-> -         card.  If defined as " " (space), the card is considered writable.
-> -
->  config ETRAX_SPI_GPIO
->         tristate "Bitbanged SPI using gpio pins"
->         depends on ETRAX_SPI_MMC
-> @@ -787,53 +454,6 @@ config ETRAX_SPI_GPIO
->           Say m to build it as a module, which will be called spi_crisv32_gpio.
->           (You need to select MMC separately.)
+>                 pr_debug("%s: [%d] %08x %08x(%x)\n", __func__,
+>                          i, da, pa, bytes);
 > 
-> -# The default match that of sser0, only because that's how it was tested.
-> -config ETRAX_SPI_CS_PIN
-> -       string "SPI chip select pin"
-> -       depends on ETRAX_SPI_GPIO
-> -       default "pc3"
-> -       help
-> -         The pin to use for SPI chip select.
-> -
-> -config ETRAX_SPI_CLK_PIN
-> -       string "SPI clock pin"
-> -       depends on ETRAX_SPI_GPIO
-> -       default "pc1"
-> -       help
-> -         The pin to use for the SPI clock.
-> -
-> -config ETRAX_SPI_DATAIN_PIN
-> -       string "SPI MISO (data in) pin"
-> -       depends on ETRAX_SPI_GPIO
-> -       default "pc16"
-> -       help
-> -         The pin to use for SPI data in from the device.
-> -
-> -config ETRAX_SPI_DATAOUT_PIN
-> -       string "SPI MOSI (data out) pin"
-> -       depends on ETRAX_SPI_GPIO
-> -       default "pc0"
-> -       help
-> -         The pin to use for SPI data out to the device.
-> -
-> -config ETRAX_SPI_MMC_CD_GPIO_PIN
-> -       string "MMC/SD card detect pin for SPI using gpio (space for none)"
-> -       depends on ETRAX_SPI_GPIO && MMC_SPI
-> -       default "pd11"
-> -       help
-> -         The pin to use for SD/MMC card detect.  This pin should be pulled up
-> -         and grounded when a card is present.  If defined as " " (space), no
-> -         pin is selected.  A card must then always be inserted for proper
-> -         action.
-> -
-> -config ETRAX_SPI_MMC_WP_GPIO_PIN
-> -       string "MMC/SD card write-protect pin for SPI using gpio (space for none)"
-> -       depends on ETRAX_SPI_GPIO && MMC_SPI
-> -       default "pd10"
-> -       help
-> -         The pin to use for the SD/MMC write-protect signal for a memory
-> -         card.  If defined as " " (space), the card is considered writable.
-> -
->  # Avoid choices causing non-working configs by conditionalizing the inclusion.
->  if ETRAX_SPI_MMC
->  source drivers/spi/Kconfig
-> diff --git a/arch/cris/arch-v32/mach-a3/Kconfig b/arch/cris/arch-v32/mach-a3/Kconfig
-> index 7796aaf..8754727 100644
-> --- a/arch/cris/arch-v32/mach-a3/Kconfig
-> +++ b/arch/cris/arch-v32/mach-a3/Kconfig
-> @@ -15,10 +15,6 @@ config ETRAX_SERIAL_PORTS
->         int
->         default 5
+> -               err = iommu_map(domain, da, pa, order, flags);
+> +               err = iommu_map(domain, da, pa, bytes, flags);
+>                 if (err)
+>                         goto err_out;
 > 
-> -config ETRAX_DDR
-> -       bool
-> -       default y
-> -
->  config ETRAX_DDR2_MRS
->         hex "DDR2 MRS"
->         default "0"
+> @@ -448,10 +445,9 @@ err_out:
+>                 size_t bytes;
+> 
+>                 bytes = sg->length + sg->offset;
+> -               order = get_order(bytes);
+> 
+>                 /* ignore failures.. we're already handling one */
+> -               iommu_unmap(domain, da, order);
+> +               iommu_unmap(domain, da, bytes);
+> 
+>                 da += bytes;
+>         }
+> @@ -466,7 +462,8 @@ static void unmap_iovm_area(struct iommu_domain
+> *domain, struct omap_iommu *obj,
+>         size_t total = area->da_end - area->da_start;
+>         const struct sg_table *sgt = area->sgt;
+>         struct scatterlist *sg;
+> -       int i, err;
+> +       int i;
+> +       size_t unmapped;
+> 
+>         BUG_ON(!sgtable_ok(sgt));
+>         BUG_ON((!total) || !IS_ALIGNED(total, PAGE_SIZE));
+> @@ -474,13 +471,11 @@ static void unmap_iovm_area(struct iommu_domain
+> *domain, struct omap_iommu *obj,
+>         start = area->da_start;
+>         for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+>                 size_t bytes;
+> -               int order;
+> 
+>                 bytes = sg->length + sg->offset;
+> -               order = get_order(bytes);
+> 
+> -               err = iommu_unmap(domain, start, order);
+> -               if (err < 0)
+> +               unmapped = iommu_unmap(domain, start, bytes);
+> +               if (unmapped < bytes)
+>                         break;
+> 
+>                 dev_dbg(obj->dev, "%s: unmap %08x(%x) %08x\n",
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index 6b6ed21..76d7ce4 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -48,6 +48,22 @@ struct iommu_domain {
+> 
+>  #ifdef CONFIG_IOMMU_API
+> 
+> +/**
+> + * struct iommu_ops - iommu ops and capabilities
+> + * @domain_init: init iommu domain
+> + * @domain_destroy: destroy iommu domain
+> + * @attach_dev: attach device to an iommu domain
+> + * @detach_dev: detach device from an iommu domain
+> + * @map: map a physically contiguous memory region to an iommu domain
+> + * @unmap: unmap a physically contiguous memory region from an iommu domain
+> + * @iova_to_phys: translate iova to physical address
+> + * @domain_has_cap: domain capabilities query
+> + * @commit: commit iommu domain
+> + * @pgsize_bitmap: bitmap of supported page sizes
+> + * @min_pagesz: smallest page size supported. note: this member is private
+> + *             to the IOMMU core, and maintained only for efficiency sake;
+> + *             drivers don't need to set it.
+> + */
+>  struct iommu_ops {
+>         int (*domain_init)(struct iommu_domain *domain);
+>         void (*domain_destroy)(struct iommu_domain *domain);
+> @@ -62,6 +78,8 @@ struct iommu_ops {
+>         int (*domain_has_cap)(struct iommu_domain *domain,
+>                               unsigned long cap);
+>         void (*commit)(struct iommu_domain *domain);
+> +       unsigned long pgsize_bitmap;
+> +       unsigned int min_pagesz;
+>  };
+> 
+>  extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+> @@ -73,9 +91,9 @@ extern int iommu_attach_device(struct iommu_domain *domain,
+>  extern void iommu_detach_device(struct iommu_domain *domain,
+>                                 struct device *dev);
+>  extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
+> -                    phys_addr_t paddr, int gfp_order, int prot);
+> -extern int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+> -                      int gfp_order);
+> +                    phys_addr_t paddr, size_t size, int prot);
+> +extern size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+> +                      size_t size);
+>  extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+>                                       unsigned long iova);
+>  extern int iommu_domain_has_cap(struct iommu_domain *domain,
+> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> index ca409be..35ed096 100644
+> --- a/virt/kvm/iommu.c
+> +++ b/virt/kvm/iommu.c
+> @@ -111,7 +111,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct
+> kvm_memory_slot *slot)
+> 
+>                 /* Map into IO address space */
+>                 r = iommu_map(domain, gfn_to_gpa(gfn), pfn_to_hpa(pfn),
+> -                             get_order(page_size), flags);
+> +                             page_size, flags);
+>                 if (r) {
+>                         printk(KERN_ERR "kvm_iommu_map_address:"
+>                                "iommu failed to map pfn=%llx\n", pfn);
+> @@ -292,15 +292,15 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+> 
+>         while (gfn < end_gfn) {
+>                 unsigned long unmap_pages;
+> -               int order;
+> +               size_t size;
+> 
+>                 /* Get physical address */
+>                 phys = iommu_iova_to_phys(domain, gfn_to_gpa(gfn));
+>                 pfn  = phys >> PAGE_SHIFT;
+> 
+>                 /* Unmap address from IO address space */
+> -               order       = iommu_unmap(domain, gfn_to_gpa(gfn), 0);
+> -               unmap_pages = 1ULL << order;
+> +               size       = iommu_unmap(domain, gfn_to_gpa(gfn), PAGE_SIZE);
+> +               unmap_pages = 1ULL << get_order(size);
+> 
+>                 /* Unpin all pages we just unmapped to not leak any memory */
+>                 kvm_unpin_pages(kvm, pfn, unmap_pages);
 > --
-> 1.7.4.4
-> 
-> 
-> 
-/^JN - Jesper Nilsson
+> 1.7.4.1
+
+Btw, how have you tested this code?
+
+Regards,
+
+	Joerg
+
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
