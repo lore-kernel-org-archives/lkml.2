@@ -1,169 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab1JNMiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:38:20 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57541 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab1JNMiT (ORCPT
+	id S932857Ab1JNMi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:38:27 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54773 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab1JNMiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:38:19 -0400
-Message-ID: <1318595915.2223.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Regression in reading /proc/stat in the newer kernels with
- large SMP and NUMA configurations
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Seger, Mark" <mark.seger@hp.com>,
-        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
-Date: Fri, 14 Oct 2011 14:38:35 +0200
-In-Reply-To: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
-References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 14 Oct 2011 08:38:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
+	in-reply-to:references:x-system-of-record;
+	b=nkK0w9kJXPH0B8m1uV1Kzi6tZZRzA2UEXTMiJI+u8KJNfVoSmgw82OAdNVtmUANML
+	82wabSgktqmJKDBhX4MIQ==
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
+        andi@firstfloor.org, robert.richter@amd.com, ravitillo@lbl.gov,
+        will.deacon@arm.com, paulus@samba.org, benh@kernel.crashing.org,
+        rth@twiddle.net, ralf@linux-mips.org, davem@davemloft.net,
+        lethal@linux-sh.org
+Subject: [PATCH 01/12] perf_events: add generic taken branch sampling support (v2)
+Date: Fri, 14 Oct 2011 14:37:02 +0200
+Message-Id: <1318595833-29984-2-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1318595833-29984-1-git-send-email-eranian@google.com>
+References: <1318595833-29984-1-git-send-email-eranian@google.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 14 octobre 2011 à 00:40 +0100, Oberman, Laurence (HAS GSE) a
-écrit :
-> Hello,
-> 
-> The HP developed collectl utility depends heavily on abstractions in /proc and /sys provided by the kernel for kernel statistics capture.
-> During testing on newer NUMA platforms with large numbers of CPU’S HP has observed a significant increase in the time taken to parse this data with the newer 2.6.32.x and higher kernels.
-> 
-> In summary:
-> 
-> To read the data for a DL785 8-node NUMA with 4 CPU’S per node takes around 80 microseconds per read on the 2.6.18.x kernels, but when testing on the same platform with the newer 2.6.32.x and higher kernels each read takes more than 5 ms. This is significant when considering that collectl typically collects the data abstraction in the kernel every 10 seconds (default) for certain statistics.
-> 
-> Given that the kernel has significantly more data structure space to parse and that there has to be some locking interaction to get this data, it is not unusual for the parsing to take longer. However we were alarmed with the significant increase in overhead and wanted to make people aware of this.
-> 
-> Supporting Data
-> ---------------
-> 
-> Mimicking a day of capture at 10 second intervals gives us 8640 reads of /proc/stat
-> 
-> I wanted to first validate if this was architecture or kernel behavior and it is actually kernel overhead on the 2.6.3x and higher kernels. I tested with 2.6.38 but the same applies for the RHEL 6 and SLES 11 2.6.32.x kernels.
-> 
-> Same architecture, just different kernels for my testing.
-> 
-> The newer kernel is around 100 times slower so it shows up in collectl behavior.
-> 
-> DL785 8-node NUMA with 128GB memory and 32 CPU'S.
-> 
-> l785sles:/sys/devices/system/node # ls
-> node0  node1  node2  node3  node4  node5  node6  node7 dl785sles:/sys/devices/system/node # pwd
-> /sys/devices/system/node   
-> 
-> On the 2.6.16.x series sles or 2.6.18.x RHEL kernels each read takes 84 us.
-> 
-> dl785sles:~/wrk # cat 2.6.16.60-0.87.1-smp.log Opened, read and closed 8640 times and read total of 13996800 bytes
-> % time     seconds  usecs/call     calls    errors syscall
-> ------ ----------- ----------- --------- --------- ----------------
->  99.41    0.725717          84      8641           read
->   0.38    0.002768           0      8642           open
->   0.21    0.001539           0      8642           close
->   0.00    0.000000           0         1           write
->   0.00    0.000000           0         3           fstat
->   0.00    0.000000           0         8           mmap
->   0.00    0.000000           0         2           mprotect
->   0.00    0.000000           0         1           munmap
->   0.00    0.000000           0         1           brk
->   0.00    0.000000           0         1         1 access
->   0.00    0.000000           0         1           madvise
->   0.00    0.000000           0         1           execve
->   0.00    0.000000           0         1           arch_prctl
-> ------ ----------- ----------- --------- --------- ----------------
-> 100.00    0.730024                 25945         1 total    
-> 
-> On the 2.6.38.4 kernel each read takes > 6ms
-> 
-> dl785sles:~/wrk # cat 2.6.38.4-smp.log
-> Opened, read and closed 8640 times and read total of 86235840 bytes
-> % time     seconds  usecs/call     calls    errors syscall
-> ------ ----------- ----------- --------- --------- ----------------
-> 100.00   59.021650        6830      8641           read
->   0.00    0.000520           0      8642           open
->   0.00    0.000425           0      8642           close
->   0.00    0.000000           0         1           write
->   0.00    0.000000           0         3           fstat
->   0.00    0.000000           0         9           mmap
->   0.00    0.000000           0         2           mprotect
->   0.00    0.000000           0         1           munmap
->   0.00    0.000000           0         1           brk
->   0.00    0.000000           0         1         1 access
->   0.00    0.000000           0         1           madvise
->   0.00    0.000000           0         1           execve
->   0.00    0.000000           0         1           arch_prctl
-> ------ ----------- ----------- --------- --------- ----------------
-> 100.00   59.022595                 25946         1 total        
-> 
-> Test program 
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <sys/types.h>
-> #include <sys/stat.h>
-> #include <asm-generic/fcntl.h>
-> #include <sys/errno.h>
-> 
-> extern int errno;
-> 
-> int fid,i,count,total;
-> char buffer[16384];
-> 
-> int main(int argc, char *argv[])
-> {
-> for (count=0;count<8640;count++) {
->         fid=open("/proc/stat",O_RDONLY,660);
->         if(fid <= 0) {
->          perror("error with file open\n");
->         }
->         i=read(fid,buffer,16384);
->         /* printf("Read %d characters \n",i); */
->         total+=i;
->         close(fid);
-> }
-> printf("Opened, read and closed %d times and read total of %d bytes\n",count,total);
-> exit(0);
-> }
+This patch adds the ability to sample taken branches to the
+perf_event interface.
 
-Strange, here is what I have on my 2x4x2 machine.
+The ability to capture taken branches is very useful for all
+sorts of analysis. For instance, basic block profiling, call
+counts, statistical call graph.
 
-Could you try following actions please ?
+This new capability requires hardware assist and as such may
+not be available on all HW platforms. On Intel X86, it is
+implemented on top of the Last Branch Record (LBR) facility.
 
-# perf record ./prog
-Opened, read and closed 8640 times and read total of 29595948 bytes
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.057 MB perf.data (~2482 samples) ]
+To enable taken branches sampling, the PERF_SAMPLE_BRANCH_STACK
+bit must be set in attr->sample_type.
 
-# perf report --stdio
-# Events: 1K cycles
-#
-# Overhead  Command      Shared Object                        Symbol
-# ........  .......  .................  ............................
-#
-    22.82%     prog  [kernel.kallsyms]  [k] format_decode
-    21.15%     prog  [kernel.kallsyms]  [k] vsnprintf
-    13.46%     prog  [kernel.kallsyms]  [k] number.isra.4
-    11.33%     prog  [kernel.kallsyms]  [k] memcpy
-     8.87%     prog  [kernel.kallsyms]  [k] kstat_irqs
-     3.80%     prog  [kernel.kallsyms]  [k] radix_tree_lookup_element
-     3.69%     prog  [kernel.kallsyms]  [k] seq_printf
-     3.63%     prog  [kernel.kallsyms]  [k] find_next_bit
-     2.81%     prog  [kernel.kallsyms]  [k] show_stat
-     1.18%     prog  [kernel.kallsyms]  [k] put_dec_trunc
-     0.96%     prog  [kernel.kallsyms]  [k] radix_tree_lookup
-     0.96%     prog  [kernel.kallsyms]  [k] irq_to_desc
-     0.66%     prog  [kernel.kallsyms]  [k] getname_flags
-     0.37%     prog  [kernel.kallsyms]  [k] selinux_inode_alloc_security
-     0.22%     prog  [kernel.kallsyms]  [k] jiffies_64_to_clock_t
-     0.22%     prog  [kernel.kallsyms]  [k] copy_user_generic_string
-     0.22%     prog  [kernel.kallsyms]  [k] __call_rcu
-     0.15%     prog  [kernel.kallsyms]  [k] add_preempt_count
-     0.15%     prog  [kernel.kallsyms]  [k] put_dec_full
-     0.15%     prog  [kernel.kallsyms]  [k] nr_context_switches
-     0.15%     prog  [kernel.kallsyms]  [k] kfree
+Sampled taken branches may be filtered by type and/or priv
+levels.
 
+The patch adds a new field, called branch_sample_type, to the
+perf_event_attr structure. It contains a bitmask of filters
+to apply to the sampled taken branches.
 
+Filters may be implemented in HW. If the HW filter does not exist
+or is not good enough, some arch may also implement a SW filter.
+
+The following generic filters are currently defined:
+- PERF_SAMPLE_USER
+  only branches whose targets are at the user level
+
+- PERF_SAMPLE_KERNEL
+  only branches whose targets are at the kernel level
+
+- PERF_SAMPLE_ANY
+  any type of branches (subject to priv levels filters)
+
+- PERF_SAMPLE_ANY_CALL
+  any call branches (may incl. syscall on some arch)
+
+- PERF_SAMPLE_ANY_RET
+  any return branches (may incl. syscall returns on some arch)
+
+- PERF_SAMPLE_IND_CALL
+  indirect call branches
+
+Obviously filter may be combined. The priv level bits are optional.
+If not provided, the priv level of the associated event are used. It
+is possible to collect branches at a priv level different from the
+associated event.
+
+The number of taken branch records present in each sample may vary based
+on HW, the type of sampled branches, the executed code. Therefore
+each sample contains the number of taken branches it contains.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   21 +++++---
+ include/linux/perf_event.h                 |   66 ++++++++++++++++++++++++++--
+ kernel/events/core.c                       |   58 ++++++++++++++++++++++++
+ 3 files changed, 133 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 3fab3de..b07e051 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -144,9 +144,11 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+ 
+ 		rdmsrl(x86_pmu.lbr_from + lbr_idx, msr_lastbranch.lbr);
+ 
+-		cpuc->lbr_entries[i].from  = msr_lastbranch.from;
+-		cpuc->lbr_entries[i].to    = msr_lastbranch.to;
+-		cpuc->lbr_entries[i].flags = 0;
++		cpuc->lbr_entries[i].from	= msr_lastbranch.from;
++		cpuc->lbr_entries[i].to		= msr_lastbranch.to;
++		cpuc->lbr_entries[i].mispred	= 0;
++		cpuc->lbr_entries[i].predicted	= 0;
++		cpuc->lbr_entries[i].reserved	= 0;
+ 	}
+ 	cpuc->lbr_stack.nr = i;
+ }
+@@ -167,19 +169,22 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+ 		unsigned long lbr_idx = (tos - i) & mask;
+-		u64 from, to, flags = 0;
++		u64 from, to, mis = 0, pred = 0;
+ 
+ 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
+ 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
+ 
+ 		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
+-			flags = !!(from & LBR_FROM_FLAG_MISPRED);
++			mis = !!(from & LBR_FROM_FLAG_MISPRED);
++			pred= !mis;
+ 			from = (u64)((((s64)from) << 1) >> 1);
+ 		}
+ 
+-		cpuc->lbr_entries[i].from  = from;
+-		cpuc->lbr_entries[i].to    = to;
+-		cpuc->lbr_entries[i].flags = flags;
++		cpuc->lbr_entries[i].from	= from;
++		cpuc->lbr_entries[i].to		= to;
++		cpuc->lbr_entries[i].mispred	= mis;
++		cpuc->lbr_entries[i].predicted	= pred;
++		cpuc->lbr_entries[i].reserved	= 0;
+ 	}
+ 	cpuc->lbr_stack.nr = i;
+ }
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1e9ebe5..d8f0278 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -128,11 +128,38 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_PERIOD			= 1U << 8,
+ 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+ 	PERF_SAMPLE_RAW				= 1U << 10,
++	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 
+-	PERF_SAMPLE_MAX = 1U << 11,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
+ };
+ 
+ /*
++ * values to program into branch_sample_type when PERF_SAMPLE_BRANCH is set
++ *
++ * If the user does not pass priv level information via branch_sample_type,
++ * the kernel uses the event's priv level. Branch and event priv levels do
++ * not have to match. Branch priv level is checked for permissions.
++ *
++ * The branch types can be combined, however BRANCH_ANY covers all types
++ * of branches and therefore it supersedes all the other types.
++ */
++enum perf_branch_sample_type {
++	PERF_SAMPLE_BRANCH_USER		= 1U << 0, /* user level branches */
++	PERF_SAMPLE_BRANCH_KERNEL	= 1U << 1, /* kernel level branches */
++
++	PERF_SAMPLE_BRANCH_ANY		= 1U << 2, /* any branch types */
++	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 3, /* any call branch */
++	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 4, /* any return branch */
++	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 5, /* indirect calls */
++
++	PERF_SAMPLE_BRANCH_MAX		= 1U << 6,/* non-ABI */
++};
++
++#define PERF_SAMPLE_BRANCH_PLM_ALL \
++	(PERF_SAMPLE_BRANCH_USER|\
++	 PERF_SAMPLE_BRANCH_KERNEL)
++
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+@@ -239,6 +266,7 @@ struct perf_event_attr {
+ 		__u64		bp_len;
+ 		__u64		config2; /* extension of config1 */
+ 	};
++	__u64	branch_sample_type; /* enum branch_sample_type */
+ };
+ 
+ /*
+@@ -455,6 +483,8 @@ enum perf_event_type {
+ 	 *
+ 	 *	{ u32			size;
+ 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
++	 *
++	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -527,12 +557,31 @@ struct perf_raw_record {
+ 	void				*data;
+ };
+ 
++/*
++ * single taken branch record layout:
++ *
++ *      from: source instruction (may not always be a branch insn)
++ *        to: branch target
++ *   mispred: branch target was mispredicted
++ * predicted: branch target was predicted
++ *
++ * support for mispred, predicted is optional. In case it
++ * is not supported mispred = predicted = 0.
++ */
+ struct perf_branch_entry {
+-	__u64				from;
+-	__u64				to;
+-	__u64				flags;
++	__u64	from;
++	__u64	to;
++	__u64	mispred:1,  /* target mispredicted */
++		predicted:1,/* target predicted */
++		reserved:62;
+ };
+ 
++/*
++ * branch stack layout:
++ *  nr: number of taken branches stored in entries[]
++ *
++ * Note that nr can vary from sample to sample
++ */
+ struct perf_branch_stack {
+ 	__u64				nr;
+ 	struct perf_branch_entry	entries[0];
+@@ -563,7 +612,9 @@ struct hw_perf_event {
+ 			unsigned long	event_base;
+ 			int		idx;
+ 			int		last_cpu;
++
+ 			struct hw_perf_event_extra extra_reg;
++			struct hw_perf_event_extra branch_reg;
+ 		};
+ 		struct { /* software */
+ 			struct hrtimer	hrtimer;
+@@ -991,12 +1042,14 @@ struct perf_sample_data {
+ 	u64				period;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
++	struct perf_branch_stack	*br_stack;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data, u64 addr)
+ {
+ 	data->addr = addr;
+ 	data->raw  = NULL;
++	data->br_stack = NULL;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+@@ -1135,6 +1188,11 @@ extern void perf_bp_event(struct perf_event *event, void *data);
+ # define perf_instruction_pointer(regs)	instruction_pointer(regs)
+ #endif
+ 
++static inline bool has_branch_stack(struct perf_event *event)
++{
++	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
++}
++
+ extern int perf_output_begin(struct perf_output_handle *handle,
+ 			     struct perf_event *event, unsigned int size);
+ extern void perf_output_end(struct perf_output_handle *handle);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d1a1bee..a4c3826 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3987,6 +3987,24 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			}
+ 		}
+ 	}
++
++	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
++		if (data->br_stack) {
++			size_t size;
++
++			size = data->br_stack->nr
++			     * sizeof(struct perf_branch_entry);
++
++			perf_output_put(handle, data->br_stack->nr);
++			perf_output_copy(handle, data->br_stack->entries, size);
++		} else {
++			/*
++			 * we always store at least the value of nr
++			 */
++			u64 nr = 0;
++			perf_output_put(handle, nr);
++		}
++	}
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4029,6 +4047,15 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		WARN_ON_ONCE(size & (sizeof(u64)-1));
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
++		int size = sizeof(u64); /* nr */
++		if (data->br_stack) {
++			size += data->br_stack->nr
++			      * sizeof(struct perf_branch_entry);
++		}
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -5979,6 +6006,37 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (attr->read_format & ~(PERF_FORMAT_MAX-1))
+ 		return -EINVAL;
+ 
++	if (attr->sample_type & PERF_SAMPLE_BRANCH_STACK) {
++		u64 mask = attr->branch_sample_type;
++
++		/* only using defined bits */
++		if (mask & ~(PERF_SAMPLE_BRANCH_MAX-1))
++			return -EINVAL;
++
++		/* at least one branch bit must be set */
++		if (!(mask & ~PERF_SAMPLE_BRANCH_PLM_ALL))
++			return -EINVAL;
++
++		/* kernel level capture */
++		if ((mask & PERF_SAMPLE_BRANCH_KERNEL)
++		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++			return -EACCES;
++
++		/* propagate priv level, when not set for branch */
++		if (!(mask & PERF_SAMPLE_BRANCH_PLM_ALL)) {
++
++			/* exclude_kernel checked on syscall entry */
++			if (!attr->exclude_kernel)
++				mask |= PERF_SAMPLE_BRANCH_KERNEL;
++
++			if (!attr->exclude_user)
++				mask |= PERF_SAMPLE_BRANCH_USER;
++			/*
++			 * adjust user setting (for HW filter setup)
++			 */
++			attr->branch_sample_type = mask;
++		}
++	}
+ out:
+ 	return ret;
+ 
+-- 
+1.7.1
 
