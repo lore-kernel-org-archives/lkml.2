@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447Ab1JNVys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 17:54:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49365 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752044Ab1JNVyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 17:54:47 -0400
-Message-ID: <4E98AF71.40303@zytor.com>
-Date: Fri, 14 Oct 2011 14:53:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S933454Ab1JNVzj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 17:55:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27070 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab1JNVzi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 17:55:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=HK6NQNE308HdYJBYQx9ia92A09wgG4Ge1l3F1UCgz9H7S3TbWXOyn6FYpksArAcwl
+	4/qdGdPRhCMi03SLlbBXg==
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH RFC V4 09/10] x86/jump_label: use GENERIC_NOP5_ATOMIC
- instead of jmp5 +0
-References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>  <34ede5db1571d541a5c3fc49923bb353a37dd431.1318464413.git.jeremy.fitzhardinge@citrix.com>  <4E97067A.2070305@zytor.com> <4E97188A.6040400@goop.org> <1318531022.12224.13.camel@gandalf.stny.rr.com>
-In-Reply-To: <1318531022.12224.13.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LNX.2.00.1110141127240.14768@pobox.suse.cz>
+References: <1318548517-5289-1-git-send-email-tlambert@chromium.org>
+	<alpine.LNX.2.00.1110140134200.14768@pobox.suse.cz>
+	<CAA_E9NHi4mS+J5VrxS915S3TD-157D=hMG7b-PMT2c1RYvnwVQ@mail.gmail.com>
+	<alpine.LNX.2.00.1110141127240.14768@pobox.suse.cz>
+Date: Fri, 14 Oct 2011 14:55:34 -0700
+X-Google-Sender-Auth: h0YWOGz-jkGC6lw2dwUicGC8Mj4
+Message-ID: <CAA_E9NH3eD+PaAc0jBDj6EnuU7sHbFyhKobhbCXPW7z6nBJwBg@mail.gmail.com>
+Subject: Re: [PATCH] Driver for Primax keyboards violating USB HID spec
+From: Terry Lambert <tlambert@chromium.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 11:37 AM, Steven Rostedt wrote:
-> On Thu, 2011-10-13 at 09:57 -0700, Jeremy Fitzhardinge wrote:
->> On 10/13/2011 08:40 AM, H. Peter Anvin wrote:
->>> On 10/12/2011 05:08 PM, Jeremy Fitzhardinge wrote:
->>>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>>>
->>>> GENERIC_NOP5_ATOMIC should make a better nop.
->>>>
->>> On 32 bits, yes.  On 64 bits you should use P6_NOP5_ATOMIC.
->>
->> Something like this?
->>
-> 
-> No, we only care about 5byte nops here. Look at ideal_nop in
-> alterative.c
-> 
+I have no problem doing that; I'll rework the patch.
 
-He needs a compile-time alternative.
+Thanks!
+-- Terry
 
-	-hpa
-
+On Fri, Oct 14, 2011 at 2:30 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>
+> On Thu, 13 Oct 2011, Terry Lambert wrote:
+>
+> > Hi Jiri; thanks for looking so promptly!
+> >
+> > The routine right now just caches the hi->input for later look up
+> > during the raw input report, which I suppose could be done inline on
+> > each report with a couple function calls.
+>
+> Well yes, but even in px_raw_event() the px_device *px is only
+> initialized, but never used. So I'd just remove the whole px_device thing
+> altogether, I don't think it's needed.
+>
+> > I don't have one of the folding keyboards people are complaining about
+> > not being able to use for Android tablets on hand, or the unhappy Dell
+> > Inspiron laptop, both of which use the controller   That's to explain
+> > why the remapping code and the product ID for them are missing from
+> > this patch.
+>
+> I see.
+>
+> I'd like to ask you though to only submit patches containing code that is
+> actually used. Whenever the remapping part is needed for some other
+> keyboard, we'll just add it at the very time it's needed.
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs
