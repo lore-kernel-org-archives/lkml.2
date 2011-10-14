@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab1JNE2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 00:28:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21371 "EHLO
+	id S932528Ab1JNE2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 00:28:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:21442 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932497Ab1JNE2q (ORCPT
+	with ESMTP id S932497Ab1JNE2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 00:28:46 -0400
+	Fri, 14 Oct 2011 00:28:51 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=aBWhw9zhQElNsEKZpxMsBFWX8fHoggA2uBYCu9tXC3KEDcTo2NQTXayeFdPXyjQ+W
-	OlFHUeLAsV+/AT+bR7F8Q==
-Subject: [PATCH v2 19/29] parisc/PCI: supply root bus resources to
-	pci_create_root_bus()
+	b=P0j6JMthzdv6CNxCsQ4Jb0sug5NAGh3WrZKV0C4lC8cQGf/FcW+oCjqvLCHSrR1p0
+	vH+TQETqQJZqkuhw+gWZg==
+Subject: [PATCH v2 20/29] parisc/PCI: deal with LMMIO/PAT overlaps before
+	creating PCI root bus
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 13 Oct 2011 22:28:44 -0600
-Message-ID: <20111014042844.23504.97139.stgit@bhelgaas.mtv.corp.google.com>
+Date: Thu, 13 Oct 2011 22:28:49 -0600
+Message-ID: <20111014042849.23504.74781.stgit@bhelgaas.mtv.corp.google.com>
 In-Reply-To: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
 References: <20111014042142.23504.70417.stgit@bhelgaas.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -31,72 +31,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Supply root bus resources to pci_create_root_bus() so they're correct
-immediately.  This fixes the problem of "early" and "header" quirks seeing
-incorrect root bus resources.
+This moves the truncate_pat_collision() call out of the pcibios_fixup_bus()
+path so that when a future patch builds a list of root bus resources for
+pci_create_bus(), it can use the truncated LMMIO range.
+
+truncate_pat_collision() used to be called in this path:
+
+    pci_scan_bus_parented
+      pci_create_bus
+      pci_scan_child_bus
+        pcibios_fixup_bus
+	  lba_fixup_bus
+	    truncate_pat_collision
+
+All of the PAT and lba_dev resource setup must be done before we call
+pci_scan_bus_parented(), so it should be safe to move the
+truncate_pat_collision() to just before pci_scan_bus_parented().
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/parisc/dino.c |   26 ++++++++++++--------------
- 1 files changed, 12 insertions(+), 14 deletions(-)
+ drivers/parisc/lba_pci.c |   35 ++++++++++++++++++-----------------
+ 1 files changed, 18 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
-index fba5636..2aca77f 100644
---- a/drivers/parisc/dino.c
-+++ b/drivers/parisc/dino.c
-@@ -562,19 +562,6 @@ dino_fixup_bus(struct pci_bus *bus)
- 	/* Firmware doesn't set up card-mode dino, so we have to */
- 	if (is_card_dino(&dino_dev->hba.dev->id)) {
- 		dino_card_setup(bus, dino_dev->hba.base_addr);
--	} else if(bus->parent == NULL) {
--		/* must have a dino above it, reparent the resources
--		 * into the dino window */
--		int i;
--		struct resource *res = &dino_dev->hba.lmmio_space;
+diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
+index 3aeb327..2c7edf3 100644
+--- a/drivers/parisc/lba_pci.c
++++ b/drivers/parisc/lba_pci.c
+@@ -689,23 +689,7 @@ lba_fixup_bus(struct pci_bus *bus)
+ 				bus->resource[i++] = &(ldev->hba.elmmio_space);
+ 		}
+ 
 -
--		bus->resource[0] = &(dino_dev->hba.io_space);
--		for(i = 0; i < DINO_MAX_LMMIO_RESOURCES; i++) {
--			if(res[i].flags == 0)
--				break;
--			bus->resource[i+1] = &res[i];
--		}
+-		/*   Overlaps with elmmio can (and should) fail here.
+-		 *   We will prune (or ignore) the distributed range.
+-		 *
+-		 *   FIXME: SBA code should register all elmmio ranges first.
+-		 *      that would take care of elmmio ranges routed
+-		 *	to a different rope (already discovered) from
+-		 *	getting registered *after* LBA code has already
+-		 *	registered it's distributed lmmio range.
+-		 */
+-		if (truncate_pat_collision(&iomem_resource,
+-				       	&(ldev->hba.lmmio_space))) {
 -
- 	} else if (bus->parent) {
- 		int i;
+-			printk(KERN_WARNING "LBA: lmmio_space [%lx/%lx] duplicate!\n",
+-					(long)ldev->hba.lmmio_space.start,
+-					(long)ldev->hba.lmmio_space.end);
+-		} else {
++		if (ldev->hba.lmmio_space.flags) {
+ 			err = request_resource(&iomem_resource, &(ldev->hba.lmmio_space));
+ 			if (err < 0) {
+ 				printk(KERN_ERR "FAILED: lba_fixup_bus() request for "
+@@ -1518,6 +1502,23 @@ lba_driver_probe(struct parisc_device *dev)
+ 	if (lba_dev->hba.bus_num.start < lba_next_bus)
+ 		lba_dev->hba.bus_num.start = lba_next_bus;
  
-@@ -927,6 +914,7 @@ static int __init dino_probe(struct parisc_device *dev)
- 	const char *version = "unknown";
- 	char *name;
- 	int is_cujo = 0;
-+	struct list_head resources;
- 	struct pci_bus *bus;
- 	unsigned long hpa = dev->hpa.start;
- 
-@@ -1003,15 +991,25 @@ static int __init dino_probe(struct parisc_device *dev)
- 
- 	dev->dev.platform_data = dino_dev;
- 
-+	INIT_LIST_HEAD(&resources);
-+	pci_add_resource(&resources, &dino_dev->hba.io_space);
-+	if (dino_dev->hba.lmmio_space.flags)
-+		pci_add_resource(&resources, &dino_dev->hba.lmmio_space);
-+	if (dino_dev->hba.elmmio_space.flags)
-+		pci_add_resource(&resources, &dino_dev->hba.elmmio_space);
-+	if (dino_dev->hba.gmmio_space.flags)
-+		pci_add_resource(&resources, &dino_dev->hba.gmmio_space);
++	/*   Overlaps with elmmio can (and should) fail here.
++	 *   We will prune (or ignore) the distributed range.
++	 *
++	 *   FIXME: SBA code should register all elmmio ranges first.
++	 *      that would take care of elmmio ranges routed
++	 *	to a different rope (already discovered) from
++	 *	getting registered *after* LBA code has already
++	 *	registered it's distributed lmmio range.
++	 */
++	if (truncate_pat_collision(&iomem_resource,
++				   &(lba_dev->hba.lmmio_space))) {
++		printk(KERN_WARNING "LBA: lmmio_space [%lx/%lx] duplicate!\n",
++				(long)lba_dev->hba.lmmio_space.start,
++				(long)lba_dev->hba.lmmio_space.end);
++		lba_dev->hba.lmmio_space.flags = 0;
++	}
 +
- 	/*
- 	** It's not used to avoid chicken/egg problems
- 	** with configuration accessor functions.
- 	*/
- 	dino_dev->hba.hba_bus = bus = pci_create_root_bus(&dev->dev,
--			 dino_current_bus, &dino_cfg_ops, NULL, NULL);
-+			 dino_current_bus, &dino_cfg_ops, NULL, &resources);
- 	if (!bus) {
- 		printk(KERN_ERR "ERROR: failed to scan PCI bus on %s (duplicate bus number %d?)\n",
- 		       dev_name(&dev->dev), dino_current_bus);
-+		pci_free_resource_list(&resources);
- 		/* increment the bus number in case of duplicates */
- 		dino_current_bus++;
- 		return 0;
+ 	dev->dev.platform_data = lba_dev;
+ 	lba_bus = lba_dev->hba.hba_bus =
+ 		pci_scan_bus_parented(&dev->dev, lba_dev->hba.bus_num.start,
 
