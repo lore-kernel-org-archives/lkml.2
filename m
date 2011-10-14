@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab1JNMPz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 08:15:55 -0400
-Received: from mail-wy0-f180.google.com ([74.125.82.180]:65031 "EHLO
-	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1JNMPy (ORCPT
+	id S1756406Ab1JNMVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 08:21:03 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55514 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab1JNMVA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 08:15:54 -0400
-Date: Fri, 14 Oct 2011 14:15:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        paulmck@linux.vnet.ibm.com, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] cgroups: use sighand lock instead of tasklist_lock
- in cgroup_attach_proc
-Message-ID: <20111014121547.GK14968@somewhere>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
- <20111014003115.GB22527@ghc17.ghc.andrew.cmu.edu>
+	Fri, 14 Oct 2011 08:21:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014003115.GB22527@ghc17.ghc.andrew.cmu.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111012085024.634281a2@nehalam.linuxnetplumber.net>
+References: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
+ <1318413446-22258-1-git-send-email-mmaruseac@ixiacom.com> <20111012085024.634281a2@nehalam.linuxnetplumber.net>
+From: Mihai Maruseac <mihai.maruseac@gmail.com>
+Date: Fri, 14 Oct 2011 15:20:40 +0300
+Message-ID: <CAOMsUMKWzKNNR-cDK7eSK-+F-hhCc8BhkzrpLHRs2tsmjXxdXw@mail.gmail.com>
+Subject: Re: [PATCH] dev: use ifindex hash for dev_seq_ops
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: davem@davemloft.net, eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl,
+        therbert@google.com, jpirko@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
+        Mihai Maruseac <mmaruseac@ixiacom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Wed, Oct 12, 2011 at 6:50 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> On Wed, 12 Oct 2011 12:57:26 +0300
+> Mihai Maruseac <mihai.maruseac@gmail.com> wrote:
+>
+> It looks like you lost the ability to seek back and read the header
+> (start token).  How is the header handled, is possible to rewind
+> the file and read it over again?
 
-On Thu, Oct 13, 2011 at 08:31:15PM -0400, Ben Blum wrote:
-> Use sighand lock instead of tasklist_lock in cgroup_attach_proc.
+We tested with a simple program reading a part of the /proc file and
+then doing a seek to the start and rereading. It worked with latest
+submitted patch.
 
-Could you please feed more the changelog to explain the reason of
-the change? Well, the reason of converting tasklist_lock based locking to
-something more granular is almost obvious these days, but
-it would be nice to know why it is safe to do so. And what exactly
-that protects.
+>> +static inline struct net_device *next_dev(struct seq_file *seq, loff_t *pos)
+>> +{
+>> +     struct dev_iter_state *state = seq->private;
+>> +     struct net *net = seq_file_net(seq);
+>> +     struct net_device *dev = NULL;
+>> +     loff_t off;
+>> +
+>> +     ++*pos;
+>> +     dev = dev_get_by_index_rcu(net, state->ifindex);
+>
+> Looks good a couple of minor nits.
+>
+> 1. The function should not be inline, since it is in no way performance
+>   critical. The compiler will probably inline it anyway.
+>
+> 2. dev does not have to be initialized since it is assigned a few
+>   lines later.  Most programmers are trained now to always initialize
+>   variables, but often it is unnecessary.
+>
+> 3. The name next_dev() is a little generic; maybe a better name.
+>
 
-Thanks.
+Fixed all of them,
+
+Thanks,
+-- 
+Mihai
