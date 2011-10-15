@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1JOTFy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:05:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20019 "EHLO mx1.redhat.com"
+	id S1754574Ab1JOTFO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:05:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57565 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754448Ab1JOTFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:05:52 -0400
-Date: Sat, 15 Oct 2011 21:01:31 +0200
+	id S1754417Ab1JOTFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 15:05:12 -0400
+Date: Sat, 15 Oct 2011 21:00:37 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
@@ -22,8 +22,8 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/X] uprobes: xol_add_vma: misc cleanups
-Message-ID: <20111015190131.GE30243@redhat.com>
+Subject: [PATCH 1/X] uprobes: write_opcode: the new page needs PG_uptodate
+Message-ID: <20111015190037.GB30243@redhat.com>
 References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,64 +34,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. get_task_mm(current)/mmput is not needed, we can use ->mm directly.
+write_opcode()->__replace_page() installs the new anonymous page,
+this new_page is PageSwapBacked() and it can be swapped out.
 
-   It can't be NULL or use_mm'ed(), otherwise we are buggy anyway.
+However it forgets to do SetPageUptodate(), fix write_opcode().
 
-2. use IS_ERR_VALUE() after do_mmap_pgoff().
-
-3. No need to read vma->vm_start, it must be equal to addr returned
-   by do_mmap_pgoff().
-
-4. No need to pass vmas => &vma to get_user_pages().
+For example, this is needed if do_swap_page() finds that orginial
+page in the the swap cache (and doesn't try to read it back), in
+this case it returns VM_FAULT_SIGBUS.
 ---
- kernel/uprobes.c |   13 +++++--------
- 1 files changed, 5 insertions(+), 8 deletions(-)
+ kernel/uprobes.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 6fe2b20..5c2554c 100644
+index 3928bcc..52b20c8 100644
 --- a/kernel/uprobes.c
 +++ b/kernel/uprobes.c
-@@ -1051,9 +1051,7 @@ static int xol_add_vma(struct uprobes_xol_area *area)
- 	unsigned long addr;
- 	int ret;
- 
--	mm = get_task_mm(current);
--	if (!mm)
--		return -ESRCH;
-+	mm = current->mm;
- 
- 	down_write(&mm->mmap_sem);
- 	ret = -EALREADY;
-@@ -1076,24 +1074,23 @@ static int xol_add_vma(struct uprobes_xol_area *area)
- 	addr = do_mmap_pgoff(NULL, addr, PAGE_SIZE, PROT_EXEC, MAP_PRIVATE, 0);
- 	revert_creds(curr_cred);
- 
--	if (addr & ~PAGE_MASK)
-+	if (IS_ERR_VALUE(addr))
- 		goto fail;
- 
- 	vma = find_vma(mm, addr);
- 	/* Don't expand vma on mremap(). */
- 	vma->vm_flags |= VM_DONTEXPAND | VM_DONTCOPY;
--	area->vaddr = vma->vm_start;
--	if (get_user_pages(current, mm, area->vaddr, 1, 1, 1, &area->page,
--				&vma) != 1) {
-+	if (get_user_pages(current, mm, addr, 1, 1, 1,
-+					&area->page, NULL) != 1) {
- 		do_munmap(mm, addr, PAGE_SIZE);
- 		goto fail;
+@@ -200,6 +200,8 @@ static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
+ 		goto put_out;
  	}
  
-+	area->vaddr = addr;
- 	mm->uprobes_xol_area = area;
- 	ret = 0;
- fail:
- 	up_write(&mm->mmap_sem);
--	mmput(mm);
- 	return ret;
- }
- 
++	__SetPageUptodate(new_page);
++
+ 	/*
+ 	 * lock page will serialize against do_wp_page()'s
+ 	 * PageAnon() handling
 -- 
 1.5.5.1
 
