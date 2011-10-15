@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab1JOAeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 20:34:09 -0400
-Received: from tundra.namei.org ([65.99.196.166]:55410 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754322Ab1JOAeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 20:34:07 -0400
-Date: Sat, 15 Oct 2011 11:34:00 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
-        dhowells@redhat.com, herbert@gondor.hengli.com.au
-Subject: Re: [PATCH v2.1 4/7] crypto: GnuPG based MPI lib - additional sources
- (part 4)
-In-Reply-To: <81f834dca8feb889e2acbc666e730cf89b5d5c41.1318598705.git.dmitry.kasatkin@intel.com>
-Message-ID: <alpine.LRH.2.00.1110151132430.24994@tundra.namei.org>
-References: <cover.1318598705.git.dmitry.kasatkin@intel.com> <81f834dca8feb889e2acbc666e730cf89b5d5c41.1318598705.git.dmitry.kasatkin@intel.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757107Ab1JOAfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 20:35:14 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43399 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab1JOAfM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 20:35:12 -0400
+Date: Fri, 14 Oct 2011 20:34:56 -0400 (EDT)
+Message-Id: <20111014.203456.760074223041131268.davem@davemloft.net>
+To: crn@netunix.com
+Cc: pebolle@tiscali.nl, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/21] sparc: drop unused Kconfig symbol
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1110150111520.26030@post.netunix.com>
+References: <1318595257.6132.59.camel@x61.thuisdomein>
+	<alpine.LNX.2.00.1110150111520.26030@post.netunix.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 14 Oct 2011 17:34:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Dmitry Kasatkin wrote:
+From: crn@netunix.com
+Date: Sat, 15 Oct 2011 01:14:02 +0100 (BST)
 
-> +#if 0				/* not yet ported to MPI */
-> +
-> +mpi_limb_t
-> +mpihelp_udiv_w_sdiv(mpi_limp_t *rp,
-> +		    mpi_limp_t *a1, mpi_limp_t *a0, mpi_limp_t *d)
+> 
+> How does this affect Javastations, ISTR that they need PCI and one
+> (rare) variant has a PCI slot. ??
 
-Drop this if it's not working.
+How about you take even the briefest look at the code and find out for
+yourself?  This is what drives me crazy about the questions you tend
+to ask, you never put forth any effort of investigation on your own
+and just toss arbitrary questions onto the list.
 
+Meanwhile those of us with initiative are burdoned to do the work for
+you.
 
--- 
-James Morris
-<jmorris@namei.org>
+The config symbol is completely unreferenced anywhere, so this
+change can't possibly make any functional difference whatsoever.
