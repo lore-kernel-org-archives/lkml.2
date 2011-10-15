@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab1JODWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 23:22:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40328 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab1JODWL convert rfc822-to-8bit (ORCPT
+	id S1753567Ab1JODqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 23:46:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40047 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab1JODqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 23:22:11 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20111014191000.GB2931@opensource.wolfsonmicro.com>
-References: <1318582919.19976.1.camel@phoenix> <1318582987.19976.2.camel@phoenix>
- <20111014191000.GB2931@opensource.wolfsonmicro.com>
+	Fri, 14 Oct 2011 23:46:14 -0400
+Subject: [PATCH v2] ASoC: max98095: Convert codec->hw_write to snd_soc_write
 From: Axel Lin <axel.lin@gmail.com>
-Date: Sat, 15 Oct 2011 11:21:49 +0800
-Message-ID: <CAF+7xWmdNqEuVCNB=53FftFm_Ds-=o5DwVa41MDq8m0DTZnzxg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: ad193x: Use snd_soc_update_bits for read-modify-write
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Barry Song <21cnbao@gmail.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Cc: Peter Hsiang <peter.hsiang@maxim-ic.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 Oct 2011 11:46:02 +0800
+Message-ID: <1318650362.6399.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/15 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Fri, Oct 14, 2011 at 05:03:07PM +0800, Axel Lin wrote:
->
->>       reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
->> -     reg = (mute > 0) ? reg | AD193X_DAC_MASTER_MUTE : reg &
->> -             (~AD193X_DAC_MASTER_MUTE);
->> +     if (mute)
->> +             reg |= AD193X_DAC_MASTER_MUTE;
->> +     else
->> +             reg &= ~AD193X_DAC_MASTER_MUTE;
->>       snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
->
-> This is still using snd_soc_read() and snd_soc_write() (though it is a
-> cleanup).
->
-hi Mark,
-One of the major reason that I do the convert to snd_soc_update_bits
-is for better readability.
-In this case, it seems ok to me with this change.
-But if you prefer also convert it to snd_soc_update_bits, I can do it.
-Let me know if I need to send a v2 for it.
+codec->hw_write is broken now, convert codec->hw_write to snd_soc_write.
+
+The hardware has 2 banks of registers sharing a section in I2C register space.
+The 1st bank is the primary one and is cached.
+The 2nd bank is for loading coefficients only and they do not need cache.
+These coefficients registers are therefore direct writes.
+Thus we set cache_bypass flag to deal with this before calling snd_soc_write.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Hi,
+  I don't have this hardware, I'd appreciate if someone can test this patch.
 
 Thanks,
 Axel
+
+ sound/soc/codecs/max98095.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
+index 6982f74..26d7b08 100644
+--- a/sound/soc/codecs/max98095.c
++++ b/sound/soc/codecs/max98095.c
+@@ -617,14 +617,13 @@ static int max98095_volatile(struct snd_soc_codec *codec, unsigned int reg)
+ static int max98095_hw_write(struct snd_soc_codec *codec, unsigned int reg,
+ 			     unsigned int value)
+ {
+-	u8 data[2];
++	int ret;
+ 
+-	data[0] = reg;
+-	data[1] = value;
+-	if (codec->hw_write(codec->control_data, data, 2) == 2)
+-		return 0;
+-	else
+-		return -EIO;
++	codec->cache_bypass = 1;
++	ret = snd_soc_write(codec, reg, value);
++	codec->cache_bypass = 0;
++
++	return ret ? -EIO : 0;
+ }
+ 
+ /*
+-- 
+1.7.4.1
+
+
+
