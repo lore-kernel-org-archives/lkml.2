@@ -1,183 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab1JOWIU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 18:08:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43283 "EHLO ogre.sisk.pl"
+	id S1752638Ab1JOWM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 18:12:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47467 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab1JOWIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 18:08:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: NeilBrown <neilb@suse.de>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate interfaces
-Date: Sun, 16 Oct 2011 00:10:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <201110132145.42270.rjw@sisk.pl> <20111014165212.7929243c@notabene.brown>
-In-Reply-To: <20111014165212.7929243c@notabene.brown>
-MIME-Version: 1.0
-Message-Id: <201110160010.40639.rjw@sisk.pl>
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
+	id S1751663Ab1JOWM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 18:12:27 -0400
+Date: Sun, 16 Oct 2011 09:12:10 +1100
+From: NeilBrown <neilb@suse.de>
+To: markgross@thegnar.org
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
+        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
+Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
+ blocking (aka more wakelock stuff)]
+Message-ID: <20111016091210.5fea2bab@notabene.brown>
+In-Reply-To: <20111015140537.GA19162@mgross-G62>
+References: <20111002164456.GC14312@mgross-G62>
+	<20111008221439.48f30263@notabene.brown>
+	<20111008181638.GA12672@mgross-G62>
+	<20111009093100.6c15be50@notabene.brown>
+	<20111013034805.GC893@mgross-G62>
+	<20111013163526.3863be01@notabene.brown>
+	<20111014140116.GC27295@mgross-G62>
+	<20111015140537.GA19162@mgross-G62>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/PCUZ2DZsLvLcwSe1_uHmUES"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/PCUZ2DZsLvLcwSe1_uHmUES
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Friday, October 14, 2011, NeilBrown wrote:
-> On Thu, 13 Oct 2011 21:45:42 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-...
-> 
-> Hi Rafael,
-> 
->  What do you mean by "too complicated to use in practice"?  What is you
->  measure for complexity?
+On Sat, 15 Oct 2011 07:05:37 -0700 mark gross <markgross@thegnar.org> wrote:
 
-I, personally, don't really know what the difficulty is, as I have already
-described this approach for a few times (for example, in Section 5 of the
-article at http://lwn.net/images/pdf/suspend_blockers.pdf).  However, I've
-recently talked to a few people whom I regard as smart and who had tried
-to implement it and it didn't work for them, and they aren't really able
-to say why exactly.  Thus I have concluded it has to be complicated, but
-obviously you're free to draw your own conclusions. :-)
+> On Fri, Oct 14, 2011 at 07:01:16AM -0700, mark gross wrote:
+> > On Thu, Oct 13, 2011 at 04:35:26PM +1100, NeilBrown wrote:
+> > > On Wed, 12 Oct 2011 20:48:05 -0700 mark gross <markgross@thegnar.org>=
+ wrote:
+> > >
+>=20
+> snip
+>=20
+> > > Can you describe a race?
+> > > Here is the sequence as I see it.
+> > >=20
+> > > 0: some user-space process is blocking suspend by telling the suspend=
+ daemon
+> > >    not to suspend.  There are no pending kernel wakeup events.
+> > >    All processes that handle wakeup events are registered with the da=
+emon.
+> > > 1: last blocking user-space  process releases its "don't suspend" loc=
+k.
+> > > 2: suspend-daemon decides to initiate suspend.
+> > > 3: suspend_daemon reads wakeup_count and remembers number.
+> > > 4: suspend daemon tells all registered clients that suspend is immine=
+nt.
+> > > 5: each client executes 'poll' or 'select' or whatever and discovers =
+that
+> > >    there are no events.
+> > > 6: each client tells daemon that it is OK to suspend
+> > > 7: when all votes are in, suspend daemon checks that no process is re=
+questing
+> > >    that suspend be blocked.
+> > > 8: if that succeeds, suspend daemon writes the number back to wakeup_=
+count
+> > > 9: if that succeeds, suspend daemon daemon writes 'mem' to 'state'.
+> > > 10: goto 1
+> > >=20
+> > > If a wake_event happens after 3 and before 8, the write at 8 will fai=
+l.
+> > > If a wake_event happens after 8, and before 9, the suspend will abort.
+> > > If a wake_event happens after 9, the suspend will resume
+> > > If a wake_event happens before 3, one of the processes will get an ev=
+ent
+> > > notification from select or poll or whatever, and will ask the suspend
+> > > daemon not to suspend just now and this will be noticed at 7, so 8 an=
+d 9
+> > > will be skipped and we go straight to 10.
+> > >=20
+> > > No race.
+> >=20
+> > With the suspend daemon designed as above I see no race either.  I was
+> > thinking of a more trivial suspend daemon design and trying to fix it up
+> > in the kernel.
+> >
+>=20
+> After responding to this yesterday I still feel I'm missing something
+> with respect to wake event acknowledgment.  After a wake source becomes
+> active how does it know its ok to become deactivate at the driver level?
+>=20
+> The race I'm now worried about is say a button press going up through
+> the event layers.  The event manager process, or X, (registered with the
+> suspend daemon) is in a race to get the event and the socket based
+> notification handshake described above.
+>=20
+> i.e. how is the key event delivery vrs unblocking of the suspend-daemon
+> read of wakeup_count in step 3 race dealt with?
+>=20
+> Sorry for getting confused and flip flopping on you.  This is pretty
+> subtle stuff for me.
+>
 
-[BTW, attempts to defend the approach I have invented against myself are
- extremely likely to fail, pretty much by definition. ;-)]
+Not a problem.   I'll see if I can help.
 
->  Using suspend in a race-free way is certainly less complex than - for
->  example - configuring bluetooth.
->  And in what way is it "inadequate for other reasons"? What reasons?
+For button presses, the wakeup_source needs to remain active only until
+input_event() has been called on the event and the EV_SYN/SYN_REPORT event.
+Then it can relax.
 
-Consider the scenario described by John (the wakeup problem).  A process
-has to do something at certain time and the system shouldn't be suspended
-while the process is doing that, although it very well may be suspended
-earlier or later.  The process puts itself to sleep with the assumption
-that a wake alarm is set (presumably by another process) to wake the system
-up from suspend at the right time (if the suspend happens).  However, the
-process itself doesn't know _exactly_ what time the wake alarm is set to.
+input_event will have called input_handle_event -> input_pass_event.
+Depending on exactly which fds are open, this might have called
+  evdev_event -> evdev_pass_event
+which actually places the event in client->buffer.
+Then evdev_event will wake up evdev->wait which will alert 'poll' etc.
 
-In the situation in which we only have the existing mechanism and a user space
-power manager daemon, this scenario appears to be inherently racy, such that it
-cannot be handled correctly.
+So if the button press starts before the read request, then by the time the
+read completes, the input event will have been queued and any process with =
+an
+appropriate file descriptor open will be able to see the event (e.g select
+will return, read on a non-blocking fd will return an event rather than
+EAGAIN).   The process will actually do a select or a read or
+whatever because at step 4 the daemon will tell it to.   When it sees the
+event it will probably request that suspend be blocked for the moment, so
+when the daemon gets to step 7 it will decide to skip the rest of the suspe=
+nd
+sequence and go back to 0.
 
->  The only sane way to handle suspend is for any (suitably privileged) process
->  to be able to request that suspend doesn't happen, and then for one process
->  to initiate suspend when no-one is blocking it.
+If the button press starts after the read of wakeup_count, the process might
+not see the event, but the wakeup_count protocol will ensure we go around t=
+he
+loop again.
 
-As long as you don't specify the exact way by which the request is made and
-how the suspend is blocked, the above statement is almost meaningless.
+NeilBrown
 
->  This is very different from the way it is currently handled were the GUI
->  says "Hmm.. I'm not doing anything just now, I think I'll suspend".
-> 
->  The later simply doesn't scale.  It is broken.  It has to be replaced.
->  And it is being replaced.
+--Sig_/PCUZ2DZsLvLcwSe1_uHmUES
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Cool, good to hear that! :-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
->  gnome-power-manage has a dbus interface on which you can request
->  "InhibitInactiveSleep".  Call that will stop gnome-power-manager from
->  sleeping (I assume - haven't looked at the code).
->  It might not inhibit an explicit request for sleep - in that case it is
->  probably broken and needs to be fixed.  But is can be fixed.  Or replaced.
+iQIVAwUBTpoFOjnsnt1WYoG5AQJRWRAAlAil3cZcFK5Cs7LlBZedJdHDtaRy1MyM
+dQXsAXMXpEW9Hk/ZiwnUnRTYupCmHDoM2pqkau8B0q1vpdjh3uqiCJ0wIRNDqW4D
+3n4W7f5vDnXT+Ab/ydUBOH5ZFniwgkd0EfoxQumLc5/s0NHI7nvru6utHPoWsRg7
+gXPJEAxpOG3exEaLeO673Yx5UsEcFyeVavTTm72aLy5UPx5JfZHHQ06/4VGypK1H
+rbvXtX1oeUdfBurRQm4H/bLykUuWMTRYN44dUEDGKQQ4XV3X7vbCrrGzusFcXEuT
+3J4/hebSeXlsXP+wj1ut8aEztZU3GNXV+80N+8CUcVrtDSESrSqPtZ12eAkRdV5R
+TZtCYUZQccwgOgzVY6ybQQKBXXqBJT1UTyeKok/Snhv6kDpTEoUaIiFw72HHbK1g
+xSijjwMoCazsr3gvszSLkZ6g6Y/Lim6Z8Tbqr+Oka/YvUTS/RAMM+osGMrWs0i5D
+QbrNftVhva4tFayVAqsCyhvxUeHpKaDbbaPt3sYXnk4pJt/HX90wV/jA0UJsufNw
+JsnXtHFCtyGbqByZiy+K7T81R+GDc4tbmzAIwuEjO26t+zQbUSUgckMFiLyKL4i7
+Qu8AA3HEah20p+YM0soa365aoJVIKw860DMkkK3RC/g4gjUqwTuRBcCevGSuGRrn
+3aB2Sp0ixN8=
+=SuGm
+-----END PGP SIGNATURE-----
 
-Perhaps.
-
-Is KDE going to use the same mechanism, for one example?  And what about other
-user space variants?  MeeGo anyone?  Tizen?  Android??
-
->  So if someone is running gnome-power-manager and wants to perform a firmware
->  update, the correct thing to do is to use dbus to disable the inactive sleep.
->  If someone is using some other power manager they might need to use some
->  other mechanism.  Presumably these things will be standardised at some stage.
-
-Unless you have a specific idea about how to make this standardization happen,
-I call it wishful thinking to put it lightly.  Sorry about the harsh words, but
-that's how it goes IMNSHO. 
-
->  But I think it is very wrong to put some hack in the kernel like your
->    suspend_mode = disabled
-
-Why is it wrong and why do you think it is a "hack"?
-
->  just because the user-space community hasn't got its act together yet.
-
-Is there any guarantee that it will get its act together in any foreseeable
-time frame?
-
->  And if you really need a hammer to stop processes from suspending the system:
-> 
->    cat /sys/power/state > /tmp/state
->    mount --bind /tmp/state /sys/power/state
-> 
->  should to it.
-
-Except that (1) it appears to be racy (what if system suspend happens between
-the first and second line in your example - can you safely start to upgrade
-your firmware in that case?) and (2) it won't prevent the hibernate interface
-based on /dev/snapshot from being used.
-
-Do you honestly think I'd propose something like patch [1/2] if I didn't
-see any other _working_ approach?
-
->  You second patch has little to recommend it either.
->  In the first place it seems to be entrenching the notion that timeouts are a
->  good and valid way to think about suspend.
-
-That's because I think they are unavoidable.  Even if we are able to eliminate
-all timeouts in the handling of wakeup events by the kernel and passing them
-to user space, which I don't think is a realistic expectation, the user will
-still have only so much time to wait for things to happen.  For example, if
-a phone user doesn't see the screen turn on 0.5 sec after the button was
-pressed, the button is pretty much guaranteed to be pressed again.  This
-observation applies to other wakeup events, more or less.  They are very much
-like items with "suitability for consumption" timestamps: it they are not
-consumed quickly enough, we can simply forget about them.
-
->  I certainly agree that there are plenty of cases where timeouts are
->  important and necessary.  But there are also plenty of cases where you will
->  know exactly when you can allow suspend again, and having a timeout there is
->  just confusing.
-
-Please note that with patch [2/2] the timeout can always be overriden.
-
->  But worse - the mechanism you provide can be trivially implemented using
->  unix-domain sockets talking to a suspend-daemon.
-> 
->  Instead of opening /dev/sleepctl, you connect to /var/run/suspend-daemon/sock
->  Instead of ioctl(SLEEPCTL_STAY_AWAKE), you write a number to the socket.
->  Instead of ioctl(SLEEPCTL_RELAX), you write zero to the socket.
-> 
->  All the extra handling you do in the kernel, can easily be done by
->  user-space suspend-daemon.
-
-I'm not exactly sure why it is "worse".  Doing it through sockets may require
-the kernel to do more work and it won't be possible to implement the
-SLEEPCTL_WAIT_EVENT ioctl I've just described to John this way.
-
->  I really wish I could work out why people find the current mechanism
->  "difficult to use".  What exactly is it that is difficult?
->  I have describe previously how to build a race-free suspend system.  Which
->  bit of that is complicated or hard to achieve?  Or which bit of that cannot
->  work the way I claim?  Or which need is not met by my proposals?
-> 
->  Isn't it much preferable to do this in userspace where people can
->  experiment and refine and improve without having to upgrade the kernel?
-
-Well, I used to think that it's better to do things in user space.  Hence,
-the hibernate user space interface that's used by many people.  And my
-experience with that particular thing made me think that doing things in
-the kernel may actually work better, even if they _can_ be done in user space.
-
-Obviously, that doesn't apply to everything, but sometimes it simply is worth
-discussing (if not trying).  If it doesn't work out, then fine, let's do it
-differently, but I'm really not taking the "this should be done in user space"
-argument at face value any more.  Sorry about that.
-
-Thanks,
-Rafael
+--Sig_/PCUZ2DZsLvLcwSe1_uHmUES--
