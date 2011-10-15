@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab1JOA35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 20:29:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42295 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab1JOA34 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 20:29:56 -0400
-Message-ID: <4E98D402.2030600@gmail.com>
-Date: Fri, 14 Oct 2011 18:29:54 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755279Ab1JOAeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 20:34:09 -0400
+Received: from tundra.namei.org ([65.99.196.166]:55410 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754322Ab1JOAeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 20:34:07 -0400
+Date: Sat, 15 Oct 2011 11:34:00 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@linux.vnet.ibm.com,
+        dhowells@redhat.com, herbert@gondor.hengli.com.au
+Subject: Re: [PATCH v2.1 4/7] crypto: GnuPG based MPI lib - additional sources
+ (part 4)
+In-Reply-To: <81f834dca8feb889e2acbc666e730cf89b5d5c41.1318598705.git.dmitry.kasatkin@intel.com>
+Message-ID: <alpine.LRH.2.00.1110151132430.24994@tundra.namei.org>
+References: <cover.1318598705.git.dmitry.kasatkin@intel.com> <81f834dca8feb889e2acbc666e730cf89b5d5c41.1318598705.git.dmitry.kasatkin@intel.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Chris Palmer <chris.palmer@pobox.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PROBLEM] ASUS Sandybridge motherboards + PCI not working (IRQ
- n: nobody cared)
-References: <4E98175A.8040905@pobox.com>
-In-Reply-To: <4E98175A.8040905@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2011 05:04 AM, Chris Palmer wrote:
-> Interrupt handling for *PCI boards with ASUS Sandybridge motherboards*
-> seems to be broken.
->
-> It has been seen with network and non-network PCI boards. PCIx network
-> boards work OK. And all reports are for ASUS motherboards.
->
-> It always results in the infamous "IRQ n: nobody cared" message usually
-> within an hour. It is possible to restart things by rmmod/modprobe on
-> the appropriate PCI driver.
->
-> Andrew Morton kindly took a quick look and thinks it is most likely an
-> ACPI bug.
->
-> Configuration summary:
->   - ASUS P8H67-V/R3 Motherboard (others have problems with similar M/Bs)
->   - M/B BIOS 0804 (just updated to that - no change)
->   - Core i5/2500K
->   - Onboard ethernet (at11c driver - works)
->   - Additional PCIx Intel ethernet board (e1000e driver - works)
->   - Additional PCI Broadcom BCM5702X ethernet board (tg3 driver - fails)
-> 	[ Also fails with other PCI boards such as RTL8139 ]
->   - Kernel 3.0.6
->
->
-> Any help much appreciated...
->
-> Previous references:
->
-> https://lkml.org/lkml/2011/6/30/197
-> https://bugzilla.kernel.org/show_bug.cgi?id=38632
-> https://bugzilla.redhat.com/show_bug.cgi?id=713351
-> https://bugzilla.kernel.org/show_bug.cgi?id=35332
-> https://bugzilla.kernel.org/show_bug.cgi?id=34242
-> https://bugzilla.kernel.org/show_bug.cgi?id=32242
-> https://bugzilla.kernel.org/show_bug.cgi?id=39122
+On Fri, 14 Oct 2011, Dmitry Kasatkin wrote:
 
-The bugzilla reports aren't currently accessible so I don't know if it 
-was posted there, but can you post the output of "lspci -vv" as root? 
-Could be that some other device is configured on that IRQ and sometimes 
-spuriously generates interrupts.
+> +#if 0				/* not yet ported to MPI */
+> +
+> +mpi_limb_t
+> +mpihelp_udiv_w_sdiv(mpi_limp_t *rp,
+> +		    mpi_limp_t *a1, mpi_limp_t *a0, mpi_limp_t *d)
 
+Drop this if it's not working.
+
+
+-- 
+James Morris
+<jmorris@namei.org>
