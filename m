@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab1JOTUF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:20:05 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:50311 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754557Ab1JOTUD convert rfc822-to-8bit (ORCPT
+	id S1754794Ab1JOTYH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:24:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41442 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab1JOTYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:20:03 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19hWfZgP9JhEUYqaXKGsbTZAKhpZxZC9Uc8HU93aU
-	Vg4IMz/7u8VUc3
-From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: 3.1.0-rc9+ : wlan stops working w/o any error messages
-Date: Sat, 15 Oct 2011 21:19:57 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; i686; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110152119.58509.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sat, 15 Oct 2011 15:24:05 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
+        greg@kroah.com, Matthew Garrett <mjg59@redhat.com>
+In-Reply-To: <20111015112006.GA10173@tango.0pointer.de>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+	 <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+	 <20111014154348.ae6267aa.akpm@linux-foundation.org>
+	 <20111015112006.GA10173@tango.0pointer.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 Oct 2011 21:11:50 +0200
+Message-ID: <1318705910.2664.5.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a ThinkPad T400 with "Intel Corporation PRO/Wireless 5100 AGN [Shiloh] 
-Network Connection" I experienced few times in the last week that the suddenly 
-the network stops to work - no messages in /var/log/messages nor any other 
-outout. Only  a restart of the network services helped
+On Sat, 2011-10-15 at 13:20 +0200, Lennart Poettering wrote:
+> On Fri, 14.10.11 15:43, Andrew Morton (akpm@linux-foundation.org) wrote:
+> 
+> > > cgroup subsys "timer_slack" implements timer slack controller. It
+> > > provides a way to set minimal timer slack value for a group of tasks.
+> > > If a task belongs to a cgroup with minimal timer slack value higher than
+> > > task's value, cgroup's value will be applied.
+> > > 
+> > > Timer slack controller allows to implement setting timer slack value of
+> > > a process based on a policy. For example, you can create foreground and
+> > > background cgroups and move tasks between them based on system state.
+> > 
+> > I'm having trouble understanding the value of this feature.  Users can
+> > presently control the timer-slack of a group of processes via
+> > inherit-over-fork.
+> > 
+> > Perhaps there's a case for providing a way for process A to set process
+> > B's slack.  And perhaps B's children.  That would be a simpler patch
+> > and would have the considerable advantage that it doesn't require
+> > cgroups.
+> > 
+> > So.... why should we merge this?
+> 
+> Our usecase is basically this:
+> 
+> consider you have one or more desktop user sessions logged in, each one
+> in a timer slack cgroup. Now, userspace already tracks when sessions
+> become idle (i.e. currently desktop userspace then starts a screensaver,
+> or turns off the screen, or similar), and we'd like to increase the timer slack
+> for the session cgroups individually as the individual session becomes
+> idle, and decrease it again if the session stops being idle.
 
-n22 ~ # uname -a
-Linux n22 3.1.0-rc9+ #1 SMP Fri Oct 14 19:21:56 CEST 2011 i686 Intel(R) 
-Core(TM)2 Duo CPU P8600 @ 2.40GHz GenuineIntel GNU/Linux
+> What matters for us here is that the timer slack cgroup controller
+> provides us with a very nice way to change the timerslack for the whole
+> set of session processes in one go and from the outside. i.e. the idle
+> logic in userspace would be trivially easy to implement, since we
+> already track per-session idle states and with the timerlsack cgroup
+> controller we'd have to touch only a single kernel file to make our
+> changes.
 
-It is an almost stable Gentoo.
+I would argue this is an excellent reason not to merge this. This really
+is in the camp of lets paper over shitty userspace instead of fix it.
 
-Anybody else made similar experiences ?
+Such a scheme takes away the immediate need to fix crap and therefore
+crap will not get fixed. Why not focus on creating tools (I think
+powertop really already does everything you need) and track down WTF
+apps are firing so many timers when the screen if off.
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Also, the downside of your approach is that you treat all applications
+the same, what if there is a genuine need for reasonable timer response
+and your 'policy' wrecks things?
+
+
+
