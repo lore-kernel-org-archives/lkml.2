@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136Ab1JOAkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 20:40:16 -0400
-Received: from tundra.namei.org ([65.99.196.166]:35714 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755070Ab1JOAkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 20:40:15 -0400
-Date: Sat, 15 Oct 2011 11:40:12 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-cc: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Smack: compilation fix
-In-Reply-To: <4E985DA8.80608@schaufler-ca.com>
-Message-ID: <alpine.LRH.2.00.1110151140050.24994@tundra.namei.org>
-References: <1318587384-2737-1-git-send-email-jarkko.j.sakkinen@gmail.com> <4E985DA8.80608@schaufler-ca.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1757141Ab1JOAop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 20:44:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23888 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab1JOAoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 20:44:44 -0400
+Message-ID: <4E98D739.4000705@oracle.com>
+Date: Fri, 14 Oct 2011 17:43:37 -0700
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH] XEN_DOMAIN_MEMORY options.
+References: <1318631811-21559-1-git-send-email-maxim.uvarov@oracle.com> <4E98BEF5.10801@goop.org> <4E98C6CE.4020508@oracle.com> <4E98C8B1.20304@goop.org>
+In-Reply-To: <4E98C8B1.20304@goop.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
+X-CT-RefId: str=0001.0A090201.4E98D778.012C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Casey Schaufler wrote:
+On 10/14/2011 04:41 PM, Jeremy Fitzhardinge wrote:
+> On 10/14/2011 04:33 PM, Maxim Uvarov wrote:
+>> On 10/14/2011 04:00 PM, Jeremy Fitzhardinge wrote:
+>>> On 10/14/2011 03:36 PM, Maxim Uvarov wrote:
+>>>> Hello,
+>>>>
+>>>> Please find here patches for XEN_MAX_DOMAIN_MEMORY:
+>>>>
+>>>> [PATCH 1/2] xen: Fix XEN_MAX_DOMAIN_MEMORY to be selectable
+>>>> [PATCH 2/2] xen: Make XEN_MAX_DOMAIN_MEMORY have more sensible
+>>>> defaults for 32-bit builds
+>>>
+>>> What's the rationale?
+>>>
+>>>       J
+>>
+>> The first patch is actually bug fix. You can not define just "int"
+>> without description in Kconfig. As the result this option will not be
+>> visible in menuconfig. Even if you will change it in .config make
+>> oldconfig will set it up for default value. So you need to add any
+>> description to it as all others int options have.
+>
+> No, that was deliberate, because I don't really think there's a need to
+> change it.
+>
 
-> On 10/14/2011 3:16 AM, Jarkko Sakkinen wrote:
-> > On some build configurations PER_CLEAR_ON_SETID symbol was not
-> > found when compiling smack_lsm.c. This patch fixes the issue by
-> > explicitly doing #include <linux/personality.h>.
-> >
-> > Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
-> 
-> Applied to git://gitorious.org/smack-next/kernel.git#master
-> 
-> James, can you pull for security testing please?
+ From that point of view it's not clear why this option is still in Kconfig?
 
-Pulled.
+Jeremy, can you please share more details about this? I see people are 
+having troubles with this option and in different kernels I see 
+different work arounds  for it. For example:
+http://lists.xensource.com/archives/html/xen-devel/2011-01/msg01841.html
 
-> 
-> commit 16014d87509e26d6ed6935adbbf437a571fb5870
-> 
-> > ---
-> >  security/smack/smack_lsm.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> > index d55b991..7db62b4 100644
-> > --- a/security/smack/smack_lsm.c
-> > +++ b/security/smack/smack_lsm.c
-> > @@ -35,6 +35,7 @@
-> >  #include <linux/audit.h>
-> >  #include <linux/magic.h>
-> >  #include <linux/dcache.h>
-> > +#include <linux/personality.h>
-> >  #include "smack.h"
-> >  
-> >  #define task_security(task)	(task_cred_xxx((task), security))
-> 
+Maxim.
+>>
+>> Second patch is more optional and it's just suggestion to use for 32
+>> bit more corresponding value.
+>
+> While it would be very silly to put 128GB of actual RAM on a 32-bit
+> machine, systems can have non-contiguous RAM placed at high addresses,
+> which would no longer be accessible.
+>
+>      J
 
--- 
-James Morris
-<jmorris@namei.org>
