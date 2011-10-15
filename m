@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab1JOBPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 21:15:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3260 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab1JOBP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 21:15:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,349,1315206000"; 
-   d="scan'208";a="62797798"
-Date: Sat, 15 Oct 2011 03:18:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] mfd: Enable rbtree cache for wm831x devices
-Message-ID: <20111015011848.GD10229@sortiz-mobl>
-References: <1318622786-20189-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1755077Ab1JOBzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 21:55:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57110 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab1JOBzy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 21:55:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318622786-20189-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111014141714.GD2198@amd.com>
+References: <000501cc897f$fa0204f0$ee060ed0$%cho@samsung.com>
+	<20111014141714.GD2198@amd.com>
+Date: Sat, 15 Oct 2011 10:55:52 +0900
+X-Google-Sender-Auth: c7H-cif0Y6qeX7Gw7SeXpj-IMWA
+Message-ID: <CAHQjnOPsBr5sV=08CaO0bpvjVXA9y_rE5tumVuseRU-N6uHx-Q@mail.gmail.com>
+Subject: Re: [PATCH v5 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        "younglak1004.kim@samsung.com" <younglak1004.kim@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Fri, Oct 14, 2011 at 11:17 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> On Thu, Oct 13, 2011 at 04:13:23AM -0400, KyongHo Cho wrote:
+>> +struct exynos_iommu_domain {
+>> +       struct device *dev;
+>> +       unsigned long *pgtable;
+>> +       spinlock_t lock;
+>> +       spinlock_t pgtablelock;
+>> +};
+>
+> Can you please add comments to document what these spinlocks protect?
+>
+'lock' protects race condition on the domain private data.
+'pgtablelock' does it on the page table of the domain.
+Since updating page table does not need to be synchronized with
+domain private data, I defined those 2 locks seperately.
 
-On Fri, Oct 14, 2011 at 09:06:26PM +0100, Mark Brown wrote:
-> Most useful with the regulators where we're doing a lot of read/modify/write
-> updates in potentially performance critical paths.  Providing some defaults
-> would make this slightly better but this is a win right now.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> Samuel, this depends on the regmap code in -next so I'd like to merge
-> it via regmap if that's OK with you?
-I'm fine with it:
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+I will add this information in the source code as comments.
 
-Cheers,
-Samuel.
+>> +static int exynos_iommu_attach_device(struct iommu_domain *domain,
+>> +                                  struct device *dev)
+>> +{
+>> +       struct exynos_iommu_domain *priv = domain->priv;
+>> +       int ret;
+>> +
+>> +       spin_lock(&priv->lock);
+>> +
+>> +       priv->dev = dev;
+>> +
+>> +       spin_unlock(&priv->lock);
+>> +
+>> +       ret = exynos_iommu_enable(domain);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static void exynos_iommu_detach_device(struct iommu_domain *domain,
+>> +                                   struct device *dev)
+>> +{
+>> +       struct exynos_iommu_domain *priv = domain->priv;
+>> +
+>> +       spin_lock(&priv->lock);
+>> +
+>> +       if (priv->dev == dev) {
+>> +               priv->dev = NULL;
+>> +
+>> +               spin_unlock(&priv->lock);
+>> +
+>> +               exynos_iommu_disable(domain);
+>> +       } else {
+>> +               spin_unlock(&priv->lock);
+>> +       }
+>> +}
+>
+> That looks weird. As I read this code there is a 1-1 mapping between a
+> device and a domain. This breaks semantics of the iommu-api where a
+> domain can contain multiple devices.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I agree.
+I will implement it soon.
+
+
+Thank you
+
+KyongHo
