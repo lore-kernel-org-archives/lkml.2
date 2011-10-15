@@ -1,153 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1JOS7S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 14:59:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55758 "EHLO
+	id S1754496Ab1JOTA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:00:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36496 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249Ab1JOS7R (ORCPT
+	with ESMTP id S1754258Ab1JOTA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 14:59:17 -0400
-Date: Sat, 15 Oct 2011 22:59:09 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
-Message-ID: <20111015185909.GZ14464@moon>
-References: <20111014110416.552685686@openvz.org>
- <20111014110511.670174429@openvz.org>
- <20111014171033.GC4294@google.com>
+	Sat, 15 Oct 2011 15:00:28 -0400
+Date: Sat, 15 Oct 2011 22:00:15 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 07/10] spi, serial: move to dma_transfer_direction
+Message-ID: <20111015190015.GB3128@mwesterb-mobl.ger.corp.intel.com>
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
+ <1318570705-17595-8-git-send-email-vinod.koul@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111014171033.GC4294@google.com>
+In-Reply-To: <1318570705-17595-8-git-send-email-vinod.koul@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 10:10:33AM -0700, Tejun Heo wrote:
-> Hello,
-> 
+On Fri, Oct 14, 2011 at 11:08:22AM +0530, Vinod Koul wrote:
 
-Hi Tejun, sorry for a bit delayed reply,
+> diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+> index 1cf6454..8754a39 100644
+> --- a/drivers/spi/spi-ep93xx.c
+> +++ b/drivers/spi/spi-ep93xx.c
+> @@ -550,6 +550,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  	struct dma_async_tx_descriptor *txd;
+>  	enum dma_slave_buswidth buswidth;
+>  	struct dma_slave_config conf;
+> +	enum dma_transfer_direction slave_dirn;
+>  	struct scatterlist *sg;
+>  	struct sg_table *sgt;
+>  	struct dma_chan *chan;
+> @@ -572,6 +573,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  
+>  		conf.src_addr = espi->sspdr_phys;
+>  		conf.src_addr_width = buswidth;
+> +		slave_dirn = DEV_TO_MEM;
+>  	} else {
+>  		chan = espi->dma_tx;
+>  		buf = t->tx_buf;
+> @@ -579,6 +581,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  
+>  		conf.dst_addr = espi->sspdr_phys;
+>  		conf.dst_addr_width = buswidth;
+> +		slave_dirn = MEM_TO_DEV;
+>  	}
+>  
+>  	ret = dmaengine_slave_config(chan, &conf);
+> @@ -630,7 +633,7 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
+>  		return ERR_PTR(-ENOMEM);
+>  
+>  	txd = chan->device->device_prep_slave_sg(chan, sgt->sgl, nents,
+> -						 dir, DMA_CTRL_ACK);
+> +						 slave_dirn, DMA_CTRL_ACK);
+>  	if (!txd) {
+>  		dma_unmap_sg(chan->device->dev, sgt->sgl, sgt->nents, dir);
+>  		return ERR_PTR(-ENOMEM);
 
-> (cc'ing Oleg and Linus, and quoting whole body)
-> 
-> On Fri, Oct 14, 2011 at 03:04:21PM +0400, Cyrill Gorcunov wrote:
-> > This patch add ability to run that named "checkpoint" files by
-> > enhancing Elf file format, which includes
-> > 
-> >  - new Elf file type ET_CKPT
-> > 
-> >  - three additional program header types PT_CKPT_VMA, PT_CKPT_CORE
-> >    and PT_CKPT_PAGES.
-> > 
-> >      PT_CKPT_VMA -- holds 'vma_entry' structure, which describes the
-> >      memory area the kernel should map. It also might contain a file descriptor
-> >      so the kernel will be mapping a file povided. Usually such file get
-> >      opened by user-space helper tool which prepares 'vma_entry' structure
-> >      for the kernel.
-> > 
-> >      PT_CKPT_CORE -- 'core_entry' structure (registers, tls, tasks specific
-> >      settings). The structure is defined as a 16K container which should be
-> >      enough for most cases. 8K of it is reserved for arch specific settings.
-> > 
-> >      PT_CKPT_PAGES -- a set of all pages which contents we should restored.
-> > 
-> > Apart from Elf extension flush_old_exec() has been splitted to two
-> > functions -- the former flush_old_exec() and flush_exec_keep_thread().
-> > The later doesn't call for de_thread() allowing to keep threads
-> > relationship. Also arch_setup_additional_pages_at() helper added
-> > to setup vdso at predefined address.
-> > 
-> > At moment only pure x86-64 architecture is supported.
-> 
-> I don't think this is a good idea.  We already have most of interface
-> necessary for restoring task state and there's no need to put it into
-> the kernel as one piece.  If there's something which can't be done
-> from userland using existing interfaces, let's please discuss what
-> they are and whether they can be resolved differently first.
-> 
+Can you also change the ep93xx_spi_setup_dma() function to use these new
+values? Like the patch below.
 
-One of the problem is restoration of memory areas which are initially
-provided by a kernel itself (such as vdso), the mm_struct members
-such as start_code/end_code/brk and friends which are formerly set by
-elf loader. Strictly speaking most of them (except brk) should not affect
-process restored BUT they are exported into /proc which allows user space
-to examinate them and hell knows how programs may react on such values
-changed when they get restored (and I imagine a program which poll this
-settings and exit out once they changed, _yes_ most programs should not
-do that I believe but still... I thought if we implement c/r feature
-the restored process should see himself exactly as it was before, at
-least this is a final goal).
+Otherwise,
 
-> The exec path is very intricate as it is and it would be very easy to
-> introduce security or other bugs by altering its basic behavior.  exec
-> presumes destruction of (most of) the current process and all its
-> other threads and replacing them w/ fresh states from an executable.
-> The scary part - interaction with process hierarchy and zapping of the
-> current state - is handled from the core exec code.
->
-> I see that you removed zapping to allow restoring multi-threaded
-> process, which seems quite scary to me.  It might be okay, I don't
-> know, but IMHO it just isn't a very good idea to introduce such
-> variation to basic exec behavior for this rather narrow use case.
->
-> In addition, leaving it alone doesn't really solve multi-threaded
-> restoring, does it?  Who sets the task states for other threads?  The
+Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
 
-The user-space tool. Eventually we are dreaming about restart with cgroups.
-And the former process hierarchy is supposed to be recreated by user-space
-tool as well.
-
-Note I know that not all states are handled and most probably here some
-bugs hidden in current patch as well, but it was the main reason to show
-it up early, just to gather people opinions.
-
-> current code doesn't seem to be doing anything but if you're gonna add
-> it later, how are you gonna synchronize other threads?  If not, what's
-> the point of pushing this chunk in when userland task state
-> restoration is necessary anyway?
->
-> So, at the moment, I'm rather strongly against this approach.
->
-
-On Fri, Oct 14, 2011 at 10:10:33AM -0700, Tejun Heo wrote:
->> I see that you removed zapping to allow restoring multi-threaded
->> process, which seems quite scary to me.  It might be okay, I don't
->> know, but IMHO it just isn't a very good idea to introduce such
->> variation to basic exec behavior for this rather narrow use case.
->
->* It's still calling exec_mmap(), so the exec'ing thread will be on
->  the new mm while other threads would still be on the old one.
-
-Hmm, seems I missed this in first place, thanks (note even having
-new mm here the user-space tool will handle shared-memory allocations).
-
->* There are operations which assume that the calling task is
->  de-threaded and thus has exclusive access to data structures which
->  can be shared among the thread group (e.g. signal struct).  How are
->  accesses to them synchronized?
-
-Seems it;s being not yet implemented, thanks.
-
->* What about properties which should be reset and then shared by
->  threads by inheriting (credentials, comm, self_exec_id and so on)?
->  e.g. new thread follows exec-time imposed rules but old ones keep
->  their original credentials.
->
->So, no, it really doesn't look good.
-
-Anyway, thanks a HUGE for review, Tejun! I really appreciate!!
-
-	Cyrill
+diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+index 66c3d9b..d97583f 100644
+--- a/drivers/spi/spi-ep93xx.c
++++ b/drivers/spi/spi-ep93xx.c
+@@ -982,7 +982,7 @@ static int ep93xx_spi_setup_dma(struct ep93xx_spi *espi)
+ 	dma_cap_set(DMA_SLAVE, mask);
+ 
+ 	espi->dma_rx_data.port = EP93XX_DMA_SSP;
+-	espi->dma_rx_data.direction = DMA_FROM_DEVICE;
++	espi->dma_rx_data.direction = DEV_TO_MEM;
+ 	espi->dma_rx_data.name = "ep93xx-spi-rx";
+ 
+ 	espi->dma_rx = dma_request_channel(mask, ep93xx_spi_dma_filter,
+@@ -993,7 +993,7 @@ static int ep93xx_spi_setup_dma(struct ep93xx_spi *espi)
+ 	}
+ 
+ 	espi->dma_tx_data.port = EP93XX_DMA_SSP;
+-	espi->dma_tx_data.direction = DMA_TO_DEVICE;
++	espi->dma_tx_data.direction = MEM_TO_DEV;
+ 	espi->dma_tx_data.name = "ep93xx-spi-tx";
+ 
+ 	espi->dma_tx = dma_request_channel(mask, ep93xx_spi_dma_filter,
