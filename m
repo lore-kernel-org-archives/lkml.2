@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab1JOMB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 08:01:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:32775 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1JOMBZ convert rfc822-to-8bit (ORCPT
+	id S1752515Ab1JOMrG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 08:47:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53806 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab1JOMrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 08:01:25 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: David Rientjes <rientjes@google.com>
-Subject: Re: Reporting Kernel Bugs
-Date: Sat, 15 Oct 2011 14:01:19 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc4; KDE/4.6.5; i686; ; )
-Cc: Jan Steinke <jan.steinke@gmail.com>, linux-kernel@vger.kernel.org
-References: <4E95D7A6.6010603@canonical.com> <loom.20111014T220901-636@post.gmane.org> <alpine.DEB.2.00.1110141321250.24783@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110141321250.24783@chino.kir.corp.google.com>
+	Sat, 15 Oct 2011 08:47:04 -0400
+Date: Sat, 15 Oct 2011 13:46:45 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        jaswinder.singh@linaro.org, 21cnbao@gmail.com,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: Re: [PATCH 01/10] dmaengine: add new enum dma_transfer_direction
+Message-ID: <20111015124645.GG21802@flint.arm.linux.org.uk>
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com> <1318570705-17595-2-git-send-email-vinod.koul@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110151401.19977.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318570705-17595-2-git-send-email-vinod.koul@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 14 października 2011 o 22:23:57 David Rientjes wrote:
-> On Fri, 14 Oct 2011, Jan Steinke wrote:
-> > > Just send an e-mail to appropriate mailinglist and CC
-> > > responsible maintainer(s).
-> > > 
-> > > That's what many people prefer to bugzilla anyway.
-> > 
-> > How do I know the responsible maintainer(s)? How do I know if the bug is
-> > confirmed or accepted?
+On Fri, Oct 14, 2011 at 11:08:16AM +0530, Vinod Koul wrote:
+> This new enum removes usage of dma_data_direction for dma direction. The new
+> enum cleans tells the DMA direction and mode
+> This further paves way for merging the dmaengine _prep operations and also for
+> interleaved dma
 > 
-> If you can figure out what subsystem is the likely source of the issue,
-> then you can check the MAINTAINERS file for the appropriate people and
-> mailing list.  If there's a panic or oops, find the source file that is to
-> blame and use ./scripts/get_maintainer.pl -f <file>.  Otherwise, just
-> report some unknown, untriaged error directly to
-> linux-kernel@vger.kernel.org and be sure to cc Andrew Morton
-> <akpm@linux-foundation.org> who used to go through the kernel.org bugzilla
-> quite often and send bug reports in the right direction.
+> Suggested-by: Jassi Brar <jaswinder.singh@linaro.org>
+> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+> ---
+>  include/linux/dmaengine.h |   22 +++++++++++++++++-----
+>  1 files changed, 17 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index ace51af..24942ad 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -23,7 +23,6 @@
+>  
+>  #include <linux/device.h>
+>  #include <linux/uio.h>
+> -#include <linux/dma-direction.h>
+>  #include <linux/scatterlist.h>
+>  
+>  /**
+> @@ -75,6 +74,19 @@ enum dma_transaction_type {
+>  /* last transaction type for creation of the capabilities mask */
+>  #define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
+>  
+> +/**
+> + * enum dma_transfer_direction - dma transfer mode and direction indicator
+> + * @MEM_TO_MEM: Async/Memcpy mode
+> + * @MEM_TO_DEV: Slave mode & From Memory to Device
+> + * @DEV_TO_MEM: Slave mode & From Device to Memory
+> + * @DEV_TO_DEV: Slave mode & From Device to Device
+> + */
+> +enum dma_transfer_direction {
+> +	MEM_TO_MEM,
+> +	MEM_TO_DEV,
+> +	DEV_TO_MEM,
+> +	DEV_TO_DEV,
+> +};
+>  
+>  /**
+>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+> @@ -267,7 +279,7 @@ enum dma_slave_buswidth {
+>   * struct, if applicable.
+>   */
+>  struct dma_slave_config {
+> -	enum dma_data_direction direction;
+> +	enum dma_transfer_direction direction;
 
-For regression add my address to CC. When bugzilla comes back, then I create 
-bug entry for regression.
+I thought we were killing this off - surely now is a good time, rather
+than allowing it to persist with this ambiguous change of functionality.
 
-Regards
+>  	dma_addr_t src_addr;
+>  	dma_addr_t dst_addr;
+>  	enum dma_slave_buswidth src_addr_width;
+> @@ -490,11 +502,11 @@ struct dma_device {
+>  
+>  	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+>  		struct dma_chan *chan, struct scatterlist *sgl,
+> -		unsigned int sg_len, enum dma_data_direction direction,
+> +		unsigned int sg_len, enum dma_transfer_direction direction,
+
+Does this make any sense?  The API takes a single scatterlist of memory
+locations - so MEM_TO_MEM and DEV_TO_DEV are meaningless for this API.
+
+If it took two scatterlists and two device addresses, then maybe it would -
+but I don't see the point of this change (and all the users of this API
+also needing to change) when the API is specifically for memory scatterlist
+to/from a device.
+
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
