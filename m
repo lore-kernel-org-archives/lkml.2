@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab1JONOG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 09:14:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45415 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab1JONOE (ORCPT
+	id S1752709Ab1JONOQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 09:14:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62483 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab1JONOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 09:14:04 -0400
+	Sat, 15 Oct 2011 09:14:12 -0400
 From: Manfred Spraul <manfred@colorfullife.com>
 To: LKML <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@google.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 0/5] ipc/sem.c: multiple fixes
-Date: Sat, 15 Oct 2011 15:21:19 +0200
-Message-Id: <1318684879-1887-1-git-send-email-manfred@colorfullife.com>
+Subject: [PATCH 1/5] ipc/sem.c: Fix return code race with semop vs. semop +semctl(IPC_RMID)
+Date: Sat, 15 Oct 2011 15:21:33 +0200
+Message-Id: <1318684893-1921-1-git-send-email-manfred@colorfullife.com>
 X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+sys_semtimedop() may return -EIDRM although the semaphore operation completed
+successfully:
 
-The wakeup scheme used by semtimedop() does not work as intended on -rt.
+thread 1:	thread 2:
+		semtimedop(), sleeps
+semop():
+* acquires sem_lock()
+		semtimedop() woken up due to timeout
+		sem_lock() loops
+* notices that thread 2 could be completed.
+* performs the operations that thread 2 is sleeping on.
+* marks the semaphore operation as IN_WAKEUP
+* drops sem_lock(), does wakeup, sets return code to 0
+		* thread delayed due to interrupt, whatever
+* returns to user space
+		* thread still delayed
+semctl(IPC_RMID)
+* acquires sem_lock()
+* ipc_rmid(), ipcp->deleted=1
+* drops sem_lock()
+		* thread finally continues - but seem_lock()
+		  now fails due to ipcp->deleted == 1
+		* returns -EIDRM instead of 0
 
-The following series:
-- fixes one bug that I noticed while thinking about a -rt compatible
-  implementation
-- prevents the code from returning to user space due to spurious wakeups.
-  (noticed by Peter Zijlstra)
-- moves private structures from include/linux/sem.h to ipc/sem.c
-- saves some memory if sysvipc is disabled.
-- reworks the wakeup scheme and adds a 2nd wakeup scheme that is based
-  on a completion. For CONFIG_PREEMPT_RT_BASE, this scheme is used.
+The fix is trivial: Always use the return code in queue.status.
 
-What do you think?
-The rework of the wakeup should also help to convert the code to
-using the wake_up_list framework.
+In real world, the race probably doesn't matter:
+If the semaphore array is destroyed, the app is probably not interested
+if the last operation succeeded or was already cancelled.
 
-Andrew: Could you replace the patches in -mm with this series?
-I would prefer to keep the current scheme as the default, it's
-~5% faster (6.5 usec vs. 6.8 usec per wakeup).
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ ipc/sem.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-The patches pass checkpatch.pl and I didn't observe any problems
-with my test apps.
+diff --git a/ipc/sem.c b/ipc/sem.c
+index c8e00f8..fb13be1 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1460,7 +1460,6 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 	 * Array removed? If yes, leave without sem_unlock().
+ 	 */
+ 	if (IS_ERR(sma)) {
+-		error = -EIDRM;
+ 		goto out_free;
+ 	}
+ 
+-- 
+1.7.6
 
---
-	Manfred
