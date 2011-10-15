@@ -1,55 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab1JOSgX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 14:36:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37097 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab1JOSgW (ORCPT
+	id S1754434Ab1JOShV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 14:37:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35195 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab1JOShQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 14:36:22 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/3] perf tools: Reset hists number of entries before collapsing
-Date: Sat, 15 Oct 2011 20:36:12 +0200
-Message-Id: <1318703773-6846-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1318703773-6846-1-git-send-email-fweisbec@gmail.com>
-References: <1318703773-6846-1-git-send-email-fweisbec@gmail.com>
+	Sat, 15 Oct 2011 14:37:16 -0400
+From: martinez.javier@gmail.com
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mohan Pallaka <mpallaka@codeaurora.org>,
+        Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <martinez.javier@gmail.com>
+Subject: [PATCH v6 2/3] Input: cyttsp - add support for Cypress TTSP touchscreen I2C bus interface
+Date: Sat, 15 Oct 2011 20:37:02 +0200
+Message-Id: <4e99d2da.473ce30a.3c78.7a55@mx.google.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1318703824-19869-1-git-send-email-a>
+References: <1318703824-19869-1-git-send-email-a>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we collapse entries, we re-compute their total numbers
-and period but we forget to reset the total number of entries
-before.
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
 
-Fix this so that the browser sees the correct number of entries.
+The driver is composed of a core driver that process the data sent by
+the contacts and a set of bus specific interface modules.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
+This patch add supports for the Cypress TTSP I2C bus interface.
+
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
 ---
- tools/perf/util/hist.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index bac6520..cef40d8 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -344,6 +344,7 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
- 
- 	root = hists__get_rotate_entries_in(hists);
- 	next = rb_first(root);
-+	hists->nr_entries = 0;
- 	hists->stats.total_period = 0;
- 
- 	while (next) {
+v2: Fix issues called out by Dmitry Torokhov
+    - Extract the IRQ from the i2c client data and pass to cyttsp_core_init()
+
+v3: Fix issues called out by Henrik Rydberg and Mohan Pallaka
+    - Remove bus type info since it is not used.
+
+ drivers/input/touchscreen/cyttsp/cyttsp_i2c.c |  190 +++++++++++++++++++++++++
+ 1 files changed, 190 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/touchscreen/cyttsp/cyttsp_i2c.c
+
+diff --git a/drivers/input/touchscreen/cyttsp/cyttsp_i2c.c b/drivers/input/touchscreen/cyttsp/cyttsp_i2c.c
+new file mode 100644
+index 0000000..146a16d
+--- /dev/null
++++ b/drivers/input/touchscreen/cyttsp/cyttsp_i2c.c
+@@ -0,0 +1,190 @@
++/*
++ * Source for:
++ * Cypress TrueTouch(TM) Standard Product (TTSP) I2C touchscreen driver.
++ * For use with Cypress Txx3xx parts.
++ * Supported parts include:
++ * CY8CTST341
++ * CY8CTMA340
++ *
++ * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
++ * Copyright (C) 2011 Javier Martinez Canillas <martinez.javier@gmail.com>
++ *
++ * Multi-touch protocol type B support and cleanups by Javier Martinez Canillas
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2, and only version 2, as published by the
++ * Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * Contact Cypress Semiconductor at www.cypress.com <kev@cypress.com>
++ *
++ */
++
++#include "cyttsp_core.h"
++
++#include <linux/i2c.h>
++#include <linux/slab.h>
++
++#define CY_I2C_DATA_SIZE  128
++
++struct cyttsp_i2c {
++	struct cyttsp_bus_ops ops;
++	struct i2c_client *client;
++	void *ttsp_client;
++	u8 wr_buf[CY_I2C_DATA_SIZE];
++};
++
++static s32 ttsp_i2c_read_block_data(void *handle, u8 addr,
++	u8 length, void *values)
++{
++	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
++	int retval = 0;
++
++	retval = i2c_master_send(ts->client, &addr, 1);
++	if (retval < 0)
++		return retval;
++
++	retval = i2c_master_recv(ts->client, values, length);
++
++	return (retval < 0) ? retval : 0;
++}
++
++static s32 ttsp_i2c_write_block_data(void *handle, u8 addr,
++	u8 length, const void *values)
++{
++	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
++	int retval;
++
++	ts->wr_buf[0] = addr;
++	memcpy(&ts->wr_buf[1], values, length);
++
++	retval = i2c_master_send(ts->client, ts->wr_buf, length+1);
++
++	return (retval < 0) ? retval : 0;
++}
++
++static s32 ttsp_i2c_tch_ext(void *handle, void *values)
++{
++	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
++	int retval = 0;
++
++	/*
++	 * TODO: Add custom touch extension handling code here
++	 * set: retval < 0 for any returned system errors,
++	 *	retval = 0 if normal touch handling is required,
++	 *	retval > 0 if normal touch handling is *not* required
++	 */
++	if (!ts || !values)
++		retval = -EINVAL;
++
++	return retval;
++}
++
++static int __devinit cyttsp_i2c_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	struct cyttsp_i2c *ts;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		return -EIO;
++
++	/* allocate and clear memory */
++	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
++	if (!ts) {
++		dev_dbg(&client->dev, "%s: Error, kzalloc.\n", __func__);
++		return -ENOMEM;
++	}
++
++	/* register driver_data */
++	ts->client = client;
++	i2c_set_clientdata(client, ts);
++	ts->ops.write = ttsp_i2c_write_block_data;
++	ts->ops.read = ttsp_i2c_read_block_data;
++	ts->ops.ext = ttsp_i2c_tch_ext;
++	ts->ops.dev = &client->dev;
++
++	ts->ttsp_client = cyttsp_core_init(&ts->ops, &client->dev, client->irq);
++	if (IS_ERR(ts->ttsp_client)) {
++		int retval = PTR_ERR(ts->ttsp_client);
++		kfree(ts);
++		return retval;
++	}
++
++	dev_dbg(ts->ops.dev, "%s: Registration complete\n", __func__);
++
++	return 0;
++}
++
++
++/* registered in driver struct */
++static int __devexit cyttsp_i2c_remove(struct i2c_client *client)
++{
++	struct cyttsp_i2c *ts;
++
++	ts = i2c_get_clientdata(client);
++	cyttsp_core_release(ts->ttsp_client);
++	kfree(ts);
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int cyttsp_i2c_suspend(struct i2c_client *client, pm_message_t message)
++{
++	struct cyttsp_i2c *ts = i2c_get_clientdata(client);
++
++	return cyttsp_suspend(ts->ttsp_client);
++}
++
++static int cyttsp_i2c_resume(struct i2c_client *client)
++{
++	struct cyttsp_i2c *ts = i2c_get_clientdata(client);
++
++	return cyttsp_resume(ts->ttsp_client);
++}
++#endif
++
++static const struct i2c_device_id cyttsp_i2c_id[] = {
++	{ CY_I2C_NAME, 0 },  { }
++};
++
++static struct i2c_driver cyttsp_i2c_driver = {
++	.driver = {
++		.name = CY_I2C_NAME,
++		.owner = THIS_MODULE,
++	},
++	.probe = cyttsp_i2c_probe,
++	.remove = __devexit_p(cyttsp_i2c_remove),
++	.id_table = cyttsp_i2c_id,
++#ifdef CONFIG_PM
++	.suspend = cyttsp_i2c_suspend,
++	.resume = cyttsp_i2c_resume,
++#endif
++};
++
++static int __init cyttsp_i2c_init(void)
++{
++	return i2c_add_driver(&cyttsp_i2c_driver);
++}
++
++static void __exit cyttsp_i2c_exit(void)
++{
++	return i2c_del_driver(&cyttsp_i2c_driver);
++}
++
++module_init(cyttsp_i2c_init);
++module_exit(cyttsp_i2c_exit);
++
++MODULE_ALIAS("i2c:cyttsp");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) I2C driver");
++MODULE_AUTHOR("Cypress");
++MODULE_DEVICE_TABLE(i2c, cyttsp_i2c_id);
 -- 
-1.7.5.4
+1.7.4.1
 
