@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1JOO6a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 10:58:30 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54117 "EHLO mx2.mail.elte.hu"
+	id S1753430Ab1JOPBb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 11:01:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54483 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab1JOO63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 10:58:29 -0400
-Date: Sat, 15 Oct 2011 16:56:47 +0200
+	id S1752278Ab1JOPBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 11:01:30 -0400
+Date: Sat, 15 Oct 2011 16:59:48 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: x86@kernel.org, Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
-Message-ID: <20111015145646.GA9516@elte.hu>
-References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20111012153415.GA26529@elte.hu>
- <20111016014203.1dfb2cb8@lenov0n>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>, arnaldo.melo@gmail.com
+Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
+Message-ID: <20111015145946.GB9516@elte.hu>
+References: <1318616873-26739-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111016014203.1dfb2cb8@lenov0n>
+In-Reply-To: <1318616873-26739-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,41 +35,55 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> On Wed, 12 Oct 2011 17:34:15 +0200,
-> Ingo Molnar <mingo@elte.hu> wrote:
+> Hi Ingo,
 > 
-> > 
-> > * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
-> > 
-> > > From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-> > > 
-> > > 
-> > > Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> > 
-> > That's not a valid signoff sequence. Did you intend this to be:
-> > 
-> >   From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-> >  
-> >   Signed-off-by: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-> >   Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> > 
-> > ?
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
+>         Please consider pulling from:
 > 
-> Yes, this should be signed off by Jonas Fonseca as well. This will 
-> be updated in the next patches set.
+> git://github.com/acmel/linux.git perf/core
+> 
+> 	These are in addition to the ones you reported being problematic
+> with perf top segfaulting sometimes, that problem should be fixed by the
+> first patch below.
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (4):
+>   perf hists browser: Invalidate ui_browser->top after timer calls
+>   perf annotate browser: Exit when pressing ESC or the left arrow
+>   perf ui browser: Add filter method
+>   perf annotate browser: Allow toggling the visualization of source code lines
+> 
+> Thomas Jarosch (1):
+>   perf buildid: Fix possible unterminated readlink() result buffer
+> 
+>  tools/perf/util/header.c               |    2 +-
+>  tools/perf/util/ui/browser.c           |   52 +++++++++++++++++----
+>  tools/perf/util/ui/browser.h           |    1 +
+>  tools/perf/util/ui/browsers/annotate.c |   78 +++++++++++++++++++++++++++++--
+>  tools/perf/util/ui/browsers/hists.c    |   15 +++++-
+>  5 files changed, 131 insertions(+), 17 deletions(-)
 
-I've already applied the current patches with the SOBs fixed (the 
-merge window is getting close), to the tip:x86/platform branch.
+Pulled, thanks a lot Arnaldo!
 
-Please send any fixes as add-on delta patches against tip:master:
+The 'perf top' segfault is indeed fixed for me too.
 
-   git://tesla.tglx.de/git/linux-2.6-tip.git
+Btw., i noticed another weirdness - sometimes after startup i get 
+this message:
+
+/lib64/libc-2.14.90.so was updated, restart the long running apps that use it!                          
+
+but it was not updated recently:
+
+ earth5:~/tip/tools/perf> ll /lib64/libc-2.14.90.so
+ -rwxr-xr-x 1 root root 2062920 Sep 28 15:11 /lib64/libc-2.14.90.so
+ earth5:~/tip/tools/perf> date
+ Sat Oct 15 16:59:04 CEST 2011
+ earth5:~/tip/tools/perf> uptime
+  16:59:08 up 19 days, 21:35, 11 users,  load average: 7.77, 7.48, 3.81
 
 Thanks,
 
