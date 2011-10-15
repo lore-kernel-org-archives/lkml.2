@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab1JOAjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 20:39:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64093 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab1JOAjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 20:39:17 -0400
+	id S1757136Ab1JOAkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 20:40:16 -0400
+Received: from tundra.namei.org ([65.99.196.166]:35714 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755070Ab1JOAkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Oct 2011 20:40:15 -0400
+Date: Sat, 15 Oct 2011 11:40:12 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+cc: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Smack: compilation fix
+In-Reply-To: <4E985DA8.80608@schaufler-ca.com>
+Message-ID: <alpine.LRH.2.00.1110151140050.24994@tundra.namei.org>
+References: <1318587384-2737-1-git-send-email-jarkko.j.sakkinen@gmail.com> <4E985DA8.80608@schaufler-ca.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Sat, 15 Oct 2011 08:39:16 +0800
-Message-ID: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
-Subject: cgroup: denying device doesn't work with 'rw' mode string
-From: Amos Kong <kongjianjun@gmail.com>
-To: serue@us.ibm.com, viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-# mount -t cgroup -o devices none /cgroup
-# mkdir /cgroups/devices
-# ls -l /dev/vg/lv
-lrwxrwxrwx. 1 root root 7 Oct 14 19:03 /dev/vg/lv -> ../dm-3
-# ls -l /dev/dm-3
-brw-rw----. 1 root disk 253, 3 Oct 14 19:03 /dev/dm-3
+On Fri, 14 Oct 2011, Casey Schaufler wrote:
 
+> On 10/14/2011 3:16 AM, Jarkko Sakkinen wrote:
+> > On some build configurations PER_CLEAR_ON_SETID symbol was not
+> > found when compiling smack_lsm.c. This patch fixes the issue by
+> > explicitly doing #include <linux/personality.h>.
+> >
+> > Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+> 
+> Applied to git://gitorious.org/smack-next/kernel.git#master
+> 
+> James, can you pull for security testing please?
 
-------- test1
-# echo a > devices/devices.allow
-# echo 'b 253:3 rwm' > devices/devices.deny
-                ^^^
-# echo $$ > task
-# dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
-couldn't write to /dev/dm-3 successfully
+Pulled.
 
-------- test2
-deny read-write permission of dm-3, but it doesn't effect.
+> 
+> commit 16014d87509e26d6ed6935adbbf437a571fb5870
+> 
+> > ---
+> >  security/smack/smack_lsm.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> > index d55b991..7db62b4 100644
+> > --- a/security/smack/smack_lsm.c
+> > +++ b/security/smack/smack_lsm.c
+> > @@ -35,6 +35,7 @@
+> >  #include <linux/audit.h>
+> >  #include <linux/magic.h>
+> >  #include <linux/dcache.h>
+> > +#include <linux/personality.h>
+> >  #include "smack.h"
+> >  
+> >  #define task_security(task)	(task_cred_xxx((task), security))
+> 
 
-# echo a > devices/devices.allow
-# echo 'b 253:2 rw' > devices.deny
-                ^^
-# echo $$ > task
-# dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
-can write to /dev/dm-3 successfully ???
-
------------
-
-related upstream commit:
-commit 08ce5f16ee466ffc5bf243800deeecd77d9eaf50
-Author: Serge E. Hallyn <serue@us.ibm.com>
-Date:   Tue Apr 29 01:00:10 2008 -0700
-
-    cgroups: implement device whitelist
-
-
-cgroup tracks and enforces open and mknod restrictions on device files,
-so 'm' are always needed in the mode string? 'rw' is uneffective?
+-- 
+James Morris
+<jmorris@namei.org>
