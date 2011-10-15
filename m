@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab1JOLUP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 07:20:15 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:50915 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab1JOLUN (ORCPT
+	id S1752256Ab1JOLZp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 07:25:45 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:38694 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab1JOLZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 07:20:13 -0400
-Date: Sat, 15 Oct 2011 13:20:09 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Matthew Garrett <mjg59@redhat.com>
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-Message-ID: <20111015112006.GA10173@tango.0pointer.de>
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
- <1318349729-3108-4-git-send-email-kirill@shutemov.name>
- <20111014154348.ae6267aa.akpm@linux-foundation.org>
+	Sat, 15 Oct 2011 07:25:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014154348.ae6267aa.akpm@linux-foundation.org>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	<1317295068.1573.1780.camel@vkoul-udesk3>
+	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	<20111003161349.GB28287@flint.arm.linux.org.uk>
+	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	<1317966346.1573.2252.camel@vkoul-udesk3>
+	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+	<CAJe_Zhc1CeFFPKMu0LDpufhQw_Q0SFkxHwXrziQrcP3AXkXANA@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com>
+Date: Sat, 15 Oct 2011 16:55:43 +0530
+Message-ID: <CAJe_ZheocjVhD4PTXQo3R7rqgiyt4BCo8Fx_sJ7AmDCjB=zMxQ@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
+        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14.10.11 15:43, Andrew Morton (akpm@linux-foundation.org) wrote:
+On 15 October 2011 00:45, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
 
-> > cgroup subsys "timer_slack" implements timer slack controller. It
-> > provides a way to set minimal timer slack value for a group of tasks.
-> > If a task belongs to a cgroup with minimal timer slack value higher than
-> > task's value, cgroup's value will be applied.
-> > 
-> > Timer slack controller allows to implement setting timer slack value of
-> > a process based on a policy. For example, you can create foreground and
-> > background cgroups and move tasks between them based on system state.
-> 
-> I'm having trouble understanding the value of this feature.  Users can
-> presently control the timer-slack of a group of processes via
-> inherit-over-fork.
-> 
-> Perhaps there's a case for providing a way for process A to set process
-> B's slack.  And perhaps B's children.  That would be a simpler patch
-> and would have the considerable advantage that it doesn't require
-> cgroups.
-> 
-> So.... why should we merge this?
+>> But doesn't the info, pointed to by this (void *), remain same for
+>> every
+>> transfer to a particular target/remote device ?
+> No. An address within the target may (and most likely will) be changed for
+> every transfer. Target destination ID will be the same for given virtual channel.
+>
+Thanks for the info.
 
-Our usecase is basically this:
+> Virtual channel may bring the same challenge and I may need a channel locking
+> if more than one requester try to read/write data to the same target RIO device.
+>
+One can't avoid taking care of locking, but using virtual channels keeps
+the dma_chan usage consistent.
 
-consider you have one or more desktop user sessions logged in, each one
-in a timer slack cgroup. Now, userspace already tracks when sessions
-become idle (i.e. currently desktop userspace then starts a screensaver,
-or turns off the screen, or similar), and we'd like to increase the timer slack
-for the session cgroups individually as the individual session becomes
-idle, and decrease it again if the session stops being idle.
+RapidIO supports 34(32+2), 50(48+2) and 66(64+2) bit addressing
+which makes me wonder if the (upper or lower) 2 bits could be attached to
+the identity of the target device ?
+(tsi721 driver actually discards the upper 2 bits while claiming to support
+66bit addressing so I couldn't make anything out of it and specs don't
+seem to say much about it)
 
-Matthew Garrett experimented with a logic like this based on existing
-patches, and it showed quite positive effects on power consumption. If
-you need hard data I am sure Matthew can fill you in (added him to CC).
-
-What matters for us here is that the timer slack cgroup controller
-provides us with a very nice way to change the timerslack for the whole
-set of session processes in one go and from the outside. i.e. the idle
-logic in userspace would be trivially easy to implement, since we
-already track per-session idle states and with the timerlsack cgroup
-controller we'd have to touch only a single kernel file to make our
-changes.
-
-Lennart
-
--- 
-Lennart Poettering - Red Hat, Inc.
+If there is no user of 66bit addressing and isn't coming in very near future,
+we might as well drop that case for now(tsi721 already does) because
+that 'completeness' of support modifies the semantics of dmaengine apis
+today for no real use.
