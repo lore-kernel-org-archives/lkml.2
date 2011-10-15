@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab1JOL40 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 07:56:26 -0400
-Received: from mailout.selfhost.de ([82.98.82.25]:37429 "EHLO
-	mailout.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab1JOL4Z (ORCPT
+	id S1752350Ab1JOMB0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 08:01:26 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:32775 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1JOMBZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 07:56:25 -0400
-Message-ID: <4E9974E3.3080309@afaics.de>
-Date: Sat, 15 Oct 2011 13:56:19 +0200
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	Sat, 15 Oct 2011 08:01:25 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: David Rientjes <rientjes@google.com>
+Subject: Re: Reporting Kernel Bugs
+Date: Sat, 15 Oct 2011 14:01:19 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc4; KDE/4.6.5; i686; ; )
+Cc: Jan Steinke <jan.steinke@gmail.com>, linux-kernel@vger.kernel.org
+References: <4E95D7A6.6010603@canonical.com> <loom.20111014T220901-636@post.gmane.org> <alpine.DEB.2.00.1110141321250.24783@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110141321250.24783@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.0.6
-References: <20111003203537.GC22113@kroah.com>
-In-Reply-To: <20111003203537.GC22113@kroah.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110151401.19977.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 10/03/11 22:35, Greg KH wrote:
-> I'm announcing the release of the 3.0.6 kernel.
+On piątek, 14 października 2011 o 22:23:57 David Rientjes wrote:
+> On Fri, 14 Oct 2011, Jan Steinke wrote:
+> > > Just send an e-mail to appropriate mailinglist and CC
+> > > responsible maintainer(s).
+> > > 
+> > > That's what many people prefer to bugzilla anyway.
+> > 
+> > How do I know the responsible maintainer(s)? How do I know if the bug is
+> > confirmed or accepted?
 > 
-> There was a build error in the radeon driver of the 3.0.5 kernel, so this update is only needed if you have problems building that kernel.
-> 
-> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE): git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+> If you can figure out what subsystem is the likely source of the issue,
+> then you can check the MAINTAINERS file for the appropriate people and
+> mailing list.  If there's a panic or oops, find the source file that is to
+> blame and use ./scripts/get_maintainer.pl -f <file>.  Otherwise, just
+> report some unknown, untriaged error directly to
+> linux-kernel@vger.kernel.org and be sure to cc Andrew Morton
+> <akpm@linux-foundation.org> who used to go through the kernel.org bugzilla
+> quite often and send bug reports in the right direction.
 
-This seems to be broken. I get
-
-fatal: http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-3.0.y.git/info/refs
-not found: did you run git update-server-info on the server?
-
+For regression add my address to CC. When bugzilla comes back, then I create 
+bug entry for regression.
 
 Regards
-
-Harri
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6ZdN4ACgkQUTlbRTxpHjedbACbBtAx/8j0INcVHRNthwGXX6FF
-YxcAnjcOx3MeDYBv2cJ91yuVaJ4Y7nCs
-=rfQb
------END PGP SIGNATURE-----
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
