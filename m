@@ -1,216 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab1JOHIk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 03:08:40 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51593 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab1JOHIj (ORCPT
+	id S1751779Ab1JOHup (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 03:50:45 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44432 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab1JOHuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 03:08:39 -0400
-From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 9/9] Staging: comedi: fix warning issue in dt3000.c
-Date: Sat, 15 Oct 2011 12:38:23 +0530
-Message-Id: <1318662503-3375-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 15 Oct 2011 03:50:44 -0400
+MIME-Version: 1.0
+Date: Sat, 15 Oct 2011 10:50:43 +0300
+Message-ID: <CAEbykaXz+J8abVzU3yjqZG2+yhHNrQWsQy2c8wNyoERWPpxWKQ@mail.gmail.com>
+Subject: Kernel panic from tg3 net driver
+From: Ari Savolainen <ari.m.savolainen@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+Hi,
 
-Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
-Converted printks to pr_<level> and dev_printk.
-Removed unnecessary printks.
+I get this panic when I try to print from a virtual machine:
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/dt3000.c |   51 +++++++++++++++----------------
- 1 files changed, 25 insertions(+), 26 deletions(-)
+https://docs.google.com/leaf?id=0B7LPWLwa6EUaODIxYTY2YmQtNWJlZS00M2ViLTk5ZmEtNDM2ZTZmNzE2MDEz&hl=fi
 
-diff --git a/drivers/staging/comedi/drivers/dt3000.c b/drivers/staging/comedi/drivers/dt3000.c
-index 6170f7b..1d2c1a1 100644
---- a/drivers/staging/comedi/drivers/dt3000.c
-+++ b/drivers/staging/comedi/drivers/dt3000.c
-@@ -57,6 +57,9 @@ AO commands are not supported.
-    you the docs without one, also.
- */
- 
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #define DEBUG 1
- 
- #include <linux/interrupt.h>
-@@ -161,7 +164,7 @@ static const struct dt3k_boardtype dt3k_boardtypes[] = {
- 	 },
- };
- 
--#define n_dt3k_boards sizeof(dt3k_boardtypes)/sizeof(struct dt3k_boardtype)
-+#define n_dt3k_boards (sizeof(dt3k_boardtypes)/sizeof(struct dt3k_boardtype))
- #define this_board ((const struct dt3k_boardtype *)dev->board_ptr)
- 
- static DEFINE_PCI_DEVICE_TABLE(dt3k_pci_table) = {
-@@ -352,7 +355,7 @@ static int dt3k_send_cmd(struct comedi_device *dev, unsigned int cmd)
- 	if ((status & DT3000_COMPLETION_MASK) == DT3000_NOERROR)
- 		return 0;
- 
--	printk("dt3k_send_cmd() timeout/error status=0x%04x\n", status);
-+	pr_err("%s: timeout/error status=0x%04x\n", __func__, status);
- 
- 	return -ETIME;
- }
-@@ -383,7 +386,7 @@ static void dt3k_writesingle(struct comedi_device *dev, unsigned int subsys,
- 	dt3k_send_cmd(dev, CMD_WRITESINGLE);
- }
- 
--static int debug_n_ints = 0;
-+static int debug_n_ints;
- 
- /* FIXME! Assumes shared interrupt is for this card. */
- /* What's this debug_n_ints stuff? Obviously needs some work... */
-@@ -420,7 +423,6 @@ static irqreturn_t dt3k_interrupt(int irq, void *d)
- 	return IRQ_HANDLED;
- }
- 
--#ifdef DEBUG
- static char *intr_flags[] = {
- 	"AdFull", "AdSwError", "AdHwError", "DaEmpty",
- 	"DaSwError", "DaHwError", "CtDone", "CmDone",
-@@ -429,14 +431,12 @@ static char *intr_flags[] = {
- static void debug_intr_flags(unsigned int flags)
- {
- 	int i;
--	printk("dt3k: intr_flags:");
-+	pr_debug("intr_flags:\n");
- 	for (i = 0; i < 8; i++) {
- 		if (flags & (1 << i))
--			printk(" %s", intr_flags[i]);
-+			pr_debug("%s\n", intr_flags[i]);
- 	}
--	printk("\n");
- }
--#endif
- 
- static void dt3k_ai_empty_fifo(struct comedi_device *dev,
- 			       struct comedi_subdevice *s)
-@@ -452,7 +452,7 @@ static void dt3k_ai_empty_fifo(struct comedi_device *dev,
- 	if (count < 0)
- 		count += AI_FIFO_DEPTH;
- 
--	printk("reading %d samples\n", count);
-+	pr_debug("reading %d samples\n", count);
- 
- 	rear = devpriv->ai_rear;
- 
-@@ -504,7 +504,9 @@ static int dt3k_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/*
-+	 * step 2: make sure trigger sources are unique and mutually compatible
-+	 */
- 
- 	if (err)
- 		return 2;
-@@ -640,7 +642,7 @@ static int dt3k_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	int ret;
- 	unsigned int mode;
- 
--	printk("dt3k_ai_cmd:\n");
-+	dev_dbg(dev->hw_dev, "dt3k_ai_cmd:\n");
- 	for (i = 0; i < cmd->chanlist_len; i++) {
- 		chan = CR_CHAN(cmd->chanlist[i]);
- 		range = CR_RANGE(cmd->chanlist[i]);
-@@ -651,15 +653,15 @@ static int dt3k_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	aref = CR_AREF(cmd->chanlist[0]);
- 
- 	writew(cmd->scan_end_arg, devpriv->io_addr + DPR_Params(0));
--	printk("param[0]=0x%04x\n", cmd->scan_end_arg);
-+	dev_dbg(dev->hw_dev, "param[0]=0x%04x\n", cmd->scan_end_arg);
- 
- 	if (cmd->convert_src == TRIG_TIMER) {
- 		divider = dt3k_ns_to_timer(50, &cmd->convert_arg,
- 					   cmd->flags & TRIG_ROUND_MASK);
- 		writew((divider >> 16), devpriv->io_addr + DPR_Params(1));
--		printk("param[1]=0x%04x\n", divider >> 16);
-+		dev_dbg(dev->hw_dev, "param[1]=0x%04x\n", divider >> 16);
- 		writew((divider & 0xffff), devpriv->io_addr + DPR_Params(2));
--		printk("param[2]=0x%04x\n", divider & 0xffff);
-+		dev_dbg(dev->hw_dev, "param[2]=0x%04x\n", divider & 0xffff);
- 	} else {
- 		/* not supported */
- 	}
-@@ -668,21 +670,21 @@ static int dt3k_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		tscandiv = dt3k_ns_to_timer(100, &cmd->scan_begin_arg,
- 					    cmd->flags & TRIG_ROUND_MASK);
- 		writew((tscandiv >> 16), devpriv->io_addr + DPR_Params(3));
--		printk("param[3]=0x%04x\n", tscandiv >> 16);
-+		dev_dbg(dev->hw_dev, "param[3]=0x%04x\n", tscandiv >> 16);
- 		writew((tscandiv & 0xffff), devpriv->io_addr + DPR_Params(4));
--		printk("param[4]=0x%04x\n", tscandiv & 0xffff);
-+		dev_dbg(dev->hw_dev, "param[4]=0x%04x\n", tscandiv & 0xffff);
- 	} else {
- 		/* not supported */
- 	}
- 
- 	mode = DT3000_AD_RETRIG_INTERNAL | 0 | 0;
- 	writew(mode, devpriv->io_addr + DPR_Params(5));
--	printk("param[5]=0x%04x\n", mode);
-+	dev_dbg(dev->hw_dev, "param[5]=0x%04x\n", mode);
- 	writew(aref == AREF_DIFF, devpriv->io_addr + DPR_Params(6));
--	printk("param[6]=0x%04x\n", aref == AREF_DIFF);
-+	dev_dbg(dev->hw_dev, "param[6]=0x%04x\n", aref == AREF_DIFF);
- 
- 	writew(AI_FIFO_DEPTH / 2, devpriv->io_addr + DPR_Params(7));
--	printk("param[7]=0x%04x\n", AI_FIFO_DEPTH / 2);
-+	dev_dbg(dev->hw_dev, "param[7]=0x%04x\n", AI_FIFO_DEPTH / 2);
- 
- 	writew(SUBS_AI, devpriv->io_addr + DPR_SubSys);
- 	ret = dt3k_send_cmd(dev, CMD_CONFIG);
-@@ -848,7 +850,6 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int bus, slot;
- 	int ret = 0;
- 
--	printk("dt3000:");
- 	bus = it->options[0];
- 	slot = it->options[1];
- 
-@@ -860,7 +861,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (ret < 0)
- 		return ret;
- 	if (ret == 0) {
--		printk(" no DT board found\n");
-+		pr_err("no DT board found\n");
- 		return -ENODEV;
- 	}
- 
-@@ -868,7 +869,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	if (request_irq(devpriv->pci_dev->irq, dt3k_interrupt, IRQF_SHARED,
- 			"dt3000", dev)) {
--		printk(" unable to allocate IRQ %u\n", devpriv->pci_dev->irq);
-+		pr_err("unable to allocate IRQ %u\n", devpriv->pci_dev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = devpriv->pci_dev->irq;
-@@ -998,10 +999,8 @@ static int setup_pci(struct comedi_device *dev)
- 	devpriv->io_addr = ioremap(devpriv->phys_addr, DT3000_SIZE);
- 	if (!devpriv->io_addr)
- 		return -ENOMEM;
--#if DEBUG
--	printk("0x%08llx mapped to %p, ",
--	       (unsigned long long)devpriv->phys_addr, devpriv->io_addr);
--#endif
-+	pr_debug("0x%08llx mapped to %p,\n",
-+		(unsigned long long)devpriv->phys_addr, devpriv->io_addr);
- 
- 	return 0;
- }
--- 
-1.7.6.4
+I tried to bisect it, but couldn't finish, because after the last step
+the boot process got stuck right after selecting the kernel in grub
+and I ran out of time:
 
+git bisect start
+# bad: [322a8b034003c0d46d39af85bf24fee27b902f48] Linux 3.1-rc1
+git bisect bad 322a8b034003c0d46d39af85bf24fee27b902f48
+# good: [02f8c6aee8df3cdc935e9bdd4f2d020306035dbe] Linux 3.0
+git bisect good 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe
+# bad: [0003230e8200699860f0b10af524dc47bf8aecad] Merge branch
+'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+git bisect bad 0003230e8200699860f0b10af524dc47bf8aecad
+# bad: [72f96e0e38d7e29ba16dcfd824ecaebe38b8293e] Merge branch
+'for-linus-core' of
+git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending
+git bisect bad 72f96e0e38d7e29ba16dcfd824ecaebe38b8293e
+# good: [204d1641d200709c759d8c269458cbc7de378c40] Merge branch
+'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
+into for-davem
+git bisect good 204d1641d200709c759d8c269458cbc7de378c40
+# bad: [415b3334a21aa67806c52d1acf4e72e14f7f402f] icmp: Fix regression
+in nexthop resolution during replies.
+git bisect bad 415b3334a21aa67806c52d1acf4e72e14f7f402f
+# bad: [95a943c162d74b20d869917bdf5df11293c35b63] Merge branch
+'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6
+into for-davem
+git bisect bad 95a943c162d74b20d869917bdf5df11293c35b63
+
+In the first bad kernel (3.1-rc1) there was this in the log:
+
+[  105.612095]
+[  105.612096] ===================================================
+[  105.612100] [ INFO: suspicious rcu_dereference_check() usage. ]
+[  105.612101] ---------------------------------------------------
+[  105.612103] include/net/dst.h:91 invoked rcu_dereference_check()
+without protection!
+[  105.612105]
+[  105.612106] other info that might help us debug this:
+[  105.612106]
+[  105.612108]
+[  105.612108] rcu_scheduler_active = 1, debug_locks = 0
+[  105.612110] 1 lock held by dnsmasq/2618:
+[  105.612111]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff815df8c7>]
+rtnl_lock+0x17/0x20
+[  105.612120]
+[  105.612121] stack backtrace:
+[  105.612123] Pid: 2618, comm: dnsmasq Not tainted 3.1.0-rc1 #41
+[  105.612125] Call Trace:
+[  105.612129]  [<ffffffff810ccdcb>] lockdep_rcu_dereference+0xbb/0xc0
+[  105.612132]  [<ffffffff815dc5a9>] neigh_update+0x4f9/0x5f0
+[  105.612135]  [<ffffffff815da001>] ? neigh_lookup+0xe1/0x220
+[  105.612139]  [<ffffffff81639298>] arp_req_set+0xb8/0x230
+[  105.612142]  [<ffffffff8163a59f>] arp_ioctl+0x1bf/0x310
+[  105.612146]  [<ffffffff810baa40>] ? lock_hrtimer_base.isra.26+0x30/0x60
+[  105.612150]  [<ffffffff8163fb75>] inet_ioctl+0x85/0x90
+[  105.612154]  [<ffffffff815b5520>] sock_do_ioctl+0x30/0x70
+[  105.612157]  [<ffffffff815b55d3>] sock_ioctl+0x73/0x280
+[  105.612162]  [<ffffffff811b7698>] do_vfs_ioctl+0x98/0x570
+[  105.612165]  [<ffffffff811a5c40>] ? fget_light+0x340/0x3a0
+[  105.612168]  [<ffffffff811b7bbf>] sys_ioctl+0x4f/0x80
+[  105.612172]  [<ffffffff816fdcab>] system_call_fastpath+0x16/0x1b
