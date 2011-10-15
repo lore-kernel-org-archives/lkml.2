@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1JOPBb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 11:01:31 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54483 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab1JOPBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 11:01:30 -0400
-Date: Sat, 15 Oct 2011 16:59:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-Message-ID: <20111015145946.GB9516@elte.hu>
-References: <1318616873-26739-1-git-send-email-acme@infradead.org>
+	id S1753470Ab1JOPLM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 11:11:12 -0400
+Received: from lnx500.hrz.tu-darmstadt.de ([130.83.156.225]:49742 "EHLO
+	lnx500.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753184Ab1JOPLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 11:11:11 -0400
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Oct 2011 11:11:10 EDT
+From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318616873-26739-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
+Message-ID: <20121.41239.485545.656633@elektron.ikp.physik.tu-darmstadt.de>
+Date: Sat, 15 Oct 2011 17:04:55 +0200
+To: linux-kernel@vger.kernel.org
+Subject: How to blacklist a usb_storage device from attach to the
+   usb_storage module
+X-Mailer: VM 7.19 under Emacs 21.3.1
+X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.10.15.145117
+X-PMX-RELAY: outgoing
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+The STxxDiscovery Modules are affordable small boards with an ARM Cortex3
+microcontroller, Pins available at break-out headers and another smaller
+Cortex3 with USB connection, providing a so called STLINK. The STLINK(V1) is
+implemented as a mass storage device and the main STLINK functionality is
+implemented as generic scsc commands. The mass storage implementation is
+deeply broken:
+http://code.google.com/p/arm-utilities/wiki/STLinkDownload (Usage)
+Attaching the device causes tons of messages and the device is only
+available minutes after plugging.
+I now have rewritten linux stlink implementation to only use libusb. Now I
+need a way to selective inhibit attaching the device to usb-storage. As a
+first mean I can inhibit loading the usb_storage module, but that affects
+other usb storage devices. In the long run, probably some modification in the
+usb storage kernel code is best, but blacklisting there will need time to
+propagate to the kernel tree and back to the distributions. So a way to
+runtime blacklist is needed too. 
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://github.com/acmel/linux.git perf/core
-> 
-> 	These are in addition to the ones you reported being problematic
-> with perf top segfaulting sometimes, that problem should be fixed by the
-> first patch below.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (4):
->   perf hists browser: Invalidate ui_browser->top after timer calls
->   perf annotate browser: Exit when pressing ESC or the left arrow
->   perf ui browser: Add filter method
->   perf annotate browser: Allow toggling the visualization of source code lines
-> 
-> Thomas Jarosch (1):
->   perf buildid: Fix possible unterminated readlink() result buffer
-> 
->  tools/perf/util/header.c               |    2 +-
->  tools/perf/util/ui/browser.c           |   52 +++++++++++++++++----
->  tools/perf/util/ui/browser.h           |    1 +
->  tools/perf/util/ui/browsers/annotate.c |   78 +++++++++++++++++++++++++++++--
->  tools/perf/util/ui/browsers/hists.c    |   15 +++++-
->  5 files changed, 131 insertions(+), 17 deletions(-)
+Any hints welcome.
+-- 
+Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
 
-Pulled, thanks a lot Arnaldo!
-
-The 'perf top' segfault is indeed fixed for me too.
-
-Btw., i noticed another weirdness - sometimes after startup i get 
-this message:
-
-/lib64/libc-2.14.90.so was updated, restart the long running apps that use it!                          
-
-but it was not updated recently:
-
- earth5:~/tip/tools/perf> ll /lib64/libc-2.14.90.so
- -rwxr-xr-x 1 root root 2062920 Sep 28 15:11 /lib64/libc-2.14.90.so
- earth5:~/tip/tools/perf> date
- Sat Oct 15 16:59:04 CEST 2011
- earth5:~/tip/tools/perf> uptime
-  16:59:08 up 19 days, 21:35, 11 users,  load average: 7.77, 7.48, 3.81
-
-Thanks,
-
-	Ingo
+Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
+--------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
