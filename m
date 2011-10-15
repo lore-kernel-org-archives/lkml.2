@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab1JOQnF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 12:43:05 -0400
-Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:60981 "EHLO
-	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab1JOQnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 12:43:04 -0400
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Maxim Uvarov <maxim.uvarov@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com
-In-Reply-To: <20111015130552.GC18864@andromeda.dapyr.net>
-References: <1318631811-21559-1-git-send-email-maxim.uvarov@oracle.com>
-	 <4E98BEF5.10801@goop.org> <4E98C6CE.4020508@oracle.com>
-	 <4E98C8B1.20304@goop.org> <4E98D739.4000705@oracle.com>
-	 <20111015130552.GC18864@andromeda.dapyr.net>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-jyMsMYRhBxLV/SbWJa8f"
-Date: Sat, 15 Oct 2011 17:42:48 +0100
-Message-ID: <1318696968.11016.47.camel@dagon.hellion.org.uk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 192.168.1.7
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [PATCH] XEN_DOMAIN_MEMORY options.
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+	id S1753681Ab1JOQ7p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 12:59:45 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41082 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925Ab1JOQ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 12:59:44 -0400
+Date: Sat, 15 Oct 2011 18:57:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Andrew Lutomirski <luto@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] fixing the UML failure root cause
+Message-ID: <20111015165757.GA29782@elte.hu>
+References: <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+ <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
+ <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
+ <20111010114840.GC17079@elte.hu>
+ <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
+ <20111011062253.GA3589@elte.hu>
+ <4E947BC9.7040805@mit.edu>
+ <CAFLxGvw3KfPCwGbh+80PLYu9DNELvcyY1uHZRncKuRwtX2uc2g@mail.gmail.com>
+ <CAObL_7E-ZpRZqL3D2OoE81-46JU2-dcOO6ywYLzAJJRuP_7Ssw@mail.gmail.com>
+ <CAFLxGvxgDQDzgWHZxS5m+9m84dsONEdmmmZhpsvVfRUH5CYTFQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFLxGvxgDQDzgWHZxS5m+9m84dsONEdmmmZhpsvVfRUH5CYTFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-jyMsMYRhBxLV/SbWJa8f
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, 2011-10-15 at 09:05 -0400, Konrad Rzeszutek Wilk wrote:
-> > On 10/14/2011 04:41 PM, Jeremy Fitzhardinge wrote:
+* richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
 
-> > >While it would be very silly to put 128GB of actual RAM on a 32-bit
-> > >machine, systems can have non-contiguous RAM placed at high addresses,
-> > >which would no longer be accessible.
->=20
-> Do you have some ideas of which machines that might be?
+> On Fri, Oct 14, 2011 at 10:17 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> > On Fri, Oct 14, 2011 at 12:53 PM, richard -rw- weinberger
+> > <richard.weinberger@gmail.com> wrote:
+> >> On Tue, Oct 11, 2011 at 7:24 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> >>> What do you think of this approach?  If it seems good, I'll finish the
+> >>> patch and submit it.
+> >>>
+> >>> With this patch applied, UML appears to work, but it fills the log with
+> >>> exploit attempt warnings.  Any ideas on what to do about that?
+> >>>
+> >>
+> >> I can confirm that this patch works.
+> >> And I really like vsyscall=emulate because with that UML can trap vsyscalls. :-)
+> >
+> > Are you sure you don't mean vsyscall=native?  I suspect that UML can't
+> > actually trap vsyscalls in emulate mode right now, although that ought
+> > to be fixable.
+> >
+> 
+> §/%)"&!, you are so right!
+> I missed that vsyscall=native is the default setting now.
+> Sorry for the confusion.
 
-Even if you were on such a machine, the discontiguity
-(discontiguousness?) wouldn't ever be reflected in the pseudo-physical
-memory map, would it? So since this variable controls the maximum size
-of the p2m (rather than the m2p) it doesn't need to be larger than the
-maximum sane 32 bit guest size (<64G).
+Switch back to vsyscall=native was just a temporary ABI fix for v3.1 
+- we'd like to switch to vsyscall=emulate again ASAP (possibly in 
+v3.2), once Andrew is done with the patch and everyone is happy with 
+it.
 
-Ian.
---=20
-Ian Campbell
+Thanks,
 
-
-Every improvement in communication makes the bore more terrible.
-		-- Frank Moore Colby
-
---=-jyMsMYRhBxLV/SbWJa8f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCgAGBQJOmbgIAAoJEOxjaZd5B0+onZcP/jYk5JvIVJGoZJ/P+Q775Rp3
-SwPvVWy0SV63/uHn1Z3BJzu3DxnCzCQ7zgQvHCBJOJJ9lHDru2voGI/Zit0wY+Ds
-ZZXAEcjZg8RWx7+UL6uChgkem3IIhXJNUG+gipBHZmr5wPui7gA+kPyy/YXOn+0v
-xAkk8aMuKlX+wSm1rX87p42B5p7YDbefQ3NjVrxp723wFE+HGSjyOZnj3pg20fFR
-Pgu8hYYaMK+bDZZ+IAD4GFzDsz8ASaG6YlcFfo3GjAGehu9RRpRJz04jNaGYl/Rp
-pMltWnrE+hT8oCJvq0x6Oxo1Al9esc6jlEjEzTX78wxzdP8AjI+bqvXnvHeQbZYl
-2pFkVGYi1uIwFImeSucs8eWw+lC4PYS3R0PLAXR74j4jrCvvJRC5ZF/9g5fPiEbr
-6ldyASACb3al2amgmMnTgYMWosn/zCXXt6aj2S0sZ4SA7aVNv8cPbqTKZZJH2ZZ8
-4Xa3WyllvLZNWAJekzeWsyDA/aITeq7th+OntAXi2rugWi5vR3fHH/rLDjS4X1/D
-Ip6Seddyzp3mU3Cs84rCzzWonaVtYjpRXq8U7ZfSMJ7BrUOVME0rmnmGeA3EQ005
-6bndcd3V7zeilDsJt2xVNSPwgit91+c5DkXNWt5lfFDS2AzY+qz6Vnqj7cxk7ItG
-FhQIUpl4/N8JWVxTIQJv
-=4w19
------END PGP SIGNATURE-----
-
---=-jyMsMYRhBxLV/SbWJa8f--
-
+	Ingo
