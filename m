@@ -1,175 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab1JOV0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 17:26:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43233 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab1JOV0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 17:26:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative suspend/hibernate mode
-Date: Sat, 15 Oct 2011 23:29:03 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, NeilBrown <neilb@suse.de>
-References: <201110132145.42270.rjw@sisk.pl> <201110150049.39219.rjw@sisk.pl> <1318637079.3375.262.camel@work-vm>
-In-Reply-To: <1318637079.3375.262.camel@work-vm>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752203Ab1JOV1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 17:27:33 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45824 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751433Ab1JOV1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 17:27:31 -0400
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of staging
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        linux-scsi@vger.kernel.org, hch@infradead.org,
+        Haiyang Zhang <haiyangz@microsoft.com>
+In-Reply-To: <1318660132-21529-1-git-send-email-kys@microsoft.com>
+References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 Oct 2011 16:27:27 -0500
+Message-ID: <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110152329.03774.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 15, 2011, John Stultz wrote:
-> On Sat, 2011-10-15 at 00:49 +0200, Rafael J. Wysocki wrote:
-> > On Friday, October 14, 2011, John Stultz wrote:
-> > > On Thu, 2011-10-13 at 21:50 +0200, Rafael J. Wysocki wrote:
-> > > > equivalent to the SLEEPCTL_STAY_AWAKE ioctl() for all processes
-> > > > that have /dev/sleepctl open at that time and whose timeouts are
-> > > > greater than 0 (i.e. enabled), to allows those processes to
-> > > > complete the handling of wakeup events before the system can be
-> > > > put to a sleep state again.
-> > > 
-> > > So the application psudocode looks like the following?
-> > 
-> > Not really.
-> > 
-> > > Example 1:
-> > > ----------
-> > > sleepfd = open("/dev/sleepctl",...);
-> > > devfd = open("/dev/wakeup-button",...);
-> > > ...
-> > > count = read(devfd, buf, bufsize);
-> > > ioctl(sleepfd, SLEEP_STAY_AWAKE, 0); /* no timeout */
-> > 
-> > No, this doesn't work like this.  You'd need to do:
-> > 
-> > write(sleepfd, zero_buf, sizeof(unsigned int));
-> > ioctl(sleepfd, SLEEP_STAY_AWAKE);
-> 
-> Sorry for misunderstanding. Thanks for the clarification!
-> 
->  
-> > > Now, my opinion: So, again, I'd welcome any solution to the problem, but
-> > > I'm personally not a big fan of the timeout usage found in this
-> > > proposal, as well as the Android wakelocks implementation. Its simply
-> > > racy, and would break down under heavy load or when interacting with
-> > > cpuhogging SCHED_FIFO tasks. Practically, it can be made to work, but I
-> > > worry the extra safety-margins folks will add to the timeouts will
-> > > result in inefficient power wasting.
-> > 
-> > That's the cost of simplicity.
-> 
-> True. Again, just my feelings about the approach, not an objection to
-> it. I'm happy if a workable solution can be merged, but I want to make
-> sure the tradeoffs are discussed/understood.
-> 
-> 
-> > > Now, an actual problem: Further, I'm worried this still doesn't address
-> > > the main race in the alarmtimer triggered system backup case:
-> > > 
-> > > Example 2:
-> > > ----------
-> > > sleepfd = open("/dev/sleepctl",...);
-> > > ...
-> > > /* wait till 5pm */
-> > > clock_nanosleep(CLOCK_REALTIME_ALARM, TIMER_ABSTIME, backup_ts); 
-> > > ioctl(sleepfd, SLEEP_STAY_AWAKE, 0); /* no timeout */
-> > > do_backup();
-> > > ioctl(sleepfd, SLEEP_RELAX);
-> > > 
-> > > 
-> > > Which is basically identical to the above. At 5pm the alarmtimer fires,
-> > > and increments the wakeup_count. 
-> > > 
-> > > At the same time, maybe on a different cpu, the PM daemon reads the
-> > > updated wakeup_count, writes it back and triggers suspend.
-> > 
-> > It doesn't really have to write it back, but that's a minor thing.
-> > 
-> > > All of this happens before my backup application gets scheduled and can
-> > > call the ioctl.
-> > 
-> > So the solution for your backup application is to (1) open "/dev/sleepctl",
-> > (2) set a suitable timeout (using write()), (3) call
-> > ioctl(sleepfd, SLEEP_STAY_AWAKE) and go to sleep, (4) (when woken up)
-> > open "/dev/sleepctl" again, set the timeout on sleepfd2 to 0 and call
-> > ioctl(sleepfd2, SLEEP_STAY_AWAKE), (5) close sleepfd (the first instance),
-> > (6) do whatever it wants and (7) call ioctl(sleepfd2, SLEEP_RELAX).
-> 
-> I think I see how using the two open fds on sleepctl allows having the
-> timeout based stay-awake to be triggered after the resume, as well as
-> the infinite stay-awake which can be taken once the task is woken up.
-> 
-> But I'm still not sure I follow how this avoids the race between the
-> alarm firing and a separate suspend call when the system has been
-> running. That is why I suggested having the kernel take the stay-awake
-> timeout on *any* wakeup event (which I think would resolve this
-> concern). Does that make any sense?
-> 
-> My apologies if I'm still just not understanding it.
+On Fri, 2011-10-14 at 23:28 -0700, K. Y. Srinivasan wrote:
+> In preparation for moving the storage driver out of staging, seek community
+> review of the storage  driver code.
 
-No, you understand it very well, I'm sorry for being a bit dense.  I must
-have been really tired last night. :-)
+That's not exactly a very descriptive commit message for me to put into
+SCSI.  It doesn't have to be huge, just something like "driver to enable
+hyperv windows guest on Linux" or something.
 
-So I think (please correct me if I'm wrong) that you're worried about the
-following situation:
 
-- The process opens /dev/sleepctl and sets the timeout
-- It sets up a wake alarm to trigger at time T.
-- It goes to sleep and sets it wakeup time to time T too, e.g. using select()
-  with a timeout.
-- The system doesn't go to sleep in the meantime.
-- The wake alarm triggers a bit earlier than the process is woken up and
-  system suspend is started in between of the two events.
+>  drivers/scsi/Kconfig             |    7 +
+>  drivers/scsi/Makefile            |    3 +
+>  drivers/scsi/storvsc_drv.c       | 1480 ++++++++++++++++++++++++++++++++++++++
+>  drivers/staging/hv/Kconfig       |    6 -
+>  drivers/staging/hv/Makefile      |    2 -
+>  drivers/staging/hv/storvsc_drv.c | 1480 --------------------------------------
+>  6 files changed, 1490 insertions(+), 1488 deletions(-)
 
-This race particular race is avoidable if the process sets its wakeup time
-to T - \Delta T, where \Delta T is enough for the process to be scheduled
-and run ioctl(sleepfd, SLEEPCTL_STAY_AWAKE).  So the complete sequence may
-look like this:
+What tree is this against?  The hv/storvsc_drv.c in upstream only has
 
-- The process opens /dev/sleepctl as sleepfd1 and sets the timeout to 0.
-- The process opens /dev/sleepctl as sleepfd2 and sets the timeout to T_2.
-  T_2 should be sufficient for the process to be able to call
-  ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) when woken up.
-- It sets up a wake alarm to trigger at time T.
-- It goes to sleep and sets it wakeup time to time T - \Delta T, such that
-  \Delta T is sufficient for the process to call
-  ioctl(sleepfd2, SLEEPCT_STAY_AWAKE).
+jejb@dabdike> wc -l drivers/staging/hv/storvsc_drv.c 
+792 drivers/staging/hv/storvsc_drv.c
 
-Then, if system suspend happens before T - \Delta T, the process will be
-woken up along with the wakealarm event at time T and it will be able to call
-ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) before T_2 expires.  If system suspend
-doesn't happen in that time frame, the process will wake up at T - \Delta T
-and it will be able to call ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) (even if
-system suspend triggers after the process has been woken up and before it's
-able to run the ioctl, it doesn't matter, because the wakealarm wakeup will
-trigger the sleepfd2's STAY_AWAKE anyway).
+i.e. whatever you're sending is double the length (and obviously I have
+trouble applying the patch.
 
-Still, there appear to be similar races that aren't avoidable (for example,
-if the time the wake alarm will trigger is not known to the process in
-advance), so I have an idea how to address them.  Namely, suppose we have
-one more ioctl, SLEEPCTL_WAIT_EVENT, that's equivalent to a combination
-of _RELAX, wait and _STAY_AWAKE such that the process will be sent a signal
-(say SIGPWR) on the first wakeup event and it's _STAY_AWAKE will trigger
-automatically.
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -0,0 +1,1480 @@
 
-So in the scenarion above:
+So not a detailed review, but a couple of structural observations:
 
-- The process opens /dev/sleepctl, sets the timeout to 0 and calls
-  ioctl(sleepfd, SLEEPCTL_STAY_AWAKE).
-- It sets up a wake alarm to trigger at time T.
-- It runs ioctl(sleepctl, SLEEPCTL_WAIT_EVENT) which "relaxes" its sleepfd
-  and makes it go to sleep until the first wakeup event happens.
-- The process' signal handler checks if the current time is >= T and makes
-  the process go to the previous step if not.
+The whole driver is a writeout deadlock trap since I assume you intend
+for it to be used as root/swap of a linux guest?  The writeout deadlock
+occurs when we can't make forward progress on a direct writeout I/O
+because one of the GFP_ATOMIC memory allocations in your driver fails.
+The only way to fix this is to back the allocations with mempools (one
+per actual device) so you can guarantee that whatever memory pressure
+the system is under, one command can always make the round trip to
+storage and back.
 
-Hmm?
+You use the locked version of queuecommand, but it looks like you don't
+need the host lock in the submit path, so why not just use the unlocked
+version?
 
-Rafael
+The bounce buffer handling for discontiguous sg lists is a complete
+nightmare.  And can't you just fix the hypervisor instead of pulling
+this level of nastiness in the driver, I mean really, the last piece of
+real SCSI hardware that failed this badly was produced in the dark ages.
+Assuming the answer is "no", I really think you need to set the minimum
+block size to 4k, which will completely avoid the situation.
+
+Minor, but use accessors like shost_priv()
+
+The SET WINDOW command is an obsolete scanner command ... the comment
+about smart issuing it looks completely bogus, but even if there's
+something issuing scanner commands and your hypervisor crashes on them,
+you need to reject it with ILLEGAL_REQUEST not DID_ERROR.
+
+All the business around max segment size and supplying your own merge
+biovec function looks a bit bogus, don't you just want to disable
+clustering?  This looks like another knock on from the weird hypervisor
+sg list handling, where you apparently need one sg entry per page.  This
+was originally a bug in the circa 1990 era NCR 53c800 host controllers
+we then had, so that's actually why the clustering parameter exists ...
+it's sort of nostalgic to see you resurrecting such an ancient bug.
+
+James
+
+
