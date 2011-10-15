@@ -1,86 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1JOVmV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 17:42:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21529 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab1JOVmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 17:42:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=K7p8Pg5jK57kOyY2ihZRnxEGFS/7Gsb0n29EquxaVdxp+dyeURF3CXvaM+KvTbKNJ
-	4nkBcDn39KaFEXAh1ufqw==
-Date: Sat, 15 Oct 2011 14:42:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Tejun Heo <htejun@gmail.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-In-Reply-To: <20111015201239.GA3475@swordfish>
-Message-ID: <alpine.DEB.2.00.1110151436420.15894@chino.kir.corp.google.com>
-References: <20111015201239.GA3475@swordfish>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1752456Ab1JOVnv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 17:43:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46891 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752239Ab1JOVnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 17:43:50 -0400
+Date: Sun, 16 Oct 2011 08:43:40 +1100
+From: NeilBrown <neilb@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
+ suspend/hibernate interfaces
+Message-ID: <20111016084340.288fd080@notabene.brown>
+In-Reply-To: <Pine.LNX.4.44L0.1110151426420.15129-100000@netrider.rowland.org>
+References: <20111015080718.01aef515@notabene.brown>
+	<Pine.LNX.4.44L0.1110151426420.15129-100000@netrider.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/mQAVfhSNbTO0.Hxa4IOQk+o"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Oct 2011, Sergey Senozhatsky wrote:
+--Sig_/mQAVfhSNbTO0.Hxa4IOQk+o
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> [10172.218213] ------------[ cut here ]------------
-> [10172.218233] WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-> [10172.218242] Hardware name: Aspire 5741G    
-> [10172.218248] Modules linked in: ipv6 usb_storage uas microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom tg3 snd_hda_intel snd_hda_codec snd_pcm snd_timer snd rndis_host cdc_ether usbnet evdev psmouse soundcore pcspkr mii
-> snd_page_alloc libphy ac battery wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
-> [10172.218330] Pid: 22953, comm: kworker/0:2 Not tainted 3.1.0-rc9-dbg-00681-gec325b2 #730
-> [10172.218335] Call Trace:
-> [10172.218346]  [<ffffffff8103e7c8>] warn_slowpath_common+0x7e/0x96
-> [10172.218353]  [<ffffffff8103e7f5>] warn_slowpath_null+0x15/0x17
-> [10172.218361]  [<ffffffff8106fee5>] __lock_acquire+0x168/0x164b
-> [10172.218370]  [<ffffffff81034645>] ? find_busiest_group+0x7b6/0x941
-> [10172.218381]  [<ffffffff8102a5e3>] ? double_rq_lock+0x4d/0x52
-> [10172.218389]  [<ffffffff8107197e>] lock_acquire+0x138/0x1ac
-> [10172.218397]  [<ffffffff8102a5e3>] ? double_rq_lock+0x4d/0x52
-> [10172.218404]  [<ffffffff8102a5c4>] ? double_rq_lock+0x2e/0x52
-> [10172.218414]  [<ffffffff8148fb49>] _raw_spin_lock_nested+0x3a/0x49
-> [10172.218421]  [<ffffffff8102a5e3>] ? double_rq_lock+0x4d/0x52
-> [10172.218428]  [<ffffffff8148fabe>] ? _raw_spin_lock+0x3e/0x45
-> [10172.218435]  [<ffffffff8102a5c4>] ? double_rq_lock+0x2e/0x52
-> [10172.218442]  [<ffffffff8102a5e3>] double_rq_lock+0x4d/0x52
-> [10172.218449]  [<ffffffff810349cc>] load_balance+0x1fc/0x769
-> [10172.218458]  [<ffffffff810075c5>] ? native_sched_clock+0x38/0x65
-> [10172.218466]  [<ffffffff8148ca17>] ? __schedule+0x2f5/0xa2d
-> [10172.218474]  [<ffffffff8148caf5>] __schedule+0x3d3/0xa2d
-> [10172.218480]  [<ffffffff8148ca17>] ? __schedule+0x2f5/0xa2d
-> [10172.218490]  [<ffffffff8104db06>] ? add_timer_on+0xd/0x196
-> [10172.218497]  [<ffffffff8148fc02>] ? _raw_spin_lock_irq+0x4a/0x51
-> [10172.218505]  [<ffffffff8105907b>] ? process_one_work+0x3ed/0x54c
-> [10172.218512]  [<ffffffff81059126>] ? process_one_work+0x498/0x54c
-> [10172.218518]  [<ffffffff81058e1b>] ? process_one_work+0x18d/0x54c
-> [10172.218526]  [<ffffffff814902d0>] ? _raw_spin_unlock_irq+0x28/0x56
-> [10172.218533]  [<ffffffff81033950>] ? get_parent_ip+0xe/0x3e
-> [10172.218540]  [<ffffffff8148d26e>] schedule+0x55/0x57
-> [10172.218547]  [<ffffffff8105970f>] worker_thread+0x217/0x21c
-> [10172.218554]  [<ffffffff810594f8>] ? manage_workers.isra.21+0x16c/0x16c
-> [10172.218564]  [<ffffffff8105d4de>] kthread+0x9a/0xa2
-> [10172.218573]  [<ffffffff81497984>] kernel_thread_helper+0x4/0x10
-> [10172.218580]  [<ffffffff8102d6d2>] ? finish_task_switch+0x76/0xf3
-> [10172.218587]  [<ffffffff81490778>] ? retint_restore_args+0x13/0x13
-> [10172.218595]  [<ffffffff8105d444>] ? __init_kthread_worker+0x53/0x53
-> [10172.218602]  [<ffffffff81497980>] ? gs_change+0x13/0x13
-> [10172.218607] ---[ end trace 9d11d6b5e4b96730 ]---
+On Sat, 15 Oct 2011 14:34:59 -0400 (EDT) Alan Stern
+<stern@rowland.harvard.edu> wrote:
 
-I think this is a problem with lockdep itself, could you try reverting 
-f59de8992aa6 ("lockdep: Clear whole lockdep_map on initialization") if 
-this reliably happens everytime you reboot (lockdep will only emit this 
-once and then will suppress future warnings until the next boot)?
+> On Sat, 15 Oct 2011, NeilBrown wrote:
+>=20
+> > > One of the things Rafael didn't mention is that sometimes a kernel=20
+> > > driver needs to prevent the system from suspending.  This happens whe=
+n=20
+> > > recharging over a USB connection.
+> > >=20
+> > > There's no simple way for such a driver to communicate with a power
+> > > daemon.  The driver has to use something like the wakeup mechanism --=
+=20
+> > > but currently that mechanism is optional.
+> > >=20
+> > > Alan Stern
+> >=20
+> > Certainly I don't expect a kernel driver to communicate directly with a
+> > user-space daemon.  It communicates indirectly through the wakeup_source
+> > mechanism.
+> > If user-space wants to block suspend, it talks to the suspend daemon (p=
+ower
+> > manager) some how (dbus, lock files, sockets, signals, whatever).
+> > If the kernel wants to block suspend, it activates a wakeup_source (aka
+> > caffeine source) which the suspend daemon notices via /sys/power/wakeup=
+_count.
+> >=20
+> > But you say this wakeup mechanism is optional .... I don't see that.
+> >=20
+> > It is implemented in drivers/base/power/wakeup.c which is included in t=
+he
+> > kernel if CONFIG_PM_SLEEP which is defined as
+> >=20
+> > config PM_SLEEP
+> > 	def_bool y
+> > 	depends on SUSPEND || HIBERNATE_CALLBACKS
+> >=20
+> > which seems to mean "enable this unless we don't have suspend and we do=
+n't
+> > have hibernate".
+> >=20
+> > So it seems that the only time we don't have the wakeup mechanism, we a=
+lso
+> > have no risk of ever going to sleep.
+> >=20
+> > What exactly where you saying was "optional"?? I don't understand.
+>=20
+> It's optional in the sense that user programs can bypass it.  They=20
+> aren't forced to read or write /sys/power/wakeup_countm, and if they=20
+> don't then the wakeup mechanism won't prevent the system from=20
+> suspending.
+>=20
+> Alan Stern
 
-I think the new memset() is inadvertently clearing the name for 
-double_unlock_balance().
+Ahh, I understand now, thanks.
+
+I didn't consider that as significant because I see it as a core and necess=
+ary
+design philosophy.
+
+For example, file locks are advisory in Unix/Linux.  In the old days we had
+lock files which could be ignored (or even removed) by any (suitably
+privileged) process.  Today we use flock or lockf which are easier to work
+with but just as easy to ignore.  So they are optional, but it all still
+works.
+I have worked with systems with mandatory locking and they are often very
+annoying.  I think they make it easier to write bad code, and harder to wri=
+te
+good code.
+
+Another example is shutdown.  The right way to do this it tell 'init' to
+clean up and shutdown, and /sbin/halt does that by default.
+But it is optional, "halt -f" or "echo p > /proc/sysrq-trigger" just halt
+immediately, and sometimes I want that option.
+
+So yes: using /sys/power/wakeup_count is optional, but if some code doesn't
+do it - file a bug report like you would if some code doesn't respect
+necessary file locks.
+
+Thanks,
+NeilBrown
+
+--Sig_/mQAVfhSNbTO0.Hxa4IOQk+o
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTpn+jDnsnt1WYoG5AQKiyQ//YVXMDN+XX0FgWEbXogadbajogY1hWVTJ
+ELJiIgcp3V0dR7eT0xZRwSiPUP+f8osD6UCVdohUSBDlf5Yod1pYf8uJsUvw4PZq
+TIzc09yN6QNB1+KGvRisHw6mSyv+UBJwWFNWx3o12mvFyiLl4VJl3GPdZonKjbOX
+2vDBkKA0+OVP3T6X3w35+sEBBnN0GIwXNaf36XQmdDIQGWVMtWvBKKOKHUWVjnIA
+AzKTtO8GejUghmlq7/4Gb47Bn2PVDEeGNZbEgEXrTr7qBrg2Dd8rFIF1OTBtNa1u
+oZ1IHOodlIhJXfvgtB/HzfQTZgvQ3clkYQjICk3xZr1GG8tSZJg7zW2QwGwKzfVN
+SlSGDpA9xkTCGXYYugodFIIWVyMx59M5FULlLAt5trb4bOER4JXOGounRMtsh3ov
+ME3sNliVVv5QSOIWkEiYretR4bdswQkpYngZCOJvxiLh2O2fWi9WGDkUWXSO74TP
+4nuGfbovTTYCSVC8OPN9wuNbTlGK684Wket7SiaQ5y67x6DhirFi5AvxX2YldOkU
+OgrcxR8rJUGO0VGeYbH6eUXg7V5RSXJl/OAgcAQWLGzA0F9oMuVaMZA5GlvXZF3X
+RVFhS436cdGjUP0oMLdmbApmqK1QZRXifYLi4GVMrVznqouS4J/+1VSXx74LU1iF
+D1H6dzdMrPk=
+=Rj8F
+-----END PGP SIGNATURE-----
+
+--Sig_/mQAVfhSNbTO0.Hxa4IOQk+o--
