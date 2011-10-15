@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1JOOZo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 10:25:44 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51987 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab1JOOZm (ORCPT
+	id S1753343Ab1JOO2X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 10:28:23 -0400
+Received: from mailout.selfhost.de ([82.98.82.25]:42819 "EHLO
+	mailout.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab1JOO2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 10:25:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv16 0/9] Contiguous Memory Allocator
-Date: Sat, 15 Oct 2011 16:24:45 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Paul McKenney <paul.mckenney@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <jweiner@redhat.com>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com> <201110111552.04615.arnd@arndb.de> <20111014161951.5b4bb327.akpm@linux-foundation.org>
-In-Reply-To: <20111014161951.5b4bb327.akpm@linux-foundation.org>
+	Sat, 15 Oct 2011 10:28:22 -0400
+Message-ID: <4E999883.3010309@afaics.de>
+Date: Sat, 15 Oct 2011 16:28:19 +0200
+From: Harald Dunkel <harri@afaics.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Greg KH <gregkh@suse.de>
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.0.6
+References: <20111003203537.GC22113@kroah.com> <4E9974E3.3080309@afaics.de>
+In-Reply-To: <4E9974E3.3080309@afaics.de>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110151624.47336.arnd@arndb.de>
-X-Provags-ID: V02:K0:BRlEgVGy2kc8XWoJIs6uDH3aX6CzMcRwn2abk+QCcmM
- rRtfLGS8X98vOYbGxDKfS/Fsb9waueT55DLhvK0Wra+jfF+H0w
- eG4o9LjrlPPSzFpYRffIYkIyRhW4BimmCw20mumGKol/fk98rF
- VEUPFm7mev8gZwiSY7yudl2/rPaI2SLRrc6adrx6XYqcNCGX7a
- YAz+XO69yZ8U6rbpi7724QtPYewCpaiNU2qg+VBr+iNxyTMMKB
- BIdh/KcApaKNACOQIhgEv0n/3wflak5ZMqmy/P1qK1eVkFuuTh
- GHeoO5869vSdOfKonLxID0YJbYcagplALKv2h/FlxLbOosv1Ob
- B3YDA9eGa9nBCMzkrDWA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 15 October 2011, Andrew Morton wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 10/15/11 13:56, Harald Dunkel wrote:
+> On 10/03/11 22:35, Greg KH wrote:
+>> I'm announcing the release of the 3.0.6 kernel.
 > 
-> On Tue, 11 Oct 2011 15:52:04 +0200
-> Arnd Bergmann <arnd@arndb.de> wrote:
-> > What I would really want to hear from you is your opinion on
-> > the architecture independent stuff. Obviously, ARM is the
-> > most important consumer of the patch set, but I think the
-> > code has its merit on other architectures as well and most of
-> > them (maybe not parisc) should be about as simple as the x86
-> > one that Marek posted now with v16.
+>> There was a build error in the radeon driver of the 3.0.5 kernel, so this update is only needed if you have problems building that kernel.
 > 
-> Having an x86 implementation is good.  It would also be good to get
-> some x86 drivers using CMA asap, so the thing gets some runtime testing
-> from the masses.  Can we think of anything we can do here?
+>> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE): git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+> 
+> This seems to be broken. I get
+> 
+> fatal: http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-3.0.y.git/info/refs not found: did you run git update-server-info on the server?
+> 
 
-With the current implementation, all drivers that use dma_alloc_coherent
-automatically use CMA, there is no need to modify any driver. On
-the other hand, nothing on x86 currently actually requires this feature
-(otherwise it would be broken already), making it hard to test the
-actual migration path.
+Sorry folks, I was too blind to see.
 
-The best test I can think of would be a network benchmark under memory
-pressure, preferrably one that use large jumbo frames (64KB).
 
-	Arnd
+Regards
+
+Harri
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk6ZmIIACgkQUTlbRTxpHjcFigCfXBzhwbMzoMj9YV80vnL0El/o
+/TIAmwXBrQtlrtaTMOuAdKvH3IvrFLIN
+=2ECf
+-----END PGP SIGNATURE-----
