@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab1JOTJi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:09:38 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40961 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501Ab1JOTJh (ORCPT
+	id S1754690Ab1JOTUF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:20:05 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50311 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754557Ab1JOTUD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:09:37 -0400
-Message-ID: <4E99DA6C.3030906@gmail.com>
-Date: Sat, 15 Oct 2011 13:09:32 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Sat, 15 Oct 2011 15:20:03 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19hWfZgP9JhEUYqaXKGsbTZAKhpZxZC9Uc8HU93aU
+	Vg4IMz/7u8VUc3
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: 3.1.0-rc9+ : wlan stops working w/o any error messages
+Date: Sat, 15 Oct 2011 21:19:57 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; i686; ; )
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-References: <1318616873-26739-1-git-send-email-acme@infradead.org> <20111015145946.GB9516@elte.hu> <4E99BC44.40400@gmail.com> <20111015170452.GD29782@elte.hu> <4E99C6E6.2040201@gmail.com> <20111015190620.GA21352@ghostprotocols.net>
-In-Reply-To: <20111015190620.GA21352@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110152119.58509.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With a ThinkPad T400 with "Intel Corporation PRO/Wireless 5100 AGN [Shiloh] 
+Network Connection" I experienced few times in the last week that the suddenly 
+the network stops to work - no messages in /var/log/messages nor any other 
+outout. Only  a restart of the network services helped
 
+n22 ~ # uname -a
+Linux n22 3.1.0-rc9+ #1 SMP Fri Oct 14 19:21:56 CEST 2011 i686 Intel(R) 
+Core(TM)2 Duo CPU P8600 @ 2.40GHz GenuineIntel GNU/Linux
 
-On 10/15/2011 01:06 PM, Arnaldo Carvalho de Melo wrote:
->>
->> It should. The message comes from map__load() when it detects a deleted
->> mapping such as:
->>
->> 7f9e8d5c7000-7f9e8d5c8000 rw-p 0000c000 fd:02 1046947
->>  /lib64/libpam.so.0.82.2.#prelink#.cM3f72 (deleted)
->>
->> I have removed prelink from most of my systems (managed to find one lone
->> server with the above).
-> 
-> David,
-> 
-> 	Can you send me a patch that clarifies this situation?
-> 
-> - Arnaldo
+It is an almost stable Gentoo.
 
-Clarifies in what way? The code checks for "(deleted)" on the dso and
-suggests a restart of the process.
+Anybody else made similar experiences ?
 
-David
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
