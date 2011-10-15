@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab1JOVEN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 17:04:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53308 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab1JOVEM convert rfc822-to-8bit (ORCPT
+	id S1751745Ab1JOVKd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 17:10:33 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50047 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751345Ab1JOVKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 17:04:12 -0400
+	Sat, 15 Oct 2011 17:10:31 -0400
+X-Sasl-enc: wCgrkjr6MlUvrlptTlklF8W1sFX0ejyoEqDt+U+Rmljk 1318713029
+Message-ID: <4E99F69F.1080701@ladisch.de>
+Date: Sat, 15 Oct 2011 23:09:51 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <33629.1318706796@turing-police.cc.vt.edu>
-References: <4E99A8F3.50206@nod.at> <30236.1318700758@turing-police.cc.vt.edu>
- <4E99C7B7.5060405@nod.at> <33629.1318706796@turing-police.cc.vt.edu>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Sat, 15 Oct 2011 17:03:51 -0400
-Message-ID: <CAGZ=bqJb5FGJe264TOtfuzm8dyvWO883NFBnzkyA4M6Fe7Nq_g@mail.gmail.com>
-Subject: Re: OCFS2 1.6.0 for mainline?
-To: Valdis.Kletnieks@vt.edu
-Cc: Richard Weinberger <richard@nod.at>, mfasheh@suse.com, jlbec@evilplan.org,
-        ocfs2-devel@oss.oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        license-violation@gpl-violations.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] dma-mapping: fix sync_single_range_* DMA debugging
+References: <4DC960B2.40406@ladisch.de>	<20110510203826.17d1ad91@stein>	<4DCAAEFF.8060907@ladisch.de>	<20110517223618.43633eee@stein>	<4DD36B16.6040802@ladisch.de>	<4E920ABE.8070100@ladisch.de>	<20111015171523.434f47c8@stein> <4E99E92B.6020408@ladisch.de>
+In-Reply-To: <4E99E92B.6020408@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 15, 2011 at 15:26,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Sat, 15 Oct 2011 19:49:43 +0200, Richard Weinberger said:
->> Am 15.10.2011 19:45, schrieb Valdis.Kletnieks@vt.edu:
->> > Put differently, why do you think 1.6.0 is available?
->
->> OCFS2 1.6.3-1 and OCFS2 Tools 1.6.3-1 are the latest versions. The new
->> features available in this release include Extended Attributes, POSIX
->> ACLs, REFLINKs, Indexed Directories, Allocation Reservation, Metadata
->> Checksums and User/Group Quotas."
->
-> Nice feature list, I can see why you want it. ;)
->
->> Looks like it's only available for "Unbreakable Linux" subscribers.
->> The development seems to be detached from mainline. :-(
->
-> Well, you have to admit it *is* an interesting business model - giving release
-> N to your customers and N-1 to the world.  I just got totally mislead by the
-> quote from the Oracle site that said the development happens in mainline. ;)
+Commit 5fd75a7850b5 (dma-mapping: remove unnecessary sync_single_range_*
+in dma_map_ops) unified not only the dma_map_ops but also the
+corresponding debug_dma_sync_* calls.  This led to spurious WARN()ings
+like the following because the DMA debug code was no longer able to
+detect the DMA buffer base address without the separate offset parameter:
 
-If someone who has a copy of Oracle's "Unbreakable Linux" can get
-ahold of the sources, please put them in GIT somewhere for the rest of
-us to access; it *is* GPLed software after all.  Otherwise, please
-distribute the binaries to the rest of us and we will obtain the
-sources on our own.  I can't find any published information on their
-website about how to obtain the sources, so someone will have to
-contact them directly.
+WARNING: at lib/dma-debug.c:911 check_sync+0xce/0x446()
+firewire_ohci 0000:04:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x00000000cedaa400] [size=1024 bytes]
+Call Trace: ...
+ [<ffffffff811326a5>] check_sync+0xce/0x446
+ [<ffffffff81132ad9>] debug_dma_sync_single_for_device+0x39/0x3b
+ [<ffffffffa01d6e6a>] ohci_queue_iso+0x4f3/0x77d [firewire_ohci]
+ ...
 
-In the event that Oracle refuses to provide the sources for OCFS2 to
-someone who has been given a copy of the binary then they are
-violating the GPL.  A relatively large number of kernel developers not
-employed by Oracle have contributed patches to OCFS2, and furthermore
-the kernel module appears to exclusively support Linux, indicating
-that it is a derivative work Oracle has no rights to relicense.
+To fix this, unshare the sync_single_* and sync_single_range_*
+implementations so that we are able to call the correct debug_dma_sync_*
+functions.
 
-Cheers,
-Kyle Moffett
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ include/asm-generic/dma-mapping-common.h |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+index 0c80bb3..9e31514 100644
+--- a/include/asm-generic/dma-mapping-common.h
++++ b/include/asm-generic/dma-mapping-common.h
+@@ -123,7 +123,12 @@ static inline void dma_sync_single_range_for_cpu(struct device *dev,
+ 						 size_t size,
+ 						 enum dma_data_direction dir)
+ {
+-	dma_sync_single_for_cpu(dev, addr + offset, size, dir);
++	struct dma_map_ops *ops = get_dma_ops(dev);
++
++	BUG_ON(!valid_dma_direction(dir));
++	if (ops->sync_single_for_cpu)
++		ops->sync_single_for_cpu(dev, addr + offset, size, dir);
++	debug_dma_sync_single_range_for_cpu(dev, addr, offset, size, dir);
+ }
+
+ static inline void dma_sync_single_range_for_device(struct device *dev,
+@@ -132,7 +137,12 @@ static inline void dma_sync_single_range_for_device(struct device *dev,
+ 						    size_t size,
+ 						    enum dma_data_direction dir)
+ {
+-	dma_sync_single_for_device(dev, addr + offset, size, dir);
++	struct dma_map_ops *ops = get_dma_ops(dev);
++
++	BUG_ON(!valid_dma_direction(dir));
++	if (ops->sync_single_for_device)
++		ops->sync_single_for_device(dev, addr + offset, size, dir);
++	debug_dma_sync_single_range_for_device(dev, addr, offset, size, dir);
+ }
+
+ static inline void
