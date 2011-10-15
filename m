@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab1JOLZp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 07:25:45 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:38694 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133Ab1JOLZo (ORCPT
+	id S1752151Ab1JOLp3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 07:45:29 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59020 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab1JOLp2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 07:25:44 -0400
+	Sat, 15 Oct 2011 07:45:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	<1317295068.1573.1780.camel@vkoul-udesk3>
-	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	<20111003161349.GB28287@flint.arm.linux.org.uk>
-	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
-	<CAJe_Zhc1CeFFPKMu0LDpufhQw_Q0SFkxHwXrziQrcP3AXkXANA@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com>
-Date: Sat, 15 Oct 2011 16:55:43 +0530
-Message-ID: <CAJe_ZheocjVhD4PTXQo3R7rqgiyt4BCo8Fx_sJ7AmDCjB=zMxQ@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
-        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
+In-Reply-To: <20111014224549.GA22810@sig21.net>
+References: <20111014192153.GA18439@sig21.net>
+	<Pine.LNX.4.44L0.1110141613420.2036-100000@iolanthe.rowland.org>
+	<20111014224549.GA22810@sig21.net>
+Date: Sat, 15 Oct 2011 13:45:27 +0200
+Message-ID: <CA+O4pCKbJCtF53jUBvQMX+zgPZ=YxCwGHyP-8JMx=++d5sCiCA@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 October 2011 00:45, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
-
->> But doesn't the info, pointed to by this (void *), remain same for
->> every
->> transfer to a particular target/remote device ?
-> No. An address within the target may (and most likely will) be changed for
-> every transfer. Target destination ID will be the same for given virtual channel.
+On Sat, Oct 15, 2011 at 12:45 AM, Johannes Stezenbach <js@sig21.net> wrote:
+> On Fri, Oct 14, 2011 at 04:19:34PM -0400, Alan Stern wrote:
+>> On Fri, 14 Oct 2011, Johannes Stezenbach wrote:
+>>
+>> > I don't really want to help Markus with his proprietary, binary-only
+>> > userspace driver crap, but I wonder why nobody seems to remember
+>> > how the USB protocol works on the wire?
+>>
+>> I remember it perfectly well.
 >
-Thanks for the info.
-
-> Virtual channel may bring the same challenge and I may need a channel locking
-> if more than one requester try to read/write data to the same target RIO device.
+> My bad, I'm sorry for hitting the wrong tone.
 >
-One can't avoid taking care of locking, but using virtual channels keeps
-the dma_chan usage consistent.
+> What I meant to say is Markus' statement that the device only
+> works at a certain transfer size cannot be true since
+> this size is not visible to the device via the USB bus.
+>
 
-RapidIO supports 34(32+2), 50(48+2) and 66(64+2) bit addressing
-which makes me wonder if the (upper or lower) 2 bits could be attached to
-the identity of the target device ?
-(tsi721 driver actually discards the upper 2 bits while claiming to support
-66bit addressing so I couldn't make anything out of it and specs don't
-seem to say much about it)
+The log files and demonstration video say something different. Plus
+the same happens with MacOSX. And
+Windows is using the same. So that means that something has been
+overlooked so far.
+The "off-by-one error" must be caused by something. In practice it
+doesn't seem to be relevant as all
+other USB stacks can handle this.
 
-If there is no user of 66bit addressing and isn't coming in very near future,
-we might as well drop that case for now(tsi721 already does) because
-that 'completeness' of support modifies the semantics of dmaengine apis
-today for no real use.
+>> > Apparently the device can only handle fixed size packets
+>> > of either 188 or 2*188 byte, thus it breaks with 12288 or 11776.
+>>
+>> No.  The device expects 512-byte packets because it uses a bulk
+>> endpoint.
+>>
+>> > The endpoint's wMaxPacketSize might reflect this.
+>>
+>> For high-speed devices, a bulk endpoint's wMaxPacketSize must always be
+>> 512.
+>
+> OK, after re-reading the USB spec I see you are right
+> and I stand corrected.
+>
+>> > I guess a transfer size of e.g. 188*60=11280 would work.
+>> > See the first mail of this thread.
+>>
+>> According to Markus, with this particular device nothing but 24064
+>> works.  The discussion is a little difficult to follow because he
+>> talked about two different devices without always being clear about
+>> which was which.
+>
+> If you queue two URBs, one 12288 and 11776 bytes, the device
+> does not see any difference to one URB with 24064.  It's just not
+> in the USB wire protocol.  It would make a difference if the
+> device violated the spec and sent 188 byte packets. However, the
+> spec says a short packet terminates the transfer.  But I wonder
+> if this is really the case?
+>
+
+I can send a sample device in around one month to Alan so he can have a look
+at it with the bus analyzer. However I would be happy to see Alan's
+proposal about the
+16 MB limitations included since that one also solves the issue and even USB 3.0
+would benefit from this as it seems.
+
+BR,
+Markus
