@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab1JOTuL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:50:11 -0400
-Received: from lunge.queued.net ([173.255.254.236]:42538 "EHLO
+	id S1754899Ab1JOTuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:50:16 -0400
+Received: from lunge.queued.net ([173.255.254.236]:42545 "EHLO
 	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab1JOTuJ (ORCPT
+	with ESMTP id S1754859Ab1JOTuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:50:09 -0400
-Date: Sat, 15 Oct 2011 12:50:06 -0700
+	Sat, 15 Oct 2011 15:50:13 -0400
+Date: Sat, 15 Oct 2011 12:50:12 -0700
 From: Andres Salomon <dilinger@queued.net>
 To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         Artem Bityutskiy <dedekind1@gmail.com>
-Subject: [PATCH 1/2] jffs2: implement mount option parsing and compression
- overriding
-Message-ID: <20111015125006.685efc30@queued.net>
+Subject: [PATCH 2/2] jffs2: add compr=lzo and compr=zlib options
+Message-ID: <20111015125012.5c9fd572@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,207 +22,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently jffs2 has compile-time constants (and .config options)
-controlling whether or not the various compression/decompression
-drivers are built in and enabled.  This is fine for embedded
-systems, but it clashes with distribution kernels.  Distro kernels
-tend to turn on everything; this causes OpenFirmware to fall
-over, as it understands ZLIB-compressed inodes.  Booting a kernel
-that has LZO compression enabled, writing to the boot partition,
-and then rebooting causes OFW to fail to read the kernel from
-the filesystem.  This is because LZO compression has priority
-when writing new data to jffs2, if LZO is enabled.
-
-This patch adds mount option parsing, and a single supported
-option ("compr=none").  This adds the flexibility of being
-able to specify which compressor overrides on a per-superblock
-basis.  For now, we can simply disable compression;
-additional flexibility coming soon.
+..to allow forcing of either compression scheme.  This will override
+compiled-in defaults.  jffs2_compress is reworked a bit, as the lzo/zlib
+override shares lots of code w/ the PRIORITY mode.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- fs/jffs2/compr.c       |    9 ++++-
- fs/jffs2/fs.c          |    2 +-
- fs/jffs2/jffs2_fs_sb.h |    6 ++++
- fs/jffs2/os-linux.h    |    2 +-
- fs/jffs2/super.c       |   75 ++++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 90 insertions(+), 4 deletions(-)
+ fs/jffs2/compr.c |  119 ++++++++++++++++++++++++++++++++++++++----------------
+ fs/jffs2/compr.h |    2 +
+ fs/jffs2/super.c |   18 +++++++-
+ 3 files changed, 102 insertions(+), 37 deletions(-)
 
 diff --git a/fs/jffs2/compr.c b/fs/jffs2/compr.c
-index de42470..97bc74d 100644
+index 97bc74d..5b6c9d1 100644
 --- a/fs/jffs2/compr.c
 +++ b/fs/jffs2/compr.c
-@@ -76,13 +76,18 @@ uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
- 			uint32_t *datalen, uint32_t *cdatalen)
- {
- 	int ret = JFFS2_COMPR_NONE;
--	int compr_ret;
-+	int mode, compr_ret;
- 	struct jffs2_compressor *this, *best=NULL;
- 	unsigned char *output_buf = NULL, *tmp_buf;
- 	uint32_t orig_slen, orig_dlen;
- 	uint32_t best_slen=0, best_dlen=0;
+@@ -53,6 +53,78 @@ static int jffs2_is_best_compression(struct jffs2_compressor *this,
+ 	return 0;
+ }
  
--	switch (jffs2_compression_mode) {
-+	if (c->mount_opts.override_compr)
-+		mode = c->mount_opts.compr;
-+	else
-+		mode = jffs2_compression_mode;
++/*
++ * jffs2_selected_compress:
++ * @compr: Explicit compression type to use (ie, JFFS2_COMPR_ZLIB).
++ *	If 0, just take the first available compression mode.
++ * @data_in: Pointer to uncompressed data
++ * @cpage_out: Pointer to returned pointer to buffer for compressed data
++ * @datalen: On entry, holds the amount of data available for compression.
++ *	On exit, expected to hold the amount of data actually compressed.
++ * @cdatalen: On entry, holds the amount of space available for compressed
++ *	data. On exit, expected to hold the actual size of the compressed
++ *	data.
++ *
++ * Returns: the compression type used.  Zero is used to show that the data
++ * could not be compressed; probably because we couldn't find the requested
++ * compression mode.
++ */
++static int jffs2_selected_compress(u8 compr, unsigned char *data_in,
++		unsigned char **cpage_out, u32 *datalen, u32 *cdatalen)
++{
++	struct jffs2_compressor *this;
++	int err, ret = JFFS2_COMPR_NONE;
++	uint32_t orig_slen, orig_dlen;
++	char *output_buf;
 +
-+	switch (mode) {
++	output_buf = kmalloc(*cdatalen, GFP_KERNEL);
++	if (!output_buf) {
++		printk(KERN_WARNING "JFFS2: No memory for compressor allocation. Compression failed.\n");
++		return ret;
++	}
++	orig_slen = *datalen;
++	orig_dlen = *cdatalen;
++	spin_lock(&jffs2_compressor_list_lock);
++	list_for_each_entry(this, &jffs2_compressor_list, list) {
++		/* Skip decompress-only and disabled modules */
++		if (!this->compress || this->disabled)
++			continue;
++
++		/* Skip if not the desired compression type */
++		if (compr && (compr != this->compr))
++			continue;
++
++		/*
++		 * Either compression type was unspecified, or we found our
++		 * compressor; either way, we're good to go.
++		 */
++		this->usecount++;
++		spin_unlock(&jffs2_compressor_list_lock);
++
++		*datalen  = orig_slen;
++		*cdatalen = orig_dlen;
++		err = this->compress(data_in, output_buf, datalen, cdatalen);
++
++		spin_lock(&jffs2_compressor_list_lock);
++		this->usecount--;
++		if (!err) {
++			/* Success */
++			ret = this->compr;
++			this->stat_compr_blocks++;
++			this->stat_compr_orig_size += *datalen;
++			this->stat_compr_new_size += *cdatalen;
++			break;
++		}
++	}
++	spin_unlock(&jffs2_compressor_list_lock);
++	if (ret == JFFS2_COMPR_NONE)
++		kfree(output_buf);
++	else
++		*cpage_out = output_buf;
++
++	return ret;
++}
++
+ /* jffs2_compress:
+  * @data_in: Pointer to uncompressed data
+  * @cpage_out: Pointer to returned pointer to buffer for compressed data
+@@ -91,37 +163,8 @@ uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
  	case JFFS2_COMPR_MODE_NONE:
  		break;
  	case JFFS2_COMPR_MODE_PRIORITY:
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index bbcb975..5d54b4e 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -379,7 +379,7 @@ void jffs2_dirty_inode(struct inode *inode, int flags)
- 	jffs2_do_setattr(inode, &iattr);
+-		output_buf = kmalloc(*cdatalen,GFP_KERNEL);
+-		if (!output_buf) {
+-			printk(KERN_WARNING "JFFS2: No memory for compressor allocation. Compression failed.\n");
+-			goto out;
+-		}
+-		orig_slen = *datalen;
+-		orig_dlen = *cdatalen;
+-		spin_lock(&jffs2_compressor_list_lock);
+-		list_for_each_entry(this, &jffs2_compressor_list, list) {
+-			/* Skip decompress-only backwards-compatibility and disabled modules */
+-			if ((!this->compress)||(this->disabled))
+-				continue;
+-
+-			this->usecount++;
+-			spin_unlock(&jffs2_compressor_list_lock);
+-			*datalen  = orig_slen;
+-			*cdatalen = orig_dlen;
+-			compr_ret = this->compress(data_in, output_buf, datalen, cdatalen);
+-			spin_lock(&jffs2_compressor_list_lock);
+-			this->usecount--;
+-			if (!compr_ret) {
+-				ret = this->compr;
+-				this->stat_compr_blocks++;
+-				this->stat_compr_orig_size += *datalen;
+-				this->stat_compr_new_size  += *cdatalen;
+-				break;
+-			}
+-		}
+-		spin_unlock(&jffs2_compressor_list_lock);
+-		if (ret == JFFS2_COMPR_NONE)
+-			kfree(output_buf);
++		ret = jffs2_selected_compress(0, data_in, cpage_out, datalen,
++				cdatalen);
+ 		break;
+ 	case JFFS2_COMPR_MODE_SIZE:
+ 	case JFFS2_COMPR_MODE_FAVOURLZO:
+@@ -179,22 +222,28 @@ uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
+ 			best->stat_compr_orig_size += best_slen;
+ 			best->stat_compr_new_size  += best_dlen;
+ 			ret = best->compr;
++			*cpage_out = output_buf;
+ 		}
+ 		spin_unlock(&jffs2_compressor_list_lock);
+ 		break;
++	case JFFS2_COMPR_MODE_FORCELZO:
++		ret = jffs2_selected_compress(JFFS2_COMPR_LZO, data_in,
++				cpage_out, datalen, cdatalen);
++		break;
++	case JFFS2_COMPR_MODE_FORCEZLIB:
++		ret = jffs2_selected_compress(JFFS2_COMPR_ZLIB, data_in,
++				cpage_out, datalen, cdatalen);
++		break;
+ 	default:
+ 		printk(KERN_ERR "JFFS2: unknown compression mode.\n");
+ 	}
+- out:
++
+ 	if (ret == JFFS2_COMPR_NONE) {
+ 		*cpage_out = data_in;
+ 		*datalen = *cdatalen;
+ 		none_stat_compr_blocks++;
+ 		none_stat_compr_size += *datalen;
+ 	}
+-	else {
+-		*cpage_out = output_buf;
+-	}
+ 	return ret;
  }
  
--int jffs2_remount_fs (struct super_block *sb, int *flags, char *data)
-+int jffs2_do_remount_fs(struct super_block *sb, int *flags, char *data)
- {
- 	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
+diff --git a/fs/jffs2/compr.h b/fs/jffs2/compr.h
+index 13bb759..5e91d57 100644
+--- a/fs/jffs2/compr.h
++++ b/fs/jffs2/compr.h
+@@ -40,6 +40,8 @@
+ #define JFFS2_COMPR_MODE_PRIORITY   1
+ #define JFFS2_COMPR_MODE_SIZE       2
+ #define JFFS2_COMPR_MODE_FAVOURLZO  3
++#define JFFS2_COMPR_MODE_FORCELZO   4
++#define JFFS2_COMPR_MODE_FORCEZLIB  5
  
-diff --git a/fs/jffs2/jffs2_fs_sb.h b/fs/jffs2/jffs2_fs_sb.h
-index 0bc6a6c..55a0c1d 100644
---- a/fs/jffs2/jffs2_fs_sb.h
-+++ b/fs/jffs2/jffs2_fs_sb.h
-@@ -29,6 +29,11 @@
+ #define FAVOUR_LZO_PERCENT 80
  
- struct jffs2_inodirty;
- 
-+struct jffs2_mount_opts {
-+	bool override_compr;
-+	unsigned int compr;
-+};
-+
- /* A struct for the overall file system control.  Pointers to
-    jffs2_sb_info structs are named `c' in the source code.
-    Nee jffs_control
-@@ -126,6 +131,7 @@ struct jffs2_sb_info {
- #endif
- 
- 	struct jffs2_summary *summary;		/* Summary information */
-+	struct jffs2_mount_opts mount_opts;
- 
- #ifdef CONFIG_JFFS2_FS_XATTR
- #define XATTRINDEX_HASHSIZE	(57)
-diff --git a/fs/jffs2/os-linux.h b/fs/jffs2/os-linux.h
-index 6c1755c..ab65ee3 100644
---- a/fs/jffs2/os-linux.h
-+++ b/fs/jffs2/os-linux.h
-@@ -176,7 +176,7 @@ void jffs2_dirty_inode(struct inode *inode, int flags);
- struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode,
- 			       struct jffs2_raw_inode *ri);
- int jffs2_statfs (struct dentry *, struct kstatfs *);
--int jffs2_remount_fs (struct super_block *, int *, char *);
-+int jffs2_do_remount_fs(struct super_block *, int *, char *);
- int jffs2_do_fill_super(struct super_block *sb, void *data, int silent);
- void jffs2_gc_release_inode(struct jffs2_sb_info *c,
- 			    struct jffs2_inode_info *f);
 diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 853b8e3..bf40d3e 100644
+index bf40d3e..26366db 100644
 --- a/fs/jffs2/super.c
 +++ b/fs/jffs2/super.c
-@@ -17,6 +17,7 @@
- #include <linux/fs.h>
- #include <linux/err.h>
- #include <linux/mount.h>
-+#include <linux/parser.h>
- #include <linux/jffs2.h>
- #include <linux/pagemap.h>
- #include <linux/mtd/super.h>
-@@ -133,6 +134,73 @@ static const struct export_operations jffs2_export_ops = {
- 	.fh_to_parent = jffs2_fh_to_parent,
- };
+@@ -171,11 +171,25 @@ static int jffs2_parse_options(struct jffs2_sb_info *c, char *data)
  
-+/*
-+ * JFFS2 mount options.
-+ *
-+ * Opt_override_compr: override default compressor
-+ * Opt_err: just end of array marker
-+ */
-+enum {
-+	Opt_override_compr,
-+	Opt_err,
-+};
-+
-+static const match_table_t tokens = {
-+	{Opt_override_compr, "compr=%s"},
-+	{Opt_err, NULL},
-+};
-+
-+static int jffs2_parse_options(struct jffs2_sb_info *c, char *data)
-+{
-+	substring_t args[MAX_OPT_ARGS];
-+	char *p, *name;
-+
-+	if (!data)
-+		return 0;
-+
-+	while ((p = strsep(&data, ","))) {
-+		int token;
-+
-+		if (!*p)
-+			continue;
-+
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case Opt_override_compr:
-+			name = match_strdup(&args[0]);
-+
-+			if (!name)
-+				return -ENOMEM;
-+			if (!strcmp(name, "none")) {
-+				c->mount_opts.compr = JFFS2_COMPR_MODE_NONE;
-+				c->mount_opts.override_compr = true;
-+			}
-+			kfree(name);
-+			break;
-+		default:
-+			printk(KERN_ERR "JFFS2 Error: unrecognized mount option '%s' or missing value\n",
-+					p);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int jffs2_remount_fs(struct super_block *sb, int *flags, char *data)
-+{
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
-+	int err;
-+
-+	err = jffs2_parse_options(c, data);
-+	if (err) {
-+		printk(KERN_ERR "JFFS2 error: invalid or unknown mount option\n");
-+		return -EINVAL;
-+	}
-+
-+	return jffs2_do_remount_fs(sb, flags, data);
-+}
-+
- static const struct super_operations jffs2_super_operations =
- {
- 	.alloc_inode =	jffs2_alloc_inode,
-@@ -166,6 +234,13 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
- 	c->os_priv = sb;
- 	sb->s_fs_info = c;
- 
-+	ret = jffs2_parse_options(c, data);
-+	if (ret) {
-+		printk(KERN_ERR "JFFS2 error: invalid or unknown mount option\n");
-+		kfree(c);
-+		return -EINVAL;
-+	}
-+
- 	/* Initialize JFFS2 superblock locks, the further initialization will
- 	 * be done later */
- 	mutex_init(&c->alloc_sem);
+ 			if (!name)
+ 				return -ENOMEM;
+-			if (!strcmp(name, "none")) {
++			if (!strcmp(name, "none"))
+ 				c->mount_opts.compr = JFFS2_COMPR_MODE_NONE;
+-				c->mount_opts.override_compr = true;
++#ifdef CONFIG_JFFS2_LZO
++			else if (!strcmp(name, "lzo"))
++				c->mount_opts.compr = JFFS2_COMPR_MODE_FORCELZO;
++#endif
++#ifdef CONFIG_JFFS2_ZLIB
++			else if (!strcmp(name, "zlib"))
++				c->mount_opts.compr =
++						JFFS2_COMPR_MODE_FORCEZLIB;
++#endif
++			else {
++				printk(KERN_ERR "JFFS2 Error: unknown compressor \"%s\"",
++						name);
++				kfree(name);
++				return -EINVAL;
+ 			}
+ 			kfree(name);
++			c->mount_opts.override_compr = true;
+ 			break;
+ 		default:
+ 			printk(KERN_ERR "JFFS2 Error: unrecognized mount option '%s' or missing value\n",
 -- 
 1.7.2.5
 
