@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab1JORGf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 13:06:35 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41973 "EHLO mx2.mail.elte.hu"
+	id S1753811Ab1JORHv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 13:07:51 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:60289 "EHLO smtp.multi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab1JORGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 13:06:34 -0400
-Date: Sat, 15 Oct 2011 19:04:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-Message-ID: <20111015170452.GD29782@elte.hu>
-References: <1318616873-26739-1-git-send-email-acme@infradead.org>
- <20111015145946.GB9516@elte.hu>
- <4E99BC44.40400@gmail.com>
+	id S1753581Ab1JORHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 13:07:50 -0400
+X-Greylist: delayed 973 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Oct 2011 13:07:50 EDT
+Message-ID: <4E99BA1A.3060002@mageia.org>
+Date: Sat, 15 Oct 2011 19:51:38 +0300
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E99BC44.40400@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PROBLEM] ASUS Sandybridge motherboards + PCI not working (IRQ
+ n: nobody cared)
+References: <4E98175A.8040905@pobox.com>
+In-Reply-To: <4E98175A.8040905@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Chris Palmer skrev 14.10.2011 14:04:
+> Interrupt handling for *PCI boards with ASUS Sandybridge motherboards*
+> seems to be broken.
+>
+> It has been seen with network and non-network PCI boards. PCIx network
+> boards work OK. And all reports are for ASUS motherboards.
+>
+> It always results in the infamous "IRQ n: nobody cared" message usually
+> within an hour. It is possible to restart things by rmmod/modprobe on
+> the appropriate PCI driver.
+>
+> Andrew Morton kindly took a quick look and thinks it is most likely an
+> ACPI bug.
+>
+> Configuration summary:
+>   - ASUS P8H67-V/R3 Motherboard (others have problems with similar M/Bs)
+>   - M/B BIOS 0804 (just updated to that - no change)
+>   - Core i5/2500K
+>   - Onboard ethernet (at11c driver - works)
+>   - Additional PCIx Intel ethernet board (e1000e driver - works)
+>   - Additional PCI Broadcom BCM5702X ethernet board (tg3 driver - fails)
+> 	[ Also fails with other PCI boards such as RTL8139 ]
+>   - Kernel 3.0.6
+>
+>
+> Any help much appreciated...
+>
 
-* David Ahern <dsahern@gmail.com> wrote:
+Does it help to boot with: pci=nocrs ?
 
-> On 10/15/2011 08:59 AM, Ingo Molnar wrote:
-> > Btw., i noticed another weirdness - sometimes after startup i get 
-> > this message:
-> > 
-> > /lib64/libc-2.14.90.so was updated, restart the long running apps that use it!                          
-> > 
-> > but it was not updated recently:
-> > 
-> >  earth5:~/tip/tools/perf> ll /lib64/libc-2.14.90.so
-> >  -rwxr-xr-x 1 root root 2062920 Sep 28 15:11 /lib64/libc-2.14.90.so
-> >  earth5:~/tip/tools/perf> date
-> >  Sat Oct 15 16:59:04 CEST 2011
-> >  earth5:~/tip/tools/perf> uptime
-> >   16:59:08 up 19 days, 21:35, 11 users,  load average: 7.77, 7.48, 3.81
-> 
-> I got the impression that comment was relative to when the 
-> processes were started versus prelink touching it. In your case the 
-> mod time of libc is after the uptime of the box.
-
-Ok, that makes sense. Do we report this in perf report output as 
-well?
-
-Thanks,
-
-	Ingo
+--
+Thomas
