@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1JOTCV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:02:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57122 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab1JOTCU (ORCPT
+	id S1754549Ab1JOTEa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:04:30 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:41962 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754462Ab1JOTE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:02:20 -0400
-Date: Sat, 15 Oct 2011 22:02:08 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Vinod Koul <vinod.koul@linux.intel.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Shawn Guo <shawn.guo@freescale.com>, Yong Wang <yong.y.wang@intel.com>,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Boojin Kim <boojin.kim@samsung.com>, Barry Song <Baohua.Song@csr.com>
-Subject: Re: [PATCH 02/10] dmaengine: move drivers to dma_transfer_direction
-Message-ID: <20111015190208.GC3128@mwesterb-mobl.ger.corp.intel.com>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
- <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
+	Sat, 15 Oct 2011 15:04:29 -0400
+Date: Sat, 15 Oct 2011 15:04:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Johannes Stezenbach <js@sig21.net>
+cc: Markus Rechberger <mrechberger@gmail.com>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+In-Reply-To: <20111014224549.GA22810@sig21.net>
+Message-ID: <Pine.LNX.4.44L0.1110151459030.15129-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 11:08:17AM +0530, Vinod Koul wrote:
-> From: Vinod Koul <vinod.koul@linux.intel.com>
-> 
-> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-> Cc: Jassi Brar <jaswinder.singh@linaro.org>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Mika Westerberg <mika.westerberg@iki.fi>
+On Sat, 15 Oct 2011, Johannes Stezenbach wrote:
 
-For the ep93xx_dma part,
+> What I meant to say is Markus' statement that the device only
+> works at a certain transfer size cannot be true since
+> this size is not visible to the device via the USB bus.
 
-Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+That's what I would expect, too.  But did you take a look at the usbmon 
+traces Markus acquired?
+
+	http://marc.info/?l=linux-usb&m=131845614819045&w=2
+
+They aren't completely definitive because the communications between
+the computer and the device _before_ the bulk transfers started were
+different.  However they do clearly show the device working with
+24064-byte transfers and not working with 12288+11776-byte transfers.
+
+> If you queue two URBs, one 12288 and 11776 bytes, the device
+> does not see any difference to one URB with 24064.  It's just not
+> in the USB wire protocol.
+
+You can argue until you're blue in the face.  It won't affect the 
+results that Markus got in real life.
+
+>  It would make a difference if the
+> device violated the spec and sent 188 byte packets. However, the
+> spec says a short packet terminates the transfer.  But I wonder
+> if this is really the case?
+
+The device does not send short packets.  If it did, the 24064-byte 
+transfers would end early.
+
+Alan Stern
+
