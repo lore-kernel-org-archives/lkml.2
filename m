@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1JOTGN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:06:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754593Ab1JOTGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:06:10 -0400
-Date: Sat, 15 Oct 2011 21:01:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/X] uprobes: xol_alloc_area() needs memory barriers
-Message-ID: <20111015190148.GF30243@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com>
+	id S1754778Ab1JOTGd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:06:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41329 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab1JOTGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 15:06:31 -0400
+Date: Sat, 15 Oct 2011 16:06:20 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>
+Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
+Message-ID: <20111015190620.GA21352@ghostprotocols.net>
+References: <1318616873-26739-1-git-send-email-acme@infradead.org>
+ <20111015145946.GB9516@elte.hu>
+ <4E99BC44.40400@gmail.com>
+ <20111015170452.GD29782@elte.hu>
+ <4E99C6E6.2040201@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111015190007.GA30243@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E99C6E6.2040201@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If xol_get_insn_slot() or xol_alloc_area() races with another thread
-doing xol_add_vma() it is not safe to dereference ->uprobes_xol_area.
+Em Sat, Oct 15, 2011 at 11:46:14AM -0600, David Ahern escreveu:
+> 
+> 
+> On 10/15/2011 11:04 AM, Ingo Molnar wrote:
+> > 
+> > * David Ahern <dsahern@gmail.com> wrote:
+> > 
+> >> On 10/15/2011 08:59 AM, Ingo Molnar wrote:
+> >>> Btw., i noticed another weirdness - sometimes after startup i get 
+> >>> this message:
+> >>>
+> >>> /lib64/libc-2.14.90.so was updated, restart the long running apps that use it!                          
+> >>>
+> >>> but it was not updated recently:
+> >>>
+> >>>  earth5:~/tip/tools/perf> ll /lib64/libc-2.14.90.so
+> >>>  -rwxr-xr-x 1 root root 2062920 Sep 28 15:11 /lib64/libc-2.14.90.so
+> >>>  earth5:~/tip/tools/perf> date
+> >>>  Sat Oct 15 16:59:04 CEST 2011
+> >>>  earth5:~/tip/tools/perf> uptime
+> >>>   16:59:08 up 19 days, 21:35, 11 users,  load average: 7.77, 7.48, 3.81
+> >>
+> >> I got the impression that comment was relative to when the 
+> >> processes were started versus prelink touching it. In your case the 
+> >> mod time of libc is after the uptime of the box.
+> > 
+> > Ok, that makes sense. Do we report this in perf report output as 
+> > well?
+> 
+> It should. The message comes from map__load() when it detects a deleted
+> mapping such as:
+> 
+> 7f9e8d5c7000-7f9e8d5c8000 rw-p 0000c000 fd:02 1046947
+>  /lib64/libpam.so.0.82.2.#prelink#.cM3f72 (deleted)
+> 
+> I have removed prelink from most of my systems (managed to find one lone
+> server with the above).
 
-Add the necessary wmb/read_barrier_depends pair, this ensures that
-xol_get_insn_slot() always sees the properly initialized memory.
+David,
 
-Other users of ->uprobes_xol_area look fine, they can't race with
-xol_add_vma() this way. xol_free_insn_slot() checks utask->xol_vaddr,
-and free_uprobes_xol_area() is calles by mmput().
+	Can you send me a patch that clarifies this situation?
 
-Except: valid_vma() is racy but it should not use ->uprobes_xol_area
-as we discussed.
----
- kernel/uprobes.c |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 5c2554c..b59af3b 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -1087,6 +1087,7 @@ static int xol_add_vma(struct uprobes_xol_area *area)
- 	}
- 
- 	area->vaddr = addr;
-+	smp_wmb();	/* pairs with get_uprobes_xol_area() */
- 	mm->uprobes_xol_area = area;
- 	ret = 0;
- fail:
-@@ -1094,6 +1095,14 @@ fail:
- 	return ret;
- }
- 
-+static inline
-+struct uprobes_xol_area *get_uprobes_xol_area(struct mm_struct *mm)
-+{
-+	struct uprobes_xol_area *area = mm->uprobes_xol_area;
-+	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
-+	return area;
-+}
-+
- /*
-  * xol_alloc_area - Allocate process's uprobes_xol_area.
-  * This area will be used for storing instructions for execution out of
-@@ -1124,7 +1133,7 @@ static struct uprobes_xol_area *xol_alloc_area(void)
- fail:
- 	kfree(area->bitmap);
- 	kfree(area);
--	return current->mm->uprobes_xol_area;
-+	return get_uprobes_xol_area(current->mm);
- }
- 
- /*
-@@ -1183,17 +1192,17 @@ static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
- static unsigned long xol_get_insn_slot(struct uprobe *uprobe,
- 					unsigned long slot_addr)
- {
--	struct uprobes_xol_area *area = current->mm->uprobes_xol_area;
-+	struct uprobes_xol_area *area;
- 	unsigned long offset;
- 	void *vaddr;
- 
-+	area = get_uprobes_xol_area(current->mm);
- 	if (!area) {
- 		area = xol_alloc_area();
- 		if (!area)
- 			return 0;
- 	}
- 	current->utask->xol_vaddr = xol_take_insn_slot(area);
--
- 	/*
- 	 * Initialize the slot if xol_vaddr points to valid
- 	 * instruction slot.
--- 
-1.5.5.1
-
-
+- Arnaldo
