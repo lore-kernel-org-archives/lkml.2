@@ -1,84 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab1JOSpj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 14:45:39 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:43235 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754241Ab1JOSpi (ORCPT
+	id S1754422Ab1JOS7S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 14:59:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55758 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754249Ab1JOS7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 14:45:38 -0400
-Date: Sat, 15 Oct 2011 14:45:37 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: NeilBrown <neilb@suse.de>
-cc: markgross@thegnar.org, <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <arve@android.com>,
-        <amit.kucheria@linaro.org>, <farrowg@sg.ibm.com>,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        <linux-pm@lists.linux-foundation.org>, <khilman@ti.com>,
-        Magnus Damm <damm@opensource.se>, <mjg@redhat.com>,
-        <peterz@infradead.org>
-Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
- blocking (aka more wakelock stuff)]
-In-Reply-To: <20111015084732.5fe55467@notabene.brown>
-Message-ID: <Pine.LNX.4.44L0.1110151435080.15129-100000@netrider.rowland.org>
+	Sat, 15 Oct 2011 14:59:17 -0400
+Date: Sat, 15 Oct 2011 22:59:09 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@parallels.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
+Message-ID: <20111015185909.GZ14464@moon>
+References: <20111014110416.552685686@openvz.org>
+ <20111014110511.670174429@openvz.org>
+ <20111014171033.GC4294@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014171033.GC4294@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Oct 2011, NeilBrown wrote:
-
-> On Thu, 13 Oct 2011 11:16:23 -0400 (EDT) Alan Stern
-> <stern@rowland.harvard.edu> wrote:
+On Fri, Oct 14, 2011 at 10:10:33AM -0700, Tejun Heo wrote:
+> Hello,
 > 
-> > On Thu, 13 Oct 2011, NeilBrown wrote:
+
+Hi Tejun, sorry for a bit delayed reply,
+
+> (cc'ing Oleg and Linus, and quoting whole body)
+> 
+> On Fri, Oct 14, 2011 at 03:04:21PM +0400, Cyrill Gorcunov wrote:
+> > This patch add ability to run that named "checkpoint" files by
+> > enhancing Elf file format, which includes
 > > 
-> > > Nope, but I'm keen for you to convince me.  Identify a wakeup event that
-> > > cannot be made visible to poll (or to user-space by some other
-> > > mechanism) before the wakeup_source needs to be deactivated.  Or if I've
-> > > misunderstood what sort of notification is problematic, help me understand.
+> >  - new Elf file type ET_CKPT
 > > 
-> > Here's an example (just for kicks, not completely relevant to your
-> > discussion): A USB keyboard key release.  Unlike key presses, key
-> > releases need not generate input events.  If no processes are
-> > monitoring the raw keyboard event queue then the release is not visible
-> > to userspace at all, hence not visible before the wakeup_source needs
-> > to be deactivated.
+> >  - three additional program header types PT_CKPT_VMA, PT_CKPT_CORE
+> >    and PT_CKPT_PAGES.
 > > 
-> > Alan Stern
+> >      PT_CKPT_VMA -- holds 'vma_entry' structure, which describes the
+> >      memory area the kernel should map. It also might contain a file descriptor
+> >      so the kernel will be mapping a file povided. Usually such file get
+> >      opened by user-space helper tool which prepares 'vma_entry' structure
+> >      for the kernel.
+> > 
+> >      PT_CKPT_CORE -- 'core_entry' structure (registers, tls, tasks specific
+> >      settings). The structure is defined as a 16K container which should be
+> >      enough for most cases. 8K of it is reserved for arch specific settings.
+> > 
+> >      PT_CKPT_PAGES -- a set of all pages which contents we should restored.
+> > 
+> > Apart from Elf extension flush_old_exec() has been splitted to two
+> > functions -- the former flush_old_exec() and flush_exec_keep_thread().
+> > The later doesn't call for de_thread() allowing to keep threads
+> > relationship. Also arch_setup_additional_pages_at() helper added
+> > to setup vdso at predefined address.
+> > 
+> > At moment only pure x86-64 architecture is supported.
 > 
-> As you say, not completely relevant.
+> I don't think this is a good idea.  We already have most of interface
+> necessary for restoring task state and there's no need to put it into
+> the kernel as one piece.  If there's something which can't be done
+> from userland using existing interfaces, let's please discuss what
+> they are and whether they can be resolved differently first.
 > 
-> If a tree falls in a forest with no one to here, does it make a sound?
-> 
-> similarly if an event happens that no-one is looking for, is it visible?
-> It doesn't really matter.
 
-That's a different question, but I'll answer it anyway: Yes, it does
-matter.  If the kernel is unable to _know_ that nobody is looking for
-an event, it has to _assume_ that somebody is.  Then what should happen 
-if it turns out that nobody really is looking for it?
+One of the problem is restoration of memory areas which are initially
+provided by a kernel itself (such as vdso), the mm_struct members
+such as start_code/end_code/brk and friends which are formerly set by
+elf loader. Strictly speaking most of them (except brk) should not affect
+process restored BUT they are exported into /proc which allows user space
+to examinate them and hell knows how programs may react on such values
+changed when they get restored (and I imagine a program which poll this
+settings and exit out once they changed, _yes_ most programs should not
+do that I believe but still... I thought if we implement c/r feature
+the restored process should see himself exactly as it was before, at
+least this is a final goal).
 
-> So at most this is a case of "is not made visible" rather than "cannot be
-> made visible".
+> The exec path is very intricate as it is and it would be very easy to
+> introduce security or other bugs by altering its basic behavior.  exec
+> presumes destruction of (most of) the current process and all its
+> other threads and replacing them w/ fresh states from an executable.
+> The scary part - interaction with process hierarchy and zapping of the
+> current state - is handled from the core exec code.
+>
+> I see that you removed zapping to allow restoring multi-threaded
+> process, which seems quite scary to me.  It might be okay, I don't
+> know, but IMHO it just isn't a very good idea to introduce such
+> variation to basic exec behavior for this rather narrow use case.
+>
+> In addition, leaving it alone doesn't really solve multi-threaded
+> restoring, does it?  Who sets the task states for other threads?  The
 
-In this case it's the same thing.  How can a key release be made 
-visible?
+The user-space tool. Eventually we are dreaming about restart with cgroups.
+And the former process hierarchy is supposed to be recreated by user-space
+tool as well.
 
-> The key-release just needs to clear the "key is pressed" state so that
-> auto-repeat stops and if it was a modifier, the modification is discarded.
-> That is all trivially done in some kernel driver while the wakeup_source is
-> active.
+Note I know that not all states are handled and most probably here some
+bugs hidden in current patch as well, but it was the main reason to show
+it up early, just to gather people opinions.
 
-In other words, if the event is discarded from within the kernel then 
-the wakeup_source can be deactivated at that time.  That's fine -- but 
-it indicates that your original request above was phrased wrongly.  You 
-should have asked for an example of a wakeup_source which the kernel 
-must not deactivate without a userspace handshake, but which cannot be 
-made visible by poll or some other similar mechanism.
+> current code doesn't seem to be doing anything but if you're gonna add
+> it later, how are you gonna synchronize other threads?  If not, what's
+> the point of pushing this chunk in when userland task state
+> restoration is necessary anyway?
+>
+> So, at the moment, I'm rather strongly against this approach.
+>
 
-Alan Stern
+On Fri, Oct 14, 2011 at 10:10:33AM -0700, Tejun Heo wrote:
+>> I see that you removed zapping to allow restoring multi-threaded
+>> process, which seems quite scary to me.  It might be okay, I don't
+>> know, but IMHO it just isn't a very good idea to introduce such
+>> variation to basic exec behavior for this rather narrow use case.
+>
+>* It's still calling exec_mmap(), so the exec'ing thread will be on
+>  the new mm while other threads would still be on the old one.
 
+Hmm, seems I missed this in first place, thanks (note even having
+new mm here the user-space tool will handle shared-memory allocations).
+
+>* There are operations which assume that the calling task is
+>  de-threaded and thus has exclusive access to data structures which
+>  can be shared among the thread group (e.g. signal struct).  How are
+>  accesses to them synchronized?
+
+Seems it;s being not yet implemented, thanks.
+
+>* What about properties which should be reset and then shared by
+>  threads by inheriting (credentials, comm, self_exec_id and so on)?
+>  e.g. new thread follows exec-time imposed rules but old ones keep
+>  their original credentials.
+>
+>So, no, it really doesn't look good.
+
+Anyway, thanks a HUGE for review, Tejun! I really appreciate!!
+
+	Cyrill
