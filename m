@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab1JOTGd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:06:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41329 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab1JOTGb (ORCPT
+	id S1754654Ab1JOTHc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:07:32 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:35653 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754530Ab1JOTHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:06:31 -0400
-Date: Sat, 15 Oct 2011 16:06:20 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-Message-ID: <20111015190620.GA21352@ghostprotocols.net>
-References: <1318616873-26739-1-git-send-email-acme@infradead.org>
- <20111015145946.GB9516@elte.hu>
- <4E99BC44.40400@gmail.com>
- <20111015170452.GD29782@elte.hu>
- <4E99C6E6.2040201@gmail.com>
+	Sat, 15 Oct 2011 15:07:31 -0400
+Date: Sat, 15 Oct 2011 15:07:30 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Benson Leung <bleung@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        <linux-usb@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: usbhid: enable remote wakeup for mice
+In-Reply-To: <201110151143.27061.oliver@neukum.org>
+Message-ID: <Pine.LNX.4.44L0.1110151504510.15129-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E99C6E6.2040201@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Oct 15, 2011 at 11:46:14AM -0600, David Ahern escreveu:
-> 
-> 
-> On 10/15/2011 11:04 AM, Ingo Molnar wrote:
-> > 
-> > * David Ahern <dsahern@gmail.com> wrote:
-> > 
-> >> On 10/15/2011 08:59 AM, Ingo Molnar wrote:
-> >>> Btw., i noticed another weirdness - sometimes after startup i get 
-> >>> this message:
-> >>>
-> >>> /lib64/libc-2.14.90.so was updated, restart the long running apps that use it!                          
-> >>>
-> >>> but it was not updated recently:
-> >>>
-> >>>  earth5:~/tip/tools/perf> ll /lib64/libc-2.14.90.so
-> >>>  -rwxr-xr-x 1 root root 2062920 Sep 28 15:11 /lib64/libc-2.14.90.so
-> >>>  earth5:~/tip/tools/perf> date
-> >>>  Sat Oct 15 16:59:04 CEST 2011
-> >>>  earth5:~/tip/tools/perf> uptime
-> >>>   16:59:08 up 19 days, 21:35, 11 users,  load average: 7.77, 7.48, 3.81
-> >>
-> >> I got the impression that comment was relative to when the 
-> >> processes were started versus prelink touching it. In your case the 
-> >> mod time of libc is after the uptime of the box.
-> > 
-> > Ok, that makes sense. Do we report this in perf report output as 
-> > well?
-> 
-> It should. The message comes from map__load() when it detects a deleted
-> mapping such as:
-> 
-> 7f9e8d5c7000-7f9e8d5c8000 rw-p 0000c000 fd:02 1046947
->  /lib64/libpam.so.0.82.2.#prelink#.cM3f72 (deleted)
-> 
-> I have removed prelink from most of my systems (managed to find one lone
-> server with the above).
+On Sat, 15 Oct 2011, Oliver Neukum wrote:
 
-David,
+> Am Freitag, 14. Oktober 2011, 17:09:32 schrieb Alan Stern:
+> > > Anyway, I'll solve this problem on my system by writing to wakeup
+> > > property on device attach. Consider my change abandoned.
+> > 
+> > That seems like the best approach.
+> 
+> Do you think this could be added to the USB configuration tool I wrote
+> last week?
 
-	Can you send me a patch that clarifies this situation?
+I don't see why not.  It's exactly the sort of thing that should be 
+handled on a per-user basis.
 
-- Arnaldo
+> In the longer run, we might consider that this properties may also need
+> to be changed based on AC vs. DC or the battery's charge level.
+
+Is that really true?  I'm not sure -- in general people want their 
+computers to be consistent.  In particular, they want to conserve power 
+regardless of the power source.
+
+However, you could add such a mechanism to the program in case some 
+people do want to use it.
+
+Alan Stern
+
