@@ -1,80 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1JOT1E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:27:04 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54038 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1JOT1C (ORCPT
+	id S1754848Ab1JOTuL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:50:11 -0400
+Received: from lunge.queued.net ([173.255.254.236]:42538 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab1JOTuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:27:02 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Richard Weinberger <richard@nod.at>
-Cc: mfasheh@suse.com, jlbec@evilplan.org, ocfs2-devel@oss.oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: OCFS2 1.6.0 for mainline?
-In-Reply-To: Your message of "Sat, 15 Oct 2011 19:49:43 +0200."
-             <4E99C7B7.5060405@nod.at>
-From: Valdis.Kletnieks@vt.edu
-References: <4E99A8F3.50206@nod.at> <30236.1318700758@turing-police.cc.vt.edu>
-            <4E99C7B7.5060405@nod.at>
+	Sat, 15 Oct 2011 15:50:09 -0400
+Date: Sat, 15 Oct 2011 12:50:06 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: [PATCH 1/2] jffs2: implement mount option parsing and compression
+ overriding
+Message-ID: <20111015125006.685efc30@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1318706796_3703P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Sat, 15 Oct 2011 15:26:36 -0400
-Message-ID: <33629.1318706796@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4E99DE78.00D8,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1318706796_3703P
-Content-Type: text/plain; charset=us-ascii
+Currently jffs2 has compile-time constants (and .config options)
+controlling whether or not the various compression/decompression
+drivers are built in and enabled.  This is fine for embedded
+systems, but it clashes with distribution kernels.  Distro kernels
+tend to turn on everything; this causes OpenFirmware to fall
+over, as it understands ZLIB-compressed inodes.  Booting a kernel
+that has LZO compression enabled, writing to the boot partition,
+and then rebooting causes OFW to fail to read the kernel from
+the filesystem.  This is because LZO compression has priority
+when writing new data to jffs2, if LZO is enabled.
 
-On Sat, 15 Oct 2011 19:49:43 +0200, Richard Weinberger said:
+This patch adds mount option parsing, and a single supported
+option ("compr=none").  This adds the flexibility of being
+able to specify which compressor overrides on a per-superblock
+basis.  For now, we can simply disable compression;
+additional flexibility coming soon.
 
-> Am 15.10.2011 19:45, schrieb Valdis.Kletnieks@vt.edu:
-> > On Sat, 15 Oct 2011 17:38:27 +0200, Richard Weinberger said:
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ fs/jffs2/compr.c       |    9 ++++-
+ fs/jffs2/fs.c          |    2 +-
+ fs/jffs2/jffs2_fs_sb.h |    6 ++++
+ fs/jffs2/os-linux.h    |    2 +-
+ fs/jffs2/super.c       |   75 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 90 insertions(+), 4 deletions(-)
 
-> >> http://oss.oracle.com/projects/ocfs2/source.html states:
-> >> "Active development on OCFS2 happens in the mainline kernel."
-
-> > Put differently, why do you think 1.6.0 is available?
-
-> OCFS2 1.6.3-1 and OCFS2 Tools 1.6.3-1 are the latest versions. The new
-> features available in this release include Extended Attributes, POSIX
-> ACLs, REFLINKs, Indexed Directories, Allocation Reservation, Metadata
-> Checksums and User/Group Quotas."
-
-Nice feature list, I can see why you want it. ;)
-
-> Looks like it's only available for "Unbreakable Linux" subscribers.
-> The development seems to be detached from mainline. :-(
-
-Well, you have to admit it *is* an interesting business model - giving release
-N to your customers and N-1 to the world.  I just got totally mislead by the
-quote from the Oracle site that said the development happens in mainline. ;)
-
-
---==_Exmh_1318706796_3703P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOmd5scC3lWbTT17ARAotDAJ4zYSKlDJymiOK847B8CobInEmdPQCgtoY9
-ZOeTnDMxOgC+yXsp6PSQokM=
-=n8+M
------END PGP SIGNATURE-----
-
---==_Exmh_1318706796_3703P--
+diff --git a/fs/jffs2/compr.c b/fs/jffs2/compr.c
+index de42470..97bc74d 100644
+--- a/fs/jffs2/compr.c
++++ b/fs/jffs2/compr.c
+@@ -76,13 +76,18 @@ uint16_t jffs2_compress(struct jffs2_sb_info *c, struct jffs2_inode_info *f,
+ 			uint32_t *datalen, uint32_t *cdatalen)
+ {
+ 	int ret = JFFS2_COMPR_NONE;
+-	int compr_ret;
++	int mode, compr_ret;
+ 	struct jffs2_compressor *this, *best=NULL;
+ 	unsigned char *output_buf = NULL, *tmp_buf;
+ 	uint32_t orig_slen, orig_dlen;
+ 	uint32_t best_slen=0, best_dlen=0;
+ 
+-	switch (jffs2_compression_mode) {
++	if (c->mount_opts.override_compr)
++		mode = c->mount_opts.compr;
++	else
++		mode = jffs2_compression_mode;
++
++	switch (mode) {
+ 	case JFFS2_COMPR_MODE_NONE:
+ 		break;
+ 	case JFFS2_COMPR_MODE_PRIORITY:
+diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
+index bbcb975..5d54b4e 100644
+--- a/fs/jffs2/fs.c
++++ b/fs/jffs2/fs.c
+@@ -379,7 +379,7 @@ void jffs2_dirty_inode(struct inode *inode, int flags)
+ 	jffs2_do_setattr(inode, &iattr);
+ }
+ 
+-int jffs2_remount_fs (struct super_block *sb, int *flags, char *data)
++int jffs2_do_remount_fs(struct super_block *sb, int *flags, char *data)
+ {
+ 	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
+ 
+diff --git a/fs/jffs2/jffs2_fs_sb.h b/fs/jffs2/jffs2_fs_sb.h
+index 0bc6a6c..55a0c1d 100644
+--- a/fs/jffs2/jffs2_fs_sb.h
++++ b/fs/jffs2/jffs2_fs_sb.h
+@@ -29,6 +29,11 @@
+ 
+ struct jffs2_inodirty;
+ 
++struct jffs2_mount_opts {
++	bool override_compr;
++	unsigned int compr;
++};
++
+ /* A struct for the overall file system control.  Pointers to
+    jffs2_sb_info structs are named `c' in the source code.
+    Nee jffs_control
+@@ -126,6 +131,7 @@ struct jffs2_sb_info {
+ #endif
+ 
+ 	struct jffs2_summary *summary;		/* Summary information */
++	struct jffs2_mount_opts mount_opts;
+ 
+ #ifdef CONFIG_JFFS2_FS_XATTR
+ #define XATTRINDEX_HASHSIZE	(57)
+diff --git a/fs/jffs2/os-linux.h b/fs/jffs2/os-linux.h
+index 6c1755c..ab65ee3 100644
+--- a/fs/jffs2/os-linux.h
++++ b/fs/jffs2/os-linux.h
+@@ -176,7 +176,7 @@ void jffs2_dirty_inode(struct inode *inode, int flags);
+ struct inode *jffs2_new_inode (struct inode *dir_i, umode_t mode,
+ 			       struct jffs2_raw_inode *ri);
+ int jffs2_statfs (struct dentry *, struct kstatfs *);
+-int jffs2_remount_fs (struct super_block *, int *, char *);
++int jffs2_do_remount_fs(struct super_block *, int *, char *);
+ int jffs2_do_fill_super(struct super_block *sb, void *data, int silent);
+ void jffs2_gc_release_inode(struct jffs2_sb_info *c,
+ 			    struct jffs2_inode_info *f);
+diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+index 853b8e3..bf40d3e 100644
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -17,6 +17,7 @@
+ #include <linux/fs.h>
+ #include <linux/err.h>
+ #include <linux/mount.h>
++#include <linux/parser.h>
+ #include <linux/jffs2.h>
+ #include <linux/pagemap.h>
+ #include <linux/mtd/super.h>
+@@ -133,6 +134,73 @@ static const struct export_operations jffs2_export_ops = {
+ 	.fh_to_parent = jffs2_fh_to_parent,
+ };
+ 
++/*
++ * JFFS2 mount options.
++ *
++ * Opt_override_compr: override default compressor
++ * Opt_err: just end of array marker
++ */
++enum {
++	Opt_override_compr,
++	Opt_err,
++};
++
++static const match_table_t tokens = {
++	{Opt_override_compr, "compr=%s"},
++	{Opt_err, NULL},
++};
++
++static int jffs2_parse_options(struct jffs2_sb_info *c, char *data)
++{
++	substring_t args[MAX_OPT_ARGS];
++	char *p, *name;
++
++	if (!data)
++		return 0;
++
++	while ((p = strsep(&data, ","))) {
++		int token;
++
++		if (!*p)
++			continue;
++
++		token = match_token(p, tokens, args);
++		switch (token) {
++		case Opt_override_compr:
++			name = match_strdup(&args[0]);
++
++			if (!name)
++				return -ENOMEM;
++			if (!strcmp(name, "none")) {
++				c->mount_opts.compr = JFFS2_COMPR_MODE_NONE;
++				c->mount_opts.override_compr = true;
++			}
++			kfree(name);
++			break;
++		default:
++			printk(KERN_ERR "JFFS2 Error: unrecognized mount option '%s' or missing value\n",
++					p);
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
++static int jffs2_remount_fs(struct super_block *sb, int *flags, char *data)
++{
++	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
++	int err;
++
++	err = jffs2_parse_options(c, data);
++	if (err) {
++		printk(KERN_ERR "JFFS2 error: invalid or unknown mount option\n");
++		return -EINVAL;
++	}
++
++	return jffs2_do_remount_fs(sb, flags, data);
++}
++
+ static const struct super_operations jffs2_super_operations =
+ {
+ 	.alloc_inode =	jffs2_alloc_inode,
+@@ -166,6 +234,13 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
+ 	c->os_priv = sb;
+ 	sb->s_fs_info = c;
+ 
++	ret = jffs2_parse_options(c, data);
++	if (ret) {
++		printk(KERN_ERR "JFFS2 error: invalid or unknown mount option\n");
++		kfree(c);
++		return -EINVAL;
++	}
++
+ 	/* Initialize JFFS2 superblock locks, the further initialization will
+ 	 * be done later */
+ 	mutex_init(&c->alloc_sem);
+-- 
+1.7.2.5
 
