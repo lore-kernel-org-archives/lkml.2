@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1JOOuq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 10:50:46 -0400
-Received: from loki.mindstab.net ([69.164.214.81]:56530 "EHLO loki.localdomain"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753076Ab1JOOup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 10:50:45 -0400
-From: Dan Ballard <dan@mindstab.net>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>, Dan Ballard <dan@mindstab.net>
-Cc: linux-kernel@vger.kernel.org, Dan Ballard <dan@mindstab.net>
-Subject: [PATCH 1/1] kernel/sysctl.c: Add cap_last_cap to /proc/sys/kernel
-Date: Sat, 15 Oct 2011 07:50:05 -0700
-Message-Id: <1318690205-2731-1-git-send-email-dan@mindstab.net>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1318460194-31983-1-git-send-email-dan@mindstab.net>
-References: <1318460194-31983-1-git-send-email-dan@mindstab.net>
+	id S1753411Ab1JOO6a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 10:58:30 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54117 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752278Ab1JOO63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 10:58:29 -0400
+Date: Sat, 15 Oct 2011 16:56:47 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: x86@kernel.org, Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
+Message-ID: <20111015145646.GA9516@elte.hu>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <20111012153415.GA26529@elte.hu>
+ <20111016014203.1dfb2cb8@lenov0n>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111016014203.1dfb2cb8@lenov0n>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace needs to know the highest valid capability of the running
-kernel, which right now cannot reliably be retrieved from the header
-files only.  The fact that this value cannot be determined properly
-right now creates various problems for libraries compiled on newer
-header files which are run on older kernels. They assume
-capabilities are available which actually aren't.
 
-Now the capability is exported in /proc/sys/kernel/cap_last_cap.
+* Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
 
-Signed-off-by: Dan Ballard <dan@mindstab.net>
----
- Documentation/sysctl/kernel.txt |    8 ++++++++
- kernel/sysctl.c                 |    9 +++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+> On Wed, 12 Oct 2011 17:34:15 +0200,
+> Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > 
+> > * Vivien Didelot <vivien.didelot@savoirfairelinux.com> wrote:
+> > 
+> > > From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> > > 
+> > > 
+> > > Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> > 
+> > That's not a valid signoff sequence. Did you intend this to be:
+> > 
+> >   From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> >  
+> >   Signed-off-by: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
+> >   Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> > 
+> > ?
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> 
+> Yes, this should be signed off by Jonas Fonseca as well. This will 
+> be updated in the next patches set.
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 704e474..1f24636 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -24,6 +24,7 @@ show up in /proc/sys/kernel:
- - bootloader_type	     [ X86 only ]
- - bootloader_version	     [ X86 only ]
- - callhome		     [ S390 only ]
-+- cap_last_cap
- - core_pattern
- - core_pipe_limit
- - core_uses_pid
-@@ -155,6 +156,13 @@ on has a service contract with IBM.
- 
- ==============================================================
- 
-+cap_last_cap
-+
-+Highest valid capability of the running kernel.  Exports
-+CAP_LAST_CAP from the kernel.
-+
-+==============================================================
-+
- core_pattern:
- 
- core_pattern is used to specify a core dumpfile pattern name.
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 11d65b5..06455c0 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -57,6 +57,7 @@
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/kmod.h>
-+#include <linux/capability.h>
- 
- #include <asm/uaccess.h>
- #include <asm/processor.h>
-@@ -134,6 +135,7 @@ static int minolduid;
- static int min_percpu_pagelist_fract = 8;
- 
- static int ngroups_max = NGROUPS_MAX;
-+static int cap_last_cap = CAP_LAST_CAP;
- 
- #ifdef CONFIG_INOTIFY_USER
- #include <linux/inotify.h>
-@@ -730,6 +732,13 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0444,
- 		.proc_handler	= proc_dointvec,
- 	},
-+	{
-+		.procname	= "cap_last_cap",
-+		.data		= &cap_last_cap,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0444,
-+		.proc_handler	= proc_dointvec,
-+	},
- #if defined(CONFIG_LOCKUP_DETECTOR)
- 	{
- 		.procname       = "watchdog",
--- 
-1.7.2.5
+I've already applied the current patches with the SOBs fixed (the 
+merge window is getting close), to the tip:x86/platform branch.
 
+Please send any fixes as add-on delta patches against tip:master:
+
+   git://tesla.tglx.de/git/linux-2.6-tip.git
+
+Thanks,
+
+	Ingo
