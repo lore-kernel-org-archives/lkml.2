@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1JOSfB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 14:35:01 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:33132 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752071Ab1JOSfA (ORCPT
+	id S1754209Ab1JOSgW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 14:36:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60687 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab1JOSgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 14:35:00 -0400
-Date: Sat, 15 Oct 2011 14:34:59 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: NeilBrown <neilb@suse.de>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
- interfaces
-In-Reply-To: <20111015080718.01aef515@notabene.brown>
-Message-ID: <Pine.LNX.4.44L0.1110151426420.15129-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 15 Oct 2011 14:36:20 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/3] perf tools: Fix double count of total period
+Date: Sat, 15 Oct 2011 20:36:11 +0200
+Message-Id: <1318703773-6846-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Oct 2011, NeilBrown wrote:
+When we resort the entries to fix the order of the hists after
+we collapsed them, we count all the hists one more time,
+recalculing the cols len, the stats, etc...
 
-> > One of the things Rafael didn't mention is that sometimes a kernel 
-> > driver needs to prevent the system from suspending.  This happens when 
-> > recharging over a USB connection.
-> > 
-> > There's no simple way for such a driver to communicate with a power
-> > daemon.  The driver has to use something like the wakeup mechanism -- 
-> > but currently that mechanism is optional.
-> > 
-> > Alan Stern
-> 
-> Certainly I don't expect a kernel driver to communicate directly with a
-> user-space daemon.  It communicates indirectly through the wakeup_source
-> mechanism.
-> If user-space wants to block suspend, it talks to the suspend daemon (power
-> manager) some how (dbus, lock files, sockets, signals, whatever).
-> If the kernel wants to block suspend, it activates a wakeup_source (aka
-> caffeine source) which the suspend daemon notices via /sys/power/wakeup_count.
-> 
-> But you say this wakeup mechanism is optional .... I don't see that.
-> 
-> It is implemented in drivers/base/power/wakeup.c which is included in the
-> kernel if CONFIG_PM_SLEEP which is defined as
-> 
-> config PM_SLEEP
-> 	def_bool y
-> 	depends on SUSPEND || HIBERNATE_CALLBACKS
-> 
-> which seems to mean "enable this unless we don't have suspend and we don't
-> have hibernate".
-> 
-> So it seems that the only time we don't have the wakeup mechanism, we also
-> have no risk of ever going to sleep.
-> 
-> What exactly where you saying was "optional"?? I don't understand.
+However we forget to reset the total period before doing that.
+So the ending count is buggy.
 
-It's optional in the sense that user programs can bypass it.  They 
-aren't forced to read or write /sys/power/wakeup_countm, and if they 
-don't then the wakeup mechanism won't prevent the system from 
-suspending.
+When we resort the entries, we don't change their total numbers
+or their content. So we can avoid to recompute the total period
+and the len of the cols there.
 
-Alan Stern
+This fixes the issue.
+
+Before:
+
+	# Events: 23  cycles
+	#
+	# Overhead  Command      Shared Object                 Symbol
+	# ........  .......  .................  .....................
+	#
+	    18.35%     perf  [kernel.kallsyms]  [k] add_preempt_count
+	    15.76%     perf  [kernel.kallsyms]  [k] lock_is_held
+	    15.22%     sshd  [kernel.kallsyms]  [k] register_lock_class
+	     0.17%  swapper  [kernel.kallsyms]  [k] lock_release
+	     0.17%     perf  [kernel.kallsyms]  [k] lock_release
+	     0.17%  swapper  [kernel.kallsyms]  [k] __perf_event_enable
+	     0.16%  swapper  [kernel.kallsyms]  [k] native_write_msr_safe
+	     0.00%     perf  [kernel.kallsyms]  [k] native_write_msr_safe
+
+After:
+
+	# Events: 23  cycles
+	#
+	# Overhead  Command      Shared Object                 Symbol
+	# ........  .......  .................  .....................
+	#
+	    36.70%     perf  [kernel.kallsyms]  [k] add_preempt_count
+	    31.52%     perf  [kernel.kallsyms]  [k] lock_is_held
+	    30.43%     sshd  [kernel.kallsyms]  [k] register_lock_class
+	     0.35%  swapper  [kernel.kallsyms]  [k] lock_release
+	     0.34%     perf  [kernel.kallsyms]  [k] lock_release
+	     0.34%  swapper  [kernel.kallsyms]  [k] __perf_event_enable
+	     0.32%  swapper  [kernel.kallsyms]  [k] native_write_msr_safe
+	     0.01%     perf  [kernel.kallsyms]  [k] native_write_msr_safe
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/hist.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a7193c5..bac6520 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -413,15 +413,11 @@ static void __hists__output_resort(struct hists *hists, bool threaded)
+ 	next = rb_first(root);
+ 	hists->entries = RB_ROOT;
+ 
+-	hists->nr_entries = 0;
+-	hists__reset_col_len(hists);
+-
+ 	while (next) {
+ 		n = rb_entry(next, struct hist_entry, rb_node_in);
+ 		next = rb_next(&n->rb_node_in);
+ 
+ 		__hists__insert_output_entry(&hists->entries, n, min_callchain_hits);
+-		hists__inc_nr_entries(hists, n);
+ 	}
+ }
+ 
+-- 
+1.7.5.4
 
