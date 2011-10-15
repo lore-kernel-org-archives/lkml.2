@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab1JOTYH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 15:24:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41442 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab1JOTYF (ORCPT
+	id S1754813Ab1JOT1E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 15:27:04 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54038 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab1JOT1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 15:24:05 -0400
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Matthew Garrett <mjg59@redhat.com>
-In-Reply-To: <20111015112006.GA10173@tango.0pointer.de>
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
-	 <1318349729-3108-4-git-send-email-kirill@shutemov.name>
-	 <20111014154348.ae6267aa.akpm@linux-foundation.org>
-	 <20111015112006.GA10173@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 Oct 2011 21:11:50 +0200
-Message-ID: <1318705910.2664.5.camel@laptop>
+	Sat, 15 Oct 2011 15:27:02 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Richard Weinberger <richard@nod.at>
+Cc: mfasheh@suse.com, jlbec@evilplan.org, ocfs2-devel@oss.oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: OCFS2 1.6.0 for mainline?
+In-Reply-To: Your message of "Sat, 15 Oct 2011 19:49:43 +0200."
+             <4E99C7B7.5060405@nod.at>
+From: Valdis.Kletnieks@vt.edu
+References: <4E99A8F3.50206@nod.at> <30236.1318700758@turing-police.cc.vt.edu>
+            <4E99C7B7.5060405@nod.at>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: multipart/signed; boundary="==_Exmh_1318706796_3703P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Sat, 15 Oct 2011 15:26:36 -0400
+Message-ID: <33629.1318706796@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4E99DE78.00D8,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-15 at 13:20 +0200, Lennart Poettering wrote:
-> On Fri, 14.10.11 15:43, Andrew Morton (akpm@linux-foundation.org) wrote:
-> 
-> > > cgroup subsys "timer_slack" implements timer slack controller. It
-> > > provides a way to set minimal timer slack value for a group of tasks.
-> > > If a task belongs to a cgroup with minimal timer slack value higher than
-> > > task's value, cgroup's value will be applied.
-> > > 
-> > > Timer slack controller allows to implement setting timer slack value of
-> > > a process based on a policy. For example, you can create foreground and
-> > > background cgroups and move tasks between them based on system state.
-> > 
-> > I'm having trouble understanding the value of this feature.  Users can
-> > presently control the timer-slack of a group of processes via
-> > inherit-over-fork.
-> > 
-> > Perhaps there's a case for providing a way for process A to set process
-> > B's slack.  And perhaps B's children.  That would be a simpler patch
-> > and would have the considerable advantage that it doesn't require
-> > cgroups.
-> > 
-> > So.... why should we merge this?
-> 
-> Our usecase is basically this:
-> 
-> consider you have one or more desktop user sessions logged in, each one
-> in a timer slack cgroup. Now, userspace already tracks when sessions
-> become idle (i.e. currently desktop userspace then starts a screensaver,
-> or turns off the screen, or similar), and we'd like to increase the timer slack
-> for the session cgroups individually as the individual session becomes
-> idle, and decrease it again if the session stops being idle.
+--==_Exmh_1318706796_3703P
+Content-Type: text/plain; charset=us-ascii
 
-> What matters for us here is that the timer slack cgroup controller
-> provides us with a very nice way to change the timerslack for the whole
-> set of session processes in one go and from the outside. i.e. the idle
-> logic in userspace would be trivially easy to implement, since we
-> already track per-session idle states and with the timerlsack cgroup
-> controller we'd have to touch only a single kernel file to make our
-> changes.
+On Sat, 15 Oct 2011 19:49:43 +0200, Richard Weinberger said:
 
-I would argue this is an excellent reason not to merge this. This really
-is in the camp of lets paper over shitty userspace instead of fix it.
+> Am 15.10.2011 19:45, schrieb Valdis.Kletnieks@vt.edu:
+> > On Sat, 15 Oct 2011 17:38:27 +0200, Richard Weinberger said:
 
-Such a scheme takes away the immediate need to fix crap and therefore
-crap will not get fixed. Why not focus on creating tools (I think
-powertop really already does everything you need) and track down WTF
-apps are firing so many timers when the screen if off.
+> >> http://oss.oracle.com/projects/ocfs2/source.html states:
+> >> "Active development on OCFS2 happens in the mainline kernel."
 
-Also, the downside of your approach is that you treat all applications
-the same, what if there is a genuine need for reasonable timer response
-and your 'policy' wrecks things?
+> > Put differently, why do you think 1.6.0 is available?
+
+> OCFS2 1.6.3-1 and OCFS2 Tools 1.6.3-1 are the latest versions. The new
+> features available in this release include Extended Attributes, POSIX
+> ACLs, REFLINKs, Indexed Directories, Allocation Reservation, Metadata
+> Checksums and User/Group Quotas."
+
+Nice feature list, I can see why you want it. ;)
+
+> Looks like it's only available for "Unbreakable Linux" subscribers.
+> The development seems to be detached from mainline. :-(
+
+Well, you have to admit it *is* an interesting business model - giving release
+N to your customers and N-1 to the world.  I just got totally mislead by the
+quote from the Oracle site that said the development happens in mainline. ;)
 
 
+--==_Exmh_1318706796_3703P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOmd5scC3lWbTT17ARAotDAJ4zYSKlDJymiOK847B8CobInEmdPQCgtoY9
+ZOeTnDMxOgC+yXsp6PSQokM=
+=n8+M
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1318706796_3703P--
 
