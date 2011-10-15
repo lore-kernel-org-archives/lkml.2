@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab1JOXET (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 19:04:19 -0400
-Received: from nef2.ens.fr ([129.199.96.40]:3882 "EHLO nef2.ens.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab1JOXES convert rfc822-to-8bit (ORCPT
+	id S1753302Ab1JOX2O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 19:28:14 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.26]:56087 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab1JOX2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 19:04:18 -0400
-From: =?utf-8?q?=C3=89ric_Brunet?= <Eric.Brunet@lps.ens.fr>
-Organization: UPMC LPS-ENS
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: Fw: List corruption and crash with kernel 3.1
-Date: Sun, 16 Oct 2011 01:04:00 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39p+; KDE/4.6.5; x86_64; ; )
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, tiwai@suse.de, linux-pm@vger.kernel.org
-References: <20111011162500.db7cd65f.akpm@linux-foundation.org> <1318410972.23801.143.camel@ted> <20111013155002.GA10632@oksana.dev.rtsoft.ru>
-In-Reply-To: <20111013155002.GA10632@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110160104.01022.Eric.Brunet@lps.ens.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.1.4 (nef2.ens.fr [129.199.96.32]); Sun, 16 Oct 2011 01:04:03 +0200 (CEST)
+	Sat, 15 Oct 2011 19:28:13 -0400
+References: <20111014234055.2265c524.peter@piie.net> <20111014234334.a87a2388.peter@piie.net> <20111015223210.GC16432@liondog.tnic>
+Message-ID: <cone.1318721291.690132.3813.1000@zopiie>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: mjg@redhat.com, linux-kernel@vger.kernel.org,
+        Borislav Petkov <petkovbb@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] acerhdf: Add support for new hardware
+Date: Sun, 16 Oct 2011 01:28:11 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 13 octobre 2011 17:50:02, Anton Vorontsov a écrit :
-> Resend, add proper Cc's.
+Hi Boris,
+
+Borislav Petkov writes:
+> On Fri, Oct 14, 2011 at 11:43:34PM +0200, Peter Feuerer wrote:
+>> From: Peter Feuerer <peter@piie.net>
+>> 
+>> Add support for new hardware:
+>> Acer Aspire LT-10Q/531/751/1810/1825,
+>> Acer Travelmate 7730,
+>> Packard Bell ENBFT/DOTVR46
+>> 
+>> To prevent from hardware defects, the default temperature values have been
+>> decreased.
 > 
-> On Wed, Oct 12, 2011 at 10:16:08AM +0100, Richard Purdie wrote:
-> > On Tue, 2011-10-11 at 16:25 -0700, Andrew Morton wrote:
-> > > erk, help, who do I blame for this?
-> > 
-> > [...]
-> > 
-> > > WARNING: at lib/list_debug.c:47 __list_del_entry+0x8d/0x98()
-> 
-> I wonder if that patch helps:
-> 
-> https://lkml.org/lkml/2011/7/12/242
-> 
-> The traces are pretty similar.
+> do you have some actual bug reports stating that the original
+> temperature values were causing hw defects?
 
-Hi,
+Fortunately not. But due to new supported hardware, of which I don't know 
+the actual temperature limits of processor, harddisk and other components, 
+it just feels safer with this lower settings.
 
-Sorry it took some time. I tried the patch with 2.6.39, it does not seem to 
-help as I still observe the crash. I was not gifted with a warning in the 
-logs, though.
+Another point is, that you need to have the "kernelmode=1" option when 
+loading the module to enable fan control. When searching the internet for 
+acerhdf tutorials, you see, everybody not only setting kernelmode=1 but 
+also setting the fanon and fanoff variables. So I think it won't change 
+anything for most people.
 
-(I used 2.6.39 because it's a kernel with a quite high rate of bugging on 
-suspend/resume. I had to apply manually one of the chunks of the patch.)
+Furthermore seems like kernel and userspace tools have been improved to 
+work more efficient and my netbook doesn't get so hot anymore, for me it 
+stays most of the time at about 50 degree when doing office stuff and 
+surfing.
 
-Is there a debugging option which would help having more info on the log ?
-
-Thanks,
-
-	Éric Brunet
+kind regards,
+--peter;
