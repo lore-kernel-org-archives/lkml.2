@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab1JOJt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 05:49:57 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:42006 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab1JOJt4 (ORCPT
+	id S1752240Ab1JOLUP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 07:20:15 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:50915 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab1JOLUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 05:49:56 -0400
-X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Oct 2011 05:49:56 EDT
-From: Oliver Neukum <oliver@neukum.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] HID: usbhid: enable remote wakeup for mice
-Date: Sat, 15 Oct 2011 11:43:27 +0200
-User-Agent: KMail/1.13.5 (Linux/3.1.0-rc9-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Benson Leung <bleung@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <Pine.LNX.4.44L0.1110141106270.2036-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1110141106270.2036-100000@iolanthe.rowland.org>
+	Sat, 15 Oct 2011 07:20:13 -0400
+Date: Sat, 15 Oct 2011 13:20:09 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
+        greg@kroah.com, Matthew Garrett <mjg59@redhat.com>
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Message-ID: <20111015112006.GA10173@tango.0pointer.de>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+ <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+ <20111014154348.ae6267aa.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110151143.27061.oliver@neukum.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014154348.ae6267aa.akpm@linux-foundation.org>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 14. Oktober 2011, 17:09:32 schrieb Alan Stern:
-> > Anyway, I'll solve this problem on my system by writing to wakeup
-> > property on device attach. Consider my change abandoned.
+On Fri, 14.10.11 15:43, Andrew Morton (akpm@linux-foundation.org) wrote:
+
+> > cgroup subsys "timer_slack" implements timer slack controller. It
+> > provides a way to set minimal timer slack value for a group of tasks.
+> > If a task belongs to a cgroup with minimal timer slack value higher than
+> > task's value, cgroup's value will be applied.
+> > 
+> > Timer slack controller allows to implement setting timer slack value of
+> > a process based on a policy. For example, you can create foreground and
+> > background cgroups and move tasks between them based on system state.
 > 
-> That seems like the best approach.
+> I'm having trouble understanding the value of this feature.  Users can
+> presently control the timer-slack of a group of processes via
+> inherit-over-fork.
+> 
+> Perhaps there's a case for providing a way for process A to set process
+> B's slack.  And perhaps B's children.  That would be a simpler patch
+> and would have the considerable advantage that it doesn't require
+> cgroups.
+> 
+> So.... why should we merge this?
 
-Do you think this could be added to the USB configuration tool I wrote
-last week?
+Our usecase is basically this:
 
-In the longer run, we might consider that this properties may also need
-to be changed based on AC vs. DC or the battery's charge level.
+consider you have one or more desktop user sessions logged in, each one
+in a timer slack cgroup. Now, userspace already tracks when sessions
+become idle (i.e. currently desktop userspace then starts a screensaver,
+or turns off the screen, or similar), and we'd like to increase the timer slack
+for the session cgroups individually as the individual session becomes
+idle, and decrease it again if the session stops being idle.
 
-	Regards
-		Oliver
+Matthew Garrett experimented with a logic like this based on existing
+patches, and it showed quite positive effects on power consumption. If
+you need hard data I am sure Matthew can fill you in (added him to CC).
+
+What matters for us here is that the timer slack cgroup controller
+provides us with a very nice way to change the timerslack for the whole
+set of session processes in one go and from the outside. i.e. the idle
+logic in userspace would be trivially easy to implement, since we
+already track per-session idle states and with the timerlsack cgroup
+controller we'd have to touch only a single kernel file to make our
+changes.
+
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
