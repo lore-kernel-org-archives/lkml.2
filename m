@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab1JOAfO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Oct 2011 20:35:14 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43399 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab1JOAfM (ORCPT
+	id S1757129Ab1JOAjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Oct 2011 20:39:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64093 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609Ab1JOAjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Oct 2011 20:35:12 -0400
-Date: Fri, 14 Oct 2011 20:34:56 -0400 (EDT)
-Message-Id: <20111014.203456.760074223041131268.davem@davemloft.net>
-To: crn@netunix.com
-Cc: pebolle@tiscali.nl, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/21] sparc: drop unused Kconfig symbol
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1110150111520.26030@post.netunix.com>
-References: <1318595257.6132.59.camel@x61.thuisdomein>
-	<alpine.LNX.2.00.1110150111520.26030@post.netunix.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 14 Oct 2011 17:34:59 -0700 (PDT)
+	Fri, 14 Oct 2011 20:39:17 -0400
+MIME-Version: 1.0
+Date: Sat, 15 Oct 2011 08:39:16 +0800
+Message-ID: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
+Subject: cgroup: denying device doesn't work with 'rw' mode string
+From: Amos Kong <kongjianjun@gmail.com>
+To: serue@us.ibm.com, viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: crn@netunix.com
-Date: Sat, 15 Oct 2011 01:14:02 +0100 (BST)
+# mount -t cgroup -o devices none /cgroup
+# mkdir /cgroups/devices
+# ls -l /dev/vg/lv
+lrwxrwxrwx. 1 root root 7 Oct 14 19:03 /dev/vg/lv -> ../dm-3
+# ls -l /dev/dm-3
+brw-rw----. 1 root disk 253, 3 Oct 14 19:03 /dev/dm-3
 
-> 
-> How does this affect Javastations, ISTR that they need PCI and one
-> (rare) variant has a PCI slot. ??
 
-How about you take even the briefest look at the code and find out for
-yourself?  This is what drives me crazy about the questions you tend
-to ask, you never put forth any effort of investigation on your own
-and just toss arbitrary questions onto the list.
+------- test1
+# echo a > devices/devices.allow
+# echo 'b 253:3 rwm' > devices/devices.deny
+                ^^^
+# echo $$ > task
+# dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
+couldn't write to /dev/dm-3 successfully
 
-Meanwhile those of us with initiative are burdoned to do the work for
-you.
+------- test2
+deny read-write permission of dm-3, but it doesn't effect.
 
-The config symbol is completely unreferenced anywhere, so this
-change can't possibly make any functional difference whatsoever.
+# echo a > devices/devices.allow
+# echo 'b 253:2 rw' > devices.deny
+                ^^
+# echo $$ > task
+# dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
+can write to /dev/dm-3 successfully ???
+
+-----------
+
+related upstream commit:
+commit 08ce5f16ee466ffc5bf243800deeecd77d9eaf50
+Author: Serge E. Hallyn <serue@us.ibm.com>
+Date:   Tue Apr 29 01:00:10 2008 -0700
+
+    cgroups: implement device whitelist
+
+
+cgroup tracks and enforces open and mknod restrictions on device files,
+so 'm' are always needed in the mode string? 'rw' is uneffective?
