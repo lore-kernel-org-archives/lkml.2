@@ -1,94 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab1JOG2z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 02:28:55 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:33823 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab1JOG2y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 02:28:54 -0400
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Keith Packard <keithp@keithp.com>
-Date: Sat, 15 Oct 2011 17:28:51 +1100
-In-Reply-To: <CAOJsxLF2Qo0UK8wCg1mt2Awiv7k=XPA9kHMy808f++FXibi4QA@mail.gmail.com>
-References: <1317342456.1959.6.camel@shrek.rexursive.com>
-	 <201110062045.48689.rjw@sisk.pl> <2409186928.1003010428@rexursive.com>
-	 <201110132326.02041.rjw@sisk.pl>
-	 <1318557712.2027.1.camel@shrek.rexursive.com>
-	 <CAOJsxLF2Qo0UK8wCg1mt2Awiv7k=XPA9kHMy808f++FXibi4QA@mail.gmail.com>
+	id S1751232Ab1JOGgl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 02:36:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38996 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750802Ab1JOGgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 02:36:39 -0400
+Message-ID: <1318660596.6035.27.camel@Joe-Laptop>
+Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
+ staging
+From: Joe Perches <joe@perches.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, Haiyang Zhang <haiyangz@microsoft.com>
+Date: Fri, 14 Oct 2011 23:36:36 -0700
+In-Reply-To: <1318658907-16698-1-git-send-email-kys@microsoft.com>
+References: <1318658907-16698-1-git-send-email-kys@microsoft.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1318660131.2027.2.camel@shrek.rexursive.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 09:14 +0300, Pekka Enberg wrote:
-> What debugging options do you have enabled?
+On Fri, 2011-10-14 at 23:08 -0700, K. Y. Srinivasan wrote:
+> In preparation for moving the mouse driver out of staging, seek community
+> review of the mouse driver code.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 
-This is what grep of DEBUG prints:
--------------------
-CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
-CONFIG_SLUB_DEBUG=y
-CONFIG_HAVE_DMA_API_DEBUG=y
-CONFIG_XEN_DEBUG_FS=y
-CONFIG_X86_DEBUGCTLMSR=y
-CONFIG_PM_DEBUG=y
-CONFIG_PM_ADVANCED_DEBUG=y
-CONFIG_ACPI_EC_DEBUGFS=m
-CONFIG_L2TP_DEBUGFS=m
-CONFIG_CFG80211_DEBUGFS=y
-CONFIG_MAC80211_DEBUGFS=y
-CONFIG_WIMAX_DEBUG_LEVEL=8
-CONFIG_DEBUG_DEVRES=y
-CONFIG_CB710_DEBUG_ASSUMPTIONS=y
-CONFIG_IWMC3200TOP_DEBUGFS=y
-CONFIG_AIC7XXX_DEBUG_MASK=0
-CONFIG_AIC79XX_DEBUG_MASK=0
-CONFIG_SCSI_DEBUG=m
-CONFIG_DM_DEBUG=y
-CONFIG_FIREWIRE_OHCI_DEBUG=y
-CONFIG_MLX4_DEBUG=y
-CONFIG_ATH5K_DEBUG=y
-CONFIG_ATH9K_DEBUGFS=y
-CONFIG_IWLWIFI_DEBUG=y
-CONFIG_IWLWIFI_DEBUGFS=y
-CONFIG_IWLWIFI_LEGACY_DEBUG=y
-CONFIG_IWLWIFI_LEGACY_DEBUGFS=y
-CONFIG_RT2X00_LIB_DEBUGFS=y
-CONFIG_WIMAX_I2400M_DEBUG_LEVEL=8
-CONFIG_SND_DEBUG=y
-CONFIG_SND_PCM_XRUN_DEBUG=y
-CONFIG_USB_SERIAL_DEBUG=m
-CONFIG_INFINIBAND_MTHCA_DEBUG=y
-CONFIG_INFINIBAND_IPOIB_DEBUG=y
-CONFIG_INFINIBAND_IPOIB_DEBUG_DATA=y
-CONFIG_DRM_NOUVEAU_DEBUG=y
-CONFIG_JFFS2_FS_DEBUG=0
-CONFIG_DLM_DEBUG=y
-CONFIG_DEBUG_FS=y
-CONFIG_DEBUG_KERNEL=y
-CONFIG_DEBUG_SHIRQ=y
-CONFIG_SCHED_DEBUG=y
-CONFIG_DEBUG_BUGVERBOSE=y
-CONFIG_DEBUG_INFO=y
-CONFIG_DEBUG_MEMORY_INIT=y
-CONFIG_DEBUG_LIST=y
-CONFIG_DYNAMIC_DEBUG=y
-CONFIG_DEBUG_STACKOVERFLOW=y
-CONFIG_DEBUG_RODATA=y
-CONFIG_DEBUG_RODATA_TEST=y
-CONFIG_DEBUG_NX_TEST=m
-CONFIG_DEBUG_BOOT_PARAMS=y
-CONFIG_KEYS_DEBUG_PROC_KEYS=y
--------------------
+Just some stylistic things, none of which should
+prevent any code movement.
 
--- 
-Bojan
+> +++ b/drivers/hid/hv_mouse.c
+[]
+> +struct mousevsc_dev {
+> +	struct hv_device	*device;
+> +	unsigned char		init_complete;
+
+bool?
+
+[]
+> +static void mousevsc_on_channel_callback(void *context)
+> +{
+> +	const int packetSize = 0x100;
+> +	int ret = 0;
+> +	struct hv_device *device = (struct hv_device *)context;
+> +
+> +	u32 bytes_recvd;
+> +	u64 req_id;
+> +	unsigned char packet[0x100];
+		[packetSize];
+
+> +	struct vmpacket_descriptor *desc;
+> +	unsigned char	*buffer = packet;
+> +	int	bufferlen = packetSize;
+> +
+> +
+trivial extra blank line
+
+> +	do {
+> +		ret = vmbus_recvpacket_raw(device->channel, buffer,
+> +					bufferlen, &bytes_recvd, &req_id);
+> +
+> +		if (ret == 0) {
+> +			if (bytes_recvd > 0) {
+> +				desc = (struct vmpacket_descriptor *)buffer;
+> +
+> +				switch (desc->type) {
+> +				case VM_PKT_COMP:
+> +					break;
+> +
+> +				case VM_PKT_DATA_INBAND:
+> +					mousevsc_on_receive(
+> +						device, desc);
+> +					break;
+> +
+> +				default:
+> +					pr_err("unhandled packet type %d, tid %llx len %d\n",
+> +						   desc->type,
+> +						   req_id,
+> +						   bytes_recvd);
+> +					break;
+> +				}
+> +
+> +				/* reset */
+> +				if (bufferlen > packetSize) {
+> +					kfree(buffer);
+> +
+> +					buffer = packet;
+> +					bufferlen = packetSize;
+> +				}
+> +			} else {
+> +				if (bufferlen > packetSize) {
+> +					kfree(buffer);
+> +
+> +					buffer = packet;
+> +					bufferlen = packetSize;
+> +				}
+> +				break;
+> +			}
+> +		} else if (ret == -ENOBUFS) {
+> +			/* Handle large packet */
+> +			bufferlen = bytes_recvd;
+> +			buffer = kzalloc(bytes_recvd, GFP_ATOMIC);
+> +
+> +			if (buffer == NULL) {
+> +				buffer = packet;
+> +				bufferlen = packetSize;
+> +				break;
+> +			}
+> +		}
+> +	} while (1);
+
+This do {} while (1); seems like it could be simpler,
+less indented and less confusing if it used continues
+or gotos like below (if I wrote it correctly...)
+
+loop:
+	ret = vmbus_bus_recvpacket_raw(device->channel, buffer,
+				       bufferlen, &bytes_recvd, &req_id);
+	switch (ret) {
+	case -ENOBUFS:
+		/* Handle large packet */
+		bufferlen = bytes_recvd;
+		buffer = kzalloc(bytes_recvd, GFP_ATOMIC);
+/*
+Why kzalloc and not kmalloc?
+The stack variable packet is not memset to 0,
+why should buffer be zeroed?
+*/
+		if (!buffer)
+			return;
+		goto loop;
+	case 0:
+		if (bytes_recvd <= 0)
+			goto loop;
+		desc = (struct vmpacket_descriptor *)buffer;
+
+		switch (desc->type) {
+		case VM_PKT_COMP:
+			break;
+		case VM_PKT_DATA_INBAND:
+			mousevsc_on_receive(device, desc);
+			break;
+		default:
+			pr_err("unhandled packet type %d, tid %llx len %d\n",
+			       desc->type, req_id, bytes_recvd);
+			break;
+		}
+		/* reset to original buffers */
+		if (bufferlen > packetSize) {
+			kfree(buffer);
+			buffer = packet;
+			bufferlen = packetSize;
+		}
+	}
+	goto loop;
+}
+
+> +
+> +static int mousevsc_connect_to_vsp(struct hv_device *device)
+> +{
+[]
+> +	if (!response->response.approved) {
+> +		pr_err("synthhid protocol request failed (version %d)",
+> +		       SYNTHHID_INPUT_VERSION);
+
+Missing \n at end of format string
+
+[]
+> +static int mousevsc_on_device_add(struct hv_device *device)
+> +{
+[]
+> +	ret = vmbus_open(device->channel,
+> +		INPUTVSC_SEND_RING_BUFFER_SIZE,
+> +		INPUTVSC_RECV_RING_BUFFER_SIZE,
+> +		NULL,
+> +		0,
+> +		mousevsc_on_channel_callback,
+> +		device
+> +		);
+
+Nicer if aligned to open paren I think.
+
+	ret = vmbus_open(device->channel,
+			 INPUTVSC_SEND_RING_BUFFER_SIZE,
+			 INPUTVSC_RECV_RING_BUFFER_SIZE,
+			 NULL, 0, mousevsc_on_channel_callback,
+			 device);
+
 
