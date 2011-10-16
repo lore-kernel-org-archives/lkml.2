@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab1JPBxD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 21:53:03 -0400
-Received: from claw.goop.org ([74.207.240.146]:54840 "EHLO claw.goop.org"
+	id S1752363Ab1JPCl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 22:41:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52512 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751843Ab1JPBxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 21:53:01 -0400
-Message-ID: <4E9A38FA.7030504@goop.org>
-Date: Sat, 15 Oct 2011 18:52:58 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1750760Ab1JPCl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 22:41:57 -0400
+Date: Sat, 15 Oct 2011 19:39:43 -0700
+From: Greg KH <gregkh@suse.de>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/8] PCI, sys: only create rescan under
+ /sys/.../pci/devices/... for pci bridges
+Message-ID: <20111016023943.GA3787@suse.de>
+References: <4E9A3092.4080309@oracle.com>
+ <4E9A3436.3010704@oracle.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH RFC V4 10/10] jump-label: initialize jump-label subsystem
- much earlier
-References: <cover.1318464169.git.jeremy.fitzhardinge@citrix.com>   <c133180533d7e520bb1e818e987117811a666fbc.1318464413.git.jeremy.fitzhardinge@citrix.com>  <1318502628.24856.10.camel@twins> <4E98AEDD.4010503@goop.org> <1318668158.6594.0.camel@twins>
-In-Reply-To: <1318668158.6594.0.camel@twins>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9A3436.3010704@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2011 01:42 AM, Peter Zijlstra wrote:
-> On Fri, 2011-10-14 at 14:51 -0700, Jeremy Fitzhardinge wrote:
->> How about this?  Proper comment and much earlier init.
-> Looks good to me, thanks!
+On Sat, Oct 15, 2011 at 06:32:38PM -0700, Yinghai Lu wrote:
+> 
+> Current code will create rescan for every pci device,
+> that is not right. the device is already there, there is no reason to rescan it.
+> 
+> So only have rescan for pci bridges. less confusing
+> 
+> Need to add cond to be new member of device_attribute.
+> device_add_attrs will check cond to see if need to create the attr.
 
-Should I take that as an ACK on the series?
+No, we already have a way to do this, this is not acceptable, sorry.
 
-    J
+greg k-h
