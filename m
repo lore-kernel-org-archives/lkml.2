@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab1JPSod (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 14:44:33 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:47988 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752081Ab1JPSoc (ORCPT
+	id S932082Ab1JPSpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 14:45:09 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42850 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab1JPSpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 14:44:32 -0400
-Message-ID: <4E9B260E.2020308@xenotime.net>
-Date: Sun, 16 Oct 2011 11:44:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Sun, 16 Oct 2011 14:45:07 -0400
 MIME-Version: 1.0
-To: Peter Teoh <htmldeveloper@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: gcc: arch/x86/lib/memmove_64.c: No such file or directory
-References: <CAHnt0GWbGRjA+8BC1hRgYPL625S+3kZH2b0UgpC+-CD=3BO3Sg@mail.gmail.com>
-In-Reply-To: <CAHnt0GWbGRjA+8BC1hRgYPL625S+3kZH2b0UgpC+-CD=3BO3Sg@mail.gmail.com>
+In-Reply-To: <4E985C60.9020308@cam.ac.uk>
+References: <1318333383-17663-1-git-send-email-jic23@cam.ac.uk>
+	<1318333383-17663-2-git-send-email-jic23@cam.ac.uk>
+	<20111013143224.GO1098@sirena.org.uk>
+	<4E96F9AC.9000001@cam.ac.uk>
+	<20111013204410.GA17160@sirena.org.uk>
+	<4E985C60.9020308@cam.ac.uk>
+Date: Sun, 16 Oct 2011 20:45:06 +0200
+Message-ID: <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com>
+Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        zdevai@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 11:51 PM, Peter Teoh wrote:
-> After a git pull today, when compiling linus git tree:
-> 
-> (both instance below consistently gave error)
-> 
-> git describe
-> v3.1-rc9-73-g37cf951
-> 
-> git describe
-> v3.1-rc9-85-ge9308cf
-> 
-> gcc: arch/x86/lib/memmove_64.c: No such file or directory
-> gcc: no input files
-> make[1]: *** [arch/x86/lib/memmove_64.o] Error 1
-> make: *** [arch/x86/lib] Error 2
-> 
-> cat include/config/kernel.release
-> 3.1.0-rc9+
-> 
-> .config file as per attached,   thanks.
+2011/10/14 Jonathan Cameron <jic23@cam.ac.uk>:
 
-No problem here with v3.1-rc9-87-g4c41042
-and your .config file.
+> I'm trying to work out what our equivalent of the clk finding api is.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Judging from the ideal use of our in-tree driver
+drivers/mfd/ab8500-gpadc.c a map like this would be
+great
+
+struct adc_map {
+        struct device *adc_dev;
+        const char *adc_dev_name;
+        const char *channel;
+        struct device *dev;
+        const char *dev_name;
+};
+
+{ adc_dev, adc_dev_name } are alternative-compulsory identifiers for
+the ADC
+
+channel: string identifying the channel on the ADC, strings have
+been shown to be good for identifying things.
+
+{ dev, dev_name } are alternative-compulsory identifiers for the
+ADC client.
+
+struct device * pointers take precedence, fallback to names if device
+pointers are unavailable.
+
+adc_dev_name is the name of the ADC and then I mean what is returned
+from it's struct device *dev when you do dev_name() on it. dev_name is
+well dev_name(dev);
+
+Then this API feels comfortable:
+
+struct adc *adc_get(struct device *dev, const char *channel);
+void adc_put(struct adc *adc);
+int adc_read_raw(struct adc *adc, int *val);
+
+We can then add adc_read_voltage(), adc_read_temperature(), adc_read_foo() ...
+
+Usage in say a hwmon driver or whatever:
+
+struct adc *mr_adc = adc_get(dev, NULL);
+/*
+ * Optional channel parameter used only when a single
+ * device use more than one channel, as with clock names
+ * or regulator names, so pass in NULL for the one channel
+ * tied to this device.
+ */
+ret = adc_read_raw(mr_adc, &val);
+(...)
+adc_put(mr_adc);
+
+But this is just what looks useful to us.
+
+Yours,
+Linus Walleij
