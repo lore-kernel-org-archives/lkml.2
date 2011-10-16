@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1JPMHl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 08:07:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34002 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab1JPMHj (ORCPT
+	id S1754227Ab1JPMHu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 08:07:50 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:63172 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab1JPMHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 08:07:39 -0400
+	Sun, 16 Oct 2011 08:07:44 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 1/4] staging: et131x: Tidy up PCI device table definition
-Date: Sun, 16 Oct 2011 13:06:12 +0100
-Message-Id: <1318766775-2517-1-git-send-email-mark.einon@gmail.com>
+Subject: [PATCH 4/4] staging: et131x: Remove unused defines
+Date: Sun, 16 Oct 2011 13:06:15 +0100
+Message-Id: <1318766775-2517-4-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1318766775-2517-1-git-send-email-mark.einon@gmail.com>
+References: <1318766775-2517-1-git-send-email-mark.einon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used the convenience macros DEFINE_PCI_DEVICE_TABLE and PCI_VDEVICE to
-tidy up the device table definition.
-
-Also remove the corresponding TODO item from the README.
+Some defines are no longer referenced in the code, so removed them.
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/README   |    1 -
- drivers/staging/et131x/et131x.c |   12 ++++--------
- 2 files changed, 4 insertions(+), 9 deletions(-)
+ drivers/staging/et131x/et131x.c |   11 -----------
+ 1 files changed, 0 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
-index 87b9360..0928eb5 100644
---- a/drivers/staging/et131x/README
-+++ b/drivers/staging/et131x/README
-@@ -10,7 +10,6 @@ driver as they did not build properly at the time.
- TODO:
- 	- Use of kmem_cache seems a bit unusual
- 	- It's too late stopping the tx queue when there is no room for the current packet. The condition should be detected for the next packet.
--	- PCI_VDEVICE ?
- 
- Please send patches to:
- 	Greg Kroah-Hartman <gregkh@suse.de>
 diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 28d54b3..cc41111 100644
+index 1c11dfd..1efa27c 100644
 --- a/drivers/staging/et131x/et131x.c
 +++ b/drivers/staging/et131x/et131x.c
-@@ -169,8 +169,7 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
- #define ET1310_PCI_REPLAY		0xC2
- #define ET1310_PCI_L0L1LATENCY		0xCF
+@@ -145,21 +145,14 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
+ /* MP_ADAPTER flags */
+ #define fMP_ADAPTER_RECV_LOOKASIDE	0x00000004
+ #define fMP_ADAPTER_INTERRUPT_IN_USE	0x00000008
+-#define fMP_ADAPTER_SECONDARY		0x00000010
  
--/* PCI Vendor/Product IDs */
--#define ET131X_PCI_VENDOR_ID		0x11C1	/* Agere Systems */
-+/* PCI Product IDs */
- #define ET131X_PCI_DEVICE_ID_GIG	0xED00	/* ET1310 1000 Base-T 8 */
- #define ET131X_PCI_DEVICE_ID_FAST	0xED01	/* ET1310 100  Base-T */
+ /* MP_SHARED flags */
+-#define fMP_ADAPTER_SHUTDOWN		0x00100000
+ #define fMP_ADAPTER_LOWER_POWER		0x00200000
  
-@@ -4647,14 +4646,11 @@ static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
- #define ET131X_PM_OPS NULL
- #endif
+ #define fMP_ADAPTER_NON_RECOVER_ERROR	0x00800000
+-#define fMP_ADAPTER_RESET_IN_PROGRESS	0x01000000
+-#define fMP_ADAPTER_NO_CABLE		0x02000000
+ #define fMP_ADAPTER_HARDWARE_ERROR	0x04000000
+-#define fMP_ADAPTER_REMOVE_IN_PROGRESS	0x08000000
+-#define fMP_ADAPTER_HALT_IN_PROGRESS	0x10000000
  
--static struct pci_device_id et131x_pci_table[] __devinitdata = {
--	{ET131X_PCI_VENDOR_ID, ET131X_PCI_DEVICE_ID_GIG, PCI_ANY_ID,
--	 PCI_ANY_ID, 0, 0, 0UL},
--	{ET131X_PCI_VENDOR_ID, ET131X_PCI_DEVICE_ID_FAST, PCI_ANY_ID,
--	 PCI_ANY_ID, 0, 0, 0UL},
-+static DEFINE_PCI_DEVICE_TABLE(et131x_pci_table) = {
-+	{ PCI_VDEVICE(ATT, ET131X_PCI_DEVICE_ID_GIG), 0UL},
-+	{ PCI_VDEVICE(ATT, ET131X_PCI_DEVICE_ID_FAST), 0UL},
- 	{0,}
- };
+ #define fMP_ADAPTER_FAIL_SEND_MASK	0x3ff00000
+-#define fMP_ADAPTER_NOT_READY_MASK	0x3ff00000
+ 
+ /* Some offsets in PCI config space that are actually used. */
+ #define ET1310_PCI_MAX_PYLD		0x4C
+@@ -205,7 +198,6 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
+ 
+ #define NUM_PACKETS_HANDLED	256
+ 
+-#define ALCATEL_BAD_STATUS	0xe47f0000
+ #define ALCATEL_MULTICAST_PKT	0x01000000
+ #define ALCATEL_BROADCAST_PKT	0x02000000
+ 
+@@ -452,8 +444,6 @@ struct tx_ring {
+  * Once the desired performance has been achieved, the optimal registry values
+  * should be re-populated to these #defines:
+  */
+-#define NUM_TRAFFIC_CLASSES          1
 -
- MODULE_DEVICE_TABLE(pci, et131x_pci_table);
+ #define TX_ERROR_PERIOD             1000
  
- static struct pci_driver et131x_driver = {
+ #define LO_MARK_PERCENT_FOR_PSR     15
+@@ -4715,7 +4705,6 @@ void et131x_disable_interrupts(struct et131x_adapter *adapter)
+ 	writel(INT_MASK_DISABLE, &adapter->regs->global.int_mask);
+ }
+ 
+-
+ /**
+  * et131x_isr - The Interrupt Service Routine for the driver.
+  * @irq: the IRQ on which the interrupt was received.
 -- 
 1.7.6.4
 
