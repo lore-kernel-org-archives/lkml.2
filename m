@@ -1,78 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab1JPInJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 04:43:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41566 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab1JPInG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 04:43:06 -0400
-Date: Sun, 16 Oct 2011 10:43:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: mjg@redhat.com, linux-kernel@vger.kernel.org,
-        Borislav Petkov <petkovbb@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] acerhdf: Add support for new hardware
-Message-ID: <20111016084300.GB32343@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Feuerer <peter@piie.net>, mjg@redhat.com,
-	linux-kernel@vger.kernel.org, Borislav Petkov <petkovbb@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20111014234055.2265c524.peter@piie.net>
- <20111014234334.a87a2388.peter@piie.net>
- <20111015223210.GC16432@liondog.tnic>
- <cone.1318721291.690132.3813.1000@zopiie>
+	id S1753570Ab1JPI5w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 04:57:52 -0400
+Received: from eastrmfepi101.cox.net ([68.230.241.197]:52118 "EHLO
+	eastrmfepi101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab1JPI5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 04:57:48 -0400
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 04:57:48 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A02020A.4E9A9B3D.0055,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=oaIW6hvuqrvZuBstGxzMQDCn9/QU+BfQ2mb81G/9NAc=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=pZmP9RTn-EsA:10 a=D6Mx2fhzbfAA:10
+ a=IkcTkHD0fZMA:10 a=dDYwxBZGHy8xwdLlItvT1g==:17 a=KUDogxLSYPgRG8_XSRkA:9
+ a=QEXdDO2ut3YA:10 a=A6kPN1-jrTM0DSsQ:21 a=dDYwxBZGHy8xwdLlItvT1g==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20111016045213.E86IT.1777686.imail@eastrmwml43>
+Date: Sun, 16 Oct 2011 4:52:13 -0400
+From: Edwin Bradley <edwin.b14@cox.net>
+Reply-To: edwinbradley5@aim.com
+Subject: Hello!!
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cone.1318721291.690132.3813.1000@zopiie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 16, 2011 at 01:28:11AM +0200, Peter Feuerer wrote:
-> Hi Boris,
-> 
-> Borislav Petkov writes:
-> >On Fri, Oct 14, 2011 at 11:43:34PM +0200, Peter Feuerer wrote:
-> >>From: Peter Feuerer <peter@piie.net>
-> >>
-> >>Add support for new hardware:
-> >>Acer Aspire LT-10Q/531/751/1810/1825,
-> >>Acer Travelmate 7730,
-> >>Packard Bell ENBFT/DOTVR46
-> >>
-> >>To prevent from hardware defects, the default temperature values have been
-> >>decreased.
-> >
-> >do you have some actual bug reports stating that the original
-> >temperature values were causing hw defects?
-> 
-> Fortunately not. But due to new supported hardware, of which I don't
-> know the actual temperature limits of processor, harddisk and other
-> components, it just feels safer with this lower settings.
-> 
-> Another point is, that you need to have the "kernelmode=1" option
-> when loading the module to enable fan control. When searching the
-> internet for acerhdf tutorials, you see, everybody not only setting
-> kernelmode=1 but also setting the fanon and fanoff variables. So I
-> think it won't change anything for most people.
-> 
-> Furthermore seems like kernel and userspace tools have been improved
-> to work more efficient and my netbook doesn't get so hot anymore,
-> for me it stays most of the time at about 50 degree when doing
-> office stuff and surfing.
 
-Ok, good. Sounds to me like this above should be the commit message
-instead of the one sentence you had before because it explains much
-better why you're doing what you're doing with the patch.
-
-Also, the "add support" part should be another patch because
-conceptually it doesn't belong with the temperature changes.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Edwin Bradley is my name, the Financial Controller of Northern Bank and am offering you a Business Proposal worthing $92million. Please do reply with mobile number for more details 
