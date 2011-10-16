@@ -1,187 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab1JPCtL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 22:49:11 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:34120 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751965Ab1JPCtK (ORCPT
+	id S1753466Ab1JPDB0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 23:01:26 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:48954 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab1JPDBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 22:49:10 -0400
-Date: Sat, 15 Oct 2011 22:49:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
- interfaces
-In-Reply-To: <201110160010.40639.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1110152224461.19724-100000@netrider.rowland.org>
+	Sat, 15 Oct 2011 23:01:24 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of staging
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of staging
+Thread-Index: AQHMiwB5ssYxGyHyyU2tUZBy8HXDxZV+YdCA///RXnA=
+Date: Sun, 16 Oct 2011 03:01:23 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
+ <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9G31WXR027086
 
-On Sun, 16 Oct 2011, Rafael J. Wysocki wrote:
 
-> Hi,
+
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Saturday, October 15, 2011 5:27 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
+> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+> staging
 > 
-> On Friday, October 14, 2011, NeilBrown wrote:
-> > On Thu, 13 Oct 2011 21:45:42 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> ...
-> > 
-> > Hi Rafael,
-> > 
-> >  What do you mean by "too complicated to use in practice"?  What is you
-> >  measure for complexity?
+> On Fri, 2011-10-14 at 23:28 -0700, K. Y. Srinivasan wrote:
+> > In preparation for moving the storage driver out of staging, seek community
+> > review of the storage  driver code.
 > 
-> I, personally, don't really know what the difficulty is, as I have already
-> described this approach for a few times (for example, in Section 5 of the
-> article at http://lwn.net/images/pdf/suspend_blockers.pdf).  However, I've
-> recently talked to a few people whom I regard as smart and who had tried
-> to implement it and it didn't work for them, and they aren't really able
-> to say why exactly.  Thus I have concluded it has to be complicated, but
-> obviously you're free to draw your own conclusions. :-)
+> That's not exactly a very descriptive commit message for me to put into
+> SCSI.  It doesn't have to be huge, just something like "driver to enable
+> hyperv windows guest on Linux" or something.
+
+Sorry about the commit message. I will have a more descriptive message in the next
+submission.
+
 > 
-> [BTW, attempts to defend the approach I have invented against myself are
->  extremely likely to fail, pretty much by definition. ;-)]
-
-I'm with Neil on this.  I think the mechanisms you have proposed could 
-be implemented equally well in userspace, with very little penalty.
-
-Certainly any process that is wakeup-aware will have to be 
-specially written in any case.  Either it has provisions for using 
-/dev/sleepctl or it has provisions for communicating with a PM daemon.  
-One doesn't seem any simpler than the other.
-
-In addition, with proper care a PM daemon could be written that would
-work with "legacy" systems (all current systems qualify).  It would 
-allow for new wakeup-aware programs while allowing the legacy system to 
-work correctly.
-
-> >  Using suspend in a race-free way is certainly less complex than - for
-> >  example - configuring bluetooth.
-> >  And in what way is it "inadequate for other reasons"? What reasons?
 > 
-> Consider the scenario described by John (the wakeup problem).  A process
-> has to do something at certain time and the system shouldn't be suspended
-> while the process is doing that, although it very well may be suspended
-> earlier or later.  The process puts itself to sleep with the assumption
-> that a wake alarm is set (presumably by another process) to wake the system
-> up from suspend at the right time (if the suspend happens).  However, the
-> process itself doesn't know _exactly_ what time the wake alarm is set to.
-
-That's okay.  When the process is notified about an impending suspend,
-it checks the current time.  If the current time is more than Delta-T
-before the target time, it allows the suspend to occur (relying on the
-wake alarm to activate before the target time).  If not, it forbids the
-suspend.
-
-> In the situation in which we only have the existing mechanism and a user space
-> power manager daemon, this scenario appears to be inherently racy, such that it
-> cannot be handled correctly.
-
-Anything wrong with the scheme described above?
-
-> Is KDE going to use the same mechanism, for one example?  And what about other
-> user space variants?  MeeGo anyone?  Tizen?  Android??
-
-It shouldn't matter.  We ought to be able to write a PM daemon that 
-would work under any of these systems as they currently exist.
-
-> >  But I think it is very wrong to put some hack in the kernel like your
-> >    suspend_mode = disabled
+> >  drivers/scsi/Kconfig             |    7 +
+> >  drivers/scsi/Makefile            |    3 +
+> >  drivers/scsi/storvsc_drv.c       | 1480
+> ++++++++++++++++++++++++++++++++++++++
+> >  drivers/staging/hv/Kconfig       |    6 -
+> >  drivers/staging/hv/Makefile      |    2 -
+> >  drivers/staging/hv/storvsc_drv.c | 1480 --------------------------------------
+> >  6 files changed, 1490 insertions(+), 1488 deletions(-)
 > 
-> Why is it wrong and why do you think it is a "hack"?
+> What tree is this against?  The hv/storvsc_drv.c in upstream only has
 > 
-> >  just because the user-space community hasn't got its act together yet.
+> jejb@dabdike> wc -l drivers/staging/hv/storvsc_drv.c
+> 792 drivers/staging/hv/storvsc_drv.c
 > 
-> Is there any guarantee that it will get its act together in any foreseeable
-> time frame?
+> i.e. whatever you're sending is double the length (and obviously I have
+> trouble applying the patch.
+
+This patch  moves the file from drivers/staging/hv/ directory to the 
+drivers/scsi directory; hence double the length. I saw an email from Greg earlier where
+he recommended that the patch we post should not delete/modify the files in the hv
+directory. When I submit this next, I will take that approach.
+ 
 > 
-> >  And if you really need a hammer to stop processes from suspending the system:
-> > 
-> >    cat /sys/power/state > /tmp/state
-> >    mount --bind /tmp/state /sys/power/state
-> > 
-> >  should to it.
+> > +++ b/drivers/scsi/storvsc_drv.c
+> > @@ -0,0 +1,1480 @@
 > 
-> Except that (1) it appears to be racy (what if system suspend happens between
-> the first and second line in your example - can you safely start to upgrade
-> your firmware in that case?) and (2) it won't prevent the hibernate interface
-> based on /dev/snapshot from being used.
-
-The bind mount, or something equivalent, would be done once, when the
-PM daemon starts up (presumably at boot time).  Races aren't an issue 
-then.
-
-Basically, what we need is a reliable way to intercept the existing
-mechanisms for suspend/hibernate and to redirect the requests to the PM
-daemon.  When the daemon is started up in "legacy" mode, it assumes
-there is a legacy client (representing the entire set of
-non-wakeup-aware programs) that always forbids suspend _except_ when
-one of the old mechanisms is invoked.
-
-> Do you honestly think I'd propose something like patch [1/2] if I didn't
-> see any other _working_ approach?
-
-This redirection idea is worth considering.
-
-> >  You second patch has little to recommend it either.
-> >  In the first place it seems to be entrenching the notion that timeouts are a
-> >  good and valid way to think about suspend.
+> So not a detailed review, but a couple of structural observations:
 > 
-> That's because I think they are unavoidable.  Even if we are able to eliminate
-> all timeouts in the handling of wakeup events by the kernel and passing them
-> to user space, which I don't think is a realistic expectation, the user will
-> still have only so much time to wait for things to happen.  For example, if
-> a phone user doesn't see the screen turn on 0.5 sec after the button was
-> pressed, the button is pretty much guaranteed to be pressed again.  This
-> observation applies to other wakeup events, more or less.  They are very much
-> like items with "suitability for consumption" timestamps: it they are not
-> consumed quickly enough, we can simply forget about them.
+> The whole driver is a writeout deadlock trap since I assume you intend
+> for it to be used as root/swap of a linux guest?  The writeout deadlock
+> occurs when we can't make forward progress on a direct writeout I/O
+> because one of the GFP_ATOMIC memory allocations in your driver fails.
+> The only way to fix this is to back the allocations with mempools (one
+> per actual device) so you can guarantee that whatever memory pressure
+> the system is under, one command can always make the round trip to
+> storage and back.
 
-At the moment, I don't see the utility of timeouts for wakeup-aware 
-user programs.  While they may sometimes be necessary in the kernel, a 
-program can implement its own timers.
+I will implement a mempool based allocation scheme as you have suggested.
 
-> >  But worse - the mechanism you provide can be trivially implemented using
-> >  unix-domain sockets talking to a suspend-daemon.
-> > 
-> >  Instead of opening /dev/sleepctl, you connect to /var/run/suspend-daemon/sock
-> >  Instead of ioctl(SLEEPCTL_STAY_AWAKE), you write a number to the socket.
-> >  Instead of ioctl(SLEEPCTL_RELAX), you write zero to the socket.
-> > 
-> >  All the extra handling you do in the kernel, can easily be done by
-> >  user-space suspend-daemon.
 > 
-> I'm not exactly sure why it is "worse".  Doing it through sockets may require
-> the kernel to do more work and it won't be possible to implement the
-> SLEEPCTL_WAIT_EVENT ioctl I've just described to John this way.
+> You use the locked version of queuecommand, but it looks like you don't
+> need the host lock in the submit path, so why not just use the unlocked
+> version?
 
-Why not?  The PM daemon queries all its clients when a suspend is 
-imminent.  Those queries are just like the SIGPWR things you described 
-for SLEEPCTL_WAIT_EVENT.
-
-> >  Isn't it much preferable to do this in userspace where people can
-> >  experiment and refine and improve without having to upgrade the kernel?
+Will do.
 > 
-> Well, I used to think that it's better to do things in user space.  Hence,
-> the hibernate user space interface that's used by many people.  And my
-> experience with that particular thing made me think that doing things in
-> the kernel may actually work better, even if they _can_ be done in user space.
+> The bounce buffer handling for discontiguous sg lists is a complete
+> nightmare.  And can't you just fix the hypervisor instead of pulling
+> this level of nastiness in the driver, I mean really, the last piece of
+> real SCSI hardware that failed this badly was produced in the dark ages.
+
+The restrictions (as they are) are really from the windows host side and for what it is 
+worth, I have never seen this code triggered at least for I/O initiated by the file system. 
+
+ 
+> Assuming the answer is "no", I really think you need to set the minimum
+> block size to 4k, which will completely avoid the situation.
+
+I would love to get rid of the bounce buffer handling code by ensuring that the 
+upper level code would never present scatter gather lists that would trigger bounce buffer
+handling code. How would I accomplish that. 
+ 
 > 
-> Obviously, that doesn't apply to everything, but sometimes it simply is worth
-> discussing (if not trying).  If it doesn't work out, then fine, let's do it
-> differently, but I'm really not taking the "this should be done in user space"
-> argument at face value any more.  Sorry about that.
+> Minor, but use accessors like shost_priv()
 
-In this case, I strongly suspect that the difficulty level will be
-about the same either way.  Both approaches would place strict
-requirements on the structure of wakeup-aware programs.
+Will do.
 
-Alan Stern
+> 
+> The SET WINDOW command is an obsolete scanner command ... the comment
+> about smart issuing it looks completely bogus, but even if there's
+> something issuing scanner commands and your hypervisor crashes on them,
+> you need to reject it with ILLEGAL_REQUEST not DID_ERROR.
 
+Will do.
+
+> 
+> All the business around max segment size and supplying your own merge
+> biovec function looks a bit bogus, don't you just want to disable
+> clustering?  This looks like another knock on from the weird hypervisor
+> sg list handling, where you apparently need one sg entry per page.  This
+> was originally a bug in the circa 1990 era NCR 53c800 host controllers
+> we then had, so that's actually why the clustering parameter exists ...
+> it's sort of nostalgic to see you resurrecting such an ancient bug.
+
+I will try to clean this up. Would you want all the cleanup you have suggested here
+done before the code can be moved out of staging or could you take the code and I could 
+give you the patches to address the issues listed by you. Once again, thanks for taking the time 
+to look at this code.
+
+Regards,
+
+K. Y
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
