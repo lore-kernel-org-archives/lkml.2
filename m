@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1JPILn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 04:11:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1085 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab1JPILm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 04:11:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,353,1315206000"; 
-   d="scan'208";a="27096962"
-Subject: Re: [PATCH 07/10] spi, serial: move to dma_transfer_direction
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Alan Cox <alan@linux.intel.com>
-In-Reply-To: <20111016042158.GB4901@ponder.secretlab.ca>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
-	 <1318570705-17595-8-git-send-email-vinod.koul@intel.com>
-	 <20111016042158.GB4901@ponder.secretlab.ca>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 16 Oct 2011 13:33:14 +0530
-Message-ID: <1318752194.23438.47.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753963Ab1JPKIz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 06:08:55 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49380 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab1JPKIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 06:08:54 -0400
+Date: Sun, 16 Oct 2011 11:08:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 6/9] drivers: add Contiguous Memory Allocator
+Message-ID: <20111016100821.GA21648@n2100.arm.linux.org.uk>
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com> <1317909290-29832-7-git-send-email-m.szyprowski@samsung.com> <20111014165730.e98aee8a.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014165730.e98aee8a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-15 at 22:21 -0600, Grant Likely wrote:
-> On Fri, Oct 14, 2011 at 11:08:22AM +0530, Vinod Koul wrote:
-> > From: Vinod Koul <vinod.koul@linux.intel.com>
-> > 
-> > Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Alan Cox <alan@linux.intel.com>
+On Fri, Oct 14, 2011 at 04:57:30PM -0700, Andrew Morton wrote:
+> On Thu, 06 Oct 2011 15:54:46 +0200
+> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> > +#ifdef phys_to_pfn
+> > +/* nothing to do */
+> > +#elif defined __phys_to_pfn
+> > +#  define phys_to_pfn __phys_to_pfn
+> > +#elif defined __va
+> > +#  define phys_to_pfn(x) page_to_pfn(virt_to_page(__va(x)))
+> > +#else
+> > +#  error phys_to_pfn implementation needed
+> > +#endif
 > 
-> This looks okay to me.  What tree does it need to be merged through?
-Can you pls send you formal ack
+> Yikes!
+> 
+> This hackery should not be here, please.  If we need a phys_to_pfn()
+> then let's write a proper one which lives in core MM and arch, then get
+> it suitably reviewed and integrated and then maintained.
 
-I plan to take this entire series thru slave-dma tree.
+Another question is whether we have any arch where PFN != PHYS >> PAGE_SHIFT?
+We've used __phys_to_pfn() to implement that on ARM (with a corresponding
+__pfn_to_phys()).  Catalin recently added a cast to __phys_to_pfn() for
+LPAE, which I don't think is required:
 
--- 
-~Vinod
+-#define        __phys_to_pfn(paddr)    ((paddr) >> PAGE_SHIFT)
++#define        __phys_to_pfn(paddr)    ((unsigned long)((paddr) >> PAGE_SHIFT))
 
+since a phys_addr_t >> PAGE_SHIFT will be silently truncated if the passed
+in physical address was 64-bit anyway.  (Note: we don't support > 32-bit
+PFNs).
+
+So, I'd suggest CMA should just use PFN_DOWN() and be done with it.
