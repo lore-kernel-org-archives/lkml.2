@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1JPP3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 11:29:20 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60068 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536Ab1JPP3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 11:29:19 -0400
-Subject: [PATCH 2/3] ASoC: wm8900: Fix the mask defines
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-In-Reply-To: <1318778876.3106.3.camel@phoenix>
-References: <1318778876.3106.3.camel@phoenix>
+	id S1753373Ab1JPIeH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 04:34:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42730 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752869Ab1JPIeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 04:34:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,353,1315206000"; 
+   d="scan'208";a="78551293"
+Subject: Re: [PATCH] dmaengine/ep93xx_dma: add module.h include
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20111016081930.GC2642@mwesterb-mobl.ger.corp.intel.com>
+References: <1318703917-7604-1-git-send-email-mika.westerberg@iki.fi>
+	 <1318752342.23438.49.camel@vkoul-udesk3>
+	 <20111016081930.GC2642@mwesterb-mobl.ger.corp.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 16 Oct 2011 23:29:12 +0800
-Message-ID: <1318778952.3106.4.camel@phoenix>
+Date: Sun, 16 Oct 2011 13:55:39 +0530
+Message-ID: <1318753539.23438.50.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have done bitwise NOT against the mask bits for the defines of
-WM8900_REG_CLOCKING1_BCLK_MASK,
-WM8900_REG_CLOCKING1_OPCLK_MASK and WM8900_LRC_MASK.
+On Sun, 2011-10-16 at 11:19 +0300, Mika Westerberg wrote:
+> On Sun, Oct 16, 2011 at 01:35:42PM +0530, Vinod Koul wrote:
+> > Any reason why it is required. Changelog isn't really helpful
+> 
+> Yeah, sorry. Grant also mentioned about the same thing.
+> 
+> Below is an updated version.
+> 
+> From: Mika Westerberg <mika.westerberg@iki.fi>
+> Subject: [PATCH] dmaengine/ep93xx_dma: add module.h include
+> 
+> Due to module.h cleanup it is not anymore included implicitly. Drivers who
+> want to use it need to include it explicitly.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+> ---
+>  drivers/dma/ep93xx_dma.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+> index 5d7a49b..b47e2b8 100644
+> --- a/drivers/dma/ep93xx_dma.c
+> +++ b/drivers/dma/ep93xx_dma.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/init.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/dmaengine.h>
+> +#include <linux/module.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/slab.h>
 
-But we don't have the bitwise NOT against the mask bits for the defines of
-WM8900_REG_CLOCKING2_DAC_CLKDIV,
-WM8900_REG_CLOCKING2_ADC_CLKDIV and WM8900_REG_DACCTRL_AIF_LRCLKRATE.
+Applied, Thanks
 
-It is error prone to mix the inconsistent meaning for different mask defines.
-So lets make the defines for each mask to be corresponding to the bits
-defines in datasheet. Don't add extra "bitwise NOT" to the defines.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8900.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/sound/soc/codecs/wm8900.c b/sound/soc/codecs/wm8900.c
-index b16522f..86de396 100644
---- a/sound/soc/codecs/wm8900.c
-+++ b/sound/soc/codecs/wm8900.c
-@@ -110,8 +110,8 @@
- 
- #define WM8900_REG_CLOCKING1_BCLK_DIR   0x1
- #define WM8900_REG_CLOCKING1_MCLK_SRC   0x100
--#define WM8900_REG_CLOCKING1_BCLK_MASK  (~0x01e)
--#define WM8900_REG_CLOCKING1_OPCLK_MASK (~0x7000)
-+#define WM8900_REG_CLOCKING1_BCLK_MASK  0x01e
-+#define WM8900_REG_CLOCKING1_OPCLK_MASK 0x7000
- 
- #define WM8900_REG_CLOCKING2_ADC_CLKDIV 0xe0
- #define WM8900_REG_CLOCKING2_DAC_CLKDIV 0x1c
-@@ -135,7 +135,7 @@
- #define WM8900_REG_HPCTL1_HP_SHORT       0x08
- #define WM8900_REG_HPCTL1_HP_SHORT2      0x04
- 
--#define WM8900_LRC_MASK 0xfc00
-+#define WM8900_LRC_MASK 0x03ff
- 
- struct wm8900_priv {
- 	enum snd_soc_control_type control_type;
-@@ -824,22 +824,22 @@ static int wm8900_set_dai_clkdiv(struct snd_soc_dai *codec_dai,
- 	case WM8900_BCLK_DIV:
- 		reg = snd_soc_read(codec, WM8900_REG_CLOCKING1);
- 		snd_soc_write(codec, WM8900_REG_CLOCKING1,
--			     div | (reg & WM8900_REG_CLOCKING1_BCLK_MASK));
-+			     div | (reg & ~WM8900_REG_CLOCKING1_BCLK_MASK));
- 		break;
- 	case WM8900_OPCLK_DIV:
- 		reg = snd_soc_read(codec, WM8900_REG_CLOCKING1);
- 		snd_soc_write(codec, WM8900_REG_CLOCKING1,
--			     div | (reg & WM8900_REG_CLOCKING1_OPCLK_MASK));
-+			     div | (reg & ~WM8900_REG_CLOCKING1_OPCLK_MASK));
- 		break;
- 	case WM8900_DAC_LRCLK:
- 		reg = snd_soc_read(codec, WM8900_REG_AUDIO4);
- 		snd_soc_write(codec, WM8900_REG_AUDIO4,
--			     div | (reg & WM8900_LRC_MASK));
-+			     div | (reg & ~WM8900_LRC_MASK));
- 		break;
- 	case WM8900_ADC_LRCLK:
- 		reg = snd_soc_read(codec, WM8900_REG_AUDIO3);
- 		snd_soc_write(codec, WM8900_REG_AUDIO3,
--			     div | (reg & WM8900_LRC_MASK));
-+			     div | (reg & ~WM8900_LRC_MASK));
- 		break;
- 	case WM8900_DAC_CLKDIV:
- 		reg = snd_soc_read(codec, WM8900_REG_CLOCKING2);
 -- 
-1.7.4.1
-
-
+~Vinod
 
