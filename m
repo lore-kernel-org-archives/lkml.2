@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1JPRfq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 13:35:46 -0400
-Received: from webmail4.allcom.net ([64.85.136.186]:45740 "EHLO
-	webmail4.allcom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714Ab1JPRfp convert rfc822-to-8bit (ORCPT
+	id S1754934Ab1JPRkg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 13:40:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44298 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815Ab1JPRkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 13:35:45 -0400
-X-Greylist: delayed 13600 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 13:35:45 EDT
-Message-ID: <20111016080018.l1gr73ebwgo8gs8g@webmail.allcom.net>
-Date: Sun, 16 Oct 2011 08:00:18 -0400
-From: =?iso-8859-1?b?V2VzdGVybi1Vbmlvbq4=?= Customer Care 
-	<info@western.com>
-Reply-to: dr.watercollins2010@w.cn
-To: undisclosed-recipients:;
-Subject: Year End Bonus. (Congratulations)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.1)
+	Sun, 16 Oct 2011 13:40:35 -0400
+Subject: Re: OCFS2 1.6.0 for mainline?
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Xose Vazquez Perez <xose.vazquez@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4E9AF05B.7020508@gmail.com>
+References: <4E9AF05B.7020508@gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Sun, 16 Oct 2011 19:40:32 +0200
+Message-ID: <1318786832.31522.21.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EMIL/idsorteo.7762020-60
+On Sun, 2011-10-16 at 16:55 +0200, Xose Vazquez Perez wrote:
+> Richard Weinberger wrote:
+> 
+> > But the mainline kernel seems to contain only version 1.5.0.
+> > 
+> > Also the linux-next ocfs2 branch has only 1.5.0.
+> > git://oss.oracle.com/git/jlbec/linux-2.6.git linux-next
+> > 
+> > Where can I get 1.6.0?
+> > When will it come to mainline?
+> 
+> the latest is 1.8.0: http://public-yum.oracle.com/beta/repo/OracleLinux/OL6/uek2/x86_64/kernel-uek-2.6.39-100.0.12.el6uek.src.rpm
+> 
+> No patch, just look at linux-2.6.39/fs/ocfs2/
+> 
+> NO NO NO oracle!
 
-ATTN: Lucky Winner,
+Oracle's git tree for OCFS2 is available at
+http://oss.oracle.com/git/?p=ocfs2-1.8.git;a=summary , and all the rest
+of their open source related trees are at http://oss.oracle.com/git/ .
 
-We are pleased to announce to you that your email attached to Euro  
-Millones Int. ticket number 5-15-28-31-44, 1-9 won in the 2nd category  
-balloting held 30th September 2011. You are to receive the sum of  
-€327.043,46 Euro.
+-- 
 
-View results here:  
-http://www.loteriasyapuestas.es/index.php/mod.sorteos/mem.sorteos/juego.EMIL/idsorteo.776202060
-
-Contact the Claims Officer:
-Name: Mr. Peter Dora
-Email: online_claims@mixmail.com
-Tel: +34-634-031-732
-
-Congratulations.
-
-Regards,
-Mr. Curtis Ortega
-Coordinator.
-
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+Sasha.
 
