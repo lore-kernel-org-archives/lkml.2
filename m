@@ -1,34 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab1JPXQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 19:16:57 -0400
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:32969 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1JPXQ4 (ORCPT
+	id S1753224Ab1JPXYc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 19:24:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53086 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab1JPXYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 19:16:56 -0400
-Message-ID: <4E9B65EC.7020303@calvaedi.com>
-Date: Mon, 17 Oct 2011 01:17:00 +0200
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
-MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: Mattia Dongili <malattia@linux.it>, John Hughes <john@Calva.COM>,
-        linux-kernel@vger.kernel.org, Stelian Pop <stelian@popies.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Subject: Re: sony-laptop driver: Volume keys on Sony Vaio TX3 don't work
-References: <4E9ABBF6.3000504@calvaedi.com> <4E9ADBD3.4070404@calvaedi.com> <4E9B182A.3020101@calvaedi.com> <74494.1318789218@turing-police.cc.vt.edu>            <20111016213800.GA12703@kamineko.org> <81436.1318801813@turing-police.cc.vt.edu>
-In-Reply-To: <81436.1318801813@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 16 Oct 2011 19:24:31 -0400
+Subject: Re: OCFS2 1.6.0 for mainline?
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Xose Vazquez Perez <xose.vazquez@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4E9B55B8.3090700@gmail.com>
+References: <4E9AF05B.7020508@gmail.com> <1318786832.31522.21.camel@lappy>
+	 <4E9B55B8.3090700@gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 17 Oct 2011 01:24:25 +0200
+Message-ID: <1318807465.31522.24.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2011 11:50 PM, Valdis.Kletnieks@vt.edu wrote:
->
-> And let me guess - two phase hotkey decoding is sufficiently weird that
-> nobody wants to actually fix *that* code, right? (Rhetorical question, I
-> already know the answer to that one).
->    
-Ok, what is "two phase hotkey decoding?"
+On Mon, 2011-10-17 at 00:07 +0200, Xose Vazquez Perez wrote:
+> On 10/16/2011 07:40 PM, Sasha Levin wrote:
+> 
+> > On Sun, 2011-10-16 at 16:55 +0200, Xose Vazquez Perez wrote:
+> 
+> >> the latest is 1.8.0: http://public-yum.oracle.com/beta/repo/OracleLinux/OL6/uek2/x86_64/kernel-uek-2.6.39-100.0.12.el6uek.src.rpm
+> >>
+> >> No patch, just look at linux-2.6.39/fs/ocfs2/
+> >>
+> >> NO NO NO oracle!
+> 
+> > Oracle's git tree for OCFS2 is available at
+> > http://oss.oracle.com/git/?p=ocfs2-1.8.git;a=summary , and all the rest
+> > of their open source related trees are at http://oss.oracle.com/git/ .
+> 
+> last change in git was *ONE year* ago: 12 Oct 2010
+> kernel-uek-2.6.39-100.0.12.el6uek.src.rpm is two weeks old.
+> Are you sure is the same code in git and src.rpm ?
+
+You're right, that source rpm is based on
+http://oss.oracle.com/git/?p=linux-2.6-unbreakable-beta.git
+which also has more recent OCFS2 commits.
+
+> 
+> 
+> Are going oracle to play also this way with btrfs ?
+
+-- 
+
+Sasha.
+
