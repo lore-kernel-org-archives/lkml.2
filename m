@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab1JPLSF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 07:18:05 -0400
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:61403 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab1JPLSD (ORCPT
+	id S1753035Ab1JPITp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 04:19:45 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37143 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab1JPITl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 07:18:03 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 07:18:03 EDT
-Message-ID: <4E9ABBF6.3000504@calvaedi.com>
-Date: Sun, 16 Oct 2011 13:11:50 +0200
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+	Sun, 16 Oct 2011 04:19:41 -0400
+Date: Sun, 16 Oct 2011 11:19:30 +0300
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmaengine/ep93xx_dma: add module.h include
+Message-ID: <20111016081930.GC2642@mwesterb-mobl.ger.corp.intel.com>
+References: <1318703917-7604-1-git-send-email-mika.westerberg@iki.fi>
+ <1318752342.23438.49.camel@vkoul-udesk3>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Mattia Dongili <malattia@linux.it>,
-        Stelian Pop <stelian@popies.net>
-Subject: sony-laptop driver: Volume keys on Sony Vaio TX3 don't work
-Content-Type: multipart/mixed;
- boundary="------------060509040901010307050408"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318752342.23438.49.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060509040901010307050408
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Sun, Oct 16, 2011 at 01:35:42PM +0530, Vinod Koul wrote:
+> Any reason why it is required. Changelog isn't really helpful
 
-Even though sony-laptop has code to handle the volume-up/volume-down 
-keys they don't work.  Pressing volume-down gets treated as 
-SONYPI_EVENT_PKEY_P1 and volume-up as SONYPI_EVENT_PKEY_P2.
+Yeah, sorry. Grant also mentioned about the same thing.
 
-This is because volume-down generates event 0x01 with data mask 0x05 and 
-although the sonypi_volumeev table exists to handle this the table 
-sonypi_pkeyev steals the event before it gets handled.
+Below is an updated version.
 
-Re-ordering the entries in the table type3_events and fixing the bug in 
-sonypi_volumeev (up and down were inverted) makes the volume keys work.
+From: Mika Westerberg <mika.westerberg@iki.fi>
+Subject: [PATCH] dmaengine/ep93xx_dma: add module.h include
 
-See attached patch.
+Due to module.h cleanup it is not anymore included implicitly. Drivers who
+want to use it need to include it explicitly.
 
-The two remaining problems are:
+Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+---
+ drivers/dma/ep93xx_dma.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-1. the EJECT key is mapped to FN_E
-2. the MUTE key (event 5f, 31) is mapped to nothing.   (Not to important 
-as it turns the speaker off in hardware).
-
---------------060509040901010307050408
-Content-Type: text/x-patch;
- name="sony-vaio-tx3.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="sony-vaio-tx3.patch"
-
---- drivers/platform/x86/sony-laptop.c.orig	2009-12-03 04:51:21.000000000 +0100
-+++ drivers/platform/x86/sony-laptop.c	2011-10-16 12:58:07.000000000 +0200
-@@ -1576,8 +1576,8 @@
+diff --git a/drivers/dma/ep93xx_dma.c b/drivers/dma/ep93xx_dma.c
+index 5d7a49b..b47e2b8 100644
+--- a/drivers/dma/ep93xx_dma.c
++++ b/drivers/dma/ep93xx_dma.c
+@@ -22,6 +22,7 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/dmaengine.h>
++#include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
  
- /* The set of possible volume events */
- static struct sonypi_event sonypi_volumeev[] = {
--	{ 0x01, SONYPI_EVENT_VOLUME_INC_PRESSED },
--	{ 0x02, SONYPI_EVENT_VOLUME_DEC_PRESSED },
-+	{ 0x01, SONYPI_EVENT_VOLUME_DEC_PRESSED },
-+	{ 0x02, SONYPI_EVENT_VOLUME_INC_PRESSED },
- 	{ 0, 0 }
- };
- 
-@@ -1624,10 +1624,10 @@
- 	{ 0x31, SONYPI_MEMORYSTICK_MASK, sonypi_memorystickev },
- 	{ 0x41, SONYPI_BATTERY_MASK, sonypi_batteryev },
- 	{ 0x31, SONYPI_PKEY_MASK, sonypi_pkeyev },
-+	{ 0x05, SONYPI_PKEY_MASK, sonypi_volumeev },
- 	{ 0x05, SONYPI_PKEY_MASK, sonypi_pkeyev },
- 	{ 0x05, SONYPI_ZOOM_MASK, sonypi_zoomev },
- 	{ 0x05, SONYPI_CAPTURE_MASK, sonypi_captureev },
--	{ 0x05, SONYPI_PKEY_MASK, sonypi_volumeev },
- 	{ 0x05, SONYPI_PKEY_MASK, sonypi_brightnessev },
- 	{ 0 },
- };
+-- 
+1.7.6.3
 
---------------060509040901010307050408--
