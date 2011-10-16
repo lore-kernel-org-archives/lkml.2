@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab1JPODc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 10:03:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37623 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab1JPODa (ORCPT
+	id S1752557Ab1JPIBm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 04:01:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62229 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab1JPIBl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 10:03:30 -0400
-Subject: Re: [PATCH 1/2] jffs2: implement mount option parsing and
- compression overriding
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andres Salomon <dilinger@queued.net>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Date: Sun, 16 Oct 2011 17:03:00 +0300
-In-Reply-To: <20111015125006.685efc30@queued.net>
-References: <20111015125006.685efc30@queued.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318773789.7278.7.camel@sauron>
-Mime-Version: 1.0
+	Sun, 16 Oct 2011 04:01:41 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Ankita Garg" <ankita@in.ibm.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>, "Mel Gorman" <mel@csn.ul.ie>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        "Jesse Barker" <jesse.barker@linaro.org>,
+        "Jonathan Corbet" <corbet@lwn.net>,
+        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
+        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
+ <20111014162933.d8fead58.akpm@linux-foundation.org>
+Date: Sun, 16 Oct 2011 10:01:36 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v3fpwyxc3l0zgt@mpn-glaptop>
+In-Reply-To: <20111014162933.d8fead58.akpm@linux-foundation.org>
+User-Agent: Opera Mail/11.51 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 15 Oct 2011 01:29:33 +0200, Andrew Morton <akpm@linux-foundation.org> wrote:
 
-please, cc the fs-devel mailing list when you sumbit v2.
+> On Thu, 06 Oct 2011 15:54:42 +0200
+> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+>
+>> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>
+>> This commit introduces alloc_contig_freed_pages() function
+>
+> The "freed" seems redundant to me.  Wouldn't "alloc_contig_pages" be a
+> better name?
 
-On Sat, 2011-10-15 at 12:50 -0700, Andres Salomon wrote:
-> Currently jffs2 has compile-time constants (and .config options)
-> controlling whether or not the various compression/decompression
-> drivers are built in and enabled.  This is fine for embedded
-> systems, but it clashes with distribution kernels.  Distro kernels
-> tend to turn on everything; this causes OpenFirmware to fall
-> over, as it understands ZLIB-compressed inodes.  Booting a kernel
-> that has LZO compression enabled, writing to the boot partition,
-> and then rebooting causes OFW to fail to read the kernel from
-> the filesystem.  This is because LZO compression has priority
-> when writing new data to jffs2, if LZO is enabled.
-> 
-> This patch adds mount option parsing, and a single supported
-> option ("compr=none").  This adds the flexibility of being
-> able to specify which compressor overrides on a per-superblock
-> basis.  For now, we can simply disable compression;
-> additional flexibility coming soon.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
+The “freed” is there because the function operates on pages that are in
+buddy system, ie. it is given a range of PFNs that are to be removed
+ from buddy system.
 
-You forgot to implement .show_options method of
-'struct super_operations' - it is needed to make sure 'compr=none'
-is shown when you do 'cat /proc/mounts'.
+There's also a alloc_contig_range() function (added by next patch)
+which frees pages in given range and then calls
+alloc_contig_free_pages() to allocate them.
 
+IMO, if there was an alloc_contig_pages() function, it would have to
+be one level up (ie. it would figure out where to allocate memory and
+then call alloc_contig_range()).  (That's really what CMA is doing).
 
-> +	err = jffs2_parse_options(c, data);
-> +	if (err) {
-> +		printk(KERN_ERR "JFFS2 error: invalid or unknown mount option\n");
-
-'jffs2_parse_options()' prints the error message, do not duplicate it
-please.
-
-> +		return -EINVAL;
-> +	}
-> +
-> +	return jffs2_do_remount_fs(sb, flags, data);
-> +}
-> +
->  static const struct super_operations jffs2_super_operations =
->  {
->  	.alloc_inode =	jffs2_alloc_inode,
-> @@ -166,6 +234,13 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
->  	c->os_priv = sb;
->  	sb->s_fs_info = c;
->  
-> +	ret = jffs2_parse_options(c, data);
-> +	if (ret) {
-> +		printk(KERN_ERR "JFFS2 error: invalid or unknown mount option\n");
-
-Ditto - kill this printk please.
-
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+Still, as I think of it now, maybe alloc_contig_free_range() would be
+better?
