@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1JPMHu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 08:07:50 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:63172 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab1JPMHo (ORCPT
+	id S1751340Ab1JPK5S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 06:57:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63148 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab1JPK5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 08:07:44 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 4/4] staging: et131x: Remove unused defines
-Date: Sun, 16 Oct 2011 13:06:15 +0100
-Message-Id: <1318766775-2517-4-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1318766775-2517-1-git-send-email-mark.einon@gmail.com>
-References: <1318766775-2517-1-git-send-email-mark.einon@gmail.com>
+	Sun, 16 Oct 2011 06:57:11 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rt-users@vger.kernel.org, tglx@linutronix.de
+Subject: [PATCH -rt 2/5] hotplug: Call cpu_unplug_begin() a little early
+Date: Sun, 16 Oct 2011 18:56:44 +0800
+Message-Id: <1318762607-2261-3-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1318762607-2261-1-git-send-email-yong.zhang0@gmail.com>
+References: <1318762607-2261-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some defines are no longer referenced in the code, so removed them.
+cpu_unplug_begin() should be called before CPU_DOWN_PREPARE,
+because at CPU_DOWN_PREPARE cpu_active is cleared and sched_domain
+is rebuilt, it will finally lead to thread 'sync_unplug' will
+be running on the cpu on which it's created.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
+I found by an incorrect warning on smp_processor_id() called by
+sync_unplug/1, and trace shows below:
+(echo 1 > /sys/device/system/cpu/cpu1/online)
+  bash-1664  [000]    83.136620: _cpu_down: Bind sync_unplug to cpu 1
+  bash-1664  [000]    83.136623: sched_wait_task: comm=sync_unplug/1 pid=1724 prio=120
+  bash-1664  [000]    83.136624: _cpu_down: Wake sync_unplug
+  bash-1664  [000]    83.136629: sched_wakeup: comm=sync_unplug/1 pid=1724 prio=120 success=1 target_cpu=000
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- drivers/staging/et131x/et131x.c |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
+ kernel/cpu.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 1c11dfd..1efa27c 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -145,21 +145,14 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
- /* MP_ADAPTER flags */
- #define fMP_ADAPTER_RECV_LOOKASIDE	0x00000004
- #define fMP_ADAPTER_INTERRUPT_IN_USE	0x00000008
--#define fMP_ADAPTER_SECONDARY		0x00000010
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 83fb084..13066a3 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -337,22 +337,20 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		return -EBUSY;
+ 	}
  
- /* MP_SHARED flags */
--#define fMP_ADAPTER_SHUTDOWN		0x00100000
- #define fMP_ADAPTER_LOWER_POWER		0x00200000
+-	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
++	cpu_hotplug_begin();
++	err = cpu_unplug_begin(cpu);
+ 	if (err) {
+-		nr_calls--;
+-		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
+-		printk("%s: attempt to take down CPU %u failed\n",
+-				__func__, cpu);
++		printk("cpu_unplug_begin(%d) failed\n", cpu);
+ 		goto out_cancel;
+ 	}
  
- #define fMP_ADAPTER_NON_RECOVER_ERROR	0x00800000
--#define fMP_ADAPTER_RESET_IN_PROGRESS	0x01000000
--#define fMP_ADAPTER_NO_CABLE		0x02000000
- #define fMP_ADAPTER_HARDWARE_ERROR	0x04000000
--#define fMP_ADAPTER_REMOVE_IN_PROGRESS	0x08000000
--#define fMP_ADAPTER_HALT_IN_PROGRESS	0x10000000
+-	cpu_hotplug_begin();
+-	err = cpu_unplug_begin(cpu);
++	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
+ 	if (err) {
+ 		nr_calls--;
+ 		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
+-		printk("cpu_unplug_begin(%d) failed\n", cpu);
+-		goto out_cancel;
++		printk("%s: attempt to take down CPU %u failed\n",
++				__func__, cpu);
++		goto out_release;
+ 	}
  
- #define fMP_ADAPTER_FAIL_SEND_MASK	0x3ff00000
--#define fMP_ADAPTER_NOT_READY_MASK	0x3ff00000
- 
- /* Some offsets in PCI config space that are actually used. */
- #define ET1310_PCI_MAX_PYLD		0x4C
-@@ -205,7 +198,6 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
- 
- #define NUM_PACKETS_HANDLED	256
- 
--#define ALCATEL_BAD_STATUS	0xe47f0000
- #define ALCATEL_MULTICAST_PKT	0x01000000
- #define ALCATEL_BROADCAST_PKT	0x02000000
- 
-@@ -452,8 +444,6 @@ struct tx_ring {
-  * Once the desired performance has been achieved, the optimal registry values
-  * should be re-populated to these #defines:
-  */
--#define NUM_TRAFFIC_CLASSES          1
--
- #define TX_ERROR_PERIOD             1000
- 
- #define LO_MARK_PERCENT_FOR_PSR     15
-@@ -4715,7 +4705,6 @@ void et131x_disable_interrupts(struct et131x_adapter *adapter)
- 	writel(INT_MASK_DISABLE, &adapter->regs->global.int_mask);
- }
- 
--
- /**
-  * et131x_isr - The Interrupt Service Routine for the driver.
-  * @irq: the IRQ on which the interrupt was received.
+ 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
 -- 
-1.7.6.4
+1.7.1
 
