@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab1JPJKX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 05:10:23 -0400
-Received: from bar.sig21.net ([80.81.252.164]:41431 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab1JPJKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 05:10:21 -0400
-Date: Sun, 16 Oct 2011 11:10:09 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Markus Rechberger <mrechberger@gmail.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-Message-ID: <20111016091009.GB32551@sig21.net>
-References: <20111014224549.GA22810@sig21.net>
- <Pine.LNX.4.44L0.1110151459030.15129-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1110151459030.15129-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -1.0 (-)
-X-Spam-21-Report: No, score=-1.0 required=5.0 tests=ALL_TRUSTED=-1,BAYES_40=-0.001 autolearn=no
+	id S1753925Ab1JPJlF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 05:41:05 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.29.7]:39368 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab1JPJlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 05:41:03 -0400
+X-Greylist: delayed 129097 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 05:41:03 EDT
+Date: Sun, 16 Oct 2011 11:41:00 +0200
+From: Peter Feuerer <peter@piie.net>
+To: mjg@redhat.com
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <petkovbb@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/3] acerhdf: add support for Aspire 1410 BIOS v1.3314
+Message-Id: <20111016114100.88295b72.peter@piie.net>
+In-Reply-To: <20111016084300.GB32343@liondog.tnic>
+References: <20111014234055.2265c524.peter@piie.net>
+	<20111014234334.a87a2388.peter@piie.net>
+	<20111015223210.GC16432@liondog.tnic>
+	<cone.1318721291.690132.3813.1000@zopiie>
+	<20111016084300.GB32343@liondog.tnic>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NjUwNDc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 15, 2011 at 03:04:28PM -0400, Alan Stern wrote:
-> On Sat, 15 Oct 2011, Johannes Stezenbach wrote:
-> 
-> > What I meant to say is Markus' statement that the device only
-> > works at a certain transfer size cannot be true since
-> > this size is not visible to the device via the USB bus.
-> 
-> That's what I would expect, too.  But did you take a look at the usbmon 
-> traces Markus acquired?
-> 
-> 	http://marc.info/?l=linux-usb&m=131845614819045&w=2
+From: Clay Carpenter <claycarpenter@gmail.com>
 
-I glanced at them for 3 seconds, but I cannot be bothered
-to analyze them in detail.  The ASCII usbmon traces don't
-show full USB packet contents anyway so you can't see if
-partial MPEG TS packets are missing.
+Add support for Aspire 1410 BIOS v1.3314.  Fixes the following error:
 
-> They aren't completely definitive because the communications between
-> the computer and the device _before_ the bulk transfers started were
-> different.  However they do clearly show the device working with
-> 24064-byte transfers and not working with 12288+11776-byte transfers.
+acerhdf: unknown (unsupported) BIOS version Acer/Aspire 1410/v1.3314,
+please report, aborting!
 
-The device transfers data in the "not working" case, it's just that
-the MPEG TS sync byte is not where Markus expects it, which could
-be explained by a partial MPEG TS packet left in the device's FIFO
-from previous interaction.
+Signed-off-by: Clay Carpenter <claycarpenter@gmail.com>
+Signed-off-by: Peter Feuerer <peter@piie.net>
+Cc: Borislav Petkov <petkovbb@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/platform/x86/acerhdf.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 760c6d7..698e45c 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -161,6 +161,7 @@ static const struct bios_settings_t bios_tbl[] = {
+ 	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Acer 1810xx */
+ 	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+-- 
+1.7.7
 
-Johannes
