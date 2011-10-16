@@ -1,63 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab1JPK5Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 06:57:24 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64860 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab1JPK5V (ORCPT
+	id S1754604Ab1JPOvE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 10:51:04 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:59131 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753705Ab1JPOvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 06:57:21 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-rt-users@vger.kernel.org, tglx@linutronix.de
-Subject: [RFC] [PATCH -rt 3/5] printk: don't call printk_tick in printk_needs_cpu()
-Date: Sun, 16 Oct 2011 18:56:45 +0800
-Message-Id: <1318762607-2261-4-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1318762607-2261-1-git-send-email-yong.zhang0@gmail.com>
-References: <1318762607-2261-1-git-send-email-yong.zhang0@gmail.com>
+	Sun, 16 Oct 2011 10:51:02 -0400
+Date: Sun, 16 Oct 2011 10:51:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
+ interfaces
+In-Reply-To: <Pine.LNX.4.44L0.1110152224461.19724-100000@netrider.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1110161018580.28864-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk_tick() can't be called in atomic context, otherwise below
-warning will show:
+On Sat, 15 Oct 2011, Alan Stern wrote:
 
-[  117.597095] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-[  117.597102] in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: kworker/0:0
-[  117.597111] Pid: 0, comm: kworker/0:0 Not tainted 3.0.6-rt17-00284-gb76d419-dirty #7
-[  117.597116] Call Trace:
-[  117.597131]  [<c06e3b61>] ? printk+0x1d/0x24
-[  117.597142]  [<c01390b6>] __might_sleep+0xe6/0x110
-[  117.597151]  [<c06e634c>] rt_spin_lock+0x1c/0x30
-[  117.597158]  [<c0142f26>] __wake_up+0x26/0x60
-[  117.597166]  [<c014c78e>] printk_tick+0x3e/0x40
-[  117.597173]  [<c014c7b4>] printk_needs_cpu+0x24/0x30
-[  117.597181]  [<c017ecc8>] tick_nohz_stop_sched_tick+0x2e8/0x410
-[  117.597191]  [<c017305a>] ? sched_clock_idle_wakeup_event+0x1a/0x20
-[  117.597201]  [<c010182a>] cpu_idle+0x4a/0xb0
-[  117.597209]  [<c06e0b97>] start_secondary+0xd3/0xd7
+> Basically, what we need is a reliable way to intercept the existing
+> mechanisms for suspend/hibernate and to redirect the requests to the PM
+> daemon.  When the daemon is started up in "legacy" mode, it assumes
+> there is a legacy client (representing the entire set of
+> non-wakeup-aware programs) that always forbids suspend _except_ when
+> one of the old mechanisms is invoked.
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- kernel/printk.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+The more I think about this, the better it seems.  In essence, it 
+amounts to "virtualizing" the existing PM interface.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 0c9a0ab..a50af4e 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1282,8 +1282,8 @@ void printk_tick(void)
- 
- int printk_needs_cpu(int cpu)
- {
--	if (cpu_is_offline(cpu))
--		printk_tick();
-+	if (unlikely(cpu_is_offline(cpu)))
-+		__this_cpu_write(printk_pending, 0);
- 	return __this_cpu_read(printk_pending);
- }
- 
--- 
-1.7.1
+Let's add /sys/power/manage, and make it single-open.  Whenever that 
+file is open, writes to /sys/power/state and /dev/snapshot don't work 
+normally; instead they get forwarded over /sys/power/manage (and 
+results get sent back).  Suspend is easy; hibernation (because of its 
+multi-step nature) will be more difficult.
+
+The only important requirement is that processes can use poll system 
+calls to wait for wakeup events.  This may not always be true (consider 
+timer expirations, for example), but we ought to be able to make some 
+sort of accomodation.
+
+The PM daemon will communicate with its clients over a Unix-domain
+socket.  The protocol can be extremely simple: The daemon sends a byte
+to the client when it wants to sleep, and the client sends the byte
+back when it is ready to allow the system to go to sleep.  There's
+never more than one byte outstanding at any time in either direction.
+
+The clients would be structured like this:
+
+	Open a socket connection to the PM daemon.
+
+	Loop:
+
+		Poll on possible events and the PM socket.
+
+		If any events occurred, handle them.
+
+		Otherwise if a byte was received from the PM daemon,
+		send it back.
+
+In non-legacy mode, the PM daemon's main loop is also quite simple:
+
+	1. Read /sys/power/wakeup_count.
+
+	2. For each client socket:
+
+		If a response to the previous transmission is still
+		pending, wait for it.
+
+		Send a byte (the data can be just a sequence number).
+
+		Wait for the byte to be echoed back.
+
+	3. Write /sys/power/wakeup_count.
+
+	4. Write a sleep command to /sys/power/manage.
+
+A timeout can be added to step 2 if desired, but in this mode it isn't
+needed.
+
+With legacy support enabled, we probably will want something like a 
+1-second timeout for step 2.  We'll also need an extra step at the 
+beginning and one at the end:
+
+	0. Wait for somebody to write "standy" or "mem" to 
+	   /sys/power/state (received via the /sys/power/manage file).
+
+	5. Send the final status of the suspend command back to the
+	   /sys/power/state writer.
+
+Equivalent support for hibernation is left as an exercise for the 
+reader.
+
+Obviously the PM daemon will need a secondary thread to accept new 
+incoming socket connections, and these connections will have to be 
+synchronized with the end of the iteration in step 2 (i.e., don't 
+accept new connections between the end of step 2 and the end of step 
+4).
+
+Initial startup of the daemon will be a little tricky, because it
+shouldn't start carrying out suspends until some clients have had a
+chance to connect.  For that matter, in non-legacy mode the daemon
+might not want to initiate suspends when there are no clients -- the
+system would never get anything done because it would go back to sleep
+as soon as the kernel finished processing each wakeup event.
+
+This really seems like it could work, and it wouldn't be tremendously 
+complicated.  The only changes needed in the kernel would be the 
+"virtualization" (or forwarding) mechanism for legacy support.
+
+Alan Stern
 
