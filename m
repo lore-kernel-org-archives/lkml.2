@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1JPQ6f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 12:58:35 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:43948 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab1JPQ6e (ORCPT
+	id S1754914Ab1JPRfq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 13:35:46 -0400
+Received: from webmail4.allcom.net ([64.85.136.186]:45740 "EHLO
+	webmail4.allcom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714Ab1JPRfp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 12:58:34 -0400
-Date: Sun, 16 Oct 2011 18:55:40 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] staging: et131x: Convert rest of pci memory management to dma api
-Message-ID: <20111016165540.GA8761@electric-eye.fr.zoreil.com>
-References: <1318766775-2517-1-git-send-email-mark.einon@gmail.com> <1318766775-2517-3-git-send-email-mark.einon@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 16 Oct 2011 13:35:45 -0400
+X-Greylist: delayed 13600 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 13:35:45 EDT
+Message-ID: <20111016080018.l1gr73ebwgo8gs8g@webmail.allcom.net>
+Date: Sun, 16 Oct 2011 08:00:18 -0400
+From: =?iso-8859-1?b?V2VzdGVybi1Vbmlvbq4=?= Customer Care 
+	<info@western.com>
+Reply-to: dr.watercollins2010@w.cn
+To: undisclosed-recipients:;
+Subject: Year End Bonus. (Congratulations)
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1318766775-2517-3-git-send-email-mark.einon@gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Einon <mark.einon@gmail.com> :
-> Replaced pci map/unmap and set_mask calls with their dma equivalents.
-> Also updated comments to reflect this.
-> 
-> Signed-off-by: Mark Einon <mark.einon@gmail.com>
-> ---
->  drivers/staging/et131x/et131x.c |   56 +++++++++++++++++++-------------------
->  1 files changed, 28 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-> index 993f93a..1c11dfd 100644
-> --- a/drivers/staging/et131x/et131x.c
-> +++ b/drivers/staging/et131x/et131x.c
-> @@ -3202,59 +3202,59 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
-[...]
->  				desc[frag++].addr_lo =
-> -				    pci_map_single(adapter->pdev,
-> +				    dma_map_single(&adapter->pdev->dev,
->  						   skb->data,
->  						   skb->len -
->  						   skb->data_len,
-> -						   PCI_DMA_TODEVICE);
-> +						   DMA_TO_DEVICE);
->  			} else {
+EMIL/idsorteo.7762020-60
 
-- Some dma_mapping_error() would be welcome.
+ATTN: Lucky Winner,
 
-- (nit) If you keep repeating &adapter->pdev->dev, you may consider adding
-  some local variable
+We are pleased to announce to you that your email attached to Euro  
+Millones Int. ticket number 5-15-28-31-44, 1-9 won in the 2nd category  
+balloting held 30th September 2011. You are to receive the sum of  
+€327.043,46 Euro.
 
-- could you rework the Tx path as well so that despite the cascade of
-  method the code does not end fighting for the right end of the screen ?
-  et131x_tx is almost empty. It could make some sense to merge it with
-  its callee (and rename it et131x_start_xmit ?).
+View results here:  
+http://www.loteriasyapuestas.es/index.php/mod.sorteos/mem.sorteos/juego.EMIL/idsorteo.776202060
 
-- nic_send_packet
-        for (i = 0; i < nr_frags; i++) {
-		[...comment..]
-                if (i == 0) {
+Contact the Claims Officer:
+Name: Mr. Peter Dora
+Email: online_claims@mixmail.com
+Tel: +34-634-031-732
 
-  Lovely...
+Congratulations.
 
-			[big block]
-		} else {
-			[small block]
-		}
+Regards,
+Mr. Curtis Ortega
+Coordinator.
 
-  ... really, really lovely.
 
-	}
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
-[...]
->  				/* NOTE: Here, the dma_addr_t returned from
-> -				 * pci_map_single() is implicitly cast as a
-> +				 * dma_map_single() is implicitly cast as a
->  				 * u32. Although dma_addr_t can be
->  				 * 64-bit, the address returned by
-> -				 * pci_map_single() is always 32-bit
-> +				 * dma_map_single() is always 32-bit
->  				 * addressable (as defined by the pci/dma
->  				 * subsystem)
->  				 */
->  				desc[frag++].addr_lo =
-[...]
->  				desc[frag].addr_hi = 0;
-
-- The NOTE seems a bit outdated. Afaiks the driver tries to set a 64 bits
-  wide DMA mask. Both addr_lo and addr_hi should be set with the returned
-  mapping and/or even replaced with a single 64 bits addr field in tx_desc.
-
-- Speaking of it, tx_desc probably lacks some __leXY annotations.
-
-- (nic_send_packet)
-  {
-        u32 i;
-        struct tx_desc desc[24];        /* 24 x 16 byte */
-
-  384 bytes. :o/
-
--- 
-Ueimor
