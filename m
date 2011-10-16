@@ -1,37 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab1JPI5w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 04:57:52 -0400
-Received: from eastrmfepi101.cox.net ([68.230.241.197]:52118 "EHLO
-	eastrmfepi101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab1JPI5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 04:57:48 -0400
-X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 04:57:48 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A02020A.4E9A9B3D.0055,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=oaIW6hvuqrvZuBstGxzMQDCn9/QU+BfQ2mb81G/9NAc=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=pZmP9RTn-EsA:10 a=D6Mx2fhzbfAA:10
- a=IkcTkHD0fZMA:10 a=dDYwxBZGHy8xwdLlItvT1g==:17 a=KUDogxLSYPgRG8_XSRkA:9
- a=QEXdDO2ut3YA:10 a=A6kPN1-jrTM0DSsQ:21 a=dDYwxBZGHy8xwdLlItvT1g==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20111016045213.E86IT.1777686.imail@eastrmwml43>
-Date: Sun, 16 Oct 2011 4:52:13 -0400
-From: Edwin Bradley <edwin.b14@cox.net>
-Reply-To: edwinbradley5@aim.com
-Subject: Hello!!
+	id S1752271Ab1JPGAi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 02:00:38 -0400
+Received: from [219.138.203.198] ([219.138.203.198]:50570 "EHLO orizone.com.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752044Ab1JPGAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 02:00:37 -0400
+Reply-To: <860181626@qq.com>
+Message-ID: <20111016135355833224@orizone.com.cn>
+From: "2011-10-16 13:53:54" <860181626@qq.com>
+To: <linuote09@163.co>
+Subject: =?utf-8?B?6IyD54ix5Yac44CBQOadpeS/oe+8gQ==?=
+Date: Sun, 16 Oct 2011 13:53:42 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 1
+X-mailer: Bmq 5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9GFTIDA027812
 
+å°Šæ•¬çš„ï¼šlinuote09@163.co
+  æœ¬å…¬å¸æœ‰ï¼šå•†ä¸šã€å¹¿å‘Šä¸šã€æœåŠ¡ä¸šã€å»ºç­‘ä¸šã€è¿è¾“ä¸šã€ç¨åŠ¡ä»£å¼€ã€è¡Œæ”¿äº‹ä¸šåŠå…¶å®ƒä¸“ç”¨...ç­‰![å‘Ë‡ËË‡ç¥¨]ä»£ç†!!
+æ‰¿è¯ºï¼šæ­£è§„é€”å¾„ä¸å¿…æ‹…å¿ƒçœŸå‡é—®é¢˜!å¯ä½¿ç”¨åä»˜æ¬¾!éœ€è¦ä¸é˜²ä¸€è¯•ï¼
 
-Edwin Bradley is my name, the Financial Controller of Northern Bank and am offering you a Business Proposal worthing $92million. Please do reply with mobile number for more details 
+è”ç³»ï¼š13802918596   Q Q: 860181626
+                                                                                                                                          2011-10-16 13:53:54 2011/10/16
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
