@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1JPVuz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 17:50:55 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42986 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab1JPVuy (ORCPT
+	id S1752409Ab1JPV5b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 17:57:31 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35155 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab1JPV53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 17:50:54 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Mattia Dongili <malattia@linux.it>
-Cc: John Hughes <john@calvaedi.com>, linux-kernel@vger.kernel.org,
-        Stelian Pop <stelian@popies.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Subject: Re: sony-laptop driver: Volume keys on Sony Vaio TX3 don't work
-In-Reply-To: Your message of "Mon, 17 Oct 2011 06:38:01 +0900."
-             <20111016213800.GA12703@kamineko.org>
-From: Valdis.Kletnieks@vt.edu
-References: <4E9ABBF6.3000504@calvaedi.com> <4E9ADBD3.4070404@calvaedi.com> <4E9B182A.3020101@calvaedi.com> <74494.1318789218@turing-police.cc.vt.edu>
-            <20111016213800.GA12703@kamineko.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1318801813_43181P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 16 Oct 2011 17:50:13 -0400
-Message-ID: <81436.1318801813@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4E9B5199.0083,ss=1,fgs=0,
-	ip=71.62.120.57,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sun, 16 Oct 2011 17:57:29 -0400
+Message-ID: <0e9ef9174a0089187fde0b3d084672ad.squirrel@www.firstfloor.org>
+In-Reply-To: <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com>
+References: <20111013233818.GB26654@one.firstfloor.org>
+    <1318631204.3018.101.camel@dabdike.int.hansenpartnership.com>
+    <20111016033514.GC26654@one.firstfloor.org>
+    <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com>
+Date: Sun, 16 Oct 2011 23:57:25 +0200
+Subject: Re: Please include const-sections into linux-next
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "James Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: multipart/mixed;boundary="----=_20111016235725_38372"
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1318801813_43181P
-Content-Type: text/plain; charset=us-ascii
+------=_20111016235725_38372
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
 
-On Mon, 17 Oct 2011 06:38:01 +0900, Mattia Dongili said:
-> On Sun, Oct 16, 2011 at 02:20:18PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> > Do we know if this is applicable to all Sony laptops, or only a few busticated
-> > models?
+vate email?
 >
-> I believe the latter is the case, the old A series also had this
-> problem. Of course applying the patch will break other models (SZ is one
-> I'm sure about) so there is no actual winner here unless we figure out
-> how to properly decode keys on sonypi models (this problem is
-> specifically related to two phase hotkey decoding, see the irq handler).
+> OK, so after fixing up that one, the next failure is:
+>
+> drivers/net/fealnx.c:95: error: version causes a section type conflict
+> drivers/net/fealnx.c:1944: error: fealnx_pci_tbl causes a section type
+> conflict
 
-And let me guess - two phase hotkey decoding is sufficiently weird that
-nobody wants to actually fix *that* code, right? (Rhetorical question, I
-already know the answer to that one).
+Hmm, this is weird (just like the other error)
+I wonder if the pa-risc tool chain has some general problems with sections
 
-If that's not an option, perhaps we need a per-model quirk that patches up the
-tables at boot time?  If we do that, we may want to re-arrange the table so the
-affected entries are at the front or something to help insure we don't patch
-the wrong entries if somebody else inserts new lines.
+On a successful build with the same config could you send me the output of
 
+make drivers/net/fealnx.s
+and
+make drivers/net/fealnx.i
 
---==_Exmh_1318801813_43181P
-Content-Type: application/pgp-signature
+in the same config privately? From that I can see if there's something else
+in init.rodata that does not match my i386 build.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+One alternative to track it down would be to apply the attached
+patch to the gcc, then gcc would print it out.
 
-iD8DBQFOm1GVcC3lWbTT17ARAjcAAKDulcPEJhmcB47OTUZQfj9tZtjRWACfS7Bc
-WTN6JHAzVNRR5TXDrqMNFFk=
-=DzNM
------END PGP SIGNATURE-----
+-Andi
 
---==_Exmh_1318801813_43181P--
+------=_20111016235725_38372
+Content-Type: application/octet-stream; name="section-conflict"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="section-conflict"
+
+Y29tbWl0IGI3NGQ5ZTdhNGE3NmFmZTRmZDc2OTg4MTUyNWY4OWY4OTMyNGJlOGMKQXV0aG9yOiBh
+ayA8YWtAMTM4YmM3NWQtMGQwNC0wNDEwLTk2MWYtODJlZTcyYjA1NGE0PgpEYXRlOiAgIFRodSBK
+dW4gOSAwNjoyMjoxNyAyMDExICswMDAwCgogICAgYmV0dGVyIHdhcm5pbmcgZm9yIHNlY3Rpb24g
+Y29uZmxpY3QKICAgIAogICAgZ2NjLzoKICAgIAogICAgMjAxMS0wNi0wOCAgQW5kaSBLbGVlbiAg
+PGFrQGxpbnV4LmludGVsLmNvbT4KICAgIAogICAgCSogdmFyYXNtLmMgKGdldF9zZWN0aW9uKTog
+UHJpbnQgbG9jYXRpb24gb2Ygb3RoZXIgY29uZmxpY3QKICAgIAlmb3Igc2VjdGlvbiBjb25mbGlj
+dHMuCiAgICAKICAgIGdpdC1zdm4taWQ6IHN2bitzc2g6Ly9nY2MuZ251Lm9yZy9zdm4vZ2NjL3Ry
+dW5rQDE3NDgzNiAxMzhiYzc1ZC0wZDA0LTA0MTAtOTYxZi04MmVlNzJiMDU0YTQKCmRpZmYgLS1n
+aXQgYS9nY2MvQ2hhbmdlTG9nIGIvZ2NjL0NoYW5nZUxvZwppbmRleCA4MjBiY2JkLi4xYzlmYTAy
+IDEwMDY0NAotLS0gYS9nY2MvQ2hhbmdlTG9nCisrKyBiL2djYy9DaGFuZ2VMb2cKQEAgLTEsNSAr
+MSwxMCBAQAogMjAxMS0wNi0wOCAgQW5kaSBLbGVlbiAgPGFrQGxpbnV4LmludGVsLmNvbT4KIAor
+CSogdmFyYXNtLmMgKGdldF9zZWN0aW9uKTogUHJpbnQgbG9jYXRpb24gb2Ygb3RoZXIgY29uZmxp
+Y3QKKwlmb3Igc2VjdGlvbiBjb25mbGljdHMuCisKKzIwMTEtMDYtMDggIEFuZGkgS2xlZW4gIDxh
+a0BsaW51eC5pbnRlbC5jb20+CisKIAkqIGNvbmZpZy9pMzg2L2RyaXZlci1pMzg2LmMgKGhvc3Rf
+ZGV0ZWN0X2xvY2FsX2NwdSk6CiAJQWRkIG1vZGVsIDB4MmQgSW50ZWwgQ1BVLgogCmRpZmYgLS1n
+aXQgYS9nY2MvdmFyYXNtLmMgYi9nY2MvdmFyYXNtLmMKaW5kZXggMzMxMWM4Ni4uYTBhMDU4MiAx
+MDA2NDQKLS0tIGEvZ2NjL3ZhcmFzbS5jCisrKyBiL2djYy92YXJhc20uYwpAQCAtMzEzLDcgKzMx
+MywxMSBAQCBnZXRfc2VjdGlvbiAoY29uc3QgY2hhciAqbmFtZSwgdW5zaWduZWQgaW50IGZsYWdz
+LCB0cmVlIGRlY2wpCiAJICBpZiAoZGVjbCA9PSAwKQogCSAgICBkZWNsID0gc2VjdC0+bmFtZWQu
+ZGVjbDsKIAkgIGdjY19hc3NlcnQgKGRlY2wpOwotCSAgZXJyb3IgKCIlK0QgY2F1c2VzIGEgc2Vj
+dGlvbiB0eXBlIGNvbmZsaWN0IiwgZGVjbCk7CisJICBlcnJvciAoIiUrRCBjYXVzZXMgYSBzZWN0
+aW9uIHR5cGUgY29uZmxpY3Qgd2l0aCAlRCIsIAorCQkJZGVjbCwgc2VjdC0+bmFtZWQuZGVjbCk7
+CisJICBpZiAoZGVjbCAhPSBzZWN0LT5uYW1lZC5kZWNsKQorICAgICAgICAgICAgaW5mb3JtIChE
+RUNMX1NPVVJDRV9MT0NBVElPTiAoc2VjdC0+bmFtZWQuZGVjbCksIAorCQkgICAgIiVxRCB3YXMg
+ZGVjbGFyZWQgaGVyZSIsIHNlY3QtPm5hbWVkLmRlY2wpOwogCSAgLyogTWFrZSBzdXJlIHdlIGRv
+bid0IGVycm9yIGFib3V0IG9uZSBzZWN0aW9uIG11bHRpcGxlIHRpbWVzLiAgKi8KIAkgIHNlY3Qt
+PmNvbW1vbi5mbGFncyB8PSBTRUNUSU9OX09WRVJSSURFOwogCX0K
+------=_20111016235725_38372--
 
