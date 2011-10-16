@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab1JPIBm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 04:01:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62229 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab1JPIBl convert rfc822-to-8bit (ORCPT
+	id S1753723Ab1JPJWR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 05:22:17 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48623 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab1JPJWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 04:01:41 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>, "Mel Gorman" <mel@csn.ul.ie>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
- <20111014162933.d8fead58.akpm@linux-foundation.org>
-Date: Sun, 16 Oct 2011 10:01:36 +0200
+	Sun, 16 Oct 2011 05:22:15 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v3fpwyxc3l0zgt@mpn-glaptop>
-In-Reply-To: <20111014162933.d8fead58.akpm@linux-foundation.org>
-User-Agent: Opera Mail/11.51 (Linux)
+In-Reply-To: <CA+O4pCL8PSyfSV+8eNTspicqfad96Z=NXhE0n-wYeKVgJOJrGg@mail.gmail.com>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+	<CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+	<CA+O4pCL-QDUJNyfGueb163wNgO4dE+bn5ykmOxfHsoHaaH3oyA@mail.gmail.com>
+	<CAHFNz9JUV6wabQxsvrxPRX6q41sWNMDy8DJcOpNTecNTbL=XaQ@mail.gmail.com>
+	<CA+O4pCJ2gDicdC7BbCbo0m3xdCX0cdhY-Azn9aqu6+C58u0kgQ@mail.gmail.com>
+	<CAHFNz9+a4PjsAoBYF-bJ9nSOzNtEVq23UJzxSTxo=fdmSGOJPw@mail.gmail.com>
+	<CA+O4pC+Qo0VVM26RZXkKs18vJ-uG-YGp1vxtKBr0nzRSOitPtA@mail.gmail.com>
+	<CA+O4pCL8PSyfSV+8eNTspicqfad96Z=NXhE0n-wYeKVgJOJrGg@mail.gmail.com>
+Date: Sun, 16 Oct 2011 10:22:13 +0100
+Message-ID: <CAAMvbhHr2--e=ZH02qV=7otdFY-xFpMR2o-0+OoMoSuG_AnpZg@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Markus Rechberger <mrechberger@gmail.com>
+Cc: Manu Abraham <abraham.manu@gmail.com>, Greg KH <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Oct 2011 01:29:33 +0200, Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Thu, 06 Oct 2011 15:54:42 +0200
-> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On 13 October 2011 10:29, Markus Rechberger <mrechberger@gmail.com> wrote:
 >
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> This commit introduces alloc_contig_freed_pages() function
+> Some demonstration video:
+> (with 24064 bytes, which uses the additional buffers which are allowed
+> by the introduced patch):
+> Flawlessly video:
+> http://www.sundtek.de/support/00011.MTS
 >
-> The "freed" seems redundant to me.  Wouldn't "alloc_contig_pages" be a
-> better name?
+> (Alan's proposed buffer size 11776/12288)
+> Jerky video:
+> http://www.sundtek.de/support/00012.MTS
+>
+> both videos are around 30 seconds made with a camera, video is still uploading.
+> this is my last post to that topic I still have some little hope that
+> this patch will get in to fix that issue.
+> As proposed for academic research you can pick up a Stick in Berlin
+> once the new cut is ready from manufacturing,
+>
 
-The “freed” is there because the function operates on pages that are in
-buddy system, ie. it is given a range of PFNs that are to be removed
- from buddy system.
-
-There's also a alloc_contig_range() function (added by next patch)
-which frees pages in given range and then calls
-alloc_contig_free_pages() to allocate them.
-
-IMO, if there was an alloc_contig_pages() function, it would have to
-be one level up (ie. it would figure out where to allocate memory and
-then call alloc_contig_range()).  (That's really what CMA is doing).
-
-Still, as I think of it now, maybe alloc_contig_free_range() would be
-better?
+Can you post the actual captured stream, and not a video camera copy
+of a media player playing the stream.
