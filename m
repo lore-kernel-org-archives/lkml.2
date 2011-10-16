@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab1JPBcz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 21:32:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17227 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab1JPBcv (ORCPT
+	id S1752086Ab1JPBtq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 21:49:46 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:45461 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751489Ab1JPBtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 21:32:51 -0400
-Message-ID: <4E9A3436.3010704@oracle.com>
-Date: Sat, 15 Oct 2011 18:32:38 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	Sat, 15 Oct 2011 21:49:45 -0400
+Date: Sat, 15 Oct 2011 21:49:44 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: markgross@thegnar.org, <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <arve@android.com>,
+        <amit.kucheria@linaro.org>, <farrowg@sg.ibm.com>,
+        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        <linux-pm@lists.linux-foundation.org>, <khilman@ti.com>,
+        Magnus Damm <damm@opensource.se>, <mjg@redhat.com>,
+        <peterz@infradead.org>
+Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
+ blocking (aka more wakelock stuff)]
+In-Reply-To: <20111016092556.07d6e415@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1110152136460.19724-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/8] PCI, sys: only create rescan under /sys/.../pci/devices/...
- for pci bridges
-References: <4E9A3092.4080309@oracle.com>
-In-Reply-To: <4E9A3092.4080309@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E9A3440.0085:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 16 Oct 2011, NeilBrown wrote:
 
-Current code will create rescan for every pci device,
-that is not right. the device is already there, there is no reason to rescan it.
+> > > > Here's an example (just for kicks, not completely relevant to your
+> > > > discussion): A USB keyboard key release.  Unlike key presses, key
+> > > > releases need not generate input events.  If no processes are
+> > > > monitoring the raw keyboard event queue then the release is not visible
+> > > > to userspace at all, hence not visible before the wakeup_source needs
+> > > > to be deactivated.
+> > > > 
+> > > > Alan Stern
+> > > 
+> > > As you say, not completely relevant.
+> > > 
+> > > If a tree falls in a forest with no one to here, does it make a sound?
+> > > 
+> > > similarly if an event happens that no-one is looking for, is it visible?
+> > > It doesn't really matter.
+> > 
+> > That's a different question, but I'll answer it anyway: Yes, it does
+> > matter.  If the kernel is unable to _know_ that nobody is looking for
+> > an event, it has to _assume_ that somebody is.  Then what should happen 
+> > if it turns out that nobody really is looking for it?
+> 
+> Same answer - it doesn't really matter.
+> In every case, the kernel's responsibility is to make the sure the event is
+> visible to any watching user-space process before it releases the
+> wakeup_source.
+> What user-space does then is up to user-space.
+> If no-one is watching the kernel is free to drop it at any stage - as soon as
+> it discovers no-one is watching.
+> When the input layer gets an event, it iterated through a list of fds which
+> are open on the event source and queues it to each one.  This list might be
+> empty - no big deal.  It was still a wakeup_event.  If we were suspended, the
+> write to /sys/power/state will now complete, the suspend daemon will go back
+> around its loop, nothing will seem to be happening, so the system will go
+> back to sleep.
 
-So only have rescan for pci bridges. less confusing
+All right, let's make things a little more complicated.
 
-Need to add cond to be new member of device_attribute.
-device_add_attrs will check cond to see if need to create the attr.
+Here's what actually happens when a USB keyboard generates a wakeup 
+request.  The system wakes up, of course, but there's no particular 
+indication of the cause.  In particular, the usbhid driver has no way 
+to know directly that the keyboard was the reason for the wakeup.
 
-Also the rescan will rescan bridge's secondary bus instead of primary bus.
+In addition, usbhid can't poll keyboards to see if they have an event
+to report.  (In theory it could -- the HID protocol allows for this --
+but many keyboards don't support that part of the protocol properly.)  
+It has to wait until the keyboard gets around to reporting the event, 
+which can take 10 ms or more.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Taken together, this means usbhid must activate a wakeup_source every
+time it wakes up.  If a keyboard event report is received reasonably
+quickly then good, it can deactivate the wakeup_source at the right
+time.  But if not, all the driver can do is time out the wakeup_source
+after some delay.  I don't see any way to avoid it.
 
----
- drivers/base/bus.c      |    7 ++++++-
- drivers/pci/pci-sysfs.c |   16 ++++++++++++++--
- include/linux/device.h  |    1 +
- include/linux/sysfs.h   |    7 +++++++
- 4 files changed, 28 insertions(+), 3 deletions(-)
+Alan Stern
 
-Index: linux-2.6/drivers/base/bus.c
-===================================================================
---- linux-2.6.orig/drivers/base/bus.c
-+++ linux-2.6/drivers/base/bus.c
-@@ -419,7 +419,12 @@ static int device_add_attrs(struct bus_t
- 		return 0;
- 
- 	for (i = 0; attr_name(bus->dev_attrs[i]); i++) {
--		error = device_create_file(dev, &bus->dev_attrs[i]);
-+		struct device_attribute *attr;
-+
-+		attr = &bus->dev_attrs[i];
-+		if (attr->cond && !attr->cond(dev, attr))
-+			continue;
-+		error = device_create_file(dev, attr);
- 		if (error) {
- 			while (--i >= 0)
- 				device_remove_file(dev, &bus->dev_attrs[i]);
-Index: linux-2.6/drivers/pci/pci-sysfs.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci-sysfs.c
-+++ linux-2.6/drivers/pci/pci-sysfs.c
-@@ -303,12 +303,23 @@ dev_rescan_store(struct device *dev, str
- 
- 	if (val) {
- 		mutex_lock(&pci_remove_rescan_mutex);
--		pci_rescan_bus(pdev->bus);
-+		pci_rescan_bus(pdev->subordinate);
- 		mutex_unlock(&pci_remove_rescan_mutex);
- 	}
- 	return count;
- }
- 
-+static int
-+dev_rescan_cond(struct device *dev, struct device_attribute *attr)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (pdev && pdev->subordinate)
-+		return 1;
-+
-+	return 0;
-+}
-+
- static void remove_callback(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -383,7 +394,8 @@ struct device_attribute pci_dev_attrs[]
- 	__ATTR(msi_bus, 0644, msi_bus_show, msi_bus_store),
- #ifdef CONFIG_HOTPLUG
- 	__ATTR(remove, (S_IWUSR|S_IWGRP), NULL, remove_store),
--	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_rescan_store),
-+	__ATTR_COND(rescan, (S_IWUSR|S_IWGRP), NULL, dev_rescan_store,
-+			dev_rescan_cond),
- #endif
- 	__ATTR_NULL,
- };
-Index: linux-2.6/include/linux/device.h
-===================================================================
---- linux-2.6.orig/include/linux/device.h
-+++ linux-2.6/include/linux/device.h
-@@ -427,6 +427,7 @@ struct device_attribute {
- 			char *buf);
- 	ssize_t (*store)(struct device *dev, struct device_attribute *attr,
- 			 const char *buf, size_t count);
-+	int (*cond)(struct device *dev, struct device_attribute *attr);
- };
- 
- #define DEVICE_ATTR(_name, _mode, _show, _store) \
-Index: linux-2.6/include/linux/sysfs.h
-===================================================================
---- linux-2.6.orig/include/linux/sysfs.h
-+++ linux-2.6/include/linux/sysfs.h
-@@ -73,6 +73,13 @@ struct attribute_group {
- 	.store	= _store,					\
- }
- 
-+#define __ATTR_COND(_name, _mode, _show, _store, _cond) { \
-+	.attr = {.name = __stringify(_name), .mode = _mode },	\
-+	.show	= _show,					\
-+	.store	= _store,					\
-+	.cond	= _cond,					\
-+}
-+
- #define __ATTR_RO(_name) { \
- 	.attr	= { .name = __stringify(_name), .mode = 0444 },	\
- 	.show	= _name##_show,					\
