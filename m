@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab1JPRpA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 13:45:00 -0400
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:63993 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab1JPRo7 (ORCPT
+	id S1754982Ab1JPRzd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 13:55:33 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53123 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754771Ab1JPRzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 13:44:59 -0400
-Message-ID: <4E9B182A.3020101@calvaedi.com>
-Date: Sun, 16 Oct 2011 19:45:14 +0200
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+	Sun, 16 Oct 2011 13:55:31 -0400
+Date: Sun, 16 Oct 2011 19:55:21 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Richard Zhao <richard.zhao@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, paul@pwsan.com,
+        linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
+        patches@linaro.org, shawn.guo@freescale.com, magnus.damm@gmail.com,
+        linux-kernel@vger.kernel.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, dsaxena@linaro.org,
+        amit.kucheria@linaro.org, skannan@quicinc.com, linux@arm.linux.org.uk,
+        jeremy.kerr@canonical.com, sboyd@quiinc.com,
+        Mike Turquette <mturquette@ti.com>, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Message-ID: <20111016175521.GA13565@pengutronix.de>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-2-git-send-email-mturquette@ti.com>
+ <20111014081024.GA9485@b20223-02.ap.freescale.net>
+ <20111014100504.GC2966@opensource.wolfsonmicro.com>
+ <20111014103233.GB9485@b20223-02.ap.freescale.net>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Mattia Dongili <malattia@linux.it>,
-        Stelian Pop <stelian@popies.net>
-Subject: Re: sony-laptop driver: Volume keys on Sony Vaio TX3 don't work
-References: <4E9ABBF6.3000504@calvaedi.com> <4E9ADBD3.4070404@calvaedi.com>
-In-Reply-To: <4E9ADBD3.4070404@calvaedi.com>
-Content-Type: multipart/mixed;
- boundary="------------010506090502040505040303"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014103233.GB9485@b20223-02.ap.freescale.net>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:18:33 up 6 days,  6:09,  9 users,  load average: 1.66, 1.50, 1.06
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010506090502040505040303
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Oct 14, 2011 at 06:32:33PM +0800, Richard Zhao wrote:
+> On Fri, Oct 14, 2011 at 11:05:04AM +0100, Mark Brown wrote:
+> > On Fri, Oct 14, 2011 at 04:10:26PM +0800, Richard Zhao wrote:
+> > > On Thu, Sep 22, 2011 at 03:26:56PM -0700, Mike Turquette wrote:
+> > 
+> > snip essentially Mike's entire mail - *please* delete irrelevant quotes
+> > from your replies, it makes it very much easier to find the new text in
+> > your mail and is much more friendly to people reading mail on mobile
+> > devices.
+> I snip not enough? sorry for that. I'll be carefull.
+> > 
+> > > > +static int __clk_enable(struct clk *clk)
+> > > > +{
+> > 
+> > > Could you expose __clk_enable/__clk_disable? I find it hard to implement
+> > > clk group. clk group means, when a major clk enable/disable, it want a set
+> > > of other clks enable/disable accordingly.
+> > 
+> > Shouldn't this be something the core is implementing?  I'd strongly
+> > expect that the clock drivers are relatively dumb and delegate all the
+> > decision making to the core API.  Otherwise it's going to be hard for
+> > the core to implement any logic that involves working with more than one
+> > clock like rate change notification, or guarantee that driver requests
+> > made through the API are satisfied, as the state of the clocks will be
+> > changing underneath it.
+> From my point of view, the first step of generic clk can be, easy to adopt
+> features of clocks in current mainline git.
+> Back to the clk group, I have a patch based on Sascha's work. 
+> http://git.linaro.org/gitweb?p=people/riczhao/linux-2.6.git;a=shortlog;h=refs/heads/imx-clk
 
-On 10/16/2011 03:27 PM, John Hughes wrote:
-> On 10/16/2011 01:11 PM, John Hughes wrote:
->> Even though sony-laptop has code to handle the volume-up/volume-down 
->> keys they don't work.  Pressing volume-down gets treated as 
->> SONYPI_EVENT_PKEY_P1 and volume-up as SONYPI_EVENT_PKEY_P2.
->
-> And of course this bug has already been fixed.  Was looking at an old 
-> version, 2.6.32, sorry.
+I thought further about this and a clock group is not something we want
+to have at all. Clocks are supposed to be arranged in a tree and
+grouping clocks together violates this which leads to problems.
+This grouping should be done at driver level, so when a driver needs
+more than one clock it should request them all, maybe with a clk_get_all
+helper function.
 
-Must learn to check before writing.
+Sascha
 
-No, the problem has not been fixed in head.
-
-Here's a patch that makes the volume keys work for me.  Tested on 
-current git
-
-# uname -a
-Linux carbon 3.1.0-rc9+ #2 SMP Sun Oct 16 19:14:15 CEST 2011 i686 GNU/Linux
-
-
-
---------------010506090502040505040303
-Content-Type: text/x-patch;
- name="sony-vaio-tx3.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="sony-vaio-tx3.patch"
-
-diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
-index bbd182e..ff14b61 100644
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -2065,8 +2065,8 @@ static struct sonypi_event sonypi_batteryev[] = {
- 
- /* The set of possible volume events */
- static struct sonypi_event sonypi_volumeev[] = {
--	{ 0x01, SONYPI_EVENT_VOLUME_INC_PRESSED },
--	{ 0x02, SONYPI_EVENT_VOLUME_DEC_PRESSED },
-+	{ 0x01, SONYPI_EVENT_VOLUME_DEC_PRESSED },
-+	{ 0x02, SONYPI_EVENT_VOLUME_INC_PRESSED },
- 	{ 0, 0 }
- };
- 
-@@ -2113,10 +2113,10 @@ static struct sonypi_eventtypes type3_events[] = {
- 	{ 0x31, SONYPI_MEMORYSTICK_MASK, sonypi_memorystickev },
- 	{ 0x41, SONYPI_BATTERY_MASK, sonypi_batteryev },
- 	{ 0x31, SONYPI_PKEY_MASK, sonypi_pkeyev },
-+	{ 0x05, SONYPI_PKEY_MASK, sonypi_volumeev },
- 	{ 0x05, SONYPI_PKEY_MASK, sonypi_pkeyev },
- 	{ 0x05, SONYPI_ZOOM_MASK, sonypi_zoomev },
- 	{ 0x05, SONYPI_CAPTURE_MASK, sonypi_captureev },
--	{ 0x05, SONYPI_PKEY_MASK, sonypi_volumeev },
- 	{ 0x05, SONYPI_PKEY_MASK, sonypi_brightnessev },
- 	{ 0 },
- };
-
---------------010506090502040505040303--
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
