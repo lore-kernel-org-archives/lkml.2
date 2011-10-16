@@ -1,32 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1JPGAi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 02:00:38 -0400
-Received: from [219.138.203.198] ([219.138.203.198]:50570 "EHLO orizone.com.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752044Ab1JPGAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 02:00:37 -0400
-Reply-To: <860181626@qq.com>
-Message-ID: <20111016135355833224@orizone.com.cn>
-From: "2011-10-16 13:53:54" <860181626@qq.com>
-To: <linuote09@163.co>
-Subject: =?utf-8?B?6IyD54ix5Yac44CBQOadpeS/oe+8gQ==?=
-Date: Sun, 16 Oct 2011 13:53:42 +0800
+	id S1753796Ab1JPJhl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 05:37:41 -0400
+Received: from re04.intra2net.com ([82.165.46.26]:43466 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1JPJhk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 05:37:40 -0400
+Message-ID: <4E9AA5E1.90001@intra2net.com>
+Date: Sun, 16 Oct 2011 11:37:37 +0200
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-Priority: 1
-X-mailer: Bmq 5
+To: Ingo Molnar <mingo@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: [trace PATCH] Fix unterminated buffer if the length of str exceeds
+ MAX_TRACER_SIZE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9GFTIDA027812
 
-å°Šæ•¬çš„ï¼šlinuote09@163.co
-  æœ¬å…¬å¸æœ‰ï¼šå•†ä¸šã€å¹¿å‘Šä¸šã€æœåŠ¡ä¸šã€å»ºç­‘ä¸šã€è¿è¾“ä¸šã€ç¨åŠ¡ä»£å¼€ã€è¡Œæ”¿äº‹ä¸šåŠå…¶å®ƒä¸“ç”¨...ç­‰![å‘Ë‡ËË‡ç¥¨]ä»£ç†!!
-æ‰¿è¯ºï¼šæ­£è§„é€”å¾„ä¸å¿…æ‹…å¿ƒçœŸå‡é—®é¢˜!å¯ä½¿ç”¨åä»˜æ¬¾!éœ€è¦ä¸é˜²ä¸€è¯•ï¼
+strncpy() doesn't always zero terminate the string.
 
-è”ç³»ï¼š13802918596   Q Q: 860181626
-                                                                                                                                          2011-10-16 13:53:54 2011/10/16
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Detected by "cppcheck"
+
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+---
+ kernel/trace/trace.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e5df02c..9637b1e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -126,7 +126,8 @@ static char *default_bootup_tracer;
+ 
+ static int __init set_cmdline_ftrace(char *str)
+ {
+-	strncpy(bootup_tracer_buf, str, MAX_TRACER_SIZE);
++	strncpy(bootup_tracer_buf, str, MAX_TRACER_SIZE-1);
++	bootup_tracer_buf[MAX_TRACER_SIZE-1] = '\0';
+ 	default_bootup_tracer = bootup_tracer_buf;
+ 	/* We are using ftrace early, expand it */
+ 	ring_buffer_expanded = 1;
+-- 
+1.7.6.4
+
