@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1JPK5u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 06:57:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43636 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab1JPK5r (ORCPT
+	id S1752634Ab1JPIFK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 04:05:10 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57954 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab1JPIFC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 06:57:47 -0400
+	Sun, 16 Oct 2011 04:05:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111015204129.GZ21648@n2100.arm.linux.org.uk>
-References: <1316508132-20020-1-git-send-email-linus.walleij@stericsson.com>
-	<20111015181808.GA3128@mwesterb-mobl.ger.corp.intel.com>
-	<20111015204129.GZ21648@n2100.arm.linux.org.uk>
-Date: Sun, 16 Oct 2011 12:57:46 +0200
-X-Google-Sender-Auth: 293dKn1qyfCOO_LsG2HywOGd9Lc
-Message-ID: <CAKnu2MqHvKLs3eER8Qvof5a3F95ooabXBUAjNgsdd0xXXajhqA@mail.gmail.com>
-Subject: Re: [PATCH v2] mach-ep93xx: break out GPIO driver specifics
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>, Ryan Mallon <rmallon@gmail.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20111016073649.GA2642@mwesterb-mobl.ger.corp.intel.com>
+References: <1318704009-8178-1-git-send-email-mika.westerberg@iki.fi>
+ <20111016042328.GC4901@ponder.secretlab.ca> <20111016073649.GA2642@mwesterb-mobl.ger.corp.intel.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 16 Oct 2011 02:04:41 -0600
+X-Google-Sender-Auth: jcED2f8VkJwVSesPO8NxmY0eWcM
+Message-ID: <CACxGe6sYxXs-s-Vw2TNQCFmLvAdf_7Fd=t_6TzXryHXtQgBSfQ@mail.gmail.com>
+Subject: Re: [PATCH] spi/spi-ep93xx: add module.h include
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/15 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+On Sun, Oct 16, 2011 at 1:36 AM, Mika Westerberg <mika.westerberg@iki.fi> wrote:
+> On Sat, Oct 15, 2011 at 10:23:28PM -0600, Grant Likely wrote:
+>> On Sat, Oct 15, 2011 at 09:40:09PM +0300, Mika Westerberg wrote:
+>> > Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+>>
+>> Why?  The commit text needs to explain why the patch is required.
+>
+> How about following then?
+>
+> From: Mika Westerberg <mika.westerberg@iki.fi>
+> Subject: [PATCHv2] spi/spi-ep93xx: add module.h include
+>
+> Due to module.h cleanup it is not anymore included implicitly. Drivers who
+> want to use it need to include it explicitly.
 
-> However, as I had to use GNU patch to apply Linus' patch (as git apply
-> wouldn't because of fuzz), it doesn't understand that, so it removed it.
-> This is where having an /* empty */ comment avoids that kind of thing,
-> just like I've done for all the other mach/gpio.h which became empty.
+Perfect, thanks.  Applied.
 
-OK now I understand what happened, I'll have the /* empty */ comment
-in them from now on...
+g.
 
-Thanks,
-Linus Walleij
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
+> ---
+>  drivers/spi/spi-ep93xx.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
+> index 1cf6454..11515c5 100644
+> --- a/drivers/spi/spi-ep93xx.c
+> +++ b/drivers/spi/spi-ep93xx.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/dmaengine.h>
+>  #include <linux/bitops.h>
+>  #include <linux/interrupt.h>
+> +#include <linux/module.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/sched.h>
+> --
+> 1.7.6.3
+>
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
