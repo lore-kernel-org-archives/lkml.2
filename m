@@ -1,107 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1JPAGx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Oct 2011 20:06:53 -0400
-Received: from lucidpixels.com ([72.73.18.11]:49815 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753264Ab1JPAGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Oct 2011 20:06:52 -0400
-Date: Sat, 15 Oct 2011 20:06:51 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-mm@vger.kernel.org
-Subject: 3.1-rc9: BUG: soft lockup in find_get_pages+0x4e/0x140
-Message-ID: <alpine.DEB.2.02.1110152003210.26507@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753483Ab1JPAOp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Oct 2011 20:14:45 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33868 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab1JPAOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Oct 2011 20:14:44 -0400
+Message-ID: <4E9A21EB.20804@linux.vnet.ibm.com>
+Date: Sun, 16 Oct 2011 05:44:35 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: rdunlap@xenotime.net, len.brown@intel.com, pavel@ucw.cz,
+        a.p.zijlstra@chello.nl, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/power: Update docs about suspend and CPU
+ hotplug
+References: <20111011201958.10065.78949.stgit@srivatsabhat.in.ibm.com> <201110122119.41027.rjw@sisk.pl> <4E960306.2010602@linux.vnet.ibm.com> <201110160042.40869.rjw@sisk.pl>
+In-Reply-To: <201110160042.40869.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11101600-2000-0000-0000-000000637F72
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/16/2011 04:12 AM, Rafael J. Wysocki wrote:
+> On Wednesday, October 12, 2011, Srivatsa S. Bhat wrote:
+>> On 10/13/2011 12:49 AM, Rafael J. Wysocki wrote:
+>>> On Wednesday, October 12, 2011, Srivatsa S. Bhat wrote:
+>>>> On 10/12/2011 03:32 AM, Rafael J. Wysocki wrote:
+>>>>> On Tuesday, October 11, 2011, Srivatsa S. Bhat wrote:
+>>>>>> Update the documentation about the interaction between the suspend (S3) call
+>>>>>> path and the CPU hotplug infrastructure.
+>>>>>> This patch focusses only on the activities of the freezer, cpu hotplug and
+>>>>>> the notifications involved. It outlines how regular CPU hotplug differs from
+>>>>>> the way it is invoked during suspend and also tries to explain the locking
+>>>>>> involved.
+>>>>>>
+>>>>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>>>>> ---
+>>>>>>
+>>>>>>  Documentation/power/00-INDEX                   |    2 
+>>>>>>  Documentation/power/suspend-and-cpuhotplug.txt |  113 ++++++++++++++++++++++++
+>>>>>>  2 files changed, 115 insertions(+), 0 deletions(-)
+>>>>>>  create mode 100644 Documentation/power/suspend-and-cpuhotplug.txt
+>>>>>>
+>>>>>> diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+>>>>>> index 45e9d4a..a4d682f 100644
+>>>>>> --- a/Documentation/power/00-INDEX
+>>>>>> +++ b/Documentation/power/00-INDEX
+>>>>>> @@ -26,6 +26,8 @@ s2ram.txt
+>>>>>>  	- How to get suspend to ram working (and debug it when it isn't)
+>>>>>>  states.txt
+>>>>>>  	- System power management states
+>>>>>> +suspend-and-cpuhotplug.txt
+>>>>>> +	- Explains the interaction between Suspend-to-RAM (S3) and CPU hotplug
+>>>>>>  swsusp-and-swap-files.txt
+>>>>>>  	- Using swap files with software suspend (to disk)
+>>>>>>  swsusp-dmcrypt.txt
+>>>>>> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+>>>>>> new file mode 100644
+>>>>>> index 0000000..d0ba411
+>>>>>> --- /dev/null
+>>>>>> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+>>>>>> @@ -0,0 +1,113 @@
+>>>>>> +Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+>>>>>> +   (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>, GPL
+>>>>>> +
+>>>>>> +
+>>>>>> +I. How does the Suspend-to-RAM code interact with CPU hotplug infrastructure?
+>>>>>> +
+>>>>>> +Well, a picture speaks more than a thousand words... So ASCII art follows :-)
+>>>>>> +
+>>>>>> +[This depicts the current design in the kernel, and focusses only on the
+>>>>>> +interactions between suspend call paths involving the freezer and cpu hotplug
+>>>>>> +and also tries to explain the locking involved. It also outlines the
+>>>>>> +notifications involved.]
+>>>>>> +
+>>>>>> +On a high level, the suspend-resume cycle goes like this:
+>>>>>> +
+>>>>>> +|Freeze| -> |Disable nonboot| -> |Do suspend| -> |Enable nonboot| -> |Thaw |
+>>>>>> +|tasks |    |     cpus      |    |          |    |     cpus     |    |tasks|
+>>>>>> +
+>>>>>> +
+>>>>>> +More details follow:
+>>>>>> +
+>>>>>> +Regular CPU hotplug                                   Suspend call path
+>>>>>> +-------------------                              ---------------------------
+>>>>>> +
+>>>>>> +Write 0 (or 1) to                                     Write 'mem' to
+>>>>>> +/sys/devices/system/cpu/cpu*/online                   /sys/power/state
+>>>>>> +     sysfs file                                          syfs file
+>>>>>> +         |                                                   |
+>>>>>> +         |                                                   v
+>>>>>> +         |                                         Acquire pm_mutex lock
+>>>>>> +         |                                                   |
+>>>>>> +         |                                                   v
+>>>>>> +         |                                Send PM_SUSPEND_PREPARE notifications
+>>>>>> +         |                                                   |
+>>>>>> +         |                                                   v
+>>>>>> +         |                                              Freeze tasks
+>>>>>
+>>>>> OK, so something appears to be missing here.  Namely, the task writing to
+>>>>> /sys/devices/system/cpu/cpu*/online should be frozen at this point or
+>>>>> suspend should be aborted.  I suppose neither of these happens and I wonder
+>>>>> why exactly.
+>>>>>
+>>>>
+>>>> I have a couple of clarifications to make here:
+>>>> * Firstly, this picture is not meant to represent what happens when regular
+>>>>   cpu hotplug and suspend run together. That race condition has not been
+>>>>   brought out here. What it does try to explain is, how the regular cpu
+>>>>   hotplug path is different from suspend, and where they share common code.
+>>>>   Please don't think about timing/race condition when reading it. Its just
+>>>>   meant to explain the call path and locking involved.
+>>>
+>>> Well, I didn't understand this part.  And the question above is:
+>>>
+>>>> I. How does the Suspend-to-RAM code interact with CPU hotplug infrastructure?
+>>>
+>>> which kind of suggests something different from what you're saying.  Care to
+>>> clarify that in the document?
+>>>
+>>
+>> Ok, I get it. I'll clarify the question and post the next version.
+>>
+>>>> * Secondly, this picture explains the *current* design, and *not* the mutual
+>>>>   exclusion design I have proposed between regular cpu hotplug and suspend.
+>>>>   The reason being, this doc was written to help everyone understand the
+>>>>   current locking schemes, to help evaluate my proposal for a different
+>>>>   scheme (mutual exclusion).
+>>>
+>>> I understand that.
+>>>
+>>>> Now, coming to your point, if that task writing to the sysfs file has not
+>>>> been frozen, then the current kernel doesn't abort suspend, which is why we are
+>>>> encountering problems, and which is exactly what my patchset tries to solve.
+>>>> Link to my patchset:
+>>>> http://thread.gmane.org/gmane.linux.documentation/3414/focus=3414
+>>>
+>>> This isn't my point, actually.  My point is that the task writing to
+>>> /sys/devices/system/cpu/cpu*/online should be frozen by the freezer.
+>>> If it is not frozen, then the freezer should fail.  If that doesn't
+>>> happen, there's a bug that has to be fixed and it is _not_ the lack
+>>> of mutual exclusion.  The bug is that, apparently, suspend continues
+>>> even though there is an unfrozen user space process in the system.
+>>>
+>>> Do you have any idea why that happens?
+>>>
+>>
+>> Sorry, I think I explained it wrong above. The freezer doesn't have any bugs
+>> in this context. If it fails to freeze the tasks, suspend does get aborted.
+>>
+>> But the point here is, suppose the task writing to the 'online' sysfs
+>> file has already entered the kernel, and _now_ the freezer started
+>> freezing tasks, it might encounter trouble in freezing that cpu hotplug
+>> operation that has already begun (because the cpu hotplug online operation
+>> waits on the frozen userspace to get microcode). 
+>>
+>> So, to clarify again, regular cpu hotplug and the cpu hotplug operations
+>> carried out during suspend are properly serialized in the current kernel.
+>> We have no problems there.
+>>
+>> The problem is with freezer and regular cpu hotplug racing with each other,
+>> as illustrated in this scenario:
+>>   * the regular cpu online operation continues its journey from userspace
+>>     into the kernel, since the freezing has not yet begun.
+>>   * then freezer starts and freezes userspace.
+>>   * If cpu online has not yet completed the microcode update stuff by now,
+>>     it will now start waiting on the frozen userspace unfortunately.
+>>   * Now the freezer continues and tries to freeze the remaining tasks. But
+>>     due to this wait mentioned above, the freezer won't be able to freeze
+>>     the cpu online hotplug task and hence freezing of tasks fails.
+>>   [This race condition is where the whole problem lies.]
+>>
+>> And if freezing of tasks fails, then suspend gets aborted. So no problems
+>> there again.
+> 
+> That pretty much is how it is supposed to be.
+> 
 
-With 3.1-rc9 during a filesystem dump, this occurred, I thought a previous 
-patch fixed this but it did not, it occurs MUCH less (first time in a 
-couple of weeks) but the problem still occurs.
+Yes, I totally agree, assuming you are referring to suspend being aborted
+after a freezer failure.
+However, if you are referring to freezing failure when CPU hotplug is run,
+then I don't think that's how it is supposed to be. We know the problem
+and we have at least 2 solutions. We can surely avoid freezing failures in
+this scenario.
 
-Thoughts?
+> Do I understand correctly that you're attempting to make suspend always
+> succeed if CPU hotplug stress test is run in parallel with it?
+> 
 
-[675100.763357] BUG: soft lockup - CPU#0 stuck for 22s! [dump:11066]
-[675100.763361] CPU 0 
-[675100.763364] Pid: 11066, comm: dump Not tainted 3.1.0-rc9 #1 Supermicro X8DTH-i/6/iF/6F/X8DTH
-[675100.763368] RIP: 0010:[<ffffffff81078eee>]  [<ffffffff81078eee>] find_get_pages+0x4e/0x140
-[675100.763375] RSP: 0018:ffff8806e6603d28  EFLAGS: 00000246
-[675100.763377] RAX: ffff880019a0a210 RBX: ffffea0028a65820 RCX: 000000000000000e
-[675100.763379] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffea0029e0faf0
-[675100.763381] RBP: 0000000001200ae9 R08: 0000000000000000 R09: ffff8806e6603ce8
-[675100.763383] R10: 0000000001200b03 R11: 0000000000000002 R12: ffffffff810805a4
-[675100.763386] R13: ffff880c3fffae00 R14: ffff880c3fffae00 R15: ffff8806e6603db8
-[675100.763392] FS:  00007fe9b56cc760(0000) GS:ffff88063fc00000(0000) knlGS:0000000000000000
-[675100.763395] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[675100.763397] CR2: 00007f2da3718fa8 CR3: 0000000c22da4000 CR4: 00000000000006f0
-[675100.763400] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[675100.763402] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[675100.763405] Process dump (pid: 11066, threadinfo ffff8806e6602000, task ffff880c21c931a0)
-[675100.763407] Stack:
-[675100.763408]  ffff8800398aaa88 0000000000000000 ffff88063fc0d560 0000000000000005
-[675100.763415]  ffff880c270652d8 ffff8806e6603da8 00000000000067b5 ffffffffffffffff
-[675100.763421]  ffff880c270652d8 ffffea0028a65820 000000000000000d ffffffff81083d15
-[675100.763427] Call Trace:
-[675100.763433]  [<ffffffff81083d15>] ? pagevec_lookup+0x15/0x20
-[675100.763437]  [<ffffffff810843c6>] ? invalidate_mapping_pages+0x66/0x170
-[675100.763442]  [<ffffffff812bc841>] ? blkdev_ioctl+0x6b1/0x700
-[675100.763451]  [<ffffffff810e405b>] ? block_ioctl+0x3b/0x50
-[675100.763455]  [<ffffffff810c692e>] ? do_vfs_ioctl+0x8e/0x4f0
-[675100.763459]  [<ffffffff810c6dd9>] ? sys_ioctl+0x49/0x80
-[675100.763464]  [<ffffffff8168b17b>] ? system_call_fastpath+0x16/0x1b
-[675100.763466] Code: 48 89 de 4c 89 ef e8 72 37 25 00 85 c0 89 c1 0f 84 a8 00 00 00 49 89 df 31 d2 31 f6 45 31 f6 66 0f 1f 44 00 00 49 8b 07 48 8b 38 
-[675100.763484]  85 ff 74 3e 40 f6 c7 03 75 5e 44 8b 47 1c 45 85 c0 74 ec 45 
-[675100.763497] Call Trace:
-[675100.763500]  [<ffffffff81083d15>] ? pagevec_lookup+0x15/0x20
-[675100.763503]  [<ffffffff810843c6>] ? invalidate_mapping_pages+0x66/0x170
-[675100.763507]  [<ffffffff812bc841>] ? blkdev_ioctl+0x6b1/0x700
-[675100.763510]  [<ffffffff810e405b>] ? block_ioctl+0x3b/0x50
-[675100.763513]  [<ffffffff810c692e>] ? do_vfs_ioctl+0x8e/0x4f0
-[675100.763516]  [<ffffffff810c6dd9>] ? sys_ioctl+0x49/0x80
-[675100.763519]  [<ffffffff8168b17b>] ? system_call_fastpath+0x16/0x1b
-[675101.484164] BUG: soft lockup - CPU#10 stuck for 23s! [dump:11068]
-[675101.484167] CPU 10 
-[675101.484170] Pid: 11068, comm: dump Not tainted 3.1.0-rc9 #1 Supermicro X8DTH-i/6/iF/6F/X8DTH
-[675101.484173] RIP: 0010:[<ffffffff81078eee>]  [<ffffffff81078eee>] find_get_pages+0x4e/0x140
-[675101.484180] RSP: 0018:ffff880bf713dd28  EFLAGS: 00000246
-[675101.484182] RAX: ffff8800ae90af00 RBX: ffffea00190d1288 RCX: 000000000000000e
-[675101.484183] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffea0019046600
-[675101.484185] RBP: 0000000000900eef R08: 0000000000000000 R09: ffff880bf713dce8
-[675101.484186] R10: 0000000000900efd R11: 000000000000000d R12: ffffffff810805a4
-[675101.484188] R13: ffff880c3fffae00 R14: ffff880c3fffae00 R15: ffff880bf713ddb8
-[675101.484190] FS:  00007fe9b56cc760(0000) GS:ffff880c3fc80000(0000) knlGS:0000000000000000
-[675101.484192] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[675101.484193] CR2: 00007f1577baefc8 CR3: 0000000bc3458000 CR4: 00000000000006e0
-[675101.484195] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[675101.484196] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[675101.484198] Process dump (pid: 11068, threadinfo ffff880bf713c000, task ffff880c25b2e310)
-[675101.484199] Stack:
-[675101.484201]  ffff88003b6f6bc0 000000000000000a ffff880c3fc8d560 0000000000000005
-[675101.484204]  ffff880c270652d8 ffff880bf713dda8 00000000000009f2 ffffffffffffffff
-[675101.484208]  ffff880c270652d8 ffffea00190d1288 000000000000000d ffffffff81083d15
-[675101.484211] Call Trace:
-[675101.484217]  [<ffffffff81083d15>] ? pagevec_lookup+0x15/0x20
-[675101.484220]  [<ffffffff810843c6>] ? invalidate_mapping_pages+0x66/0x170
-[675101.484226]  [<ffffffff812bc841>] ? blkdev_ioctl+0x6b1/0x700
-[675101.484230]  [<ffffffff810e405b>] ? block_ioctl+0x3b/0x50
-[675101.484234]  [<ffffffff810c692e>] ? do_vfs_ioctl+0x8e/0x4f0
-[675101.484238]  [<ffffffff810c6dd9>] ? sys_ioctl+0x49/0x80
-[675101.484242]  [<ffffffff8168b17b>] ? system_call_fastpath+0x16/0x1b
-[675101.484243] Code: 48 89 de 4c 89 ef e8 72 37 25 00 85 c0 89 c1 0f 84 a8 00 00 00 49 89 df 31 d2 31 f6 45 31 f6 66 0f 1f 44 00 00 49 8b 07 48 8b 38 
-[675101.484257]  85 ff 74 3e 40 f6 c7 03 75 5e 44 8b 47 1c 45 85 c0 74 ec 45 
-[675101.484263] Call Trace:
-[675101.484266]  [<ffffffff81083d15>] ? pagevec_lookup+0x15/0x20
-[675101.484268]  [<ffffffff810843c6>] ? invalidate_mapping_pages+0x66/0x170
-[675101.484272]  [<ffffffff812bc841>] ? blkdev_ioctl+0x6b1/0x700
-[675101.484275]  [<ffffffff810e405b>] ? block_ioctl+0x3b/0x50
-[675101.484277]  [<ffffffff810c692e>] ? do_vfs_ioctl+0x8e/0x4f0
-[675101.484279]  [<ffffffff810c6dd9>] ? sys_ioctl+0x49/0x80
-[675101.484282]  [<ffffffff8168b17b>] ? system_call_fastpath+0x16/0x1b
+Short answer:
+I was attempting to prevent freezing failures. CPU hotplug was one of the
+problematic scenarios I found. So yes, I am attempting to make freezing
+(and thereby suspend) to always succeed, even when CPU hotplug is run in
+parallel.
 
-Justin.
+Long answer:
+Well, overall, I was just attempting to make the suspend infrastructure more
+robust. And clearly, hitting task freezing failures is not good, whatever the
+scenario maybe. And we also now know that this used to be hit by a situation
+that wasn't handled properly.
+
+So all I was trying to do was prevent the freezing failures, either by:
+  * solving the problem in the microcode update itself, keeping the freezer
+    code unaware of it, since the root cause of the problem was not in the
+    freezer code anyway.
+  * or, by the other approach of mutually excluding CPU hotplug and suspend.
+    This would make both of them aware of each other, since we know they'll
+    hit problems if they run together.
+
+If we applied either of these solutions, suspend would always succeed even if
+you run CPU hotplug in parallel with it, because we would never hit freezing
+failures pertaining to this scenario.
+
+>From your question, I get a slight feeling that you might be hinting that
+this whole usecase itself is rather unreal and hence why should we even
+bother making suspend succeed in "crazy" scenarios like this (as has already
+been debated in some of the threads).
+If that is really what you are pointing at, then I have to admit that I don't
+feel comfortable with the idea of giving the user a manual telling him what
+to do and what not to do, just because the system doesn't take care of certain
+scenarios. And moreover, if we know of a loophole, I believe we can be more
+or less sure that some code or the other will hit it sooner or later.
+
+What do you think?
+
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
+
