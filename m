@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab1JPOYw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 10:24:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab1JPOYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 10:24:50 -0400
-Date: Sun, 16 Oct 2011 16:25:41 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        kvm@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/3] PCI: Rework config space locking, add INTx masking
- services
-Message-ID: <20111016142541.GA18956@redhat.com>
-References: <cover.1315846441.git.jan.kiszka@siemens.com>
+	id S1754363Ab1JPOSa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 10:18:30 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:35130 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753115Ab1JPOS2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 10:18:28 -0400
+Date: Sun, 16 Oct 2011 10:18:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Johannes Stezenbach <js@sig21.net>
+cc: Markus Rechberger <mrechberger@gmail.com>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+In-Reply-To: <20111016091009.GB32551@sig21.net>
+Message-ID: <Pine.LNX.4.44L0.1110161017040.28864-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1315846441.git.jan.kiszka@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 12, 2011 at 06:54:01PM +0200, Jan Kiszka wrote:
-> This series tries to heal the currently broken locking scheme around PCI
-> config space accesses.
-> 
-> We have an interface lock out access via sysfs, but that service wrongly
-> assumes it is only called by one instance at a time for some device. So
-> two loops doing
-> 
-> echo 1 > /sys/bus/pci/devices/<some-device>/reset
-> 
-> in parallel will trigger a kernel BUG at the moment.
-> 
-> Besides synchronizing with user space, we also need to manage config
-> space access of generic PCI drivers. They need to mask legacy interrupt
-> lines while the specific driver runs in user space or a guest OS.
-> 
-> The approach taken here is provide mutex-like locking for general
-> access - which still requires a special mechanism due to requirements of
-> the IBM Power RAID SCSI driver. Furthermore, INTx masking is now
-> available via the PCI core and synchronized via the internal pci_lock.
-> 
-> Not sure who may want to take this, so I'm CC'ing broadly.
-> 
-> CC: Brian King <brking@linux.vnet.ibm.com>
-> 
-> Jan Kiszka (3):
->   pci: Rework config space blocking services
->   pci: Introduce INTx check & mask API
->   uio: Convert uio_generic_pci to new intx masking API
+On Sun, 16 Oct 2011, Johannes Stezenbach wrote:
 
-For the series:
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-
->  drivers/pci/access.c          |   76 +++++++++++++++++----------
->  drivers/pci/iov.c             |   12 ++--
->  drivers/pci/pci.c             |  114 ++++++++++++++++++++++++++++++++++++++++-
->  drivers/pci/pci.h             |    2 +
->  drivers/scsi/ipr.c            |   66 +++++++++++++++++++++---
->  drivers/scsi/ipr.h            |    1 +
->  drivers/uio/uio_pci_generic.c |   82 +++---------------------------
->  include/linux/pci.h           |   17 ++++--
->  8 files changed, 248 insertions(+), 122 deletions(-)
+> On Sat, Oct 15, 2011 at 03:04:28PM -0400, Alan Stern wrote:
+> > On Sat, 15 Oct 2011, Johannes Stezenbach wrote:
+> > 
+> > > What I meant to say is Markus' statement that the device only
+> > > works at a certain transfer size cannot be true since
+> > > this size is not visible to the device via the USB bus.
+> > 
+> > That's what I would expect, too.  But did you take a look at the usbmon 
+> > traces Markus acquired?
+> > 
+> > 	http://marc.info/?l=linux-usb&m=131845614819045&w=2
 > 
-> -- 
-> 1.7.3.4
+> I glanced at them for 3 seconds, but I cannot be bothered
+> to analyze them in detail.  The ASCII usbmon traces don't
+> show full USB packet contents anyway so you can't see if
+> partial MPEG TS packets are missing.
+
+> The device transfers data in the "not working" case, it's just that
+> the MPEG TS sync byte is not where Markus expects it, which could
+> be explained by a partial MPEG TS packet left in the device's FIFO
+> from previous interaction.
+
+But why does this happen only when the transfer size is different from
+24064?  Why doesn't it also happen when the transfer size _is_ 24064?
+
+Alan Stern
+
