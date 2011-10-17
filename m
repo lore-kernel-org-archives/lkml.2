@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab1JQRDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:03:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab1JQRDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 13:03:49 -0400
-Date: Mon, 17 Oct 2011 19:04:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] kvm: set affinity hint for assigned device msi
-Message-ID: <20111017170440.GA8894@redhat.com>
-References: <cover.1318358229.git.mst@redhat.com>
- <7458f62a58ad7d4022eefba4333336ba268e4ef9.1318358229.git.mst@redhat.com>
- <20111013145450.GA4143@amt.cnet>
- <20111016131223.GB17978@redhat.com>
- <20111017105859.GA20914@amt.cnet>
- <20111017133215.GA6406@redhat.com>
- <20111017160741.GA25476@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017160741.GA25476@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756719Ab1JQRER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:04:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52648 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab1JQQ7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 12:59:49 -0400
+X-Authority-Analysis: v=1.1 cv=Aw1K5MWCW/IlYLbVHOK2DHmxtnIeftPoAvmBFvlQMWA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=taZY2NAhKxIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=idGAMlH7VvsUJbHs6YgA:9 a=QEXdDO2ut3YA:10 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=1RYEe79mk3PgpC4AAWwA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111017165947.748741715@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 17 Oct 2011 12:04:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Jones <drjones@redhat.com>
+Subject: [PATCH 02/17][RFC] ktest: Create outputdir if it does not exist
+References: <20111017160455.498567257@goodmis.org>
+Content-Disposition: inline; filename=0002-ktest-Create-outputdir-if-it-does-not-exist.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 02:07:41PM -0200, Marcelo Tosatti wrote:
-> > > Configurations to consider, all common ones used for assigned devices?
-> > 
-> > I mean, besides round robin, any other modes that
-> > have an issue? Interrupts can also be multicast,
-> > I think, but we probably don't care what happens
-> > to affinity then, as msi interrupts are probably never
-> > broadcast ...
-> 
-> There is also lowest priority, which can be used with MSI.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+From: Andrew Jones <drjones@redhat.com>
 
-So the following will probably address that comment?
+Signed-off-by: Andrew Jones <drjones@redhat.com>
+Link: http://lkml.kernel.org/r/1313155932-20092-2-git-send-email-drjones@re=
+dhat.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/ktest/ktest.pl |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index f89f138..b579777 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -142,9 +142,11 @@ static void deassign_host_irq(struct kvm *kvm,
- 		for (i = 0; i < assigned_dev->entries_nr; i++)
- 			disable_irq(assigned_dev->host_msix_entries[i].vector);
- 
--		for (i = 0; i < assigned_dev->entries_nr; i++)
--			free_irq(assigned_dev->host_msix_entries[i].vector,
--				 (void *)assigned_dev);
-+		for (i = 0; i < assigned_dev->entries_nr; i++) {
-+			u32 vector = assigned_dev->host_msix_entries[i].vector;
-+			irq_set_affinity_hint(vector, NULL);
-+			free_irq(vector, (void *)assigned_dev);
-+		}
- 
- 		assigned_dev->entries_nr = 0;
- 		kfree(assigned_dev->host_msix_entries);
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index ac8b629..dabf89f 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -22,6 +22,7 @@
- 
- #include <linux/kvm_host.h>
- #include <linux/slab.h>
-+#include <linux/interrupt.h>
- #include <trace/events/kvm.h>
- 
- #include <asm/msidef.h>
-@@ -80,11 +81,23 @@ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
- #endif
- }
- 
-+static void kvm_vcpu_host_irq_hint(struct kvm_vcpu *vcpu, int host_irq)
-+{
-+	const struct cpumask *mask;
-+	/* raw_smp_processor_id() is ok here: if we get preempted we can get a
-+	 * wrong value but we don't mind much. */
-+	if (host_irq >= 0 && unlikely(vcpu->cpu != raw_smp_processor_id())) {
-+		mask = get_cpu_mask(vcpu->cpu);
-+		irq_set_affinity_hint(host_irq, mask);
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index e087cb4..253e9a2 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -2850,9 +2850,11 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+=20
+     chdir $builddir || die "can't change directory to $builddir";
+=20
+-    if (!-d $tmpdir) {
+-	mkpath($tmpdir) or
+-	    die "can't create $tmpdir";
++    foreach my $dir ($tmpdir, $outputdir) {
++	if (!-d $dir) {
++	    mkpath($dir) or
++		die "can't create $dir";
 +	}
-+}
-+	
- int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 		struct kvm_lapic_irq *irq, int host_irq)
- {
- 	int i, r = -1;
--	struct kvm_vcpu *vcpu, *lowest = NULL;
-+	int matches = 0;
-+	struct kvm_vcpu *vcpu, *lowest = NULL, *match;
- 
- 	if (irq->dest_mode == 0 && irq->dest_id == 0xff &&
- 			kvm_is_dm_lowest_prio(irq))
-@@ -98,10 +111,13 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 					irq->dest_id, irq->dest_mode))
- 			continue;
- 
-+		++matches;
-+
- 		if (!kvm_is_dm_lowest_prio(irq)) {
- 			if (r < 0)
- 				r = 0;
- 			r += kvm_apic_set_irq(vcpu, irq);
-+			match = vcpu;
- 		} else if (kvm_lapic_enabled(vcpu)) {
- 			if (!lowest)
- 				lowest = vcpu;
-@@ -110,8 +126,13 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 		}
- 	}
- 
--	if (lowest)
-+	if (lowest) {
- 		r = kvm_apic_set_irq(lowest, irq);
-+		match = lowest;
-+	}
-+
-+	if (matches == 1)
-+		kvm_vcpu_host_irq_hint(match, host_irq);
- 
- 	return r;
- }
+     }
+=20
+     $ENV{"SSH_USER"} =3D $ssh_user;
+--=20
+1.7.6.3
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJOnF8DAAoJEIy3vGnGbaoAkIAP/2MYdnaq6JVsJvqBKiFugI6E
+4VEnfI0Ks81lF2flgJ5mYD3luf6xTPuojJnyteq7tZlu3crdc4ycqh7Eg9znXQZw
+Z+Rkxfeoe/EzgfMR503FIjds+1Os7df7yti/f1/GVgiam+mFEVy48xeVo1+Ac6pM
+6xXkiS2P22z70sAk/O9+28t1KZXrRbpp/9K1+xyzRGYypv/iYS+F9awIgHpHHUg5
+m945QRo2wIHnw/5H3ldPWKXGRY0ifcR6foShCJ/WmVSIvA4OxGa0OXv+kR5Bn1Rn
+rd7VI+bbhP1IbZ0B60clANnrAUXOiiyaZdCz6I0Dm9bSmMeVcnBpMktOVE8hUJ17
+4zZuPd7ugTAUp6Ub2rLO+Lq6cpfVSupjXpRyC550voOckAFHwtVzI1z3e4LkVMa1
+d9EZM1myxaMBb9JSyNNyOINYXmE7301/5iAcCnOGPKDsUdNVEjirYWck127xZR3T
+F0BBi7XMcoSReRgUYMZSxVW7QcaeYFOsIyBlQnIgwnb2pePfyEXwQiIv7a6fMXi7
+pNbO+5aVBWkq5DKpFqtV32XSmrOLTC+IWY7hZ06Zfc9YXePa5KMsEHa3QjVhIm6W
+DGhhvAUtbL9G4J5Kz30SFtjPoToovep0GeYaL0Ac7DOcvmFc7EA07viZxIwX6i41
+YPyC7d2ppdmlavj6yznl
+=Fd+e
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
