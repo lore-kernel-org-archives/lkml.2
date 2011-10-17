@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab1JQLoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:44:37 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46915 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751374Ab1JQLog (ORCPT
+	id S1751379Ab1JQLxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:53:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44300 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab1JQLxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:44:36 -0400
-Date: Mon, 17 Oct 2011 12:40:32 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111017124032.65d8973a@lxorguk.ukuu.org.uk>
-In-Reply-To: <1318848001.6594.45.camel@twins>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-	<20111007070842.GA27555@hostway.ca>
-	<20111007174848.GA11011@hostway.ca>
-	<1318010515.398.8.camel@twins>
-	<20111008005035.GC22843@hostway.ca>
-	<1318060551.8395.0.camel@twins>
-	<20111012213555.GC24461@hostway.ca>
-	<20111013232521.GA5654@hostway.ca>
-	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
-	<20111017045806.GA11561@elte.hu>
-	<alpine.LFD.2.02.1110171101250.3240@ionos>
-	<1318848001.6594.45.camel@twins>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 07:53:06 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de, linus.walleij@stericsson.com, jamie@jamieiles.com,
+        arnd@arndb.de
+Subject: [PATCH 0/6] ux500: Export SoC information and some platform clean-up
+Date: Mon, 17 Oct 2011 12:52:52 +0100
+Message-Id: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011 12:40:01 +0200
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+This patch-set satisfies 4 objectives:
+  1. Ensures each platform device can specify a suitable parent
+  2. Provides a bus for SoC devices as a means to export information
+  3. Allows ux500 to make use of the new SoC bus
+  4. Cleans up unnecessary complexity from ux500 code 
 
-> On Mon, 2011-10-17 at 11:03 +0200, Thomas Gleixner wrote:
-> > That's not a micro optimization, it's a massive performance hit if you
-> > force those 32bit archs to do 64/32 all over the place.
-> > 
-> Linus could just say he doesn't care about 32bit and everybody sane
-> should just get a 64bit machine.. but I suspect that's a few more years.
-> 
-> Although I hope not too long, even my phone could do with more than 2G
-> of memory.
-
-Perhaps it wouldnt; if people didn't keep adding junk to the system ;)
+ Documentation/ABI/testing/sysfs-devices-soc    |   24 ++++
+ arch/arm/mach-ux500/Kconfig                    |    1 +
+ arch/arm/mach-ux500/board-mop500-sdi.c         |   30 ++--
+ arch/arm/mach-ux500/board-mop500.c             |   74 +++++++----
+ arch/arm/mach-ux500/board-mop500.h             |    6 +-
+ arch/arm/mach-ux500/board-u5500-sdi.c          |    4 +-
+ arch/arm/mach-ux500/board-u5500.c              |   27 +++--
+ arch/arm/mach-ux500/cpu-db5500.c               |   37 ++++-
+ arch/arm/mach-ux500/cpu-db8500.c               |   45 +++++-
+ arch/arm/mach-ux500/cpu.c                      |   67 +++++++++
+ arch/arm/mach-ux500/devices-common.c           |   79 +++---------
+ arch/arm/mach-ux500/devices-common.h           |   71 +++++-----
+ arch/arm/mach-ux500/devices-db5500.h           |  116 +++++++++-------
+ arch/arm/mach-ux500/devices-db8500.h           |  176 ++++++++++++++----------
+ arch/arm/mach-ux500/dma-db5500.c               |    3 +-
+ arch/arm/mach-ux500/include/mach/db8500-regs.h |    3 +
+ arch/arm/mach-ux500/include/mach/setup.h       |   10 +-
+ arch/arm/mach-ux500/include/mach/usb.h         |    4 +-
+ arch/arm/mach-ux500/usb.c                      |    7 +-
+ drivers/base/Kconfig                           |    3 +
+ drivers/base/Makefile                          |    1 +
+ drivers/base/soc.c                             |  115 +++++++++++++++
+ include/linux/sys_soc.h                        |   38 +++++
+ 23 files changed, 639 insertions(+), 302 deletions(-)
 
