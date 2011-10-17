@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1JQVgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 17:36:33 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54227 "EHLO
+	id S1755431Ab1JQViB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 17:38:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46940 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754286Ab1JQVgb (ORCPT
+	by vger.kernel.org with ESMTP id S1754518Ab1JQViA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 17:36:31 -0400
+	Mon, 17 Oct 2011 17:38:00 -0400
+Date: Mon, 17 Oct 2011 22:37:58 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant@secretlab.ca>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH v2] gpio/samsung: Complain loudly if we don't know the SoC
-Date: Mon, 17 Oct 2011 22:36:19 +0100
-Message-Id: <1318887379-5158-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Barry Song <21cnbao@gmail.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 2/2] ASoC: ad193x: Use snd_soc_update_bits for
+ read-modify-write
+Message-ID: <20111017213757.GA5200@opensource.wolfsonmicro.com>
+References: <1318582919.19976.1.camel@phoenix>
+ <1318582987.19976.2.camel@phoenix>
+ <20111014191000.GB2931@opensource.wolfsonmicro.com>
+ <CAF+7xWmdNqEuVCNB=53FftFm_Ds-=o5DwVa41MDq8m0DTZnzxg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWmdNqEuVCNB=53FftFm_Ds-=o5DwVa41MDq8m0DTZnzxg@mail.gmail.com>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't know the SoC type then we won't add any chips which is rather
-unfortunate as neither GPIO nor pinmux APIs will work, breaking lots of
-different subsystems. Logging at least provides a hint to the user as to
-what's gone wrong.
+On Sat, Oct 15, 2011 at 11:21:49AM +0800, Axel Lin wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/gpio/gpio-samsung.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> But if you prefer also convert it to snd_soc_update_bits, I can do it.
+> Let me know if I need to send a v2 for it.
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 479edc3..8662518 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2486,6 +2486,9 @@ static __init int samsung_gpiolib_init(void)
- 		s5p_register_gpioint_bank(IRQ_GPIO_XA, 0, IRQ_GPIO1_NR_GROUPS);
- 		s5p_register_gpioint_bank(IRQ_GPIO_XB, IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
- #endif
-+	} else {
-+		WARN(1, "Unknown SoC in gpio-samsung, no GPIOs added\n");
-+		return -ENODEV;
- 	}
- 
- 	return 0;
--- 
-1.7.6.3
-
+It'd be nice, if only because the patch clearly isn't doing what the
+changelog claims it's doing.
