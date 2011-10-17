@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab1JQUGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 16:06:09 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48889 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab1JQUGI (ORCPT
+	id S1754088Ab1JQUHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 16:07:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59041 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752461Ab1JQUHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 16:06:08 -0400
-Message-ID: <4E9C8AAC.7080803@gmail.com>
-Date: Mon, 17 Oct 2011 22:06:04 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Mon, 17 Oct 2011 16:07:02 -0400
+Date: Mon, 17 Oct 2011 16:07:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: John Stultz <john.stultz@linaro.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>
+Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative suspend/hibernate
+ mode
+In-Reply-To: <1318878529.3125.80.camel@work-vm>
+Message-ID: <Pine.LNX.4.44L0.1110171531190.1749-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v5 10/10] x86, efi: EFI boot stub support
-References: <1318848017-12301-1-git-send-email-matt@console-pimps.org> <1318848017-12301-11-git-send-email-matt@console-pimps.org>
-In-Reply-To: <1318848017-12301-11-git-send-email-matt@console-pimps.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Matt,
+On Mon, 17 Oct 2011, John Stultz wrote:
 
-On 10/17/2011 12:40 PM, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
->
-> There is currently a large divide between kernel development and the
-> development of EFI boot loaders. The idea behind this patch is to give
-> the kernel developers full control over the EFI boot process. As
-> H. Peter Anvin put it,
->
-> "The 'kernel carries its own stub' approach been very successful in
-> dealing with BIOS, and would make a lot of sense to me for EFI as
-> well."
->
-> This patch introduces an EFI boot stub that allows an x86 bzImage to
-> be loaded and executed by EFI firmware. The bzImage appears to the
-> firmware as an EFI application. Luckily there are enough free bits
-> within the bzImage header so that it can masquerade as an EFI
-> application, thereby coercing the EFI firmware into loading it and
-> jumping to its entry point. The beauty of this masquerading approach
-> is that both BIOS and EFI boot loaders can still load and run the same
-> bzImage, thereby allowing a single kernel image to work in any boot
-> environment.
->
-> The EFI boot stub supports multiple initrds, but they must exist on
-> the same partition as the bzImage. Command-line arguments for the
-> kernel can be appended after the bzImage name when run from the EFI
-> shell, e.g.
->
-> Shell> bzImage console=ttyS0 root=/dev/sdb initrd=initrd.img
-Seems initrd is failing for me. Is there any limitation on the size of the initrd? The default one fedora generates for my kernel is 46mb. It loads the kernel, but it reboots before it gets to userspace. Loading the kernel and initrd with grub2-efi works. EFI booting without initrd works too.
+> I agree that the dual-timer approach is not really a good solution, and
+> doesn't help with similar races on non-timer based wakeups.
+> 
+> Though I also think proposed userland implementations that require
+> communication with all wakeup consumers before suspending (which really,
+> once you get aggressive about suspending when you can, means
+> communicating with all wakeup consumers on every wakeup event) isn't
+> really a good solution either.
 
-Cheers,
-Maarten
+I think you're not going to be able to do any better.  After a wakeup
+event, any of the wakeup consumers could in theory become busy.  
+Either you hope that the busy ones will tell the PM daemon they are
+busy before the daemon tries another suspend (racy), or else the daemon
+has to explicitly check the status of every client.
+
+It doesn't get much better if you replace communication with the PM
+daemon by communication with the kernel.
+
+> Though as I've been thinking about it, there may be a way to do a
+> userland solution that uses the wakeup_count that isn't so inefficient.
+> Basically, its a varient of Mark's wakeup-device idea, but moved out to
+> userland.
+> 
+> There is a userland PM daemon. Its responsible for both suspending the
+> system, *and* handing all wakeup events.
+> 
+> Normal wakeup consumers open wakeup devices with a special library which
+> passes the open request through the PM daemon. The PM daemon opens the
+> device and provides a pipe fd back to the application, and basically
+> acts as a middle-man.
+> 
+> The PM daemon then cycles, doing the following:
+> 
+> while(1) {
+> 	wakeup_count = read_int(wakeup_count_fd) /*possibly blocking*/
+> 	if (wakeup_count != last_wakeup) {
+> 		have_data = check_open_fds(fds);
+> 		if (have_data)
+> 			process_fds(fds);
+> 		last_wakeup = wakeup_count;
+> 	}
+> 	write_int(wakeup_count_fd, wakeup_count);
+> 	attempt_suspend();
+> }
+> 
+> 
+> Where check_open_fds() does a non-blocking select on all the fds that
+> the PM deamon has opened on behalf of applications, and process_fds()
+> basically writes any available data from the opened fds over to the
+> application through the earlier setup pipe. The daemon's write to the
+> pipe could be blocking, to ensure the application has read all of the
+> necessary data before the deamon continues trying to suspend.
+> 
+> Provided there is some suspend_inhibit/allow command that userspace can
+> make to the PM damon, this approach then provides a similar
+> select/wakelock/read pattern as what Android uses. The only other
+> features we might want is suggestion from Peter that
+> the /sys/power/state be only able to be opened by one application, so
+> that on systems which don't have the PM deamon running, applications
+> like the firmware update tool can try opening /sys/power/state and
+> blocking anyone from suspending under it.
+> 
+> Thoughts?
+
+So now, instead of contacting every client on every wakeup event, your 
+daemon has to contact a client on every I/O operation!  That hardly 
+seems more efficient.
+
+Also, this doesn't cope well with wakeup conditions that aren't 
+expressed in terms of data flowing through a pipe, such as a timer 
+expiration.
+
+Alan Stern
+
