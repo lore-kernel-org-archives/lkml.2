@@ -1,165 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1JQPPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:15:14 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:38915 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab1JQPPL (ORCPT
+	id S1756197Ab1JQPQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:16:57 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38256 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab1JQPQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:15:11 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-Thread-Index: AQHMiwB5ssYxGyHyyU2tUZBy8HXDxZV+YdCA///RXnCAAtYrAP//mN2A
-Date: Mon, 17 Oct 2011 15:15:09 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
-	 <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 17 Oct 2011 11:16:56 -0400
 MIME-Version: 1.0
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	<1317295068.1573.1780.camel@vkoul-udesk3>
+	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	<20111003161349.GB28287@flint.arm.linux.org.uk>
+	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	<1317966346.1573.2252.camel@vkoul-udesk3>
+	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZheocjVhD4PTXQo3R7rqgiyt4BCo8Fx_sJ7AmDCjB=zMxQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+Date: Mon, 17 Oct 2011 20:46:54 +0530
+Message-ID: <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
+        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9HFFU6S001246
 
+On 17 October 2011 19:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
+> On Sat, Oct 15, 2011 at 7:26 AM, Jassi Brar <jaswinder.singh@linaro.org>
+> wrote:
+>>
+>> On 15 October 2011 00:45, Bounine, Alexandre
+>> <Alexandre.Bounine@idt.com> wrote:
+>>
+>> >> But doesn't the info, pointed to by this (void *), remain same for
+>> >> every
+>> >> transfer to a particular target/remote device ?
+>> > No. An address within the target may (and most likely will) be
+> changed for
+>> > every transfer. Target destination ID will be the same for given
+> virtual channel.
+>> >
+>> Thanks for the info.
+>>
+>> > Virtual channel may bring the same challenge and I may need a
+> channel locking
+>> > if more than one requester try to read/write data to the same target
+> RIO device.
+>> >
+>> One can't avoid taking care of locking, but using virtual channels
+>> keeps the dma_chan usage consistent.
+>>
+> Using virtual channels adds layers of complexity
+Perhaps you didn't get me ... I suggest the dma controller driver
+(not client drivers) create virtual channels corresponding to each
+device it can talk to. A bunch of virtual channels could be served
+by a single appropriate physical channel.
+It is actually quite common, see amba-pl08x.c or pl330.c for example.
 
+> which may be avoided with simple API changes:
+> - virtual channel allocation: statically vs. dynamically
+Yes, it would be cool but it's not possible right now.
 
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Monday, October 17, 2011 10:00 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
-> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> staging
-> 
-> On Sun, 2011-10-16 at 03:01 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > > Sent: Saturday, October 15, 2011 5:27 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org;
-> ohering@suse.com;
-> > > linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
-> > > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> > > staging
-> > >
-> > > On Fri, 2011-10-14 at 23:28 -0700, K. Y. Srinivasan wrote:
-> > > > In preparation for moving the storage driver out of staging, seek community
-> > > > review of the storage  driver code.
-> > >
-> > > That's not exactly a very descriptive commit message for me to put into
-> > > SCSI.  It doesn't have to be huge, just something like "driver to enable
-> > > hyperv windows guest on Linux" or something.
-> >
-> > Sorry about the commit message. I will have a more descriptive message in the
-> next
-> > submission.
-> >
-> > >
-> > >
-> > > >  drivers/scsi/Kconfig             |    7 +
-> > > >  drivers/scsi/Makefile            |    3 +
-> > > >  drivers/scsi/storvsc_drv.c       | 1480
-> > > ++++++++++++++++++++++++++++++++++++++
-> > > >  drivers/staging/hv/Kconfig       |    6 -
-> > > >  drivers/staging/hv/Makefile      |    2 -
-> > > >  drivers/staging/hv/storvsc_drv.c | 1480 --------------------------------------
-> > > >  6 files changed, 1490 insertions(+), 1488 deletions(-)
-> > >
-> > > What tree is this against?  The hv/storvsc_drv.c in upstream only has
-> > >
-> > > jejb@dabdike> wc -l drivers/staging/hv/storvsc_drv.c
-> > > 792 drivers/staging/hv/storvsc_drv.c
-> > >
-> > > i.e. whatever you're sending is double the length (and obviously I have
-> > > trouble applying the patch.
-> >
-> > This patch  moves the file from drivers/staging/hv/ directory to the
-> > drivers/scsi directory; hence double the length.
-> 
-> No, that's not it.  Look again: the storvsc_drv.c in staging is removing
-> 1480 lines, but in git head, this file is only 792 lines long ... is
-> there an alternative tree with the rest in?
+> - linking virtual channel to the physical one
+>
+Perhaps you mean what I suggested ?
 
-This patch is against Greg's staging tree where recently I merged all of the storage
-drivers into a single driver. This change may not have percolated up yet - Greg has
-checked this into his staging tree though.
+>
+>> RapidIO supports 34(32+2), 50(48+2) and 66(64+2) bit addressing
+>> which makes me wonder if the (upper or lower) 2 bits could be attached
+>> to
+>> the identity of the target device ?
+>> (tsi721 driver actually discards the upper 2 bits while claiming to
+>> support
+>> 66bit addressing so I couldn't make anything out of it and specs don't
+>> seem to say much about it)
+>>
+>> If there is no user of 66bit addressing and isn't coming in very near
+>> future,
+>> we might as well drop that case for now(tsi721 already does) because
+>> that 'completeness' of support modifies the semantics of dmaengine
+> apis
+>> today for no real use.
+> This is marked to be fixed in tsi721 driver. Also, this is a local
+> deficiency
+> and changing it that does not affect other components of the RIO
+> subsystem.
+> Contrary to that, defining an upper layer affects all future development
+> and
+> may result in greater pain if it needs to be adjusted later.
+>
+I just wanted to know
 
-As I deal with the review comments now, do you want me to get these changes
-applied first to Greg's tree before you would consider moving this driver to drivers/scsi
-directory, or could you move the driver as it is in Greg's tree under staging and I could give
-you patches against the moved driver.
+1) The role of the 'extra' 2bits ?
 
-> 
-> The point I'm making is that the staging file you're modifying isn't the
-> one I see in Linus' git head, so which git tree is it in (I assume it's
-> somewhere waiting for the merge window)?
-> 
-> [...]
-> > > The bounce buffer handling for discontiguous sg lists is a complete
-> > > nightmare.  And can't you just fix the hypervisor instead of pulling
-> > > this level of nastiness in the driver, I mean really, the last piece of
-> > > real SCSI hardware that failed this badly was produced in the dark ages.
-> >
-> > The restrictions (as they are) are really from the windows host side
-> > and for what it is
-> > worth, I have never seen this code triggered at least for I/O
-> > initiated by the file system.
-> >
-> >
-> > > Assuming the answer is "no", I really think you need to set the minimum
-> > > block size to 4k, which will completely avoid the situation.
-> >
-> > I would love to get rid of the bounce buffer handling code by ensuring
-> > that the
-> > upper level code would never present scatter gather lists that would
-> > trigger bounce buffer
-> > handling code. How would I accomplish that.
-> 
-> OK, so as I read the code, what it can't handle is fragments except at
-> the ends.  As long as everything always transfers in multiples of 4k,
-> the problem will never occur.  This means that all devices you present
-> need to tell the OS they have 4k sectors.  I *think* you can do this by
-> setting  blk_limits_io_min() in the driver ... but you'll have to test
-> this.  The minimum sector size gets set also in sd.c when we probe the
-> disk.  I think that won't override blk_limits_io_min(), but please test
-> (we don't have any SCSI drivers which have ever used this setting).
-> 
-> The way to test, is to read back the /sys/block/<dev>/queue/ settings
-> when presenting a 512 byte sector disk.  (And the way to activate your
-> bounce code would be to create a filesystem with a < PAGE_SIZE block
-> size).
+2) Are there real use-cases that are blocked on this support right now ?
+    If there are indeed, do you think the transfer would be _randomly_
+   distributed over the 66-bit address space ? Because otherwise, maybe
+   the upper 2 bits could be used to "activate" one of the 4 "segments"
+   using slave config call.
 
-Given that the bounce buffer handling code would typically
-never be triggered, I not sure how useful it will be to try to get rid of the bounce buffer
-code using a feature that is not well tested. In any event, I will try your suggestion though. 
-
-Regards,
-
-K. Y 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+We should try our best to avoid opening the can of worms by adding
+(void *) hook to each transfer, because any client driver could want to
+pass its own private data to dmac and there would be no way for a dmac
+driver to know what to cast the void pointer to.
+Thanks.
