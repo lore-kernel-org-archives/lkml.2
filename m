@@ -1,114 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1JPXzw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 19:55:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab1JPXzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 19:55:51 -0400
-Date: Mon, 17 Oct 2011 01:54:42 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Pawel Sikora <pluto@agmk.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Message-ID: <20111016235442.GB25266@redhat.com>
-References: <201110122012.33767.pluto@agmk.net>
- <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
- <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+	id S1753481Ab1JQBBY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 21:01:24 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:47220 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1JQBBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 21:01:23 -0400
+X-Greylist: delayed 661 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Oct 2011 21:01:23 EDT
+Message-ID: <4E9B7BE1.1080907@snapgear.com>
+Date: Mon, 17 Oct 2011 10:50:41 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/21] m68k: drop unused Kconfig symbols
+References: <1318595371.6132.70.camel@x61.thuisdomein>
+In-Reply-To: <1318595371.6132.70.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
-> mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
-> and pagetable locks, were good enough before page migration (with its
-> requirement that every migration entry be found) came in; and enough
-> while migration always held mmap_sem.  But not enough nowadays, when
-> there's memory hotremove and compaction: anon_vma lock is also needed,
-> to make sure a migration entry is not dodging around behind our back.
+Hi Paul,
 
-For things like migrate and split_huge_page, the anon_vma layer must
-guarantee the page is reachable by rmap walk at all times regardless
-if it's at the old or new address.
+On 14/10/11 22:29, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
+> ---
+>   arch/m68k/Kconfig       |   28 +---------------------------
+>   arch/m68k/Kconfig.nommu |   44 --------------------------------------------
+>   2 files changed, 1 insertions(+), 71 deletions(-)
 
-This shall be guaranteed by the copy_vma called by move_vma well
-before move_page_tables/move_ptes can run.
+I have no problem with the changes. But it will clash with the
+reworking of the Kconfig files currently sitting in linux-next
+for merging in the 3.2 merge window.
 
-copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
-into the anon_vma chains structures (vma_link does that). That before
-any pte can be moved.
+Regards
+Greg
 
-Because we keep two vmas mapped on both src and dst range, with
-different vma->vm_pgoff that is valid for the page (the page doesn't
-change its page->index) the page should always find _all_ its pte at
-any given time.
 
-There may be other variables at play like the order of insertion in
-the anon_vma chain matches our direction of copy and removal of the
-old pte. But I think the double locking of the PT lock should make the
-order in the anon_vma chain absolutely irrelevant (the rmap_walk
-obviously takes the PT lock too), and furthermore likely the
-anon_vma_chain insertion is favorable (the dst vma is inserted last
-and checked last). But it shouldn't matter.
 
-Another thing could be the copy_vma vma_merge branch succeeding
-(returning not NULL) but I doubt we risk to fall into that one. For
-the rmap_walk to be always working on both the src and dst
-vma->vma_pgoff the pgoff must be different so we can't possibly be ok
-if there's just 1 vma covering the whole range. I exclude this could
-be the case because the pgoff passed to copy_vma is different than the
-vma->vm_pgoff given to copy_vma, so vma_merge can't possibly succeed.
+> diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+> index 9e8ee9d..58c6496 100644
+> --- a/arch/m68k/Kconfig
+> +++ b/arch/m68k/Kconfig
+> @@ -149,32 +149,6 @@ config MULTIFACE_III_TTY
+>
+>   	  To compile this driver as a module, choose M here.
+>
+> -config GVPIOEXT
+> -	tristate "GVP IO-Extender support"
+> -	depends on PARPORT=n&&  ZORRO
+> -	help
+> -	  If you want to use a GVP IO-Extender serial card in Linux, say Y.
+> -	  Otherwise, say N.
+> -
+> -config GVPIOEXT_LP
+> -	tristate "GVP IO-Extender parallel printer support"
+> -	depends on GVPIOEXT
+> -	help
+> -	  Say Y to enable driving a printer from the parallel port on your
+> -	  GVP IO-Extender card, N otherwise.
+> -
+> -config GVPIOEXT_PLIP
+> -	tristate "GVP IO-Extender PLIP support"
+> -	depends on GVPIOEXT
+> -	help
+> -	  Say Y to enable doing IP over the parallel port on your GVP
+> -	  IO-Extender card, N otherwise.
+> -
+> -config MAC_HID
+> -	bool
+> -	depends on INPUT_ADBHID
+> -	default y
+> -
+>   config HPDCA
+>   	tristate "HP DCA serial support"
+>   	depends on DIO&&  SERIAL_8250
+> @@ -217,7 +191,7 @@ config DN_SERIAL
+>
+>   config SERIAL_CONSOLE
+>   	bool "Support for serial port console"
+> -	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO)&&  (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || GVPIOEXT=y || MULTIFACE_III_TTY=y || SERIAL=y || MVME147_SCC || SERIAL167 || MVME162_SCC || BVME6000_SCC || DN_SERIAL)
+> +	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO)&&  (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || MVME147_SCC || SERIAL167 || MVME162_SCC || BVME6000_SCC || DN_SERIAL)
+>   	---help---
+>   	  If you say Y here, it will be possible to use a serial port as the
+>   	  system console (the system console is the device which receives all
+> diff --git a/arch/m68k/Kconfig.nommu b/arch/m68k/Kconfig.nommu
+> index ff46383..2b7f1e9 100644
+> --- a/arch/m68k/Kconfig.nommu
+> +++ b/arch/m68k/Kconfig.nommu
+> @@ -542,13 +542,6 @@ config SAVANTrosie1
+>   	help
+>   	  Support for the Savant Rosie1 board.
+>
+> -config ROMFS_FROM_ROM
+> -	bool "ROMFS image not RAM resident"
+> -	depends on (NETtel || SNAPGEAR)
+> -	help
+> -	  The ROMfs filesystem will stay resident in the FLASH/ROM, not be
+> -	  moved into RAM.
+> -
+>   config PILOT
+>   	bool
+>   	default y
+> @@ -564,21 +557,11 @@ config FREESCALE
+>   	default y
+>   	depends on (M5206eC3 || M5208EVB || M5235EVB || M5249C3 || M5271EVB || M5272C3 || M5275EVB || M5282EVB || M5307C3 || M5329EVB || M5407C3)
+>
+> -config HW_FEITH
+> -	bool
+> -	default y
+> -	depends on (CLEOPATRA || CANCam || SCALES)
+> -
+>   config senTec
+>   	bool
+>   	default y
+>   	depends on (COBRA5272 || COBRA5282)
+>   	
+> -config EMAC_INC
+> -	bool
+> -	default y
+> -	depends on (SOM5282EM)
+> -
+>   config SNEHA
+>   	bool
+>   	default y
+> @@ -673,33 +656,6 @@ config KERNELBASE
+>   	  a system with the RAM based at address 0, and leaving enough room
+>   	  for the theoretical maximum number of 256 vectors.
+>
+> -choice
+> -	prompt "RAM bus width"
+> -	default RAMAUTOBIT
+> -
+> -config RAMAUTOBIT
+> -	bool "AUTO"
+> -	help
+> -	  Select the physical RAM data bus size. Not needed on most platforms,
+> -	  so you can generally choose AUTO.
+> -
+> -config RAM8BIT
+> -	bool "8bit"
+> -	help
+> -	  Configure RAM bus to be 8 bits wide.
+> -
+> -config RAM16BIT
+> -	bool "16bit"
+> -	help
+> -	  Configure RAM bus to be 16 bits wide.
+> -
+> -config RAM32BIT
+> -	bool "32bit"
+> -	help
+> -	  Configure RAM bus to be 32 bits wide.
+> -
+> -endchoice
+> -
+>   comment "ROM configuration"
+>
+>   config ROM
 
-Yet another point to investigate is the point where we teardown the
-old vma and we leave the new vma generated by copy_vma
-established. That's apparently taken care of by do_munmap in move_vma
-so that shall be safe too as munmap is safe in the first place.
 
-Overall I don't think this patch is needed and it seems a noop.
-
-> It appears that Mel's a8bef8ff6ea1 "mm: migration: avoid race between
-> shift_arg_pages() and rmap_walk() during migration by not migrating
-> temporary stacks" was actually a workaround for this in the special
-> common case of exec's use of move_pagetables(); and we should probably
-> now remove that VM_STACK_INCOMPLETE_SETUP stuff as a separate cleanup.
-
-I don't think this patch can help with that, the problem of execve vs
-rmap_walk is that there's 1 single vma existing for src and dst
-virtual ranges while execve runs move_page_tables. So there is no
-possible way that rmap_walk will be guaranteed to find _all_ ptes
-mapping a page if there's just one vma mapping either the src or dst
-range while move_page_table runs. No addition of locking whatsoever
-can fix that bug because we miss a vma (well modulo locking that
-prevents rmap_walk to run at all, until we're finished with execve,
-which is more or less what VM_STACK_INCOMPLETE_SETUP does...).
-
-The only way is to fix this is prevent migrate (or any other rmap_walk
-user that requires 100% reliability from the rmap layer, for example
-swap doesn't require 100% reliability and can still run and gracefully
-fail at finding the pte) while we're moving pagetables in execve. And
-that's what Mel's above mentioned patch does.
-
-The other way to fix that bug that I implemented was to do copy_vma in
-execve, so that we still have both src and dst ranges of
-move_page_tables covered by 2 (not 1) vma, each with the proper
-vma->vm_pgoff, so my approach fixed that bug as well (but requires a
-vma allocation in execve so it was dropped in favor of Mel's patch
-which is totally fine with as both approaches fixes the bug equally
-well, even if now we've to deal with this special case of sometime
-rmap_walk having false negatives if the vma_flags is set, and the
-important thing is that after VM_STACK_INCOMPLETE_SETUP has been
-cleared it won't ever be set again for the whole lifetime of the vma).
-
-I may be missing something, I did a short review so far, just so the
-patch doesn't get merged if not needed. I mean I think it needs a bit
-more looks on it... The fact the i_mmap_mutex was taken but the
-anon_vma lock was not taken (while in every other place they both are
-needed) certainly makes the patch look correct, but that's just a
-misleading coincidence I think.
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
