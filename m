@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1JQRAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:00:55 -0400
+	id S1756637Ab1JQQ7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:59:54 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45329 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643Ab1JQQ7z (ORCPT
+	with ESMTP id S1756599Ab1JQQ7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:59:55 -0400
-X-Authority-Analysis: v=1.1 cv=G2mrdTwFgeQf4gnIVCGl5REDSA/JVLCrZmxI9r5hHjY= c=1 sm=0 a=vhdKIqpQuCYA:10 a=SERZnYZTKdUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=KRCr8N6MsTSkg2eTPMEA:9 a=72fgMRCJTlKv7fW5eHIA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=zMTsXtV2ZVJXfLNr:21 a=CjAY00WYveH1sr0y:21 a=fmbVO6pYXtQaKoyDroAA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 17 Oct 2011 12:59:52 -0400
+X-Authority-Analysis: v=1.1 cv=G2mrdTwFgeQf4gnIVCGl5REDSA/JVLCrZmxI9r5hHjY= c=1 sm=0 a=vhdKIqpQuCYA:10 a=1Vthl_CjnasA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=g3W1TVA1e65YW-LzzFwA:9 a=IhAwZzdN0q-5rzXpZo8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=59up8UmTGVMYl7dueysA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111017165954.376385828@goodmis.org>
+Message-Id: <20111017165951.607972540@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 12:05:11 -0400
+Date: Mon, 17 Oct 2011 12:05:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 16/17][RFC] ktest: Fix parsing of config section lines
+Subject: [PATCH 10/17][RFC] ktest: Let IF keyword take comparisons
 References: <20111017160455.498567257@goodmis.org>
-Content-Disposition: inline; filename=0016-ktest-Fix-parsing-of-config-section-lines.patch
+Content-Disposition: inline; filename=0010-ktest-Let-IF-keyword-take-comparisons.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,111 +29,173 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The order for some of the keywords on a section line
-(TEST_START or DEFAULTS) does not really matter. Simply need
-to remove the keyword from the line as we process it and
-evaluate the next keyword in the line. By removing the keywords
-as we find them, we do not need to keep track of where on the
-line they were found.
+Allow =3D=3D, !=3D, <=3D, >=3D, <, and > to be used in IF statements
+to compare if a section should be processed or not.
+
+For example:
+
+BITS :=3D 32
+
+DEFAULTS IF ${BITS} =3D=3D 32
+MIN_CONFIG =3D ${CONFIG_DIR}/config-32
+ELSE
+MIN_CONFIG =3D ${CONFIG_DIR}/config-64
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   49 ++++++++++++++++++++++++++------------=
+ tools/testing/ktest/ktest.pl    |   54 ++++++++++++++++++++++++++++++++++-=
 ---
- 1 files changed, 31 insertions(+), 18 deletions(-)
+ tools/testing/ktest/sample.conf |   14 ++++++++++
+ 2 files changed, 62 insertions(+), 6 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 2a9d042..d292c2d 100755
+index c76e18f..ed20d68 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -449,6 +449,7 @@ sub __read_config {
-     my $num_tests_set =3D 0;
-     my $skip =3D 0;
-     my $rest;
-+    my $line;
-     my $test_case =3D 0;
-     my $if =3D 0;
-     my $if_set =3D 0;
-@@ -465,6 +466,7 @@ sub __read_config {
+@@ -361,11 +361,47 @@ sub set_variable {
+     }
+ }
 =20
- 	    my $type =3D $1;
- 	    $rest =3D $2;
-+	    $line =3D $2;
-=20
- 	    my $old_test_num;
- 	    my $old_repeat;
-@@ -486,32 +488,28 @@ sub __read_config {
- 		$default =3D 1;
- 	    }
-=20
--	    if ($rest =3D~ /\s+SKIP\b(.*)/) {
--		$rest =3D $1;
-+	    # If SKIP is anywhere in the line, the command will be skipped
-+	    if ($rest =3D~ s/\s+SKIP\b//) {
- 		$skip =3D 1;
- 	    } else {
- 		$test_case =3D 1;
- 		$skip =3D 0;
- 	    }
-=20
--	    if (!$skip) {
--		if ($type eq "TEST_START") {
--		    if ($rest =3D~ /\s+ITERATE\s+(\d+)(.*)$/) {
--			$repeat =3D $1;
--			$rest =3D $2;
--			$repeat_tests{"$test_num"} =3D $repeat;
--		    }
--		} elsif ($rest =3D~ /\sOVERRIDE\b(.*)/) {
--		    # DEFAULT only
--		    $rest =3D $1;
--		    $override =3D 1;
--		    # Clear previous overrides
--		    %overrides =3D ();
-+	    if ($rest =3D~ s/\sELSE\b//) {
-+		if (!$if) {
-+		    die "$name: $.: ELSE found with out matching IF section\n$_";
-+		}
-+		$if =3D 0;
++sub process_compare {
++    my ($lval, $cmp, $rval) =3D @_;
 +
-+		if ($if_set) {
-+		    $skip =3D 1;
-+		} else {
-+		    $skip =3D 0;
- 		}
++    # remove whitespace
++
++    $lval =3D~ s/^\s*//;
++    $lval =3D~ s/\s*$//;
++
++    $rval =3D~ s/^\s*//;
++    $rval =3D~ s/\s*$//;
++
++    if ($cmp eq "=3D=3D") {
++	return $lval eq $rval;
++    } elsif ($cmp eq "!=3D") {
++	return $lval ne $rval;
++    }
++
++    my $statement =3D "$lval $cmp $rval";
++    my $ret =3D eval $statement;
++
++    # $@ stores error of eval
++    if ($@) {
++	return -1;
++    }
++
++    return $ret;
++}
++
+ sub process_if {
+     my ($name, $value) =3D @_;
+=20
+     my $val =3D process_variables($value);
+=20
++    if ($val =3D~ /(.*)(=3D=3D|\!=3D|>=3D|<=3D|>|<)(.*)/) {
++	my $ret =3D process_compare($1, $2, $3);
++	if ($ret < 0) {
++	    die "$name: $.: Unable to process comparison\n";
++	}
++	return $ret;
++    }
++
+     if ($val =3D~ /^\s*0\s*$/) {
+ 	return 0;
+     } elsif ($val =3D~ /^\s*\d+\s*$/) {
+@@ -428,8 +464,8 @@ sub read_config {
+ 		$repeat_tests{"$test_num"} =3D $repeat;
  	    }
 =20
--	    if ($rest =3D~ /\sIF\s+(.*)/) {
--		$rest =3D "";
-+	    if ($rest =3D~ s/\sIF\s+(.*)//) {
+-	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
+-		$rest =3D $2;
++	    if ($rest =3D~ /\sIF\s+(.*)/) {
++		$rest =3D "";
  		if (process_if($name, $1)) {
  		    $if_set =3D 1;
  		} else {
-@@ -520,9 +518,24 @@ sub __read_config {
+@@ -461,14 +497,14 @@ sub read_config {
+ 		$skip =3D 0;
+ 	    }
+=20
+-	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
++	    if ($rest =3D~ /\sIF\s+(.*)/) {
  		$if =3D 1;
+-		$rest =3D $2;
+ 		if (process_if($name, $1)) {
+ 		    $if_set =3D 1;
+ 		} else {
+ 		    $skip =3D 1;
+ 		}
++		$rest =3D "";
  	    } else {
  		$if =3D 0;
-+		$if_set =3D 0;
+ 	    }
+@@ -477,26 +513,32 @@ sub read_config {
+ 		die "$name: $.: Gargbage found after DEFAULTS\n$_";
  	    }
 =20
--	    if ($rest !~ /^\s*$/) {
-+	    if (!$skip) {
-+		if ($type eq "TEST_START") {
-+		    if ($rest =3D~ s/\s+ITERATE\s+(\d+)//) {
-+			$repeat =3D $1;
-+			$repeat_tests{"$test_num"} =3D $repeat;
-+		    }
-+		} elsif ($rest =3D~ s/\sOVERRIDE\b//) {
-+		    # DEFAULT only
-+		    $override =3D 1;
-+		    # Clear previous overrides
-+		    %overrides =3D ();
-+		}
+-	} elsif (/^\s*ELSE(.*)$/) {
++	} elsif (/^\s*ELSE\b(.*)$/) {
+ 	    if (!$if) {
+ 		die "$name: $.: ELSE found with out matching IF section\n$_";
+ 	    }
+ 	    $rest =3D $1;
+ 	    if ($if_set) {
+ 		$skip =3D 1;
++		$rest =3D "";
+ 	    } else {
+ 		$skip =3D 0;
+=20
+-		if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
++		if ($rest =3D~ /\sIF\s+(.*)/) {
+ 		    # May be a ELSE IF section.
+ 		    if (!process_if($name, $1)) {
+ 			$skip =3D 1;
+ 		    }
++		    $rest =3D "";
+ 		} else {
+ 		    $if =3D 0;
+ 		}
+ 	    }
+=20
++	    if ($rest !~ /^\s*$/) {
++		die "$name: $.: Gargbage found after DEFAULTS\n$_";
 +	    }
 +
-+	    if (!$skip && $rest !~ /^\s*$/) {
- 		die "$name: $.: Gargbage found after $type\n$_";
- 	    }
+ 	} elsif (/^\s*([A-Z_\[\]\d]+)\s*=3D\s*(.*?)\s*$/) {
 =20
+ 	    next if ($skip);
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
+onf
+index 6a0a0ba..4e8fb91 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -72,6 +72,8 @@
+ # the same option name under the same test or as default
+ # ktest will fail to execute, and no tests will run.
+ #
++#
++#
+ # Both TEST_START and DEFAULTS sections can also have the IF keyword
+ # The value after the IF must evaluate into a 0 or non 0 positive
+ # integer, and can use the config variables (explained below).
+@@ -110,6 +112,18 @@
+ # ELSE
+ # BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
+ #
++# The if statement may also have comparisons that will and for
++# =3D=3D and !=3D, strings may be used for both sides.
++#
++# BOX_TYPE :=3D x86_32
++#
++# DEFAULTS IF ${BOX_TYPE} =3D=3D x86_32
++# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-32
++# ELSE
++# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-64
++#
++
++
+=20
+ #### Config variables ####
+ #
 --=20
 1.7.6.3
 
@@ -146,19 +208,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOnF8KAAoJEIy3vGnGbaoA/zYQAKYeIzLYuBk6n/Vo56Ow1L5G
-w71XKRF5nhv32d/L2ig9D6I0D9Iwq+Sr7gnvkX/tFz8Ga+ICtZd+O4p5p2RoKeMp
-5Yd52dyJssZD/hgmnIiua6+o8CJV2DTz+/JJgfYBYRPlXEEKwrHSclHsX5QSm6s8
-M+bjT7Oi69ABDDAVjY2dZs31VOhkzJ9p/6crp+q5I0GU98x5LTiNkWNyMQGI0fN4
-2LB5T+4dGZpW/yy4dw/Zytg3hAYh1Yn2A7MT3xZnqGcVYCCGMUnclRh04UUEgvFo
-bj71c/NXkUd6eYSYI/nF8dGClWcXSip082vsBjiv+Ui1eN3nOTKDh+S3nT/iau8j
-QBOAsL2WXgT+UVVmAyk29JqGN/Up/Cl4jrC2Yg4DGQTrhFsdYToqN3mF60zGHLIv
-WljKu+wA0OZEN/us5Ex3mmCpIgkXsISLzJfwxfKN5CnpfkunSRinSZw4N/1wKAeL
-XG75i3rtPA4R6OOcKqvpBJUM/qhdl0bIVv0Zpl0pvg5MPI7mgXnRVXn+hdK6wfxd
-mBYXzpUaVqeVENKHGIKlU6/gQcgw2lg/ivXFZDJvpFuQ7TQS5AQzriOAICiw48mT
-AJwCZ8O3TpNJ5i0cBfKGMJbqkZrACoNvWTpVBwggFVotZEgSM6Zg718G3lg9MZ8V
-FCsvCoFeBp1oAEWPVBnn
-=a06D
+iQIcBAABAgAGBQJOnF8HAAoJEIy3vGnGbaoACZIP/iPgNlijOsSF3WYYIgqh7FHD
+1JAyXyTG6yxW4mAr4u7p9JAhSahap2FzAdcgKSlbORhg3uu22Jpxs4L9ms+n8bJI
+K8R6yRvL8W75s5KK1ep0LjFqrj6QiDFX1Y4P+lXlicO76n2Rbcm6uf3lkFOGWDoa
+khAcKO0U3JsX42DBvIQJpw4eLTyTOhbPZP5rGkiE9i3Qack2iVELGj7WiOyCD5S7
+JJi18/6BjadPNleZ/j8wIuBXojCAggiNUdOpNwj9fvXZOeqywq0mlHPtxuMKo/fQ
+yKGM807OO9DKzshMOo2uiq5hGZI7A+vV7MtT8ISSCbz/2DPuXd/rpnXaatI6UZET
+xSReFL1EwVX/wUVhjGTqkP33WoH52bDL/0F8ipOovQt83whtNY3jjWRUhVZJQO7Q
+h6Ml2OfJHVP5MralQWVrf9pkcPj0TXOdWMns2aVWlH1XHm1NuxolDaVFVnNUzHM+
+pn9POgC0Wbo9EJdRbsY8PSEAcDghlgOidrTEsEo300yGEOgpM/Dm6Ms92MwDs4++
+HUtcfcbKM1VwNR33VohRBOTqsJsTG0Az08hG4BiIbjr6AKUE6AS0je+Q1rnv3922
+tWmUS75kYfwLWRbHtnHP3LY3UXG0JiKh6vTffar3S3ydHII+2mYQ8eJowu1XaAwE
+I03xgIom+qgIasPWyqna
+=gN1k
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
