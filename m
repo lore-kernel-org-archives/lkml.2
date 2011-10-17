@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1JQMIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 08:08:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40630 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751278Ab1JQMIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 08:08:17 -0400
-Date: Mon, 17 Oct 2011 13:08:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, zdevai@gmail.com
-Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
-Message-ID: <20111017120813.GB27266@opensource.wolfsonmicro.com>
-References: <20111013204410.GA17160@sirena.org.uk>
- <4E985C60.9020308@cam.ac.uk>
- <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com>
- <4E9BF8D9.8030301@cam.ac.uk>
- <20111017101959.GC3042@opensource.wolfsonmicro.com>
- <4E9C0423.5010909@cam.ac.uk>
- <20111017104642.GD3042@opensource.wolfsonmicro.com>
- <4E9C0DD7.7080105@cam.ac.uk>
- <20111017111807.GA27266@opensource.wolfsonmicro.com>
- <4E9C1249.5020408@cam.ac.uk>
+	id S1752365Ab1JQMK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:10:26 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28312 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab1JQMKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 08:10:24 -0400
+Subject: [RFC PATCH 0/5] SUNRPC: "RPC pipefs per network namespace"
+	preparations
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Date: Mon, 17 Oct 2011 16:10:16 +0300
+Message-ID: <20111017120629.4541.67395.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9C1249.5020408@cam.ac.uk>
-X-Cookie: Be cautious in your daily affairs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 12:32:25PM +0100, Jonathan Cameron wrote:
-> On 10/17/11 12:18, Mark Brown wrote:
+Hello to everyone. 
+RPC pipefs file system have to work per network namespace context is required
+prior to any NFS modifications.
+This is a way how to do it. I'll really appreciate for any comments.
 
-> >  - Some voltage inputs hard wired to particular system supplies.
+There are several statements about how to make RPC pipefs working per network
+namespace context.
+Here they are:
+1) RPC pipefs should be mounted per network namespace context.
+2) RPC pipefs superblock should holds network namespace while active.
+3) RPC pipefs lookup and readir should be perfomed in network namespace context
+it was mounted. IOW, user-space process, working in another network namespace
+context, should see RPC pipefs dentries from network namespace context this
+mount-point was created (like it was done for sysfs). 
 
-> Hard wired in the pmic?  (e.g. do not vary from device to device).
-> These I'm happy to see have names.  If it were a normal IIO device their
-> access attributes would be something like:
+These statement leads to some restrictions which we must follow during
+implementation. Here are they:
+1) RPC pipefs mount can't be performed in kernel context since new super block
+will holds networks namespace reference and it's impossible to recognize, when
+and how we have to release this mount point. IOW rpc_get_mount() and
+rpc_put_mount() have to be removed.
+2) RPC pipefs should provide some new helpers to lookup directory dentry for
+those modules which creates pipes, because without RPC pipefs mount point
+general lookup can't be performed.
+3) These methods must garantee, that pipefs superblock will be active during
+pipes creation and destruction.
 
-> in_voltage0_supply3V_raw
-> in_voltage1_supply2.8V_raw
+So, here is the idea of making RPC pipefs works per network namespace context:
+1) RPC pipefs superblock should holds network namespcae context while active.
+2) RPC pipefs should send notification events on superblock creation and
+destruction.
+3) RPC pipefs should provide "lookup dentry by name" method for notification
+subscribers.
+4) RPC pipefs should place superblock reference on current network namespace
+context on creation and remove it on destruction.
+5) RPC pipefs should provide safe "lookup dentry by name" method for per-net
+operations, which garantees, that superblock is active, while
+per-net-operations are performing.
+6) Client and cache directories creation and destruction should be performed
+also on superblock creation and destruction notification events. Note: generic
+creation (like now) can fail (if no superblock is not created yet).
+7) Pipes creation and destruction should be performed on superblock creation
+and destruction events. Also pipes operations should be performed during
+per-net operation and in this case they could fail (due to the same reason as
+in statement above).
 
-Yes, though the names are more symbolic than that (eg, "USB").
+This patch-set implements first 5 points and thus doesn't affects current RPC
+pipefs logic.
 
-> (have insist on indexing even with named channels because it is needed as
-> events codes don't want to carry a string.).
+The only problem about I'm not sure how to solve properly yet, is auth gss
+pipes creations operations. Hoping for some help with it.
 
-This is orthogonal to the request interface, though.
 
-> >  - One or more temperature inputs wired to particular place (eg, chip
-> >    and battery).
+The following series consists of:
 
-> Not hard wired so to my mind these are just general purpose temperature inputs.
-> Hence naming doesn't make sense (at least not outside of board file or DT).
+---
 
-No, they're hard wired - like I say they're wired to a particular place.
+Stanislav Kinsbursky (5):
+      SUNRPC: hold current network namespace while pipefs superblock is active
+      SUNRPC: send notification events on pipefs sb creation and destruction
+      SUNRPC: pipefs dentry lookup helper introduced
+      SUNRPC: put pipefs superblock link on network namespace
+      SUNRPC: pipefs per-net operations helper introduced
 
-> There are some complexities to deal with that make me wonder if direct indexing
-> into a driver provided table isn't easier.  The other is channel types.
 
-It's not great for usability if you've got to apply an additional layer
-of translation on top of mapping the schematic onto the hardware.
+ include/linux/sunrpc/rpc_pipe_fs.h |   16 ++++++
+ net/sunrpc/netns.h                 |    3 +
+ net/sunrpc/rpc_pipe.c              |  103 ++++++++++++++++++++++++++++++++++++
+ net/sunrpc/sunrpc_syms.c           |    1 
+ 4 files changed, 122 insertions(+), 1 deletions(-)
 
-> Is it so bad to insist that the dt writer or equivalent actually looks at the
-> driver in question and picks the underlying channel index directly?
-
-We certainly can't put Linux specific channel numbers into the device
-tree.
+-- 
+Signature
