@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1JQSwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:52:23 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59011 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751667Ab1JQSwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:52:22 -0400
-Date: Mon, 17 Oct 2011 14:52:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mpn@google.com>
-cc: Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv6 0/3] get rid of USB_GADGET_{DUAL,SUPER}SPEED
-In-Reply-To: <cover.1318875728.git.mina86@mina86.com>
-Message-ID: <Pine.LNX.4.44L0.1110171450490.1749-100000@iolanthe.rowland.org>
+	id S1753317Ab1JQSwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:52:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44877 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751671Ab1JQSwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:52:37 -0400
+Date: Mon, 17 Oct 2011 11:38:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v4 8_1/8] PCI, sys: Use device_type and attr_groups with
+ pci dev
+Message-ID: <20111017183819.GA18457@suse.de>
+References: <4E9A3092.4080309@oracle.com>
+ <4E9A3436.3010704@oracle.com>
+ <20111016023943.GA3787@suse.de>
+ <4E9A6CCB.4060101@oracle.com>
+ <20111016155517.GA6421@suse.de>
+ <4E9B6A2F.1080706@oracle.com>
+ <20111017014527.GA7322@suse.de>
+ <4E9C7386.6090607@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9C7386.6090607@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011, Michal Nazarewicz wrote:
-
-> From: Michal Nazarewicz <mina86@mina86.com>
+On Mon, Oct 17, 2011 at 11:27:18AM -0700, Yinghai Lu wrote:
 > 
-> Sorry for the delay.
-> 
-> Rebased on top of <git://gitorious.org/usb/usb.git gadget>.
-> 
-> This has been only compile-tested.
+> We want to create rescan in sys only for pci bridge instead of all pci dev.
 
-Did you compile-test the various intermediate stages (i.e., after the 
-first patch and after the second patch)?  I bet not, because the change 
-to file_storage.c in 3/3 belongs in 2/3.
+Much nicer, and the best part, the code is much smaller :)
 
-Alan Stern
+> Also We could add more attr groups with is_visible to reduce messness in
+> 	pci_create_sysfs_dev_files. ( at least for boot_vga one )
 
+Yes, you probably should.
+
+Thanks for making the changes.
+
+greg k-h
