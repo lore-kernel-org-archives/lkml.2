@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab1JQCDa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 22:03:30 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59534 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab1JQCD3 (ORCPT
+	id S1753890Ab1JQCGh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 22:06:37 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37328 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab1JQCGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 22:03:29 -0400
-X-Originating-IP: 217.70.178.133
+	Sun, 16 Oct 2011 22:06:36 -0400
+X-Originating-IP: 217.70.178.137
 X-Originating-IP: 50.43.15.19
-Date: Sun, 16 Oct 2011 19:03:10 -0700
+Date: Sun, 16 Oct 2011 19:06:13 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -18,26 +18,83 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 54/55] rcu: Make srcu_read_lock_held() call
- common lockdep-enabled function
-Message-ID: <20111017020309.GI19421@leaf>
+Subject: Re: [PATCH tip/core/rcu 0/55] Preview of RCU changes for 3.2
+Message-ID: <20111017020613.GJ19421@leaf>
 References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-54-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315332049-2604-54-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 11:00:48AM -0700, Paul E. McKenney wrote:
-> A common debug_lockdep_rcu_enabled() function is used to check whether
-> RCU lockdep splats should be reported, but srcu_read_lock() does not
-> use it.  This commit therefore brings srcu_read_lock_held() up to date.
+On Tue, Sep 06, 2011 at 11:00:15AM -0700, Paul E. McKenney wrote:
+> Hello!
+> 
+> This patchset adds RCU event tracing, improved diagnostics and
+> documentation, and fixes a number of bugs, including several from an
+> ongoing top-to-bottom inspection of RCU.  The patches are as follows:
+> 
+> 1.	Place per-CPU kthreads' stack and task struct on the corresponding
+> 	node on NUMA systems (courtesy of Eric Dumazet).
+> 2.	Avoid unnecessary self-wakeups for per-CPU kthreads
+> 	(courtesy of Shaohua Li).
+> 3,6,10,12,25,28,33.
+> 	Documentations updates (some courtesy Wanlong Gao).
+> 4.	Add replacement checks for blocking within an RCU read-side
+> 	critical section.
+> 5.	Header-file untangling part 1 of N: move rcu_head to types.h.
+> 7.	Fix mismatched variable declaration (courtesy of Andi Kleen).
+> 8.	Abstract out common grace-period-primitive code.
+> 9.	Update rcutorture to test newish RCU API members.
+> 11.	Drive RCU algorithm selection directly from SMP and PREEMPT.
+> 13.	Make rcu_torture_boost() wait for callbacks before telling
+> 	debug-objects that they are done.
+> 14-17,20,22.
+> 	Add event tracing for RCU.
+> 18.	Update comments to reflect kthreads being used only when
+> 	RCU priority boosting is enabled.
+> 19.	Move RCU_BOOSt data declarations to alow compiler to detect
+> 	mismatches.
+> 20.	Make TINY_RCU use softirqs for RCU_BOOST=n.
+> 23.	Simplify quiescent-state accounting.
+> 24.	Stop passing rcu_read_lock_held() to rcu_dereference_protected()
+> 	(courtesy of Michal Hocko).
+> 26.	Remove unused and redundant RCU API members.
+> 27.	Allow rcutorture's stat_interval parameter to be changed at runtime
+> 	to make it easier to test RCU in guest OSes.
+> 28.	Removed unused nohz_cpu_mask (courtesy of Alex Shi).
+> 30.	Eliminate in_irq() checks in rcu_enter_nohz().
+> 31.	Fix rcu_implicit_dynticks_qs() local-variable size mismatches.
+> 32.	Make rcu_assign_pointer() unconditionally emit memory barrier
+> 	to silence new gcc warnings (courtesy of Eric Dumazet).
+> 34.	Move __rcu_read_lock()'s barrier within if-statement.
+> 35.	Dump local stack for CPU stall warnings if cannot dump all stacks.
+> 36.	Prevent early-boot set_need_resched() from __rcu_pending().
+> 37.	Simplify unboosting checks.
+> 38.	Prohibit RCU grace periods during early boot.
+> 39.	Suppress NMI backtraces when CPU stall ends before dump.
+> 40.	Avoid just-online CPU needlessly rescheding itself.
+> 41.	Permit rt_mutex_unlock() with irqs disabled.
+> 42-43.	Prevent end-of-test rcutorture hangs.
+> 44.	Wire up RCU_BOOST_PRIO, use conventional kthread naming scheme
+> 	(courtesy of Mike Galbraith).
+> 45.	Check for entering dyntick-idle in RCU read-side critical section.
+> 46.	Adjust RCU_FAST_NO_HZ to avoid false quiescent states.
+> 47.	Avoid concurrent end of old GP with start of new GP.
+> 48.	Strengthen powerpc value-returning atomic memory ordering.
+> 49-51.	Detect illegal RCU use from dyntick-idle mode (courtesy of
+> 	Frederic Weisbecker).
+> 52.	Remove an unnecessary layer of abstraction from PROVE_RCU checking.
+> 53.	Detect illegal SRCU use from dyntick-idle mode.
+> 54.	Make SRCU use common lockdep-splat code.
+> 55.	Placeholder patch that disables illegal tracing from dyntick-idle
+> 	mode (illegal because tracing uses RCU).
 
-Should this patch go before 53, or merge into 53, to prevent the issues
-you describe from occuring in a tree which has 53 applied but not 54?
+I responded to a few of the patches with comments and potential issues.
+I also don't consider myself qualified to review patch 48/55, "powerpc:
+strengthen value-returning-atomics memory barriers".  For the rest:
 
-- Josh Triplett
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
