@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab1JQNRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:17:17 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40967 "EHLO
+	id S1755288Ab1JQNRy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 09:17:54 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40948 "EHLO
 	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab1JQNQq (ORCPT
+	with ESMTP id S1753273Ab1JQNQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Oct 2011 09:16:46 -0400
 X-Cam-AntiVirus: no malware found
@@ -15,11 +15,10 @@ To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
 Cc: guenter.roeck@ericsson.com, khali@linux-fr.org, dmitry.torokhov@gmail.com,
         broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
         alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
-        Michael Hennerich <michael.hennerich@analog.com>,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 3/6] IIO:ADC:ad799x initial import.
-Date: Mon, 17 Oct 2011 14:16:18 +0100
-Message-Id: <1318857381-13787-4-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 1/6] IIO: Core sysfs only support.
+Date: Mon, 17 Oct 2011 14:16:16 +0100
+Message-Id: <1318857381-13787-2-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk>
 References: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk>
@@ -27,800 +26,1002 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Hennerich <michael.hennerich@analog.com>
+Add support for simple sysfs only interfaces.
+
+Bulk of patch is concerned with taking struct iio_chan_spec
+arrays and generating all the relevant interfaces from them.
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-Signed-off-by: Michael Hennerich<michael.hennerich@analog.com>
 ---
- drivers/iio/adc/Kconfig       |   11 +
- drivers/iio/adc/Makefile      |    3 +
- drivers/iio/adc/ad799x_core.c |  723 +++++++++++++++++++++++++++++++++++++++++
- include/linux/iio/ad799x.h    |   12 +
- 4 files changed, 749 insertions(+), 0 deletions(-)
+ drivers/Kconfig           |    2 +
+ drivers/Makefile          |    3 +
+ drivers/iio/Kconfig       |   11 +
+ drivers/iio/Makefile      |    6 +
+ drivers/iio/iio.c         |  591 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/iio/iio.h   |  250 +++++++++++++++++++
+ include/linux/iio/sysfs.h |   68 +++++
+ 7 files changed, 931 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index 0673d78..3d97b21 100644
---- a/drivers/iio/adc/Kconfig
-+++ b/drivers/iio/adc/Kconfig
-@@ -3,6 +3,17 @@
- #
- menu "Analog to digital convertors"
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index ce3c35f..f90101e 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -132,4 +132,6 @@ source "drivers/virt/Kconfig"
  
-+config IIO_AD799X
-+	tristate "Analog Devices AD799x ADC driver"
-+	depends on I2C
-+	select IIO_TRIGGER if IIO_BUFFER
-+	select AD799X_RING_BUFFER
-+	help
-+	  Say yes here to build support for Analog Devices:
-+	  ad7991, ad7995, ad7999, ad7992, ad7993, ad7994, ad7997, ad7998
-+	  i2c analog to digital convertors (ADC). Provides direct access
-+	  via sysfs.
-+
- config IIO_MAX1363
- 	tristate "Maxim max1363 ADC driver"
- 	depends on I2C
-diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index 8d6a7f9..c197334 100644
---- a/drivers/iio/adc/Makefile
-+++ b/drivers/iio/adc/Makefile
-@@ -2,5 +2,8 @@
- # Makefile for IIO ADCs
- #
+ source "drivers/hv/Kconfig"
  
-+iio_ad799x-y := ad799x_core.o
-+obj-$(CONFIG_IIO_AD799X) += iio_ad799x.o
++source "drivers/iio/Kconfig"
 +
- iio_max1363-y := max1363_core.o
- obj-$(CONFIG_IIO_MAX1363) += iio_max1363.o
-\ No newline at end of file
-diff --git a/drivers/iio/adc/ad799x_core.c b/drivers/iio/adc/ad799x_core.c
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index ef693cf..df39628 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -127,5 +127,8 @@ obj-$(CONFIG_IOMMU_SUPPORT)	+= iommu/
+ 
+ # Virtualization drivers
+ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
++
+ obj-$(CONFIG_HYPERV)		+= hv/
+ 
++obj-$(CONFIG_IIO)		+= iio/
++
+diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
 new file mode 100644
-index 0000000..b734547
+index 0000000..5d9a97d
 --- /dev/null
-+++ b/drivers/iio/adc/ad799x_core.c
-@@ -0,0 +1,723 @@
-+/*
-+ * iio/adc/ad799x.c
-+ * Copyright (C) 2010-1011 Michael Hennerich, Analog Devices Inc.
++++ b/drivers/iio/Kconfig
+@@ -0,0 +1,11 @@
++#
++# Industrial I/O subsystem
++#
++
++menuconfig IIO
++	tristate "Industrial I/O support"
++	depends on GENERIC_HARDIRQS
++	help
++	  The Industrial input / output subsystem provides a unified
++	  framework for many different types of embedded sensor.
++	  See Documentation/iio for more information.
+diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
+new file mode 100644
+index 0000000..733846b
+--- /dev/null
++++ b/drivers/iio/Makefile
+@@ -0,0 +1,6 @@
++#
++# Makefile for the Industrial I/O subsystem
++#
++
++obj-$(CONFIG_IIO) += iio.o
++industrialio-y := core.o
+diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+new file mode 100644
+index 0000000..326b09b
+--- /dev/null
++++ b/drivers/iio/iio.c
+@@ -0,0 +1,591 @@
++/* The industrial I/O core
 + *
-+ * based on iio/adc/max1363
-+ * Copyright (C) 2008-2010 Jonathan Cameron
++ * Copyright (c) 2008-2011 Jonathan Cameron
 + *
-+ * based on linux/drivers/i2c/chips/max123x
-+ * Copyright (C) 2002-2004 Stefan Eletzhofer
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
 + *
-+ * based on linux/drivers/acron/char/pcf8583.c
-+ * Copyright (C) 2000 Russell King
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * ad799x.c
-+ *
-+ * Support for ad7991, ad7995, ad7999, ad7992, ad7993, ad7994, ad7997,
-+ * ad7998 and similar chips.
-+ *
++ * Based on elements of hwmon and input subsystems.
 + */
-+
-+#include <linux/interrupt.h>
-+#include <linux/device.h>
 +#include <linux/kernel.h>
-+#include <linux/sysfs.h>
-+#include <linux/i2c.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/err.h>
 +#include <linux/module.h>
-+
++#include <linux/slab.h>
++#include <linux/idr.h>
 +#include <linux/iio/iio.h>
 +#include <linux/iio/sysfs.h>
-+#include <linux/iio/ad799x.h>
 +
-+#define AD799X_CHANNEL_SHIFT			4
-+/*
-+ * AD7991, AD7995 and AD7999 defines
-+ */
++static DEFINE_IDA(iio_ida);
 +
-+#define AD7991_REF_SEL				0x08
-+#define AD7991_FLTR				0x04
-+#define AD7991_BIT_TRIAL_DELAY			0x02
-+#define AD7991_SAMPLE_DELAY			0x01
-+
-+/*
-+ * AD7992, AD7993, AD7994, AD7997 and AD7998 defines
-+ */
-+
-+#define AD7998_FLTR				0x08
-+#define AD7998_ALERT_EN				0x04
-+#define AD7998_BUSY_ALERT			0x02
-+#define AD7998_BUSY_ALERT_POL			0x01
-+
-+#define AD7998_CONV_RES_REG			0x0
-+#define AD7998_ALERT_STAT_REG			0x1
-+#define AD7998_CONF_REG				0x2
-+#define AD7998_CYCLE_TMR_REG			0x3
-+#define AD7998_DATALOW_CH1_REG			0x4
-+#define AD7998_DATAHIGH_CH1_REG			0x5
-+#define AD7998_HYST_CH1_REG			0x6
-+#define AD7998_DATALOW_CH2_REG			0x7
-+#define AD7998_DATAHIGH_CH2_REG			0x8
-+#define AD7998_HYST_CH2_REG			0x9
-+#define AD7998_DATALOW_CH3_REG			0xA
-+#define AD7998_DATAHIGH_CH3_REG			0xB
-+#define AD7998_HYST_CH3_REG			0xC
-+#define AD7998_DATALOW_CH4_REG			0xD
-+#define AD7998_DATAHIGH_CH4_REG			0xE
-+#define AD7998_HYST_CH4_REG			0xF
-+
-+#define AD7998_CYC_MASK				0x7
-+#define AD7998_CYC_DIS				0x0
-+#define AD7998_CYC_TCONF_32			0x1
-+#define AD7998_CYC_TCONF_64			0x2
-+#define AD7998_CYC_TCONF_128			0x3
-+#define AD7998_CYC_TCONF_256			0x4
-+#define AD7998_CYC_TCONF_512			0x5
-+#define AD7998_CYC_TCONF_1024			0x6
-+#define AD7998_CYC_TCONF_2048			0x7
-+
-+#define AD7998_ALERT_STAT_CLEAR			0xFF
-+
-+/*
-+ * AD7997 and AD7997 defines
-+ */
-+
-+#define AD7997_8_READ_SINGLE			0x80
-+#define AD7997_8_READ_SEQUENCE			0x70
-+/* TODO: move this into a common header */
-+#define RES_MASK(bits)	((1 << (bits)) - 1)
-+
-+enum {
-+	ad7991,
-+	ad7995,
-+	ad7999,
-+	ad7992,
-+	ad7993,
-+	ad7994,
-+	ad7997,
-+	ad7998
++static struct bus_type iio_bus_type = {
++	.name = "iio",
 +};
 +
-+struct ad799x_state;
-+
-+/**
-+ * struct ad799x_chip_info - chip specifc information
-+ * @channel:		channel specification
-+ * @num_channels:	number of channels
-+ * @int_vref_mv:	the internal reference voltage
-+ */
-+struct ad799x_chip_info {
-+	struct iio_chan_spec		channel[9];
-+	int				num_channels;
-+	u16				int_vref_mv;
++static const char * const iio_data_type_name[] = {
++	[IIO_RAW] = "raw",
++	[IIO_PROCESSED] = "input",
 +};
 +
-+struct ad799x_state {
-+	struct i2c_client		*client;
-+	const struct ad799x_chip_info	*chip_info;
-+	struct regulator		*reg;
-+	u16				int_vref_mv;
-+	unsigned			id;
-+	char				*name;
-+	u16				config;
++static const char * const iio_chan_type_name_spec[] = {
++	[IIO_VOLTAGE] = "voltage",
++	[IIO_CURRENT] = "current",
++	[IIO_POWER] = "power",
++	[IIO_ACCEL] = "accel",
++	[IIO_ANGL_VEL] = "anglvel",
++	[IIO_MAGN] = "magn",
++	[IIO_LIGHT] = "illuminance",
++	[IIO_INTENSITY] = "intensity",
++	[IIO_PROXIMITY] = "proximity",
++	[IIO_TEMP] = "temp",
++	[IIO_INCLI] = "incli",
++	[IIO_ROT] = "rot",
++	[IIO_ANGL] = "angl",
++	[IIO_TIMESTAMP] = "timestamp",
 +};
 +
-+/*
-+ * ad799x register access by I2C
-+ */
-+static int ad799x_i2c_read16(struct ad799x_state *st, u8 reg, u16 *data)
++static const char * const iio_direction_name[] = {
++	[IIO_IN] = "in",
++	[IIO_OUT] = "out",
++};
++
++static const char * const iio_modifier_names[] = {
++	[IIO_MOD_X] = "x",
++	[IIO_MOD_Y] = "y",
++	[IIO_MOD_Z] = "z",
++	[IIO_MOD_LIGHT_BOTH] = "both",
++	[IIO_MOD_LIGHT_INFRARED] = "ir",
++};
++
++/* relies on pairs of these shared then separate */
++static const char * const iio_chan_info_postfix[] = {
++	[IIO_CHAN_INFO_SCALE_SHARED/2] = "scale",
++	[IIO_CHAN_INFO_OFFSET_SHARED/2] = "offset",
++	[IIO_CHAN_INFO_CALIBSCALE_SHARED/2] = "calibscale",
++	[IIO_CHAN_INFO_CALIBBIAS_SHARED/2] = "calibbias",
++	[IIO_CHAN_INFO_PEAK_SHARED/2] = "peak_raw",
++	[IIO_CHAN_INFO_PEAK_SCALE_SHARED/2] = "peak_scale",
++	[IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SHARED/2]
++	= "quadrature_correction_raw",
++};
++
++static void iio_device_free_read_attr(struct iio_dev *indio_dev,
++						 struct iio_dev_attr *p)
 +{
-+	struct i2c_client *client = st->client;
-+	int ret = 0;
-+
-+	ret = i2c_smbus_read_word_data(client, reg);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "I2C read error\n");
-+		return ret;
-+	}
-+
-+	*data = swab16((u16)ret);
-+
-+	return 0;
++	kfree(p->dev_attr.attr.name);
++	kfree(p);
 +}
 +
-+static int ad799x_scan_direct(struct ad799x_state *st, unsigned ch)
++static void iio_device_unregister_sysfs(struct iio_dev *indio_dev)
 +{
-+	u16 rxbuf;
-+	u8 cmd;
-+	int ret;
 +
-+	switch (st->id) {
-+	case ad7991:
-+	case ad7995:
-+	case ad7999:
-+		cmd = st->config | ((1 << ch) << AD799X_CHANNEL_SHIFT);
-+		break;
-+	case ad7992:
-+	case ad7993:
-+	case ad7994:
-+		cmd = (1 << ch) << AD799X_CHANNEL_SHIFT;
-+		break;
-+	case ad7997:
-+	case ad7998:
-+		cmd = (ch << AD799X_CHANNEL_SHIFT) | AD7997_8_READ_SINGLE;
-+		break;
-+	default:
-+		return -EINVAL;
++	struct iio_dev_attr *p, *n;
++
++	list_for_each_entry_safe(p, n, &indio_dev->channel_attr_list, l) {
++		list_del(&p->l);
++		iio_device_free_read_attr(indio_dev, p);
++	}
++	kfree(indio_dev->chan_attr_group.attrs);
++}
++
++static void iio_dev_release(struct device *device)
++{
++	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
++	iio_device_unregister_sysfs(indio_dev);
++}
++
++static struct device_type iio_dev_type = {
++	.name = "iio_device",
++	.release = iio_dev_release,
++};
++
++struct iio_dev *iio_device_allocate(int sizeof_priv)
++{
++	struct iio_dev *dev;
++	size_t alloc_size;
++
++	alloc_size = sizeof(struct iio_dev);
++	if (sizeof_priv) {
++		alloc_size = ALIGN(alloc_size, IIO_ALIGN);
++		alloc_size += sizeof_priv;
++	}
++	/* ensure cacheline alignment of whole construct */
++	alloc_size += IIO_ALIGN - 1;
++
++	dev = kzalloc(alloc_size, GFP_KERNEL);
++
++	if (dev) {
++		dev->dev.type = &iio_dev_type;
++		dev->dev.bus = &iio_bus_type;
++		device_initialize(&dev->dev);
++		dev_set_drvdata(&dev->dev, (void *)dev);
++		mutex_init(&dev->mlock);
 +	}
 +
-+	ret = ad799x_i2c_read16(st, cmd, &rxbuf);
++	return dev;
++}
++EXPORT_SYMBOL_GPL(iio_device_allocate);
++
++void iio_device_free(struct iio_dev *dev)
++{
++	if (dev)
++		iio_put_device(dev);
++}
++EXPORT_SYMBOL_GPL(iio_device_free);
++
++ssize_t __iio_read_const_attr(struct device *dev,
++			    struct device_attribute *attr,
++			    char *buf)
++{
++	return sprintf(buf, "%s\n",
++		       container_of(attr,
++				    struct iio_const_attr,
++				    dev_attr)->string);
++}
++EXPORT_SYMBOL_GPL(__iio_read_const_attr);
++
++static ssize_t iio_read_channel_info(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
++	int val, val2;
++	int ret = indio_dev->info->read_raw(indio_dev, this_attr->c,
++					    &val, &val2, this_attr->address);
++
 +	if (ret < 0)
 +		return ret;
 +
-+	return rxbuf;
++	if (ret == IIO_VAL_INT)
++		return sprintf(buf, "%d\n", val);
++	else if (ret == IIO_VAL_INT_PLUS_MICRO) {
++		if (val2 < 0)
++			return sprintf(buf, "-%d.%06u\n", val, -val2);
++		else
++			return sprintf(buf, "%d.%06u\n", val, val2);
++	} else if (ret == IIO_VAL_INT_PLUS_NANO) {
++		if (val2 < 0)
++			return sprintf(buf, "-%d.%09u\n", val, -val2);
++		else
++			return sprintf(buf, "%d.%09u\n", val, val2);
++	} else
++		return 0;
 +}
 +
-+static int ad799x_read_raw(struct iio_dev *indio_dev,
-+			   struct iio_chan_spec const *chan,
-+			   int *val,
-+			   int *val2,
-+			   long m)
++static ssize_t iio_write_channel_info(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf,
++				      size_t len)
 +{
-+	int ret;
-+	struct ad799x_state *st = iio_priv(indio_dev);
-+	unsigned int scale_uv;
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
++	int ret, integer = 0, fract = 0, fract_mult = 100000;
++	bool integer_part = true, negative = false;
 +
-+	switch (m) {
-+	case 0:
-+		mutex_lock(&indio_dev->mlock);
-+		ret = ad799x_scan_direct(st, chan->channel);
-+		mutex_unlock(&indio_dev->mlock);
++	/* Assumes decimal - precision based on number of digits */
++	if (!indio_dev->info->write_raw)
++		return -EINVAL;
 +
-+		if (ret < 0)
-+			return ret;
-+		*val = (ret >> chan->scan_type.shift) &
-+			RES_MASK(chan->scan_type.realbits);
-+		return IIO_VAL_INT;
-+	case (1 << IIO_CHAN_INFO_SCALE_SHARED):
-+		scale_uv = (st->int_vref_mv * 1000) >> chan->scan_type.realbits;
-+		*val =  scale_uv / 1000;
-+		*val2 = (scale_uv % 1000) * 1000;
-+		return IIO_VAL_INT_PLUS_MICRO;
++	if (indio_dev->info->write_raw_get_fmt)
++		switch (indio_dev->info->write_raw_get_fmt(indio_dev,
++			this_attr->c, this_attr->address)) {
++		case IIO_VAL_INT_PLUS_MICRO:
++			fract_mult = 100000;
++			break;
++		case IIO_VAL_INT_PLUS_NANO:
++			fract_mult = 100000000;
++			break;
++		default:
++			return -EINVAL;
++		}
++
++	if (buf[0] == '-') {
++		negative = true;
++		buf++;
 +	}
-+	return -EINVAL;
-+}
 +
-+static const struct iio_info ad799X_info = {
-+	.read_raw = &ad799x_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+
-+static const struct ad799x_chip_info ad799x_chip_info_tbl[] = {
-+	[ad7991] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type =  {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+		},
-+		.num_channels = 5,
-+		.int_vref_mv = 4096,
-+	},
-+	[ad7995] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+		},
-+		.num_channels = 5,
-+		.int_vref_mv = 1024,
-+	},
-+	[ad7999] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 8,
-+					.shift = 4,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 8,
-+					.shift = 4,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 8,
-+					.shift = 4,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 8,
-+					.shift = 4,
-+				},
-+			},
-+		},
-+		.num_channels = 5,
-+		.int_vref_mv = 1024,
-+	},
-+	[ad7992] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+		},
-+		.num_channels = 3,
-+		.int_vref_mv = 4096,
-+	},
-+	[ad7993] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+		},
-+		.num_channels = 5,
-+		.int_vref_mv = 1024,
-+	},
-+	[ad7994] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+		},
-+		.num_channels = 5,
-+		.int_vref_mv = 4096,
-+	},
-+	[ad7997] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[4] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 4,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[5] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 5,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[6] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 6,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+			[7] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 7,
-+				.scan_type = {
-+					.realbits = 10,
-+					.shift = 2,
-+				},
-+			},
-+		},
-+		.num_channels = 9,
-+		.int_vref_mv = 1024,
-+	},
-+	[ad7998] = {
-+		.channel = {
-+			[0] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 0,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[1] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 1,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[2] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 2,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[3] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 3,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[4] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 4,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[5] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 5,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[6] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 6,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+			[7] = {
-+				.type = IIO_VOLTAGE,
-+				.indexed = 1,
-+				.channel = 7,
-+				.scan_type = {
-+					.realbits = 12,
-+					.shift = 0,
-+				},
-+			},
-+		},
-+		.num_channels = 9,
-+		.int_vref_mv = 4096,
-+	},
-+};
-+
-+static int __devinit ad799x_probe(struct i2c_client *client,
-+				   const struct i2c_device_id *id)
-+{
-+	int ret;
-+	struct ad799x_platform_data *pdata = client->dev.platform_data;
-+	struct ad799x_state *st;
-+	struct iio_dev *indio_dev = iio_device_allocate(sizeof(*st));
-+
-+	if (indio_dev == NULL)
-+		return -ENOMEM;
-+
-+	st = iio_priv(indio_dev);
-+	/* this is only used for device removal purposes */
-+	i2c_set_clientdata(client, indio_dev);
-+
-+	st->id = id->driver_data;
-+	st->chip_info = &ad799x_chip_info_tbl[st->id];
-+
-+	/* TODO: Add pdata options for filtering and bit delay */
-+
-+	if (pdata)
-+		st->int_vref_mv = pdata->vref_mv;
-+	else
-+		st->int_vref_mv = st->chip_info->int_vref_mv;
-+
-+	st->reg = regulator_get(&client->dev, "vcc");
-+	if (!IS_ERR(st->reg)) {
-+		ret = regulator_enable(st->reg);
-+		if (ret)
-+			goto error_put_reg;
++	while (*buf) {
++		if ('0' <= *buf && *buf <= '9') {
++			if (integer_part)
++				integer = integer*10 + *buf - '0';
++			else {
++				fract += fract_mult*(*buf - '0');
++				if (fract_mult == 1)
++					break;
++				fract_mult /= 10;
++			}
++		} else if (*buf == '\n') {
++			if (*(buf + 1) == '\0')
++				break;
++			else
++				return -EINVAL;
++		} else if (*buf == '.') {
++			integer_part = false;
++		} else {
++			return -EINVAL;
++		}
++		buf++;
 +	}
-+	st->client = client;
++	if (negative) {
++		if (integer)
++			integer = -integer;
++		else
++			fract = -fract;
++	}
 +
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->name = id->name;
-+	indio_dev->info = &ad799X_info;
-+
-+	indio_dev->channels = st->chip_info->channel;
-+	indio_dev->num_channels = st->chip_info->num_channels;
-+
-+	ret = iio_device_register(indio_dev);
++	ret = indio_dev->info->write_raw(indio_dev, this_attr->c,
++					 integer, fract, this_attr->address);
 +	if (ret)
-+		goto error_disable_reg;
++		return ret;
++
++	return len;
++}
++
++static
++int __iio_device_attr_init(struct device_attribute *dev_attr,
++			   const char *postfix,
++			   struct iio_chan_spec const *chan,
++			   ssize_t (*readfunc)(struct device *dev,
++					       struct device_attribute *attr,
++					       char *buf),
++			   ssize_t (*writefunc)(struct device *dev,
++						struct device_attribute *attr,
++						const char *buf,
++						size_t len),
++			   bool generic)
++{
++	int ret;
++	char *name_format, *full_postfix;
++	sysfs_attr_init(&dev_attr->attr);
++
++	/* Build up postfix of <extend_name>_<modifier>_postfix */
++	if (chan->modified) {
++		if (chan->extend_name)
++			full_postfix = kasprintf(GFP_KERNEL, "%s_%s_%s",
++						 iio_modifier_names[chan
++								    ->channel2],
++						 chan->extend_name,
++						 postfix);
++		else
++			full_postfix = kasprintf(GFP_KERNEL, "%s_%s",
++						 iio_modifier_names[chan
++								    ->channel2],
++						 postfix);
++	} else {
++		if (chan->extend_name == NULL)
++			full_postfix = kstrdup(postfix, GFP_KERNEL);
++		else
++			full_postfix = kasprintf(GFP_KERNEL,
++						 "%s_%s",
++						 chan->extend_name,
++						 postfix);
++	}
++	if (full_postfix == NULL) {
++		ret = -ENOMEM;
++		goto error_ret;
++	}
++
++	if (chan->differential) { /* Differential  can not have modifier */
++		if (generic)
++			name_format
++				= kasprintf(GFP_KERNEL, "%s_%s-%s_%s",
++					    iio_direction_name[chan->output],
++					    iio_chan_type_name_spec[chan->type],
++					    iio_chan_type_name_spec[chan->type],
++					    full_postfix);
++		else if (chan->indexed)
++			name_format
++				= kasprintf(GFP_KERNEL, "%s_%s%d-%s%d_%s",
++					    iio_direction_name[chan->output],
++					    iio_chan_type_name_spec[chan->type],
++					    chan->channel,
++					    iio_chan_type_name_spec[chan->type],
++					    chan->channel2,
++					    full_postfix);
++		else {
++			WARN_ON("Differential channels must be indexed\n");
++			ret = -EINVAL;
++			goto error_free_full_postfix;
++		}
++	} else { /* Single ended */
++		if (generic)
++			name_format
++				= kasprintf(GFP_KERNEL, "%s_%s_%s",
++					    iio_direction_name[chan->output],
++					    iio_chan_type_name_spec[chan->type],
++					    full_postfix);
++		else if (chan->indexed)
++			name_format
++				= kasprintf(GFP_KERNEL, "%s_%s%d_%s",
++					    iio_direction_name[chan->output],
++					    iio_chan_type_name_spec[chan->type],
++					    chan->channel,
++					    full_postfix);
++		else
++			name_format
++				= kasprintf(GFP_KERNEL, "%s_%s_%s",
++					    iio_direction_name[chan->output],
++					    iio_chan_type_name_spec[chan->type],
++					    full_postfix);
++	}
++	if (name_format == NULL) {
++		ret = -ENOMEM;
++		goto error_free_full_postfix;
++	}
++	dev_attr->attr.name = kasprintf(GFP_KERNEL,
++					name_format,
++					chan->channel,
++					chan->channel2);
++	if (dev_attr->attr.name == NULL) {
++		ret = -ENOMEM;
++		goto error_free_name_format;
++	}
++
++	if (readfunc) {
++		dev_attr->attr.mode |= S_IRUGO;
++		dev_attr->show = readfunc;
++	}
++
++	if (writefunc) {
++		dev_attr->attr.mode |= S_IWUSR;
++		dev_attr->store = writefunc;
++	}
++	kfree(name_format);
++	kfree(full_postfix);
 +
 +	return 0;
 +
-+error_disable_reg:
-+	if (!IS_ERR(st->reg))
-+		regulator_disable(st->reg);
-+error_put_reg:
-+	if (!IS_ERR(st->reg))
-+		regulator_put(st->reg);
-+	iio_device_free(indio_dev);
++error_free_name_format:
++	kfree(name_format);
++error_free_full_postfix:
++	kfree(full_postfix);
++error_ret:
++	return ret;
++}
++
++static void __iio_device_attr_deinit(struct device_attribute *dev_attr)
++{
++	kfree(dev_attr->attr.name);
++}
++
++static
++int __iio_add_chan_devattr(const char *postfix,
++			   struct iio_chan_spec const *chan,
++			   ssize_t (*readfunc)(struct device *dev,
++					       struct device_attribute *attr,
++					       char *buf),
++			   ssize_t (*writefunc)(struct device *dev,
++						struct device_attribute *attr,
++						const char *buf,
++						size_t len),
++			   u64 mask,
++			   bool generic,
++			   struct device *dev,
++			   struct list_head *attr_list)
++{
++	int ret;
++	struct iio_dev_attr *iio_attr, *t;
++
++	iio_attr = kzalloc(sizeof *iio_attr, GFP_KERNEL);
++	if (iio_attr == NULL) {
++		ret = -ENOMEM;
++		goto error_ret;
++	}
++	ret = __iio_device_attr_init(&iio_attr->dev_attr,
++				     postfix, chan,
++				     readfunc, writefunc, generic);
++	if (ret)
++		goto error_iio_dev_attr_free;
++	iio_attr->c = chan;
++	iio_attr->address = mask;
++	list_for_each_entry(t, attr_list, l)
++		if (strcmp(t->dev_attr.attr.name,
++			   iio_attr->dev_attr.attr.name) == 0) {
++			if (!generic)
++				dev_err(dev, "tried to double register : %s\n",
++					t->dev_attr.attr.name);
++			ret = -EBUSY;
++			goto error_device_attr_deinit;
++		}
++
++	list_add(&iio_attr->l, attr_list);
++
++	return 0;
++
++error_device_attr_deinit:
++	__iio_device_attr_deinit(&iio_attr->dev_attr);
++error_iio_dev_attr_free:
++	kfree(iio_attr);
++error_ret:
++	return ret;
++}
++
++static int iio_device_add_channel_sysfs(struct iio_dev *indio_dev,
++					struct iio_chan_spec const *chan)
++{
++	int ret, i, attrcount = 0;
++
++	if (chan->channel < 0)
++		return 0;
++	ret = __iio_add_chan_devattr(iio_data_type_name[chan->processed_val],
++				     chan,
++				     &iio_read_channel_info,
++				     (chan->output ?
++				      &iio_write_channel_info : NULL),
++				     0,
++				     0,
++				     &indio_dev->dev,
++				     &indio_dev->channel_attr_list);
++	if (ret)
++		goto error_ret;
++
++	for_each_set_bit(i, &chan->info_mask,
++			 ARRAY_SIZE(iio_chan_info_postfix)*2) {
++		ret = __iio_add_chan_devattr(iio_chan_info_postfix[i/2],
++					     chan,
++					     &iio_read_channel_info,
++					     &iio_write_channel_info,
++					     (1 << i),
++					     !(i%2),
++					     &indio_dev->dev,
++					     &indio_dev->channel_attr_list);
++		if (ret == -EBUSY && (i%2 == 0)) {
++			ret = 0;
++			continue;
++		}
++		if (ret < 0)
++			goto error_ret;
++		attrcount++;
++	}
++	ret = attrcount;
++error_ret:
++	return ret;
++}
++
++static ssize_t iio_show_dev_name(struct device *dev,
++				 struct device_attribute *attr,
++				 char *buf)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	return sprintf(buf, "%s\n", indio_dev->name);
++}
++
++static DEVICE_ATTR(name, S_IRUGO, iio_show_dev_name, NULL);
++
++static int iio_device_register_sysfs(struct iio_dev *indio_dev)
++{
++	int i, ret = 0, attrcount, attrn, attrcount_orig = 0;
++	struct iio_dev_attr *p, *n;
++	struct attribute **attr;
++
++	/* First count elements in any existing group */
++	if (indio_dev->info->attrs) {
++		attr = indio_dev->info->attrs->attrs;
++		while (*attr++ != NULL)
++			attrcount_orig++;
++	}
++	attrcount = attrcount_orig;
++
++	INIT_LIST_HEAD(&indio_dev->channel_attr_list);
++	if (indio_dev->channels)
++		for (i = 0; i < indio_dev->num_channels; i++) {
++			ret = iio_device_add_channel_sysfs(indio_dev,
++							   &indio_dev
++							   ->channels[i]);
++			if (ret < 0)
++				goto error_clear_attrs;
++			attrcount += ret;
++		}
++	if (indio_dev->name)
++		attrcount++;
++
++	indio_dev->chan_attr_group.attrs
++		= kzalloc(sizeof(indio_dev->chan_attr_group.attrs[0])*
++			  (attrcount + 1),
++			  GFP_KERNEL);
++	if (indio_dev->chan_attr_group.attrs == NULL) {
++		ret = -ENOMEM;
++		goto error_clear_attrs;
++	}
++	/* Copy across original attributes */
++	if (indio_dev->info->attrs)
++		memcpy(indio_dev->chan_attr_group.attrs,
++		       indio_dev->info->attrs->attrs,
++		       sizeof(indio_dev->chan_attr_group.attrs[0])
++		       *attrcount_orig);
++	attrn = attrcount_orig;
++	/* Add all elements from the list. */
++	list_for_each_entry(p, &indio_dev->channel_attr_list, l)
++		indio_dev->chan_attr_group.attrs[attrn++] = &p->dev_attr.attr;
++	if (indio_dev->name)
++		indio_dev->chan_attr_group.attrs[attrn++] = &dev_attr_name.attr;
++
++	indio_dev->groups[indio_dev->groupcounter++] =
++		&indio_dev->chan_attr_group;
++
++	return 0;
++
++error_clear_attrs:
++	list_for_each_entry_safe(p, n,
++				 &indio_dev->channel_attr_list, l) {
++		list_del(&p->l);
++		iio_device_free_read_attr(indio_dev, p);
++	}
 +
 +	return ret;
 +}
 +
-+static __devexit int ad799x_remove(struct i2c_client *client)
++int iio_device_register(struct iio_dev *indio_dev)
 +{
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct ad799x_state *st = iio_priv(indio_dev);
++	int ret;
 +
-+	iio_device_unregister(indio_dev);
-+	if (!IS_ERR(st->reg)) {
-+		regulator_disable(st->reg);
-+		regulator_put(st->reg);
++	indio_dev->id = ida_simple_get(&iio_ida, 0, 0, GFP_KERNEL);
++	if (indio_dev->id < 0) {
++		ret = indio_dev->id;
++		goto error_ret;
 +	}
-+	iio_device_free(indio_dev);
++
++	dev_set_name(&indio_dev->dev, "iio:device%d", indio_dev->id);
++
++	ret = iio_device_register_sysfs(indio_dev);
++	if (ret) {
++		dev_err(indio_dev->dev.parent,
++			"Failed to register sysfs interfaces\n");
++		goto error_free_ida;
++	}
++	ret = device_add(&indio_dev->dev);
++	if (ret)
++		goto error_free_sysfs;
 +
 +	return 0;
++
++error_free_sysfs:
++	iio_device_unregister_sysfs(indio_dev);
++error_free_ida:
++	ida_simple_remove(&iio_ida, indio_dev->id);
++error_ret:
++	return ret;
 +}
++EXPORT_SYMBOL(iio_device_register);
 +
-+static const struct i2c_device_id ad799x_id[] = {
-+	{ "ad7991", ad7991 },
-+	{ "ad7995", ad7995 },
-+	{ "ad7999", ad7999 },
-+	{ "ad7992", ad7992 },
-+	{ "ad7993", ad7993 },
-+	{ "ad7994", ad7994 },
-+	{ "ad7997", ad7997 },
-+	{ "ad7998", ad7998 },
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, ad799x_id);
-+
-+static struct i2c_driver ad799x_driver = {
-+	.driver = {
-+		.name = "ad799x",
-+	},
-+	.probe = ad799x_probe,
-+	.remove = __devexit_p(ad799x_remove),
-+	.id_table = ad799x_id,
-+};
-+
-+static __init int ad799x_init(void)
++void iio_device_unregister(struct iio_dev *indio_dev)
 +{
-+	return i2c_add_driver(&ad799x_driver);
++	device_unregister(&indio_dev->dev);
 +}
++EXPORT_SYMBOL(iio_device_unregister);
 +
-+static __exit void ad799x_exit(void)
++static int __init iio_init(void)
 +{
-+	i2c_del_driver(&ad799x_driver);
++	return bus_register(&iio_bus_type);
 +}
++subsys_initcall(iio_init);
 +
-+MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
-+MODULE_DESCRIPTION("Analog Devices AD799x ADC");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("i2c:ad799x");
++static void __exit iio_exit(void)
++{
++	bus_unregister(&iio_bus_type);
++}
++module_exit(iio_exit);
 +
-+module_init(ad799x_init);
-+module_exit(ad799x_exit);
-diff --git a/include/linux/iio/ad799x.h b/include/linux/iio/ad799x.h
++MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
++MODULE_DESCRIPTION("Industrial I/O core");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
 new file mode 100644
-index 0000000..38517be
+index 0000000..8066c8a
 --- /dev/null
-+++ b/include/linux/iio/ad799x.h
-@@ -0,0 +1,12 @@
++++ b/include/linux/iio/iio.h
+@@ -0,0 +1,250 @@
 +/*
-+ * Copyright (C) 2010-2011 Michael Hennerich, Analog Devices Inc.
-+ * Copyright (C) 2008-2010 Jonathan Cameron
++ * The industrial I/O core
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Copyright (c) 2008-2011 Jonathan Cameron
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++#include <linux/klist.h>
++#include <linux/device.h>
++
++#ifndef _IIO_H_
++#define _IIO_H_
++
++/* Minimum alignment of priv within iio_dev */
++#define IIO_ALIGN L1_CACHE_BYTES
++
++enum iio_data_type {
++	IIO_RAW,
++	IIO_PROCESSED,
++};
++
++enum iio_chan_type {
++	IIO_VOLTAGE,
++	IIO_CURRENT,
++	IIO_POWER,
++	IIO_CAPACITANCE,
++	IIO_ACCEL,
++	IIO_ANGL_VEL,
++	IIO_MAGN,
++	IIO_LIGHT,
++	IIO_INTENSITY,
++	IIO_PROXIMITY,
++	IIO_TEMP,
++	IIO_INCLI,
++	IIO_ROT,
++	IIO_ANGL,
++	IIO_TIMESTAMP,
++};
++
++enum iio_modifier {
++	IIO_NO_MOD,
++	IIO_MOD_X,
++	IIO_MOD_Y,
++	IIO_MOD_Z,
++	IIO_MOD_X_AND_Y,
++	IIO_MOD_X_ANX_Z,
++	IIO_MOD_Y_AND_Z,
++	IIO_MOD_X_AND_Y_AND_Z,
++	IIO_MOD_X_OR_Y,
++	IIO_MOD_X_OR_Z,
++	IIO_MOD_Y_OR_Z,
++	IIO_MOD_X_OR_Y_OR_Z,
++	IIO_MOD_LIGHT_BOTH,
++	IIO_MOD_LIGHT_INFRARED,
++};
++
++enum iio_chan_info_enum {
++	IIO_CHAN_INFO_SCALE_SHARED,
++	IIO_CHAN_INFO_SCALE_SEPARATE,
++	IIO_CHAN_INFO_OFFSET_SHARED,
++	IIO_CHAN_INFO_OFFSET_SEPARATE,
++	IIO_CHAN_INFO_CALIBSCALE_SHARED,
++	IIO_CHAN_INFO_CALIBSCALE_SEPARATE,
++	IIO_CHAN_INFO_CALIBBIAS_SHARED,
++	IIO_CHAN_INFO_CALIBBIAS_SEPARATE,
++	IIO_CHAN_INFO_PEAK_SHARED,
++	IIO_CHAN_INFO_PEAK_SEPARATE,
++	IIO_CHAN_INFO_PEAK_SCALE_SHARED,
++	IIO_CHAN_INFO_PEAK_SCALE_SEPARATE,
++	IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SHARED,
++	IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SEPARATE,
++};
++
++enum iio_direction {
++	IIO_IN,
++	IIO_OUT,
++};
++
++#define IIO_VAL_INT 1
++#define IIO_VAL_INT_PLUS_MICRO 2
++#define IIO_VAL_INT_PLUS_NANO 3
++
++/**
++ * struct iio_chan_spec - specification of a single channel
++ * @type:		What type of measurement is the channel making.
++ * @channel:		What number or name do we wish to asign the channel.
++ * @channel2:		If there is a second number for a differential
++ *			channel then this is it. If modified is set then the
++ *			value here specifies the modifier.
++ * @address:		Driver specific identifier.
++ * @scan_type:		Description of data format.
++ * @info_mask:		What information is to be exported about this channel.
++ *			This includes calibbias, scale etc.
++ * @extend_name:	Allows labeling of channel attributes with an
++ *			informative name. Note this has no effect codes etc,
++ *			unlike modifiers.
++ * @processed_val:	Flag to specify the data access attribute should be
++ *			*_input rather than *_raw.
++ * @modified:		Does a modifier apply to this channel. What these are
++ *			depends on the channel type.  Modifier is set in
++ *			channel2. Examples are IIO_MOD_X for axial sensors about
++ *			the 'x' axis.
++ * @indexed:		Specify the channel has a numerical index. If not,
++ *			the value in channel will be suppressed for attribute
++ *			but not for event codes. Typically set it to 0 when
++ *			the index is false.
++ * @output:		Specify the channel is an output channel (DAC).
++ * @differential:	Is the channel a differential channel. Cannot coexist
++ *			with modified and requires indexed.
++ */
++struct iio_chan_spec {
++	enum iio_chan_type	type;
++	int			channel;
++	int			channel2;
++	unsigned long		address;
++	/**
++	 * struct scan_type - description of the data format
++	 * @sign:	Set if signed value
++	 * @realbits:	Number of valid bits of data
++	 * @shift:	Shift right by this before masking out realbits.
++	 */
++	struct {
++		char		sign;
++		u8		realbits;
++		u8		shift;
++	} scan_type;
++	long                    info_mask;
++	char			*extend_name;
++	unsigned		processed_val:1;
++	unsigned		modified:1;
++	unsigned		indexed:1;
++	unsigned		output:1;
++	unsigned		differential:1;
++};
++
++struct iio_dev;
++
++/**
++ * struct iio_info - constant information about device
++ * @driver_module:	module structure used to ensure correct
++ *			ownership of chrdevs etc
++ * @attrs:		general purpose device attributes
++ * @read_raw:		function to request a value from the device.
++ *			mask specifies which value. Note 0 means a reading of
++ *			the channel in question.  Return value will specify the
++ *			type of value returned by the device. val and val2 will
++ *			contain the elements making up the returned value.
++ * @write_raw:		function to write a value to the device.
++ *			Parameters are the same as for read_raw.
++ * @write_raw_get_fmt:	callback function to query the expected
++ *			format/precision. If not set by the driver, write_raw
++ *			returns IIO_VAL_INT_PLUS_MICRO.
++ **/
++struct iio_info {
++	struct module			*driver_module;
++	const struct attribute_group	*attrs;
++
++	int (*read_raw)(struct iio_dev *indio_dev,
++			struct iio_chan_spec const *chan,
++			int *val,
++			int *val2,
++			long mask);
++
++	int (*write_raw)(struct iio_dev *indio_dev,
++			 struct iio_chan_spec const *chan,
++			 int val,
++			 int val2,
++			 long mask);
++
++	int (*write_raw_get_fmt)(struct iio_dev *indio_dev,
++			 struct iio_chan_spec const *chan,
++			 long mask);
++};
++
++/**
++ * struct iio_dev - industrial I/O device
++ * @id:			[INTERN] used to identify device internally
++ * @dev:		[DRIVER] device structure, should be assigned a parent
++ *			and owner
++ * @mlock:		[INTERN] lock used to prevent simultaneous device state
++ *			changes
++ * @available_scan_masks: [DRIVER] optional array of allowed bitmasks
++ * @channels:		[DRIVER] channel specification structure table
++ * @num_channels:	[DRIVER] number of chanels specified in @channels
++ * @channel_attr_list:	[INTERN] keep track of automatically created channel
++ *			attributes
++ * @chan_attr_group:	[INTERN] group for all attrs in base directory
++ * @name:		[DRIVER] name of the device
++ * @info:		[DRIVER] callbacks and constant info from driver
++ * @groups:		[INTERN] attribute groups
++ * @groupcounter:	[INTERN] index of next attribute group
++ **/
++struct iio_dev {
++	int				id;
++	struct device			dev;
++	struct mutex			mlock;
++	unsigned long			*available_scan_masks;
++	struct iio_chan_spec const	*channels;
++	int				num_channels;
++	struct list_head		channel_attr_list;
++	struct attribute_group		chan_attr_group;
++	const char			*name;
++	const struct iio_info		*info;
++#define IIO_MAX_GROUPS 1
++	const struct attribute_group	*groups[IIO_MAX_GROUPS + 1];
++	int				groupcounter;
++};
++
++/**
++ * iio_device_allocate() - allocate an iio_dev from a driver
++ * @sizeof_priv:	Space to allocate for private structure.
++ **/
++struct iio_dev *iio_device_allocate(int sizeof_priv);
++
++static inline void *iio_priv(const struct iio_dev *dev)
++{
++	return (char *)dev + ALIGN(sizeof(struct iio_dev), IIO_ALIGN);
++}
++
++/**
++ * iio_device_free() - free an iio_dev from a driver
++ * @dev: the iio_dev associated with the device
++ **/
++void iio_device_free(struct iio_dev *dev);
++
++/**
++ * iio_device_register() - register a device with the IIO subsystem
++ * @indio_dev:		Device structure filled by the device driver
++ **/
++int iio_device_register(struct iio_dev *indio_dev);
++
++/**
++ * iio_device_unregister() - unregister a device from the IIO subsystem
++ * @indio_dev:		Device structure representing the device.
++ **/
++void iio_device_unregister(struct iio_dev *indio_dev);
++
++/**
++ * iio_put_device() - reference counted deallocation of struct device
++ * @indio_dev: the iio_device containing the device
++ **/
++static inline void iio_put_device(struct iio_dev *indio_dev)
++{
++	if (indio_dev)
++		put_device(&indio_dev->dev);
++};
++
++#endif /* _IIO_H_ */
+diff --git a/include/linux/iio/sysfs.h b/include/linux/iio/sysfs.h
+new file mode 100644
+index 0000000..c6735bf
+--- /dev/null
++++ b/include/linux/iio/sysfs.h
+@@ -0,0 +1,68 @@
++/*
++ * The industrial I/O core
++ *
++ * Copyright (c) 2008 Jonathan Cameron
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * General attributes
 + */
 +
-+struct ad799x_platform_data {
-+	u16				vref_mv;
++#include <linux/klist.h>
++#include <linux/device.h>
++
++#ifndef _IIO_SYSFS_H_
++#define _IIO_SYSFS_H_
++
++struct iio_chan_spec;
++
++/**
++ * struct iio_dev_attr - iio specific device attribute
++ * @dev_attr:	underlying device attribute
++ * @address:	associated register address
++ * @l:		list head for maintaining list of dynamically created attrs
++ * @c:		channel spec for channel with which attr is associated if any
++ */
++struct iio_dev_attr {
++	struct device_attribute dev_attr;
++	int address;
++	struct list_head l;
++	struct iio_chan_spec const *c;
 +};
++
++#define to_iio_dev_attr(_dev_attr)				\
++	container_of(_dev_attr, struct iio_dev_attr, dev_attr)
++
++#define IIO_ATTR(_name, _mode, _show, _store, _addr)		\
++	{ .dev_attr = __ATTR(_name, _mode, _show, _store),	\
++	  .address = _addr }
++
++#define IIO_DEVICE_ATTR(_name, _mode, _show, _store, _addr)	\
++	struct iio_dev_attr iio_dev_attr_##_name		\
++	= IIO_ATTR(_name, _mode, _show, _store, _addr)
++
++/**
++ * struct iio_const_attr - constant device specific attribute
++ *                         often used for things like available modes
++ * @string:	attribute string
++ * @dev_attr:	underlying device attribute
++ */
++struct iio_const_attr {
++	const char *string;
++	struct device_attribute dev_attr;
++};
++
++#define to_iio_const_attr(_dev_attr) \
++	container_of(_dev_attr, struct iio_const_attr, dev_attr)
++
++ssize_t __iio_read_const_attr(struct device *dev,
++			      struct device_attribute *attr,
++			      char *len);
++
++#define IIO_CONST_ATTR(_name, _string)					\
++	struct iio_const_attr iio_const_attr_##_name			\
++	= { .string = _string,						\
++	    .dev_attr = __ATTR(_name, S_IRUGO, __iio_read_const_attr, NULL) }
++#endif /* _IIO_SYSFS_H_ */
 -- 
 1.7.7
 
