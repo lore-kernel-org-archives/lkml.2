@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab1JQUZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 16:25:07 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34909 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753219Ab1JQUZF (ORCPT
+	id S1754596Ab1JQUZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 16:25:23 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:34473 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754380Ab1JQUZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 16:25:05 -0400
-X-Sasl-enc: LqMxCWi932JVbFWwDb182OoHquK8WwNP3hdocRZhiR5E 1318883104
-Date: Mon, 17 Oct 2011 13:24:57 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.0.7
-Message-ID: <20111017202457.GA6952@kroah.com>
-References: <20111017165654.GA5442@kroah.com>
+	Mon, 17 Oct 2011 16:25:07 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+Organization: VMware, Inc.
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Subject: Re: [PATCH] drivers, vmw_balloon.c: Increment alloc and sleep_alloc only when page allocation succeeds.
+Date: Mon, 17 Oct 2011 13:25:05 -0700
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; x86_64; ; )
+Cc: David Rientjes <rientjes@google.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org
+References: <1318877852.10091.11.camel@localhost.localdomain> <201110171245.31256.dtor@vmware.com> <CADZ9YHinpV=7LMRVbwVH4NS_q5b_VhhedbJ5gE7KnKFkg1F1xw@mail.gmail.com>
+In-Reply-To: <CADZ9YHinpV=7LMRVbwVH4NS_q5b_VhhedbJ5gE7KnKFkg1F1xw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017165654.GA5442@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110171325.06256.dtor@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 09:56:54AM -0700, Greg KH wrote:
-> I'm announcing the release of the 3.0.7 kernel.
+On Monday, October 17, 2011 01:17:02 PM Rakib Mullick wrote:
+> On Tue, Oct 18, 2011 at 1:45 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
+> > On Monday, October 17, 2011 12:35:34 PM David Rientjes wrote:
+> >> On Tue, 18 Oct 2011, Rakib Mullick wrote:
+> >> >  While doing allocation statistics in vmballoon_reserve_page
+> >> > function,
+> >> > 
+> >> > alloc and sleep_alloc has been incremented even if allocation
+> >> > fails. But,
+> >> > b->stats.alloc and b->stats.sleep_alloc supposed to increment only
+> >> > when they succeed. This patch makes sure that, alloc and
+> >> > sleep_alloc gets incremented when page allocation succeeds.
+> >> 
+> >> Dmitry could say for sure, but this seems to actually change the
+> >> semantics.  If the allocations fail, it increments alloc_fail and
+> >> sleep_alloc_fail accordingly so you could easily see 10 alloc and 5
+> >> alloc_fail.  With your patch, it would be 5 alloc and 5 alloc_fail.
+> >> 
+> >> I don't know which one is best, but I would opt to stay with the
+> >> semantics that alloc and sleep_alloc have already had rather than
+> >> changing them.
+> > 
+> > Right, b->stats.alloc and b->stats.sleep_alloc show number of
+> > allocation attempts and alloc_fail and sleep_alloc_fail show how many
+> > of these attempts failed. This behavior matches behavior of the
+> > driver we have been shipping out of the tree for many years and I
+> > would prefer to keep it as is.
 > 
-> All users of the 3.0 kernel series must upgrade.
-> 
-> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
->         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-> and can be browsed at the normal kernel.org git web browser:
->         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-> 
-> Note, I've had some boot problems with this kernel, and I can't seem to
-> narrow the issue down, but I think it's due to something not related to
-> the kernel itself, but am not positive.  Please test to verify that I
-> didn't mess something up.
+> Then why b->stats.alloc and b->stats.sleep_alloc are not renamed as
+> b->stats.alloc_attempted and b->stats.sleep_alloc_attempted
+> respectively. Current naming is confusing, anyone looking at the alloc
+> and sleep_alloc stat would easily think that, if 10 alloc and 5
+> alloc_fail then 10 has been allocated and 5 times has been allocation
+> fails. Isn't it?
 
-Ok, this was a userspace problem on my machines, not a kernel issue,
-I've resolved it (hint, don't have an old udev with a new libudev
-package on the same system), and this kernel works fine for me now.
+I'd give you this point if they were named alloc_succeeded and
+sleep_alloc_succeeded... but they are not.
 
-I've had some reports of it working for others as well, so we can chalk
-this one up to my boxes being broken, not the kernel.
-
-thanks,
-
-greg k-h
+Thanks,
+Dmitry
