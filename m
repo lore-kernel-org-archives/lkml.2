@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab1JQO7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:59:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab1JQO7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:59:06 -0400
-Date: Mon, 17 Oct 2011 10:58:42 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        konrad.wilk@oracle.com, rth@redhat.com
-Subject: Re: [PATCH RFC V5 00/11] Paravirtualized ticketlocks
-Message-ID: <20111017145842.GA2658@redhat.com>
-References: <cover.1318466916.git.jeremy.fitzhardinge@citrix.com>
- <1318503245.24856.12.camel@twins>
- <4E971580.6030300@goop.org>
- <20111014141701.GA2433@redhat.com>
- <4E986B2B.60803@goop.org>
- <20111014183539.GE2433@redhat.com>
- <4E988753.1080201@goop.org>
+	id S1752385Ab1JQPAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:00:08 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37094 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab1JQPAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 11:00:04 -0400
+Date: Mon, 17 Oct 2011 15:59:52 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Message-ID: <20111017145952.GB15769@srcf.ucam.org>
+References: <20111017032232.GA4816@srcf.ucam.org>
+ <4E9BBB6D.4050004@linux.intel.com>
+ <1318837019.6594.29.camel@twins>
+ <alpine.LFD.2.02.1110171119580.3240@ionos>
+ <20111017124647.GA12838@srcf.ucam.org>
+ <1318856786.4172.22.camel@twins>
+ <20111017141147.GA14581@srcf.ucam.org>
+ <1318861707.4172.32.camel@twins>
+ <20111017144013.GA15447@srcf.ucam.org>
+ <1318862969.4172.45.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E988753.1080201@goop.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1318862969.4172.45.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 12:02:43PM -0700, Jeremy Fitzhardinge wrote:
-> On 10/14/2011 11:35 AM, Jason Baron wrote:
-> > On Fri, Oct 14, 2011 at 10:02:35AM -0700, Jeremy Fitzhardinge wrote:
-> >> On 10/14/2011 07:17 AM, Jason Baron wrote:
-> >>> On Thu, Oct 13, 2011 at 09:44:48AM -0700, Jeremy Fitzhardinge wrote:
-> >>>> pvops is basically a collection of ordinary _ops structures full of
-> >>>> function pointers, but it has a layer of patching to help optimise it. 
-> >>>> In the common case, this just replaces an indirect call with a direct
-> >>>> one, but in some special cases it can inline code.  This is used for
-> >>>> small, extremely performance-critical things like cli/sti, but it
-> >>>> awkward to use in general because you have to specify the inlined code
-> >>>> as a parameterless asm.
-> >>>>
-> >>> I haven't look at the pvops patching (probably should), but I was
-> >>> wondering if jump labels could be used for it? Or is there something
-> >>> that the pvops patching is doing that jump labels can't handle?
-> >> Jump labels are essentially binary: you can use path A or path B.  pvops
-> >> are multiway: there's no limit to the number of potential number of
-> >> paravirtualized hypervisor implementations.  At the moment we have 4:
-> >> native, Xen, KVM and lguest.
-> >>
-> > Yes, they are binary using the static_branch() interface. But in
-> > general, the asm goto() construct, allows branching to any number of
-> > labels. I have implemented the boolean static_branch() b/c it seems like
-> > the most common interface for jump labels, but I imagine we will
-> > introduce new interfaces as time goes on. You could of course nest
-> > static_branch() calls, although I can't say I've tried it.
+On Mon, Oct 17, 2011 at 04:49:29PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-10-17 at 15:40 +0100, Matthew Garrett wrote:
+> > On Mon, Oct 17, 2011 at 04:28:27PM +0200, Peter Zijlstra wrote:
+> > > An XDamage and repaint from the X client, after which your copy will
+> > > complete and you get what you asked for?
+> > 
+> > An XDamage and then an asynchronous RPC call to the remote server to 
+> > identify the contents of the next frame before drawing them, plus some 
+> > sort of new synchronisation mechanism for blocking the X query until 
+> > that point?
 > 
-> At the moment we're using pvops to optimise things like:
+> Why would this be a problem? 
 > 
-> 	(*pv_mmu_ops.set_pte)(...);
-> 
-> To do that with some kind of multiway jump label thing, then that would
-> need to expand out to something akin to:
-> 
-> 	if (static_branch(is_xen))
-> 		xen_set_pte(...);
-> 	else if (static_branch(is_kvm))
-> 		kvm_set_pte(...);
-> 	else if (static_branch(is_lguest))
-> 		lguest_set_pte(...);
-> 	else
-> 		native_set_pte(...);
-> 
-> or something similar with an actual jump table.  But I don't see how it
-> offers much scope for improvement.
-> 
-> If there were something like:
-> 
-> 	STATIC_INDIRECT_CALL(&pv_mmu_ops.set_pte)(...);
-> 
-> where the apparently indirect call is actually patched to be a direct
-> call, then that would offer a large subset of what we do with pvops.
-> 
-> However, to completely replace pvops patching, the static branch / jump
-> label mechanism would also need to work in assembler code, and be
-> capable of actually patching callsites with instructions rather than
-> just calls (sti/cli/pushf/popf being the most important).
-> 
-> We also keep track of the live registers at the callsite, and compare
-> that to what registers the target functions will clobber in order to
-> optimise the amount of register save/restore is needed.  And as a result
-> we have some pvops functions with non-standard calling conventions to
-> minimise save/restores on critical paths.
-> 
-> > We could have an interface, that allowed static branch(), to specifiy an
-> > arbitrary number of no-ops such that call-site itself could look anyway
-> > we want, if we don't know the bias at compile time. This, of course
-> > means potentially greater than 1 no-op in the fast path. I assume the
-> > pvops can have greater than 1 no-op in the fast path. Or is there a
-> > better solution here?
-> 
-> See above.  But pvops patching is pretty well tuned for its job.
-> 
-> However, I definitely think its worth investigating some way to reduce
-> the number of patching mechanisms, and if pvops patching doesn't stretch
-> static jumps in unnatural ways, then perhaps that's the way to go.
-> 
-> Thanks,
->     J
+> I mean, why would getting a copy of an otherwise invisible surface be a
+> performance sensitive path? If the compositor needs the surface it would
+> make it visible and send the XDamage once and keep it visible henceforth
+> until the time it again becomes invisible, at which point you have to
+> stop updates again.
 
-ok, as things are now, I don't think jump labels are well suited for
-replacing indirect calls. They could be used to have a single no-op that
-is replaced with a jmp to the proper direct call...but at that point
-you've taken an extra jump. That doesn't make sense to me.
+I'm not saying that it's a problem. I'm saying that your approach 
+changes behavioural semantics in a way that may violate application 
+expectations just as surely as changing the timer behaviour does. 
+There's no free approach.
 
-Jump labels are well suited as mentioned for if/else type control flow,
-while the indirect call table, at least to me, seems like a bit of a
-different use-case...
+> > Timers are a resource. People want to manage that resource. cgroups are 
+> > a convenient mechanism for managing resources.
+> 
+> Yes, and a ball is round (unless you're a USA-ian, in which case they're
+> ovoid), what's your point?
 
-Thanks,
+If there's no reason to want to manage that resource, why do we support 
+timer slack at all?
 
--Jason
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
