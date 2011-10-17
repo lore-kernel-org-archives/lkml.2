@@ -1,179 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab1JQChw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 22:37:52 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:41561 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753798Ab1JQChv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 22:37:51 -0400
-Date: Sun, 16 Oct 2011 19:26:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, anton@samba.org
-Subject: Re: [PATCH 08/11 v2] nohz: Allow rcu extended quiescent state
- handling seperately from tick stop
-Message-ID: <20111017022607.GE5291@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1318004530-705-9-git-send-email-fweisbec@gmail.com>
- <1318082460-9982-1-git-send-email-fweisbec@gmail.com>
- <20111013065752.GB2430@linux.vnet.ibm.com>
- <20111013070357.GA7656@linux.vnet.ibm.com>
- <20111013125017.GH14968@somewhere>
- <20111013225136.GG2350@linux.vnet.ibm.com>
- <20111014120832.GJ14968@somewhere>
- <20111014170019.GE2428@linux.vnet.ibm.com>
- <20111016132804.GB2829@somewhere>
+	id S1754410Ab1JQCne (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 22:43:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53688 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab1JQCnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 22:43:33 -0400
+Date: Sun, 16 Oct 2011 19:43:29 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] block: make gendisk hold a reference to its queue
+Message-ID: <20111017024329.GA23507@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111016132804.GB2829@somewhere>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11101702-3534-0000-0000-000000B1759C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 16, 2011 at 03:28:08PM +0200, Frederic Weisbecker wrote:
-> On Fri, Oct 14, 2011 at 10:00:19AM -0700, Paul E. McKenney wrote:
-> > On Fri, Oct 14, 2011 at 02:08:36PM +0200, Frederic Weisbecker wrote:
-> > > On Thu, Oct 13, 2011 at 03:51:36PM -0700, Paul E. McKenney wrote:
-> > > > On Thu, Oct 13, 2011 at 02:50:20PM +0200, Frederic Weisbecker wrote:
-> > > > > On Thu, Oct 13, 2011 at 12:03:57AM -0700, Paul E. McKenney wrote:
-> > > > > > On Wed, Oct 12, 2011 at 11:57:52PM -0700, Paul E. McKenney wrote:
-> > > > > > > On Sat, Oct 08, 2011 at 04:01:00PM +0200, Frederic Weisbecker wrote:
-> > > > > > > > It is assumed that rcu won't be used once we switch to tickless
-> > > > > > > > mode and until we restart the tick. However this is not always
-> > > > > > > > true, as in x86-64 where we dereference the idle notifiers after
-> > > > > > > > the tick is stopped.
-> > > > > > > > 
-> > > > > > > > To prepare for fixing this, add two new APIs:
-> > > > > > > > tick_nohz_idle_enter_norcu() and tick_nohz_idle_exit_norcu().
-> > > > > > > > 
-> > > > > > > > If no use of RCU is made in the idle loop between
-> > > > > > > > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the arch
-> > > > > > > > must instead call the new *_norcu() version such that the arch doesn't
-> > > > > > > > need to call rcu_idle_enter() and rcu_idle_exit().
-> > > > > > > > 
-> > > > > > > > Otherwise the arch must call tick_nohz_enter_idle() and
-> > > > > > > > tick_nohz_exit_idle() and also call explicitly:
-> > > > > > > > 
-> > > > > > > > - rcu_idle_enter() after its last use of RCU before the CPU is put
-> > > > > > > > to sleep.
-> > > > > > > > - rcu_idle_exit() before the first use of RCU after the CPU is woken
-> > > > > > > > up.
-> > > > > > > 
-> > > > > > > Thank you, Frederic!  I have queued this to replace the earlier
-> > > > > > > version.  The set is available on branch rcu/dyntick of
-> > > > > > > 
-> > > > > > > 	https://github.com/paulmckrcu/linux
-> > > > > > 
-> > > > > > Which reminds me...  About the ultimate objective, getting tick-free
-> > > > > > operation.  (Or, for the guys who want to eliminate the tick entirely,
-> > > > > > shutting up the hrtimer stuff that they want to replace it with.)
-> > > > > > 
-> > > > > > I believe that you will then need to have two levels of not-in-dynticks
-> > > > > > for processes, one for idle vs. not and another for when a process
-> > > > > > switches from user-space to kernel execution.  Correct, or am I
-> > > > > > confused?
-> > > > > > 
-> > > > > > The reason I ask is that commit e11f5981 currently only allows one
-> > > > > > level of not-in-dynticks for processes.  It is easy to add another
-> > > > > > level, but thought I should check beforehand.
-> > > > > 
-> > > > > Hmm, yeah looking at that patch, it's going to be hard to have a nesting
-> > > > > that looks like:
-> > > > > 
-> > > > > rcu_irq_enter();
-> > > > > rcu_user_enter();
-> > > > > rcu_irq_exit(); <-- with effective extended quiescent state starting there
-> > > > 
-> > > > OK, so the idea here is that there has been two runnable processes on
-> > > > the current CPU, but during the irq handler one of them moves or some
-> > > > such?
-> > > 
-> > > No it happens when we have an irq in userspace and we stop the tick
-> > > from that irq. Noticing we are in userspace, we want to be in extended
-> > > quiescent state when we resume from the interrupt to userspace.
-> > 
-> > Ah, OK!
-> > 
-> > > > If so, how about a rcu_user_enter_fromirq() that sets the counter
-> > > > to 1 so that the rcu_irq_exit() cleans up properly?  If need be, I could
-> > > > of course provide an argument to allow you to specify the count offset.
-> > > 
-> > > Yeah I think that should work.
-> > 
-> > Very good.  I will start off with no argument, easy enough to add it
-> > later if needed.
-> 
-> Yeah, but for now, this is out of tree code. The functions seem quite trivial
-> to write so I guess I can sort it out in my tree when I'll rebase on 3.2
-> (if the current queue goes to the next merge window)
+The following command sequence triggers an oops.
 
-I will be pushing rcu/next to get -next exposure later this week (once
-I reach a geography that permits github access), and if all goes well...
+# mount /dev/sdb1 /mnt
+# echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
+# umount /mnt
 
-> > > > > I also need to be able to call rcu_user_enter() from non-irq path.
-> > > > 
-> > > > Then rcu_user_enter_fromirq() would be for the irq path and
-> > > > rcu_user_enter() from the non-irq path.
-> > > > 
-> > > > Would that work for you?
-> > > 
-> > > Yep!
-> > 
-> > Very good, I will take a whack at it.  BTW, testing is going quite
-> > well thus far with your current patches combined with my paranoid
-> > idle-count approach.  One test in particular that previously failed
-> > reliably within minutes just successfully completed a ten-hour run.
-> > So things are looking up!  (Famous last words...)
-> 
-> Great, I cross my fingers! :)
+ general protection fault: 0000 [#1] PREEMPT SMP 
+ CPU 2 
+ Modules linked in:
+ 
+ Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
+ RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
+...
+ Call Trace:
+  [<ffffffff810d2845>] lock_acquire+0x95/0x140
+  [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
+  [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
+  [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
+  [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
+  [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
+  [<ffffffff811c40df>] blkdev_put+0x5f/0x190
+  [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
+  [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
+  [<ffffffff8119003a>] deactivate_super+0x4a/0x70
+  [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
+  [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
+  [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
 
-Good results for that one.  Here's hoping for continued test passing.
+This is because bdev holds on to disk but disk doesn't pin the
+associated queue.  If a SCSI device is removed while the device is
+still open, the sdev puts the base reference to the queue on release.
+When the bdev is finally released, the associated queue is already
+gone along with the bdi and bdev_inode_switch_bdi() ends up
+dereferencing already freed bdi.
 
-> > > > > I don't truly understand the problem of the usermode helpers that
-> > > > > mess up the dynticks counts. May be we can somewhow fix it differently
-> > > > > from the offending callsite?
-> > > > 
-> > > > I tried a few approaches along these lines, but there were way too
-> > > > many opportunities for interruption and preemption along the way.
-> > > > The problem is that unless the fixup happens under a no-preempt
-> > > > region of code that includes the rcu_irq_enter() or rcu_irq_exit()
-> > > > call (as the case may be), then you end up messing up the idle-depth
-> > > > count of two CPUs rather than just one.  :-(
-> > > > 
-> > > > But maybe I am missing something -- suggestions more than welcome!
-> > > 
-> > > It's rather me missing everything :)
-> > > It happens when we call call_usermodehelper()? If so how? We have a
-> > > call to rcu_irq_enter() that lacks an rcu_irq_exit() ?
-> > 
-> > On powerpc, it executes the "sc" ("system call") instruction from
-> > kernel mode, which results in an exception.  But from what I can see,
-> > there is no corresponding return from exception, so my not-so-paranoid
-> > counting scheme would lose count.  That said, please keep in mind that
-> > I in no way fully understand that code.  It is also far from clear to
-> > me why my earlier dyntick-idle code worked in this situation -- perhaps
-> > the value of preempt_count() gets fixed up somehow -- I haven't really
-> > studied all the assembly language involved in detail, so there is lots
-> > of opportunity for such a fixup somewhere.
-> > 
-> > You asked!  ;-)
-> 
-> Haha! ;)
+Even if it were not for this bug, disk not holding onto the associated
+queue is very unusual and error-prone.
 
-;-)
+Fix it by making add_disk() take an extra reference to its queue and
+put it on disk_release() and ensuring that disk and its fops owner are
+put in that order after all accesses to the disk and queue are
+complete.
 
-							Thanx, Paul
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: stable@kernel.org
+---
+ block/genhd.c  |    8 ++++++++
+ fs/block_dev.c |   13 ++++++++-----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
+Index: work/fs/block_dev.c
+===================================================================
+--- work.orig/fs/block_dev.c
++++ work/fs/block_dev.c
+@@ -1085,6 +1085,7 @@ static int __blkdev_put(struct block_dev
+ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ {
+ 	struct gendisk *disk;
++	struct module *owner;
+ 	int ret;
+ 	int partno;
+ 	int perm = 0;
+@@ -1110,6 +1111,7 @@ static int __blkdev_get(struct block_dev
+ 	disk = get_gendisk(bdev->bd_dev, &partno);
+ 	if (!disk)
+ 		goto out;
++	owner = disk->fops->owner;
+ 
+ 	disk_block_events(disk);
+ 	mutex_lock_nested(&bdev->bd_mutex, for_part);
+@@ -1137,8 +1139,8 @@ static int __blkdev_get(struct block_dev
+ 					bdev->bd_disk = NULL;
+ 					mutex_unlock(&bdev->bd_mutex);
+ 					disk_unblock_events(disk);
+-					module_put(disk->fops->owner);
+ 					put_disk(disk);
++					module_put(owner);
+ 					goto restart;
+ 				}
+ 			}
+@@ -1194,8 +1196,8 @@ static int __blkdev_get(struct block_dev
+ 				goto out_unlock_bdev;
+ 		}
+ 		/* only one opener holds refs to the module and disk */
+-		module_put(disk->fops->owner);
+ 		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	bdev->bd_openers++;
+ 	if (for_part)
+@@ -1215,8 +1217,8 @@ static int __blkdev_get(struct block_dev
+  out_unlock_bdev:
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	disk_unblock_events(disk);
+-	module_put(disk->fops->owner);
+ 	put_disk(disk);
++	module_put(owner);
+  out:
+ 	bdput(bdev);
+ 
+@@ -1437,8 +1439,6 @@ static int __blkdev_put(struct block_dev
+ 	if (!bdev->bd_openers) {
+ 		struct module *owner = disk->fops->owner;
+ 
+-		put_disk(disk);
+-		module_put(owner);
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+@@ -1447,6 +1447,9 @@ static int __blkdev_put(struct block_dev
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
++
++		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
+Index: work/block/genhd.c
+===================================================================
+--- work.orig/block/genhd.c
++++ work/block/genhd.c
+@@ -611,6 +611,12 @@ void add_disk(struct gendisk *disk)
+ 	register_disk(disk);
+ 	blk_register_queue(disk);
+ 
++	/*
++	 * Take an extra ref on queue which will be put on disk_release()
++	 * so that it sticks around as long as @disk is there.
++	 */
++	WARN_ON_ONCE(!blk_get_queue(disk->queue));
++
+ 	retval = sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
+ 				   "bdi");
+ 	WARN_ON(retval);
+@@ -1095,6 +1101,8 @@ static void disk_release(struct device *
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
+ 	free_part_info(&disk->part0);
++	if (disk->queue)
++		blk_put_queue(disk->queue);
+ 	kfree(disk);
+ }
+ struct class block_class = {
