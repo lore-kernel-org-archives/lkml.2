@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab1JQNRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:17:15 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40973 "EHLO
+	id S1755522Ab1JQNRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 09:17:17 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40967 "EHLO
 	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab1JQNQq (ORCPT
+	with ESMTP id S1754874Ab1JQNQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Oct 2011 09:16:46 -0400
 X-Cam-AntiVirus: no malware found
@@ -15,11 +15,11 @@ To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
 Cc: guenter.roeck@ericsson.com, khali@linux-fr.org, dmitry.torokhov@gmail.com,
         broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
         alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
-        Amit Kucheria <amit.kucheria@verdurent.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 4/6] IIO:light:tsl2563 initial move out of staging.
-Date: Mon, 17 Oct 2011 14:16:19 +0100
-Message-Id: <1318857381-13787-5-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 3/6] IIO:ADC:ad799x initial import.
+Date: Mon, 17 Oct 2011 14:16:18 +0100
+Message-Id: <1318857381-13787-4-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk>
 References: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk>
@@ -27,750 +27,800 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amit Kucheria <amit.kucheria@verdurent.com>
-
-Driver has had all event related elements stripped out leaving just
-the raw sysfs reads for now.
+From: Michael Hennerich <michael.hennerich@analog.com>
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Michael Hennerich<michael.hennerich@analog.com>
 ---
- drivers/iio/Kconfig         |    1 +
- drivers/iio/Makefile        |    1 +
- drivers/iio/light/Kconfig   |   16 +
- drivers/iio/light/Makefile  |    6 +
- drivers/iio/light/tsl2563.c |  654 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/iio/tsl2563.h |    9 +
- 6 files changed, 687 insertions(+), 0 deletions(-)
+ drivers/iio/adc/Kconfig       |   11 +
+ drivers/iio/adc/Makefile      |    3 +
+ drivers/iio/adc/ad799x_core.c |  723 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/iio/ad799x.h    |   12 +
+ 4 files changed, 749 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index cebe21f..c5613b6 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -13,5 +13,6 @@ menuconfig IIO
- if IIO
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 0673d78..3d97b21 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -3,6 +3,17 @@
+ #
+ menu "Analog to digital convertors"
  
- source "drivers/iio/adc/Kconfig"
-+source "drivers/iio/light/Kconfig"
- 
- endif # IIO
-diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-index 42d6d12..0e59946 100644
---- a/drivers/iio/Makefile
-+++ b/drivers/iio/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_IIO) += iio.o
- industrialio-y := core.o
- 
- obj-y += adc/
-+obj-y += light/
-diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
-new file mode 100644
-index 0000000..6282ce0
---- /dev/null
-+++ b/drivers/iio/light/Kconfig
-@@ -0,0 +1,16 @@
-+#
-+# IIO Light Sensor Drivers
-+#
-+menu "Light Sensors"
-+
-+config IIO_TSL2563
-+tristate "TAOS TSL2560, TSL2561, TSL2562 and TSL2563 ambient light sensors"
++config IIO_AD799X
++	tristate "Analog Devices AD799x ADC driver"
 +	depends on I2C
++	select IIO_TRIGGER if IIO_BUFFER
++	select AD799X_RING_BUFFER
 +	help
-+	 If you say yes here you get support for the Taos TSL2560,
-+	 TSL2561, TSL2562 and TSL2563 ambient light sensors.
++	  Say yes here to build support for Analog Devices:
++	  ad7991, ad7995, ad7999, ad7992, ad7993, ad7994, ad7997, ad7998
++	  i2c analog to digital convertors (ADC). Provides direct access
++	  via sysfs.
 +
-+	 This driver can also be built as a module.  If so, the module
-+	 will be called iio_tsl2563.
+ config IIO_MAX1363
+ 	tristate "Maxim max1363 ADC driver"
+ 	depends on I2C
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index 8d6a7f9..c197334 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -2,5 +2,8 @@
+ # Makefile for IIO ADCs
+ #
+ 
++iio_ad799x-y := ad799x_core.o
++obj-$(CONFIG_IIO_AD799X) += iio_ad799x.o
 +
-+endmenu
-diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+ iio_max1363-y := max1363_core.o
+ obj-$(CONFIG_IIO_MAX1363) += iio_max1363.o
+\ No newline at end of file
+diff --git a/drivers/iio/adc/ad799x_core.c b/drivers/iio/adc/ad799x_core.c
 new file mode 100644
-index 0000000..f7fe4fd
+index 0000000..b734547
 --- /dev/null
-+++ b/drivers/iio/light/Makefile
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for IIO Light Sensors
-+#
-+
-+iio_tsl2563-y := tsl2563.o
-+obj-$(CONFIG_IIO_MAX1363) += iio_tsl2563.o
-diff --git a/drivers/iio/light/tsl2563.c b/drivers/iio/light/tsl2563.c
-new file mode 100644
-index 0000000..1026cd6
---- /dev/null
-+++ b/drivers/iio/light/tsl2563.c
-@@ -0,0 +1,654 @@
++++ b/drivers/iio/adc/ad799x_core.c
+@@ -0,0 +1,723 @@
 +/*
-+ * drivers/i2c/chips/tsl2563.c
++ * iio/adc/ad799x.c
++ * Copyright (C) 2010-1011 Michael Hennerich, Analog Devices Inc.
 + *
-+ * Copyright (C) 2008 Nokia Corporation
++ * based on iio/adc/max1363
++ * Copyright (C) 2008-2010 Jonathan Cameron
 + *
-+ * Written by Timo O. Karjalainen <timo.o.karjalainen@nokia.com>
-+ * Contact: Amit Kucheria <amit.kucheria@verdurent.com>
++ * based on linux/drivers/i2c/chips/max123x
++ * Copyright (C) 2002-2004 Stefan Eletzhofer
 + *
-+ * Converted to IIO driver
-+ * Amit Kucheria <amit.kucheria@verdurent.com>
++ * based on linux/drivers/acron/char/pcf8583.c
++ * Copyright (C) 2000 Russell King
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
++ * ad799x.c
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-+ * 02110-1301 USA
++ * Support for ad7991, ad7995, ad7999, ad7992, ad7993, ad7994, ad7997,
++ * ad7998 and similar chips.
++ *
 + */
 +
-+#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/sysfs.h>
 +#include <linux/i2c.h>
-+#include <linux/sched.h>
-+#include <linux/mutex.h>
-+#include <linux/delay.h>
-+#include <linux/pm.h>
-+#include <linux/err.h>
++#include <linux/regulator/consumer.h>
 +#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/err.h>
++#include <linux/module.h>
 +
 +#include <linux/iio/iio.h>
 +#include <linux/iio/sysfs.h>
-+#include <linux/iio/tsl2563.h>
++#include <linux/iio/ad799x.h>
 +
-+/* Use this many bits for fraction part. */
-+#define ADC_FRAC_BITS		(14)
++#define AD799X_CHANNEL_SHIFT			4
++/*
++ * AD7991, AD7995 and AD7999 defines
++ */
 +
-+/* Given number of 1/10000's in ADC_FRAC_BITS precision. */
-+#define FRAC10K(f)		(((f) * (1L << (ADC_FRAC_BITS))) / (10000))
-+
-+/* Bits used for fraction in calibration coefficients.*/
-+#define CALIB_FRAC_BITS		(10)
-+/* 0.5 in CALIB_FRAC_BITS precision */
-+#define CALIB_FRAC_HALF		(1 << (CALIB_FRAC_BITS - 1))
-+/* Make a fraction from a number n that was multiplied with b. */
-+#define CALIB_FRAC(n, b)	(((n) << CALIB_FRAC_BITS) / (b))
-+/* Decimal 10^(digits in sysfs presentation) */
-+#define CALIB_BASE_SYSFS	(1000)
-+
-+#define TSL2563_CMD		(0x80)
-+#define TSL2563_CLEARINT	(0x40)
-+
-+#define TSL2563_REG_CTRL	(0x00)
-+#define TSL2563_REG_TIMING	(0x01)
-+#define TSL2563_REG_LOWLOW	(0x02) /* data0 low threshold, 2 bytes */
-+#define TSL2563_REG_LOWHIGH	(0x03)
-+#define TSL2563_REG_HIGHLOW	(0x04) /* data0 high threshold, 2 bytes */
-+#define TSL2563_REG_HIGHHIGH	(0x05)
-+#define TSL2563_REG_INT		(0x06)
-+#define TSL2563_REG_ID		(0x0a)
-+#define TSL2563_REG_DATA0LOW	(0x0c) /* broadband sensor value, 2 bytes */
-+#define TSL2563_REG_DATA0HIGH	(0x0d)
-+#define TSL2563_REG_DATA1LOW	(0x0e) /* infrared sensor value, 2 bytes */
-+#define TSL2563_REG_DATA1HIGH	(0x0f)
-+
-+#define TSL2563_CMD_POWER_ON	(0x03)
-+#define TSL2563_CMD_POWER_OFF	(0x00)
-+#define TSL2563_CTRL_POWER_MASK	(0x03)
-+
-+#define TSL2563_TIMING_13MS	(0x00)
-+#define TSL2563_TIMING_100MS	(0x01)
-+#define TSL2563_TIMING_400MS	(0x02)
-+#define TSL2563_TIMING_MASK	(0x03)
-+#define TSL2563_TIMING_GAIN16	(0x10)
-+#define TSL2563_TIMING_GAIN1	(0x00)
-+
-+#define TSL2563_INT_DISBLED	(0x00)
-+#define TSL2563_INT_LEVEL	(0x10)
-+#define TSL2563_INT_PERSIST(n)	((n) & 0x0F)
-+
-+struct tsl2563_gainlevel_coeff {
-+	u8 gaintime;
-+	u16 min;
-+	u16 max;
-+};
-+
-+static const struct tsl2563_gainlevel_coeff tsl2563_gainlevel_table[] = {
-+	{
-+		.gaintime	= TSL2563_TIMING_400MS | TSL2563_TIMING_GAIN16,
-+		.min		= 0,
-+		.max		= 65534,
-+	}, {
-+		.gaintime	= TSL2563_TIMING_400MS | TSL2563_TIMING_GAIN1,
-+		.min		= 2048,
-+		.max		= 65534,
-+	}, {
-+		.gaintime	= TSL2563_TIMING_100MS | TSL2563_TIMING_GAIN1,
-+		.min		= 4095,
-+		.max		= 37177,
-+	}, {
-+		.gaintime	= TSL2563_TIMING_13MS | TSL2563_TIMING_GAIN1,
-+		.min		= 3000,
-+		.max		= 65535,
-+	},
-+};
-+
-+struct tsl2563_chip {
-+	struct mutex		lock;
-+	struct i2c_client	*client;
-+	struct delayed_work	poweroff_work;
-+
-+	/* Remember state for suspend and resume functions */
-+	pm_message_t		state;
-+
-+	struct tsl2563_gainlevel_coeff const *gainlevel;
-+
-+	/* Calibration coefficients */
-+	u32			calib0;
-+	u32			calib1;
-+	int			cover_comp_gain;
-+
-+	/* Cache current values, to be returned while suspended */
-+	u32			data0;
-+	u32			data1;
-+};
-+
-+static int tsl2563_set_power(struct tsl2563_chip *chip, int on)
-+{
-+	return i2c_smbus_write_byte_data(chip->client,
-+					 TSL2563_CMD | TSL2563_REG_CTRL,
-+					 on ?
-+					 TSL2563_CMD_POWER_ON :
-+					 TSL2563_CMD_POWER_OFF);
-+}
++#define AD7991_REF_SEL				0x08
++#define AD7991_FLTR				0x04
++#define AD7991_BIT_TRIAL_DELAY			0x02
++#define AD7991_SAMPLE_DELAY			0x01
 +
 +/*
-+ * Return value is 0 for off, 1 for on, or a negative error
-+ * code if reading failed.
++ * AD7992, AD7993, AD7994, AD7997 and AD7998 defines
 + */
-+static int tsl2563_get_power(struct tsl2563_chip *chip)
-+{
-+	int ret;
 +
-+	ret = i2c_smbus_read_byte_data(chip->client,
-+				       TSL2563_CMD | TSL2563_REG_CTRL);
-+	if (ret < 0)
-+		return ret;
++#define AD7998_FLTR				0x08
++#define AD7998_ALERT_EN				0x04
++#define AD7998_BUSY_ALERT			0x02
++#define AD7998_BUSY_ALERT_POL			0x01
 +
-+	return (ret & TSL2563_CTRL_POWER_MASK) == TSL2563_CMD_POWER_ON;
-+}
++#define AD7998_CONV_RES_REG			0x0
++#define AD7998_ALERT_STAT_REG			0x1
++#define AD7998_CONF_REG				0x2
++#define AD7998_CYCLE_TMR_REG			0x3
++#define AD7998_DATALOW_CH1_REG			0x4
++#define AD7998_DATAHIGH_CH1_REG			0x5
++#define AD7998_HYST_CH1_REG			0x6
++#define AD7998_DATALOW_CH2_REG			0x7
++#define AD7998_DATAHIGH_CH2_REG			0x8
++#define AD7998_HYST_CH2_REG			0x9
++#define AD7998_DATALOW_CH3_REG			0xA
++#define AD7998_DATAHIGH_CH3_REG			0xB
++#define AD7998_HYST_CH3_REG			0xC
++#define AD7998_DATALOW_CH4_REG			0xD
++#define AD7998_DATAHIGH_CH4_REG			0xE
++#define AD7998_HYST_CH4_REG			0xF
 +
-+static int tsl2563_configure(struct tsl2563_chip *chip)
-+{
-+	return i2c_smbus_write_byte_data(chip->client,
-+					 TSL2563_CMD | TSL2563_REG_TIMING,
-+					 chip->gainlevel->gaintime);
-+}
++#define AD7998_CYC_MASK				0x7
++#define AD7998_CYC_DIS				0x0
++#define AD7998_CYC_TCONF_32			0x1
++#define AD7998_CYC_TCONF_64			0x2
++#define AD7998_CYC_TCONF_128			0x3
++#define AD7998_CYC_TCONF_256			0x4
++#define AD7998_CYC_TCONF_512			0x5
++#define AD7998_CYC_TCONF_1024			0x6
++#define AD7998_CYC_TCONF_2048			0x7
 +
-+static void tsl2563_poweroff_work(struct work_struct *work)
-+{
-+	struct tsl2563_chip *chip =
-+		container_of(work, struct tsl2563_chip, poweroff_work.work);
-+	tsl2563_set_power(chip, 0);
-+}
-+
-+static int tsl2563_detect(struct tsl2563_chip *chip)
-+{
-+	int ret;
-+
-+	ret = tsl2563_set_power(chip, 1);
-+	if (ret)
-+		return ret;
-+
-+	ret = tsl2563_get_power(chip);
-+	if (ret < 0)
-+		return ret;
-+
-+	return ret ? 0 : -ENODEV;
-+}
++#define AD7998_ALERT_STAT_CLEAR			0xFF
 +
 +/*
-+ * "Normalized" ADC value is one obtained with 400ms of integration time and
-+ * 16x gain. This function returns the number of bits of shift needed to
-+ * convert between normalized values and HW values obtained using given
-+ * timing and gain settings.
++ * AD7997 and AD7997 defines
 + */
-+static int adc_shiftbits(u8 timing)
++
++#define AD7997_8_READ_SINGLE			0x80
++#define AD7997_8_READ_SEQUENCE			0x70
++/* TODO: move this into a common header */
++#define RES_MASK(bits)	((1 << (bits)) - 1)
++
++enum {
++	ad7991,
++	ad7995,
++	ad7999,
++	ad7992,
++	ad7993,
++	ad7994,
++	ad7997,
++	ad7998
++};
++
++struct ad799x_state;
++
++/**
++ * struct ad799x_chip_info - chip specifc information
++ * @channel:		channel specification
++ * @num_channels:	number of channels
++ * @int_vref_mv:	the internal reference voltage
++ */
++struct ad799x_chip_info {
++	struct iio_chan_spec		channel[9];
++	int				num_channels;
++	u16				int_vref_mv;
++};
++
++struct ad799x_state {
++	struct i2c_client		*client;
++	const struct ad799x_chip_info	*chip_info;
++	struct regulator		*reg;
++	u16				int_vref_mv;
++	unsigned			id;
++	char				*name;
++	u16				config;
++};
++
++/*
++ * ad799x register access by I2C
++ */
++static int ad799x_i2c_read16(struct ad799x_state *st, u8 reg, u16 *data)
 +{
-+	int shift = 0;
-+
-+	switch (timing & TSL2563_TIMING_MASK) {
-+	case TSL2563_TIMING_13MS:
-+		shift += 5;
-+		break;
-+	case TSL2563_TIMING_100MS:
-+		shift += 2;
-+		break;
-+	case TSL2563_TIMING_400MS:
-+		/* no-op */
-+		break;
-+	}
-+
-+	if (!(timing & TSL2563_TIMING_GAIN16))
-+		shift += 4;
-+
-+	return shift;
-+}
-+
-+/* Convert a HW ADC value to normalized scale. */
-+static u32 normalize_adc(u16 adc, u8 timing)
-+{
-+	return adc << adc_shiftbits(timing);
-+}
-+
-+static void tsl2563_wait_adc(struct tsl2563_chip *chip)
-+{
-+	unsigned int delay;
-+
-+	switch (chip->gainlevel->gaintime & TSL2563_TIMING_MASK) {
-+	case TSL2563_TIMING_13MS:
-+		delay = 14;
-+		break;
-+	case TSL2563_TIMING_100MS:
-+		delay = 101;
-+		break;
-+	default:
-+		delay = 402;
-+	}
-+	/*
-+	 * TODO: Make sure that we wait at least required delay but why we
-+	 * have to extend it one tick more?
-+	 */
-+	schedule_timeout_interruptible(msecs_to_jiffies(delay) + 2);
-+}
-+
-+static int tsl2563_adjust_gainlevel(struct tsl2563_chip *chip, u16 adc)
-+{
-+	struct i2c_client *client = chip->client;
-+
-+	if (adc > chip->gainlevel->max || adc < chip->gainlevel->min) {
-+
-+		(adc > chip->gainlevel->max) ?
-+			chip->gainlevel++ : chip->gainlevel--;
-+
-+		i2c_smbus_write_byte_data(client,
-+					  TSL2563_CMD | TSL2563_REG_TIMING,
-+					  chip->gainlevel->gaintime);
-+
-+		tsl2563_wait_adc(chip);
-+		tsl2563_wait_adc(chip);
-+
-+		return 1;
-+	} else
-+		return 0;
-+}
-+
-+static int tsl2563_get_adc(struct tsl2563_chip *chip)
-+{
-+	struct i2c_client *client = chip->client;
-+	u16 adc0, adc1;
-+	int retry = 1;
++	struct i2c_client *client = st->client;
 +	int ret = 0;
 +
-+	if (chip->state.event != PM_EVENT_ON)
-+		goto out;
-+
-+	cancel_delayed_work(&chip->poweroff_work);
-+
-+	if (!tsl2563_get_power(chip)) {
-+		ret = tsl2563_set_power(chip, 1);
-+		if (ret)
-+			goto out;
-+		ret = tsl2563_configure(chip);
-+		if (ret)
-+			goto out;
-+		tsl2563_wait_adc(chip);
++	ret = i2c_smbus_read_word_data(client, reg);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
 +	}
 +
-+	while (retry) {
-+		ret = i2c_smbus_read_word_data(client,
-+				TSL2563_CMD | TSL2563_REG_DATA0LOW);
-+		if (ret < 0)
-+			goto out;
-+		adc0 = ret;
-+
-+		ret = i2c_smbus_read_word_data(client,
-+				TSL2563_CMD | TSL2563_REG_DATA1LOW);
-+		if (ret < 0)
-+			goto out;
-+		adc1 = ret;
-+
-+		retry = tsl2563_adjust_gainlevel(chip, adc0);
-+	}
-+
-+	chip->data0 = normalize_adc(adc0, chip->gainlevel->gaintime);
-+	chip->data1 = normalize_adc(adc1, chip->gainlevel->gaintime);
-+
-+
-+	ret = 0;
-+out:
-+	return ret;
-+}
-+
-+static inline int calib_to_sysfs(u32 calib)
-+{
-+	return (int) (((calib * CALIB_BASE_SYSFS) +
-+		       CALIB_FRAC_HALF) >> CALIB_FRAC_BITS);
-+}
-+
-+static inline u32 calib_from_sysfs(int value)
-+{
-+	return (((u32) value) << CALIB_FRAC_BITS) / CALIB_BASE_SYSFS;
-+}
-+
-+/*
-+ * Conversions between lux and ADC values.
-+ *
-+ * The basic formula is lux = c0 * adc0 - c1 * adc1, where c0 and c1 are
-+ * appropriate constants. Different constants are needed for different
-+ * kinds of light, determined by the ratio adc1/adc0 (basically the ratio
-+ * of the intensities in infrared and visible wavelengths). lux_table below
-+ * lists the upper threshold of the adc1/adc0 ratio and the corresponding
-+ * constants.
-+ */
-+
-+struct tsl2563_lux_coeff {
-+	unsigned long ch_ratio;
-+	unsigned long ch0_coeff;
-+	unsigned long ch1_coeff;
-+};
-+
-+static const struct tsl2563_lux_coeff lux_table[] = {
-+	{
-+		.ch_ratio	= FRAC10K(1300),
-+		.ch0_coeff	= FRAC10K(315),
-+		.ch1_coeff	= FRAC10K(262),
-+	}, {
-+		.ch_ratio	= FRAC10K(2600),
-+		.ch0_coeff	= FRAC10K(337),
-+		.ch1_coeff	= FRAC10K(430),
-+	}, {
-+		.ch_ratio	= FRAC10K(3900),
-+		.ch0_coeff	= FRAC10K(363),
-+		.ch1_coeff	= FRAC10K(529),
-+	}, {
-+		.ch_ratio	= FRAC10K(5200),
-+		.ch0_coeff	= FRAC10K(392),
-+		.ch1_coeff	= FRAC10K(605),
-+	}, {
-+		.ch_ratio	= FRAC10K(6500),
-+		.ch0_coeff	= FRAC10K(229),
-+		.ch1_coeff	= FRAC10K(291),
-+	}, {
-+		.ch_ratio	= FRAC10K(8000),
-+		.ch0_coeff	= FRAC10K(157),
-+		.ch1_coeff	= FRAC10K(180),
-+	}, {
-+		.ch_ratio	= FRAC10K(13000),
-+		.ch0_coeff	= FRAC10K(34),
-+		.ch1_coeff	= FRAC10K(26),
-+	}, {
-+		.ch_ratio	= ULONG_MAX,
-+		.ch0_coeff	= 0,
-+		.ch1_coeff	= 0,
-+	},
-+};
-+
-+/*
-+ * Convert normalized, scaled ADC values to lux.
-+ */
-+static unsigned int adc_to_lux(u32 adc0, u32 adc1)
-+{
-+	const struct tsl2563_lux_coeff *lp = lux_table;
-+	unsigned long ratio, lux, ch0 = adc0, ch1 = adc1;
-+
-+	ratio = ch0 ? ((ch1 << ADC_FRAC_BITS) / ch0) : ULONG_MAX;
-+
-+	while (lp->ch_ratio < ratio)
-+		lp++;
-+
-+	lux = ch0 * lp->ch0_coeff - ch1 * lp->ch1_coeff;
-+
-+	return (unsigned int) (lux >> ADC_FRAC_BITS);
-+}
-+
-+/* Apply calibration coefficient to ADC count. */
-+static u32 calib_adc(u32 adc, u32 calib)
-+{
-+	unsigned long scaled = adc;
-+
-+	scaled *= calib;
-+	scaled >>= CALIB_FRAC_BITS;
-+
-+	return (u32) scaled;
-+}
-+
-+static int tsl2563_write_raw(struct iio_dev *indio_dev,
-+			       struct iio_chan_spec const *chan,
-+			       int val,
-+			       int val2,
-+			       long mask)
-+{
-+	struct tsl2563_chip *chip = iio_priv(indio_dev);
-+
-+	if (chan->channel == 0)
-+		chip->calib0 = calib_from_sysfs(val);
-+	else
-+		chip->calib1 = calib_from_sysfs(val);
++	*data = swab16((u16)ret);
 +
 +	return 0;
 +}
 +
-+static int tsl2563_read_raw(struct iio_dev *indio_dev,
-+			    struct iio_chan_spec const *chan,
-+			    int *val,
-+			    int *val2,
-+			    long m)
++static int ad799x_scan_direct(struct ad799x_state *st, unsigned ch)
 +{
-+	int ret = -EINVAL;
-+	u32 calib0, calib1;
-+	struct tsl2563_chip *chip = iio_priv(indio_dev);
++	u16 rxbuf;
++	u8 cmd;
++	int ret;
 +
-+	mutex_lock(&chip->lock);
-+	switch (m) {
-+	case 0:
-+		switch (chan->type) {
-+		case IIO_LIGHT:
-+			ret = tsl2563_get_adc(chip);
-+			if (ret)
-+				goto error_ret;
-+			calib0 = calib_adc(chip->data0, chip->calib0) *
-+				chip->cover_comp_gain;
-+			calib1 = calib_adc(chip->data1, chip->calib1) *
-+				chip->cover_comp_gain;
-+			*val = adc_to_lux(calib0, calib1);
-+			ret = IIO_VAL_INT;
-+			break;
-+		case IIO_INTENSITY:
-+			ret = tsl2563_get_adc(chip);
-+			if (ret)
-+				goto error_ret;
-+			if (chan->channel == 0)
-+				*val = chip->data0;
-+			else
-+				*val = chip->data1;
-+			ret = IIO_VAL_INT;
-+			break;
-+		default:
-+			break;
-+		}
++	switch (st->id) {
++	case ad7991:
++	case ad7995:
++	case ad7999:
++		cmd = st->config | ((1 << ch) << AD799X_CHANNEL_SHIFT);
 +		break;
-+
-+	case (1 << IIO_CHAN_INFO_CALIBSCALE_SEPARATE):
-+		if (chan->channel == 0)
-+			*val = calib_to_sysfs(chip->calib0);
-+		else
-+			*val = calib_to_sysfs(chip->calib1);
-+		ret = IIO_VAL_INT;
++	case ad7992:
++	case ad7993:
++	case ad7994:
++		cmd = (1 << ch) << AD799X_CHANNEL_SHIFT;
++		break;
++	case ad7997:
++	case ad7998:
++		cmd = (ch << AD799X_CHANNEL_SHIFT) | AD7997_8_READ_SINGLE;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
 +
-+error_ret:
-+	mutex_unlock(&chip->lock);
++	ret = ad799x_i2c_read16(st, cmd, &rxbuf);
++	if (ret < 0)
++		return ret;
++
++	return rxbuf;
++}
++
++static int ad799x_read_raw(struct iio_dev *indio_dev,
++			   struct iio_chan_spec const *chan,
++			   int *val,
++			   int *val2,
++			   long m)
++{
++	int ret;
++	struct ad799x_state *st = iio_priv(indio_dev);
++	unsigned int scale_uv;
++
++	switch (m) {
++	case 0:
++		mutex_lock(&indio_dev->mlock);
++		ret = ad799x_scan_direct(st, chan->channel);
++		mutex_unlock(&indio_dev->mlock);
++
++		if (ret < 0)
++			return ret;
++		*val = (ret >> chan->scan_type.shift) &
++			RES_MASK(chan->scan_type.realbits);
++		return IIO_VAL_INT;
++	case (1 << IIO_CHAN_INFO_SCALE_SHARED):
++		scale_uv = (st->int_vref_mv * 1000) >> chan->scan_type.realbits;
++		*val =  scale_uv / 1000;
++		*val2 = (scale_uv % 1000) * 1000;
++		return IIO_VAL_INT_PLUS_MICRO;
++	}
++	return -EINVAL;
++}
++
++static const struct iio_info ad799X_info = {
++	.read_raw = &ad799x_read_raw,
++	.driver_module = THIS_MODULE,
++};
++
++
++static const struct ad799x_chip_info ad799x_chip_info_tbl[] = {
++	[ad7991] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type =  {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++		},
++		.num_channels = 5,
++		.int_vref_mv = 4096,
++	},
++	[ad7995] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++		},
++		.num_channels = 5,
++		.int_vref_mv = 1024,
++	},
++	[ad7999] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 8,
++					.shift = 4,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 8,
++					.shift = 4,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 8,
++					.shift = 4,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 8,
++					.shift = 4,
++				},
++			},
++		},
++		.num_channels = 5,
++		.int_vref_mv = 1024,
++	},
++	[ad7992] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++		},
++		.num_channels = 3,
++		.int_vref_mv = 4096,
++	},
++	[ad7993] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++		},
++		.num_channels = 5,
++		.int_vref_mv = 1024,
++	},
++	[ad7994] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++		},
++		.num_channels = 5,
++		.int_vref_mv = 4096,
++	},
++	[ad7997] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[4] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 4,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[5] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 5,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[6] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 6,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++			[7] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 7,
++				.scan_type = {
++					.realbits = 10,
++					.shift = 2,
++				},
++			},
++		},
++		.num_channels = 9,
++		.int_vref_mv = 1024,
++	},
++	[ad7998] = {
++		.channel = {
++			[0] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 0,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[1] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 1,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[2] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 2,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[3] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 3,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[4] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 4,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[5] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 5,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[6] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 6,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++			[7] = {
++				.type = IIO_VOLTAGE,
++				.indexed = 1,
++				.channel = 7,
++				.scan_type = {
++					.realbits = 12,
++					.shift = 0,
++				},
++			},
++		},
++		.num_channels = 9,
++		.int_vref_mv = 4096,
++	},
++};
++
++static int __devinit ad799x_probe(struct i2c_client *client,
++				   const struct i2c_device_id *id)
++{
++	int ret;
++	struct ad799x_platform_data *pdata = client->dev.platform_data;
++	struct ad799x_state *st;
++	struct iio_dev *indio_dev = iio_device_allocate(sizeof(*st));
++
++	if (indio_dev == NULL)
++		return -ENOMEM;
++
++	st = iio_priv(indio_dev);
++	/* this is only used for device removal purposes */
++	i2c_set_clientdata(client, indio_dev);
++
++	st->id = id->driver_data;
++	st->chip_info = &ad799x_chip_info_tbl[st->id];
++
++	/* TODO: Add pdata options for filtering and bit delay */
++
++	if (pdata)
++		st->int_vref_mv = pdata->vref_mv;
++	else
++		st->int_vref_mv = st->chip_info->int_vref_mv;
++
++	st->reg = regulator_get(&client->dev, "vcc");
++	if (!IS_ERR(st->reg)) {
++		ret = regulator_enable(st->reg);
++		if (ret)
++			goto error_put_reg;
++	}
++	st->client = client;
++
++	indio_dev->dev.parent = &client->dev;
++	indio_dev->name = id->name;
++	indio_dev->info = &ad799X_info;
++
++	indio_dev->channels = st->chip_info->channel;
++	indio_dev->num_channels = st->chip_info->num_channels;
++
++	ret = iio_device_register(indio_dev);
++	if (ret)
++		goto error_disable_reg;
++
++	return 0;
++
++error_disable_reg:
++	if (!IS_ERR(st->reg))
++		regulator_disable(st->reg);
++error_put_reg:
++	if (!IS_ERR(st->reg))
++		regulator_put(st->reg);
++	iio_device_free(indio_dev);
++
 +	return ret;
 +}
 +
-+static const struct iio_chan_spec tsl2563_channels[] = {
-+	{
-+		.type = IIO_LIGHT,
-+		.indexed = 1,
-+		.channel = 0,
-+	}, {
-+		.type = IIO_INTENSITY,
-+		.modified = 1,
-+		.channel2 = IIO_MOD_LIGHT_BOTH,
-+		.info_mask = (1 << IIO_CHAN_INFO_CALIBSCALE_SEPARATE),
-+	}, {
-+		.type = IIO_INTENSITY,
-+		.modified = 1,
-+		.channel2 = IIO_MOD_LIGHT_INFRARED,
-+		.info_mask = (1 << IIO_CHAN_INFO_CALIBSCALE_SEPARATE),
-+	}
-+};
-+
-+static const struct iio_info tsl2563_info = {
-+	.driver_module = THIS_MODULE,
-+	.read_raw = &tsl2563_read_raw,
-+	.write_raw = &tsl2563_write_raw,
-+};
-+
-+static int __devinit tsl2563_probe(struct i2c_client *client,
-+				const struct i2c_device_id *device_id)
-+{
-+	struct iio_dev *indio_dev;
-+	struct tsl2563_chip *chip;
-+	struct tsl2563_platform_data *pdata = client->dev.platform_data;
-+	int err = 0;
-+	int ret;
-+	u8 id = 0;
-+
-+	indio_dev = iio_device_allocate(sizeof(*chip));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	chip = iio_priv(indio_dev);
-+
-+	i2c_set_clientdata(client, indio_dev);
-+	chip->client = client;
-+
-+	err = tsl2563_detect(chip);
-+	if (err) {
-+		dev_err(&client->dev, "device not found, error %d\n", -err);
-+		goto fail1;
-+	}
-+
-+	/* Check we can read the id */
-+	err = i2c_smbus_read_byte_data(chip->client,
-+				       TSL2563_CMD | TSL2563_REG_ID);
-+	if (err < 0)
-+		goto fail1;
-+
-+	mutex_init(&chip->lock);
-+
-+	/* Default values used until userspace says otherwise */
-+	chip->gainlevel = tsl2563_gainlevel_table;
-+	chip->calib0 = calib_from_sysfs(CALIB_BASE_SYSFS);
-+	chip->calib1 = calib_from_sysfs(CALIB_BASE_SYSFS);
-+
-+	if (pdata)
-+		chip->cover_comp_gain = pdata->cover_comp_gain;
-+	else
-+		chip->cover_comp_gain = 1;
-+
-+	dev_info(&client->dev, "model %d, rev. %d\n", id >> 4, id & 0x0f);
-+	indio_dev->name = client->name;
-+	indio_dev->channels = tsl2563_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(tsl2563_channels);
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->info = &tsl2563_info;
-+	ret = iio_device_register(indio_dev);
-+	if (ret)
-+		goto fail1;
-+	err = tsl2563_configure(chip);
-+	if (err)
-+		goto fail2;
-+
-+	INIT_DELAYED_WORK(&chip->poweroff_work, tsl2563_poweroff_work);
-+
-+	schedule_delayed_work(&chip->poweroff_work, 5 * HZ);
-+
-+	return 0;
-+fail2:
-+	iio_device_unregister(indio_dev);
-+fail1:
-+	kfree(chip);
-+	return err;
-+}
-+
-+static int tsl2563_remove(struct i2c_client *client)
++static __devexit int ad799x_remove(struct i2c_client *client)
 +{
 +	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct tsl2563_chip *chip = iio_priv(indio_dev);
++	struct ad799x_state *st = iio_priv(indio_dev);
 +
 +	iio_device_unregister(indio_dev);
-+	tsl2563_set_power(chip, 0);
++	if (!IS_ERR(st->reg)) {
++		regulator_disable(st->reg);
++		regulator_put(st->reg);
++	}
 +	iio_device_free(indio_dev);
 +
 +	return 0;
 +}
 +
-+static int tsl2563_suspend(struct i2c_client *client, pm_message_t state)
-+{
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct tsl2563_chip *chip = iio_priv(indio_dev);
-+	int ret;
-+
-+	mutex_lock(&chip->lock);
-+
-+	ret = tsl2563_set_power(chip, 0);
-+	if (ret)
-+		goto out;
-+
-+	chip->state = state;
-+
-+out:
-+	mutex_unlock(&chip->lock);
-+	return ret;
-+}
-+
-+static int tsl2563_resume(struct i2c_client *client)
-+{
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct tsl2563_chip *chip = iio_priv(indio_dev);
-+	int ret;
-+
-+	mutex_lock(&chip->lock);
-+
-+	ret = tsl2563_set_power(chip, 1);
-+	if (ret)
-+		goto out;
-+
-+	ret = tsl2563_configure(chip);
-+	if (ret)
-+		goto out;
-+
-+	chip->state.event = PM_EVENT_ON;
-+
-+out:
-+	mutex_unlock(&chip->lock);
-+	return ret;
-+}
-+
-+static const struct i2c_device_id tsl2563_id[] = {
-+	{ "tsl2560", 0 },
-+	{ "tsl2561", 0 },
-+	{ "tsl2562", 0 },
-+	{ "tsl2563", 0 },
++static const struct i2c_device_id ad799x_id[] = {
++	{ "ad7991", ad7991 },
++	{ "ad7995", ad7995 },
++	{ "ad7999", ad7999 },
++	{ "ad7992", ad7992 },
++	{ "ad7993", ad7993 },
++	{ "ad7994", ad7994 },
++	{ "ad7997", ad7997 },
++	{ "ad7998", ad7998 },
 +	{}
 +};
-+MODULE_DEVICE_TABLE(i2c, tsl2563_id);
 +
-+static struct i2c_driver tsl2563_i2c_driver = {
++MODULE_DEVICE_TABLE(i2c, ad799x_id);
++
++static struct i2c_driver ad799x_driver = {
 +	.driver = {
-+		.name	 = "tsl2563",
++		.name = "ad799x",
 +	},
-+	.suspend	= tsl2563_suspend,
-+	.resume		= tsl2563_resume,
-+	.probe		= tsl2563_probe,
-+	.remove		= __devexit_p(tsl2563_remove),
-+	.id_table	= tsl2563_id,
++	.probe = ad799x_probe,
++	.remove = __devexit_p(ad799x_remove),
++	.id_table = ad799x_id,
 +};
 +
-+static int __init tsl2563_init(void)
++static __init int ad799x_init(void)
 +{
-+	return i2c_add_driver(&tsl2563_i2c_driver);
++	return i2c_add_driver(&ad799x_driver);
 +}
-+module_init(tsl2563_init);
 +
-+static void __exit tsl2563_exit(void)
++static __exit void ad799x_exit(void)
 +{
-+	i2c_del_driver(&tsl2563_i2c_driver);
++	i2c_del_driver(&ad799x_driver);
 +}
-+module_exit(tsl2563_exit);
 +
-+MODULE_AUTHOR("Nokia Corporation");
-+MODULE_DESCRIPTION("tsl2563 light sensor driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/iio/tsl2563.h b/include/linux/iio/tsl2563.h
++MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
++MODULE_DESCRIPTION("Analog Devices AD799x ADC");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("i2c:ad799x");
++
++module_init(ad799x_init);
++module_exit(ad799x_exit);
+diff --git a/include/linux/iio/ad799x.h b/include/linux/iio/ad799x.h
 new file mode 100644
-index 0000000..e0bc31c
+index 0000000..38517be
 --- /dev/null
-+++ b/include/linux/iio/tsl2563.h
-@@ -0,0 +1,9 @@
-+#ifndef _TSL2563_H_
-+#define _TSL2563_H_
++++ b/include/linux/iio/ad799x.h
+@@ -0,0 +1,12 @@
++/*
++ * Copyright (C) 2010-2011 Michael Hennerich, Analog Devices Inc.
++ * Copyright (C) 2008-2010 Jonathan Cameron
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+struct tsl2563_platform_data {
-+	int cover_comp_gain;
++struct ad799x_platform_data {
++	u16				vref_mv;
 +};
-+
-+#endif /* _TSL2563_H_ */
-+
 -- 
 1.7.7
 
