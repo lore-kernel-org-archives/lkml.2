@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab1JQE7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 00:59:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36998 "EHLO mx2.mail.elte.hu"
+	id S1754022Ab1JQFOu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 01:14:50 -0400
+Received: from ozlabs.org ([203.10.76.45]:59236 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab1JQE7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 00:59:44 -0400
-Date: Mon, 17 Oct 2011 06:58:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111017045806.GA11561@elte.hu>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
- <20111007070842.GA27555@hostway.ca>
- <20111007174848.GA11011@hostway.ca>
- <1318010515.398.8.camel@twins>
- <20111008005035.GC22843@hostway.ca>
- <1318060551.8395.0.camel@twins>
- <20111012213555.GC24461@hostway.ca>
- <20111013232521.GA5654@hostway.ca>
- <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+	id S1752751Ab1JQFOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 01:14:49 -0400
+Date: Mon, 17 Oct 2011 16:14:45 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>, Andrew Barry <abarry@cray.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Hastings <abh@cray.com>
+Subject: Re: [PATCH v2 1/1] hugepages: Fix race between hugetlbfs umount and
+ quota update.
+Message-ID: <20111017051445.GI4580@truffala.fritz.box>
+Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Paul Mackerras <paulus@samba.org>, Andrew Barry <abarry@cray.com>,
+	linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+	Minchan Kim <minchan.kim@gmail.com>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Andrew Hastings <abh@cray.com>
+References: <4E4EB603.8090305@cray.com>
+ <20110819145109.dcd5dac6.akpm@linux-foundation.org>
+ <20111012044317.GA31436@drongo>
+ <20111014135948.a45a8ac1.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+In-Reply-To: <20111014135948.a45a8ac1.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> However, I don't see why that spinlock is needed at all. Why aren't 
-> those fields just atomics (or at least just "sum_exec_runtime")? 
-> And why does "cputime_add()" exist at all? [...]
-
-Agreed, atomic64_t is the best choice here. (When the lock was added 
-to struct *_cputimer this should probably have been done already - 
-but we didn't have atomic64_t back then yet.)
-
-> That stupid definition of cputime_add() has apparently existed 
-> as-is since it was introduced in 2005. Why do we have code like 
-> this:
+On Fri, Oct 14, 2011 at 01:59:48PM -0700, Andrew Morton wrote:
+> On Wed, 12 Oct 2011 15:43:17 +1100
+> Paul Mackerras <paulus@samba.org> wrote:
 > 
->     times->utime = cputime_add(times->utime, t->utime);
+> > In the meantime we have a user-triggerable kernel crash.  As far as I
+> > can see, if we did what you suggest, we would end up with a situation
+> > where we could run out of huge pages even though everyone was within
+> > quota.  Which is arguably better than a kernel crash, but still less
+> > than ideal.  What do you suggest?
 > 
-> instead of just
+> My issue with the patch is that it's rather horrible.  We have a layer
+> of separation between core hugetlb pages and hugetlbfs.  That layering
+> has already been mucked up in various places and this patch mucks it up
+> further, and quite severely.
 > 
->     times->utime += t->utime;
-> 
-> which seems not just shorter, but more readable too? The reason is 
-> not some type safety in the cputime_add() thing, it's just a macro.
+> So I believe we should rethink the patch.  Either a) get the layering
+> correct by not poking into hugetlbfs internals from within hugetlb core
+> via one of the usual techniques or
 
-Yes. This was in fact how the old scheduler accunting code looked 
-like:
+Which usual techniques did you have in mind?
 
--                               utime += t->utime;
--                               stime += t->stime;
-+                               utime = cputime_add(utime, t->utime);
-+                               stime = cputime_add(stime, t->stime);
+> b) make a deliberate decision to
+> just give up on that layering: state that hugetlb and hugetlbfs are now
+> part of the same subsystem.  Make the necessaary Kconfig changes,
+> remove ifdefs, move code around, etc.
 
-before the pointless looking cputime_t wrappery was added in 2005:
+Well, that might have something to be said for it, the distinction has
+always been tenuous at best.
 
- 0a71336: [PATCH] cputime: introduce cputime
+> If we go ahead with the proposed patch-n-run bugfix, the bad code will
+> be there permanently - nobody will go in and clean this mess up and the
+> kernel is permanently worsened.
 
-For the record, i absolutely hate much of the other time related type 
-obfuscation we do as well.
+Hrm, as opposed to leaving the crash bug there until someone has time
+to do the requested cleanup.
 
-For example the ktime_t obfuscation - we only do it to avoid a divide 
-on 32-bit architectures that cannot do fast 64/32 divisions ...
-
-It makes the time code a *lot* less obvious than it could be.
-
-I think we should use one flat u64 nanoseconds time type in the 
-kernel (preparing it with using KTIME_SCALAR on all architectures for 
-a release or so), used with very simple and obvious C arithmetics.
-
-That simple time type could then trickle down as well: we could use 
-it everywhere in kernel code and limit the hodge-podge of ABI time 
-units to the syscall boundary. (and convert the internal time unit to 
-whatever ABI unit there is close to the syscall boundary)
-
-There's a point where micro-optimized 32-bit support related 
-maintenance overhead (and the resulting loss of 
-robustness/flexibility) becomes too expensive IMO.
-
-Thanks,
-
-	Ingo
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
