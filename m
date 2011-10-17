@@ -1,118 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab1JQVH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 17:07:59 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46607 "EHLO ogre.sisk.pl"
+	id S1755271Ab1JQVIH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 17:08:07 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:46002 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab1JQVH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 17:07:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate interfaces
-Date: Mon, 17 Oct 2011 23:10:17 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-References: <Pine.LNX.4.44L0.1110171046490.2430-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1110171046490.2430-100000@iolanthe.rowland.org>
+	id S1754099Ab1JQVIE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 17:08:04 -0400
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110172310.18069.rjw@sisk.pl>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Date: Mon, 17 Oct 2011 14:07:31 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Thread-Index: AcyNAyo/g/cXrS03SUy80vnnzI7YGwABC+5g
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org><1317200618.1573.1765.camel@vkoul-udesk3><CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com><1317295068.1573.1780.camel@vkoul-udesk3><CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com><CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com><CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com><CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com><CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com><CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com><20111003161349.GB28287@flint.arm.linux.org.uk><CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com><CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com><1317966346.1573.2252.camel@vkoul-udesk3><CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com><CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com><CAJe_Z
+	heocjVhD4PTX
+	Qo3R7rqgiyt4BCo8Fx_sJ7AmDCjB=zMxQ@mail.gmail.com><0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com><CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com><0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
+        Barry Song <21cnbao@gmail.com>, <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 17, 2011, Alan Stern wrote:
-> On Sun, 16 Oct 2011, Rafael J. Wysocki wrote:
+On Mon, Oct 17, 2011 at 3:30 PM, Jassi Brar <jaswinder.singh@linaro.org>
+wrote:
+... skip ...
+> > This is a source of the problem for RIO - DMA controller driver
+> creates
+> > virtual channels statically. RapidIO may use 8- or 16-bit destID.
+> > In this case we need to create 256 or 64K virtual channels if we
+> > want to cover all possible targets on single RIO port. Adding an
+> extra
+> > controller/net multiplies that number. Considering that not every
+> > device will need a data transfer from a given node static allocation
+> > will
+> > create even more wasted resources.
+> >
+> Please excuse my rudimentary knowledge of RapidIO but I am tempted
+> to ask why not register channels only for those targets that are
+> actually
+> detected and enumerated?
 > 
-> > On Sunday, October 16, 2011, Alan Stern wrote:
-> > > On Sat, 15 Oct 2011, Alan Stern wrote:
-> > > 
-> > > > Basically, what we need is a reliable way to intercept the existing
-> > > > mechanisms for suspend/hibernate and to redirect the requests to the PM
-> > > > daemon.  When the daemon is started up in "legacy" mode, it assumes
-> > > > there is a legacy client (representing the entire set of
-> > > > non-wakeup-aware programs) that always forbids suspend _except_ when
-> > > > one of the old mechanisms is invoked.
-> > > 
-> > > The more I think about this, the better it seems.  In essence, it 
-> > > amounts to "virtualizing" the existing PM interface.
-> > > 
-> > > Let's add /sys/power/manage, and make it single-open.
-> > 
-> > I'm not sure how to do that in sysfs.
+Two reasons:
+- possibility of hot device insertion/removal
+- there is no advance knowledge of which target device may require DMA
+  service. A device driver for the particular target device is expected
+  to request DMA service if required.
+
+> >>
+> >> 1) The role of the 'extra' 2bits ?
+> >>
+> > Just upper bits of the RIO address.
+> >
+> I assume you mean any transfer could be targeted at any of 2^66 bits
+> on the remote device.
+Yes, this is correct. 
+
 > 
-> If we don't implement the virtualization in the kernel, as Neil
-> suggests, then /sys/power/manage isn't necessary.  (And yes, I don't 
-> know how to make sysfs files single-open either -- probably there's no 
-> way to do it.)
+> > There is nothing that absence of full 66-bit addressing blocks now.
+> > So far we are not aware about implementations that use 66-bit
+> address.
+> >
+> Thanks for the important info.
+> If I were you, I would postpone enabling support for 66-bit addressing
+> esp when it soo affects the dmaengine API.
+> Otherwise, you don't just code unused feature, but also put
+constraints
+> on development/up-gradation of the API in future, possibly, nearer
+than
+> real need of the feature.
 > 
-> > Also I'm not sure what the real difference between /sys/power/manage
-> > and my /sys/power/sleep_mode is (I could make /sys/power/sleep_mode
-> > single-open too, if I knew how to do that).
+> If we postpone 66-bit addressing to when it arrives, we can
+> 1) Attach destID to the virtual channel's identity
+> 2) Use device_prep_dma_memcpy so as to be able to change
+>     target address for every transfer. Or use prep_slave, depending
+>     upon nature of address at target endpoint.
+> 3) Use slave_config to set wr_type if it remains same for enough
+>     consecutive transfers to the same target (only you could strike
+>     the balance between idealism and pragmatism).
 > 
-> We really need to determine up front what userspace environments we
-> want to support.  It seems reasonable to decide that wakeup-awareness
-> will be available only on systems that use a centralized mechanism for
-> initiating system sleeps.  Whether that mechanism is pm-utils or a
-> vendor-specific program in an embedded system shouldn't matter too much
-> -- the important thing is that it can easily be changed to send
-> requests to a PM daemon instead of writing directly to /sys/power/state
-> or /dev/snapshot.
+With item #1 above being a separate topic, I may have a problem with #2
+as well: dma_addr_t is sized for the local platform and not guaranteed
+to be a 64-bit value (which may be required by a target).
+Agree with #3 (if #1 and #2 work).  
+
+> > This does not prevent someone from designing RIO compliant endpoint
+> > device which gives interpretation to these two bits in addition to
+> full 64-bit
+> > addressing of their platform.
+> >
+> It sounds as if the 2bits are 'Vendor-Specific' ?
 > 
-> (Sending requests to the daemon need not be difficult; we could write a 
-> special program just for that purpose.)
-> 
-> If we do things this way, it leaves open the possibility of bypassing 
-> all the wakeup-aware code.  That's not necessarily a bad thing.
+They are not 'Vendor-Specific' in the RIO spec (just address),
+but HW vendors may give them such meaning. I just wanted to say
+that HW designers may follow the same logic as we do here and
+decide to give those bits a special meaning because "no one uses
+them". They are expecting from RapidIO fabric to pass 66-bit
+address and have right to do this. Tsi721 is capable to generate
+66-bit address for RIO requests.
 
-OK, I'd like to focus on this a bit more.  I'll reply to the rest of your
-message separately.
+So far this is a theoretical possibility and we are not
+aware about any designs of this type. We may put a big warning
+note about 64-bit limitation in RapidIO documentation section.
 
-_If_ we are going to use an extra interface for switching "modes" (e.g. current
-behavior vs something that uses wakeup events detection unconditionally), then
-it may be /dev/sleepctl working as follows:
+I have 64-bit only support in Tsi721 DMA driver because my priority
+is defining right upper layer interface to DMA Engine.
+I published tsi721 DMA driver mostly as supporting example to
+demonstrate what we are doing at RapidIO layer.
+After the upper layer is defined it should not be a problem to
+switch to 66-bit or just keep 64.
 
-1. It may be open only *once* for writing.
-2. It may be open multiple times in parallel for reading.
-3. While open for writing, it will cause all writes to /sys/power/wakeup_count
-   fail (e.g. return -EACCES).
-4. Writing to it will unconditionally store the written value as saved_count
-   (this will allow the writer to effectively block all suspend/hibernate
-   interfaces by writing a "known bad" number to it).
-5. Reading from it will work like reading from /sys/power/wakeup_count.
+> >> We should try our best to avoid opening the can of worms by adding
+> >> (void *) hook to each transfer, because any client driver could
+want
+> > to
+> >> pass its own private data to dmac and there would be no way for a
+> dmac
+> >> driver to know what to cast the void pointer to.
+> >
+> > Do we really expect that clients will jump to use an extra parameter
+> > without a valid reason and without knowing their hardware specifics?
+> >
+> The long term plan for dmaengine is to be able to have client drivers
+> shared across dmac drivers. And that requires clients making no
+> assumptions about the underlying dmac and the dmac driver expecting
+> nothing from client via outside of common APIs.
+In this case adding new values to dma_transaction_type (like
+DMA_RAPIDIO)
+may have a sense when using unified prep_slave_sg() with extra
+parameter.
+This will hide RapidIO dmac drivers from DMA_SLAVE clients (and vice
+versa)
+while keeping common APIs from growing in their numbers.
 
-This way, the writer using it (the power manager) won't have to open
-/sys/power/wakeup_count in addition to opening /dev/sleepctl.
-
-Next, we can add the SLEEPCTL_RELAX and SLEEPCTL_STAY_AWAKE ioctls to it in the
-following way:
-
-SLEEPCTL_STAY_AWAKE: cause all attempts to use /sys/power/state and the
-  /dev/snapshot's ioctls to block until SLEEPCTL_RELAX is executed for
-  the same file descriptor.
-
-SLEEPCTL_RELAX(arg): if arg is 0, reverse the previous SLEEPCTL_STAY_AWAKE and
-  return.  If arg is different from 0, reverse the previous SLEEPCTL_STAY_AWAKE
-  and prepare the kernel to carry out an equivalent of SLEEPCTL_STAY_AWAKE on
-  the given file descriptor and send the calling process the SIGPWR signal
-  on the first wakeup event.
-
-Then, the John's backup scenario will look like this:
-
-1. SLEEPCTL_STAY_AWAKE
-2. Set up the wakealarm.
-3. SLEEPCTL_RELAX(1)
-4. Sleep with timeout to wake up at time T (slightly before the wakealarm).
-5. (a) if the system doesn't suspend and there are no wakeup events,
-       do SLEEPCTL_STAY_AWAKE (when woken up) and create a backup.
-   (b) if there is a wakeup event, check if the current time is earlier than
-       T and go to 3 if so.  Otherwise, create a backup (the kernel has already
-       done the SLEEPCTL_STAY_AWAKE for us).
-
-Thanks,
-Rafael
+Alex.
+ 
