@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab1JQOk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:40:59 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57432 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab1JQOk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:40:58 -0400
-Date: Mon, 17 Oct 2011 15:40:13 +0100
-From: Matthew Garrett <mjg@redhat.com>
+	id S1755987Ab1JQOmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:42:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751076Ab1JQOme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:42:34 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
-        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-Message-ID: <20111017144013.GA15447@srcf.ucam.org>
-References: <1318705910.2664.5.camel@laptop>
- <20111017013921.GA30035@tango.0pointer.de>
- <20111017032232.GA4816@srcf.ucam.org>
- <4E9BBB6D.4050004@linux.intel.com>
- <1318837019.6594.29.camel@twins>
- <alpine.LFD.2.02.1110171119580.3240@ionos>
- <20111017124647.GA12838@srcf.ucam.org>
- <1318856786.4172.22.camel@twins>
- <20111017141147.GA14581@srcf.ucam.org>
- <1318861707.4172.32.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318861707.4172.32.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 1/3] s390: gup_huge_pmd() support THP tail recounting
+Date: Mon, 17 Oct 2011 16:41:55 +0200
+Message-Id: <1318862517-7042-2-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1318862517-7042-1-git-send-email-aarcange@redhat.com>
+References: <1316793432.9084.47.camel@twins>
+ <1318862517-7042-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 04:28:27PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-10-17 at 15:11 +0100, Matthew Garrett wrote:
-> > Whether or not you want the animation to carry on animating is policy, 
-> > and you need something to be the policy agent. Let's say firefox is 
-> > invisible. I now grab a copy of its window contents. What do I get?
-> 
-> An XDamage and repaint from the X client, after which your copy will
-> complete and you get what you asked for?
+Up to this point the code assumed old refcounting for hugepages
+(pre-thp). This updates the code directly to the thp mapcount tail
+page refcounting.
 
-An XDamage and then an asynchronous RPC call to the remote server to 
-identify the contents of the next frame before drawing them, plus some 
-sort of new synchronisation mechanism for blocking the X query until 
-that point?
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ arch/s390/mm/gup.c |   24 +++++++++++++++++++++++-
+ 1 files changed, 23 insertions(+), 1 deletions(-)
 
-> >  in preference to merging a piece 
-> > of code that's functionally consistent with the rest of the cgroups 
-> > infrastructure?
-> 
-> Yep.. because as of yet there isn't a sane use-case to warrant adding
-> the maintenance burden. Any cgroup controller is functionally
-> consistent, per definition, that doesn't make it useful or even sane.
-
-Timers are a resource. People want to manage that resource. cgroups are 
-a convenient mechanism for managing resources.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+diff --git a/arch/s390/mm/gup.c b/arch/s390/mm/gup.c
+index 45b405c..668dda9 100644
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -48,11 +48,22 @@ static inline int gup_pte_range(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 	return 1;
+ }
+ 
++static inline void get_huge_page_tail(struct page *page)
++{
++	/*
++	 * __split_huge_page_refcount() cannot run
++	 * from under us.
++	 */
++	VM_BUG_ON(page_mapcount(page) < 0);
++	VM_BUG_ON(atomic_read(&page->_count) != 0);
++	atomic_inc(&page->_mapcount);
++}
++
+ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
+ {
+ 	unsigned long mask, result;
+-	struct page *head, *page;
++	struct page *head, *page, *tail;
+ 	int refs;
+ 
+ 	result = write ? 0 : _SEGMENT_ENTRY_RO;
+@@ -64,6 +75,7 @@ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 	refs = 0;
+ 	head = pmd_page(pmd);
+ 	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
++	tail = page;
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
+@@ -81,6 +93,16 @@ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 		*nr -= refs;
+ 		while (refs--)
+ 			put_page(head);
++	} else {
++		/*
++		 * Any tail page need their mapcount reference taken
++		 * before we return.
++		 */
++		while (refs--) {
++			if (PageTail(tail))
++				get_huge_page_tail(tail);
++			tail++;
++		}
+ 	}
+ 
+ 	return 1;
