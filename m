@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab1JQQvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:51:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2208 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296Ab1JQQvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:51:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,360,1315206000"; 
-   d="scan'208";a="63385767"
-Subject: Re: [PATCH v3] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Vinod Koul <vinod.koul@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Barry Song <21cnbao@gmail.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
-        Barry Song <Barry.Song@csr.com>
-In-Reply-To: <201110171711.07384.arnd@arndb.de>
-References: <1318844199-19303-1-git-send-email-Barry.Song@csr.com>
-	 <1318859861.23438.137.camel@vkoul-udesk3>
-	 <CAGsJ_4y4ZxqmefxXS+2QEtTcq6Jr9+o92pd4enRYQMkG3kZ=ng@mail.gmail.com>
-	 <201110171711.07384.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 22:12:39 +0530
-Message-ID: <1318869759.23438.159.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756424Ab1JQQxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:53:06 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49963 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab1JQQxE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 12:53:04 -0400
+Date: Mon, 17 Oct 2011 12:52:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: hch@infradead.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] xen/blkback: Support 'feature-barrier' aka old-style
+ BARRIER requests.
+Message-ID: <20111017165247.GB19724@phenom.dumpdata.com>
+References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
+ <1318260494-27985-2-git-send-email-konrad.wilk@oracle.com>
+ <4E9C3B39020000780005BA5D@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9C3B39020000780005BA5D@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4E9C5D69.00DF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 17:11 +0200, Arnd Bergmann wrote:
-> On Monday 17 October 2011, Barry Song wrote:
-> > >> +
-> > >> +     /* Start the DMA transfer */
-> > >> +     writel_relaxed(sdesc->width, sdma->base + SIRFSOC_DMA_WIDTH_0 + cid * 4);
-> > >> +     writel_relaxed(cid | (schan->mode << SIRFSOC_DMA_MODE_CTRL_BIT) |
-> > >> +             (sdesc->dir << SIRFSOC_DMA_DIR_CTRL_BIT),
-> > >> +             sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_CTRL);
-> > >> +     writel_relaxed(sdesc->xlen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_XLEN);
-> > >> +     writel_relaxed(sdesc->ylen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_YLEN);
-> > >> +     writel_relaxed(readl_relaxed(sdma->base + SIRFSOC_DMA_INT_EN) | (1 << cid),
-> > >> +             sdma->base + SIRFSOC_DMA_INT_EN);
-> > >> +     writel(sdesc->addr >> 2, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_ADDR);
-> > >> +
-> > >> +     if (sdesc->cyclic) {
-> > >> +             writel((1 << cid) | 1 << (cid + 16) |
-> > >> +                     readl_relaxed(sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL),
-> > >> +                     sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL);
-> > >> +             schan->happened_cyclic = schan->completed_cyclic = 0;
-> > >> +     }
-> > > any reason why we have mixed use of writel_relaxes and writel?
-> > > Shouldn't all the DMA register writes be done only using writel?
+On Mon, Oct 17, 2011 at 01:27:05PM +0100, Jan Beulich wrote:
+> >>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > We emulate the barrier requests by draining the outstanding bio's
+> > and then sending the WRITE_FLUSH command. To drain the I/Os
+> > we use the refcnt that is used during disconnect to wait for all
+> > the I/Os before disconnecting from the frontend. We latch on its
+> > value and if it reaches either the threshold for disconnect or when
+> > there are no more outstanding I/Os, then we have drained all I/Os.
 > > 
-> > Arnd comment this in v2.
+> > Suggested-by: Christopher Hellwig <hch@infradead.org>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/block/xen-blkback/blkback.c |   37 +++++++++++++++++++++++++++++++++-
+> >  drivers/block/xen-blkback/common.h  |    5 ++++
+> >  drivers/block/xen-blkback/xenbus.c  |   18 +++++++++++++++++
+> >  3 files changed, 58 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/block/xen-blkback/blkback.c 
+> > b/drivers/block/xen-blkback/blkback.c
+> > index e0dab61..184b133 100644
+> > --- a/drivers/block/xen-blkback/blkback.c
+> > +++ b/drivers/block/xen-blkback/blkback.c
+> > @@ -452,6 +452,23 @@ static void xen_blk_discard(struct xen_blkif *blkif, 
+> > struct blkif_request *req)
+> >  	make_response(blkif, req->id, req->operation, status);
+> >  }
+> >  
+> > +static void xen_blk_drain_io(struct xen_blkif *blkif)
+> > +{
+> > +	atomic_set(&blkif->drain, 1);
+> > +	do {
+> > +		wait_for_completion_interruptible_timeout(
+> > +				&blkif->drain_complete, HZ);
+> > +
+> > +		if (!atomic_read(&blkif->drain))
+> > +			break;
+> > +		/* The initial value is one, and one refcnt taken at the
+> > +		 * start of the xen_blkif_schedule thread. */
+> > +		if (atomic_read(&blkif->refcnt) <= 2)
+> > +			break;
 > 
-> The new version looks good to me, but a comment in the source code would
-> be very helpful, especially to prevent people from attempting to "fix" it
-> in the future.
-> 
-> I'm not sure about the writel/readl_relaxed in the end of that function,
-> because I don't understand what having a "cyclic" descriptor means.
-"cyclic" descriptor represents a dma operation which is cyclic in
-nature, i.e would auto restart the DMA operation again, till it is
-explicitly aborted.
-Typically you need to tell dmac that it has to perform such operation
-after the current transfer/list is completed.
-In above case looks like you have to do that by performing a writel
-which invokes a readl_relaxed as well
+> Shouldn't this test be done the very first thing in the loop? It looks
+> racy the way it's placed now, and it would incur a 1 sec stall if this
+> was the only request currently being processed (as no completion
+> of ane earlier request could signal completion).
 
--- 
-~Vinod
+Sure does. An earlier version of this (not posted), had this check right
+before going in the loop as all of the requests might have been already
+processed.
+
+I accidently dropped that logic as I moved this whole code into a function.
 
