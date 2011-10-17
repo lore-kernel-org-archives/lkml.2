@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1JQIxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 04:53:14 -0400
-Received: from lnx500.hrz.tu-darmstadt.de ([130.83.156.225]:54499 "EHLO
-	lnx500.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751577Ab1JQIxM (ORCPT
+	id S1754264Ab1JQIzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 04:55:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33776 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab1JQIzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 04:53:12 -0400
-From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+	Mon, 17 Oct 2011 04:55:02 -0400
+Date: Mon, 17 Oct 2011 10:55:46 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: Problems with videos and i915 driver
+Message-ID: <20111017085546.GB2971@phenom.ffwll.local>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org
+References: <1318788068.12224.125.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20123.60660.896589.761967@elektron.ikp.physik.tu-darmstadt.de>
-Date: Mon, 17 Oct 2011 10:53:08 +0200
-To: linux-kernel@vger.kernel.org
-Subject: Re: How to blacklist a usb_storage device from attach to the
-   usb_storage module
-In-Reply-To: <20121.41239.485545.656633@elektron.ikp.physik.tu-darmstadt.de>
-References: <20121.41239.485545.656633@elektron.ikp.physik.tu-darmstadt.de>
-X-Mailer: VM 7.19 under Emacs 21.3.1
-X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.10.17.84514
-X-PMX-RELAY: outgoing
+Content-Disposition: inline
+In-Reply-To: <1318788068.12224.125.camel@gandalf.stny.rr.com>
+X-Operating-System: Linux phenom 3.0.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Uwe" == Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de> writes:
+On Sun, Oct 16, 2011 at 02:01:08PM -0400, Steven Rostedt wrote:
+> [  102.695526] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> [  102.695538] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> [  102.699680] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 1 at 0, next 2)
 
-    Uwe> Hello, The STxxDiscovery Modules are affordable small boards with
-...
-    Uwe> blacklisting there will need time to propagate to the kernel tree
-    Uwe> and back to the distributions. So a way to runtime blacklist is
-    Uwe> needed too.
+Can you please attach i915_error_state? It contains the gpu crashdump we
+need to diagnose gpu hangs.
 
-To answer my own question, at least partial, with and udev Rule like
-SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="0483", \
-ATTRS{idProduct}=="3744", DRIVER=="usb-storage", \
-RUN+="/bin/sh -c 'echo -n %k> %S%p/driver/unbind'"
-
-as the first rule for the device, the device still binds to the driver but
-as first action is unbinded.
-
-Should such a device still be blacklisted in the kernel somehow?
-
+Thanks, Daniel
 -- 
-Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
-
-Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
---------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
