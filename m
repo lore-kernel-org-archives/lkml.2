@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1JQGtY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 02:49:24 -0400
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:36051 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab1JQGtV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 02:49:21 -0400
-X-SourceIP: 180.215.228.84
-X-Authenticated-Sender: p.boven92@upcmail.nl
-Reply-To: <microsoftgame6@gala.net>
-From: "Microsoft Office" <info@winner.com>
-Subject: MESSAGE FROM BILL GATES.
-Date: Mon, 17 Oct 2011 11:31:25 +0530
+	id S1753637Ab1JQGud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 02:50:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49401 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751465Ab1JQGuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 02:50:32 -0400
+Date: Mon, 17 Oct 2011 08:48:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>
+Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
+Message-ID: <20111017064855.GA18858@elte.hu>
+References: <1318616873-26739-1-git-send-email-acme@infradead.org>
+ <20111015145946.GB9516@elte.hu>
+ <4E99BC44.40400@gmail.com>
+ <20111015170452.GD29782@elte.hu>
+ <4E99C6E6.2040201@gmail.com>
+ <20111015190620.GA21352@ghostprotocols.net>
+ <4E99DA6C.3030906@gmail.com>
+ <20111017011521.GD21352@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111017060129.YVCT1579.viefep20-int.chello.at@edge01.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=+RjJgcKC3TVhmG59MdV7mpGZVAC1es/cBi3EpYMuMBM= c=1 sm=0 a=Dyoqhi_TatcA:10 a=W5eWDzlLbqUA:10 a=LQ0OwbNP_iQA:10 a=8EU9Q7FnrCoA:10 a=Z26bdIOBFeEA:10 a=Cfj4BQAnxiAA:10 a=GtgfBv1tAAAA:8 a=hO0FxwS0YmsQuPzzv24A:9 a=Ft8UYL4EG9YA:10 a=tATN3I0HKS0A:10 a=OYjzaMAtzVwA:10 a=gaTGXAt6RyBTGmS-:21 a=_SnYlkeo_7HTAlOv:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111017011521.GD21352@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Email Id has won 750,000.00GBP with a HP Laptop and a BlackBerry Phone in the MICROSOFT NATIONAL PROMOTION DRAW Promo 2011. send your
 
-Names.
-Address.
-Sex.
-Age.
-Tel.
-Occupation.
-Country.
-*City/State:
- 
-Dr.Terry Cole
-Email: microsoftgame6@gala.net
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+
+> Em Sat, Oct 15, 2011 at 01:09:32PM -0600, David Ahern escreveu:
+> > On 10/15/2011 01:06 PM, Arnaldo Carvalho de Melo wrote:
+> > >>
+> > >> It should. The message comes from map__load() when it detects a deleted
+> > >> mapping such as:
+> > >>
+> > >> 7f9e8d5c7000-7f9e8d5c8000 rw-p 0000c000 fd:02 1046947
+> > >>  /lib64/libpam.so.0.82.2.#prelink#.cM3f72 (deleted)
+> > >>
+> > >> I have removed prelink from most of my systems (managed to find one lone
+> > >> server with the above).
+> > > 
+> > > 	Can you send me a patch that clarifies this situation?
+> > 
+> > Clarifies in what way? The code checks for "(deleted)" on the dso and
+> > suggests a restart of the process.
+> 
+> Perhaps telling that prelinking is the reason, so that users that 
+> don't recall updating anything understands the situation.
+
+Yeah. I am certainly aware of prelinking yet it did not occur to me 
+when i saw the message.
+
+Thanks,
+
+	Ingo
