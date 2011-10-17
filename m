@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab1JQPWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:22:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59543 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab1JQPWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756234Ab1JQPWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:22:33 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:4801 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab1JQPWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Oct 2011 11:22:32 -0400
-Date: Mon, 17 Oct 2011 08:21:49 -0700
-From: Greg KH <gregkh@suse.de>
-To: Conny Seidel <conny.seidel@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [00/38] 3.0.7-stable review
-Message-ID: <20111017152149.GA10897@suse.de>
-References: <20111011165903.GA30976@kroah.com>
- <20111011170026.GB31075@kroah.com>
- <20111017170503.7bd4bce8.conny.seidel@amd.com>
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dKzz1202hzzz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LT7UP1-01-G80-02
+X-M-MSG: 
+Date: Mon, 17 Oct 2011 17:22:03 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: Re: [PATCH 0/5] oprofile: Updates and fixes for timer modes
+Message-ID: <20111017152203.GE24346@erda.amd.com>
+References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111017170503.7bd4bce8.conny.seidel@amd.com>
+In-Reply-To: <1318861624-715-1-git-send-email-robert.richter@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 05:05:03PM +0200, Conny Seidel wrote:
-> Hi,
-> 
-> is there a reason why the v3.0.7 tag is missing from the stable
-> repository?
-> 
-> 
-> [/build/linux-stable]$ make kernelrelease
-> 3.0.7+
-> [/build/linux-stable]$ make kernelversion
-> 3.0.7
-> [/build/linux-stable]$ git describe
-> v3.0.6-33-g62bf792
+Apologize the corrupted subject line in my emails, these are the
+correct patch titles:
 
-Yes, it's not "officially" released yet, I'm still doing testing...
+On 17.10.11 16:26:59, Robert Richter wrote:
+> Robert Richter (5):
+>       oprofile, x86: Add kernel parameter oprofile.cpu_type=timer
+>       oprofile: Fix crash when unloading module (hr timer mode)
+>       oprofile, x86: Fix crash when unloading module (nmi timer mode)
+>       oprofile: Remove exit function for timer mode
+>       oprofile, x86: Reimplement nmi timer mode using perf event
 
-greg k-h
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
