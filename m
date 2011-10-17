@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab1JQL4m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:56:42 -0400
-Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:34185 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751194Ab1JQL4l (ORCPT
+	id S1752141Ab1JQL7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:59:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35787 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab1JQL7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:56:41 -0400
-X-Greylist: delayed 3599 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Oct 2011 07:56:41 EDT
-Date: Mon, 17 Oct 2011 12:15:32 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andrew Victor <avictor.za@gmail.com>,
-        Maxim Osipov <maxim.osipov@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH] AT91: Add external RTC for Flexibity board
-Message-ID: <20111017101532.GU1459@game.jcrosoft.org>
-References: <4DC53134.8070706@gmail.com>
- <20110510234526.GC18929@game.jcrosoft.org>
- <BANLkTikvCiXgnm_hVTqDmzZ6yDf6H5WaCw@mail.gmail.com>
- <20111013211145.GA27779@n2100.arm.linux.org.uk>
+	Mon, 17 Oct 2011 07:59:13 -0400
+Date: Mon, 17 Oct 2011 12:59:08 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@suse.de, linus.walleij@stericsson.com, jamie@jamieiles.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 6/6] mach-ux500: remove intermediary add_platform_device*
+ functions
+Message-ID: <20111017115908.GE4992@totoro>
+References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
+ <1318852378-14180-7-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111013211145.GA27779@n2100.arm.linux.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 433752939927546803
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -210
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrfeeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddmnehlihhnuhigucdlqddutddm
+In-Reply-To: <1318852378-14180-7-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:11 Thu 13 Oct     , Russell King - ARM Linux wrote:
-> On Wed, May 11, 2011 at 09:44:52AM +0200, Andrew Victor wrote:
-> > hi,
-> > 
-> > >> This patch enables external RTC support on AT91 Flexibity board.
-> > 
-> > Acked-by: Andrew Victor <linux@maxim.org.za>
-> > 
-> > Maxim: You can submit it to Russell's patch system.
-> > 
-> > 
-> > > looks fine just one comment please add your board to the new at91sam9260_defconfig
-> > 
-> > That file does not exist in any mainline kernel.
-> 
-> It's been a while since this patch went into the patch system, and it
-> didn't get applied for various reasons, including because it looked
-> like it was sent there without any review (no acked-by's etc added to
-> it.)
-> 
-> What's the status of this - and if its still relevant can we have
-> it with the proper attributations please
-This patch is already in Arnd tree IIRC
+Hi Lee,
 
-Best Regards,
-J.
+On Mon, Oct 17, 2011 at 12:52:58PM +0100, Lee Jones wrote:
+> These are no longer required since a 'parent' pointer is now
+> passed to each registering device.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/mach-ux500/devices-common.c |   53 ----------------------------------
+>  arch/arm/mach-ux500/devices-common.h |   34 +++++++++------------
+>  arch/arm/mach-ux500/devices-db8500.h |   10 ++++--
+>  3 files changed, 22 insertions(+), 75 deletions(-)
+> 
+> diff --git a/arch/arm/mach-ux500/devices-common.c b/arch/arm/mach-ux500/devices-common.c
+> index b8d9a99..170975f 100644
+> --- a/arch/arm/mach-ux500/devices-common.c
+> +++ b/arch/arm/mach-ux500/devices-common.c
+> @@ -59,59 +59,6 @@ dbx500_add_amba_device(struct device *parent, const char *name,
+>  }
+>  
+>  static struct platform_device *
+> -dbx500_add_platform_device(const char *name, int id, void *pdata,
+> -			   struct resource *res, int resnum)
+> -{
+> -	struct platform_device *dev;
+> -	int ret;
+> -
+> -	dev = platform_device_alloc(name, id);
+> -	if (!dev)
+> -		return ERR_PTR(-ENOMEM);
+> -
+> -	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> -	dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
+> -
+> -	ret = platform_device_add_resources(dev, res, resnum);
+> -	if (ret)
+> -		goto out_free;
+> -
+> -	dev->dev.platform_data = pdata;
+> -
+> -	ret = platform_device_add(dev);
+> -	if (ret)
+> -		goto out_free;
+> -
+> -	return dev;
+> -
+> -out_free:
+> -	platform_device_put(dev);
+> -	return ERR_PTR(ret);
+> -}
+[...]
+> diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
+> index f8adff8..089371e 100644
+> --- a/arch/arm/mach-ux500/devices-common.h
+> +++ b/arch/arm/mach-ux500/devices-common.h
+[...]
+> -static inline struct platform_device *
+> -dbx500_add_msp_i2s(int id, resource_size_t base, int irq,
+> -		   struct msp_i2s_platform_data *pdata)
+> -{
+> -	return dbx500_add_platform_device_4k1irq("MSP_I2S", id, base, irq,
+> -						 pdata);
+> +	struct resource resources[] = {
+> +		DEFINE_RES_MEM(base, SZ_4K),
+> +		DEFINE_RES_IRQ(irq),
+> +	};
+> +
+> +	return platform_device_register_resndata(parent, "nmk-i2c",
+> +						 id, resources,
+> +						 ARRAY_SIZE(resources),
+> +						 pdata, sizeof(*pdata));
+>  }
+
+I think you need platform_device_register_full() rather than 
+platform_device_register_resndata() here as dbx500_add_platform_device() 
+also set a dma mask which platform_device_register_resndata() doesn't 
+do.  Otherwise a nice diffstat!
+
+Jamie
