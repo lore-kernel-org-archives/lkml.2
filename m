@@ -1,39 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1JQDJe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 23:09:34 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35077 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab1JQDJd (ORCPT
+	id S1754654Ab1JQDUC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 23:20:02 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45852 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab1JQDUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 23:09:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANsGZ6Zs0sPMqcToGpw8H1vLcAewyj4aii+iy0V9oyhk7RqzjA@mail.gmail.com>
-References: <201110122012.33767.pluto@agmk.net> <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
- <CA+55aFyTif3k0-wb+1zS8b+hKT13pL0T_qtVzAz2HW5U9=yoMg@mail.gmail.com> <CANsGZ6Zs0sPMqcToGpw8H1vLcAewyj4aii+iy0V9oyhk7RqzjA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 16 Oct 2011 20:09:12 -0700
-X-Google-Sender-Auth: Bm3vg8Qnqi5X8P-p3RkicvWxQOk
-Message-ID: <CA+55aFwfkiH7NN18ve2y0PUK8UobagHfpTJ4QoZSL1KLLUMFTw@mail.gmail.com>
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-To: Hugh Dickins <hughd@google.com>
-Cc: Pawel Sikora <pluto@agmk.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-mm@kvack.org, jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 16 Oct 2011 23:20:00 -0400
+Subject: [PATCH] ASoC: wm8580: Use snd_soc_update_bits for read-modify-write
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Oct 2011 11:19:49 +0800
+Message-ID: <1318821589.5325.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 16, 2011 at 8:02 PM, Hugh Dickins <hughd@google.com> wrote:
-> I've not read through and digested Andrea's reply yet, but I'd say
-> this is not something we need to rush into 3.1 at the last moment,
-> before it's been fully considered: the bug here is hard to hit,
-> ancient, made more likely in 2.6.35 by compaction and in 2.6.38 by
-> THP's reliance on compaction, but not a regression in 3.1 at all - let
-> it wait until stable.
+Use snd_soc_update_bits for read-modify-write register access instead of
+open-coding it using snd_soc_read and snd_soc_write
 
-Ok, thanks. Just wanted to check.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8580.c |   21 +++++++++------------
+ 1 files changed, 9 insertions(+), 12 deletions(-)
 
-                     Linus
+diff --git a/sound/soc/codecs/wm8580.c b/sound/soc/codecs/wm8580.c
+index b256727..5e348d6 100644
+--- a/sound/soc/codecs/wm8580.c
++++ b/sound/soc/codecs/wm8580.c
+@@ -430,8 +430,7 @@ static int wm8580_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
+ 	/* Always disable the PLL - it is not safe to leave it running
+ 	 * while reprogramming it.
+ 	 */
+-	reg = snd_soc_read(codec, WM8580_PWRDN2);
+-	snd_soc_write(codec, WM8580_PWRDN2, reg | pwr_mask);
++	snd_soc_update_bits(codec, WM8580_PWRDN2, pwr_mask, pwr_mask);
+ 
+ 	if (!freq_in || !freq_out)
+ 		return 0;
+@@ -449,8 +448,7 @@ static int wm8580_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
+ 	snd_soc_write(codec, WM8580_PLLA4 + offset, reg);
+ 
+ 	/* All done, turn it on */
+-	reg = snd_soc_read(codec, WM8580_PWRDN2);
+-	snd_soc_write(codec, WM8580_PWRDN2, reg & ~pwr_mask);
++	snd_soc_update_bits(codec, WM8580_PWRDN2, pwr_mask, 0);
+ 
+ 	return 0;
+ }
+@@ -757,20 +755,19 @@ static int wm8580_set_bias_level(struct snd_soc_codec *codec,
+ 	case SND_SOC_BIAS_STANDBY:
+ 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
+ 			/* Power up and get individual control of the DACs */
+-			reg = snd_soc_read(codec, WM8580_PWRDN1);
+-			reg &= ~(WM8580_PWRDN1_PWDN | WM8580_PWRDN1_ALLDACPD);
+-			snd_soc_write(codec, WM8580_PWRDN1, reg);
++			snd_soc_update_bits(codec, WM8580_PWRDN1,
++					    WM8580_PWRDN1_PWDN |
++					    WM8580_PWRDN1_ALLDACPD, 0);
+ 
+ 			/* Make VMID high impedance */
+-			reg = snd_soc_read(codec,  WM8580_ADC_CONTROL1);
+-			reg &= ~0x100;
+-			snd_soc_write(codec, WM8580_ADC_CONTROL1, reg);
++			snd_soc_update_bits(codec, WM8580_ADC_CONTROL1,
++					    0x100, 0);
+ 		}
+ 		break;
+ 
+ 	case SND_SOC_BIAS_OFF:
+-		reg = snd_soc_read(codec, WM8580_PWRDN1);
+-		snd_soc_write(codec, WM8580_PWRDN1, reg | WM8580_PWRDN1_PWDN);
++		snd_soc_update_bits(codec, WM8580_PWRDN1,
++				    WM8580_PWRDN1_PWDN, WM8580_PWRDN1_PWDN);
+ 		break;
+ 	}
+ 	codec->dapm.bias_level = level;
+-- 
+1.7.4.1
+
+
+
