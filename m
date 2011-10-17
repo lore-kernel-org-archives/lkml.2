@@ -1,110 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab1JQOeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:34:09 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:55862 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab1JQOeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:34:07 -0400
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1756003Ab1JQOf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:35:28 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:25941
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751222Ab1JQOf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:35:27 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LT7SIX-01-BYV-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Robert Richter <robert.richter@amd.com>, <stable@kernel.org>
+Subject: [PATCH 2/5] oprofile: Fix crash when unloading module (hr timer
+Date: Mon, 17 Oct 2011 16:27:01 +0200
+Message-ID: <1318861624-715-3-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1318861624-715-1-git-send-email-robert.richter@amd.com>
+References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Subject: RE: [RFC PATCH 1/2] RapidIO: Add DMA Engine support for RIO data transfers
-Date: Mon, 17 Oct 2011 07:33:01 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E3E@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <1318700142.23438.45.camel@vkoul-udesk3>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [RFC PATCH 1/2] RapidIO: Add DMA Engine support for RIO data transfers
-Thread-Index: AcyLYhExk3/Bl8sjTVmoVJvbZo1r5gBdIXvQ
-References: <1317418715-9666-1-git-send-email-alexandre.bounine@idt.com> <1317492077.1573.1839.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E55202291E40@CORPEXCH1.na.ads.idt.com> <1317965252.1573.2238.camel@vkoul-udesk3> <0CE8B6BE3C4AD74AB97D9D29BD24E552022D6C9A@CORPEXCH1.na.ads.idt.com> <1318700142.23438.45.camel@vkoul-udesk3>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Vinod Koul <vinod.koul@intel.com>, Jassi Brar <jaswinder.singh@linaro.org>
-CC: Dan <dan.j.williams@intel.com>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9HEYHW6000888
 
-On Sat, Oct 15, 2011 at 1:36 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> 
-> > ... skip ...
-> > > >
-> > > > Second, having ability to pass private target information allows me to pass
-> > > > information about remote target device on per-transfer basis.
-> > > Okay, then why not pass the dma address and make your dma driver
-> > > transparent (i saw you passed RIO address, IIRC 64+2 bits)
-> > > Currently using dma_slave_config we pass channel specific information,
-> > > things like peripheral address and config don't change typically
-> > > between
-> > > transfers and if you have some controller specific properties you can
-> > > pass them by embedding dma_slave_config in your specific structure.
-> > > Worst case, you can configure slave before every prepare
-> >
-> > In addition to address on target RIO device I need to pass corresponding
-> > device destination ID. With single channel capable to transfer data between
-> > local memory and different RapidIO devices I have to pass device specific
-> > information on per transfer basis (destID + 66-bit address + type of write ops, etc.).
-> >
-> > Even having 8 channels (each set for specific target) will not help me with
-> > full support of RapidIO network where I have 8- or 16-bit destID (256 or 64K
-> > devices respectively).
-> >
-> > RapidIO controller device (and its DMA component) may provide services to
-> > multiple device drivers which service individual devices on RapidIO network
-> > (similar to PCIe having multiple peripherals, but not using memory mapped
-> > model - destID defines route to a device).
-> >
-> > Generic RapidIO controller may have only one DMA channel which services all
-> > target devices forming the network. We may have multiple concurrent data
-> > transfer requests for different devices.
-> >
-> > Parallel discussion with Dan touches the same post-config approach and
-> > another option. I like Dan's idea of having RIO-specific version of prep_sg().
-> > At the same time my current implementation of rio_dma_prep_slave_sg() with
-> > added appropriate locking may do job as well and keeps DMA part within
-> > existing API (DMA_RAPIDIO removed).
-> Thanks this helps to understand your model.
-> 
-> Per above you need destID, 66bit address and type of write to be passed
-> for each transfer. Looking at your rio_dma_data, i cant see the destID.
-> 
-destID is extracted by rio_dma_prep_slave_sg() from the rio_dev parameter
-and passed down prep_slave_sg() as part of rio_dma_ext structure
-(as dchan->private). 
+Oprofile may crash in a KVM guest while unlaoding modules. This
+happens if oprofile_arch_init() fails and oprofile switches to the hr
+timer mode as a fallback. In this case oprofile_arch_exit() is called,
+but it never was initialized properly which causes the crash. This
+patch fixes this.
 
-> Nevertheless we have few ways to solve this, pass this using
-> dma_slave_config _every-time_ before doing a prep_slave_sg. Or as Dan
-> pointed out create RIO specific version. Principally I am not for
-> adding
-> a subsystem specific stuff, even more when we are talking about
-> converging and cutting down on dmaengine API :)
-> 
-Agree. This is why I am trying to find my way within boundaries of DMA_SLAVE API first.
+oprofile: using timer interrupt.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+PGD 41da3f067 PUD 41d80e067 PMD 0
+Oops: 0002 [#1] PREEMPT SMP
+CPU 5
+Modules linked in: oprofile(-)
 
-> Another alternate approach could be to add one more argument to
-> prep_slave_sg API which allows us to pass additional runtime specific
-> parameters. This can be NULL and unused for existing drivers and used
-> in
-> RIO and any future subsystems which want to use dmaengine.
-> Thoughts...?
-> 
-This is exactly what I need and it may be useful for future systems.
-This makes DMA_SLAVE prepared for variations in device addressing.
+Pid: 2382, comm: modprobe Not tainted 3.1.0-rc7-00018-g709a39d #18 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+RSP: 0018:ffff88041de1de98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa00060e0 RCX: dead000000200200
+RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
+RBP: ffff88041de1dea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041de1dde8 R12: 0000000000000080
+R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
+FS:  00007f9ae5bef700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 000000041ca44000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 2382, threadinfo ffff88041de1c000, task ffff88042db6d040)
+Stack:
+ ffff88041de1deb8 ffffffffa0006770 ffff88041de1deb8 ffffffffa000251e
+ ffff88041de1dec8 ffffffffa00022c2 ffff88041de1ded8 ffffffffa0004993
+ ffff88041de1df78 ffffffff81073115 656c69666f72706f 0000000000610200
+Call Trace:
+ [<ffffffffa000251e>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00022c2>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa0004993>] oprofile_exit+0x13/0x15 [oprofile]
+ [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
+ [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
+Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
+ 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
+RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+ RSP <ffff88041de1de98>
+CR2: 0000000000000008
+---[ end trace 06d4e95b6aa3b437 ]---
 
-Plus, this will make porting RIO DMA to previous kernel versions
-relatively easy for those who prefers/requires that.
+CC: stable@kernel.org # 2.6.37+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ drivers/oprofile/oprof.c     |   29 ++++++++++++++++++++++++-----
+ drivers/oprofile/timer_int.c |    1 +
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
-Based on the fact that you started transition to the new DMA transfer
-direction flags, it may be a good time to add that extra argument
-to prep_slave_sg().
+diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+index dccd863..f8c752e 100644
+--- a/drivers/oprofile/oprof.c
++++ b/drivers/oprofile/oprof.c
+@@ -239,26 +239,45 @@ int oprofile_set_ulong(unsigned long *addr, unsigned long val)
+ 	return err;
+ }
+ 
++static int timer_mode;
++
+ static int __init oprofile_init(void)
+ {
+ 	int err;
+ 
++	/* always init architecture to setup backtrace support */
+ 	err = oprofile_arch_init(&oprofile_ops);
+-	if (err < 0 || timer) {
+-		printk(KERN_INFO "oprofile: using timer interrupt.\n");
++
++	timer_mode = err || timer;	/* fall back to timer mode on errors */
++	if (timer_mode) {
++		if (!err)
++			oprofile_arch_exit();
+ 		err = oprofile_timer_init(&oprofile_ops);
+ 		if (err)
+ 			return err;
+ 	}
+-	return oprofilefs_register();
++
++	err = oprofilefs_register();
++	if (!err)
++		return 0;
++
++	/* failed */
++	if (timer_mode)
++		oprofile_timer_exit();
++	else
++		oprofile_arch_exit();
++
++	return err;
+ }
+ 
+ 
+ static void __exit oprofile_exit(void)
+ {
+-	oprofile_timer_exit();
+ 	oprofilefs_unregister();
+-	oprofile_arch_exit();
++	if (timer_mode)
++		oprofile_timer_exit();
++	else
++		oprofile_arch_exit();
+ }
+ 
+ 
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index 3ef4462..878fba1 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -110,6 +110,7 @@ int oprofile_timer_init(struct oprofile_operations *ops)
+ 	ops->start = oprofile_hrtimer_start;
+ 	ops->stop = oprofile_hrtimer_stop;
+ 	ops->cpu_type = "timer";
++	printk(KERN_INFO "oprofile: using timer interrupt.\n");
+ 	return 0;
+ }
+ 
+-- 
+1.7.7
 
-Alex.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
