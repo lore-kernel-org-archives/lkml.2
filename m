@@ -1,120 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1JQXBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 19:01:07 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:11329 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab1JQXBF (ORCPT
+	id S1756591Ab1JQXFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 19:05:39 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46334 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab1JQXFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 19:01:05 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-Thread-Index: AQHMiwB5ssYxGyHyyU2tUZBy8HXDxZV+YdCA///RXnCAAtYrAP//mN2AgAB/eQCAAAbIcA==
-Date: Mon, 17 Oct 2011 23:00:56 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA1D68C@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
-	 <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-	 <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.72]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Mon, 17 Oct 2011 19:05:38 -0400
+From: Dan McGee <dpmcgee@gmail.com>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH] powerpc/mm: remove hack in mmap randomize layout
+Date: Mon, 17 Oct 2011 18:05:23 -0500
+Message-Id: <1318892723-19401-1-git-send-email-dpmcgee@gmail.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20111017.185357.1185691091043314919.davem@davemloft.net>
+References: <20111017.185357.1185691091043314919.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9HN1E4b003781
 
+Since commit 8a0a9bd4db63bc45e301, this comment in mmap_rnd() does not
+hold true as the value returned by get_random_int() will in fact be
+different every single call. Remove the comment and simplify the code
+back to its original desired form.
 
+This reverts commit a5adc91a4b44b5d1 which is no longer necessary and
+also fixes the sparc code that copied this same adjustment.
 
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Monday, October 17, 2011 11:27 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
-> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> staging
-> 
-> On Mon, 2011-10-17 at 15:15 +0000, KY Srinivasan wrote:
-> > This patch is against Greg's staging tree where recently I merged all
-> > of the storage
-> > drivers into a single driver. This change may not have percolated up
-> > yet - Greg has
-> > checked this into his staging tree though.
-> 
-> OK, that explains the difference.
-> 
-> > As I deal with the review comments now, do you want me to get these
-> > changes
-> > applied first to Greg's tree before you would consider moving this
-> > driver to drivers/scsi
-> > directory, or could you move the driver as it is in Greg's tree under
-> > staging and I could give
-> > you patches against the moved driver.
-> 
-> Either way is fine by me.  The best route for this is to get the staging
-> update into Linus head, then work on the actual SCSI problems.  I'd like
-> other SCSI people besides me to review it.
-> 
-> > > OK, so as I read the code, what it can't handle is fragments except at
-> > > the ends.  As long as everything always transfers in multiples of 4k,
-> > > the problem will never occur.  This means that all devices you present
-> > > need to tell the OS they have 4k sectors.  I *think* you can do this by
-> > > setting  blk_limits_io_min() in the driver ... but you'll have to test
-> > > this.  The minimum sector size gets set also in sd.c when we probe the
-> > > disk.  I think that won't override blk_limits_io_min(), but please test
-> > > (we don't have any SCSI drivers which have ever used this setting).
-> > >
-> > > The way to test, is to read back the /sys/block/<dev>/queue/ settings
-> > > when presenting a 512 byte sector disk.  (And the way to activate your
-> > > bounce code would be to create a filesystem with a < PAGE_SIZE block
-> > > size).
-> >
-> > Given that the bounce buffer handling code would typically
-> > never be triggered, I not sure how useful it will be to try to get rid
-> > of the bounce buffer
-> > code using a feature that is not well tested.
-> 
-> As opposed to bounce buffer code which hasn't been well tested either if
-> it can't be triggered.
-> 
-> >  In any event, I will try your suggestion though.
-> 
-> Just to be clear: Setting the minimum I/O size is completely well
-> tested: it's how we handle 4k sector drives.  What hasn't been tested is
-> the ability of the *driver* to enforce the minimum using
-> blk_limits_io_min().  As long at that doesn't get overridden by sd when
-> it sees a 512b drive, the rest of the block paths (those which actually
-> enforce the minimum) have all been well tested.
+Signed-off-by: Dan McGee <dpmcgee@gmail.com>
+---
+ arch/powerpc/mm/mmap_64.c        |   14 +++-----------
+ arch/sparc/kernel/sys_sparc_64.c |    6 +++---
+ 2 files changed, 6 insertions(+), 14 deletions(-)
 
-I will work on addressing the issues you have raised and any other comments I might
-get from the community. I will submit these patches to Greg and I will copy you and other
-scsi maintainers as well. Once Greg's staging tree is synced with Linus' tree, then I will submit
-the code for further review in preparation for moving the code out of staging.
+diff --git a/arch/powerpc/mm/mmap_64.c b/arch/powerpc/mm/mmap_64.c
+index 5a783d8..67a42ed 100644
+--- a/arch/powerpc/mm/mmap_64.c
++++ b/arch/powerpc/mm/mmap_64.c
+@@ -53,14 +53,6 @@ static inline int mmap_is_legacy(void)
+ 	return sysctl_legacy_va_layout;
+ }
+ 
+-/*
+- * Since get_random_int() returns the same value within a 1 jiffy window,
+- * we will almost always get the same randomisation for the stack and mmap
+- * region. This will mean the relative distance between stack and mmap will
+- * be the same.
+- *
+- * To avoid this we can shift the randomness by 1 bit.
+- */
+ static unsigned long mmap_rnd(void)
+ {
+ 	unsigned long rnd = 0;
+@@ -68,11 +60,11 @@ static unsigned long mmap_rnd(void)
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		/* 8MB for 32bit, 1GB for 64bit */
+ 		if (is_32bit_task())
+-			rnd = (long)(get_random_int() % (1<<(22-PAGE_SHIFT)));
++			rnd = (long)(get_random_int() % (1<<(23-PAGE_SHIFT)));
+ 		else
+-			rnd = (long)(get_random_int() % (1<<(29-PAGE_SHIFT)));
++			rnd = (long)(get_random_int() % (1<<(30-PAGE_SHIFT)));
+ 	}
+-	return (rnd << PAGE_SHIFT) * 2;
++	return rnd << PAGE_SHIFT;
+ }
+ 
+ static inline unsigned long mmap_base(void)
+diff --git a/arch/sparc/kernel/sys_sparc_64.c b/arch/sparc/kernel/sys_sparc_64.c
+index 908b47a..c2c03c8 100644
+--- a/arch/sparc/kernel/sys_sparc_64.c
++++ b/arch/sparc/kernel/sys_sparc_64.c
+@@ -368,11 +368,11 @@ static unsigned long mmap_rnd(void)
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		unsigned long val = get_random_int();
+ 		if (test_thread_flag(TIF_32BIT))
+-			rnd = (val % (1UL << (22UL-PAGE_SHIFT)));
++			rnd = (val % (1UL << (23UL-PAGE_SHIFT)));
+ 		else
+-			rnd = (val % (1UL << (29UL-PAGE_SHIFT)));
++			rnd = (val % (1UL << (30UL-PAGE_SHIFT)));
+ 	}
+-	return (rnd << PAGE_SHIFT) * 2;
++	return rnd << PAGE_SHIFT;
+ }
+ 
+ void arch_pick_mmap_layout(struct mm_struct *mm)
+-- 
+1.7.7
 
-Regards,
-
-K. Y
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
