@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab1JQHTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:19:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57669 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab1JQHTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:19:06 -0400
-Message-ID: <4E9BD73B.7060405@cn.fujitsu.com>
-Date: Mon, 17 Oct 2011 15:20:27 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Ben Blum <bblum@andrew.cmu.edu>
-CC: Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Menage <paul@paulmenage.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: cgroup_task_counter subsys may crash with whole-threadgroup
- move
-References: <20111014000913.GA22527@ghc17.ghc.andrew.cmu.edu>
-In-Reply-To: <20111014000913.GA22527@ghc17.ghc.andrew.cmu.edu>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-17 15:17:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-17 15:17:18,
-	Serialize complete at 2011-10-17 15:17:18
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754452Ab1JQHXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:23:12 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49677 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab1JQHXK convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:5:1>);
+	Mon, 17 Oct 2011 03:23:10 -0400
+Message-Id: <4E9BF3F8020000780005B966@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 17 Oct 2011 08:23:04 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Borislav Petkov" <bp@amd64.org>, "Tejun Heo" <tj@kernel.org>
+Cc: "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
+        "Conny Seidel" <Conny.Seidel@amd.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at arch/x86/kernel/apic/apic.c:1239
+	 setup_local_APIC+...
+References: <20111014135516.GC11990@aftab> <20111014165604.GA14286@aftab>
+ <20111014175556.GE4294@google.com>
+In-Reply-To: <20111014175556.GE4294@google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-08:09, Ben Blum wrote:
-> I was testing some patches for cgroup_attach_proc and managed to cause a
-> crash with the following usage pattern:
+>>> On 14.10.11 at 19:55, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
 > 
->     mount -t cgroup none -o tasks /dev/cgroup
->     cd /dev/cgroup
->     mkdir foo
->     echo $PID > foo/cgroup.procs
->     echo $PID > tasks
->     echo $PID > foo/cgroup.procs
+> (cc'ing Jan Beulich)
 > 
-> Where $PID is the thread ID of a member of a multithreaded process (my
-> test program just does CLONE_THREAD 8 times and then all threads sleep).
-> (It doesn't matter if the thread is the group leader or not, but a
-> single-threaded process doesn't crash.)
+> On Fri, Oct 14, 2011 at 06:56:04PM +0200, Borislav Petkov wrote:
+>> On Fri, Oct 14, 2011 at 09:55:16AM -0400, Borislav Petkov wrote:
+>> > So, in the end, and AFAICR, the warning triggers because we're comparing
+>> > logical APIC IDs from the APIC Logical Destination Register (0xD0) which
+>> > have been assigned by BIOS with "1 << cpu" shifted values which wrap on
+>> > 32-bit.
+>> > 
+>> > I'd very much like to know why?
+>> 
+>> Update: upon a second thought, we think we know why: The WARN_ON
+>> cannot stomach the switch to bigsmp apic because, on the one hand,
+>> bigsmp_init_apic_ldr() "normalizes" the APIC ids by using the BIOS
+>> values (x86_bios_cpu_apicid) but OTOH, x86_cpu_to_logical_apicid
+>> contains the early percpu value which got assigned by the default apic,
+>> i.e. the shifting thing as it is spec'ed for the LDR register.
+>> 
+>> So, the way we see it, the WARN_ON should know whether we switched apics
+>> or should be removed completely. Btw, why was it added in the first
+>> place, the commit message doesn't quite explain why.
 > 
-> And get the following kernel panic:
-> http://maximegalon.andrew.cmu.edu/cgroup-taskstats/panic.txt
+> Jan hit similar problem a while back.
 > 
-> It's deterministic, and happens only when the "tasks" subsystem is
-> mounted.
+>   http://thread.gmane.org/gmane.linux.kernel/1180954 
 > 
-> I'm using user-mode linux to test, with the following config:
-> http://maximegalon.andrew.cmu.edu/cgroup-taskstats/config.txt
-> 
-> and I ran it in GDB to get the following backtrace:
-> http://maximegalon.andrew.cmu.edu/cgroup-taskstats/bt.txt
-> 
+> I can't seem to find the patch in mainline.
 
-I've figured out what's wrong. Patch will be sent out soon.
+Ingo let me know at the end of September that v2 got applied to -tip;
+at that point, I took it that it would make only 3.2 (and perhaps then
+earlier ones via -stable).
 
-Thanks for reporting this!
+Jan
 
---
-Li Zefan
