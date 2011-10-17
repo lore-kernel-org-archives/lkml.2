@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab1JQWb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 18:31:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52738 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab1JQWb6 (ORCPT
+	id S1756466Ab1JQWcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 18:32:22 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48601 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756368Ab1JQWcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 18:31:58 -0400
-Message-ID: <1318890308.15935.0.camel@phoenix>
-Subject: [PATCH v2] ASoC: ad193x: Use snd_soc_update_bits for
- read-modify-write
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Barry Song <21cnbao@gmail.com>,
-        alsa-devel@alsa-project.org
-Date: Tue, 18 Oct 2011 06:25:08 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 17 Oct 2011 18:32:19 -0400
+X-Sasl-enc: DF/LpefWlaycoiYxXUlx7Zh2qMx/nDau3VdTXTkDn3Sg 1318890738
+Date: Mon, 17 Oct 2011 15:20:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Marc Dietrich <marvin24@gmx.de>, Mikael Pettersson <mikpe@it.uu.se>,
+        "Olof Johansson (olof@lixom.net)" <olof@lixom.net>,
+        "Greg KH (gregkh@suse.de)" <gregkh@suse.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Julian Andres Klode <jak@jak-linux.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Leon Romanovsky <leon@leon.nu>,
+        "Colin Cross (ccross@android.com)" <ccross@android.com>
+Subject: Re: [PATCH] fix drivers/staging/nvec linkage error when keyboard is
+ disabled
+Message-ID: <20111017222019.GA2410@kroah.com>
+References: <20112.34922.209107.730268@pilspetsen.it.uu.se>
+ <1534774.fR3YHUzZE9@fb07-iapwap2>
+ <74CDBE0F657A3D45AFBB94109FB122FF173B23B539@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173B23B539@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_update_bits for read-modify-write register access instead of
-open-coding it using snd_soc_read and snd_soc_write
+On Mon, Oct 10, 2011 at 10:25:07AM -0700, Stephen Warren wrote:
+> Marc Dietrich wrote at Sunday, October 09, 2011 9:48 AM:
+> > Hi Mikael,
+> > 
+> > thanks for review. The nvec driver received some overhaul in the 3.1 release cycle
+> > and he fruids can be viewed in linux-next tree. The nvec client drivers were
+> > converted to mfd children in the mean time. This solves the build error, but is not
+> > very flexible. We are planing to move the mfd stuct to the board file(s) in the next
+> > cycle.
+> 
+> Indeed, the code in v3.1-rc9 is quite different to that in linux-next, so
+> this exact problem doesn't exist in linux-next.
+> 
+> However, don't we still want to solve build problems for the final v3.1
+> release, or a stable update to that? As such,
+> 
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+> 
+> I also CC'd the staging maintainer Greg KH and Tegra maintainers Olof and
+> Colin on this email.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/ad193x.c |   31 +++++++++++++++----------------
- 1 files changed, 15 insertions(+), 16 deletions(-)
+I'm confused, what patch should I apply here?  Can someone please resend
+it in a format that I can apply it in?  With the proper acks?
 
-diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
-index 39056ce..1206021 100644
---- a/sound/soc/codecs/ad193x.c
-+++ b/sound/soc/codecs/ad193x.c
-@@ -103,12 +103,14 @@ static const struct snd_soc_dapm_route audio_paths[] = {
- static int ad193x_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	int reg;
- 
--	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
--	reg = (mute > 0) ? reg | AD193X_DAC_MASTER_MUTE : reg &
--		(~AD193X_DAC_MASTER_MUTE);
--	snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
-+	if (mute)
-+		snd_soc_update_bits(codec, AD193X_DAC_CTRL2,
-+				    AD193X_DAC_MASTER_MUTE,
-+				    AD193X_DAC_MASTER_MUTE);
-+	else
-+		snd_soc_update_bits(codec, AD193X_DAC_CTRL2,
-+				    AD193X_DAC_MASTER_MUTE, 0);
- 
- 	return 0;
- }
-@@ -262,7 +264,7 @@ static int ad193x_hw_params(struct snd_pcm_substream *substream,
- 		struct snd_pcm_hw_params *params,
- 		struct snd_soc_dai *dai)
- {
--	int word_len = 0, reg = 0, master_rate = 0;
-+	int word_len = 0, master_rate = 0;
- 
- 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
- 	struct snd_soc_codec *codec = rtd->codec;
-@@ -297,18 +299,15 @@ static int ad193x_hw_params(struct snd_pcm_substream *substream,
- 		break;
- 	}
- 
--	reg = snd_soc_read(codec, AD193X_PLL_CLK_CTRL0);
--	reg = (reg & (~AD193X_PLL_INPUT_MASK)) | master_rate;
--	snd_soc_write(codec, AD193X_PLL_CLK_CTRL0, reg);
-+	snd_soc_update_bits(codec, AD193X_PLL_CLK_CTRL0,
-+			    AD193X_PLL_INPUT_MASK, master_rate);
- 
--	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
--	reg = (reg & (~AD193X_DAC_WORD_LEN_MASK))
--		| (word_len << AD193X_DAC_WORD_LEN_SHFT);
--	snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
-+	snd_soc_update_bits(codec, AD193X_DAC_CTRL2,
-+			    AD193X_DAC_WORD_LEN_MASK,
-+			    word_len << AD193X_DAC_WORD_LEN_SHFT);
- 
--	reg = snd_soc_read(codec, AD193X_ADC_CTRL1);
--	reg = (reg & (~AD193X_ADC_WORD_LEN_MASK)) | word_len;
--	snd_soc_write(codec, AD193X_ADC_CTRL1, reg);
-+	snd_soc_update_bits(codec, AD193X_ADC_CTRL1,
-+			    AD193X_ADC_WORD_LEN_MASK, word_len);
- 
- 	return 0;
- }
--- 
-1.7.5.4
+thanks,
 
-
-
+greg k-h
