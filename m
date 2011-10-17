@@ -1,126 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab1JQN7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:59:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59003 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753086Ab1JQN7k (ORCPT
+	id S1755785Ab1JQOBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:01:44 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:54816 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337Ab1JQOBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 09:59:40 -0400
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
-	 <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 08:59:36 -0500
-Message-ID: <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Mon, 17 Oct 2011 10:01:43 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9C354A.2010709@cam.ac.uk>
+Date: Mon, 17 Oct 2011 15:01:46 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        zdevai@gmail.com
+Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
+References: <1318333383-17663-1-git-send-email-jic23@cam.ac.uk> <1318333383-17663-2-git-send-email-jic23@cam.ac.uk> <20111013143224.GO1098@sirena.org.uk> <4E96F9AC.9000001@cam.ac.uk> <20111013204410.GA17160@sirena.org.uk> <4E985C60.9020308@cam.ac.uk> <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com> <4E9BF8D9.8030301@cam.ac.uk> <CACRpkdaEUndv=-1hkKghx7BuOQFfHKONq0n86M+v=fTms3L04g@mail.gmail.com>
+In-Reply-To: <CACRpkdaEUndv=-1hkKghx7BuOQFfHKONq0n86M+v=fTms3L04g@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-10-16 at 03:01 +0000, KY Srinivasan wrote:
+On 10/17/11 14:55, Linus Walleij wrote:
+> On Mon, Oct 17, 2011 at 11:43 AM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
 > 
-> > -----Original Message-----
-> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > Sent: Saturday, October 15, 2011 5:27 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> > linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
-> > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> > staging
-> > 
-> > On Fri, 2011-10-14 at 23:28 -0700, K. Y. Srinivasan wrote:
-> > > In preparation for moving the storage driver out of staging, seek community
-> > > review of the storage  driver code.
-> > 
-> > That's not exactly a very descriptive commit message for me to put into
-> > SCSI.  It doesn't have to be huge, just something like "driver to enable
-> > hyperv windows guest on Linux" or something.
+>> Thanks for this Linus. It is more or less where I was heading with one
+>> exception.  I was going to link whole physical devices whereas I think
+>> you are proposing linking individual channels.
 > 
-> Sorry about the commit message. I will have a more descriptive message in the next
-> submission.
+> That's for the usecases I have at hand, I don't know which is more
+> common: grab the entire device and pick a few channels or grab
+> a single channel. I was thinking the latter would be most common
+> for in-kernel use.
+Guess most common for a pull type situation, less so for messing
+with input devices (accelerometers etc - where they need a push
+interface from the adc to the next layer up).
 > 
-> > 
-> > 
-> > >  drivers/scsi/Kconfig             |    7 +
-> > >  drivers/scsi/Makefile            |    3 +
-> > >  drivers/scsi/storvsc_drv.c       | 1480
-> > ++++++++++++++++++++++++++++++++++++++
-> > >  drivers/staging/hv/Kconfig       |    6 -
-> > >  drivers/staging/hv/Makefile      |    2 -
-> > >  drivers/staging/hv/storvsc_drv.c | 1480 --------------------------------------
-> > >  6 files changed, 1490 insertions(+), 1488 deletions(-)
-> > 
-> > What tree is this against?  The hv/storvsc_drv.c in upstream only has
-> > 
-> > jejb@dabdike> wc -l drivers/staging/hv/storvsc_drv.c
-> > 792 drivers/staging/hv/storvsc_drv.c
-> > 
-> > i.e. whatever you're sending is double the length (and obviously I have
-> > trouble applying the patch.
+> If you need some inspiring code for how to handle registration of
+> mapping tables etc you can look at the API I'm pushing for the
+> pin control subsystem:
+> http://marc.info/?l=linux-kernel&m=131850357826490&w=2
+Thanks, I admit I lost touch with this a while back :(
 > 
-> This patch  moves the file from drivers/staging/hv/ directory to the 
-> drivers/scsi directory; hence double the length.
-
-No, that's not it.  Look again: the storvsc_drv.c in staging is removing
-1480 lines, but in git head, this file is only 792 lines long ... is
-there an alternative tree with the rest in?
-
-The point I'm making is that the staging file you're modifying isn't the
-one I see in Linus' git head, so which git tree is it in (I assume it's
-somewhere waiting for the merge window)?
-
-[...]
-> > The bounce buffer handling for discontiguous sg lists is a complete
-> > nightmare.  And can't you just fix the hypervisor instead of pulling
-> > this level of nastiness in the driver, I mean really, the last piece of
-> > real SCSI hardware that failed this badly was produced in the dark ages.
+>> For the adc channel I'm not particularly keen on insisting every device
+>> have a unique name for every channel.  That breaks the effort we went to
+>> in IIO to enforce consistent naming (for userspace interfaces) in the first
+>> place.  To my mind it should never be anything other than a number.
 > 
-> The restrictions (as they are) are really from the windows host side
-> and for what it is 
-> worth, I have never seen this code triggered at least for I/O
-> initiated by the file system. 
+> Doesn't feel like a big issue, plain numbers are fine for me.
 > 
->  
-> > Assuming the answer is "no", I really think you need to set the minimum
-> > block size to 4k, which will completely avoid the situation.
+> I was more thinking along the line that in an embedded system an
+> on-system-in-chip GPADC sure has specific set-in-stone uses for
+> each channel, i.e. the pin it connects to is hardwired somewhere,
+> like channel 0 is "battery-voltage", pin 1 is "battery-temperature"
+> etc, which makes string descriptions make sense.
+Yup. Those I'm fine with. Mark is talking me into providing string
+mappings for everything. We'll see how it works in practice.
+Perhaps there is a happy middle ground.
+
 > 
-> I would love to get rid of the bounce buffer handling code by ensuring
-> that the 
-> upper level code would never present scatter gather lists that would
-> trigger bounce buffer
-> handling code. How would I accomplish that. 
-
-OK, so as I read the code, what it can't handle is fragments except at
-the ends.  As long as everything always transfers in multiples of 4k,
-the problem will never occur.  This means that all devices you present
-need to tell the OS they have 4k sectors.  I *think* you can do this by
-setting  blk_limits_io_min() in the driver ... but you'll have to test
-this.  The minimum sector size gets set also in sd.c when we probe the
-disk.  I think that won't override blk_limits_io_min(), but please test
-(we don't have any SCSI drivers which have ever used this setting).
-
-The way to test, is to read back the /sys/block/<dev>/queue/ settings
-when presenting a 512 byte sector disk.  (And the way to activate your
-bounce code would be to create a filesystem with a < PAGE_SIZE block
-size).
-
-James
-
+> It doesn't make sense for an ADC card with 100 ADC:s for random
+> measurements, of course.
+> 
+>> struct adc_map {
+>> /* Input / output side */
+>>        struct device *adc_dev;
+>>        const char *adc_dev_name;
+>>        int channel_number;
+>> /* User side */
+>>        const char *channel;
+>>        struct device *dev;
+>>        const char *dev_name;
+>> };
+> 
+> OK that makes sense.
+> 
+>> Anyhow, I'll have a go at implementing this over the next few days.  Before I
+>> do that I am going to push out the proposal to move the core IIO infrastructure
+>> out of staging.
+> 
+> Good, my gut feeling is that right now it hurts the kernel more to
+> have IIO in staging than it could ever hurt it to have it in drivers/,
+> it is getting badly needed.
+We're working on it ;)  All reviews welcome.  We only need the first core
+bit to build this pull type in kernel interfaces on top. 
+(sorry, didn't cc you on the posting a few minutes ago) 
+https://lkml.org/lkml/2011/10/17/157
+> 
+> Yours,
+> Linus Walleij
+> 
 
