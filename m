@@ -1,71 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab1JQSux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:50:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47854 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab1JQSuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:50:52 -0400
-Date: Mon, 17 Oct 2011 20:49:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111017184916.GA5545@elte.hu>
-References: <20111007070842.GA27555@hostway.ca>
- <20111007174848.GA11011@hostway.ca>
- <1318010515.398.8.camel@twins>
- <20111008005035.GC22843@hostway.ca>
- <1318060551.8395.0.camel@twins>
- <20111012213555.GC24461@hostway.ca>
- <20111013232521.GA5654@hostway.ca>
- <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
- <20111017045806.GA11561@elte.hu>
- <alpine.LFD.2.02.1110171101250.3240@ionos>
+	id S1753271Ab1JQSvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:51:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14681 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1JQSvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:51:11 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=JcMm1r5Em9TrO5q8qe60Z+t+vZgxlDwg79/MuMSBqv/XvpmdDrj2FjOBZ3p2zWElf
+	uN4KQpLqjkmWLHS4ReUxA==
+Date: Mon, 17 Oct 2011 11:51:00 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Pawel Sikora <pluto@agmk.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+In-Reply-To: <20111016235442.GB25266@redhat.com>
+Message-ID: <alpine.LSU.2.00.1110171111150.2545@sister.anvils>
+References: <201110122012.33767.pluto@agmk.net> <alpine.LSU.2.00.1110131547550.1346@sister.anvils> <alpine.LSU.2.00.1110131629530.1410@sister.anvils> <20111016235442.GB25266@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110171101250.3240@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> > That simple time type could then trickle down as well: we could 
-> > use it everywhere in kernel code and limit the hodge-podge of ABI 
-> > time units to the syscall boundary. (and convert the internal 
-> > time unit to whatever ABI unit there is close to the syscall 
-> > boundary)
-> > 
-> > There's a point where micro-optimized 32-bit support related 
-> > maintenance overhead (and the resulting loss of 
-> > robustness/flexibility) becomes too expensive IMO.
+On Mon, 17 Oct 2011, Andrea Arcangeli wrote:
+> On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
+> > mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+> > and pagetable locks, were good enough before page migration (with its
+> > requirement that every migration entry be found) came in; and enough
+> > while migration always held mmap_sem.  But not enough nowadays, when
+> > there's memory hotremove and compaction: anon_vma lock is also needed,
+> > to make sure a migration entry is not dodging around behind our back.
 > 
-> That's not a micro optimization, it's a massive performance hit if 
-> you force those 32bit archs to do 64/32 all over the place.
+> For things like migrate and split_huge_page, the anon_vma layer must
+> guarantee the page is reachable by rmap walk at all times regardless
+> if it's at the old or new address.
+> 
+> This shall be guaranteed by the copy_vma called by move_vma well
+> before move_page_tables/move_ptes can run.
+> 
+> copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
+> into the anon_vma chains structures (vma_link does that). That before
+> any pte can be moved.
+> 
+> Because we keep two vmas mapped on both src and dst range, with
+> different vma->vm_pgoff that is valid for the page (the page doesn't
+> change its page->index) the page should always find _all_ its pte at
+> any given time.
+> 
+> There may be other variables at play like the order of insertion in
+> the anon_vma chain matches our direction of copy and removal of the
+> old pte. But I think the double locking of the PT lock should make the
+> order in the anon_vma chain absolutely irrelevant (the rmap_walk
+> obviously takes the PT lock too), and furthermore likely the
+> anon_vma_chain insertion is favorable (the dst vma is inserted last
+> and checked last). But it shouldn't matter.
 
-Do we have some hard data on this, which we could put into comments 
-in include/linux/ktime.h and such? Older versions of GCC used to do a 
-bad job of long long handling on 32-bit systems - that might be a 
-factor in the performance figures.
+Thanks a lot for thinking it over.  I _almost_ agree with you, except
+there's one aspect that I forgot to highlight in the patch comment:
+remove_migration_pte() behaves as page_check_address() does by default,
+it peeks to see if what it wants is there _before_ taking ptlock.
 
-But i suspect you are right that the cost is still very much there 
-...
+And therefore, I think, it is possible that during mremap move, the swap
+pte is in neither of the locations it tries at the instant it peeks there.
 
-Thanks,
+We could put a stop to that: see plausible alternative patch below.
+Though I have dithered from one to the other and back, I think on the
+whole I still prefer the anon_vma locking in move_ptes(): we don't care
+too deeply about the speed of mremap, but we do care about the speed of
+exec, and this does add another lock/unlock there, but it will always
+be uncontended; whereas the patch at the migration end could be adding
+a contended and unnecessary lock.
 
-	Ingo
+Oh, I don't know which, you vote - if you now agree there is a problem.
+I'll sign off the migrate.c one if you prefer it.  But no hurry.
+
+> 
+> Another thing could be the copy_vma vma_merge branch succeeding
+> (returning not NULL) but I doubt we risk to fall into that one. For
+> the rmap_walk to be always working on both the src and dst
+> vma->vma_pgoff the pgoff must be different so we can't possibly be ok
+> if there's just 1 vma covering the whole range. I exclude this could
+> be the case because the pgoff passed to copy_vma is different than the
+> vma->vm_pgoff given to copy_vma, so vma_merge can't possibly succeed.
+> 
+> Yet another point to investigate is the point where we teardown the
+> old vma and we leave the new vma generated by copy_vma
+> established. That's apparently taken care of by do_munmap in move_vma
+> so that shall be safe too as munmap is safe in the first place.
+> 
+> Overall I don't think this patch is needed and it seems a noop.
+> 
+> > It appears that Mel's a8bef8ff6ea1 "mm: migration: avoid race between
+> > shift_arg_pages() and rmap_walk() during migration by not migrating
+> > temporary stacks" was actually a workaround for this in the special
+> > common case of exec's use of move_pagetables(); and we should probably
+> > now remove that VM_STACK_INCOMPLETE_SETUP stuff as a separate cleanup.
+> 
+> I don't think this patch can help with that, the problem of execve vs
+> rmap_walk is that there's 1 single vma existing for src and dst
+> virtual ranges while execve runs move_page_tables. So there is no
+> possible way that rmap_walk will be guaranteed to find _all_ ptes
+> mapping a page if there's just one vma mapping either the src or dst
+> range while move_page_table runs. No addition of locking whatsoever
+> can fix that bug because we miss a vma (well modulo locking that
+> prevents rmap_walk to run at all, until we're finished with execve,
+> which is more or less what VM_STACK_INCOMPLETE_SETUP does...).
+> 
+> The only way is to fix this is prevent migrate (or any other rmap_walk
+> user that requires 100% reliability from the rmap layer, for example
+> swap doesn't require 100% reliability and can still run and gracefully
+> fail at finding the pte) while we're moving pagetables in execve. And
+> that's what Mel's above mentioned patch does.
+
+Thanks for explaining, yes, you're right.
+
+> 
+> The other way to fix that bug that I implemented was to do copy_vma in
+> execve, so that we still have both src and dst ranges of
+> move_page_tables covered by 2 (not 1) vma, each with the proper
+> vma->vm_pgoff, so my approach fixed that bug as well (but requires a
+> vma allocation in execve so it was dropped in favor of Mel's patch
+> which is totally fine with as both approaches fixes the bug equally
+> well, even if now we've to deal with this special case of sometime
+> rmap_walk having false negatives if the vma_flags is set, and the
+> important thing is that after VM_STACK_INCOMPLETE_SETUP has been
+> cleared it won't ever be set again for the whole lifetime of the vma).
+
+I think your two-vmas approach is more aesthetically pleasing (and
+matches mremap), but can see that Mel's vmaflag hack^Htechnique ends up
+more economical.  It is a bit sad that we lose that all-pages-swappable
+condition for unlimited args, for a brief moment, but I think no memory
+allocations are made in that interval, so I guess it's fine.
+
+Hugh
+
+> 
+> I may be missing something, I did a short review so far, just so the
+> patch doesn't get merged if not needed. I mean I think it needs a bit
+> more looks on it... The fact the i_mmap_mutex was taken but the
+> anon_vma lock was not taken (while in every other place they both are
+> needed) certainly makes the patch look correct, but that's just a
+> misleading coincidence I think.
+> 
+
+--- 3.1-rc9/mm/migrate.c	2011-07-21 19:17:23.000000000 -0700
++++ linux/mm/migrate.c	2011-10-17 11:21:48.923826334 -0700
+@@ -119,12 +119,6 @@ static int remove_migration_pte(struct p
+ 			goto out;
+ 
+ 		ptep = pte_offset_map(pmd, addr);
+-
+-		if (!is_swap_pte(*ptep)) {
+-			pte_unmap(ptep);
+-			goto out;
+-		}
+-
+ 		ptl = pte_lockptr(mm, pmd);
+ 	}
+ 
