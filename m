@@ -1,264 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab1JQOZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:25:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab1JQOZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:25:47 -0400
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [RFC 1/3 repost to correct ML] mm: more intensive memory corruption debug
-Date: Mon, 17 Oct 2011 16:24:44 +0200
-Message-Id: <1318861486-3942-1-git-send-email-sgruszka@redhat.com>
+	id S1755940Ab1JQO2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:28:30 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:33179 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782Ab1JQO23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:28:29 -0400
+Date: Mon, 17 Oct 2011 10:28:25 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org
+Cc: Jeff Mahoney <jeffm@suse.de>, Elena Zannoni <elena.zannoni@oracle.com>,
+        Dave Jones <davej@redhat.com>, David Zeuthen <davidz@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: kernel.org keysigning party for the Boston area: October 18,
+ 2011
+Message-ID: <20111017142825.GC25017@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+	Jeff Mahoney <jeffm@suse.de>,
+	Elena Zannoni <elena.zannoni@oracle.com>,
+	Dave Jones <davej@redhat.com>, David Zeuthen <davidz@redhat.com>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	Ric Wheeler <rwheeler@redhat.com>
+References: <E1RENGE-0007PN-GO@tytso-glaptop.cam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1RENGE-0007PN-GO@tytso-glaptop.cam.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_DEBUG_PAGEALLOC configured, cpu will generate exception on
-access (read,write) to not allocated page, what allow to catch code
-which corrupt memory. However kernel is trying to maximalise memory
-usage, hence there is usually not much free pages in the system and
-buggy code usually corrupt some crucial data.
+On Thu, Oct 13, 2011 at 11:31:54AM -0400, Theodore Ts'o wrote:
+> 
+> I will be holding a key signing party in Cambridge on Tuesday, October
+> 18, from 4-5pm for folks in the Boston greater metropolitan area.
+> 
+> Anyone who is interested should send me their key-id by Tuesday noon
+> US/Eastern, and I will give those folks the details about where we will
+> be holding the key signing party.   Please put "BOSTON KEY SIGNING" in
+> the subject line.
+> 
+> Please feel free to forward this to any fellow kernel devs who might not
+> be reading LKML.
+> 
 
-This patch change buddy allocator to keep more free/protected pages
-and interlace free/protected and allocated pages to increase probability
-of catch a corruption.
+Reminder, please send me your key-id today, or Tuesday at the latest,
+if you would like to participate in the Boston area Key Signing.
 
-When kernel is compiled with CONFIG_DEBUG_PAGEALLOC, corrupt_dbg
-parameter is available to specify page order that should be kept free.
+>     	    	  	   	   	   - Ted
 
-I.e:
-
-* corrupt_dbg=1:
-  - order=0 allocation will result of 1 page allocated and 1 consecutive
-    page protected
-  - order > 0 allocations are not affected
-* corrupt_dbg=2
-  - order=0 allocation will result 1 allocated page and 3 consecutive
-    pages protected
-  - order=1 allocation will result 2 allocated pages and 2 consecutive
-    pages protected
-  - order > 1 allocations are not affected
-* and so on
-
-Probably only practical usage is corrupt_dbg=1, as long someone is not
-really desperate by memory corruption bug and have huge amount of RAM.
-
-Patch should not cause any executable code change when kernel is
-compiled without CONFIG_DEBUG_PAGEALLOC, but I did not check that yet.
-
-There some issues with patch:
-
-- With corrupt_dbg=1 I expect /proc/buddyinfo will always show 0-order
-  allocation count equal to 0, however this is not true, sometimes this
-  value shows 1, I'm not able to explain that.
-
-- When dropping caches system may hang on:
-
-  RIP: 0010:[<ffffffff81266337>]  [<ffffffff81266337>] radix_tree_gang_lookup_slot+0x47/0xf0
-  Call Trace:
-    [<ffffffff8111ecd0>] find_get_pages+0x70/0x1b0
-    [<ffffffff8111ec60>] ? find_get_pages_contig+0x180/0x180
-    [<ffffffff811297b2>] pagevec_lookup+0x22/0x30
-    [<ffffffff8112b404>] invalidate_mapping_pages+0x84/0x1e0
-    [<ffffffff811ab797>] drop_pagecache_sb+0xb7/0xf0
-
- Not sure if this is problem of my patch, or pagevec_lookup has some
- corner case problem.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
- include/linux/mm.h               |   12 ++++++
- include/linux/page-debug-flags.h |    4 ++-
- mm/Kconfig.debug                 |    1 +
- mm/page_alloc.c                  |   69 +++++++++++++++++++++++++++++++++----
- 4 files changed, 77 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 7438071..17e3658 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1627,5 +1627,17 @@ extern void copy_user_huge_page(struct page *dst, struct page *src,
- 				unsigned int pages_per_huge_page);
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
- 
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+extern unsigned int _corrupt_dbg;
-+
-+
-+static inline unsigned int corrupt_dbg(void)
-+{
-+	return _corrupt_dbg;
-+}
-+#else
-+static inline unsigned int corrupt_dbg(void) { return 0; }
-+#endif /* CONFIG_DEBUG_PAGEALLOC */
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
-diff --git a/include/linux/page-debug-flags.h b/include/linux/page-debug-flags.h
-index b0638fd..f63c905 100644
---- a/include/linux/page-debug-flags.h
-+++ b/include/linux/page-debug-flags.h
-@@ -13,6 +13,7 @@
- 
- enum page_debug_flags {
- 	PAGE_DEBUG_FLAG_POISON,		/* Page is poisoned */
-+	PAGE_DEBUG_FLAG_CORRUPT,
- };
- 
- /*
-@@ -21,7 +22,8 @@ enum page_debug_flags {
-  */
- 
- #ifdef CONFIG_WANT_PAGE_DEBUG_FLAGS
--#if !defined(CONFIG_PAGE_POISONING) \
-+#if !defined(CONFIG_PAGE_POISONING) && \
-+    !defined(CONFIG_DEBUG_PAGEALLOC) \
- /* && !defined(CONFIG_PAGE_DEBUG_SOMETHING_ELSE) && ... */
- #error WANT_PAGE_DEBUG_FLAGS is turned on with no debug features!
- #endif
-diff --git a/mm/Kconfig.debug b/mm/Kconfig.debug
-index 8b1a477..3c554f0 100644
---- a/mm/Kconfig.debug
-+++ b/mm/Kconfig.debug
-@@ -4,6 +4,7 @@ config DEBUG_PAGEALLOC
- 	depends on !HIBERNATION || ARCH_SUPPORTS_DEBUG_PAGEALLOC && !PPC && !SPARC
- 	depends on !KMEMCHECK
- 	select PAGE_POISONING if !ARCH_SUPPORTS_DEBUG_PAGEALLOC
-+	select WANT_PAGE_DEBUG_FLAGS
- 	---help---
- 	  Unmap pages from the kernel linear mapping after free_pages().
- 	  This results in a large slowdown, but helps to find certain types
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e8ecb6..8d18ae4 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -57,6 +57,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
- #include <linux/prefetch.h>
-+#include <linux/page-debug-flags.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -402,6 +403,39 @@ static inline void prep_zero_page(struct page *page, int order, gfp_t gfp_flags)
- 		clear_highpage(page + i);
- }
- 
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+unsigned int _corrupt_dbg;
-+
-+static int __init corrupt_dbg_setup(char *buf)
-+{
-+	_corrupt_dbg = simple_strtoul(buf, &buf, 10);
-+	/* FIXME: check range ? */
-+	printk(KERN_INFO "Setting corrupt debug order to %d\n", _corrupt_dbg);
-+	return 0;
-+}
-+__setup("corrupt_dbg=", corrupt_dbg_setup);
-+
-+static inline void set_page_corrupt_dbg(struct page *page)
-+{
-+	__set_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
-+}
-+
-+static inline void clear_page_corrupt_dbg(struct page *page)
-+{
-+	__clear_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
-+}
-+
-+static inline bool page_is_corrupt_dbg(struct page *page)
-+{
-+	return test_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
-+}
-+
-+#else
-+static inline void set_page_corrupt_dbg(struct page *page) { }
-+static inline void clear_page_corrupt_dbg(struct page *page) { }
-+static inline bool page_is_corrupt_dbg(struct page *page) { return false; }
-+#endif
-+
- static inline void set_page_order(struct page *page, int order)
- {
- 	set_page_private(page, order);
-@@ -459,6 +493,11 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
- 	if (page_zone_id(page) != page_zone_id(buddy))
- 		return 0;
- 
-+	if (page_is_corrupt_dbg(buddy) && page_order(buddy) == order) {
-+		VM_BUG_ON(page_count(buddy) != 0);
-+		return 1;
-+	}
-+
- 	if (PageBuddy(buddy) && page_order(buddy) == order) {
- 		VM_BUG_ON(page_count(buddy) != 0);
- 		return 1;
-@@ -517,9 +556,15 @@ static inline void __free_one_page(struct page *page,
- 			break;
- 
- 		/* Our buddy is free, merge with it and move up one order. */
--		list_del(&buddy->lru);
--		zone->free_area[order].nr_free--;
--		rmv_page_order(buddy);
-+		if (page_is_corrupt_dbg(buddy)) {
-+			clear_page_corrupt_dbg(buddy);
-+			set_page_private(page, 0);
-+			__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
-+		} else {
-+			list_del(&buddy->lru);
-+			zone->free_area[order].nr_free--;
-+			rmv_page_order(buddy);
-+		}
- 		combined_idx = buddy_idx & page_idx;
- 		page = page + (combined_idx - page_idx);
- 		page_idx = combined_idx;
-@@ -735,7 +780,7 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
-  * -- wli
-  */
- static inline void expand(struct zone *zone, struct page *page,
--	int low, int high, struct free_area *area,
-+	unsigned int low, unsigned int high, struct free_area *area,
- 	int migratetype)
- {
- 	unsigned long size = 1 << high;
-@@ -745,9 +790,16 @@ static inline void expand(struct zone *zone, struct page *page,
- 		high--;
- 		size >>= 1;
- 		VM_BUG_ON(bad_range(zone, &page[size]));
--		list_add(&page[size].lru, &area->free_list[migratetype]);
--		area->nr_free++;
--		set_page_order(&page[size], high);
-+		if (high < corrupt_dbg()) {
-+			INIT_LIST_HEAD(&page[size].lru);
-+			set_page_corrupt_dbg(&page[size]);
-+			set_page_private(&page[size], high);
-+			__mod_zone_page_state(zone, NR_FREE_PAGES, -(1 << high));
-+		} else {
-+			set_page_order(&page[size], high);
-+			list_add(&page[size].lru, &area->free_list[migratetype]);
-+			area->nr_free++;
-+		}
- 	}
- }
- 
-@@ -1756,7 +1808,8 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
- 	va_list args;
- 	unsigned int filter = SHOW_MEM_FILTER_NODES;
- 
--	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs))
-+	if ((gfp_mask & __GFP_NOWARN) || !__ratelimit(&nopage_rs) ||
-+	    corrupt_dbg() > 0)
- 		return;
- 
- 	/*
--- 
-1.7.1
-
+> 
+> 
+> What's a key-signing party?
+> 
+> A key-signing party is a get-together with PGP users for the purpose of
+> meeting other PGP users and signing each other's keys. This helps to
+> extend the "web of trust" to a great degree. Also, it sometimes serves
+> as a forum to discuss strong cryptography and related issues.
+> 
+> What do I need for this party?
+> 
+> Required Items
+> Physical attendance
+> Positive picture ID
+> Your Key ID, Key type, HEX fingerprint, and Key size
+> A pen/pencil or whatever you'd like to write with....
+> NO computer
+> 
+> Required Process
+> 
+> 1.  All attendees send their public keys to a public keyserver. For this
+> party, we'll use keyserver.cryptnet.net. If for some reason you don't
+> want your key to be in a public keyserver, but still want to
+> participate, please let me know.
+> 
+> 2.  All attendees send their key ID, key type, fingerprint, and key size to
+> the host, tytso@mit.edu, who will compile everyone's key information.
+> 
+> 3.  The host prints a list with everyone's key ID, key type,
+> fingerprint, and key size from the compiled keyrings and distributes
+> copies of the printout at the meeting.
+> 
+> 4.  Attend the party. Bring along a paper copy of your key ID, key type,
+> fingerprint, and key size that you obtained from your own keyring. You
+> must also bring along a suitable photo ID. Instruct the attendees at the
+> beginning that they are to make two marks on the listing, one for
+> correct key information (key ID, key type, fingerprint, and key size)
+> and one if the ID check is ok.
+> 
+> 5. At the meeting each key owner reads his key ID, key type,
+> fingerprint, key size, and user ID from his own printout, not from the
+> distributed listing. This is because there could be an error, intended
+> or not, on the listing. This is also the time to tell which ID's to sign
+> or not. If the key information matches your printout then place a
+> check-mark by the key.
+> 
+> 6. After everyone has read his key ID information, have all attendees
+> form a line.
+> 
+> 7. The first person walks down the line having every person check his
+> ID.   The second person follows immediately behind the first person and
+> so on.
+> 
+> 8.  If you are satisfied that the person is who they say they are, and
+> that the key on the printout is theirs, you place another check-mark
+> next to their key on your printout.
+> 
+> 9.  Once the first person cycles back around to the front of the line he
+> has checked all the other IDs and his ID has been checked by all others.
+> 
+> 10. After confirming that the key information on the key server matches
+> the printout that you have checked, sign the appropriate keys. Keys
+> should only be signed if they have two check-marks.  If you are using
+> Debian or Ubuntu, the "caff" (certifying authority fire and forget)
+> script can be found in the "signing-party" package along with other
+> useful scripts, which makes it much easier to sign the keys.  For
+> Fedora, the "caff" script can be found in the "pgp-tools" package.
+> 
+> 11.  Send the signed keys back to the keyservers, or to owners of the
+> key.
+> 
+> Other questions about signing keys?
+> 
+> You may want to read the Keysigning Party Howto which includes an
+> explanation of the concepts behind keysigning, instructions for hosting
+> a keysigning party, instructions for participating in a keysinging
+> party, and step by step instructions for signing other's keys.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
