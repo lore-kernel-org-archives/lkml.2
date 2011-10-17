@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab1JQHwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:52:49 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:56028 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752644Ab1JQHws convert rfc822-to-8bit (ORCPT
+	id S1755150Ab1JQHw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:52:56 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:54846 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104Ab1JQHwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:52:48 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19tuUB5hfdtfYwr/bbuBidnZb0oaPLFqaOkiPbjC9
-	bf60oG03FNYThb
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: David Rientjes <rientjes@google.com>
-Subject: Re: 3.1.0-rc9+ : wlan stops working w/o any error messages
-Date: Mon, 17 Oct 2011 09:52:43 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; i686; ; )
-Cc: werner <w.landgraf@ru.ru>, "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        ilw@linux.intel.com, linux-wireless@vger.kernel.org,
+	Mon, 17 Oct 2011 03:52:54 -0400
+Subject: Re: [PATCH 12/21] m68k: drop unused Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
         linux-kernel@vger.kernel.org
-References: <201110152119.58509.toralf.foerster@gmx.de> <alpine.DEB.2.00.1110151416360.15894@chino.kir.corp.google.com> <201110170931.59534.toralf.foerster@gmx.de>
-In-Reply-To: <201110170931.59534.toralf.foerster@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110170952.43916.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <4E9B7BE1.1080907@snapgear.com>
+References: <1318595371.6132.70.camel@x61.thuisdomein>
+	 <4E9B7BE1.1080907@snapgear.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Oct 2011 09:52:44 +0200
+Message-ID: <1318837964.6414.6.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-10-17 at 10:50 +1000, Greg Ungerer wrote:
+> I have no problem with the changes. But it will clash with the
+> reworking of the Kconfig files currently sitting in linux-next
+> for merging in the 3.2 merge window.
 
-Toralf Förster wrote at 09:31:58
-> > What does "iwconfig" show?
-
-And this is the state if the netwerk stops working :
-
-wlan0     IEEE 802.11abgn  ESSID:"IBM"  
-          Mode:Managed  Frequency:2.462 GHz  Access Point: 00:21:55:AC:8B:80   
-          Bit Rate=54 Mb/s   Tx-Power=15 dBm   
-          Retry  long limit:7   RTS thr:off   Fragment thr:off
-          Encryption key:off
-          Power Management:off
-          Link Quality=45/70  Signal level=-65 dBm  
-          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-          Tx excessive retries:0  Invalid misc:77   Missed beacon:0
+So should I put this on hold and see what's needed after those reworked
+Kconfig files are merged in mainline? Or would you prefer to have that
+done beforehand (ie, I'll try to redo this on top of current linux-next
+and get the redone patch in linux-next before the 3.2 merge)?
 
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Paul Bolle
+
