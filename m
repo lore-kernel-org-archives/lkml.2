@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab1JQSft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:35:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44311 "EHLO mx2.suse.de"
+	id S1752999Ab1JQSfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:35:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44315 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab1JQSfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:35:48 -0400
-Date: Mon, 17 Oct 2011 11:23:45 -0700
+	id S1751979Ab1JQSfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:35:51 -0400
+Date: Mon, 17 Oct 2011 11:25:42 -0700
 From: Greg KH <gregkh@suse.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, Kai Jiang <Kai.Jiang@freescale.com>
-Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
-Message-ID: <20111017182345.GA14416@suse.de>
-References: <1318521058-15662-1-git-send-email-galak@kernel.crashing.org>
- <20111014183144.GD28556@local>
- <4D73F261-3795-4F71-9921-568C1B9F06E0@kernel.crashing.org>
- <20111017171859.GB13919@local>
- <20111017180350.GC13919@local>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        jamie@jamieiles.com, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/6] drivers/base: add bus for System-on-Chip devices
+Message-ID: <20111017182542.GB14416@suse.de>
+References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
+ <1318852378-14180-3-git-send-email-lee.jones@linaro.org>
+ <20111017161616.GA5108@suse.de>
+ <2152965.Ns7xt0yLIG@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111017180350.GC13919@local>
+In-Reply-To: <2152965.Ns7xt0yLIG@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 08:03:51PM +0200, Hans J. Koch wrote:
-> On Mon, Oct 17, 2011 at 07:18:59PM +0200, Hans J. Koch wrote:
-> > On Mon, Oct 17, 2011 at 11:00:55AM -0500, Kumar Gala wrote:
-> > > 
-> > > On Oct 14, 2011, at 1:31 PM, Hans J. Koch wrote:
-> > > 
-> > > > On Thu, Oct 13, 2011 at 10:50:58AM -0500, Kumar Gala wrote:
-> > > >> From: Kai Jiang <Kai.Jiang@freescale.com>
-> > > >> 
-> > > >> To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
-> > > >> extend the width of 'addr' in struct uio_mem.  Numerous platforms like
-> > > >> embedded PPC, ARM, and X86 have support for systems with larger physical
-> > > >> address than logical.
-> > > >> 
-> > > >> Since 'addr' may contain a physical, logical, or virtual address the
-> > > >> easiest solution is to just change the type to 'phys_addr_t' which
-> > > >> should always be greater than or equal to the sizeof(void *) such that
-> > > >> it can properly hold any of the address types.
-> > > >> 
-> > > >> For physical address we can support up to a 44-bit physical address on a
-> > > >> typical 32-bit system as we utilize remap_pfn_range() for the mapping of
-> > > >> the memory region and pfn's are represnted by shifting the address by
-> > > >> the page size (typically 4k).
-> > > >> 
-> > > >> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
-> > > >> Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
-> > > >> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
-> > > > 
-> > > > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-> > > > 
-> > > > That looks good to me. There's an unnecessary cast (see below), but I fixed that
-> > > > on the way.
-> > > > 
-> > > > Greg, please pull this from branch uio-for-gregkh from
-> > > > 
-> > > > git://hansjkoch.de/git/linux-hjk
-> > > > 
-> > > > Thanks,
-> > > > Hans
-> > > 
-> > > I think removing that cast is wrong:
-> > > 
-> > > drivers/uio/uio.c: In function 'uio_vma_fault':
-> > > drivers/uio/uio.c:637:26: warning: cast to pointer from integer of different size
+On Mon, Oct 17, 2011 at 08:03:42PM +0200, Arnd Bergmann wrote:
+> On Monday 17 October 2011 09:16:16 Greg KH wrote:
+> > On Mon, Oct 17, 2011 at 12:52:54PM +0100, Lee Jones wrote:
+> 
+> > > +static ssize_t soc_info_get(struct device *dev,
+> > > +                         struct device_attribute *attr,
+> > > +                         char *buf);
+> > > +
+> > > +static DEVICE_ATTR(machine,  S_IRUGO, soc_info_get,  NULL);
+> > > +static DEVICE_ATTR(family,   S_IRUGO, soc_info_get,  NULL);
+> > > +static DEVICE_ATTR(soc_id,   S_IRUGO, soc_info_get,  NULL);
+> > > +static DEVICE_ATTR(revision, S_IRUGO, soc_info_get,  NULL);
+> > > +
+> > > +static ssize_t soc_info_get(struct device *dev,
+> > > +                         struct device_attribute *attr,
+> > > +                         char *buf)
+> > > +{
+> > > +     struct soc_device *soc_dev =
+> > > +             container_of(dev, struct soc_device, dev);
+> > > +
+> > > +     if (attr == &dev_attr_machine)
+> > > +             return sprintf(buf, "%s\n", soc_dev->attr->machine);
+> > > +     if (attr == &dev_attr_family)
+> > > +             return sprintf(buf, "%s\n", soc_dev->attr->family);
+> > > +     if (attr == &dev_attr_revision)
+> > > +             return sprintf(buf, "%s\n", soc_dev->attr->revision);
+> > > +     if (attr == &dev_attr_soc_id)
+> > > +             return sprintf(buf, "%s\n", soc_dev->attr->soc_id);
+> > > +
+> > > +     return -EINVAL;
+> > > +
+> > > +}
 > > 
-> > Hmm, on what platform did you see this? I tested on 32bit-x86 and didn't get
-> > any warnings.
+> > If you move around things a bit here, you can save 4 lines of code,
+> > please do so.
 > 
-> OK, you're right. I turned on CONFIG_HIGHMEM64G and got that warning. Damned x86...
-> 
-> Greg, can you fix it, or should I send the patch again?
+> I don't think that works: the DEVICE_ATTR definitions require a prototype
+> for the function, and the function compares the device attribute.
 
-Please send it again.
+Ah, yeah, you are right.
+
+> > > +struct soc_device {
+> > > +     struct device dev;
+> > > +     struct soc_device_attribute *attr;
+> > > +};
+> > 
+> > Why is this needed to be defined here?  It should be in the .c file as
+> > no external code needs to know what it looks like.
+> 
+> You also commented that the argument to soc_device_unregister should
+> be a soc_device (as, consequently, the return type of soc_device_register).
+> Agree with that comment, but it means that the definition of struct
+> soc_device needs to remain visible in order to be used as the parent
+> for other devices.
+
+No it doesn't:
+	struct device * soc_device_to_device(struct soc device *soc);
+
+Anyway, what are you using this soc device to be the parent of?
+
+greg k-h
