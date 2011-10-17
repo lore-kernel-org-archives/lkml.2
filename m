@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab1JQHJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:09:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48153 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab1JQHI7 (ORCPT
+	id S1754239Ab1JQHQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:16:27 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40997 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab1JQHQZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:08:59 -0400
+	Mon, 17 Oct 2011 03:16:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E9BB353.70606@redhat.com>
-References: <4E9BB353.70606@redhat.com>
-Date: Mon, 17 Oct 2011 09:08:57 +0200
-Message-ID: <CAN+gG=FsAwnQH-KjmLCvYpB_MVoe0zyBOLNu1zn3YwduC37p2A@mail.gmail.com>
-Subject: Re: patch for Dell ST220T Touch Screen Monitor
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Gopal <gtiwari@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Glenn Sommer <gsommer@datanordisk.dk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+In-Reply-To: <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com>
+	<1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Mon, 17 Oct 2011 09:16:23 +0200
+Message-ID: <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com>
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
+ kernel oops
+From: Elmar Vonlanthen <evonlanthen@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        =?ISO-8859-1?Q?Timo_Ter=E4s?= <timo.teras@iki.fi>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gopal,
-
-well, the device 0x1fd2:0x0064 is already supported by hid-multitouch
-since mid-August. It has been included in the for-next branch of
-Jiri's tree (see
-http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commit;h=c50bb1a4005630f47b5da26336f74a485033a515
-).
-
-As the device is a standard (Win7 compatible) hid multitouch device,
-it's better to handle it that way: you'll get multitouch support and
-there will be no cost to maintain it ;-)
-
-Cheers,
-Benjamin
-
-On Mon, Oct 17, 2011 at 06:47, Gopal <gtiwari@redhat.com> wrote:
-> Hello Everybody,
+2011/10/14 Eric Dumazet <eric.dumazet@gmail.com>:
+> Please try following patch :
 >
-> We have recently created Support for Dell ST2220T Touch screen monitor with
-> in the kernel hierarchy driver/input/touchscreen patch for this attach with
-> this mail.
-> Please find the attachment. I have previously also send the patch didn't got
-> any feedback so sending it again.
+> [PATCH] ip_gre: dont increase dev->needed_headroom on a live device
 >
-> thanks
-> Gopal
+> It seems ip_gre is able to change dev->needed_headroom on the fly.
 >
+> Its is not legal unfortunately and triggers a BUG in raw_sendmsg()
+>
+> skb = sock_alloc_send_skb(sk, ... + LL_ALLOCATED_SPACE(rt->dst.dev)
+>
+> < another cpu change dev->needed_headromm (making it bigger)
+>
+> ...
+> skb_reserve(skb, LL_RESERVED_SPACE(rt->dst.dev));
+>
+> We end with LL_RESERVED_SPACE() being bigger than LL_ALLOCATED_SPACE()
+> -> we crash later because skb head is exhausted.
+>
+> Bug introduced in commit 243aad83 in 2.6.34 (ip_gre: include route
+> header_len in max_headroom calculation)
+>
+> Reported-by: Elmar Vonlanthen <evonlanthen@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Timo Teräs <timo.teras@iki.fi>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> ---
+> diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+> index 8871067..1505dcf 100644
+> --- a/net/ipv4/ip_gre.c
+> +++ b/net/ipv4/ip_gre.c
+> @@ -835,8 +835,6 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
+>        if (skb_headroom(skb) < max_headroom || skb_shared(skb)||
+>            (skb_cloned(skb) && !skb_clone_writable(skb, 0))) {
+>                struct sk_buff *new_skb = skb_realloc_headroom(skb, max_headroom);
+> -               if (max_headroom > dev->needed_headroom)
+> -                       dev->needed_headroom = max_headroom;
+>                if (!new_skb) {
+>                        ip_rt_put(rt);
+>                        dev->stats.tx_dropped++;
+
+Hello
+
+I tried this patch and I was not able anymore to reproduce the kernel
+oops. So the patch solved the bug.
+Thank you very much!
+
+Would it be possible to add the patch to the long term kernel 2.6.35
+as well? Because this is the one I use at the moment in production.
+
+And sorry for posting to the wrong mailing list (linux-kernel).
+
+Best regards
+Elmar
