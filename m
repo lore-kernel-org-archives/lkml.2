@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab1JQQud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:50:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:37270 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab1JQQuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:50:32 -0400
-Date: Mon, 17 Oct 2011 12:50:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: hch@infradead.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] xen/blkback: Support 'feature-barrier' aka old-style
- BARRIER requests.
-Message-ID: <20111017165011.GA19724@phenom.dumpdata.com>
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
- <1318260494-27985-2-git-send-email-konrad.wilk@oracle.com>
- <4E9C2F52020000780005BA4C@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9C2F52020000780005BA4C@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4E9C5CCD.00CD,ss=1,re=0.000,fgs=0
+	id S1756545Ab1JQQvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:51:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2208 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab1JQQvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 12:51:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,360,1315206000"; 
+   d="scan'208";a="63385767"
+Subject: Re: [PATCH v3] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Vinod Koul <vinod.koul@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Barry Song <21cnbao@gmail.com>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
+        Barry Song <Barry.Song@csr.com>
+In-Reply-To: <201110171711.07384.arnd@arndb.de>
+References: <1318844199-19303-1-git-send-email-Barry.Song@csr.com>
+	 <1318859861.23438.137.camel@vkoul-udesk3>
+	 <CAGsJ_4y4ZxqmefxXS+2QEtTcq6Jr9+o92pd4enRYQMkG3kZ=ng@mail.gmail.com>
+	 <201110171711.07384.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Oct 2011 22:12:39 +0530
+Message-ID: <1318869759.23438.159.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 12:36:18PM +0100, Jan Beulich wrote:
-> >>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > @@ -481,6 +503,10 @@ static void __end_block_io_op(struct pending_req 
-> > *pending_req, int error)
-> >  			      pending_req->operation, pending_req->status);
-> >  		xen_blkif_put(pending_req->blkif);
-> >  		free_req(pending_req);
-> > +		if (atomic_read(&pending_req->blkif->refcnt) <= 2) {
-> > +			if (atomic_read(&pending_req->blkif->drain))
-> > +				complete(&pending_req->blkif->drain_complete);
-> > +		}
+On Mon, 2011-10-17 at 17:11 +0200, Arnd Bergmann wrote:
+> On Monday 17 October 2011, Barry Song wrote:
+> > >> +
+> > >> +     /* Start the DMA transfer */
+> > >> +     writel_relaxed(sdesc->width, sdma->base + SIRFSOC_DMA_WIDTH_0 + cid * 4);
+> > >> +     writel_relaxed(cid | (schan->mode << SIRFSOC_DMA_MODE_CTRL_BIT) |
+> > >> +             (sdesc->dir << SIRFSOC_DMA_DIR_CTRL_BIT),
+> > >> +             sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_CTRL);
+> > >> +     writel_relaxed(sdesc->xlen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_XLEN);
+> > >> +     writel_relaxed(sdesc->ylen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_YLEN);
+> > >> +     writel_relaxed(readl_relaxed(sdma->base + SIRFSOC_DMA_INT_EN) | (1 << cid),
+> > >> +             sdma->base + SIRFSOC_DMA_INT_EN);
+> > >> +     writel(sdesc->addr >> 2, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_ADDR);
+> > >> +
+> > >> +     if (sdesc->cyclic) {
+> > >> +             writel((1 << cid) | 1 << (cid + 16) |
+> > >> +                     readl_relaxed(sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL),
+> > >> +                     sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL);
+> > >> +             schan->happened_cyclic = schan->completed_cyclic = 0;
+> > >> +     }
+> > > any reason why we have mixed use of writel_relaxes and writel?
+> > > Shouldn't all the DMA register writes be done only using writel?
+> > 
+> > Arnd comment this in v2.
 > 
-> Shouldn't this be done *before* the call the free_req()? Or
-
-Yes, otherwise we could referencing somebody's else blkif->refcnt.
-
-Thanks for spotting that.
-> alternatively a local copy of pending_req->blkif be obtained before
-> freeing pending_req (which could be used in a couple more places
-> in this function)?
+> The new version looks good to me, but a comment in the source code would
+> be very helpful, especially to prevent people from attempting to "fix" it
+> in the future.
 > 
-> Jan
+> I'm not sure about the writel/readl_relaxed in the end of that function,
+> because I don't understand what having a "cyclic" descriptor means.
+"cyclic" descriptor represents a dma operation which is cyclic in
+nature, i.e would auto restart the DMA operation again, till it is
+explicitly aborted.
+Typically you need to tell dmac that it has to perform such operation
+after the current transfer/list is completed.
+In above case looks like you have to do that by performing a writel
+which invokes a readl_relaxed as well
+
+-- 
+~Vinod
+
