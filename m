@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab1JQHQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:16:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40997 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab1JQHQZ convert rfc822-to-8bit (ORCPT
+	id S1754502Ab1JQHRC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:17:02 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39155 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab1JQHRA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:16:25 -0400
+	Mon, 17 Oct 2011 03:17:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com>
-	<1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Date: Mon, 17 Oct 2011 09:16:23 +0200
-Message-ID: <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com>
-Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
- kernel oops
-From: Elmar Vonlanthen <evonlanthen@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        =?ISO-8859-1?Q?Timo_Ter=E4s?= <timo.teras@iki.fi>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
+In-Reply-To: <alpine.DEB.2.00.1110141252480.24783@chino.kir.corp.google.com>
+References: <4E9869B4.6080702@intra2net.com>
+	<alpine.DEB.2.00.1110141214270.6411@router.home>
+	<4E9870A8.2010905@intra2net.com>
+	<alpine.DEB.2.00.1110141252480.24783@chino.kir.corp.google.com>
+Date: Mon, 17 Oct 2011 10:16:59 +0300
+X-Google-Sender-Auth: yeE6qlyStv-HP0UigbqfFD1GpnU
+Message-ID: <CAOJsxLGS519114eonOWbDTwO+CL_e=buiW7XdbtxfCUpYz=Y6A@mail.gmail.com>
+Subject: Re: [slabinfo PATCH] Fix off-by-one after readlink() call
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: David Rientjes <rientjes@google.com>
+Cc: Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/14 Eric Dumazet <eric.dumazet@gmail.com>:
-> Please try following patch :
+On Fri, Oct 14, 2011 at 10:53 PM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 14 Oct 2011, Thomas Jarosch wrote:
 >
-> [PATCH] ip_gre: dont increase dev->needed_headroom on a live device
+>> The problem is the line after the readlink() call:
+>>
+>> buffer[count] = '\0';
+>>
+>> The common technique is to reduce the buffer size by one.
+>> Another fix would be to check
+>>
+>> "
+>> if (count < 0 || count == sizeof(buffer))
+>>     fatal();
+>> "
+>>
+>> Reducing the buffer size by one is easier IMHO.
+>>
 >
-> It seems ip_gre is able to change dev->needed_headroom on the fly.
+> I think this should be used for changelog.
 >
-> Its is not legal unfortunately and triggers a BUG in raw_sendmsg()
->
-> skb = sock_alloc_send_skb(sk, ... + LL_ALLOCATED_SPACE(rt->dst.dev)
->
-> < another cpu change dev->needed_headromm (making it bigger)
->
-> ...
-> skb_reserve(skb, LL_RESERVED_SPACE(rt->dst.dev));
->
-> We end with LL_RESERVED_SPACE() being bigger than LL_ALLOCATED_SPACE()
-> -> we crash later because skb head is exhausted.
->
-> Bug introduced in commit 243aad83 in 2.6.34 (ip_gre: include route
-> header_len in max_headroom calculation)
->
-> Reported-by: Elmar Vonlanthen <evonlanthen@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: Timo Teräs <timo.teras@iki.fi>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> ---
-> diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-> index 8871067..1505dcf 100644
-> --- a/net/ipv4/ip_gre.c
-> +++ b/net/ipv4/ip_gre.c
-> @@ -835,8 +835,6 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
->        if (skb_headroom(skb) < max_headroom || skb_shared(skb)||
->            (skb_cloned(skb) && !skb_clone_writable(skb, 0))) {
->                struct sk_buff *new_skb = skb_realloc_headroom(skb, max_headroom);
-> -               if (max_headroom > dev->needed_headroom)
-> -                       dev->needed_headroom = max_headroom;
->                if (!new_skb) {
->                        ip_rt_put(rt);
->                        dev->stats.tx_dropped++;
+> Acked-by: David Rientjes <rientjes@google.com>
 
-Hello
-
-I tried this patch and I was not able anymore to reproduce the kernel
-oops. So the patch solved the bug.
-Thank you very much!
-
-Would it be possible to add the patch to the long term kernel 2.6.35
-as well? Because this is the one I use at the moment in production.
-
-And sorry for posting to the wrong mailing list (linux-kernel).
-
-Best regards
-Elmar
+Thomas, please resend with proper changelog and with David's and
+Christoph's ACKs included.
