@@ -1,359 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab1JQPB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:01:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60294 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab1JQPBz (ORCPT
+	id S1755699Ab1JQPDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:03:24 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:50077 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab1JQPDX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:01:55 -0400
-Date: Mon, 17 Oct 2011 17:01:50 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Josh Wu <josh.wu@atmel.com>
-cc: linux-media@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nicolas.ferre@atmel.com, s.nawrocki@samsung.com
-Subject: Re: [PATCH v4 3/3] at91: add Atmel ISI and ov2640 support on
- sam9m10/sam9g45 board
-In-Reply-To: <1318331020-22031-4-git-send-email-josh.wu@atmel.com>
-Message-ID: <Pine.LNX.4.64.1110171635310.18438@axis700.grange>
-References: <1318331020-22031-1-git-send-email-josh.wu@atmel.com>
- <1318331020-22031-4-git-send-email-josh.wu@atmel.com>
+	Mon, 17 Oct 2011 11:03:23 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:abQWWRIrplkP7ldtEoeLec2kjMvuNYYkW95CpVtRXa8
- Q0Atrazf3XCEx9cLDqmgrA/ingFhPR/l3efeYDzFRfqXfudSSl
- /W0ltlN7pdYQhy/7XtpCEbP4y1bZiAh2KLgT0UAOFad0TBYTv4
- XyIq7fUpDy81iPhNOlRA2PsKxdsYOJND0ak/Fr30quvMX91Wn4
- 56GkhOE6BrCzpr9QAKco9bRl5kUliFjdW3zyF1psL7+taP9+VW
- FlHRlecNeTPsDxa4Q6scBiORAsoJ+P24koli9Wp1vCWYhePNLZ
- D01JPPO10F3/8gRGjV6NyFkpp6+RUy8CzZJH5Mm+jhU9esFriK
- dWSN4jAnsrHn2lIgYTWNaWYJi6W04ahVGF+6i6BcVTElbSoyM4
- DLIqAORPyFcdQ==
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A166@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A166@HQMAIL01.nvidia.com>
+Date: Mon, 17 Oct 2011 17:03:22 +0200
+Message-ID: <CACRpkdYR=Dgd=Ohp=jOh-VpxGFFb4dYniN6N-Zaj9y6uuGDftg@mail.gmail.com>
+Subject: Re: pinctrl_config APIs, and other pinmux questions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Stijn Devriendt <highguy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Josh Wu wrote:
+Thanks for a long letter, took som time to read, but as usual it
+contains good stuff!
 
-> This patch add:
-> - ov2640 sensor in sam9m10/sam9g45 board.
-> - support to use PCK as ISI_MCK. PCK's parent is managed in SoC level, e.g. at91sam9g45_devices.c
-> 
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> ---
->  arch/arm/mach-at91/at91sam9g45_devices.c |   98 +++++++++++++++++++++++++++++-
->  arch/arm/mach-at91/board-sam9m10g45ek.c  |   85 +++++++++++++++++++++++++-
->  2 files changed, 180 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-> index 600bffb..00e6a7f 100644
-> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-> @@ -16,7 +16,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/i2c-gpio.h>
->  #include <linux/atmel-mci.h>
-> -
-> +#include <linux/clk.h>
->  #include <linux/fb.h>
->  #include <video/atmel_lcdc.h>
->  
-> @@ -28,7 +28,10 @@
->  #include <mach/at_hdmac.h>
->  #include <mach/atmel-mci.h>
->  
-> +#include <media/atmel-isi.h>
-> +
->  #include "generic.h"
-> +#include "clock.h"
->  
->  
->  /* --------------------------------------------------------------------
-> @@ -863,6 +866,99 @@ void __init at91_add_device_ac97(struct ac97c_platform_data *data)
->  void __init at91_add_device_ac97(struct ac97c_platform_data *data) {}
->  #endif
->  
-> +/* --------------------------------------------------------------------
-> + *  Image Sensor Interface
-> + * -------------------------------------------------------------------- */
-> +#if defined(CONFIG_VIDEO_ATMEL_ISI) || defined(CONFIG_VIDEO_ATMEL_ISI_MODULE)
-> +static u64 isi_dmamask = DMA_BIT_MASK(32);
-> +static struct isi_platform_data isi_data;
-> +
-> +struct resource isi_resources[] = {
-> +	[0] = {
-> +		.start	= AT91SAM9G45_BASE_ISI,
-> +		.end	= AT91SAM9G45_BASE_ISI + SZ_16K - 1,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	[1] = {
-> +		.start	= AT91SAM9G45_ID_ISI,
-> +		.end	= AT91SAM9G45_ID_ISI,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct platform_device at91sam9g45_isi_device = {
-> +	.name		= "atmel_isi",
-> +	.id		= 0,
-> +	.dev		= {
-> +			.dma_mask		= &isi_dmamask,
-> +			.coherent_dma_mask	= DMA_BIT_MASK(32),
-> +			.platform_data		= &isi_data,
-> +	},
-> +	.resource	= isi_resources,
-> +	.num_resources	= ARRAY_SIZE(isi_resources),
-> +};
-> +
-> +static struct clk_lookup isi_mck_lookups[] = {
-> +	CLKDEV_CON_DEV_ID("isi_mck", "atmel_isi.0", NULL),
-> +};
-> +
-> +void __init at91_add_device_isi(struct isi_platform_data * data,
-> +		bool use_pck_as_mck)
+I think you're talking about two things here:
 
-Extra space.
+1) The need to configure per-pin "stuff" like biasing, driving,
+  load capacitance ... whatever
 
-> +{
-> +	struct clk *pck;
-> +	struct clk *parent;
-> +
-> +	if (!data)
-> +		return;
-> +	isi_data = *data;
-> +
-> +	at91_set_A_periph(AT91_PIN_PB20, 0);	/* ISI_D0 */
-> +	at91_set_A_periph(AT91_PIN_PB21, 0);	/* ISI_D1 */
-> +	at91_set_A_periph(AT91_PIN_PB22, 0);	/* ISI_D2 */
-> +	at91_set_A_periph(AT91_PIN_PB23, 0);	/* ISI_D3 */
-> +	at91_set_A_periph(AT91_PIN_PB24, 0);	/* ISI_D4 */
-> +	at91_set_A_periph(AT91_PIN_PB25, 0);	/* ISI_D5 */
-> +	at91_set_A_periph(AT91_PIN_PB26, 0);	/* ISI_D6 */
-> +	at91_set_A_periph(AT91_PIN_PB27, 0);	/* ISI_D7 */
-> +	at91_set_A_periph(AT91_PIN_PB28, 0);	/* ISI_PCK */
-> +	at91_set_A_periph(AT91_PIN_PB30, 0);	/* ISI_HSYNC */
-> +	at91_set_A_periph(AT91_PIN_PB29, 0);	/* ISI_VSYNC */
-> +	at91_set_B_periph(AT91_PIN_PB8, 0);	/* ISI_PD8 */
-> +	at91_set_B_periph(AT91_PIN_PB9, 0);	/* ISI_PD9 */
-> +	at91_set_B_periph(AT91_PIN_PB10, 0);	/* ISI_PD10 */
-> +	at91_set_B_periph(AT91_PIN_PB11, 0);	/* ISI_PD11 */
-> +
-> +	platform_device_register(&at91sam9g45_isi_device);
-> +
-> +	if (use_pck_as_mck) {
-> +		at91_set_B_periph(AT91_PIN_PB31, 0);	/* ISI_MCK (PCK1) */
-> +
-> +		pck = clk_get(NULL, "pck1");
-> +		parent = clk_get(NULL, "plla");
-> +
-> +		if (IS_ERR(pck) || IS_ERR(parent))
-> +			BUG();
+2) The need to handle state transitions of pinmux settings.
 
-Use BUG_ON().
+I prefer that we try to keep these two separate and not conflate
+them too much.
 
-> +
-> +		if (clk_set_parent(pck, parent))
-> +			printk(KERN_ERR "Failed to set PCK's parent\n");
+On Thu, Oct 13, 2011 at 10:59 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-pr_err()
+> 2) Enhance the pin controller subsystem to support configuring these
+> properties.
 
-> +		else {
+This is definately what we want to do. That is why the subsystem was
+renamed from pinmux to pinctrl in the first place, and also the rationale
+for introducing the abstract pin groups.
 
-Missing braces before "else."
+> int (*pin_config)(unsigned pin, u32 param, u32 data);
+> int (*group_config)(unsigned group, u32 param, u32 data);
 
-> +			/* Register PCK as ISI_MCK */
-> +			isi_mck_lookups->clk = pck;
+Do you mean
+int (*group_config)(const char *group, u32 param, u32 data);
 
-If you're certain, it'll always be a single-element array, you might 
-remove the array completely. If you want to have the array, better do
+On the latter one? We identify groups by name mainly.
+The selectors is an internal thing between pinctrl core and
+drivers.
 
-+			isi_mck_lookups[0].clk = pck;
+> Where "param" is some driver-specific parameter, such as:
+>
+> #define TEGRA_PINCTRL_PARAM_TRISTATE_ENABLE    0
+(...)
+> I looked at a bunch of existing pinmux drivers in the mainline kernel.
+> There are certainly some common concepts between SoCs. However, the
+> details are often different enough that I don't think attempting to
+> unify the set of configuration options will be that successful; I
+> doubt we could create a generic enough abstraction of these settings
+> for a cross-SoC driver to be able to usefully name and select values
+> for all the different pin/group options.
 
-Or even:
-
-+ #define CLK_IDX_ISI_MCK 0
+I don't know, I could easily say the same thing about say input devices:
+all of them are essentially different, still they opted to create the file
+<linux/input.h> with this kind of stuff:
 
 ...
-
-+	[CLK_IDX_ISI_MCK] = CLKDEV_CON_DEV_ID("isi_mck", "atmel_isi.0", NULL),
-
+#define KEY_COMMA               51
+#define KEY_DOT                 52
+#define KEY_SLASH               53
+#define KEY_RIGHTSHIFT          54
+#define KEY_KPASTERISK          55
 ...
 
-+			isi_mck_lookups[CLK_IDX_ISI_MCK].clk = pck;
+And it has proven to be very useful. I'd rather opt to just remove
+the TEGRA_ prefix from all the above, and that we try to create some
+common sematics to these calls.
 
-But in any case I wouldn't use "isi_mck_lookups->clk" with an array.
+> Data being a plain u32 rather than a pointer as your v7 patchset had it:
 
-> +			clkdev_add_table(isi_mck_lookups,
-> +					ARRAY_SIZE(isi_mck_lookups));
-> +		}
-> +
-> +		clk_put(pck);
-> +		clk_put(parent);
-> +	}
-> +
-> +	return;
+Actually it looked like this:
 
-No need for "return."
+static inline int pinmux_config(struct pinmux *pmx, u16 param,
+                               unsigned long *data)
 
-> +}
-> +#else
-> +void __init at91_add_device_isi(struct isi_platform_data * data,
-> +		int use_pck_as_mck) {}
+That was supposed to be an unsigned long (not a *pointer), which
+is exchangeable to pointer, as per the example known from
+interrupt handlers. It can also be used to pass a plain argument.
+It was designed to be "ioctl()-like".
 
-Please use the same prototype - bool. Looks like you haven't tried to 
-compile this with CONFIG_VIDEO_ATMEL_ISI(_MODULE) unset. Extra space.
+So I prefer we say:
+int (*pin_config)(unsigned pin, u32 param, unsigned long data);
+int (*group_config)(const char *group, u32 param, unsigned long data);
 
-> +#endif
-> +
->  
->  /* --------------------------------------------------------------------
->   *  LCD Controller
-> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> index ad234cc..068464c 100644
-> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> @@ -23,11 +23,13 @@
->  #include <linux/gpio_keys.h>
->  #include <linux/input.h>
->  #include <linux/leds.h>
-> -#include <linux/clk.h>
->  #include <linux/atmel-mci.h>
-> +#include <linux/delay.h>
->  
->  #include <mach/hardware.h>
->  #include <video/atmel_lcdc.h>
-> +#include <media/soc_camera.h>
-> +#include <media/atmel-isi.h>
->  
->  #include <asm/setup.h>
->  #include <asm/mach-types.h>
-> @@ -187,6 +189,76 @@ static void __init ek_add_device_nand(void)
->  
->  
->  /*
-> + *  ISI
-> + */
-> +static struct isi_platform_data __initdata isi_data = {
-> +	.frate			= ISI_CFG1_FRATE_CAPTURE_ALL,
-> +	.has_emb_sync		= 0,
-> +	.emb_crc_sync		= 0,
-> +	.hsync_act_low		= 0,
-> +	.vsync_act_low		= 0,
-> +	.pclk_act_falling	= 0,
+> Using a pointer does allow passing arbitrary data into the driver, which
+> seems useful. However, this also makes it much more difficult for the
+> core pin controller API to handle the values, e.g. in the mapping table,
+> in a device-tree representation thereof, etc.
 
-I would drop all "= 0"
+Only if it treats "param" as opaque. If we let "param"
+infer the semantics of "data" it's no problem, and it can
+easily switch(param) to select the proper semantics for the
+data.
 
-> +	/* to use codec and preview path simultaneously */
-> +	.full_mode		= 1,
-> +	.data_width_flags	= ISI_DATAWIDTH_8 | ISI_DATAWIDTH_10,
-> +	/* ISI_MCK is provided by programmable clock or external clock  */
+> Having both config_pin and config_group functions:
 
-Superfluous space before '*/'
+I buy that straight off, there is obviously a need for that.
 
-> +	.mck_hz			= 25000000,
-> +};
-> +
-> +
-> +/*
-> + * soc-camera OV2640
-> + */
-> +#if defined(CONFIG_SOC_CAMERA_OV2640) || \
-> +	defined(CONFIG_SOC_CAMERA_OV2640_MODULE)
-> +static unsigned long isi_camera_query_bus_param(struct soc_camera_link *link)
-> +{
-> +	/* ISI board for ek using default 8-bits connection */
-> +	return SOCAM_DATAWIDTH_8;
-> +}
-> +
-> +static int i2c_camera_power(struct device *dev, int on)
-> +{
-> +	/* enable or disable the camera */
-> +	pr_debug("%s: %s the camera\n", __func__, on ? "ENABLE" : "DISABLE");
-> +	at91_set_gpio_output(AT91_PIN_PD13, !on);
-> +
-> +	if (!on)
-> +		goto out;
-> +
-> +	/* If enabled, give a reset impulse */
-> +	at91_set_gpio_output(AT91_PIN_PD12, 0);
-> +	msleep(20);
-> +	at91_set_gpio_output(AT91_PIN_PD12, 1);
-> +	msleep(100);
-> +
-> +out:
-> +	return 0;
-> +}
-> +
-> +static struct i2c_board_info i2c_camera = {
-> +	I2C_BOARD_INFO("ov2640", 0x30),
-> +};
-> +
-> +static struct soc_camera_link iclink_ov2640 = {
-> +	.bus_id			= 0,
-> +	.board_info		= &i2c_camera,
-> +	.i2c_adapter_id		= 0,
-> +	.power			= i2c_camera_power,
-> +	.query_bus_param	= isi_camera_query_bus_param,
-> +};
-> +
-> +static struct platform_device isi_ov2640 = {
-> +	.name	= "soc-camera-pdrv",
-> +	.id	= 0,
-> +	.dev	= {
-> +		.platform_data = &iclink_ov2640,
-> +	},
-> +};
-> +#endif
-> +
-> +
-> +/*
->   * LCD Controller
->   */
->  #if defined(CONFIG_FB_ATMEL) || defined(CONFIG_FB_ATMEL_MODULE)
-> @@ -378,7 +450,12 @@ static struct gpio_led ek_pwm_led[] = {
->  #endif
->  };
->  
-> -
-> +static struct platform_device *devices[] __initdata = {
-> +#if defined(CONFIG_SOC_CAMERA_OV2640) || \
-> +	defined(CONFIG_SOC_CAMERA_OV2640_MODULE)
-> +	&isi_ov2640,
-> +#endif
-> +};
->  
->  static void __init ek_board_init(void)
->  {
-> @@ -400,6 +477,8 @@ static void __init ek_board_init(void)
->  	ek_add_device_nand();
->  	/* I2C */
->  	at91_add_device_i2c(0, NULL, 0);
-> +	/* ISI, using programmable clock as ISI_MCK */
-> +	at91_add_device_isi(&isi_data, 1);
+> Issue 2: Do we need a new "pin settings" table passed from the board to
+> the pin controller core?
 
-s/1/true/
+Yes I think so, trying to stuff it into the mappings does not look
+appealing at all. We should try to separate concerns, also it makes
+for nice separation in the DT metadata I suspect?
 
->  	/* LCD Controller */
->  	at91_add_device_lcdc(&ek_lcdc_data);
->  	/* Touch Screen */
-> @@ -411,6 +490,8 @@ static void __init ek_board_init(void)
->  	/* LEDs */
->  	at91_gpio_leds(ek_leds, ARRAY_SIZE(ek_leds));
->  	at91_pwm_leds(ek_pwm_led, ARRAY_SIZE(ek_pwm_led));
-> +	/* Other platform devices */
-> +	platform_add_devices(devices, ARRAY_SIZE(devices));
->  }
->  
->  MACHINE_START(AT91SAM9M10G45EK, "Atmel AT91SAM9M10G45-EK")
-> -- 
-> 1.6.3.3
-> 
+> Issue 3: Do we need to change "pin settings" on-the-fly, or only at boot?
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Both I think, from own experience and from reading the
+text below...
+
+> struct pinmux_map {
+>        const char *name;
+>        struct device *ctrl_dev;
+>        const char *ctrl_dev_name;
+>        enum pinmux_map_type type;
+>        union {
+>            struct {
+>                const char *function;
+>                const char *group;
+>            } mux;
+>            struct {
+>                u32 param;
+>                u32 data;
+>            } config;
+>        } data;
+>        struct device *dev;
+>        const char *dev_name;
+>        const bool hog_on_boot;
+> };
+>
+> Such that pinmux_enable would both activate all the mux settings, and
+> also call pin/group_config based on the mapping table.
+
+No thanks :-)
+
+Let's keep these two separate. One mapping, one default
+pin config or whatever we want to call it.
+
+> I'd like to enhance the pinmux core to allow the mapping table to be read
+> from device tree. If we end up with a separate "pin configuration" table,
+> the same applies there. Do you have any thoughts here, or should I just go
+> ahead and create/propose something? I'd probably base this partially on my
+> previous patches that do this within the Tegra pinmux driver itself.
+
+Something is better than nothing, but I cannot claim to be
+knowledgeable in DT.
+
+Right now I would prefer to create basic stuff first, i.e. create
+a device tree binding for the stuff we have - the mapping table,
+get that ready for merge and then move on to the next thing.
+
+> Now let's suppose that we've enhanced the mapping table to support pin/
+> group_config values, and that a driver is written to expect a pinmux
+> mapping table with the following mappings:
+>
+> "active"
+> "suspend"
+
+I'm not following why this should be different mappings.
+
+I would rather contrast it with the similar concept from the
+regulator framework, these have modes like these:
+
+enum regulator_status {
+        REGULATOR_STATUS_OFF,
+        REGULATOR_STATUS_ON,
+        REGULATOR_STATUS_ERROR,
+        /* fast/normal/idle/standby are flavors of "on" */
+        REGULATOR_STATUS_FAST,
+        REGULATOR_STATUS_NORMAL,
+        REGULATOR_STATUS_IDLE,
+        REGULATOR_STATUS_STANDBY,
+};
+
+So I think we should have pin group states in a similar
+manner:
+
+enum pinmux_state {
+    PINMUX_STATE_DEFAULT, /* == active */
+    PINMUX_STATE_LOWPOWER,
+};
+
+And associated calls:
+
+pinmux_set_state(const char *group, enum pingroup_state state);
+
+> Where the only difference between those two mappings is some pin/
+> group_config value. When switching between those two settings, the "active"
+> mux values will be rolled back to some "safe" values, then the "suspend"
+> mux values will be re-programmed. This may cause spurious changes in output
+> signals, depending on what the "safe" function is exactly. It might even
+> temporarily change some pins from inputs to outputs.
+
+A pinmux_set_state() function all the way down to the driver
+could handle this I think.
+
+> The pinmux API currently conflates two different things:
+>
+> a) A device's ownership of certain pins.
+>
+> b) The configuration of those pins.
+>
+> I think we should aim for some mechanism of teasing those two concepts
+> apart, and allowing dynamic transitioning between different configurations
+> for the owned pins without completely releasing them.
+
+I agree with this. So we only need to decide on a proper
+mechanism. pinmux_set_state() looks appealing to me...
+
+> Driver mapping_name configuration settings
+> -----------------------------------------
+> i2c    -            active        group i2cp.mux = i2c
+> i2c    -            active        group i2cp.tristate = false
+> i2c    -            suspend       group i2cp.mux = i2c
+> i2c    -            suspend       group i2cp.tristate = true
+
+I would prefer not to try to shoehorn this into the mapping
+table. Isn't it possible to introduce this in some orthogonal
+way, like a per-group state table with associated groups?
+
+Right now the pinmux_map** enumerates the valid
+groups, and pinmux_get()/put() selects one of them,
+I don't see any problem with pinmux_set_state() changing
+from one group to another.
+
+If this has to follow some specific order like first go
+from group A -> B -> C should probably be handled in
+the driver since that's definately HW-specific, else we start
+embedding some scripting engine in the pinctrl core
+and that would be most unfortunate (IMO).
+
+> Driver probe():
+>
+> reservation = pinmux_reserve(device, NULL /* mapping_name */)
+> pinmux_select(reservation, "active")
+
+Just
+pmx = pinmux_get()
+
+> Driver suspend():
+> pinmux_select(reservation, "suspend")
+
+pinmux_set_state(pmx, PINMUX_STATE_SUSPEND);
+
+> Driver resume():
+>
+> pinmux_select(reservation, "active")
+
+pinmux_set_state(pmx, PINMUX_STATE_DEFAULT);
+
+> Driver remove():
+> pinmux_unreserve(reservation)
+
+pinmux_put(pmx);
+
+
+> For reference, I read through all the pinmux drivers I could find in arch/
+> arm, and made a rough list of all the pin/group_config settings they support:
+
+Thanks for this! I need to go over them too, also read some
+datasheets I guess, else I can not figure out whether my
+idea of trying to keep parameters generic makes sense or is
+just plain raving mad.
+
+Yours,
+Linus Walleij
