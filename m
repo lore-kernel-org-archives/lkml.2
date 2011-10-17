@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1JQPLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:11:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63014 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab1JQPLP (ORCPT
+	id S1756157Ab1JQPLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:11:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58789 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab1JQPLS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:11:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] dmaengine: add CSR SiRFprimaII DMAC driver
-Date: Mon, 17 Oct 2011 17:11:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Barry Song <21cnbao@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
-        Barry Song <Barry.Song@csr.com>
-References: <1318844199-19303-1-git-send-email-Barry.Song@csr.com> <1318859861.23438.137.camel@vkoul-udesk3> <CAGsJ_4y4ZxqmefxXS+2QEtTcq6Jr9+o92pd4enRYQMkG3kZ=ng@mail.gmail.com>
-In-Reply-To: <CAGsJ_4y4ZxqmefxXS+2QEtTcq6Jr9+o92pd4enRYQMkG3kZ=ng@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110171711.07384.arnd@arndb.de>
-X-Provags-ID: V02:K0:jrNLJLbFDc+a5iI9lQb6rlyn0SCECTx3BsoITVXvzX1
- vblq3VL6z5tZWtwJ/5ecjOAGKcf6evqLj9NPO34+X88UdId7Yp
- 49uHeXqkLd5V7Qnhqf5yuT4SUoElOLwtKGwq4y/iN14JLorKKk
- o4AjnKtA4xer2QKsP6vDszsS30X0Kpc5Pyzn4uyJpw+3lwwJg/
- +KI4kbORnW7hXA06X1DAZuJhC/6kMoMncxd5u3Li75sey78WF/
- FN4RxOeHN26mgsKnt/CSd6Ub/ljnGKYqNYLVFxbk2FPTEphfsv
- +Low7Byl2zfdwVHyfMJSkhqcq5Vju8s1xyjo1jWe6h2cCZ9tR9
- kONQoynw2q4wfZTDD2pg=
+	Mon, 17 Oct 2011 11:11:18 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Date: Mon, 17 Oct 2011 17:11:00 +0200
+In-Reply-To: <20111017145952.GB15769@srcf.ucam.org>
+References: <20111017032232.GA4816@srcf.ucam.org>
+	 <4E9BBB6D.4050004@linux.intel.com> <1318837019.6594.29.camel@twins>
+	 <alpine.LFD.2.02.1110171119580.3240@ionos>
+	 <20111017124647.GA12838@srcf.ucam.org> <1318856786.4172.22.camel@twins>
+	 <20111017141147.GA14581@srcf.ucam.org> <1318861707.4172.32.camel@twins>
+	 <20111017144013.GA15447@srcf.ucam.org> <1318862969.4172.45.camel@twins>
+	 <20111017145952.GB15769@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318864260.4172.54.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 October 2011, Barry Song wrote:
-> >> +
-> >> +     /* Start the DMA transfer */
-> >> +     writel_relaxed(sdesc->width, sdma->base + SIRFSOC_DMA_WIDTH_0 + cid * 4);
-> >> +     writel_relaxed(cid | (schan->mode << SIRFSOC_DMA_MODE_CTRL_BIT) |
-> >> +             (sdesc->dir << SIRFSOC_DMA_DIR_CTRL_BIT),
-> >> +             sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_CTRL);
-> >> +     writel_relaxed(sdesc->xlen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_XLEN);
-> >> +     writel_relaxed(sdesc->ylen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_YLEN);
-> >> +     writel_relaxed(readl_relaxed(sdma->base + SIRFSOC_DMA_INT_EN) | (1 << cid),
-> >> +             sdma->base + SIRFSOC_DMA_INT_EN);
-> >> +     writel(sdesc->addr >> 2, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_ADDR);
-> >> +
-> >> +     if (sdesc->cyclic) {
-> >> +             writel((1 << cid) | 1 << (cid + 16) |
-> >> +                     readl_relaxed(sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL),
-> >> +                     sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL);
-> >> +             schan->happened_cyclic = schan->completed_cyclic = 0;
-> >> +     }
-> > any reason why we have mixed use of writel_relaxes and writel?
-> > Shouldn't all the DMA register writes be done only using writel?
+On Mon, 2011-10-17 at 15:59 +0100, Matthew Garrett wrote:
+> On Mon, Oct 17, 2011 at 04:49:29PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2011-10-17 at 15:40 +0100, Matthew Garrett wrote:
+> > > On Mon, Oct 17, 2011 at 04:28:27PM +0200, Peter Zijlstra wrote:
+> > > > An XDamage and repaint from the X client, after which your copy will
+> > > > complete and you get what you asked for?
+> > > 
+> > > An XDamage and then an asynchronous RPC call to the remote server to 
+> > > identify the contents of the next frame before drawing them, plus some 
+> > > sort of new synchronisation mechanism for blocking the X query until 
+> > > that point?
+> > 
+> > Why would this be a problem? 
+> > 
+> > I mean, why would getting a copy of an otherwise invisible surface be a
+> > performance sensitive path? If the compositor needs the surface it would
+> > make it visible and send the XDamage once and keep it visible henceforth
+> > until the time it again becomes invisible, at which point you have to
+> > stop updates again.
 > 
-> Arnd comment this in v2.
+> I'm not saying that it's a problem. I'm saying that your approach 
+> changes behavioural semantics in a way that may violate application 
+> expectations just as surely as changing the timer behaviour does. 
+> There's no free approach.
 
-The new version looks good to me, but a comment in the source code would
-be very helpful, especially to prevent people from attempting to "fix" it
-in the future.
+I'm not saying its free, I'm saying its a much better approach since it
+gets rid of the entire problem instead of papering over the worst of it.
 
-I'm not sure about the writel/readl_relaxed in the end of that function,
-because I don't understand what having a "cyclic" descriptor means.
+> > > Timers are a resource. People want to manage that resource. cgroups are 
+> > > a convenient mechanism for managing resources.
+> > 
+> > Yes, and a ball is round (unless you're a USA-ian, in which case they're
+> > ovoid), what's your point?
+> 
+> If there's no reason to want to manage that resource, why do we support 
+> timer slack at all?
 
-	Arnd
+So that individual applications can provide their timing tolerance and
+the OS can group these timers in order to optimize idle time or whatnot.
+
+Indiscriminately changing the slack for a whole group of otherwise
+unrelated applications will violate their timing tolerances and break
+them in non-obvious ways.
+
+
+  
+What I'm saying is that its much better to attack the primary source of
+evil in a manner that is unforgiving instead of trying to avoid the
+worst excesses and cause non-obvious breakage.
+
+For a while people were promoting the idea that its good to be lenient
+in what you accept as input and strict in what you send out. I think
+people are starting to realize that was a horrid mistake since now
+they're getting utter crap and people don't even know what right is
+anymore.
