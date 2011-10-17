@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1JQFV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 01:21:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3943 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab1JQFVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 01:21:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,357,1315206000"; 
-   d="scan'208";a="63189056"
-Message-ID: <4E9BBB6D.4050004@linux.intel.com>
-Date: Sun, 16 Oct 2011 22:21:49 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1754532Ab1JQF3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 01:29:39 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:50691 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753087Ab1JQF3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 01:29:37 -0400
+Message-ID: <4E9BBCEB.9090204@st.com>
+Date: Mon, 17 Oct 2011 10:58:11 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: Lennart Poettering <mzxreary@0pointer.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
-        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name> <1318349729-3108-4-git-send-email-kirill@shutemov.name> <20111014154348.ae6267aa.akpm@linux-foundation.org> <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop> <20111017013921.GA30035@tango.0pointer.de> <20111017032232.GA4816@srcf.ucam.org>
-In-Reply-To: <20111017032232.GA4816@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>,
+        "21cnbao@gmail.com" <21cnbao@gmail.com>,
+        "rmk@arm.linux.org.uk" <rmk@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Yong Wang <yong.y.wang@intel.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Boojin Kim <boojin.kim@samsung.com>, Barry Song <Baohua.Song@csr.com>
+Subject: Re: [PATCH 02/10] dmaengine: move drivers to dma_transfer_direction
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com> <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
+In-Reply-To: <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2011 8:22 PM, Matthew Garrett wrote:
-> On Mon, Oct 17, 2011 at 03:39:21AM +0200, Lennart Poettering wrote:
->> On Sat, 15.10.11 21:11, Peter Zijlstra (peterz@infradead.org) wrote:
->>> I would argue this is an excellent reason not to merge this. This really
->>> is in the camp of lets paper over shitty userspace instead of fix it.
->>>
->>> Such a scheme takes away the immediate need to fix crap and therefore
->>> crap will not get fixed. Why not focus on creating tools (I think
->>> powertop really already does everything you need) and track down WTF
->>> apps are firing so many timers when the screen if off.
->> Well, maybe that works in fantasy land. In real life however there's
->> stuff like closed source crap, and all kinds of other things you cannot
->> fix. In a world where everybody wants "apps" (i.e. 3rd party code
->> running with limited privileges) your chance to fix every bit of code is
->> gone.
-> I agree. We can't assume perfect software, and I don't think *requiring*
-> the duplication of this functionality in every single session
-> application is sensible. We want to be able to shut down timer based
-> code when the session is idle. We could do this by exposing the slack in
-> /proc. We could do this by modifying every piece of code to listen for
-> session idle events and (independently) enact session-wide policy. Or we
-> could just accept that it's a problem that maps onto what people are
-> already using cgroups for and implement it in the same way.
+On 10/14/2011 11:08 AM, Vinod Koul wrote:
+> From: Vinod Koul <vinod.koul@linux.intel.com>
+> 
+> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+> Cc: Jassi Brar <jaswinder.singh@linaro.org>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Mika Westerberg <mika.westerberg@iki.fi>
+> Cc: H Hartley Sweeten <hartleys@visionengravers.com>
+> Cc: Li Yang <leoli@freescale.com>
+> Cc: Zhang Wei <zw@zh-kernel.org>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Shawn Guo <shawn.guo@freescale.com>
+> Cc: Yong Wang <yong.y.wang@intel.com>
+> Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+> Cc: Boojin Kim <boojin.kim@samsung.com>
+> Cc: Barry Song <Baohua.Song@csr.com>
+> ---
+>  arch/arm/mach-ep93xx/include/mach/dma.h        |    6 ++--
+>  arch/arm/plat-nomadik/include/plat/ste_dma40.h |    4 +-
+>  drivers/dma/amba-pl08x.c                       |   24 +++++++++++-----------
+>  drivers/dma/at_hdmac.c                         |   22 ++++++++++----------
+>  drivers/dma/coh901318.c                        |   12 +++++-----
+>  drivers/dma/coh901318_lli.c                    |   23 ++++++++++-----------
+>  drivers/dma/coh901318_lli.h                    |    4 +-
+>  drivers/dma/dw_dmac.c                          |   14 ++++++------
+>  drivers/dma/ep93xx_dma.c                       |   22 ++++++++++----------
+>  drivers/dma/fsldma.c                           |    4 +-
+>  drivers/dma/imx-dma.c                          |   10 ++++----
+>  drivers/dma/imx-sdma.c                         |   10 ++++----
+>  drivers/dma/intel_mid_dma.c                    |   14 ++++++------
+>  drivers/dma/intel_mid_dma_regs.h               |    2 +-
+>  drivers/dma/ipu/ipu_idmac.c                    |    4 +-
+>  drivers/dma/mxs-dma.c                          |    8 +++---
+>  drivers/dma/pch_dma.c                          |   12 +++++-----
+>  drivers/dma/pl330.c                            |   18 ++++++++--------
+>  drivers/dma/shdma.c                            |   25 +++++++++++------------
+>  drivers/dma/ste_dma40.c                        |   26 ++++++++++++------------
+>  drivers/dma/timb_dma.c                         |   18 ++++++++--------
+>  drivers/dma/txx9dmac.c                         |   12 +++++-----
+>  include/linux/amba/pl08x.h                     |    4 +-
+>  include/linux/dw_dmac.h                        |    2 +-
+>  include/linux/sh_dma.h                         |    2 +-
+>  25 files changed, 150 insertions(+), 152 deletions(-)
 
-and..it's not like we let the bad guys go free.
-We actually seriously hurt their behavior while we throttle their timers 
-here.
+For amba-pl08x and dw_dmac:
 
+Acked-by: Viresh Kumar <viresh.kumar@st.com>
 
+Can you please add something in the commit message, to explain why is it done.
+
+-- 
+viresh
