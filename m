@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab1JQRCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:02:10 -0400
+	id S1756593Ab1JQQ7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:59:51 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52674 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab1JQQ7w (ORCPT
+	with ESMTP id S1753453Ab1JQQ7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:59:52 -0400
-X-Authority-Analysis: v=1.1 cv=UpSRffbr9y8V5xg6O7MBcDNOk5f8u00m038obrfOR4U= c=1 sm=0 a=vhdKIqpQuCYA:10 a=PNP0HHTZC3oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=d_yON4x6gciIcn7BXBAA:9 a=aV8xZ56l4vTWJKqxg94A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ApjUT8FHXwqQuxr298gA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 17 Oct 2011 12:59:48 -0400
+X-Authority-Analysis: v=1.1 cv=UpSRffbr9y8V5xg6O7MBcDNOk5f8u00m038obrfOR4U= c=1 sm=0 a=vhdKIqpQuCYA:10 a=cduR4O7mHtkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=1_ydI7Sl2YjKxvQt_dMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=aNWANMpNj92KJJjyDagA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111017165951.126001279@goodmis.org>
+Message-Id: <20111017165947.145747873@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 12:05:04 -0400
+Date: Mon, 17 Oct 2011 12:04:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 09/17][RFC] ktest: Add IF and ELSE to config sections
+Subject: [PATCH 01/17][RFC] ktest: Add TEST_TYPE install option
 References: <20111017160455.498567257@goodmis.org>
-Content-Disposition: inline; filename=0009-ktest-Add-IF-and-ELSE-to-config-sections.patch
+Content-Disposition: inline; filename=0001-ktest-Add-TEST_TYPE-install-option.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,189 +29,54 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Add IF keyword to sections within the config. Also added an ELSE
-keyword that allows different config options to be set for a given
-section.
-
-For example:
-
-TYPE :=3D 1
-STATUS :=3D 0
-
-DEFAULTS IF ${TYPE}
-[...]
-ELSE IF ${STATUS}
-[...]
-ELSE
-[...]
-
-The above will process the first section as $TYPE is true. If it
-was false, it would process the last section as $STATUS is false.
+In testing one of my boxes, I found that I only wanted to build and
+install the kernel. I wanted to manually reboot the box and test it.
+Adding a TEST_TYPE option "install" allows this to happen.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl    |   64 +++++++++++++++++++++++++++++++++++=
-+--
- tools/testing/ktest/sample.conf |   38 +++++++++++++++++++++++
- 2 files changed, 98 insertions(+), 4 deletions(-)
+ tools/testing/ktest/ktest.pl    |    7 +++++++
+ tools/testing/ktest/sample.conf |    7 ++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 057676a..c76e18f 100755
+index 8d02ccb..e087cb4 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -361,6 +361,21 @@ sub set_variable {
+@@ -2929,6 +2929,13 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+ 	build $build_type or next;
      }
- }
 =20
-+sub process_if {
-+    my ($name, $value) =3D @_;
-+
-+    my $val =3D process_variables($value);
-+
-+    if ($val =3D~ /^\s*0\s*$/) {
-+	return 0;
-+    } elsif ($val =3D~ /^\s*\d+\s*$/) {
-+	return 1;
++    if ($test_type eq "install") {
++	get_version;
++	install;
++	success $i;
++	next;
 +    }
 +
-+    die ("$name: $.: Undefined variable $val in if statement\n");
-+    return 1;
-+}
-+
- sub read_config {
-     my ($config) =3D @_;
-=20
-@@ -376,6 +391,8 @@ sub read_config {
-     my $skip =3D 0;
-     my $rest;
-     my $test_case =3D 0;
-+    my $if =3D 0;
-+    my $if_set =3D 0;
-=20
-     while (<IN>) {
-=20
-@@ -397,7 +414,7 @@ sub read_config {
- 	    $default =3D 0;
- 	    $repeat =3D 1;
-=20
--	    if ($rest =3D~ /\s+SKIP(.*)/) {
-+	    if ($rest =3D~ /\s+SKIP\b(.*)/) {
- 		$rest =3D $1;
- 		$skip =3D 1;
- 	    } else {
-@@ -411,9 +428,16 @@ sub read_config {
- 		$repeat_tests{"$test_num"} =3D $repeat;
- 	    }
-=20
--	    if ($rest =3D~ /\s+SKIP(.*)/) {
--		$rest =3D $1;
--		$skip =3D 1;
-+	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		$rest =3D $2;
-+		if (process_if($name, $1)) {
-+		    $if_set =3D 1;
-+		} else {
-+		    $skip =3D 1;
-+		}
-+		$if =3D 1;
-+	    } else {
-+		$if =3D 0;
- 	    }
-=20
- 	    if ($rest !~ /^\s*$/) {
-@@ -437,10 +461,42 @@ sub read_config {
- 		$skip =3D 0;
- 	    }
-=20
-+	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		$if =3D 1;
-+		$rest =3D $2;
-+		if (process_if($name, $1)) {
-+		    $if_set =3D 1;
-+		} else {
-+		    $skip =3D 1;
-+		}
-+	    } else {
-+		$if =3D 0;
-+	    }
-+
- 	    if ($rest !~ /^\s*$/) {
- 		die "$name: $.: Gargbage found after DEFAULTS\n$_";
- 	    }
-=20
-+	} elsif (/^\s*ELSE(.*)$/) {
-+	    if (!$if) {
-+		die "$name: $.: ELSE found with out matching IF section\n$_";
-+	    }
-+	    $rest =3D $1;
-+	    if ($if_set) {
-+		$skip =3D 1;
-+	    } else {
-+		$skip =3D 0;
-+
-+		if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		    # May be a ELSE IF section.
-+		    if (!process_if($name, $1)) {
-+			$skip =3D 1;
-+		    }
-+		} else {
-+		    $if =3D 0;
-+		}
-+	    }
-+
- 	} elsif (/^\s*([A-Z_\[\]\d]+)\s*=3D\s*(.*?)\s*$/) {
-=20
- 	    next if ($skip);
+     if ($test_type ne "build") {
+ 	my $failed =3D 0;
+ 	start_monitor_and_boot or $failed =3D 1;
 diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
 onf
-index 67bc4e0..6a0a0ba 100644
+index b8bcd14..eadca3e 100644
 --- a/tools/testing/ktest/sample.conf
 +++ b/tools/testing/ktest/sample.conf
-@@ -72,6 +72,44 @@
- # the same option name under the same test or as default
- # ktest will fail to execute, and no tests will run.
- #
-+# Both TEST_START and DEFAULTS sections can also have the IF keyword
-+# The value after the IF must evaluate into a 0 or non 0 positive
-+# integer, and can use the config variables (explained below).
-+#
-+# DEFAULTS IF ${IS_X86_32}
-+#
-+# The above will process the DEFAULTS section if the config
-+# variable IS_X86_32 evaluates to a non zero positive integer
-+# otherwise if it evaluates to zero, it will act the same
-+# as if the SKIP keyword was used.
-+#
-+# The ELSE keyword can be used directly after a section with
-+# a IF statement.
-+#
-+# TEST_START IF ${RUN_NET_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
-+#
-+# ELSE
-+#
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-normal
-+#
-+#
-+# The ELSE keyword can also contain an IF statement to allow multiple
-+# if then else sections. But all the sections must be either
-+# DEFAULT or TEST_START, they can not be a mixture.
-+#
-+# TEST_START IF ${RUN_NET_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
-+#
-+# ELSE IF ${RUN_DISK_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-tests
-+#
-+# ELSE IF ${RUN_CPU_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-cpu
-+#
-+# ELSE
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
-+#
+@@ -253,9 +253,10 @@
 =20
- #### Config variables ####
- #
+ # The default test type (default test)
+ # The test types may be:
+-#   build - only build the kernel, do nothing else
+-#   boot - build and boot the kernel
+-#   test - build, boot and if TEST is set, run the test script
++#   build   - only build the kernel, do nothing else
++#   install - build and install, but do nothing else (does not reboot)
++#   boot    - build, install, and boot the kernel
++#   test    - build, boot and if TEST is set, run the test script
+ #          (If TEST is not set, it defaults back to boot)
+ #   bisect - Perform a bisect on the kernel (see BISECT_TYPE below)
+ #   patchcheck - Do a test on a series of commits in git (see PATCHCHECK b=
+elow)
 --=20
 1.7.6.3
 
@@ -224,19 +89,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOnF8HAAoJEIy3vGnGbaoA8Z0P/2E7n+r7VVrDbMjyTU7uYEf0
-EBnCBWMPLAc8ryQFfGPbc3SbBobyw0MVkkF3PKwP1CNNW3JvFxnOOCx5o6LT2zG0
-xdAV0FXJLTs4aCCZRArO05WolpT7/3B8eSkH//ufeC56f5DMZSIGUfNBCRCX5PH2
-5KeZarMVfEegP2ZTB/0WlKVIfeC7E7vth0+sbOuNc7PxKpaV9gkPx+UPSsZTlpr0
-3tSMjEvFFBMSZM3a/Rv+2qsfynrw9JtEwuUMWE6SEKZjK9xtuLTX031idHw3Mdg4
-uun/YraIJMsyqQwPa4udtPBn/14xYLNVQQbrQ2m1dnhVWlHfDkaBW8nMhiigi5Jo
-wrD/gYxyhMC7FsaDBdQpjverwcsAB4tbuwK2BFs7v1bOFQoJW57TgFu7FAorTj8w
-Nhgbkk2gc0hSM1ORAEVJwtQXtNG5aamnTIVynl1IuUiNRjrEz7SIU8FzsWw2TYej
-khOONuB4AK8EcP1ZncDvaSKJeltHk/Bj2iAYfrU2t1iEGz01LZYxUIcuxNyDBcYp
-ifQcqbEViji3mK5teSFvpPCeh0PHj9I4papnAQMeNXthl1f9ktFs0/9X6Xu4Dxgo
-HVEncFM1iBw4AzXcN22H7TEQvqdNRYT6oW8LrfzZqcneYm51NmHVTalUFx8CiBO0
-LVre9nSd1vxvd6T3iLIv
-=Aq38
+iQIcBAABAgAGBQJOnF8DAAoJEIy3vGnGbaoAPgQP/Aifa4E1H5PRgAKhbw40Z7bI
+Dj3bkG2pY+EQsA/37gqnHNK20XjacUYCytZuAaTvw/aRgH06qNMTaNJSQ/pA2Gbi
+ud3UjQRVzOYyVpAKf7edMlmAvF53lMvNl3cp1BjuIBiJPO82HQ2FqyDjWTXPa/gx
+VmAkQSDKF2MzQ//eKeCkUxJ1VSZiqkzdyRrZ31yofTZ1EY6QLVzvzMcyM2bRuR/Z
+tDLj2aQkpUMkIB/Bx1wGmW3XjWDORlzKdp55ln8dcN8A/YoiN7ALeZIWujSACGxI
+NqUg+nGQcfa4i1JaMFmVwGXihdFzui2YOqHzOF0Hu/rOfxgCnpnh0Ul2y/lYDEtZ
+shXh5d7Y4uD0Jr3/nUFTdk55D9JhtFQRe6Y7LQ/MBksHDdwk0kHUTmENsV1EgHS5
+wMuHwyEi33gJ2lPUDvGxOE/oage703sRuq/Q0qCdvK72QwblzrW01nLlhejPDYHn
+NW51o2cbngWdGqUt+/qdnGku9RTSpLsRKNRerEzAc2zGEcewslt/OBAR16EE0mWH
+VPENv8rK7nyJLZEUfPJc1NeRlG2g/ncnxr0lY9VTUeIMDkEcYq9iJyU/75IS27ub
+Zx3HcFoY38KU3rld8GxvNGykpsgyCi30OEa0/V0noxJ35CORgPS8o9ch+EKWnoQd
++JX4cx7cXcMkAlqvCRP2
+=5zdk
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
