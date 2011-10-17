@@ -1,141 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1JQO2a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:28:30 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33179 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755782Ab1JQO23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:28:29 -0400
-Date: Mon, 17 Oct 2011 10:28:25 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: linux-kernel@vger.kernel.org
-Cc: Jeff Mahoney <jeffm@suse.de>, Elena Zannoni <elena.zannoni@oracle.com>,
-        Dave Jones <davej@redhat.com>, David Zeuthen <davidz@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Ric Wheeler <rwheeler@redhat.com>
-Subject: Re: kernel.org keysigning party for the Boston area: October 18,
- 2011
-Message-ID: <20111017142825.GC25017@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-	Jeff Mahoney <jeffm@suse.de>,
-	Elena Zannoni <elena.zannoni@oracle.com>,
-	Dave Jones <davej@redhat.com>, David Zeuthen <davidz@redhat.com>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Konrad Rzeszutek Wilk <konrad@darnok.org>,
-	Ric Wheeler <rwheeler@redhat.com>
-References: <E1RENGE-0007PN-GO@tytso-glaptop.cam.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1RENGE-0007PN-GO@tytso-glaptop.cam.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755976Ab1JQO2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:28:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51712 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab1JQO2s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:28:48 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Date: Mon, 17 Oct 2011 16:28:27 +0200
+In-Reply-To: <20111017141147.GA14581@srcf.ucam.org>
+References: <20111014154348.ae6267aa.akpm@linux-foundation.org>
+	 <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop>
+	 <20111017013921.GA30035@tango.0pointer.de>
+	 <20111017032232.GA4816@srcf.ucam.org> <4E9BBB6D.4050004@linux.intel.com>
+	 <1318837019.6594.29.camel@twins> <alpine.LFD.2.02.1110171119580.3240@ionos>
+	 <20111017124647.GA12838@srcf.ucam.org> <1318856786.4172.22.camel@twins>
+	 <20111017141147.GA14581@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318861707.4172.32.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 11:31:54AM -0400, Theodore Ts'o wrote:
+On Mon, 2011-10-17 at 15:11 +0100, Matthew Garrett wrote:
+> On Mon, Oct 17, 2011 at 03:06:26PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2011-10-17 at 13:46 +0100, Matthew Garrett wrote:
+> > > They're orthogonal. Sometimes you want timer-driven behaviour (how else 
+> > > are you going to draw animations?) and that's obviously going to 
+> > > generate wakeups. This is for the idle case, where the user is no longer 
+> > > sitting in front of the machine but you don't want to trigger a full 
+> > > system suspend. We either need every application that ever uses 
+> > > timer-driven behaviour to support setting its own timer slack on some 
+> > > sort of external policy decision, or we need a way to let the kernel 
+> > > force them to.
+> > 
+> > No!! you want that application to stop drawing stuff that is invisible.
+> > Setting your own timerslack for something you know is pointless is worse
+> > than doing something pointless, its down right stupid.
 > 
-> I will be holding a key signing party in Cambridge on Tuesday, October
-> 18, from 4-5pm for folks in the Boston greater metropolitan area.
-> 
-> Anyone who is interested should send me their key-id by Tuesday noon
-> US/Eastern, and I will give those folks the details about where we will
-> be holding the key signing party.   Please put "BOSTON KEY SIGNING" in
-> the subject line.
-> 
-> Please feel free to forward this to any fellow kernel devs who might not
-> be reading LKML.
-> 
+> Whether or not you want the animation to carry on animating is policy, 
+> and you need something to be the policy agent. Let's say firefox is 
+> invisible. I now grab a copy of its window contents. What do I get?
 
-Reminder, please send me your key-id today, or Tuesday at the latest,
-if you would like to participate in the Boston area Key Signing.
+An XDamage and repaint from the X client, after which your copy will
+complete and you get what you asked for?
 
->     	    	  	   	   	   - Ted
+> > Please, work with the X folks and make it an error to draw to invisible
+> > surfaces. And yes, I know that composition makes that a non-trivial
+> > problem. But at least the blank screen case should be trivial, and I
+> > suspect there's more tractable cases as well. Mostly the desktop is
+> > still a very static place and a few extra timer ticks for when you're
+> > spinning your desktop cube around isn't going to be a problem.
+> 
+> So, just to be clear on this, you want to change the semantics of X and 
+> modify every piece of userspace that currently uses X (because it'll now 
+> otherwise crash when the screen blanks)
 
-> 
-> 
-> What's a key-signing party?
-> 
-> A key-signing party is a get-together with PGP users for the purpose of
-> meeting other PGP users and signing each other's keys. This helps to
-> extend the "web of trust" to a great degree. Also, it sometimes serves
-> as a forum to discuss strong cryptography and related issues.
-> 
-> What do I need for this party?
-> 
-> Required Items
-> Physical attendance
-> Positive picture ID
-> Your Key ID, Key type, HEX fingerprint, and Key size
-> A pen/pencil or whatever you'd like to write with....
-> NO computer
-> 
-> Required Process
-> 
-> 1.  All attendees send their public keys to a public keyserver. For this
-> party, we'll use keyserver.cryptnet.net. If for some reason you don't
-> want your key to be in a public keyserver, but still want to
-> participate, please let me know.
-> 
-> 2.  All attendees send their key ID, key type, fingerprint, and key size to
-> the host, tytso@mit.edu, who will compile everyone's key information.
-> 
-> 3.  The host prints a list with everyone's key ID, key type,
-> fingerprint, and key size from the compiled keyrings and distributes
-> copies of the printout at the meeting.
-> 
-> 4.  Attend the party. Bring along a paper copy of your key ID, key type,
-> fingerprint, and key size that you obtained from your own keyring. You
-> must also bring along a suitable photo ID. Instruct the attendees at the
-> beginning that they are to make two marks on the listing, one for
-> correct key information (key ID, key type, fingerprint, and key size)
-> and one if the ID check is ok.
-> 
-> 5. At the meeting each key owner reads his key ID, key type,
-> fingerprint, key size, and user ID from his own printout, not from the
-> distributed listing. This is because there could be an error, intended
-> or not, on the listing. This is also the time to tell which ID's to sign
-> or not. If the key information matches your printout then place a
-> check-mark by the key.
-> 
-> 6. After everyone has read his key ID information, have all attendees
-> form a line.
-> 
-> 7. The first person walks down the line having every person check his
-> ID.   The second person follows immediately behind the first person and
-> so on.
-> 
-> 8.  If you are satisfied that the person is who they say they are, and
-> that the key on the printout is theirs, you place another check-mark
-> next to their key on your printout.
-> 
-> 9.  Once the first person cycles back around to the front of the line he
-> has checked all the other IDs and his ID has been checked by all others.
-> 
-> 10. After confirming that the key information on the key server matches
-> the printout that you have checked, sign the appropriate keys. Keys
-> should only be signed if they have two check-marks.  If you are using
-> Debian or Ubuntu, the "caff" (certifying authority fire and forget)
-> script can be found in the "signing-party" package along with other
-> useful scripts, which makes it much easier to sign the keys.  For
-> Fedora, the "caff" script can be found in the "pgp-tools" package.
-> 
-> 11.  Send the signed keys back to the keyservers, or to owners of the
-> key.
-> 
-> Other questions about signing keys?
-> 
-> You may want to read the Keysigning Party Howto which includes an
-> explanation of the concepts behind keysigning, instructions for hosting
-> a keysigning party, instructions for participating in a keysinging
-> party, and step by step instructions for signing other's keys.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Or even when I minimize firefox. That said, ff will probably crash as
+soon as I open a second tab because the retarded thing will very likely
+continue animating everything on the invisible tab anyway.
+
+You could start by making the X lib of the day, is that XCB these days?,
+issue an error print (you get plenty of those anyway) and progress to
+full on crashing later.
+
+This gives developers a migration window and incentive to fix up their
+apps.
+
+>  in preference to merging a piece 
+> of code that's functionally consistent with the rest of the cgroups 
+> infrastructure?
+
+Yep.. because as of yet there isn't a sane use-case to warrant adding
+the maintenance burden. Any cgroup controller is functionally
+consistent, per definition, that doesn't make it useful or even sane.
