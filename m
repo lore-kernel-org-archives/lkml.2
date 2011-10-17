@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1JQOKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:10:31 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36516 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab1JQOK2 (ORCPT
+	id S1755907Ab1JQOLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:11:18 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:55252 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab1JQOLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:10:28 -0400
-Date: Mon, 17 Oct 2011 16:10:21 +0200
-From: Julian Andres Klode <jak@jak-linux.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
- staging
-Message-ID: <20111017141021.GA4386@jak-linux.org>
-Mail-Followup-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-	KY Srinivasan <kys@microsoft.com>,
-	"linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-	Haiyang Zhang <haiyangz@microsoft.com>,
-	"gregkh@suse.de" <gregkh@suse.de>,
-	"ohering@suse.com" <ohering@suse.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"hch@infradead.org" <hch@infradead.org>,
-	"virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
- <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
- <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
+	Mon, 17 Oct 2011 10:11:16 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "hughd@chromium.org" <hughd@chromium.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 17 Oct 2011 10:10:26 -0400
+Subject: RE: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Topic: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Index: AcyMlRE8F5tlsuxeR9C2VaoDoFlzmgAPWYKw
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5747E157@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
+ <4E9BC972.8010909@linux.intel.com>
+In-Reply-To: <4E9BC972.8010909@linux.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110170134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9HEBQRN000798
 
-On Mon, Oct 17, 2011 at 08:59:36AM -0500, James Bottomley wrote:
-> On Sun, 2011-10-16 at 03:01 +0000, KY Srinivasan wrote:
-> > 
-> > > -----Original Message-----
-> > > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > > Sent: Saturday, October 15, 2011 5:27 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> > > linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
-> > > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> > > staging
-> > > 
-> > > On Fri, 2011-10-14 at 23:28 -0700, K. Y. Srinivasan wrote:
-> > > > In preparation for moving the storage driver out of staging, seek community
-> > > > review of the storage  driver code.
-> > > 
-> > > That's not exactly a very descriptive commit message for me to put into
-> > > SCSI.  It doesn't have to be huge, just something like "driver to enable
-> > > hyperv windows guest on Linux" or something.
-> > 
-> > Sorry about the commit message. I will have a more descriptive message in the next
-> > submission.
-> > 
-> > > 
-> > > 
-> > > >  drivers/scsi/Kconfig             |    7 +
-> > > >  drivers/scsi/Makefile            |    3 +
-> > > >  drivers/scsi/storvsc_drv.c       | 1480
-> > > ++++++++++++++++++++++++++++++++++++++
-> > > >  drivers/staging/hv/Kconfig       |    6 -
-> > > >  drivers/staging/hv/Makefile      |    2 -
-> > > >  drivers/staging/hv/storvsc_drv.c | 1480 --------------------------------------
-> > > >  6 files changed, 1490 insertions(+), 1488 deletions(-)
-> > > 
-> > > What tree is this against?  The hv/storvsc_drv.c in upstream only has
-> > > 
-> > > jejb@dabdike> wc -l drivers/staging/hv/storvsc_drv.c
-> > > 792 drivers/staging/hv/storvsc_drv.c
-> > > 
-> > > i.e. whatever you're sending is double the length (and obviously I have
-> > > trouble applying the patch.
-> > 
-> > This patch  moves the file from drivers/staging/hv/ directory to the 
-> > drivers/scsi directory; hence double the length.
-> 
-> No, that's not it.  Look again: the storvsc_drv.c in staging is removing
-> 1480 lines, but in git head, this file is only 792 lines long ... is
-> there an alternative tree with the rest in?
-> 
-> The point I'm making is that the staging file you're modifying isn't the
-> one I see in Linus' git head, so which git tree is it in (I assume it's
-> somewhere waiting for the merge window)?
+Hi,
 
-I guess it's the staging tree you're looking for.
+Thank you for giving me a comment.
 
--- 
-Julian Andres Klode  - Debian Developer, Ubuntu Member
+>I have a stupid question: since you have serialized the process procedure via
+>smp_send_stop, why still using spin_lock_xxx? Maybe preempt_disable/enable is
+>enough?
 
-See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
+
+I added spin_lock_init() in panic path for sharing code with other triggers 
+such as oops/reboot/emergency_restart because they still need spin_locks.
+
+Do you suggest following code?
+
+<snip>
+If(!panic)
+	spin_lock_irqsave();
+
+     .
+     .
+If(!panic)
+	spin_unlock_restore();
+<snip>
+
+I don't stick to current patch.
+So I will resend a patch above if you request.
+
+Regarding as preempt_disable/enable, we don't need to call them in panic path because they are
+called at the beginning of panic().
+
+	<snip>
+	60 NORET_TYPE void panic(const char * fmt, ...)  
+	61 {  
+	62         static char buf[1024];  
+	63         va_list args;  
+	64         long i, i_next = 0;  
+	65         int state = 0;  
+	66   
+	67         /*  
+	68          * It's possible to come here directly from a panic-assertion and  
+	69          * not have preempt disabled. Some functions called from here want  
+	70          * preempt to be disabled. No point enabling it later though...  
+	71          */  
+	72         preempt_disable();
+	<snip>
+
+Seiji
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
