@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab1JQQTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:19:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36362 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756417Ab1JQQTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:19:16 -0400
-Date: Mon, 17 Oct 2011 09:18:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, jamie@jamieiles.com, arnd@arndb.de
-Subject: Re: [PATCH 2/6] drivers/base: add bus for System-on-Chip devices
-Message-ID: <20111017161854.GB5108@suse.de>
-References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
- <1318852378-14180-3-git-send-email-lee.jones@linaro.org>
+	id S1756453Ab1JQQWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:22:20 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34450 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752818Ab1JQQWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 12:22:18 -0400
+X-Sasl-enc: u+Pjq7btrDOUnbHjYgIAgfz7pFoqazC607f6EnKk5gbK 1318868537
+Date: Mon, 17 Oct 2011 09:22:08 -0700
+From: Greg KH <greg@kroah.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, dhowells@redhat.com,
+        herbert@gondor.hengli.com.au
+Subject: Re: [PATCH v2.1 1/7] crypto: GnuPG based MPI lib - source files
+ (part 1)
+Message-ID: <20111017162208.GA6661@kroah.com>
+References: <cover.1318598705.git.dmitry.kasatkin@intel.com>
+ <92d93a9fe52e048a21d19732c31d80c9ec44de77.1318598705.git.dmitry.kasatkin@intel.com>
+ <alpine.LRH.2.00.1110151125280.24994@tundra.namei.org>
+ <CALLzPKZ63vp9W_p1t1JOCui+aLRyN6W0t9O-tJ40xKxBef0QPA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318852378-14180-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <CALLzPKZ63vp9W_p1t1JOCui+aLRyN6W0t9O-tJ40xKxBef0QPA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 12:52:54PM +0100, Lee Jones wrote:
-> +void soc_device_unregister(struct device *dev)
+On Mon, Oct 17, 2011 at 12:11:37PM +0300, Kasatkin, Dmitry wrote:
+> >From Kernel Docbook
+> 
+>     Similar to <function>EXPORT_SYMBOL()</function> except that the
+>     symbols exported by <function>EXPORT_SYMBOL_GPL()</function> can
+>     only be seen by modules with a
+>     <function>MODULE_LICENSE()</function> that specifies a GPL
+>     compatible license.  It implies that the function is considered
+>     an internal implementation issue, and not really an interface.
+> 
+> "not really an interface"....
+> 
+> Should it really be EXPORT_SYMBOL_GPL?
 
-Ick, no, pass in the struct soc_device, which the register function
-should return, not a "raw" struct device.
-
-
-> +{
-> +	struct soc_device *soc_dev =
-> +		container_of(dev, struct soc_device, dev);
-> +
-> +	sysfs_remove_group(&dev->kobj, &soc_attr_group);
-> +
-> +	if (device_is_registered(dev))
-> +		device_unregister(dev);
-
-Why is this call needed?
-
-> +
-> +	bus_unregister(&soc_bus_type);
-
-What happens if you have more than one SOC device?  I think you just
-oopsed.
-
-> +
-> +	kfree(soc_dev->attr);
-> +	kfree(soc_dev);
-
-Nope, you just failed again.  I can tell you never tried this code path,
-otherwise you would have noticed the HUGE warnings that the kernel spit
-back at you.  Please fix this.
-
-greg k-h
+Yes.
