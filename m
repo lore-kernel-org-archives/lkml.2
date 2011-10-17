@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab1JQQ7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:59:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45329 "EHLO
+	id S1756700Ab1JQRBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:01:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63567 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab1JQQ7w (ORCPT
+	with ESMTP id S1756618Ab1JQQ7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:59:52 -0400
-X-Authority-Analysis: v=1.1 cv=G2mrdTwFgeQf4gnIVCGl5REDSA/JVLCrZmxI9r5hHjY= c=1 sm=0 a=vhdKIqpQuCYA:10 a=1Vthl_CjnasA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=g3W1TVA1e65YW-LzzFwA:9 a=IhAwZzdN0q-5rzXpZo8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=59up8UmTGVMYl7dueysA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 17 Oct 2011 12:59:54 -0400
+X-Authority-Analysis: v=1.1 cv=cRnbtTsVO6wWDdOYuq0VmyuiiLG/FStMSb4CWlTvuS0= c=1 sm=0 a=vhdKIqpQuCYA:10 a=A7_kQgbFqTMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Uq1LQkEK12DiPy_JfjoA:9 a=q7RHVR6LALaEXBMc0aMA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=kX_FQbC6cxkiiZXY:21 a=Ar_V3aJfphiZFGJW:21 a=d_daC2v3TaKlaloV8icA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111017165951.607972540@goodmis.org>
+Message-Id: <20111017165952.991869955@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 12:05:05 -0400
+Date: Mon, 17 Oct 2011 12:05:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/17][RFC] ktest: Let IF keyword take comparisons
+Subject: [PATCH 13/17][RFC] ktest: Add OVERRIDE keyword to DEFAULTS section
 References: <20111017160455.498567257@goodmis.org>
-Content-Disposition: inline; filename=0010-ktest-Let-IF-keyword-take-comparisons.patch
+Content-Disposition: inline; filename=0013-ktest-Add-OVERRIDE-keyword-to-DEFAULTS-section.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,173 +29,131 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Allow =3D=3D, !=3D, <=3D, >=3D, <, and > to be used in IF statements
-to compare if a section should be processed or not.
+The OVERRIDE keyword will allow options defined in the given
+DEFAULTS section to override options defined in previous DEFAULT
+sections.
 
-For example:
+Normally, options will error if they were previous defined.
+The OVERRIDE keyword allows options that have been previously
+defined to be changed in the given section.
 
-BITS :=3D 32
-
-DEFAULTS IF ${BITS} =3D=3D 32
-MIN_CONFIG =3D ${CONFIG_DIR}/config-32
-ELSE
-MIN_CONFIG =3D ${CONFIG_DIR}/config-64
+Note, the same option can not be defined in the same DEFAULT section
+even if that section is marked as OVERRIDE.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl    |   54 ++++++++++++++++++++++++++++++++++-=
----
- tools/testing/ktest/sample.conf |   14 ++++++++++
- 2 files changed, 62 insertions(+), 6 deletions(-)
+ tools/testing/ktest/ktest.pl    |   37 +++++++++++++++++++++++++++++------=
+--
+ tools/testing/ktest/sample.conf |   15 +++++++++++++++
+ 2 files changed, 44 insertions(+), 8 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index c76e18f..ed20d68 100755
+index b4f32e7..7bce412 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -361,11 +361,47 @@ sub set_variable {
-     }
+@@ -337,10 +337,17 @@ sub process_variables {
  }
 =20
-+sub process_compare {
-+    my ($lval, $cmp, $rval) =3D @_;
-+
-+    # remove whitespace
-+
-+    $lval =3D~ s/^\s*//;
-+    $lval =3D~ s/\s*$//;
-+
-+    $rval =3D~ s/^\s*//;
-+    $rval =3D~ s/\s*$//;
-+
-+    if ($cmp eq "=3D=3D") {
-+	return $lval eq $rval;
-+    } elsif ($cmp eq "!=3D") {
-+	return $lval ne $rval;
-+    }
-+
-+    my $statement =3D "$lval $cmp $rval";
-+    my $ret =3D eval $statement;
-+
-+    # $@ stores error of eval
-+    if ($@) {
-+	return -1;
-+    }
-+
-+    return $ret;
-+}
-+
- sub process_if {
-     my ($name, $value) =3D @_;
+ sub set_value {
+-    my ($lvalue, $rvalue) =3D @_;
++    my ($lvalue, $rvalue, $override, $overrides, $name) =3D @_;
 =20
-     my $val =3D process_variables($value);
-=20
-+    if ($val =3D~ /(.*)(=3D=3D|\!=3D|>=3D|<=3D|>|<)(.*)/) {
-+	my $ret =3D process_compare($1, $2, $3);
-+	if ($ret < 0) {
-+	    die "$name: $.: Unable to process comparison\n";
-+	}
-+	return $ret;
-+    }
-+
-     if ($val =3D~ /^\s*0\s*$/) {
- 	return 0;
-     } elsif ($val =3D~ /^\s*\d+\s*$/) {
-@@ -428,8 +464,8 @@ sub read_config {
- 		$repeat_tests{"$test_num"} =3D $repeat;
- 	    }
-=20
--	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
--		$rest =3D $2;
-+	    if ($rest =3D~ /\sIF\s+(.*)/) {
-+		$rest =3D "";
- 		if (process_if($name, $1)) {
- 		    $if_set =3D 1;
- 		} else {
-@@ -461,14 +497,14 @@ sub read_config {
- 		$skip =3D 0;
- 	    }
-=20
--	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+	    if ($rest =3D~ /\sIF\s+(.*)/) {
- 		$if =3D 1;
--		$rest =3D $2;
- 		if (process_if($name, $1)) {
- 		    $if_set =3D 1;
- 		} else {
- 		    $skip =3D 1;
- 		}
-+		$rest =3D "";
- 	    } else {
- 		$if =3D 0;
- 	    }
-@@ -477,26 +513,32 @@ sub read_config {
- 		die "$name: $.: Gargbage found after DEFAULTS\n$_";
- 	    }
-=20
--	} elsif (/^\s*ELSE(.*)$/) {
-+	} elsif (/^\s*ELSE\b(.*)$/) {
- 	    if (!$if) {
- 		die "$name: $.: ELSE found with out matching IF section\n$_";
- 	    }
- 	    $rest =3D $1;
- 	    if ($if_set) {
- 		$skip =3D 1;
-+		$rest =3D "";
- 	    } else {
- 		$skip =3D 0;
-=20
--		if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		if ($rest =3D~ /\sIF\s+(.*)/) {
- 		    # May be a ELSE IF section.
- 		    if (!process_if($name, $1)) {
- 			$skip =3D 1;
- 		    }
-+		    $rest =3D "";
- 		} else {
- 		    $if =3D 0;
- 		}
- 	    }
-=20
-+	    if ($rest !~ /^\s*$/) {
-+		die "$name: $.: Gargbage found after DEFAULTS\n$_";
+     if (defined($opt{$lvalue})) {
+-	die "Error: Option $lvalue defined more than once!\n";
++	if (!$override || defined(${$overrides}{$lvalue})) {
++	    my $extra =3D "";
++	    if ($override) {
++		$extra =3D "In the same override section!\n";
 +	    }
++	    die "$name: $.: Option $lvalue defined more than once!\n$extra";
++	}
++	${$overrides}{$lvalue} =3D $rvalue;
+     }
+     if ($rvalue =3D~ /^\s*$/) {
+ 	delete $opt{$lvalue};
+@@ -430,6 +437,9 @@ sub __read_config {
+     my $test_case =3D 0;
+     my $if =3D 0;
+     my $if_set =3D 0;
++    my $override =3D 0;
 +
- 	} elsif (/^\s*([A-Z_\[\]\d]+)\s*=3D\s*(.*?)\s*$/) {
++    my %overrides;
 =20
- 	    next if ($skip);
+     while (<$in>) {
+=20
+@@ -443,6 +453,7 @@ sub __read_config {
+=20
+ 	    my $old_test_num;
+ 	    my $old_repeat;
++	    $override =3D 0;
+=20
+ 	    if ($type eq "TEST_START") {
+=20
+@@ -468,10 +479,20 @@ sub __read_config {
+ 		$skip =3D 0;
+ 	    }
+=20
+-	    if ($rest =3D~ /\s+ITERATE\s+(\d+)(.*)$/) {
+-		$repeat =3D $1;
+-		$rest =3D $2;
+-		$repeat_tests{"$test_num"} =3D $repeat;
++	    if (!$skip) {
++		if ($type eq "TEST_START") {
++		    if ($rest =3D~ /\s+ITERATE\s+(\d+)(.*)$/) {
++			$repeat =3D $1;
++			$rest =3D $2;
++			$repeat_tests{"$test_num"} =3D $repeat;
++		    }
++		} elsif ($rest =3D~ /\sOVERRIDE\b(.*)/) {
++		    # DEFAULT only
++		    $rest =3D $1;
++		    $override =3D 1;
++		    # Clear previous overrides
++		    %overrides =3D ();
++		}
+ 	    }
+=20
+ 	    if ($rest =3D~ /\sIF\s+(.*)/) {
+@@ -573,10 +594,10 @@ sub __read_config {
+ 	    }
+=20
+ 	    if ($default || $lvalue =3D~ /\[\d+\]$/) {
+-		set_value($lvalue, $rvalue);
++		set_value($lvalue, $rvalue, $override, \%overrides, $name);
+ 	    } else {
+ 		my $val =3D "$lvalue\[$test_num\]";
+-		set_value($val, $rvalue);
++		set_value($val, $rvalue, $override, \%overrides, $name);
+=20
+ 		if ($repeat > 1) {
+ 		    $repeats{$val} =3D $repeat;
 diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
 onf
-index 6a0a0ba..4e8fb91 100644
+index ae2a93c..0fd3ca3 100644
 --- a/tools/testing/ktest/sample.conf
 +++ b/tools/testing/ktest/sample.conf
-@@ -72,6 +72,8 @@
+@@ -72,6 +72,21 @@
  # the same option name under the same test or as default
  # ktest will fail to execute, and no tests will run.
  #
++# DEFAULTS OVERRIDE
 +#
++# Options defined in the DEFAULTS section can not be duplicated
++# even if they are defined in two different DEFAULT sections.
++# This is done to catch mistakes where an option is added but
++# the previous option was forgotten about and not commented.
 +#
++# The OVERRIDE keyword can be added to a section to allow this
++# section to override other DEFAULT sections values that have
++# been defined previously. It will only override options that
++# have been defined before its use. Options defined later
++# in a non override section will still error. The same option
++# can not be defined in the same section even if that section
++# is marked OVERRIDE.
++#
+ #
+ #
  # Both TEST_START and DEFAULTS sections can also have the IF keyword
- # The value after the IF must evaluate into a 0 or non 0 positive
- # integer, and can use the config variables (explained below).
-@@ -110,6 +112,18 @@
- # ELSE
- # BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
- #
-+# The if statement may also have comparisons that will and for
-+# =3D=3D and !=3D, strings may be used for both sides.
-+#
-+# BOX_TYPE :=3D x86_32
-+#
-+# DEFAULTS IF ${BOX_TYPE} =3D=3D x86_32
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-32
-+# ELSE
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-64
-+#
-+
-+
-=20
- #### Config variables ####
- #
 --=20
 1.7.6.3
 
@@ -208,19 +166,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOnF8HAAoJEIy3vGnGbaoACZIP/iPgNlijOsSF3WYYIgqh7FHD
-1JAyXyTG6yxW4mAr4u7p9JAhSahap2FzAdcgKSlbORhg3uu22Jpxs4L9ms+n8bJI
-K8R6yRvL8W75s5KK1ep0LjFqrj6QiDFX1Y4P+lXlicO76n2Rbcm6uf3lkFOGWDoa
-khAcKO0U3JsX42DBvIQJpw4eLTyTOhbPZP5rGkiE9i3Qack2iVELGj7WiOyCD5S7
-JJi18/6BjadPNleZ/j8wIuBXojCAggiNUdOpNwj9fvXZOeqywq0mlHPtxuMKo/fQ
-yKGM807OO9DKzshMOo2uiq5hGZI7A+vV7MtT8ISSCbz/2DPuXd/rpnXaatI6UZET
-xSReFL1EwVX/wUVhjGTqkP33WoH52bDL/0F8ipOovQt83whtNY3jjWRUhVZJQO7Q
-h6Ml2OfJHVP5MralQWVrf9pkcPj0TXOdWMns2aVWlH1XHm1NuxolDaVFVnNUzHM+
-pn9POgC0Wbo9EJdRbsY8PSEAcDghlgOidrTEsEo300yGEOgpM/Dm6Ms92MwDs4++
-HUtcfcbKM1VwNR33VohRBOTqsJsTG0Az08hG4BiIbjr6AKUE6AS0je+Q1rnv3922
-tWmUS75kYfwLWRbHtnHP3LY3UXG0JiKh6vTffar3S3ydHII+2mYQ8eJowu1XaAwE
-I03xgIom+qgIasPWyqna
-=gN1k
+iQIcBAABAgAGBQJOnF8JAAoJEIy3vGnGbaoALCIP+gIsQ2qD+yQfGxnT/k3LeD6m
+qZEx5eXiazm/21I9F7C3cFlQGS6s+pIFUgkzAqK8uZ3gLBPBBDA3I0aT/xJSPVDB
+bfwwzF9HfJ1qdbtLTI0jY16b1cD0bvGduFcMp5zN9L4SVRa3sFAdzMhyYPJWtZqu
+CsyJ76v56o9yIcJS78JfLnoNi8UuCKIeC0qAYC8ek+lsrZbsvK24R+qPujQJSDEQ
+blUh4XNHswbsHWBJalGkF9U+gBqkCTSa+EAYlm6d5V7MnCsyWYYaF1ObgBu3ggzp
+JudHojjygRLejATlkse3RaFz5VOQ3EAlEF0y37X/NxmIBPGQKx+VnryeuyOVbQo1
+qoHKhfFrfRw2OLV9RDEUQTYLJVlsyHO/MOYFWsItLS67b6f+tAOENbSD9inbapkF
+vm346H3+y5T+rr+8QF06zV+f1/lAufz56LX+p9ZT3RWzWyNYILZDieJgklKCrtjS
+KfEsRGtuaEkxQxc7XKiwxEN/lWfuj/m4yz5x1kqKw79Rj/cYirN+5tegEan9R5jY
+zwbNGkGWmPTEzoPoe44USFJkRqqrt2AvoRmvtP1yiNhaqiK9KH2yUkEKxrumDPw7
+62P2xD6mi5q+2J7c+oFyRi7BgNzPi11fPwKsGJOpA/9tLwkY4iIA8g3vMCyAi7wb
+PEZTq+oTPc+HYZyVfFaJ
+=u/t3
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
