@@ -1,96 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab1JQMbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 08:31:23 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:57377 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab1JQMbW (ORCPT
+	id S1753067Ab1JQMcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:32:20 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59904 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1JQMcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 08:31:22 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E9C201D.30905@cam.ac.uk>
-Date: Mon, 17 Oct 2011 13:31:25 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.ml.walleij@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, zdevai@gmail.com
-Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
-References: <20111013204410.GA17160@sirena.org.uk> <4E985C60.9020308@cam.ac.uk> <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com> <4E9BF8D9.8030301@cam.ac.uk> <20111017101959.GC3042@opensource.wolfsonmicro.com> <4E9C0423.5010909@cam.ac.uk> <20111017104642.GD3042@opensource.wolfsonmicro.com> <4E9C0DD7.7080105@cam.ac.uk> <20111017111807.GA27266@opensource.wolfsonmicro.com> <4E9C1249.5020408@cam.ac.uk> <20111017120813.GB27266@opensource.wolfsonmicro.com>
-In-Reply-To: <20111017120813.GB27266@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 08:32:19 -0400
+From: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 10/10] Staging: comedi: fix printk issue in cb_pcidas64.c
+Date: Mon, 17 Oct 2011 18:02:05 +0530
+Message-Id: <1318854725-6775-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/11 13:08, Mark Brown wrote:
-> On Mon, Oct 17, 2011 at 12:32:25PM +0100, Jonathan Cameron wrote:
->> On 10/17/11 12:18, Mark Brown wrote:
-> 
->>>  - Some voltage inputs hard wired to particular system supplies.
-> 
->> Hard wired in the pmic?  (e.g. do not vary from device to device).
->> These I'm happy to see have names.  If it were a normal IIO device their
->> access attributes would be something like:
-> 
->> in_voltage0_supply3V_raw
->> in_voltage1_supply2.8V_raw
-> 
-> Yes, though the names are more symbolic than that (eg, "USB").
-> 
->> (have insist on indexing even with named channels because it is needed as
->> events codes don't want to carry a string.).
-> 
-> This is orthogonal to the request interface, though.
-No it isn't - because it will effect the numbering of the gneral purpose ones.
-> 
->>>  - One or more temperature inputs wired to particular place (eg, chip
->>>    and battery).
-> 
->> Not hard wired so to my mind these are just general purpose temperature inputs.
->> Hence naming doesn't make sense (at least not outside of board file or DT).
-> 
-> No, they're hard wired - like I say they're wired to a particular place.
-If it isn't physically in the pmic package then it doesn't belong in the driver.
-> 
->> There are some complexities to deal with that make me wonder if direct indexing
->> into a driver provided table isn't easier.  The other is channel types.
-> 
-> It's not great for usability if you've got to apply an additional layer
-> of translation on top of mapping the schematic onto the hardware.
-Agreed.  Lets see how ti comes out.
-> 
->> Is it so bad to insist that the dt writer or equivalent actually looks at the
->> driver in question and picks the underlying channel index directly?
-> 
-> We certainly can't put Linux specific channel numbers into the device
-> tree.
-Fine so numbering is based on Linux specific channel numbers based on the channel
-type rather than a single index.  Thus as a minimum we need everything given
-in my last proposed structure.
+Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
+Converted printks to dev_printk.
+Removed unnecessary printk statement.
 
-Note the numbering is still going to be Linux specific just within a given type
-of channel. ADC channels regularly have completely inconsistent (and/or stupid) names
-in device data sheets.
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/cb_pcidas64.c |   31 ++++++++++++-------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
-0...4
-1...5
-AUXA....AUXD
-TEMP_EXT1...TEMP_EXT5 (all of which are just normal adc channels that some
-designer decided would be used only for connecting analog temperature sensors.)
-
-All of these get mapped to 0...4.  Anything else leads to totally unpredictable
-guessing games when trying to find the channel.
-
-Naming should be restricted for the rare case where it really really is physically
-mounted in the same chip package and hence can never be used for anything else.
-Sure if the adc has special features that mean it really is only useful for one
-thing (like a resolver channel) then it is fine to mark it as a more specific type.
-
-Jonathan
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index 3dc68ef..51c48e3 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -83,6 +83,8 @@ TODO:
+ 	make ao fifo size adjustable like ai fifo
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../comedidev.h"
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+@@ -1739,8 +1741,6 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	uint32_t local_range, local_decode;
+ 	int retval;
+ 
+-	pr_info("comedi%d: cb_pcidas64\n", dev->minor);
+-
+ /*
+  * Allocate the private structure area.
+  */
+@@ -1776,17 +1776,15 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
+ 
+ 	if (dev->board_ptr == NULL) {
+-		printk
+-		    ("No supported ComputerBoards/MeasurementComputing card found\n");
++		dev_err(dev->hw_dev, "No supported ComputerBoards/MeasurementComputing card found\n");
+ 		return -EIO;
+ 	}
+ 
+-	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	dev_dbg(dev->hw_dev,  "Found %s on bus %i, slot %i\n", board(dev)->name,
++		pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 
+ 	if (comedi_pci_enable(pcidev, driver_cb_pcidas.driver_name)) {
+-		printk(KERN_WARNING
+-		       " failed to enable PCI device and request regions\n");
++		dev_err(dev->hw_dev, "failed to enable PCI device and request regions\n");
+ 		return -EIO;
+ 	}
+ 	pci_set_master(pcidev);
+@@ -1814,7 +1812,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	if (!priv(dev)->plx9080_iobase || !priv(dev)->main_iobase
+ 	    || !priv(dev)->dio_counter_iobase) {
+-		printk(" failed to remap io memory\n");
++		dev_err(dev->hw_dev, "failed to remap io memory\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1850,17 +1848,19 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	priv(dev)->hw_revision =
+ 	    hw_revision(dev, readw(priv(dev)->main_iobase + HW_STATUS_REG));
+-	printk(" stc hardware revision %i\n", priv(dev)->hw_revision);
++	dev_dbg(dev->hw_dev, "stc hardware revision %i\n",
++		priv(dev)->hw_revision);
+ 	init_plx9080(dev);
+ 	init_stc_registers(dev);
+ 	/*  get irq */
+ 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
+ 			"cb_pcidas64", dev)) {
+-		printk(" unable to allocate irq %u\n", pcidev->irq);
++		dev_err(dev->hw_dev, "unable to allocate irq %u\n",
++			pcidev->irq);
+ 		return -EINVAL;
+ 	}
+ 	dev->irq = pcidev->irq;
+-	printk(" irq %u\n", dev->irq);
++	dev_dbg(dev->hw_dev, "irq %u\n", dev->irq);
+ 
+ 	retval = setup_subdevices(dev);
+ 	if (retval < 0)
+@@ -1882,8 +1882,6 @@ static int detach(struct comedi_device *dev)
+ {
+ 	unsigned int i;
+ 
+-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
+-
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+ 	if (priv(dev)) {
+@@ -2093,7 +2091,8 @@ static int ai_config_calibration_source(struct comedi_device *dev,
+ 	else
+ 		num_calibration_sources = 8;
+ 	if (source >= num_calibration_sources) {
+-		printk("invalid calibration source: %i\n", source);
++		dev_err(dev->hw_dev, "invalid calibration source: %i\n",
++			source);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -2924,7 +2923,7 @@ static void pio_drain_ai_fifo_16(struct comedi_device *dev)
+ 		}
+ 
+ 		if (num_samples < 0) {
+-			printk(" cb_pcidas64: bug! num_samples < 0\n");
++			dev_err(dev->hw_dev, "bug! num_samples < 0\n");
+ 			break;
+ 		}
+ 
+-- 
+1.7.6.4
 
