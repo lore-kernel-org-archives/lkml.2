@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab1JQSjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:39:25 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36708 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab1JQSjX (ORCPT
+	id S1752901Ab1JQStI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:49:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34184 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab1JQStH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:39:23 -0400
-Date: Mon, 17 Oct 2011 11:39:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-Message-Id: <20111017113919.3b7ac253.akpm@linux-foundation.org>
-In-Reply-To: <01b201cc8cc7$3f6117d0$be234770$%szyprowski@samsung.com>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
-	<1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
-	<20111014162933.d8fead58.akpm@linux-foundation.org>
-	<01b201cc8cc7$3f6117d0$be234770$%szyprowski@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 14:49:07 -0400
+Date: Mon, 17 Oct 2011 20:49:51 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Problems with videos and i915 driver
+Message-ID: <20111017184951.GK2971@phenom.ffwll.local>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org
+References: <1318788068.12224.125.camel@gandalf.stny.rr.com>
+ <20111017085546.GB2971@phenom.ffwll.local>
+ <1318851627.12224.135.camel@gandalf.stny.rr.com>
+ <20111017170218.GH2971@phenom.ffwll.local>
+ <1318871219.12224.138.camel@gandalf.stny.rr.com>
+ <20111017175258.GJ2971@phenom.ffwll.local>
+ <1318875562.4722.4.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318875562.4722.4.camel@gandalf.stny.rr.com>
+X-Operating-System: Linux phenom 3.0.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011 14:21:07 +0200
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-
-> > > +
-> > > +void free_contig_pages(unsigned long pfn, unsigned nr_pages)
-> > > +{
-> > > +	struct page *page = pfn_to_page(pfn);
-> > > +
-> > > +	while (nr_pages--) {
-> > > +		__free_page(page);
-> > > +		++pfn;
-> > > +		if (likely(zone_pfn_same_memmap(pfn - 1, pfn)))
-> > > +			++page;
-> > > +		else
-> > > +			page = pfn_to_page(pfn);
-> > > +	}
-> > > +}
+On Mon, Oct 17, 2011 at 02:19:22PM -0400, Steven Rostedt wrote:
+> On Mon, 2011-10-17 at 19:52 +0200, Daniel Vetter wrote:
+> > On Mon, Oct 17, 2011 at 01:06:59PM -0400, Steven Rostedt wrote:
+> > > It's running Fedora 14, and I rather avoid Gnome3 and systemd, which
+> > > prevents me from moving her to Fedora 15. If F14 does not provide the
+> > > necessary updates, I'll move her over to a Debian system.
 > > 
-> > You're sure these functions don't need EXPORT_SYMBOL()?  Maybe the
-> > design is that only DMA core calls into here (if so, that's good).
+> > Generally we're (unfortunately) only now cracking down on a few
+> > long-standing Sandybdrige gpu hang issues, so you want something that
+> > tracks upstream (and sometimes even git master) pretty closely.
+> > 
 > 
-> Drivers should not call it, it is intended to be used by low-level DMA
-> code.
+> What git tree is this? I could try it out.
 
-OK, thanks for checking.
+Just for these fixes you'd need libdrm and xf86-video-intel. Git repos for
+these two:
 
-> Do you think that a comment about missing EXPORT_SYMBOL is 
-> required?
+git://anongit.freedesktop.org/git/xorg/driver/xf86-video-intel
+git://anongit.freedesktop.org/git/mesa/drm
 
-No.  If someone later wants to use these from a module then we can look
-at their reasons and make a decision at that time.
+See
 
+http://intellinuxgraphics.org/download.html
+
+for the entire stack.
+
+Cheers, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
