@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab1JQHyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:54:04 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44270 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab1JQHyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:54:02 -0400
-Date: Mon, 17 Oct 2011 09:53:35 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Seidel, Conny" <Conny.Seidel@amd.com>, Tejun Heo <tj@kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "JBeulich@novell.com" <JBeulich@novell.com>, x86 <x86@kernel.org>
-Subject: Re: WARNING: at arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+...
-Message-ID: <20111017075335.GB4940@aftab>
-References: <20111014135516.GC11990@aftab>
- <20111014165604.GA14286@aftab>
- <20111014175556.GE4294@google.com>
- <20111015221215.GA25519@aftab>
- <20111017000759.3d1f4310.conny.seidel@amd.com>
- <20111017072352.GA4940@aftab>
- <20111017073811.GA3675@elte.hu>
+	id S1755157Ab1JQHzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:55:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754804Ab1JQHzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 03:55:05 -0400
+Message-ID: <4E9BDF3B.6080602@redhat.com>
+Date: Mon, 17 Oct 2011 13:24:35 +0530
+From: Gopal <gtiwari@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017073811.GA3675@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Glenn Sommer <gsommer@datanordisk.dk>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: patch for Dell ST220T Touch Screen Monitor
+References: <4E9BB353.70606@redhat.com> <CAN+gG=FsAwnQH-KjmLCvYpB_MVoe0zyBOLNu1zn3YwduC37p2A@mail.gmail.com>
+In-Reply-To: <CAN+gG=FsAwnQH-KjmLCvYpB_MVoe0zyBOLNu1zn3YwduC37p2A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 03:38:11AM -0400, Ingo Molnar wrote:
-> Yeah, it's still lined up in -tip:x86/apic for a v3.2 merge.
+Hi Benjamin,
 
-Cool,
-thanks.
+Thanks for Informing...I think i have missed by some day may be. But i 
+have fwded my patch some where around 9th Aug. 2011 also but didn't got 
+any feedback on that so tried again.
 
--- 
-Regards/Gruss,
-Boris.
+thanks for informing.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+gopal.
+
+
+
+
+
+
+
+
+On 10/17/2011 12:38 PM, Benjamin Tissoires wrote:
+> Hi Gopal,
+>
+> well, the device 0x1fd2:0x0064 is already supported by hid-multitouch
+> since mid-August. It has been included in the for-next branch of
+> Jiri's tree (see
+> http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commit;h=c50bb1a4005630f47b5da26336f74a485033a515
+> ).
+>
+> As the device is a standard (Win7 compatible) hid multitouch device,
+> it's better to handle it that way: you'll get multitouch support and
+> there will be no cost to maintain it ;-)
+>
+> Cheers,
+> Benjamin
+>
+> On Mon, Oct 17, 2011 at 06:47, Gopal<gtiwari@redhat.com>  wrote:
+>> Hello Everybody,
+>>
+>> We have recently created Support for Dell ST2220T Touch screen monitor with
+>> in the kernel hierarchy driver/input/touchscreen patch for this attach with
+>> this mail.
+>> Please find the attachment. I have previously also send the patch didn't got
+>> any feedback so sending it again.
+>>
+>> thanks
+>> Gopal
+>>
+
