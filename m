@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1JQUZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 16:25:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48368 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab1JQUZn (ORCPT
+	id S1754781Ab1JQUZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 16:25:54 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:34692 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753219Ab1JQUZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 16:25:43 -0400
-From: Dan McGee <dpmcgee@gmail.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Disable TCP_DEBUG and FASTRETRANS_DEBUG by default
-Date: Mon, 17 Oct 2011 15:25:24 -0500
-Message-Id: <1318883125-29500-1-git-send-email-dpmcgee@gmail.com>
-X-Mailer: git-send-email 1.7.7
+	Mon, 17 Oct 2011 16:25:52 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+Organization: VMware, Inc.
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Subject: Re: [PATCH] drivers, vmw_balloon.c: Fix typo in code comment.
+Date: Mon, 17 Oct 2011 13:25:50 -0700
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+References: <1318880063.10091.14.camel@localhost.localdomain>
+In-Reply-To: <1318880063.10091.14.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110171325.50958.dtor@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If these are truly debug options, they should be turned off by default
-and can be tweaked if necessary. Fix one usage of the flag to use #if
-instead of #ifdef so defining to zero is acceptable.
+On Monday, October 17, 2011 12:34:23 PM Rakib Mullick wrote:
+>  Fix typo in code comment.
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
 
-Signed-off-by: Dan McGee <dpmcgee@gmail.com>
----
- include/net/tcp.h    |    4 ++--
- net/ipv4/tcp_timer.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index acc620a..15236d0 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -18,8 +18,8 @@
- #ifndef _TCP_H
- #define _TCP_H
- 
--#define TCP_DEBUG 1
--#define FASTRETRANS_DEBUG 1
-+#define TCP_DEBUG 0
-+#define FASTRETRANS_DEBUG 0
- 
- #include <linux/list.h>
- #include <linux/tcp.h>
-diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
-index ecd44b0..31669e7 100644
---- a/net/ipv4/tcp_timer.c
-+++ b/net/ipv4/tcp_timer.c
-@@ -334,7 +334,7 @@ void tcp_retransmit_timer(struct sock *sk)
- 		 * connection. If the socket is an orphan, time it out,
- 		 * we cannot allow such beasts to hang infinitely.
- 		 */
--#ifdef TCP_DEBUG
-+#if TCP_DEBUG
- 		struct inet_sock *inet = inet_sk(sk);
- 		if (sk->sk_family == AF_INET) {
- 			LIMIT_NETDEBUG(KERN_DEBUG "TCP: Peer %pI4:%u/%u unexpectedly shrunk window %u:%u (repaired)\n",
--- 
-1.7.7
-
+> ---
+> 
+> diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
+> index 053d36c..2480c21 100644
+> --- a/drivers/misc/vmw_balloon.c
+> +++ b/drivers/misc/vmw_balloon.c
+> @@ -151,7 +151,7 @@ MODULE_LICENSE("GPL");
+>  struct vmballoon_stats {
+>  	unsigned int timer;
+> 
+> -	/* allocation statustics */
+> +	/* allocation statistics */
+>  	unsigned int alloc;
+>  	unsigned int alloc_fail;
+>  	unsigned int sleep_alloc;
