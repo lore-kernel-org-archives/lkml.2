@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab1JQLxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:53:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46258 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab1JQLxM (ORCPT
+	id S1752245Ab1JQLxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:53:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56650 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab1JQLxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:53:12 -0400
+	Mon, 17 Oct 2011 07:53:15 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: gregkh@suse.de, linus.walleij@stericsson.com, jamie@jamieiles.com,
         arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 4/6] mach-ux500: export System-on-Chip information ux500 via sysfs
-Date: Mon, 17 Oct 2011 12:52:56 +0100
-Message-Id: <1318852378-14180-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 6/6] mach-ux500: remove intermediary add_platform_device* functions
+Date: Mon, 17 Oct 2011 12:52:58 +0100
+Message-Id: <1318852378-14180-7-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
 References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
@@ -21,272 +21,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we make use of the new System-On-Chip bus driver to export
-vital SoC information out to userspace via sysfs. This patch
-provides a data structure of strings to populate the base
-nodes found in:
-
-/sys/devices/soc[0|1|2|...]/[family|machine|revision|soc_id].
-
-It also adds one more node as requested by ST-Ericsson.
-'process' depicts the way in which the silicon was manufactured.
+These are no longer required since a 'parent' pointer is now
+passed to each registering device.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/Kconfig                    |    1 +
- arch/arm/mach-ux500/cpu-db5500.c               |   32 +++++++++---
- arch/arm/mach-ux500/cpu-db8500.c               |   36 ++++++++++---
- arch/arm/mach-ux500/cpu.c                      |   67 ++++++++++++++++++++++++
- arch/arm/mach-ux500/include/mach/db8500-regs.h |    3 +
- arch/arm/mach-ux500/include/mach/setup.h       |    6 ++-
- 6 files changed, 128 insertions(+), 17 deletions(-)
+ arch/arm/mach-ux500/devices-common.c |   53 ----------------------------------
+ arch/arm/mach-ux500/devices-common.h |   34 +++++++++------------
+ arch/arm/mach-ux500/devices-db8500.h |   10 ++++--
+ 3 files changed, 22 insertions(+), 75 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index 86188b2..1c462ed 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -27,6 +27,7 @@ config MACH_U8500
- 	bool "U8500 Development platform"
- 	depends on UX500_SOC_DB8500
- 	select TPS6105X
-+	select SOC_BUS
- 	help
- 	  Include support for the mop500 development platform.
- 
-diff --git a/arch/arm/mach-ux500/cpu-db5500.c b/arch/arm/mach-ux500/cpu-db5500.c
-index 3995284..6bbc9da 100644
---- a/arch/arm/mach-ux500/cpu-db5500.c
-+++ b/arch/arm/mach-ux500/cpu-db5500.c
-@@ -220,17 +220,33 @@ static int usb_db5500_tx_dma_cfg[] = {
- 	DB5500_DMA_DEV38_USB_OTG_OEP_8
- };
- 
--struct device* __init u5500_init_devices(void)
-+static const char *db5500_read_soc_id(void)
- {
--	/* FIXME: First parameter to be a real parent. */
--	db5500_add_gpios(NULL);
--	db5500_dma_init(NULL);
--	db5500_add_rtc(NULL);
--	db5500_add_usb(NULL, usb_db5500_rx_dma_cfg, usb_db5500_tx_dma_cfg);
-+	return kasprintf(GFP_KERNEL, "u5500 currently unsupported\n");
-+}
-+
-+static struct device * __init db5500_soc_device_init(void)
-+{
-+	const char *soc_id = db5500_read_soc_id();
-+
-+	return ux500_soc_device_init(soc_id);
-+}
-+
-+struct device * __init u5500_init_devices(void)
-+{
-+	struct device *parent;
-+	int i;
-+
-+	parent = db5500_soc_device_init();
-+
-+	db5500_add_gpios(parent);
-+	db5500_dma_init(parent);
-+	db5500_add_rtc(parent);
-+	db5500_add_usb(parent, usb_db5500_rx_dma_cfg,
-+		usb_db5500_tx_dma_cfg);
- 
- 	platform_add_devices(db5500_platform_devs,
- 			     ARRAY_SIZE(db5500_platform_devs));
- 
--	/* FIXME: Return value to be a real parent. */
--	return NULL;
-+	return parent;
+diff --git a/arch/arm/mach-ux500/devices-common.c b/arch/arm/mach-ux500/devices-common.c
+index b8d9a99..170975f 100644
+--- a/arch/arm/mach-ux500/devices-common.c
++++ b/arch/arm/mach-ux500/devices-common.c
+@@ -59,59 +59,6 @@ dbx500_add_amba_device(struct device *parent, const char *name,
  }
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 375171e..c83440b 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -24,6 +24,7 @@
- #include <mach/setup.h>
- #include <mach/devices.h>
- #include <mach/usb.h>
-+#include <mach/db8500-regs.h>
  
- #include "devices-db8500.h"
- #include "ste-dma40-db8500.h"
-@@ -188,22 +189,43 @@ static int usb_db8500_tx_dma_cfg[] = {
- 	DB8500_DMA_DEV39_USB_OTG_OEP_8
- };
- 
-+static const char *db8500_read_soc_id(void)
-+{
-+	void __iomem *uid = __io_address(U8500_BB_UID_BASE);
-+
-+	return kasprintf(GFP_KERNEL, "%08x%08x%08x%08x%08x",
-+			 readl((u32 *)uid+1),
-+			 readl((u32 *)uid+1), readl((u32 *)uid+2),
-+			 readl((u32 *)uid+3), readl((u32 *)uid+4));
-+}
-+
-+static struct device * __init db8500_soc_device_init(void)
-+{
-+	const char *soc_id = db8500_read_soc_id();
-+
-+	return ux500_soc_device_init(soc_id);
-+}
-+
- /*
-  * This function is called from the board init
-  */
--struct device* __init u8500_init_devices(void)
-+struct device * __init u8500_init_devices(void)
+ static struct platform_device *
+-dbx500_add_platform_device(const char *name, int id, void *pdata,
+-			   struct resource *res, int resnum)
+-{
+-	struct platform_device *dev;
+-	int ret;
+-
+-	dev = platform_device_alloc(name, id);
+-	if (!dev)
+-		return ERR_PTR(-ENOMEM);
+-
+-	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+-	dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
+-
+-	ret = platform_device_add_resources(dev, res, resnum);
+-	if (ret)
+-		goto out_free;
+-
+-	dev->dev.platform_data = pdata;
+-
+-	ret = platform_device_add(dev);
+-	if (ret)
+-		goto out_free;
+-
+-	return dev;
+-
+-out_free:
+-	platform_device_put(dev);
+-	return ERR_PTR(ret);
+-}
+-
+-struct platform_device *
+-dbx500_add_platform_device_4k1irq(const char *name, int id,
+-				  resource_size_t base,
+-				  int irq, void *pdata)
+-{
+-	struct resource resources[] = {
+-		[0] = {
+-			.start	= base,
+-			.end	= base + SZ_4K - 1,
+-			.flags	= IORESOURCE_MEM,
+-		},
+-		[1] = {
+-			.start	= irq,
+-			.end	= irq,
+-			.flags	= IORESOURCE_IRQ,
+-		}
+-	};
+-
+-	return dbx500_add_platform_device(name, id, pdata, resources,
+-					  ARRAY_SIZE(resources));
+-}
+-
+-static struct platform_device *
+ dbx500_add_gpio(struct device *parent, int id, resource_size_t addr, int irq,
+ 		struct nmk_gpio_platform_data *pdata)
  {
-+	struct device *parent;
-+	int i;
-+
-+	parent = db8500_soc_device_init();
-+
- 	if (cpu_is_u8500ed())
- 		dma40_u8500ed_fixup();
+diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
+index f8adff8..089371e 100644
+--- a/arch/arm/mach-ux500/devices-common.h
++++ b/arch/arm/mach-ux500/devices-common.h
+@@ -8,14 +8,13 @@
+ #ifndef __DEVICES_COMMON_H
+ #define __DEVICES_COMMON_H
  
--	/* FIXME: First parameter to be a real parent. */
--	db8500_add_rtc(NULL);
--	db8500_add_gpios(NULL);
--	db8500_add_usb(NULL, usb_db8500_rx_dma_cfg, usb_db8500_tx_dma_cfg);
-+	db8500_add_rtc(parent);
-+	db8500_add_gpios(parent);
-+	db8500_add_usb(parent, usb_db8500_rx_dma_cfg,
-+		usb_db8500_tx_dma_cfg);
- 
- 	platform_device_register_simple("cpufreq-u8500", -1, NULL, 0);
- 	platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
- 
--	/* FIXME: Return value to be a real parent. */
--	return NULL;
-+	return parent;
- }
-diff --git a/arch/arm/mach-ux500/cpu.c b/arch/arm/mach-ux500/cpu.c
-index b457799..3315436 100644
---- a/arch/arm/mach-ux500/cpu.c
-+++ b/arch/arm/mach-ux500/cpu.c
-@@ -2,6 +2,7 @@
-  * Copyright (C) ST-Ericsson SA 2010
-  *
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-+ * Author: Lee Jones <lee.jones@linaro.org> for ST-Ericsson
-  * License terms: GNU General Public License (GPL) version 2
-  */
- 
-@@ -10,6 +11,9 @@
- #include <linux/clk.h>
- #include <linux/mfd/db8500-prcmu.h>
- #include <linux/mfd/db5500-prcmu.h>
+-extern struct amba_device *
+-dbx500_add_amba_device(struct device *parent, const char *name, resource_size_t base,
+-		       int irq, void *pdata, unsigned int periphid);
 +#include <linux/sys_soc.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
++#include <plat/i2c.h>
  
- #include <asm/hardware/gic.h>
- #include <asm/mach/map.h>
-@@ -77,3 +81,66 @@ static void __init ux500_timer_init(void)
- struct sys_timer ux500_timer = {
- 	.init	= ux500_timer_init,
- };
-+
-+static const char * __init ux500_get_machine(void)
-+{
-+	return kasprintf(GFP_KERNEL, "DB%4x", dbx500_partnumber());
-+}
-+
-+static const char * __init ux500_get_family(void)
-+{
-+	return kasprintf(GFP_KERNEL, "ux500");
-+}
-+
-+static const char * __init ux500_get_revision(void)
-+{
-+	unsigned int rev = dbx500_revision();
-+
-+	if (rev == 0x01)
-+		return kasprintf(GFP_KERNEL, "%s", "ED");
-+	else if (rev >= 0xA0)
-+		return kasprintf(GFP_KERNEL, "%d.%d",
-+				 (rev >> 4) - 0xA + 1, rev & 0xf);
-+
-+	return kasprintf(GFP_KERNEL, "%s", "Unknown");
-+}
-+
-+static ssize_t __init ux500_get_process(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	if (dbx500_id.process == 0x00)
-+		return sprintf(buf, "Standard\n");
-+
-+	return sprintf(buf, "%02xnm\n", dbx500_id.process);
-+}
-+
-+static void __init soc_info_populate(struct soc_device_attribute *soc_dev_attr,
-+				     const char *soc_id)
-+{
-+	soc_dev_attr->soc_id   = soc_id;
-+	soc_dev_attr->machine  = ux500_get_machine();
-+	soc_dev_attr->family   = ux500_get_family();
-+	soc_dev_attr->revision = ux500_get_revision();
-+}
-+
-+struct device_attribute ux500_soc_attr =
-+	__ATTR(process,  S_IRUGO, ux500_get_process,  NULL);
-+
-+struct device * __init ux500_soc_device_init(const char *soc_id)
-+{
-+	struct device *parent;
-+	struct soc_device_attribute *soc_dev_attr;
-+
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	soc_info_populate(soc_dev_attr, soc_id);
-+
-+	parent = soc_device_register(soc_dev_attr);
-+	if (!IS_ERR_OR_NULL(parent))
-+		device_create_file(parent, &ux500_soc_attr);
-+
-+	return parent;
-+}
-diff --git a/arch/arm/mach-ux500/include/mach/db8500-regs.h b/arch/arm/mach-ux500/include/mach/db8500-regs.h
-index 0499971..22a9a5d 100644
---- a/arch/arm/mach-ux500/include/mach/db8500-regs.h
-+++ b/arch/arm/mach-ux500/include/mach/db8500-regs.h
-@@ -166,4 +166,7 @@
- #define U8500_MODEM_BASE	0xe000000
- #define U8500_APE_BASE		0x6000000
+-extern struct platform_device *
+-dbx500_add_platform_device_4k1irq(const char *name, int id,
+-				  resource_size_t base,
+-				  int irq, void *pdata);
++extern struct amba_device *
++dbx500_add_amba_device(struct device *parent, const char *name,
++		       resource_size_t base, int irq, void *pdata,
++		       unsigned int periphid);
  
-+/* SoC identification number information */
-+#define U8500_BB_UID_BASE      (U8500_BACKUPRAM1_BASE + 0xFC0)
+ struct spi_master_cntlr;
+ 
+@@ -62,18 +61,15 @@ static inline struct platform_device *
+ dbx500_add_i2c(struct device *parent, int id, resource_size_t base, int irq,
+ 	       struct nmk_i2c_controller *pdata)
+ {
+-	return dbx500_add_platform_device_4k1irq("nmk-i2c", id, base, irq,
+-						 pdata);
+-}
+-
+-struct msp_i2s_platform_data;
+-
+-static inline struct platform_device *
+-dbx500_add_msp_i2s(int id, resource_size_t base, int irq,
+-		   struct msp_i2s_platform_data *pdata)
+-{
+-	return dbx500_add_platform_device_4k1irq("MSP_I2S", id, base, irq,
+-						 pdata);
++	struct resource resources[] = {
++		DEFINE_RES_MEM(base, SZ_4K),
++		DEFINE_RES_IRQ(irq),
++	};
 +
- #endif
-diff --git a/arch/arm/mach-ux500/include/mach/setup.h b/arch/arm/mach-ux500/include/mach/setup.h
-index 88e8d6b..74b43bb 100644
---- a/arch/arm/mach-ux500/include/mach/setup.h
-+++ b/arch/arm/mach-ux500/include/mach/setup.h
-@@ -18,8 +18,8 @@ void __init ux500_map_io(void);
- extern void __init u5500_map_io(void);
- extern void __init u8500_map_io(void);
++	return platform_device_register_resndata(parent, "nmk-i2c",
++						 id, resources,
++						 ARRAY_SIZE(resources),
++						 pdata, sizeof(*pdata));
+ }
  
--extern void __init u5500_init_devices(void);
--extern void __init u8500_init_devices(void);
-+extern struct device * __init u5500_init_devices(void);
-+extern struct device * __init u8500_init_devices(void);
- 
- extern void __init ux500_init_irq(void);
- 
-@@ -27,6 +27,8 @@ extern void __init u5500_sdi_init(struct device *parent);
- 
- extern void __init db5500_dma_init(struct device *parent);
- 
-+extern struct device *ux500_soc_device_init(const char *soc_id);
+ static inline struct amba_device *
+diff --git a/arch/arm/mach-ux500/devices-db8500.h b/arch/arm/mach-ux500/devices-db8500.h
+index 9bd08ad..9fd93e9 100644
+--- a/arch/arm/mach-ux500/devices-db8500.h
++++ b/arch/arm/mach-ux500/devices-db8500.h
+@@ -18,9 +18,13 @@ db8500_add_ske_keypad(struct device *parent,
+ 		      struct ske_keypad_platform_data *pdata,
+ 		      size_t size)
+ {
+-	return dbx500_add_platform_device_4k1irq("nmk-ske-keypad", -1,
+-						 U8500_SKE_BASE,
+-						 IRQ_DB8500_KB, pdata);
++	struct resource resources[] = {
++		DEFINE_RES_MEM(U8500_SKE_BASE, SZ_4K),
++		DEFINE_RES_IRQ(IRQ_DB8500_KB),
++	};
 +
- /* We re-use nomadik_timer for this platform */
- extern void nmdk_timer_init(void);
++	return platform_device_register_resndata(parent, "nmk-ske-keypad", -1,
++						 resources, 2, pdata, size);
+ }
  
+ static inline struct amba_device *
 -- 
 1.7.5.4
 
