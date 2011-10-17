@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab1JQHw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:52:56 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:54846 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab1JQHwy (ORCPT
+	id S1755130Ab1JQHyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:54:04 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44270 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab1JQHyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:52:54 -0400
-Subject: Re: [PATCH 12/21] m68k: drop unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4E9B7BE1.1080907@snapgear.com>
-References: <1318595371.6132.70.camel@x61.thuisdomein>
-	 <4E9B7BE1.1080907@snapgear.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 09:52:44 +0200
-Message-ID: <1318837964.6414.6.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 03:54:02 -0400
+Date: Mon, 17 Oct 2011 09:53:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Seidel, Conny" <Conny.Seidel@amd.com>, Tejun Heo <tj@kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "JBeulich@novell.com" <JBeulich@novell.com>, x86 <x86@kernel.org>
+Subject: Re: WARNING: at arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+...
+Message-ID: <20111017075335.GB4940@aftab>
+References: <20111014135516.GC11990@aftab>
+ <20111014165604.GA14286@aftab>
+ <20111014175556.GE4294@google.com>
+ <20111015221215.GA25519@aftab>
+ <20111017000759.3d1f4310.conny.seidel@amd.com>
+ <20111017072352.GA4940@aftab>
+ <20111017073811.GA3675@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111017073811.GA3675@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 10:50 +1000, Greg Ungerer wrote:
-> I have no problem with the changes. But it will clash with the
-> reworking of the Kconfig files currently sitting in linux-next
-> for merging in the 3.2 merge window.
+On Mon, Oct 17, 2011 at 03:38:11AM -0400, Ingo Molnar wrote:
+> Yeah, it's still lined up in -tip:x86/apic for a v3.2 merge.
 
-So should I put this on hold and see what's needed after those reworked
-Kconfig files are merged in mainline? Or would you prefer to have that
-done beforehand (ie, I'll try to redo this on top of current linux-next
-and get the redone patch in linux-next before the 3.2 merge)?
+Cool,
+thanks.
 
+-- 
+Regards/Gruss,
+Boris.
 
-Paul Bolle
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
