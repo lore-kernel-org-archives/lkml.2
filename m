@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab1JQPLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:11:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58764 "EHLO mx2.suse.de"
+	id S1756216Ab1JQPMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:12:12 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:50289 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756111Ab1JQPLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:11:52 -0400
-Date: Mon, 17 Oct 2011 17:11:50 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Terry Lambert <tlambert@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Driver for Primax keyboards violating USB HID spec
-In-Reply-To: <1318637934-30006-1-git-send-email-tlambert@chromium.org>
-Message-ID: <alpine.LNX.2.00.1110171710570.3541@pobox.suse.cz>
-References: <1318637934-30006-1-git-send-email-tlambert@chromium.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752056Ab1JQPMK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 11:12:10 -0400
+Date: Mon, 17 Oct 2011 08:12:05 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Daniel Baluta <dbaluta@ixiacom.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Mihai Maruseac <mihai.maruseac@gmail.com>, davem@davemloft.net,
+        mirq-linux@rere.qmqm.pl, therbert@google.com, jpirko@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mihai Maruseac <mmaruseac@ixiacom.com>
+Subject: Re: [PATCH] dev: use ifindex hash for dev_seq_ops
+Message-ID: <20111017081205.2e41d03f@nehalam.linuxnetplumber.net>
+In-Reply-To: <CAEnQRZCWBhTy24WkWoC_wy11YuLxWQ3GWr3v1=JcGvprq4AtmA@mail.gmail.com>
+References: <1318413446-22258-1-git-send-email-mmaruseac@ixiacom.com>
+	<1318586017-17207-1-git-send-email-mmaruseac@ixiacom.com>
+	<1318596791.2223.13.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<CAEnQRZCWBhTy24WkWoC_wy11YuLxWQ3GWr3v1=JcGvprq4AtmA@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Oct 2011, Terry Lambert wrote:
+On Mon, 17 Oct 2011 11:03:54 +0300
+Daniel Baluta <dbaluta@ixiacom.com> wrote:
 
-> Primax keyboards with the issue this driver addresses report modifier
-> keys as in band key events instead of as out of band modifier bits,
-> resulting in the modifier keys generating key up events immediately
-> before the keys they are intended to modify.  This driver rewrites
-> the raw report data from such keyboards into USB HID 1.11 compliant
-> report data.  It only matches the USB vendor and product IDs for the
-> keyboard it has been tested on. Since there are several keyboards,
-> notably a number of laptops and folding USB keyboards known to have
-> similar unresolved problem reports, the list is expected to grow.
+> > This assumes device ifindexes are contained in a small range
+> > [N .. N + X]
+> >
+> > I understand this can help some benchmarks, but in real world this wont
+> > help that much once ifindexes are 'fragmented' (If really this multi
+> > thousand devices stuff is for real)
+> >
+> > Listen, we currently have 256 slots in the hash table.
+> >
+> > Can we try to make 'offset' something like  (slot_number<<24) +
+> > (position in hash chain [slot_number]), instead of (position in devices
+> > global list)
 > 
-> Signed-off-by: Terry Lambert <tlambert@chromium.org>
-> ---
->  drivers/hid/Kconfig      |    8 +++
->  drivers/hid/Makefile     |    1 +
->  drivers/hid/hid-core.c   |    1 +
->  drivers/hid/hid-ids.h    |    3 +
->  drivers/hid/hid-primax.c |  117 ++++++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 130 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/hid/hid-primax.c
 > 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index 1130a89..a097e17 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -441,6 +441,14 @@ config HID_PICOLCD_LEDS
->  	---help---
->  	  Provide access to PicoLCD's GPO pins via leds class.
->  
-> +config HID_PRIMAX
-> +	tristate "Primax non-fully HID-compliant devices" if EXPERT
-> +	depends on USB_HID
-> +	default !EXPERT
+> Eric, we can refine the idea of our first patch [1], where we recorded
+> the (bucket, offset) pair. Stephen, do you agree with this?
+> 
+> 
+> thanks,
+> Daniel.
+> 
+> [1] http://patchwork.ozlabs.org/patch/118331/
 
-I have removed thi 'EXPERT' dependency (please see changelog of commit 
-73d5e8f77e8 for rationale behind that) and applied. Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Using buckets is fine, my idea about ifindex was just to try and
+preserve the order, but it doesn't matter.
