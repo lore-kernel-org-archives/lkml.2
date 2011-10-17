@@ -1,211 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab1JQQ57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:57:59 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56839 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752757Ab1JQQ55 (ORCPT
+	id S1756660Ab1JQQ74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:59:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52674 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab1JQQ7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:57:57 -0400
-X-Sasl-enc: wWwR93B0eG0l1ICi/8m6OPUzzKEDvrI9ppj55k8N+aL9 1318870676
-Date: Mon, 17 Oct 2011 09:56:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net
-Subject: Linux 3.0.7
-Message-ID: <20111017165654.GA5442@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Oct 2011 12:59:53 -0400
+X-Authority-Analysis: v=1.1 cv=UpSRffbr9y8V5xg6O7MBcDNOk5f8u00m038obrfOR4U= c=1 sm=0 a=vhdKIqpQuCYA:10 a=dpEo6TZrp7EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Qdg3YHP4dvspYzXrr44A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=TjaiqMRUOx5P8DQf:21 a=W69gfQoDoO0aC5g2:21 a=BRj_892zC60lrK2mg8AA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111017165952.559137810@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 17 Oct 2011 12:05:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 12/17][RFC] ktest: Consolidate TEST_TYPE and DEFAULT code
+References: <20111017160455.498567257@goodmis.org>
+Content-Disposition: inline; filename=0012-ktest-Consolidate-TEST_TYPE-and-DEFAULT-code.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-I'm announcing the release of the 3.0.7 kernel.
+From: Steven Rostedt <srostedt@redhat.com>
 
-All users of the 3.0 kernel series must upgrade.
+The code that handles parsing the TEST_TYPE and DEFAULT code share
+a lot of common functionality. Combine the two and add a if statement
+that does what is different between them.
 
-The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
-;a=3Dsummary
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/ktest/ktest.pl |   61 ++++++++++++++------------------------=
+---
+ 1 files changed, 21 insertions(+), 40 deletions(-)
 
-Note, I've had some boot problems with this kernel, and I can't seem to
-narrow the issue down, but I think it's due to something not related to
-the kernel itself, but am not positive.  Please test to verify that I
-didn't mess something up.
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                   |    2 -
- arch/arm/mach-ux500/Kconfig                |    1=20
- arch/mips/jz4740/gpio.c                    |   52 ++++++++++++------------=
------
- arch/sparc/mm/init_64.c                    |    5 ++
- arch/x86/pci/acpi.c                        |   11 ++++++
- drivers/ata/ahci.c                         |   12 ++++++
- drivers/gpu/drm/radeon/atombios_dp.c       |   28 ++++++++++-----
- drivers/gpu/drm/radeon/evergreen.c         |   44 ------------------------
- drivers/gpu/drm/radeon/ni.c                |   32 -----------------
- drivers/gpu/drm/radeon/radeon_connectors.c |    8 ++--
- drivers/gpu/drm/radeon/radeon_cursor.c     |   12 +++---
- drivers/gpu/drm/radeon/radeon_encoders.c   |    9 +++--
- drivers/gpu/drm/radeon/rv770.c             |   51 ------------------------=
-----
- drivers/ide/ide-disk.c                     |    7 +++
- drivers/md/dm-table.c                      |   13 +++----
- drivers/md/md.c                            |   22 ++++++++++--
- drivers/md/md.h                            |    2 -
- drivers/md/multipath.c                     |    3 -
- drivers/md/raid1.c                         |    3 -
- drivers/md/raid10.c                        |    5 +-
- drivers/md/raid5.c                         |    6 +--
- drivers/misc/lis3lv02d/lis3lv02d.c         |   14 ++++---
- drivers/mmc/host/mxs-mmc.c                 |   30 +++++++---------
- drivers/net/e1000e/ich8lan.c               |   19 +++++++---
- drivers/net/wireless/rt2x00/rt2x00queue.c  |   21 ++++++++---
- drivers/net/wireless/rt2x00/rt2x00queue.h  |    2 +
- drivers/scsi/libsas/sas_expander.c         |   10 +++--
- drivers/scsi/qla2xxx/qla_os.c              |    9 ++---
- fs/exec.c                                  |    2 +
- include/linux/ftrace.h                     |    7 ++-
- include/linux/ptp_classify.h               |   13 +++++--
- include/linux/sched.h                      |    1=20
- include/net/ipv6.h                         |    2 -
- kernel/posix-cpu-timers.c                  |    5 +-
- kernel/sched.c                             |   26 --------------
- kernel/sched_rt.c                          |    4 +-
- kernel/trace/ftrace.c                      |   42 +++++++++++++++++------
- kernel/trace/trace_functions.c             |    3 +
- net/ipv6/ip6_output.c                      |   10 ++---
- net/ipv6/udp.c                             |    4 +-
- sound/soc/codecs/wm8753.c                  |    4 +-
- sound/soc/pxa/zylonite.c                   |    8 ++--
- 42 files changed, 262 insertions(+), 302 deletions(-)
-
-
-Alex Deucher (6):
-      drm/radeon/kms: Fix logic error in DP HPD handler
-      drm/radeon/kms: fix regression in DP aux defer handling
-      drm/radeon/kms: add retry limits for native DP aux defer
-      drm/radeon/kms: fix channel_remap setup (v2)
-      drm/radeon/kms: retry aux transactions if there are status flags
-      drm/radeon/kms: use hardcoded dig encoder to transmitter mapping for =
-DCE4.1
-
-Arnd Bergmann (1):
-      ASoC: use a valid device for dev_err() in Zylonite
-
-Axel Lin (1):
-      ASoC: Fix setting update bits for WM8753_LADC and WM8753_RADC
-
-Borislav Petkov (1):
-      ide-disk: Fix request requeuing
-
-Bruce Allan (1):
-      e1000e: workaround for packet drop on 82579 at 100Mbps
-
-David S. Miller (1):
-      sparc64: Force the execute bit in OpenFirmware's translation entries.
-
-Gertjan van Wingerde (1):
-      rt2x00: Serialize TX operations on a queue.
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.7
-
-Jason Wang (1):
-      ipv6: fix NULL dereference in udp6_ufo_fragment()
-
-Koen Beel (1):
-      mmc: mxs-mmc: fix clock rate setting
-
-Mark Nelson (1):
-      ahci: Enable SB600 64bit DMA on Asus M3A
-
-Mark Salyzyn (1):
-      libsas: fix panic when single phy is disabled on a wide port
-
-Michel D=E4nzer (1):
-      drm/radeon: Update AVIVO cursor coordinate origin before x/yorigin ca=
-lculation.
-
-Mike Snitzer (1):
-      dm table: avoid crash if integrity profile changes
-
-NeilBrown (1):
-      md: Avoid waking up a thread after it has been freed.
-
-Paul Menzel (1):
-      x86/PCI: use host bridge _CRS info on ASUS M2V-MX SE
-
-Peter Zijlstra (1):
-      posix-cpu-timers: Cure SMP wobbles
-
-Rafael J. Wysocki (1):
-      MIPS: PM: Use struct syscore_ops instead of sysdevs for PM (v2)
-
-Richard Cochran (1):
-      ptp: fix L2 event message recognition
-
-Roland Dreier (1):
-      qla2xxx: Fix crash in qla2x00_abort_all_cmds() on unload
-
-Shawn Bohrer (1):
-      sched/rt: Migrate equal priority tasks to available CPUs
-
-Simon Kirby (1):
-      sched: Fix up wchan borkage
-
-Steven Rostedt (3):
-      ftrace: Fix regression of :mod:module function enabling
-      ftrace: Fix regression where ftrace breaks when modules are loaded
-      ftrace: Fix warning when CONFIG_FUNCTION_TRACER is not defined
-
-Takashi Iwai (1):
-      lis3: fix regression of HP DriveGuard with 8bit chip
-
-Tetsuo Handa (1):
-      exec: do not call request_module() twice from search_binary_handler()
-
-srinidhi kasagar (1):
-      ARM: mach-ux500: enable fix for ARM errata 754322
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 62de47d..b4f32e7 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -436,20 +436,29 @@ sub __read_config {
+ 	# ignore blank lines and comments
+ 	next if (/^\s*$/ || /\s*\#/);
+=20
+-	if (/^\s*TEST_START(.*)/) {
++	if (/^\s*(TEST_START|DEFAULTS)\b(.*)/) {
+=20
+-	    $rest =3D $1;
++	    my $type =3D $1;
++	    $rest =3D $2;
+=20
+-	    if ($num_tests_set) {
+-		die "$name: $.: Can not specify both NUM_TESTS and TEST_START\n";
+-	    }
++	    my $old_test_num;
++	    my $old_repeat;
++
++	    if ($type eq "TEST_START") {
+=20
+-	    my $old_test_num =3D $test_num;
+-	    my $old_repeat =3D $repeat;
++		if ($num_tests_set) {
++		    die "$name: $.: Can not specify both NUM_TESTS and TEST_START\n";
++		}
+=20
+-	    $test_num +=3D $repeat;
+-	    $default =3D 0;
+-	    $repeat =3D 1;
++		$old_test_num =3D $test_num;
++		$old_repeat =3D $repeat;
++
++		$test_num +=3D $repeat;
++		$default =3D 0;
++		$repeat =3D 1;
++	    } else {
++		$default =3D 1;
++	    }
+=20
+ 	    if ($rest =3D~ /\s+SKIP\b(.*)/) {
+ 		$rest =3D $1;
+@@ -478,42 +487,14 @@ sub __read_config {
+ 	    }
+=20
+ 	    if ($rest !~ /^\s*$/) {
+-		die "$name: $.: Gargbage found after TEST_START\n$_";
++		die "$name: $.: Gargbage found after $type\n$_";
+ 	    }
+=20
+-	    if ($skip) {
++	    if ($skip && $type eq "TEST_START") {
+ 		$test_num =3D $old_test_num;
+ 		$repeat =3D $old_repeat;
+ 	    }
+=20
+-	} elsif (/^\s*DEFAULTS(.*)$/) {
+-	    $default =3D 1;
+-
+-	    $rest =3D $1;
+-
+-	    if ($rest =3D~ /\s+SKIP(.*)/) {
+-		$rest =3D $1;
+-		$skip =3D 1;
+-	    } else {
+-		$skip =3D 0;
+-	    }
+-
+-	    if ($rest =3D~ /\sIF\s+(.*)/) {
+-		$if =3D 1;
+-		if (process_if($name, $1)) {
+-		    $if_set =3D 1;
+-		} else {
+-		    $skip =3D 1;
+-		}
+-		$rest =3D "";
+-	    } else {
+-		$if =3D 0;
+-	    }
+-
+-	    if ($rest !~ /^\s*$/) {
+-		die "$name: $.: Gargbage found after DEFAULTS\n$_";
+-	    }
+-
+ 	} elsif (/^\s*ELSE\b(.*)$/) {
+ 	    if (!$if) {
+ 		die "$name: $.: ELSE found with out matching IF section\n$_";
+--=20
+1.7.6.3
 
 
---tKW2IUtsqtDRztdT
-Content-Type: application/pgp-signature
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJOnF5WAAoJEDjbvchgkmk+7isQAJoiOli7xxV2s6ltiImtBsID
-Paj7Ngx3dJkhk+nCbzTWhQRsfkFkqXUdUF6R/6q4MgE76OQCeEaK4Hx5sW2MiaFR
-FmZsCjLu/abwZx4zLBFoU4iKLyALDxtDhylL2tC+9EGGiEy1AAEMXP4ZiPAoo7/g
-IzLVPc0FyfPtQWwRnYPuwJINKSm+NWDOfoL5pVrBYJ3y6b9Mq9uUv2JmyZjtH2oW
-Q5I8YSEulBUudv4iM+9n1fxk6zwr2I6lE6TFVNPQxoXtbWzHlVITv+qpeOhLF6Ts
-Ky5xVAHZS6dHe2qiV+VyiJxyeUiGc8YChrrqaP4nOiecCCg4b6INR4x7Njkj0Wgs
-R80fKxsuV5SIMvFKXC6sBwCozEW0ouUWAanneFijHTXELhy8ZYWD940hfS4ajPRc
-w6lAk08pGmlIc81Y1HBPEFpIVP6XITyrG5RKeVu4AjLALP40rg/PexVdsOEayUpm
-9wwUhshx+FR9yjEqIPwvM10wUpkk6kCLOAfmefMvGl0dkIY7n57K1cKDDDhE+MMu
-waPTDom1Vofffa/9qvQZc61BC9bkKXsKLcw7VFBO3plS+wO1m2krrXWa/RbtutQE
-X3zlx1bZhcbnPluE0vNd2YSzNHo2GhLejoE26UWcg7BXZT921kxicCv4tlEiEmSe
-lACAZzyfZ4WG2jH9r81v
-=3Ocb
+iQIcBAABAgAGBQJOnF8IAAoJEIy3vGnGbaoA02wQALr2HKhl/5ZjffMSoBkQ2etZ
+EhyET4KRAHVSxcwnVwy+b1J0O70mOFjZh3s2tUXhzkPwkA3trHC9QePrDXSLaORo
+bHNeL8xxFmH5j3JkrEGhkchZAKpjLomQ3R8IvRimHJModeHwPxWl4/BHdPyt5+oo
+t5x+KcQJpO35Uo0+wp6TJrNmqt12isw53i0GSvN0FGuvndw4B+uSa3a96GuMGqEe
+dHcy8KFcB8u1Ady5URs0gdjhHNBn/QqHbN2ODBvtnfzUY0tdd8cjo4nHMKPFyc/n
++EGQaA5E7wT+JJ+4+If0Y12xpH/KxqmR02h1lhmaSyOj1WGtz6eQqcI9Ryp7za3k
+5oIU8TdsMTanEWCL9RKlvMrJ8Dy6h89l6sPqkC/C4JfJbX3R5/UdKqBob7SRkLcX
+AMG8Oj81ireRvKffJzPSk1u+8/KQXj9nE5iRC76aBZzLa7IvLwXUChnTMkCSczqv
+08Pn2/rmnqiK5nVHy/Dy57k5zk5Q415W+kkwX/FGW+3Ya4WaqNK7W8fWxvVgZGro
+C7zsMKpawYXH4q+1E2bd8dx3a11LHPlTKX2pojyJRxc5KV8Kr+e7DEVHXUcVl4BP
+zZPhzoSSub09Q8/0bK93J72K2Ya48hhj/hLyPGIhX/MSpEfk5628NQwL65ykAp2n
+IvQaD/UaZtxEeIDtsvSe
+=5T4C
 -----END PGP SIGNATURE-----
 
---tKW2IUtsqtDRztdT--
+--00GvhwF7k39YY--
