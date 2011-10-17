@@ -1,123 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab1JQMdv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 08:33:51 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40720 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab1JQMdu (ORCPT
+	id S1753170Ab1JQMe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:34:57 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:50807 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1JQMe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 08:33:50 -0400
+	Mon, 17 Oct 2011 08:34:56 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 11/11] Staging: comedi: fix printk issue in cb_pcidda.c
-Date: Mon, 17 Oct 2011 18:03:39 +0530
-Message-Id: <1318854819-6835-1-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 13/13] Staging: comedi: fix printk issue in cb_pcimdas.c
+Date: Mon, 17 Oct 2011 18:04:46 +0530
+Message-Id: <1318854886-6895-1-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
-converted printks to dev_printk level.
-Removed unnecessary printk statements.
+This is a patch to the cb_pcimdas.c file that fixes up a printk warning
+found by the checkpatch.pl tool
+Converted printks to dev_printk.
+
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcidda.c |   22 ++++++++++------------
- 1 files changed, 10 insertions(+), 12 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcimdas.c |   48 +++++++++++---------------
+ 1 files changed, 20 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index 49102b3..68bea4d 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -46,11 +46,14 @@ Please report success/failure with other different cards to
- <comedi@comedi.org>.
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include "../comedidev.h"
- 
- #include "comedi_pci.h"
- #include "8255.h"
- 
-+
- #define PCI_VENDOR_ID_CB	0x1307	/*  PCI vendor number of ComputerBoards */
- #define EEPROM_SIZE	128	/*  number of entries in eeprom */
- #define MAX_AO_CHANNELS 8	/*  maximum number of ao channels for supported boards */
-@@ -282,7 +285,6 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- 	struct pci_dev *pcidev = NULL;
+diff --git a/drivers/staging/comedi/drivers/cb_pcimdas.c b/drivers/staging/comedi/drivers/cb_pcimdas.c
+index b1b832b..9aae302 100644
+--- a/drivers/staging/comedi/drivers/cb_pcimdas.c
++++ b/drivers/staging/comedi/drivers/cb_pcimdas.c
+@@ -212,8 +212,6 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
  	int index;
+ 	/* int i; */
  
--	printk("comedi%d: cb_pcidda: ", dev->minor);
- 
+-	printk("comedi%d: cb_pcimdas: ", dev->minor);
+-
  /*
   * Allocate the private structure area.
-@@ -293,7 +295,6 @@ static int cb_pcidda_attach(struct comedi_device *dev,
+  */
+@@ -223,7 +221,6 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
  /*
   * Probe the device to determine what device in the series it is.
   */
 -	printk("\n");
  
  	for_each_pci_dev(pcidev) {
- 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
-@@ -312,22 +313,22 @@ static int cb_pcidda_attach(struct comedi_device *dev,
+ 		/*  is it not a computer boards card? */
+@@ -248,26 +245,27 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
  		}
  	}
- 	if (!pcidev) {
--		printk
--		    ("Not a ComputerBoards/MeasurementComputing card on requested position\n");
-+		dev_err(dev->hw_dev,
-+			"Not a ComputerBoards/MeasurementComputing card on requested position\n");
- 		return -EIO;
- 	}
+ 
+-	printk("No supported ComputerBoards/MeasurementComputing card found on "
+-	       "requested position\n");
++	dev_err(dev->hw_dev,
++		"No supported ComputerBoards/MeasurementComputing card found on requested position\n");
+ 	return -EIO;
+ 
  found:
- 	devpriv->pci_dev = pcidev;
- 	dev->board_ptr = cb_pcidda_boards + index;
- 	/*  "thisboard" macro can be used from here. */
--	printk("Found %s at requested position\n", thisboard->name);
-+	dev_dbg(dev->hw_dev, "Found %s at requested position\n",
-+		thisboard->name);
  
- 	/*
- 	 * Enable PCI device and request regions.
- 	 */
- 	if (comedi_pci_enable(pcidev, thisboard->name)) {
--		printk
--		    ("cb_pcidda: failed to enable PCI device and request regions\n");
-+		dev_err(dev->hw_dev, "failed to enable PCI device and request regions\n");
+-	printk("Found %s on bus %i, slot %i\n", cb_pcimdas_boards[index].name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	dev_dbg(dev->hw_dev, "Found %s on bus %i, slot %i\n",
++		cb_pcimdas_boards[index].name,
++		pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 
+ 	/*  Warn about non-tested features */
+ 	switch (thisboard->device_id) {
+ 	case 0x56:
+ 		break;
+ 	default:
+-		printk("THIS CARD IS UNSUPPORTED.\n"
+-		       "PLEASE REPORT USAGE TO <mocelet@sucs.org>\n");
++		dev_err(dev->hw_dev, "THIS CARD IS UNSUPPORTED.\n"
++			 "PLEASE REPORT USAGE TO <mocelet@sucs.org>\n");
+ 	}
+ 
+ 	if (comedi_pci_enable(pcidev, "cb_pcimdas")) {
+-		printk(" Failed to enable PCI device and request regions\n");
++		dev_dbg(dev->hw_dev, "Failed to enable PCI device and request regions\n");
  		return -EIO;
  	}
  
-@@ -377,12 +378,11 @@ found:
- 	s = dev->subdevices + 2;
- 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
+@@ -277,13 +275,11 @@ found:
+ 	devpriv->BADR3 = pci_resource_start(devpriv->pci_dev, 3);
+ 	devpriv->BADR4 = pci_resource_start(devpriv->pci_dev, 4);
  
--	printk(" eeprom:");
-+	dev_dbg(dev->hw_dev, "eeprom:\n");
- 	for (index = 0; index < EEPROM_SIZE; index++) {
- 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
--		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
-+		dev_dbg(dev->hw_dev, "%i:0x%x\n", index,
-+			devpriv->eeprom_data[index]);
- 	}
--	printk("\n");
+-#ifdef CBPCIMDAS_DEBUG
+-	printk("devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
+-	printk("devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
+-	printk("devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
+-	printk("devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
+-	printk("devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
+-#endif
++	dev_dbg(dev->hw_dev, "devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
++	dev_dbg(dev->hw_dev, "devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
++	dev_dbg(dev->hw_dev, "devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
++	dev_dbg(dev->hw_dev, "devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
++	dev_dbg(dev->hw_dev, "devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
  
- 	/*  set calibrations dacs */
- 	for (index = 0; index < thisboard->ao_chans; index++)
-@@ -417,8 +417,6 @@ static int cb_pcidda_detach(struct comedi_device *dev)
- 		subdev_8255_cleanup(dev, dev->subdevices + 2);
- 	}
+ /* Dont support IRQ yet */
+ /*  get irq */
+@@ -333,8 +329,6 @@ found:
+ 	else
+ 		s->type = COMEDI_SUBD_UNUSED;
  
--	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
+-	printk("attached\n");
 -
- 	return 0;
+ 	return 1;
  }
  
+@@ -348,16 +342,14 @@ found:
+  */
+ static int cb_pcimdas_detach(struct comedi_device *dev)
+ {
+-#ifdef CBPCIMDAS_DEBUG
+ 	if (devpriv) {
+-		printk("devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
+-		printk("devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
+-		printk("devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
+-		printk("devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
+-		printk("devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
++		dev_dbg(dev->hw_dev, "devpriv->BADR0 = 0x%lx\n",
++			devpriv->BADR0);
++		dev_dbg(dev->hw_dev, "devpriv->BADR1 = 0x%lx\n",
++			devpriv->BADR1);
++		dev_dbg(dev->hw_dev, "devpriv->BADR2 = 0x%lx\n",
++			devpriv->BADR2);
++		dev_dbg(dev->hw_dev, "devpriv->BADR3 = 0x%lx\n",
++			devpriv->BADR3);
++		dev_dbg(dev->hw_dev, "devpriv->BADR4 = 0x%lx\n",
++			devpriv->BADR4);
+ 	}
+-#endif
+-	printk("comedi%d: cb_pcimdas: remove\n", dev->minor);
++	
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+ 	if (devpriv) {
+@@ -425,7 +417,7 @@ static int cb_pcimdas_ai_rinsn(struct comedi_device *dev,
+ 				break;
+ 		}
+ 		if (i == TIMEOUT) {
+-			printk("timeout\n");
++			dev_err(dev->hw_dev, "timeout\n");
+ 			return -ETIMEDOUT;
+ 		}
+ 		/* read data */
 -- 
 1.7.6.4
 
