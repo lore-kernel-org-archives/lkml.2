@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab1JQRua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:50:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56456 "EHLO
+	id S1751504Ab1JQRur (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:50:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63213 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab1JQRu2 (ORCPT
+	with ESMTP id S1751154Ab1JQRuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 13:50:28 -0400
-X-Authority-Analysis: v=1.1 cv=G2mrdTwFgeQf4gnIVCGl5REDSA/JVLCrZmxI9r5hHjY= c=1 sm=0 a=vhdKIqpQuCYA:10 a=EEreSC8TPeUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=ufJ8-FlIoTL3jZGMJyUA:9 a=uj9oJ74vp4gsUVSEL3IA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=CtTO1R1YagVIgY8cVdcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 17 Oct 2011 13:50:25 -0400
+X-Authority-Analysis: v=1.1 cv=Aw1K5MWCW/IlYLbVHOK2DHmxtnIeftPoAvmBFvlQMWA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=SynPNRHhxoAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=hD80L64hAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=2TICIzPm5_ciRUbzbvsA:9 a=QEXdDO2ut3YA:10 a=DHQQ7jDAcw4A:10 a=v3rLFGiuRE8A:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=3ahqdCAx0qoexaMLyigA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111017175023.569695684@goodmis.org>
+Message-Id: <20111017175023.109360819@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 13:49:40 -0400
+Date: Mon, 17 Oct 2011 13:49:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@kernel.org>
-Subject: [PATCH 2/2] tracing: Fix returning of duplicate data after EOF in trace_pipe_raw
+        Geunsik Lim <geunsik.lim@samsung.com>
+Subject: [PATCH 1/2] ftrace: Fix README to state tracing_on to start/stop tracing
 References: <20111017174938.842273454@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Fix-returning-of-duplicate-data-after-EOF-in.patch
+Content-Disposition: inline; filename=0001-ftrace-Fix-README-to-state-tracing_on-to-start-stop-.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Geunsik Lim <geunsik.lim@samsung.com>
 
-The trace_pipe_raw handler holds a cached page from the time the file
-is opened to the time it is closed. The cached page is used to handle
-the case of the user space buffer being smaller than what was read from
-the ring buffer. The left over buffer is held in the cache so that the
-next read will continue where the data left off.
+tracing_enabled option is deprecated.
+To start/stop tracing, write to /sys/kernel/debug/tracing/tracing_on
+without tracing_enabled. This patch is based on Linux 3.1.0-rc1
 
-After EOF is returned (no more data in the buffer), the index of
-the cached page is set to zero. If a user app reads the page again
-after EOF, the check in the buffer will see that the cached page
-is less than page size and will return the cached page again. This
-will cause reading the trace_pipe_raw again after EOF to return
-duplicate data, making the output look like the time went backwards
-but instead data is just repeated.
-
-The fix is to not reset the index right after all data is read
-from the cache, but to reset it after all data is read and more
-data exists in the ring buffer.
-
-Cc: stable <stable@kernel.org>
-Reported-by: Jeremy Eder <jeder@redhat.com>
+Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+Link: http://lkml.kernel.org/r/1313127022-23830-1-git-send-email-leemgs1@gm=
+ail.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
  kernel/trace/trace.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index cea1605..b24a72d 100644
+index f86efe9..cea1605 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -3903,8 +3903,6 @@ tracing_buffers_read(struct file *filp, char __user *=
-ubuf,
- 	if (info->read < PAGE_SIZE)
- 		goto read;
+@@ -2720,9 +2720,9 @@ static const char readme_msg[] =3D
+ 	"# cat /sys/kernel/debug/tracing/trace_options\n"
+ 	"noprint-parent nosym-offset nosym-addr noverbose\n"
+ 	"# echo print-parent > /sys/kernel/debug/tracing/trace_options\n"
+-	"# echo 1 > /sys/kernel/debug/tracing/tracing_enabled\n"
++	"# echo 1 > /sys/kernel/debug/tracing/tracing_on\n"
+ 	"# cat /sys/kernel/debug/tracing/trace > /tmp/trace.txt\n"
+-	"# echo 0 > /sys/kernel/debug/tracing/tracing_enabled\n"
++	"# echo 0 > /sys/kernel/debug/tracing/tracing_on\n"
+ ;
 =20
--	info->read =3D 0;
--
- 	trace_access_lock(info->cpu);
- 	ret =3D ring_buffer_read_page(info->tr->buffer,
- 				    &info->spare,
-@@ -3914,6 +3912,8 @@ tracing_buffers_read(struct file *filp, char __user *=
-ubuf,
- 	if (ret < 0)
- 		return 0;
-=20
-+	info->read =3D 0;
-+
- read:
- 	size =3D PAGE_SIZE - info->read;
- 	if (size > count)
+ static ssize_t
 --=20
 1.7.6.3
 
@@ -92,19 +71,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOnGrfAAoJEIy3vGnGbaoAVUIP/i9ZdOOizaVdPHXABDq0gco0
-LYJxBtrw6SyStbiINYv4NgXlsItuBizRNOMkwSzmmanC0xckV6IpilfWEC7MuAQM
-puATGoDQWhyevmPng0EHWu96bcqoaFsUkTBmD6nVD2gkS9J1NRmGbJdENIHwoNP7
-QibbFFlO9vseuXrEOetH2Qi0oo43Mf2OEVewIB5D3go7ZBV5ynRNKj9Zm2rhg1xJ
-IAu3P8j4ymgeyhFMoJlSYJhLET0ionXk444LAi5AtVp0JjkBIO/wjfI3/Mu3bcyg
-abP7htxTABsN3Lc0H3J0AZmX8x54CZ0XtqScnBpQU5vuXAC/GGWFm4YIqLt7X0uY
-oq/DKqRPL1tMTNRhiLZzlMJtHAzJY5YGQdNO3YIhyghkZIurkUZJr/Nt+8wx5E8M
-Ib0sgbZYNnOzKWYtdpwVf1bQ3Qv4Ump+xj5iFAs8rCOyRqoBx6c752WaKxgifPSi
-3desPMyzLVJPOzbY3Er6+Aitq3gRQbu20KvYaJfY2TQBx+bg2Y1v/52j1LLncXjP
-z8Q8ZtfoYvkixkPfWyL89DFp7SJ1jFjgD50nsMRSoO2spupNOghCE1YZ5atkJ5fw
-cDIcvBRM0fvxD84D0T9ulN275yoi9Whv52xlguVCMIbcyM7EGtHrue0E0+UOF+HW
-qRzdWdZGAG0rUbGgSUAn
-=XTz9
+iQIcBAABAgAGBQJOnGrfAAoJEIy3vGnGbaoAP4AQAMnPvG/QSAzD4ooQC/K6ReL3
+Ww9OB/z0yA199izmGy6M0mOpYhIBlmm37d2aT4ULAMldg0y7NsJDW+42sAx6wvHc
+twKijNGLhe2TsPRR+ccxssH05A6OeKmOcofouwXUN93eNZal6JdHvrQsEXJts0HB
+Fq33StR1AX1dL/VyLY5icEs7ck7WgCcgDDWyAu6T4/pf4czX3DcfBtcWAM3Aofgg
+SKNH/WqClp/K4hVN1zhyvkkMOyC+6KY/gSzkH2/D9/g+LAdKnwbKz6om+UmuON3P
+HLeceMHtWbvJgYqIDweZib9nbJxxAbHE+IRSE0ntHQwvW8z12zsIPlg1feM33GBZ
+wMolQG01j2dLd7XPgKyTfHnZ87MO2bFIoWsdBaCasyhT03MIgysE/iAQmcTs5lbC
+8fuO+LPOWfiOgne+JTk9j26O30BVzc2P900cJyWFKhC5eaDSmWzqkb0ZNOyWJ43l
++3l5eJO0MozJQP0SW9O5/v0q6+eCJqoFdjrGhjSWdl6a/at/LnmHMDDY3Ac78MeA
+eZCfoPmULwnFw82eKbSi/jh7y/LexuhlgLeuXBuiZl2S5C3MYTAoKewKo3tAt/Th
+xOEdWl0Vi8LGoS//EXkxWEMnZ96pjcuVQahW/bAm73yy78UlJTq4qx62NRepY02u
+I2/7OPuYf2TAa1qNTQ5d
+=vBtI
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
