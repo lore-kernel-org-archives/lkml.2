@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab1JQSWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:22:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58999 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752179Ab1JQSWy (ORCPT
+	id S1751770Ab1JQS2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:28:21 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:55684 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750818Ab1JQS2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:22:54 -0400
-Date: Mon, 17 Oct 2011 14:22:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Johannes Stezenbach <js@sig21.net>
-cc: Markus Rechberger <mrechberger@gmail.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-In-Reply-To: <20111017181117.GA17422@sig21.net>
-Message-ID: <Pine.LNX.4.44L0.1110171419550.1749-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 17 Oct 2011 14:28:20 -0400
+Subject: Re: [PATCH v5 10/10] x86, efi: EFI boot stub support
+From: Matt Fleming <matt@console-pimps.org>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Mike Waychison <mikew@google.com>, Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <4E9C5A4D.7090802@gmail.com>
+References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>
+	 <1318848017-12301-11-git-send-email-matt@console-pimps.org>
+	 <4E9C5A4D.7090802@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Oct 2011 19:28:17 +0100
+Message-ID: <1318876097.23581.125.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011, Johannes Stezenbach wrote:
+On Mon, 2011-10-17 at 18:39 +0200, Maarten Lankhorst wrote:
+> > +		if (options_size) {
+> > +			if (options_size > hdr->cmdline_size)
+> > +				options_size = hdr->cmdline_size;
+> > +
+> > +			options_size++;	/* NUL termination */
+> > +
+> > +			status = low_alloc(options_size, 1, &cmdline);
+> > +			if (status != EFI_SUCCESS)
+> > +				goto fail;
+> Shouldn't this be options_size + 1?
 
-> On Sat, Oct 15, 2011 at 03:04:28PM -0400, Alan Stern wrote:
-> > On Sat, 15 Oct 2011, Johannes Stezenbach wrote:
-> > 
-> > >  It would make a difference if the
-> > > device violated the spec and sent 188 byte packets. However, the
-> > > spec says a short packet terminates the transfer.  But I wonder
-> > > if this is really the case?
-> > 
-> > The device does not send short packets.  If it did, the 24064-byte 
-> > transfers would end early.
-> 
-> Re-reading the USB-2.0 standard, a short packet which terminates
-> the transfer is defined by packet_size < wMaxPacketSize,
-> not by packet_size < 512.
-> Thus wMaxPacketSize == 188 (or 2*188) might be possible.
-> 
-> There is a comment in linux/drivers/usb/host/ehci-q.c:
-> 
-> 	/* The USB spec says that high speed bulk endpoints
-> 	 * always use 512 byte maxpacket.  But some device
-> 	 * vendors decided to ignore that, and MSFT is happy
-> 	 * to help them do so.  So now people expect to use
-> 	 * such nonconformant devices with Linux too; sigh.
-> 	 */
+Nope. Notice the options_size++ above the allocation.
 
-That comment referred to devices with wMaxPacketSize = 1024, which has
-been seen in the wild.  But other bizarre sizes are possible.
+> > +
+> > +			s1 = (u8 *)(unsigned long)cmdline;
+> > +			s2 = (u16 *)options;
+> > +
+> > +			for (i = 0; i < options_size - 1; i++)
+> > +				*s1++ = *s2++;
 
-> Maybe we should look at the descriptors?
+And the options_size - 1 here.
 
-It won't hurt, although I would be quite surprised to see anything
-other than 512.
+> > +
+> > +			*s1 = '\0';
+> For this null character..
 
-Markus, can you post the output from "lsusb -v" for this inflexible 
-webcam?
+So this should all work OK.
 
-Alan Stern
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
