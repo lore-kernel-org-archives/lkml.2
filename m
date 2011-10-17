@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab1JQNsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:48:12 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:30783 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab1JQNsL (ORCPT
+	id S1755684Ab1JQNsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 09:48:53 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:43579 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab1JQNsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 09:48:11 -0400
-X-IronPort-AV: E=Sophos;i="4.69,359,1315180800"; 
-   d="scan'208";a="8425136"
-From: Ian Jackson <Ian.Jackson@eu.citrix.com>
+	Mon, 17 Oct 2011 09:48:52 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9C3248.9030304@cam.ac.uk>
+Date: Mon, 17 Oct 2011 14:48:56 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        guenter.roeck@ericsson.com, khali@linux-fr.org,
+        dmitry.torokhov@gmail.com, broonie@opensource.wolfsonmicro.com,
+        gregkh@suse.de, alan@lxorguk.ukuu.org.uk, arnd@arndb.de
+Subject: Re: [PATCH 1/6] IIO: Core sysfs only support.
+References: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk> <1318857381-13787-2-git-send-email-jic23@cam.ac.uk> <201110171542.24673.alexander.stein@systec-electronic.com>
+In-Reply-To: <201110171542.24673.alexander.stein@systec-electronic.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-ID: <20124.12795.279739.528005@mariner.uk.xensource.com>
-Date: Mon, 17 Oct 2011 14:47:39 +0100
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Borislav Petkov <bp@amd64.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for microcode
- update in Xen dom0
-Newsgroups: chiark.mail.xen.devel
-In-Reply-To: <m2n.s.1RE5NW-151309@chiark.greenend.org.uk>
-References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
-	<4E94E1E5.4070505@goop.org>
-	<20111012101615.GA14966@aftab>
-	<4E95D9E7.6090304@zytor.com>
-	<4E95E7FE.6050302@goop.org>
-	<m2n.s.1RE5NW-151309@chiark.greenend.org.uk>
-X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin writes ("[Xen-devel] Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen dom0"):
-> On 10/12/2011 12:18 PM, Jeremy Fitzhardinge wrote:
-> > But for right now, this patch seems like the pragmatic solution.
+On 10/17/11 14:42, Alexander Stein wrote:
+> Hello Jonathan,
 > 
-> No.
+> On Monday 17 October 2011 15:16:16 you wrote:
+>> Add support for simple sysfs only interfaces.
+>>
+>> Bulk of patch is concerned with taking struct iio_chan_spec
+>> arrays and generating all the relevant interfaces from them.
+>>
+>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+>> ---
+>>  drivers/Kconfig           |    2 +
+>>  drivers/Makefile          |    3 +
+>>  drivers/iio/Kconfig       |   11 +
+>>  drivers/iio/Makefile      |    6 +
+>>  drivers/iio/iio.c         |  591
+>> +++++++++++++++++++++++++++++++++++++++++++++ include/linux/iio/iio.h   | 
+>> 250 +++++++++++++++++++
+>>  include/linux/iio/sysfs.h |   68 +++++
+>>  7 files changed, 931 insertions(+), 0 deletions(-)
+>>
+>> [...]
+>> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+>> new file mode 100644
+>> index 0000000..5d9a97d
+>> --- /dev/null
+>> +++ b/drivers/iio/Kconfig
+>> @@ -0,0 +1,11 @@
+>> +#
+>> +# Industrial I/O subsystem
+>> +#
+>> +
+>> +menuconfig IIO
+>> +	tristate "Industrial I/O support"
+>> +	depends on GENERIC_HARDIRQS
+>> +	help
+>> +	  The Industrial input / output subsystem provides a unified
+>> +	  framework for many different types of embedded sensor.
+>> +	  See Documentation/iio for more information.
+> 
+> I don't know much about iio so I want to read about it. But where does 
+> Documentation/iio come from?
+An excellent point.  First fix for V2 ;)
 
-This is a quite astonishing response.  At the moment, microcode
-updates in Xen systems are _completely broken_ because they do not
-happen at all.
+It is in drivers/staging/iio/  I haven't lifted most of it over yet.
 
-The existing machinery in Linux is the way it is and you say it's no
-good - how about we just remove it all too ?  Because that's what
-you're suggesting is the proper course for Xen!
+Sadly some of it is somewhat bit rotted. Best bet is to read
+sysfs-bus-iio to see sysfs interface and we do have an example driver
+but it's not quite merged yet (working its way to staging-next).
+So see
 
-At the moment, Jeremy's patch is a significant improvement.  It is
-quite unreasonable to block it because some pie-in-the-sky scheme for
-doing it at boot time does not exist yet.
+https://github.com/jic23/linux-iio/blob/master/drivers/staging/iio/iio_simple_dummy.c
 
-Either:
- (a) Jeremy's patch should go in
- (b) all after-boot microcode update code should be removed from Linux
+As someone new to IIO I'd particularly like to hear you
+opinions on whether the dummy driver helped you to figure
+out what is going on.   Any other comments of course would
+be most welcome.
 
-Ian.
-(very cross)
+Perhaps I'll pull the dummy driver into V2 of this patch set.
+
+Thanks,
+
+Jonathan
