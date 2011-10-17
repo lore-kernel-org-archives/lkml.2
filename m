@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab1JQLUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:20:12 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:37826 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755580Ab1JQLUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:20:09 -0400
-Date: Mon, 17 Oct 2011 16:29:54 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/X] uprobes: write_opcode: the new page needs
- PG_uptodate
-Message-ID: <20111017105954.GD11831@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20111015190007.GA30243@redhat.com>
- <20111015190037.GB30243@redhat.com>
+	id S1755611Ab1JQLXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:23:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44181 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab1JQLXt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 07:23:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111015190037.GB30243@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11101711-5930-0000-0000-000000615F31
+In-Reply-To: <20111010100555.GA33394@0x90.at>
+References: <20111010100555.GA33394@0x90.at>
+Date: Mon, 17 Oct 2011 17:23:48 +0600
+Message-ID: <CADZ9YHjF-xwfc7sxGz+ih-S0Xa+XNcDBx3e15=acdMyiQVm-Kw@mail.gmail.com>
+Subject: Re: [PATCH][TRIVIAL] [thermal] fix unused variable warning
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Daniel Walter <d.walter@0x90.at>
+Cc: rui.zhang@intel.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2011-10-15 21:00:37]:
+Hi Daniel,
 
-> write_opcode()->__replace_page() installs the new anonymous page,
-> this new_page is PageSwapBacked() and it can be swapped out.
-> 
-> However it forgets to do SetPageUptodate(), fix write_opcode().
-> 
-> For example, this is needed if do_swap_page() finds that orginial
-> page in the the swap cache (and doesn't try to read it back), in
-> this case it returns VM_FAULT_SIGBUS.
+On Mon, Oct 10, 2011 at 4:05 PM, Daniel Walter <d.walter@0x90.at> wrote:
+> [thermal] fix unused variable warning
+>
+> thermal_event_seqnum is only used if CONFIG_NET is defined.
+>
+> Signed-off-by: Daniel Walter <d.walter@0x90.at>
 > ---
->  kernel/uprobes.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-> index 3928bcc..52b20c8 100644
-> --- a/kernel/uprobes.c
-> +++ b/kernel/uprobes.c
-> @@ -200,6 +200,8 @@ static int write_opcode(struct task_struct *tsk, struct uprobe * uprobe,
->  		goto put_out;
->  	}
-> 
-> +	__SetPageUptodate(new_page);
-> +
+>  drivers/thermal/thermal_sys.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> ---
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 708f8e9..def02da 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -60,7 +60,9 @@ static LIST_HEAD(thermal_tz_list);
+>  static LIST_HEAD(thermal_cdev_list);
+>  static DEFINE_MUTEX(thermal_list_lock);
+>
+> +#ifdef CONFIG_NET
+>  static unsigned int thermal_event_seqnum;
+> +#endif /* CONFIG_NET */
+>
+I think, it would be nice to move thermal_event_seqnum under
+CONFIG_NET defined section, instead of wrapping with CONFIG_NET.
+Although your fix is okay but moving under CONFIG_NET would be nicer.
+Something like below:
 
-Agree. 
+---
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 708f8e9..b88c6ba 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -60,8 +60,6 @@ static LIST_HEAD(thermal_tz_list);
+ static LIST_HEAD(thermal_cdev_list);
+ static DEFINE_MUTEX(thermal_list_lock);
 
->  	/*
->  	 * lock page will serialize against do_wp_page()'s
->  	 * PageAnon() handling
+-static unsigned int thermal_event_seqnum;
+-
+ static int get_idr(struct idr *idr, struct mutex *lock, int *id)
+ {
+        int err;
+@@ -1293,6 +1291,8 @@ void thermal_zone_device_unregister(struct
+thermal_zone_device *tz)
+ EXPORT_SYMBOL(thermal_zone_device_unregister);
 
--- 
-Thanks and Regards
-Srikar
+ #ifdef CONFIG_NET
++static unsigned int thermal_event_seqnum;
++
+ static struct genl_family thermal_event_genl_family = {
+        .id = GENL_ID_GENERATE,
+        .name = THERMAL_GENL_FAMILY_NAME,
 
+
+Thanks,
+Rakib
