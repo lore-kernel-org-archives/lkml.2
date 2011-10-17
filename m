@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab1JQNDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:03:50 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:45681 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab1JQNDt (ORCPT
+	id S1753269Ab1JQNGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 09:06:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41642 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab1JQNGv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 09:03:49 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E9C27B9.50504@cam.ac.uk>
-Date: Mon, 17 Oct 2011 14:03:53 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.ml.walleij@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, zdevai@gmail.com
-Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
-References: <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com> <4E9BF8D9.8030301@cam.ac.uk> <20111017101959.GC3042@opensource.wolfsonmicro.com> <4E9C0423.5010909@cam.ac.uk> <20111017104642.GD3042@opensource.wolfsonmicro.com> <4E9C0DD7.7080105@cam.ac.uk> <20111017111807.GA27266@opensource.wolfsonmicro.com> <4E9C1249.5020408@cam.ac.uk> <20111017120813.GB27266@opensource.wolfsonmicro.com> <4E9C201D.30905@cam.ac.uk> <20111017124807.GD27266@opensource.wolfsonmicro.com>
-In-Reply-To: <20111017124807.GD27266@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 09:06:51 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Date: Mon, 17 Oct 2011 15:06:26 +0200
+In-Reply-To: <20111017124647.GA12838@srcf.ucam.org>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+	 <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+	 <20111014154348.ae6267aa.akpm@linux-foundation.org>
+	 <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop>
+	 <20111017013921.GA30035@tango.0pointer.de>
+	 <20111017032232.GA4816@srcf.ucam.org> <4E9BBB6D.4050004@linux.intel.com>
+	 <1318837019.6594.29.camel@twins> <alpine.LFD.2.02.1110171119580.3240@ionos>
+	 <20111017124647.GA12838@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318856786.4172.22.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/11 13:48, Mark Brown wrote:
-> On Mon, Oct 17, 2011 at 01:31:25PM +0100, Jonathan Cameron wrote:
->> On 10/17/11 13:08, Mark Brown wrote:
->>> On Mon, Oct 17, 2011 at 12:32:25PM +0100, Jonathan Cameron wrote:
+On Mon, 2011-10-17 at 13:46 +0100, Matthew Garrett wrote:
+> On Mon, Oct 17, 2011 at 11:38:03AM +0200, Thomas Gleixner wrote:
 > 
-> Your mails would be much more legible if you'd leave blank lines between
-> paragraphs and if you could wrap your mails at less than 80 columns.
+> > Unfortunately this is a full speed rolling trainwreck already. The
+> > whole app space is made to encourage shitty applications. Android is
+> > designed exactly in that way and it seems that all other desktop folks
+> > have fully adopted that adsurdity.
+> > 
+> > Back when NOHZ was merged in the kernel, powertop made people fix crap
+> > left and right in not time. Why should we add something which actively
+> > fosters crappy applications today?
+> 
+> They're orthogonal. Sometimes you want timer-driven behaviour (how else 
+> are you going to draw animations?) and that's obviously going to 
+> generate wakeups. This is for the idle case, where the user is no longer 
+> sitting in front of the machine but you don't want to trigger a full 
+> system suspend. We either need every application that ever uses 
+> timer-driven behaviour to support setting its own timer slack on some 
+> sort of external policy decision, or we need a way to let the kernel 
+> force them to.
 
-Sorry.  Too used to pretty colour coding ;)
+No!! you want that application to stop drawing stuff that is invisible.
+Setting your own timerslack for something you know is pointless is worse
+than doing something pointless, its down right stupid.
 
-> 
->>>> (have insist on indexing even with named channels because it is needed as
->>>> events codes don't want to carry a string.).
-> 
->>> This is orthogonal to the request interface, though.
-> 
->> No it isn't - because it will effect the numbering of the gneral purpose ones.
-> 
-> I don't think the numbers reported in events should be forced to be
-> directly associated with the numbers (consider the case with mixes of
-> high sensitivity and low sensitivity inputs for example).
-> 
->>>> Not hard wired so to my mind these are just general purpose temperature inputs.
->>>> Hence naming doesn't make sense (at least not outside of board file or DT).
-> 
->>> No, they're hard wired - like I say they're wired to a particular place.
-> 
->> If it isn't physically in the pmic package then it doesn't belong in the driver.
-> 
-> In the case of the die temperature measurement things are obviously
-> entirely within the PMIC.  In the case of battery temperature monitoring
-> the actual sensor is outside the device but it's fixed function due to
-> cross connection with the autonomous control logic for the battery
-> chargers.
+Please, work with the X folks and make it an error to draw to invisible
+surfaces. And yes, I know that composition makes that a non-trivial
+problem. But at least the blank screen case should be trivial, and I
+suspect there's more tractable cases as well. Mostly the desktop is
+still a very static place and a few extra timer ticks for when you're
+spinning your desktop cube around isn't going to be a problem.
 
-In those cases it would be fine.  We will however want to enforce a
-consistent naming across different devices.
-
-> 
->> Note the numbering is still going to be Linux specific just within a given type
->> of channel. ADC channels regularly have completely inconsistent (and/or stupid) names
->> in device data sheets.
-> 
->> 0...4
->> 1...5
->> AUXA....AUXD
->> TEMP_EXT1...TEMP_EXT5 (all of which are just normal adc channels that some
->> designer decided would be used only for connecting analog temperature sensors.)
-> 
-> None of those look at all unreasonable
-
-Fair enough though the temp one is at least stupid, but why should
-we match them?
-
-> 
->> All of these get mapped to 0...4.  Anything else leads to totally unpredictable
->> guessing games when trying to find the channel.
-> 
-> I dunno, things like introducing an offset of 1 into the numbers the
-> datasheet uses can be pretty painful to work with - it's not obvious
-> when looking at the code that you've got the number wrong.  With the
-> PMICs it's been really helpful to do things like map the LDOs and DCDCs
-> separately even though at the level where you're gluing things together
-> there's no meaningful difference.
-
-Ok, so we could add to every channel a magic matching field called
-datasheet_name?  To my mind its silly overhead, but if there is a
-consensus on it then fine.  Note however that any remotely general
-purpose userspace will not read these values even if we make
-them available.
-
-> 
-> Once we're running it's a different story, it's just when expressing the
-> wiring to the system that I'm worried.
-
-I don't like it, but would adding a magic const char *datasheet_name
-to each channel and allowing matching on that work for you?
-We'd have to dictate that it was the first name found on a
-schematic diagram of the chip in the datasheet as these sheets
-are often completely inconsistent in uses of abbreviations etc.
-This will also mean insanity such as having separate channel
-tables for compatible parts if the naming on their particular
-datasheet is different...
-
-So hideous mess in drivers to make mapping a little easier. I guess
-there is a balance to be struck.
 
