@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab1JQSEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:04:24 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:44948 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab1JQSEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:04:22 -0400
-Date: Mon, 17 Oct 2011 20:03:51 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, gregkh@suse.de,
-        Kai Jiang <Kai.Jiang@freescale.com>
-Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
-Message-ID: <20111017180350.GC13919@local>
-References: <1318521058-15662-1-git-send-email-galak@kernel.crashing.org>
- <20111014183144.GD28556@local>
- <4D73F261-3795-4F71-9921-568C1B9F06E0@kernel.crashing.org>
- <20111017171859.GB13919@local>
+	id S1752025Ab1JQSFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:05:37 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:11729 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1JQSFg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:05:36 -0400
+From: "Seger, Mark" <mark.seger@hp.com>
+To: "Oberman, Laurence (HAS GSE)" <Laurence.Oberman@hp.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Cabaniols, Sebastien" <Sebastien.Cabaniols@hp.com>
+Date: Mon, 17 Oct 2011 19:05:09 +0100
+Subject: RE: Regression in reading /proc/stat in the newer kernels with
+ large SMP and NUMA configurations
+Thread-Topic: Regression in reading /proc/stat in the newer kernels with
+ large SMP and NUMA configurations
+Thread-Index: AcyKkpBGBr00LwCHTo6XbMuC8Y0O1wAABydwAJjyAgA=
+Message-ID: <9FCE3A46FE7C8045A6207AE4B42E9F9A4EC2E2A848@GVW1119EXC.americas.hpqcorp.net>
+References: <8DC664164FA4D1449479E7B36CDCFB1F221E724322@GVW0676EXC.americas.hpqcorp.net>
+	 <1318595915.2223.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <9FCE3A46FE7C8045A6207AE4B42E9F9A4EC2E29DD4@GVW1119EXC.americas.hpqcorp.net>
+	 <1318600023.2223.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A48@GVW0676EXC.americas.hpqcorp.net>
+	 <1318610416.2223.45.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <8DC664164FA4D1449479E7B36CDCFB1F221F060A92@GVW0676EXC.americas.hpqcorp.net>
+ <1318611542.2223.47.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <8DC664164FA4D1449479E7B36CDCFB1F221F060AC2@GVW0676EXC.americas.hpqcorp.net>
+In-Reply-To: <8DC664164FA4D1449479E7B36CDCFB1F221F060AC2@GVW0676EXC.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017171859.GB13919@local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9HI5kV0002188
 
-On Mon, Oct 17, 2011 at 07:18:59PM +0200, Hans J. Koch wrote:
-> On Mon, Oct 17, 2011 at 11:00:55AM -0500, Kumar Gala wrote:
-> > 
-> > On Oct 14, 2011, at 1:31 PM, Hans J. Koch wrote:
-> > 
-> > > On Thu, Oct 13, 2011 at 10:50:58AM -0500, Kumar Gala wrote:
-> > >> From: Kai Jiang <Kai.Jiang@freescale.com>
-> > >> 
-> > >> To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
-> > >> extend the width of 'addr' in struct uio_mem.  Numerous platforms like
-> > >> embedded PPC, ARM, and X86 have support for systems with larger physical
-> > >> address than logical.
-> > >> 
-> > >> Since 'addr' may contain a physical, logical, or virtual address the
-> > >> easiest solution is to just change the type to 'phys_addr_t' which
-> > >> should always be greater than or equal to the sizeof(void *) such that
-> > >> it can properly hold any of the address types.
-> > >> 
-> > >> For physical address we can support up to a 44-bit physical address on a
-> > >> typical 32-bit system as we utilize remap_pfn_range() for the mapping of
-> > >> the memory region and pfn's are represnted by shifting the address by
-> > >> the page size (typically 4k).
-> > >> 
-> > >> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
-> > >> Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
-> > >> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
-> > > 
-> > > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-> > > 
-> > > That looks good to me. There's an unnecessary cast (see below), but I fixed that
-> > > on the way.
-> > > 
-> > > Greg, please pull this from branch uio-for-gregkh from
-> > > 
-> > > git://hansjkoch.de/git/linux-hjk
-> > > 
-> > > Thanks,
-> > > Hans
-> > 
-> > I think removing that cast is wrong:
-> > 
-> > drivers/uio/uio.c: In function 'uio_vma_fault':
-> > drivers/uio/uio.c:637:26: warning: cast to pointer from integer of different size
-> 
-> Hmm, on what platform did you see this? I tested on 32bit-x86 and didn't get
-> any warnings.
+>Just FYI, the same behavior is seen on multiple hardware platforms so it
+>is definitely kernel changes. The earlier kernel on the DL785 platform
+>was returning reads within 60 microseconds.
+>I have measured it on multiple platforms.
+>
+>In this case we have a DL980 with HT enabled so you will see 128 CPUS.
+>If I shut off HT, it does not make a difference.
 
-OK, you're right. I turned on CONFIG_HIGHMEM64G and got that warning. Damned x86...
+Given that there have only been a couple of responses to this I can't help but wonder if this hasn't really gotten anyone's attention yet or if perhaps I'm just overreacting.  I'd claim this breaks key Linux utilities by making them have a significantly heavier footprint than they used to have.  Historically people would always run top whenever they wanted to knowing it had minimal impact on the system and now I'm not so sure that will be the case anymore, at least not on big numa boxes.
 
-Greg, can you fix it, or should I send the patch again?
+I can assure you if someone wants to report cpu stats every tenth of a second it will more definitely have an impact.
 
-Thanks,
-Hans
+-mark
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
