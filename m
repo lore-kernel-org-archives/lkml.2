@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab1JQRTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:19:33 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:49580 "EHLO www.hansjkoch.de"
+	id S1756772Ab1JQRXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62484 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab1JQRTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 13:19:32 -0400
-Date: Mon, 17 Oct 2011 19:18:59 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, gregkh@suse.de,
-        Kai Jiang <Kai.Jiang@freescale.com>
-Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
-Message-ID: <20111017171859.GB13919@local>
-References: <1318521058-15662-1-git-send-email-galak@kernel.crashing.org>
- <20111014183144.GD28556@local>
- <4D73F261-3795-4F71-9921-568C1B9F06E0@kernel.crashing.org>
+	id S1753317Ab1JQRXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 13:23:07 -0400
+Date: Mon, 17 Oct 2011 13:22:29 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "hughd@chromium.org" <hughd@chromium.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Message-ID: <20111017172229.GH5795@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
+ <20111017160904.GG5795@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301EE911C66@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D73F261-3795-4F71-9921-568C1B9F06E0@kernel.crashing.org>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EE911C66@orsmsx505.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 11:00:55AM -0500, Kumar Gala wrote:
+On Mon, Oct 17, 2011 at 09:56:50AM -0700, Luck, Tony wrote:
+> > All this lock busting probably isn't pretty and causes one to reflect what
+> > is going on here.  But as long as we are going to keep the kmsg_dump
+> > design, changes like this seem necessary to make sure the locking stays
+> > sane(r) for now.
 > 
-> On Oct 14, 2011, at 1:31 PM, Hans J. Koch wrote:
-> 
-> > On Thu, Oct 13, 2011 at 10:50:58AM -0500, Kumar Gala wrote:
-> >> From: Kai Jiang <Kai.Jiang@freescale.com>
-> >> 
-> >> To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
-> >> extend the width of 'addr' in struct uio_mem.  Numerous platforms like
-> >> embedded PPC, ARM, and X86 have support for systems with larger physical
-> >> address than logical.
-> >> 
-> >> Since 'addr' may contain a physical, logical, or virtual address the
-> >> easiest solution is to just change the type to 'phys_addr_t' which
-> >> should always be greater than or equal to the sizeof(void *) such that
-> >> it can properly hold any of the address types.
-> >> 
-> >> For physical address we can support up to a 44-bit physical address on a
-> >> typical 32-bit system as we utilize remap_pfn_range() for the mapping of
-> >> the memory region and pfn's are represnted by shifting the address by
-> >> the page size (typically 4k).
-> >> 
-> >> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
-> >> Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
-> >> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
-> > 
-> > Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
-> > 
-> > That looks good to me. There's an unnecessary cast (see below), but I fixed that
-> > on the way.
-> > 
-> > Greg, please pull this from branch uio-for-gregkh from
-> > 
-> > git://hansjkoch.de/git/linux-hjk
-> > 
-> > Thanks,
-> > Hans
-> 
-> I think removing that cast is wrong:
-> 
-> drivers/uio/uio.c: In function 'uio_vma_fault':
-> drivers/uio/uio.c:637:26: warning: cast to pointer from integer of different size
+> So should we let the back-end know that locks have been busted?  I worry
+> that we'll get through the pstore layer by blasting away at any locks that
+> get in our way - but then the backend (which may well have been written on
+> the assumption that pstore serialized calls to it) will not do anything
+> useful (and may cause its own hang).
 
-Hmm, on what platform did you see this? I tested on 32bit-x86 and didn't get
-any warnings.
+I was kinda alluding to something like that, when I said we probably need
+follow on patches to clean up the backend.  But maybe it would be smarter
+to set a flag in pstore to let the backend know we busted the locks
+instead of letting them do panic checks themselves.  I agree with your
+concerns.
 
-Hans
+I really can't think of a good overall solution other than slowly
+step-by-step untangle things by making subtle changes, this round being
+the serialization of kmsg_dump().
+
+My brain is to small to figure this out.  I keep thinking about making an
+ascii art diagram to see all the various paths and their contexts, but
+then I keep finding more interesting things to do. :-)
+
+Perhaps we should do that and make some rules about what the back-end can
+and can not do when plugging into kmsg_dump.
+
+Cheers,
+Don
+
