@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1JQEeo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 00:34:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39928 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab1JQEen (ORCPT
+	id S1753238Ab1JQEhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 00:37:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51956 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1JQEg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 00:34:43 -0400
-Subject: [PATCH 1/2] ASoC: wm9081: Fix setting soft VMID ramp enable with
- VMID 2*240k
+	Mon, 17 Oct 2011 00:36:59 -0400
+Subject: [PATCH 2/2] ASoC: wm9081: Use snd_soc_update_bits for
+ read-modify-write
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+In-Reply-To: <1318826071.12989.0.camel@phoenix>
+References: <1318826071.12989.0.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 12:34:31 +0800
-Message-ID: <1318826071.12989.0.camel@phoenix>
+Date: Mon, 17 Oct 2011 12:36:52 +0800
+Message-ID: <1318826212.12989.2.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -24,34 +26,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the datasheet:
-BIT 2:1
-        VMID_SEL[1:0] VMID Divider Enable and Select
-        00 = VMID disabled
-        01 = 2x40k Omh divider
-        10 = 2x240k Omh divider
-        11 = 2x5k Omh divider
-
-To set VMID 2*240k, we should OR reg with 0x04 instead of 0x40.
+Use snd_soc_update_bits for read-modify-write register access instead of
+open-coding it using snd_soc_read and snd_soc_write
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/wm9081.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ sound/soc/codecs/wm9081.c |   81 +++++++++++++++++++--------------------------
+ 1 files changed, 34 insertions(+), 47 deletions(-)
 
 diff --git a/sound/soc/codecs/wm9081.c b/sound/soc/codecs/wm9081.c
-index b2d3448..66092ef 100644
+index 66092ef..f4fc03b 100644
 --- a/sound/soc/codecs/wm9081.c
 +++ b/sound/soc/codecs/wm9081.c
-@@ -819,7 +819,7 @@ static int wm9081_set_bias_level(struct snd_soc_codec *codec,
+@@ -766,84 +766,72 @@ static const struct snd_soc_dapm_route wm9081_audio_paths[] = {
+ static int wm9081_set_bias_level(struct snd_soc_codec *codec,
+ 				 enum snd_soc_bias_level level)
+ {
+-	u16 reg;
+-
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+ 		break;
+ 
+ 	case SND_SOC_BIAS_PREPARE:
+ 		/* VMID=2*40k */
+-		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
+-		reg &= ~WM9081_VMID_SEL_MASK;
+-		reg |= 0x2;
+-		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
++		snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
++				    WM9081_VMID_SEL_MASK, 0x2);
+ 
+ 		/* Normal bias current */
+-		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+-		reg &= ~WM9081_STBY_BIAS_ENA;
+-		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
++		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
++				    WM9081_STBY_BIAS_ENA, 0);
+ 		break;
+ 
+ 	case SND_SOC_BIAS_STANDBY:
+ 		/* Initial cold start */
+ 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
+ 			/* Disable LINEOUT discharge */
+-			reg = snd_soc_read(codec, WM9081_ANTI_POP_CONTROL);
+-			reg &= ~WM9081_LINEOUT_DISCH;
+-			snd_soc_write(codec, WM9081_ANTI_POP_CONTROL, reg);
++			snd_soc_update_bits(codec, WM9081_ANTI_POP_CONTROL,
++					    WM9081_LINEOUT_DISCH, 0);
+ 
+ 			/* Select startup bias source */
+-			reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+-			reg |= WM9081_BIAS_SRC | WM9081_BIAS_ENA;
+-			snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
++			snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
++					    WM9081_BIAS_SRC | WM9081_BIAS_ENA,
++					    WM9081_BIAS_SRC | WM9081_BIAS_ENA);
+ 
+ 			/* VMID 2*4k; Soft VMID ramp enable */
+-			reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
+-			reg |= WM9081_VMID_RAMP | 0x6;
+-			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
+-
++			snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
++					    WM9081_VMID_RAMP | 0x6,
++					    WM9081_VMID_RAMP | 0x6);
+ 			mdelay(100);
+ 
+ 			/* Normal bias enable & soft start off */
+-			reg |= WM9081_BIAS_ENA;
+-			reg &= ~WM9081_VMID_RAMP;
+-			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
++			snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
++					    WM9081_VMID_RAMP | WM9081_BIAS_ENA,
++					    WM9081_BIAS_ENA);
+ 
+ 			/* Standard bias source */
+-			reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+-			reg &= ~WM9081_BIAS_SRC;
+-			snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
++			snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
++					    WM9081_BIAS_SRC, 0);
+ 		}
+ 
  		/* VMID 2*240k */
- 		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
- 		reg &= ~WM9081_VMID_SEL_MASK;
--		reg |= 0x40;
-+		reg |= 0x04;
- 		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
+-		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+-		reg &= ~WM9081_VMID_SEL_MASK;
+-		reg |= 0x04;
+-		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
++		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
++				    WM9081_VMID_SEL_MASK, 0x04);
  
  		/* Standby bias current on */
+-		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+-		reg |= WM9081_STBY_BIAS_ENA;
+-		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
++		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
++				    WM9081_STBY_BIAS_ENA,
++				    WM9081_STBY_BIAS_ENA);
+ 		break;
+ 
+ 	case SND_SOC_BIAS_OFF:
+ 		/* Startup bias source */
+-		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+-		reg |= WM9081_BIAS_SRC;
+-		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
++		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
++				    WM9081_BIAS_SRC, WM9081_BIAS_SRC);
+ 
+ 		/* Disable VMID and biases with soft ramping */
+-		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
+-		reg &= ~(WM9081_VMID_SEL_MASK | WM9081_BIAS_ENA);
+-		reg |= WM9081_VMID_RAMP;
+-		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
++		snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
++				    WM9081_VMID_RAMP | WM9081_VMID_SEL_MASK |
++				    WM9081_BIAS_ENA, WM9081_VMID_RAMP);
+ 
+ 		/* Actively discharge LINEOUT */
+-		reg = snd_soc_read(codec, WM9081_ANTI_POP_CONTROL);
+-		reg |= WM9081_LINEOUT_DISCH;
+-		snd_soc_write(codec, WM9081_ANTI_POP_CONTROL, reg);
++		snd_soc_update_bits(codec, WM9081_ANTI_POP_CONTROL,
++				    WM9081_LINEOUT_DISCH,
++				    WM9081_LINEOUT_DISCH);
+ 		break;
+ 	}
+ 
+@@ -1242,11 +1230,10 @@ static int wm9081_probe(struct snd_soc_codec *codec)
+ 	wm9081_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 
+ 	/* Enable zero cross by default */
+-	reg = snd_soc_read(codec, WM9081_ANALOGUE_LINEOUT);
+-	snd_soc_write(codec, WM9081_ANALOGUE_LINEOUT, reg | WM9081_LINEOUTZC);
+-	reg = snd_soc_read(codec, WM9081_ANALOGUE_SPEAKER_PGA);
+-	snd_soc_write(codec, WM9081_ANALOGUE_SPEAKER_PGA,
+-		     reg | WM9081_SPKPGAZC);
++	snd_soc_update_bits(codec, WM9081_ANALOGUE_LINEOUT,
++			    WM9081_LINEOUTZC, WM9081_LINEOUTZC);
++	snd_soc_update_bits(codec, WM9081_ANALOGUE_SPEAKER_PGA,
++			    WM9081_SPKPGAZC, WM9081_SPKPGAZC);
+ 
+ 	snd_soc_add_controls(codec, wm9081_snd_controls,
+ 			     ARRAY_SIZE(wm9081_snd_controls));
 -- 
 1.7.4.1
 
