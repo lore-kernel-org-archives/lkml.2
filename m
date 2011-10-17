@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1JQIsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 04:48:02 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:48938 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1JQIr7 (ORCPT
+	id S1753863Ab1JQItH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 04:49:07 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:12519
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752084Ab1JQItF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 04:47:59 -0400
-Message-ID: <4E9BEB68.1050707@ce.jp.nec.com>
-Date: Mon, 17 Oct 2011 17:46:32 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	Mon, 17 Oct 2011 04:49:05 -0400
+X-SpamScore: -2
+X-BigFish: VS-2(z1039oz1432N98dKzz1202hzz8275dhz2dh87h2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 17 Oct 2011 16:48:52 +0800
+From: Richard Zhao <richard.zhao@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <paul@pwsan.com>,
+        <linaro-dev@lists.linaro.org>, <linus.walleij@stericsson.com>,
+        <patches@linaro.org>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <magnus.damm@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <eric.miao@linaro.org>, <grant.likely@secretlab.ca>,
+        <arnd.bergmann@linaro.org>, <dsaxena@linaro.org>, <tglx@linutronix.de>,
+        <amit.kucheria@linaro.org>, <linux@arm.linux.org.uk>,
+        <skannan@quicinc.com>, Mike Turquette <mturquette@ti.com>,
+        <jeremy.kerr@canonical.com>, <shawn.guo@freescale.com>,
+        <sboyd@quiinc.com>
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Message-ID: <20111017084851.GB20184@b20223-02.ap.freescale.net>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-2-git-send-email-mturquette@ti.com>
+ <20111014081024.GA9485@b20223-02.ap.freescale.net>
+ <20111014100504.GC2966@opensource.wolfsonmicro.com>
+ <20111014103233.GB9485@b20223-02.ap.freescale.net>
+ <20111016175521.GA13565@pengutronix.de>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Steffen Maier <maier@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
-        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>	 <20110928004722.GA27421@kernel.dk>	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>	 <4E82751C.9050908@kernel.dk>	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>	 <4E832A55.30709@kernel.dk>	 <1317219074.19034.4.camel@dabdike.hansenpartnership.com>	 <4E832BD2.50409@kernel.dk>  <4E96E2FF.6070601@linux.vnet.ibm.com> <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111016175521.GA13565@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/11 01:03, James Bottomley wrote:
-> On Thu, 2011-10-13 at 15:09 +0200, Steffen Maier wrote:
->> This fix also went into 3.0.5 via
->> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob;f=releases/3.0.5/block-free-queue-resources-at-blk_release_queue.patch
->> (originated at http://marc.info/?l=linux-scsi&m=131669751909474&w=2 and 
->> http://marc.info/?l=linux-scsi&m=131669414205696&w=2)
->>
->> However, it seems we still have a use-after-free bug, now causing the 
->> following oops with kernel 3.0.6 when removing paths to storage while 
->> generating load on device-mapper multipath disks:
->>
->>> Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
->>> Oops: 0038 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>> Modules linked in: iptable_filter ip_tables x_tables dm_round_robin sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
->>> CPU: 1 Not tainted 3.0.6-50.x.20111006-s390xdefault #1
->>> Process blast.LzS_64_SL (pid: 26613, task: 0000000063e2a398, ksp: 0000000064de3560)
->>> Krnl PSW : 0704100180000000 000000000048a038 (scsi_print_command+0x44/0xf8)
->>>            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:1 PM:0 EA:3
->>> Krnl GPRS: 000000000000006b 6b6b6b6b6b6b6b6b 000000006717f800 000000000094f2e0
->>>            000000000061242e 000000000062bd88 0000000066fb90d8 0000000065391ad7
->>>            000000006717f800 000000006717f800 000000006716a090 000000006717f800
->>>            0000000000000004 0000000000672f88 0000000064de3838 0000000064de3808
->>> Krnl Code: 000000000048a026: f0b80004ebbf        srp     4(12,%r0),3007(%r14),8
->>>            000000000048a02c: f0a0000407f4        srp     4(11,%r0),2036,0
->>>            000000000048a032: e31020800004        lg      %r1,128(%r2)
->>>           >000000000048a038: e31010b00004        lg      %r1,176(%r1)
->>>            000000000048a03e: b9020011            ltgr    %r1,%r1
->>>            000000000048a042: a7840032            brc     8,48a0a6
->>>            000000000048a046: e33020000004        lg      %r3,0(%r2)
->>>            000000000048a04c: c04000182f4c        larl    %r4,78fee4
->>> Call Trace:
->>> ([<000000006717f800>] 0x6717f800)
->>>  [<0000000000487f28>] scsi_log_send+0xf0/0x130
->>>  [<000000000048824c>] scsi_dispatch_cmd+0xc8/0x4bc
->>>  [<0000000000490694>] scsi_request_fn+0x3b8/0x480
+On Sun, Oct 16, 2011 at 07:55:21PM +0200, Sascha Hauer wrote:
+> On Fri, Oct 14, 2011 at 06:32:33PM +0800, Richard Zhao wrote:
+> > On Fri, Oct 14, 2011 at 11:05:04AM +0100, Mark Brown wrote:
+> > > On Fri, Oct 14, 2011 at 04:10:26PM +0800, Richard Zhao wrote:
+> > > > On Thu, Sep 22, 2011 at 03:26:56PM -0700, Mike Turquette wrote:
+> > > 
+> > > snip essentially Mike's entire mail - *please* delete irrelevant quotes
+> > > from your replies, it makes it very much easier to find the new text in
+> > > your mail and is much more friendly to people reading mail on mobile
+> > > devices.
+> > I snip not enough? sorry for that. I'll be carefull.
+> > > 
+> > > > > +static int __clk_enable(struct clk *clk)
+> > > > > +{
+> > > 
+> > > > Could you expose __clk_enable/__clk_disable? I find it hard to implement
+> > > > clk group. clk group means, when a major clk enable/disable, it want a set
+> > > > of other clks enable/disable accordingly.
+> > > 
+> > > Shouldn't this be something the core is implementing?  I'd strongly
+> > > expect that the clock drivers are relatively dumb and delegate all the
+> > > decision making to the core API.  Otherwise it's going to be hard for
+> > > the core to implement any logic that involves working with more than one
+> > > clock like rate change notification, or guarantee that driver requests
+> > > made through the API are satisfied, as the state of the clocks will be
+> > > changing underneath it.
+> > From my point of view, the first step of generic clk can be, easy to adopt
+> > features of clocks in current mainline git.
+> > Back to the clk group, I have a patch based on Sascha's work. 
+> > http://git.linaro.org/gitweb?p=people/riczhao/linux-2.6.git;a=shortlog;h=refs/heads/imx-clk
 > 
-> Correct me if I'm wrong, but this seems to be saying that struct
-> scsi_cmnd was used after free.  This looks to be a different problem
-> because the command has a separate refcounting model which wasn't
-> impacted by the change ... it could be we've just exposed yet another
-> refcounting problem outside of the queue one.
+> I thought further about this and a clock group is not something we want
+> to have at all. Clocks are supposed to be arranged in a tree and
+> grouping clocks together violates this which leads to problems.
+> This grouping should be done at driver level, so when a driver needs
+> more than one clock it should request them all, maybe with a clk_get_all
+> helper function.
+clock group is not limited to help driver get clock. It refects clock dependency.
+For example, devices that possible access to on-chip RAM, depend on OCRAM clock. 
+On imx53, VPU depends on OCRAM clock, even when VPU does not use OCRAM.
+
+Thanks
+Richard
 > 
-> If I had to guess, I'd say a bio got cloned with a SCSI command already
-> attached, but the ref count on the SCSI command wasn't correctly
-> adjusted.
+> Sascha
+> 
+> -- 
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-As far as dm is concerned, it shouldn't happen.
-Clone is made from a dm request, not from SCSI one.
-Also clone is not reused when retrying.
-
->> Initially, we encountered use-after-free bugs in
->> scsi_print_command / scsi_dispatch_cmd
->> http://marc.info/?l=linux-scsi&m=130824013229933&w=2
-
-It is interesting that both this and the older report
-got oopsed in scsi_log_send(), while there are other
-dereferences of 'cmd' around scsi_dispatch_cmd().
-Are there any reason they are special? Just by accident?
-
-Thanks,
--- 
-Jun'ichi Nomura, NEC Corporation
