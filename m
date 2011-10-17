@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab1JQVdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 17:33:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755384Ab1JQVdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 17:33:22 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: fix two more s390/sparc gup_fast bugs
-Date: Mon, 17 Oct 2011 23:32:50 +0200
-Message-Id: <1318887172-5854-1-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1316793432.9084.47.camel@twins>
-References: <1316793432.9084.47.camel@twins>
+	id S1755357Ab1JQVgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 17:36:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54227 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754286Ab1JQVgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 17:36:31 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant@secretlab.ca>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH v2] gpio/samsung: Complain loudly if we don't know the SoC
+Date: Mon, 17 Oct 2011 22:36:19 +0100
+Message-Id: <1318887379-5158-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+If we don't know the SoC type then we won't add any chips which is rather
+unfortunate as neither GPIO nor pinmux APIs will work, breaking lots of
+different subsystems. Logging at least provides a hint to the user as to
+what's gone wrong.
 
-I just noticed return 0 was missing after rolling back *nr, that's not
-ok as then gup_fast wouldn't abort and it would put pages in the wrong
-offset in the array I think... This isn't related to the recent
-changes, it was the same in 2.6.37. I don't think it's ok to return 1
-after rolling back *nr.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/gpio/gpio-samsung.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-These next two are incremental with the previous.
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index 479edc3..8662518 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -2486,6 +2486,9 @@ static __init int samsung_gpiolib_init(void)
+ 		s5p_register_gpioint_bank(IRQ_GPIO_XA, 0, IRQ_GPIO1_NR_GROUPS);
+ 		s5p_register_gpioint_bank(IRQ_GPIO_XB, IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
+ #endif
++	} else {
++		WARN(1, "Unknown SoC in gpio-samsung, no GPIOs added\n");
++		return -ENODEV;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.6.3
+
