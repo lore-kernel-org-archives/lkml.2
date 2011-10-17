@@ -1,50 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab1JQTHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 15:07:03 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64225 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab1JQTHB convert rfc822-to-8bit (ORCPT
+	id S1753423Ab1JQTJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 15:09:26 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58575 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab1JQTJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 15:07:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1110171426520.1749-300000@iolanthe.rowland.org>
-References: <CA+O4pCKKOvjRmgpC1fijzmpKOMQGdb1vkKeiSgFTY3Sv7xeaoQ@mail.gmail.com>
-	<Pine.LNX.4.44L0.1110171426520.1749-300000@iolanthe.rowland.org>
-Date: Mon, 17 Oct 2011 21:07:00 +0200
-Message-ID: <CA+O4pCJ3iihLBr0W61Z1uQAAw4tk7aTLv-0=iAP0qFPYKL9zYw@mail.gmail.com>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-From: Markus Rechberger <mrechberger@gmail.com>
+	Mon, 17 Oct 2011 15:09:25 -0400
+Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative
+ suspend/hibernate mode
+From: John Stultz <john.stultz@linaro.org>
 To: Alan Stern <stern@rowland.harvard.edu>
-Cc: USB list <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>
+In-Reply-To: <Pine.LNX.4.44L0.1110171417070.1749-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1110171417070.1749-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Oct 2011 12:08:49 -0700
+Message-ID: <1318878529.3125.80.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+x-cbid: 11101719-3352-0000-0000-0000003450EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 8:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> Markus:
->
-> Attached is a sequence of two patches for you to try out.  The second
-> is meant to be applied on top of the first.  I based them on 3.1-rc4
-> (more or less) so they may need a little tweaking for your kernel, but
-> hopefully not very much.
->
-> The first patch simplifies the error pathways for the USB submission
-> routines in usbfs.  The second patch removes the limits on the sizes of
-> individual URBs and replaces them with a global limit on the total
-> amount of memory allocated by usbfs.
->
-> They work okay on my system but I don't have any good way to give them
-> a thorough test.  Please try them out and see if they allow your webcam
-> programs to work properly.
->
+On Mon, 2011-10-17 at 14:19 -0400, Alan Stern wrote:
+> On Mon, 17 Oct 2011, John Stultz wrote:
+> 
+> > So, the alarmtimer code is a bit more simple then what you describe
+> > above (alarmtimers are just like regular posix timers, only enable an
+> > RTC wakeup for the soonest event when the system goes into suspend).
+> > 
+> > However, such a dual-timer style behavior seems like it could work for
+> > timer driven wakeups (and have been suggested to me by others as well).
+> > Just to reiterate my understanding so that we're sure we're on the same
+> > wavelength:
+> > 
+> > For any timer-style wakeup event, you set another non-wakeup timer for
+> > some small period of time before the wakeup timer. Then when the
+> > non-wakeup timer fires, the application inhibits suspend and waits for
+> > the wakeup timer.  
+> > 
+> > Thus if the system is supended, the system will stay asleep until the
+> > wakeup event, where we'll hold off suspend for a timeout length so the
+> > task can run. If the system is not suspended, the early timer inhibits
+> > suspend to block the possible race.
+> > 
+> > So yes, while not a very elegant solution in my mind (as its still racy
+> > like any timeout based solution), it would seem to be workable in
+> > practice, assuming wide error margins are used as the kernel does not
+> > guarantee that timers will fire at a specific time (only after the
+> > requested time). 
+> > 
+> > And this again assumes we'll see no timing issues as a result of system
+> > load or realtime task processing.
 
-will go through it within the next 1-2 days, just a bit busy with
-other things now..
+> It shouldn't have to be this complicated.  If a program wants the
+> system to be awake at a certain target time, it sets a wakeup timer for
+> that time.  Then it vetoes any suspend requests that occur too close to 
+> the target time, and continues to veto them until it has finished its 
+> job.
 
-thanks,
-Markus
-> Alan Stern
->
+I agree that the dual-timer approach is not really a good solution, and
+doesn't help with similar races on non-timer based wakeups.
+
+Though I also think proposed userland implementations that require
+communication with all wakeup consumers before suspending (which really,
+once you get aggressive about suspending when you can, means
+communicating with all wakeup consumers on every wakeup event) isn't
+really a good solution either.
+
+
+Though as I've been thinking about it, there may be a way to do a
+userland solution that uses the wakeup_count that isn't so inefficient.
+Basically, its a varient of Mark's wakeup-device idea, but moved out to
+userland.
+
+There is a userland PM daemon. Its responsible for both suspending the
+system, *and* handing all wakeup events.
+
+Normal wakeup consumers open wakeup devices with a special library which
+passes the open request through the PM daemon. The PM daemon opens the
+device and provides a pipe fd back to the application, and basically
+acts as a middle-man.
+
+The PM daemon then cycles, doing the following:
+
+while(1) {
+	wakeup_count = read_int(wakeup_count_fd) /*possibly blocking*/
+	if (wakeup_count != last_wakeup) {
+		have_data = check_open_fds(fds);
+		if (have_data)
+			process_fds(fds);
+		last_wakeup = wakeup_count;
+	}
+	write_int(wakeup_count_fd, wakeup_count);
+	attempt_suspend();
+}
+
+
+Where check_open_fds() does a non-blocking select on all the fds that
+the PM deamon has opened on behalf of applications, and process_fds()
+basically writes any available data from the opened fds over to the
+application through the earlier setup pipe. The daemon's write to the
+pipe could be blocking, to ensure the application has read all of the
+necessary data before the deamon continues trying to suspend.
+
+Provided there is some suspend_inhibit/allow command that userspace can
+make to the PM damon, this approach then provides a similar
+select/wakelock/read pattern as what Android uses. The only other
+features we might want is suggestion from Peter that
+the /sys/power/state be only able to be opened by one application, so
+that on systems which don't have the PM deamon running, applications
+like the firmware update tool can try opening /sys/power/state and
+blocking anyone from suspending under it.
+
+Thoughts?
+
+thanks
+-john
+
+
+
+
+
