@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab1JQIMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 04:12:34 -0400
-Received: from office.intopix.com ([212.166.54.212]:47267 "EHLO
-	office.intopix.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab1JQIMd convert rfc822-to-8bit (ORCPT
+	id S1753391Ab1JQIsC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 04:48:02 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:48938 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1JQIr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 04:12:33 -0400
-X-Greylist: delayed 1230 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Oct 2011 04:12:32 EDT
-From: Charles Buysschaert <Charles.Buysschaert@intopix.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Speed of RAM reserved with memmap kernel command line option.
-Thread-Topic: Speed of RAM reserved with memmap kernel command line option.
-Thread-Index: AcyMoYqk4aToPCQsSBu7Gz7pox+iqA==
-Date: Mon, 17 Oct 2011 07:51:53 +0000
-Message-ID: <894F5F1132E3C5458AAB08FA0A1AC9380F1E2F12@IPX-MAIL.Intopix.com>
-Accept-Language: en-US, fr-BE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.0.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Oct 2011 04:47:59 -0400
+Message-ID: <4E9BEB68.1050707@ce.jp.nec.com>
+Date: Mon, 17 Oct 2011 17:46:32 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-X-Intopix-MailScanner: Found to be clean
-X-Intopix-MailScanner-From: charles.buysschaert@intopix.com
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+References: <201109221318.p8MDIXPP020015@pentland.suse.de>	 <20110928004722.GA27421@kernel.dk>	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>	 <4E82751C.9050908@kernel.dk>	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>	 <4E832A55.30709@kernel.dk>	 <1317219074.19034.4.camel@dabdike.hansenpartnership.com>	 <4E832BD2.50409@kernel.dk>  <4E96E2FF.6070601@linux.vnet.ibm.com> <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all, 
+On 10/15/11 01:03, James Bottomley wrote:
+> On Thu, 2011-10-13 at 15:09 +0200, Steffen Maier wrote:
+>> This fix also went into 3.0.5 via
+>> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob;f=releases/3.0.5/block-free-queue-resources-at-blk_release_queue.patch
+>> (originated at http://marc.info/?l=linux-scsi&m=131669751909474&w=2 and 
+>> http://marc.info/?l=linux-scsi&m=131669414205696&w=2)
+>>
+>> However, it seems we still have a use-after-free bug, now causing the 
+>> following oops with kernel 3.0.6 when removing paths to storage while 
+>> generating load on device-mapper multipath disks:
+>>
+>>> Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
+>>> Oops: 0038 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>> Modules linked in: iptable_filter ip_tables x_tables dm_round_robin sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
+>>> CPU: 1 Not tainted 3.0.6-50.x.20111006-s390xdefault #1
+>>> Process blast.LzS_64_SL (pid: 26613, task: 0000000063e2a398, ksp: 0000000064de3560)
+>>> Krnl PSW : 0704100180000000 000000000048a038 (scsi_print_command+0x44/0xf8)
+>>>            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:1 PM:0 EA:3
+>>> Krnl GPRS: 000000000000006b 6b6b6b6b6b6b6b6b 000000006717f800 000000000094f2e0
+>>>            000000000061242e 000000000062bd88 0000000066fb90d8 0000000065391ad7
+>>>            000000006717f800 000000006717f800 000000006716a090 000000006717f800
+>>>            0000000000000004 0000000000672f88 0000000064de3838 0000000064de3808
+>>> Krnl Code: 000000000048a026: f0b80004ebbf        srp     4(12,%r0),3007(%r14),8
+>>>            000000000048a02c: f0a0000407f4        srp     4(11,%r0),2036,0
+>>>            000000000048a032: e31020800004        lg      %r1,128(%r2)
+>>>           >000000000048a038: e31010b00004        lg      %r1,176(%r1)
+>>>            000000000048a03e: b9020011            ltgr    %r1,%r1
+>>>            000000000048a042: a7840032            brc     8,48a0a6
+>>>            000000000048a046: e33020000004        lg      %r3,0(%r2)
+>>>            000000000048a04c: c04000182f4c        larl    %r4,78fee4
+>>> Call Trace:
+>>> ([<000000006717f800>] 0x6717f800)
+>>>  [<0000000000487f28>] scsi_log_send+0xf0/0x130
+>>>  [<000000000048824c>] scsi_dispatch_cmd+0xc8/0x4bc
+>>>  [<0000000000490694>] scsi_request_fn+0x3b8/0x480
+> 
+> Correct me if I'm wrong, but this seems to be saying that struct
+> scsi_cmnd was used after free.  This looks to be a different problem
+> because the command has a separate refcounting model which wasn't
+> impacted by the change ... it could be we've just exposed yet another
+> refcounting problem outside of the queue one.
+> 
+> If I had to guess, I'd say a bio got cloned with a SCSI command already
+> attached, but the ref count on the SCSI command wasn't correctly
+> adjusted.
 
-We are writing a PCI-e "frame grabber-like" driver for linux 2.6 kernel.
+As far as dm is concerned, it shouldn't happen.
+Clone is made from a dm request, not from SCSI one.
+Also clone is not reused when retrying.
 
-For exchanging data with the board, we would like to be able to use a big piece of consecutive memory.  
--> we reserve 512 megs after the first Gig of RAM by setting "memmap=512M$1024M" in grub.conf.
+>> Initially, we encountered use-after-free bugs in
+>> scsi_print_command / scsi_dispatch_cmd
+>> http://marc.info/?l=linux-scsi&m=130824013229933&w=2
 
-In order to give access to that memory in user space, I use "remap_pfn_range" : 
+It is interesting that both this and the older report
+got oopsed in scsi_log_send(), while there are other
+dereferences of 'cmd' around scsi_dispatch_cmd().
+Are there any reason they are special? Just by accident?
 
-int myboard_mmap(struct file *filep, struct vm_area_struct *vma) {
-  unsigned int board;
-
-  board = MINOR(filep->f_dentry->d_inode->i_rdev);
-  vma->vm_flags |= VM_LOCKED;
-
-  if(remap_pfn_range(vma, vma->vm_start, myboard_var[board].dmablkp>>PAGE_SHIFT, DMA_BUFFER_SIZE, vma->vm_page_prot)) {
-    printk(KERN_ERR "myboard: myboard_mmap: failed to mmap\n");
-    return -EAGAIN;
-  }
-
-  return 0;
-}
-
-(I have set myboard_var[board].dmablkp to the address I set in grub.conf: 0x40000000)
-
-However when writing or reading that part of memory, speed is terrible. 
-I compared the performances to the ones I can reach using a piece of memory got with malloc: 
-For transfering 128 megs:
-With malloc"ed" RAM : 23053us
-With "mmap"ed RAM : 1913389us
-
-I guess cache is not used. Does anyone know if there is a way to speed this up? How could we set that area to "cached"? 
-
-We have seen this post:
-http://www.linux-mips.org/archives/linux-mips/2006-02/msg00120.html
-
-And we tried adding this to our driver: 
-
-static inline pgprot_t pgprot_cached(pgprot_t _prot)
-
-{
-    unsigned long prot = pgprot_val(_prot);
-    prot = (prot & ~_CACHE_MASK);
-    return __pgprot(prot);
-}
-
-vma->vm_page_prot = pgprot_cached(vma->vm_page_prot);
-
-But it did not help...
-
-Thank you in advance! 
-
-Best regards,
-
-Charles
-
-
+Thanks,
+-- 
+Jun'ichi Nomura, NEC Corporation
