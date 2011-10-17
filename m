@@ -1,173 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805Ab1JQSAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:00:51 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:37843 "EHLO mxout1.idt.com"
+	id S1751854Ab1JQSDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:03:38 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58327 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751679Ab1JQSAu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:00:50 -0400
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCHv4] DMAEngine: Define interleaved transfer request api
-Date: Mon, 17 Oct 2011 11:00:06 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCHv4] DMAEngine: Define interleaved transfer request api
-Thread-Index: AcyM3+OlUvVtNJUlR0WUrp+F0lLz/AAA2wBw
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org><1317200618.1573.1765.camel@vkoul-udesk3><CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com><1317295068.1573.1780.camel@vkoul-udesk3><CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com><CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com><CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com><CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com><CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com><CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com><20111003161349.GB28287@flint.arm.linux.org.uk><CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com><CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com><1317966346.1573.2252.camel@vkoul-udesk3><CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com><CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com><0CE8B6
-	BE3C4AD74AB9
-	7D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com><CAJe_ZheocjVhD4PTXQo3R7rqgiyt4BCo8Fx_sJ7AmDCjB=zMxQ@mail.gmail.com><0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-CC: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
-        Barry Song <21cnbao@gmail.com>, <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
+	id S1751221Ab1JQSDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:03:36 -0400
+Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative
+ suspend/hibernate mode
+From: John Stultz <john.stultz@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, NeilBrown <neilb@suse.de>
+In-Reply-To: <201110152329.03774.rjw@sisk.pl>
+References: <201110132145.42270.rjw@sisk.pl>
+	 <201110150049.39219.rjw@sisk.pl> <1318637079.3375.262.camel@work-vm>
+	 <201110152329.03774.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Oct 2011 09:48:20 -0700
+Message-ID: <1318870100.3125.30.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 11:17 AM, Jassi Brar
-<jaswinder.singh@linaro.org> wrote:
+On Sat, 2011-10-15 at 23:29 +0200, Rafael J. Wysocki wrote:
+> So I think (please correct me if I'm wrong) that you're worried about the
+> following situation:
 > 
-> On 17 October 2011 19:37, Bounine, Alexandre
-> <Alexandre.Bounine@idt.com> wrote:
-> > On Sat, Oct 15, 2011 at 7:26 AM, Jassi Brar
-> <jaswinder.singh@linaro.org>
-> > wrote:
-> >>
-> >> On 15 October 2011 00:45, Bounine, Alexandre
-> >> <Alexandre.Bounine@idt.com> wrote:
-> >>
-> >> >> But doesn't the info, pointed to by this (void *), remain same
-> for
-> >> >> every
-> >> >> transfer to a particular target/remote device ?
-> >> > No. An address within the target may (and most likely will) be
-> > changed for
-> >> > every transfer. Target destination ID will be the same for given
-> > virtual channel.
-> >> >
-> >> Thanks for the info.
-> >>
-> >> > Virtual channel may bring the same challenge and I may need a
-> > channel locking
-> >> > if more than one requester try to read/write data to the same
-> target
-> > RIO device.
-> >> >
-> >> One can't avoid taking care of locking, but using virtual channels
-> >> keeps the dma_chan usage consistent.
-> >>
-> > Using virtual channels adds layers of complexity
-> Perhaps you didn't get me ... I suggest the dma controller driver
-> (not client drivers) create virtual channels corresponding to each
-> device it can talk to. A bunch of virtual channels could be served
-> by a single appropriate physical channel.
-> It is actually quite common, see amba-pl08x.c or pl330.c for example.
+> - The process opens /dev/sleepctl and sets the timeout
+> - It sets up a wake alarm to trigger at time T.
+> - It goes to sleep and sets it wakeup time to time T too, e.g. using select()
+>   with a timeout.
+> - The system doesn't go to sleep in the meantime.
+> - The wake alarm triggers a bit earlier than the process is woken up and
+>   system suspend is started in between of the two events.
 > 
-This is a source of the problem for RIO - DMA controller driver creates
-virtual channels statically. RapidIO may use 8- or 16-bit destID.
-In this case we need to create 256 or 64K virtual channels if we
-want to cover all possible targets on single RIO port. Adding an extra
-controller/net multiplies that number. Considering that not every
-device will need a data transfer from a given node static allocation
-will
-create even more wasted resources. 
-
-> > which may be avoided with simple API changes:
-> > - virtual channel allocation: statically vs. dynamically
-> Yes, it would be cool but it's not possible right now.
+> This race particular race is avoidable if the process sets its wakeup time
+> to T - \Delta T, where \Delta T is enough for the process to be scheduled
+> and run ioctl(sleepfd, SLEEPCTL_STAY_AWAKE).  So the complete sequence may
+> look like this:
 > 
-This is a reason for calling it "added complexity" we will need
-to find some mechanism to do it dynamically at DMA or RIO layer.
-
-> > - linking virtual channel to the physical one
-> >
-> Perhaps you mean what I suggested ?
+> - The process opens /dev/sleepctl as sleepfd1 and sets the timeout to 0.
+> - The process opens /dev/sleepctl as sleepfd2 and sets the timeout to T_2.
+>   T_2 should be sufficient for the process to be able to call
+>   ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) when woken up.
+> - It sets up a wake alarm to trigger at time T.
+> - It goes to sleep and sets it wakeup time to time T - \Delta T, such that
+>   \Delta T is sufficient for the process to call
+>   ioctl(sleepfd2, SLEEPCT_STAY_AWAKE).
 > 
-I mean linking dynamically allocated virtual channel to the physical
-one.
-Sorry for confusing statement. Ideally, in the virtual channel scenario
-rio_request_dma() should dynamically allocate target-mapped virtual DMA
-channel and link it to the appropriate physical DMA channel.  
+> Then, if system suspend happens before T - \Delta T, the process will be
+> woken up along with the wakealarm event at time T and it will be able to call
+> ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) before T_2 expires.  If system suspend
+> doesn't happen in that time frame, the process will wake up at T - \Delta T
+> and it will be able to call ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) (even if
+> system suspend triggers after the process has been woken up and before it's
+> able to run the ioctl, it doesn't matter, because the wakealarm wakeup will
+> trigger the sleepfd2's STAY_AWAKE anyway).
 
-> >
-> >> RapidIO supports 34(32+2), 50(48+2) and 66(64+2) bit addressing
-> >> which makes me wonder if the (upper or lower) 2 bits could be
-> attached
-> >> to
-> >> the identity of the target device ?
-> >> (tsi721 driver actually discards the upper 2 bits while claiming to
-> >> support
-> >> 66bit addressing so I couldn't make anything out of it and specs
-> don't
-> >> seem to say much about it)
-> >>
-> >> If there is no user of 66bit addressing and isn't coming in very
-> near
-> >> future,
-> >> we might as well drop that case for now(tsi721 already does)
-because
-> >> that 'completeness' of support modifies the semantics of dmaengine
-> > apis
-> >> today for no real use.
-> > This is marked to be fixed in tsi721 driver. Also, this is a local
-> > deficiency
-> > and changing it that does not affect other components of the RIO
-> > subsystem.
-> > Contrary to that, defining an upper layer affects all future
-> development
-> > and
-> > may result in greater pain if it needs to be adjusted later.
-> >
-> I just wanted to know
+So, the alarmtimer code is a bit more simple then what you describe
+above (alarmtimers are just like regular posix timers, only enable an
+RTC wakeup for the soonest event when the system goes into suspend).
+
+However, such a dual-timer style behavior seems like it could work for
+timer driven wakeups (and have been suggested to me by others as well).
+Just to reiterate my understanding so that we're sure we're on the same
+wavelength:
+
+For any timer-style wakeup event, you set another non-wakeup timer for
+some small period of time before the wakeup timer. Then when the
+non-wakeup timer fires, the application inhibits suspend and waits for
+the wakeup timer.  
+
+Thus if the system is supended, the system will stay asleep until the
+wakeup event, where we'll hold off suspend for a timeout length so the
+task can run. If the system is not suspended, the early timer inhibits
+suspend to block the possible race.
+
+So yes, while not a very elegant solution in my mind (as its still racy
+like any timeout based solution), it would seem to be workable in
+practice, assuming wide error margins are used as the kernel does not
+guarantee that timers will fire at a specific time (only after the
+requested time). 
+
+And this again assumes we'll see no timing issues as a result of system
+load or realtime task processing.
+
+
+> Still, there appear to be similar races that aren't avoidable (for example,
+> if the time the wake alarm will trigger is not known to the process in
+> advance), so I have an idea how to address them.  Namely, suppose we have
+> one more ioctl, SLEEPCTL_WAIT_EVENT, that's equivalent to a combination
+> of _RELAX, wait and _STAY_AWAKE such that the process will be sent a signal
+> (say SIGPWR) on the first wakeup event and it's _STAY_AWAKE will trigger
+> automatically.
+
+So actually first sentence above is key, so let me talk about that
+before I get into your new solution: As long as we know the timer is
+going to fire, we can set the pre-timer to inhibit suspend. But most
+wakeup events (network packets, keyboard presses, other buttons) are not
+timer based, and we don't know when they would arrive. Thus the same
+race could trigger between a wakeup-button press and a suspend call. 
+
+1) wakeup key press
+2) suspend call
+3) key-press task scheduled
+
+That's why I suggested adding the timeout on any wake event, instead of
+resume. This would block the suspend call inbetween the wake event and
+the application processing it. 
+
+Really, the interaction is between the wakeup event and it being
+processed in userland. Resume, if it occurs, should really be
+transparent to that interaction. So that's why I think the
+resume-specific behavior in your original proposal doesn't make sense.
+
+
+> So in the scenarion above:
 > 
-> 1) The role of the 'extra' 2bits ?
-> 
-Just upper bits of the RIO address.
+> - The process opens /dev/sleepctl, sets the timeout to 0 and calls
+>   ioctl(sleepfd, SLEEPCTL_STAY_AWAKE).
+> - It sets up a wake alarm to trigger at time T.
+> - It runs ioctl(sleepctl, SLEEPCTL_WAIT_EVENT) which "relaxes" its sleepfd
+>   and makes it go to sleep until the first wakeup event happens.
+> - The process' signal handler checks if the current time is >= T and makes
+>   the process go to the previous step if not.
 
-> 2) Are there real use-cases that are blocked on this support right now
-> ?
->     If there are indeed, do you think the transfer would be _randomly_
->    distributed over the 66-bit address space ? Because otherwise,
-maybe
->    the upper 2 bits could be used to "activate" one of the 4
-"segments"
->    using slave config call.
-> 
-There is nothing that absence of full 66-bit addressing blocks now.
-So far we are not aware about implementations that use 66-bit address.
-This does not prevent someone from designing RIO compliant endpoint
-device
-which gives interpretation to these two bits in addition to full 64-bit
-addressing of their platform.
 
-At this moment we may say that it is reasonable to lower an importance
-of 66-bit
-addressing but we should keep it in mind when considering all pros and
-cons
-of possible API changes. I discussed this with some members of RTA and
-did not
-hear any strong argument in favor of full 66-bit addressing support in
-SW
-at this moment.
+So I'm not sure if I'm understanding your suggestion totally. Is it that
+when you call SLEEP_CTL_WAIT_EVENT, the ioctl sets SLEEP_CTL_RELAX, and
+then the ioctl call blocks? 
 
-> We should try our best to avoid opening the can of worms by adding
-> (void *) hook to each transfer, because any client driver could want
-to
-> pass its own private data to dmac and there would be no way for a dmac
-> driver to know what to cast the void pointer to.
+Then when the signal handler triggers, where exactly does the
+SLEEP_CTL_STAY_AWAKE call get made? Is it in the signal handler (after
+the task has been scheduled)? Or is it done by the kernel on task
+wakeup?
 
-Do we really expect that clients will jump to use an extra parameter
-without a valid reason and without knowing their hardware specifics?
+If its the former, I don't see how it blocks the race. 
 
-Alex.
+If its the latter, then it seems this proposal starts to somewhat
+approximate to my proposal (ie: kernel allows suspend on blocking on a
+specific device, then disables it on task wakeup).
+
+thanks
+-john
+
+
 
