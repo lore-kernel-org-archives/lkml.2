@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1JQBUq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 21:20:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50163 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab1JQBUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 21:20:44 -0400
-From: chris@cnpbagwell.com
-To: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
-        pinglinux@gmail.com
-Cc: Chris Bagwell <chris@cnpbagwell.com>
-Subject: [PATCH 1/6] Input: wacom - cleanup feature report for bamboos
-Date: Sun, 16 Oct 2011 20:20:25 -0500
-Message-Id: <1318814430-30316-2-git-send-email-chris@cnpbagwell.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1318814430-30316-1-git-send-email-chris@cnpbagwell.com>
-References: <1318814430-30316-1-git-send-email-chris@cnpbagwell.com>
+	id S1753647Ab1JQBdw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 21:33:52 -0400
+Received: from zfrontend2.aha.ru ([195.2.83.148]:37011 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751341Ab1JQBdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Oct 2011 21:33:51 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: 3.1-rc9 wifi problem
+To: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        dave.taht@gmail.com, rientjes@google.com, arend@broadcom.com,
+        toralf.foerster@gmx.de, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        larry.finger@gmail.com
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Sun, 16 Oct 2011 21:33:46 -0400
+Message-ID: <web-627302724@zbackend1.aha.ru>
+In-Reply-To: <4E9A4496.1000906@lwfinger.net>
+References: <web-626905859@zbackend1.aha.ru>
+ <4E9A4496.1000906@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Bagwell <chris@cnpbagwell.com>
+I have to wait until the friend with the laptop comes 
+back, perhaps this week. Then I can look what wireless 
+card is in it.
 
-Only the stylus interface on Bamboo's has a feature report that can
-be used to set to wacom mode.  The touch interface only has 1 report mode
-and will return errors for those get/sets requests.
+However, now I remember me:  that laptop worked only good 
+since 2.6.39 with the new kernel-embedded modules. 
+  Before, it didn't work normally, i.e. on booting the 
+wireless almost never didn't switch on; only ocasionally .
 
-The get request was always erroring out because it was not marked as
-an input request. Only down side of error was needlessly resending the
-set request 5 times.
 
-Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+And, beside of kernel 2.6.39, and the normal wifi 
+software, I still had him to install a file 
+iwlwifi-1000-3.ucode or .5 ucode (i'm not sure, the number 
+can also be 5000), and I had the problem to search long 
+time for that file because one find only .2 or .4 in 
+internet but what don't work at that wifi card.   You 
+could improve the kernel-module so that everything is 
+included so that one don't need to search such files.
+
+Then, with this kernel and that file however, it worked 
+without any problem.
+
+I hope from these informations you can find out what wifi 
+card or what driver is in the laptop.
+
+W.Landgraf
 ---
- drivers/input/tablet/wacom_sys.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index a205055..4f35473 100644
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -66,7 +66,8 @@ static int wacom_get_report(struct usb_interface *intf, u8 type, u8 id,
- 	do {
- 		retval = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
- 				USB_REQ_GET_REPORT,
--				USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-+				USB_DIR_IN | USB_TYPE_CLASS |
-+				USB_RECIP_INTERFACE,
- 				(type << 8) + id,
- 				intf->altsetting[0].desc.bInterfaceNumber,
- 				buf, size, 100);
-@@ -362,7 +363,8 @@ static int wacom_query_tablet_data(struct usb_interface *intf, struct wacom_feat
- 						WAC_HID_FEATURE_REPORT,
- 						report_id, rep_data, 4, 1);
- 		} while ((error < 0 || rep_data[1] != 4) && limit++ < WAC_MSG_RETRIES);
--	} else if (features->type != TABLETPC) {
-+	} else if (features->type != TABLETPC &&
-+		   features->device_type == BTN_TOOL_PEN) {
- 		do {
- 			rep_data[0] = 2;
- 			rep_data[1] = 2;
--- 
-1.7.6.4
-
+Professional hosting for everyone - http://www.host.ru
