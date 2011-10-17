@@ -1,111 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab1JQVUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 17:20:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50359 "EHLO e9.ny.us.ibm.com"
+	id S1755311Ab1JQVVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 17:21:30 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59998 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753903Ab1JQVUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 17:20:19 -0400
-Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative
- suspend/hibernate mode
-From: John Stultz <john.stultz@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>
-In-Reply-To: <201110172238.18027.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1110171417070.1749-100000@iolanthe.rowland.org>
-	 <1318878529.3125.80.camel@work-vm>  <201110172238.18027.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 14:20:09 -0700
-Message-ID: <1318886409.3125.106.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753903Ab1JQVV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 17:21:29 -0400
+Date: Mon, 17 Oct 2011 23:19:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111017211951.GA8043@elte.hu>
+References: <1318010515.398.8.camel@twins>
+ <20111008005035.GC22843@hostway.ca>
+ <1318060551.8395.0.camel@twins>
+ <20111012213555.GC24461@hostway.ca>
+ <20111013232521.GA5654@hostway.ca>
+ <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+ <20111017045806.GA11561@elte.hu>
+ <alpine.LFD.2.02.1110171101250.3240@ionos>
+ <20111017184916.GA5545@elte.hu>
+ <4E9C917B.2050802@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9C917B.2050802@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 22:38 +0200, Rafael J. Wysocki wrote:
-> On Monday, October 17, 2011, John Stultz wrote:
-> > Though as I've been thinking about it, there may be a way to do a
-> > userland solution that uses the wakeup_count that isn't so inefficient.
-> > Basically, its a varient of Mark's wakeup-device idea, but moved out to
-> > userland.
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 10/17/2011 11:49 AM, Ingo Molnar wrote:
+> > Do we have some hard data on this, which we could put into comments 
+> > in include/linux/ktime.h and such? Older versions of GCC used to do a 
+> > bad job of long long handling on 32-bit systems - that might be a 
+> > factor in the performance figures.
 > > 
-> > There is a userland PM daemon. Its responsible for both suspending the
-> > system, *and* handing all wakeup events.
-> > 
-> > Normal wakeup consumers open wakeup devices with a special library which
-> > passes the open request through the PM daemon. The PM daemon opens the
-> > device and provides a pipe fd back to the application, and basically
-> > acts as a middle-man.
-> > 
-> > The PM daemon then cycles, doing the following:
-> > 
-> > while(1) {
-> > 	wakeup_count = read_int(wakeup_count_fd) /*possibly blocking*/
-> > 	if (wakeup_count != last_wakeup) {
-> > 		have_data = check_open_fds(fds);
-> > 		if (have_data)
-> > 			process_fds(fds);
-> > 		last_wakeup = wakeup_count;
-> > 	}
-> > 	write_int(wakeup_count_fd, wakeup_count);
-> > 	attempt_suspend();
-> > }
-> > 
-> > 
-> > Where check_open_fds() does a non-blocking select on all the fds that
-> > the PM deamon has opened on behalf of applications, and process_fds()
-> > basically writes any available data from the opened fds over to the
-> > application through the earlier setup pipe. The daemon's write to the
-> > pipe could be blocking, to ensure the application has read all of the
-> > necessary data before the deamon continues trying to suspend.
-> > 
-> > Provided there is some suspend_inhibit/allow command that userspace can
-> > make to the PM damon, this approach then provides a similar
-> > select/wakelock/read pattern as what Android uses. The only other
-> > features we might want is suggestion from Peter that
-> > the /sys/power/state be only able to be opened by one application, so
-> > that on systems which don't have the PM deamon running, applications
-> > like the firmware update tool can try opening /sys/power/state and
-> > blocking anyone from suspending under it.
-> > 
-> > Thoughts?
+> > But i suspect you are right that the cost is still very much there 
 > 
-> Well, that's kind of like I thought it might work when I introduced
-> wakeup_count. :-)  So, I definitely don't think it's a bad approach.
-> If it addesses all your use cases, I'd say we can go for it, but I'd
-> like to explore the alternatives as far as we can to avoid going back
-> to them some time in future.
+> 64/64 division is done bit by bit on most (all?) 32-bit architectures.
+> 
+> 64/32 division can be done in hardware on some architectures, e.g. x86.
 
-Do forgive me for not seeing it earlier. But until I considered the idea
-of the PM deamon handling the data as well as the wakeup_count, I didn't
-really see a solution with a workable API (requiring full communication
-before suspending didn't seem very usable in my mind, but I'm still
-happy to entertain it if folks can get working protypes going to demo
-it).
+it's 64/32 division - it's the /1000000000 /1000000 /1000 divisions 
+in the large majority of cases, to convert between 
+seconds/milliseconds/microseconds and scalar nanoseconds.
 
-I of course am still interested in considering other approaches. But
-I'll probably see how far I can get in prototyping this current userland
-approach to see what issues it runs up against.
+the kernel-internal ktime_t in the 32-bit optimized case is:
 
-> As for single-opening /sys/power/state, I don't think it will be
-> sufficient, because of the hibernate user space interface that doesn't
-> work on the basis of /sys/power/state.  It would have to be something
-> like /sys/power/manage that Alan has suggested (which opens one more
-> possibility, but see my reply to Alan).
+union ktime {
+        s32     sec, nsec;
+};
 
-Right. I forgot about hibernate.
+which is the same as timespec and arithmetically close to timeval, 
+which many ABIs use. So conversion is easy in that case - but 
+arithmetics gets a bit harder.
 
-Although maybe if any of the sysfs devices are open, we could return
-error on open to all of them? 
+If we used a scalar 64-bit form for all kernel internal time 
+representations:
 
-I'm just trying to think of what we can do without introducing a new
-ABI.
+	s64	nsecs;
 
-thanks
--john
+then conversions back to timespec/timeval would involve dividing this 
+64-bit value with 1000000000 or 1000000.
 
+Is there no faster approximation for those than bit by bit?
+
+In particular we could try something like:
+
+	(high*2^32 + low)/1e9 ~==  ( high * (2^64/1e9) ) / 2^32
+
+... which reduces it all to a 64-bit multiplication (or two 32-bit 
+multiplications) with a known constant, at the cost of 1 nsec 
+imprecision of the result - but that's an OK approximation in my 
+opinion.
+
+But it's late here and math is hard - lets go shopping ;-)
+
+Thanks,
+
+	Ingo
