@@ -1,107 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab1JQLbc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:31:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40459 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1JQLbb (ORCPT
+	id S1751704Ab1JQLcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:32:05 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:48281 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab1JQLcD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:31:31 -0400
-Date: Mon, 17 Oct 2011 12:30:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Richard Zhao <richard.zhao@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        jeremy.kerr@canonical.com, paul@pwsan.com, linaro-dev@lists.linaro.org,
-        linus.walleij@stericsson.com, patches@linaro.org,
-        shawn.guo@freescale.com, magnus.damm@gmail.com,
-        linux-kernel@vger.kernel.org, eric.miao@linaro.org,
-        grant.likely@secretlab.ca, dsaxena@linaro.org,
-        amit.kucheria@linaro.org, skannan@quicinc.com,
-        arnd.bergmann@linaro.org, sboyd@quiinc.com, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@ti.com>
+	Mon, 17 Oct 2011 07:32:03 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(z1039oz9371K1432N98dK4015Lzz1202hzz8275bh8275dhz2dh87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 17 Oct 2011 19:31:51 +0800
+From: Richard Zhao <richard.zhao@linaro.org>
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <paul@pwsan.com>,
+        <linaro-dev@lists.linaro.org>, <linus.walleij@stericsson.com>,
+        <patches@linaro.org>, <sboyd@quicinc.com>,
+        <broonie@opensource.wolfsonmicro.com>, <magnus.damm@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <amit.kucheria@linaro.org>,
+        <grant.likely@secretlab.ca>, <dsaxena@linaro.org>,
+        <tglx@linutronix.de>, <eric.miao@linaro.org>, <linux@arm.linux.org.uk>,
+        <skannan@quicinc.com>, <jeremy.kerr@canonical.com>,
+        <shawn.guo@freescale.com>, <arnd.bergmann@linaro.org>
 Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
-Message-ID: <20111017113050.GI21648@n2100.arm.linux.org.uk>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com> <1316730422-20027-2-git-send-email-mturquette@ti.com> <20111014081024.GA9485@b20223-02.ap.freescale.net> <20111014100504.GC2966@opensource.wolfsonmicro.com> <20111014103233.GB9485@b20223-02.ap.freescale.net> <20111016175521.GA13565@pengutronix.de> <20111017084851.GB20184@b20223-02.ap.freescale.net> <20111017092028.GA3042@opensource.wolfsonmicro.com> <20111017105302.GC20184@b20223-02.ap.freescale.net> <20111017110539.GB18141@pengutronix.de>
+Message-ID: <20111017113150.GD20184@b20223-02.ap.freescale.net>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-2-git-send-email-mturquette@ti.com>
+ <CAJOA=zM9k7_z_PUoF0tZ_OrgdDTgMjZLftqtW0ra3G9C08Th7g@mail.gmail.com>
+ <20111015022448.GA17872@b20223-02.ap.freescale.net>
+ <CAJOA=zOvAV1f+rXP1jYNPOXAchyJPEEAvCdrNfGVg=iZn3Q3Ag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20111017110539.GB18141@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAJOA=zOvAV1f+rXP1jYNPOXAchyJPEEAvCdrNfGVg=iZn3Q3Ag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 01:05:39PM +0200, Sascha Hauer wrote:
-> It's not a problem to associate multiple clocks to a device, we can do
-> this now already. What a driver can't do now is give-me-all-clocks-I-need(dev),
-> but this problem should not be solved at clock core level but at the
-> clkdev level.
-
-I don't think it even needs solving at the clkdev level.
-
-In order to get all clocks for a specific device, we'd need variable
-length arrays to store the individual struct clk pointers, which isn't
-going to be all that nice.  We'd need clk_get_alldev() and
-clk_put_alldev() to deal with these variable length arrays - and as
-far as the driver is concerned that's an opaque object - it can't know
-anything about any particular individual struct clk in the array.
-
-Then we'd need operations to operate on the array itself, which means
-much more API baggage.
-
-Also, if it did need to know about one particular struct clk, then
-there's problems with avoiding that struct clk in the alldev() versions
-(or we'll see drivers doing clk_get() followed by clk_disable() to
-work-around any enabling done via the array versions.)
-
-> The fact is that the different clocks for a device are really different
-> clocks. A dumb driver may want to request/enable all relevant clocks at
-> once while a more sophisticated driver may want to enable the clock for
-> accessing registers in the probe function and a baud clock on device
-> open time.
-
-I don't think you can get away from drivers having to know about their
-individual clocks in some form or other - and I don't think a dumb
-driver should be a justification for creating an API.  If a dumb driver
-wants to get the clocks for a device it has to behave as if it were
-a smart driver and request each one (maybe having an array itself)
-such as this:
-
-static const char *con_ids[NR_CLKS] = {
-	"foo",
-	"bar",
+On Sun, Oct 16, 2011 at 02:17:29PM -0700, Turquette, Mike wrote:
+> On Fri, Oct 14, 2011 at 7:24 PM, Richard Zhao <richard.zhao@linaro.org> wrote:
+> > On Fri, Oct 14, 2011 at 11:14:19AM -0700, Turquette, Mike wrote:
+> >> On Thu, Sep 22, 2011 at 3:26 PM, Mike Turquette <mturquette@ti.com> wrote:
+> >> unsigned long omap_recalc_rate(struct clk_hw *hw)
+> >> {
+> >>         struct clk *parent;
+> >>         struct clk_hw_omap *oclk;
+> >>
+> >>         parent = hw->clk->parent;
+> > clk drivers can not see struct clk details. I use clk_get_parent.
+> 
+> clk_get_parent should query the hardware to see what the parent is.
+> This can have undesireable overhead.  It is quite acceptable to
+> reference a clock's parent through clk->parent, just as it is
+> acceptable to get a clock rate through clk->rate.
+IMHO, we only need to get parent from hw at register/init time.
+clk_get_parent can get it from cache, like current code.
+> 
+> An analogous situation is a clk_get_rate call which uses a clk's
+> .recalc.  There is undesirable overhead involved in .recalc for clocks
+> whose rates won't change behind our backs, so best to just treat the
+> data in struct clk as cache and reference it directly.
+> 
+> >>         oclk = to_clk_omap(hw);
+> >>         ...
+> >> }
+> >>
+> ...
+> >>
+> >> unsigned long omap_recalc_rate(struct clk *clk)
+> >> {
+> >>         struct clk *parent;
+> >>         struct clk_hw_omap *oclk;
+> >>
+> >>         parent = clk->parent;
+> >>         oclk = to_clk_omap(clk->hw);
+> >>         ...
+> >> }
+> > In my understanding, struct clk stores things specific to clk core,
+> > struct clk_hw stores common things needed by clk drivers. For static clk driver
+> > there' some problems:
+> >  - For clocks without mux, I need duplicate a  .parent and set .get_parent.
+> >   Even when we adopt DT and dynamicly create clk, it's still a problem.
+> >   Moving .parent to clk_hw can fix it.
+> 
+> For clocks with a fixed parent we should just pass it in at
+> register-time.  We should definitely not move .parent out of struct
+> clk, since struct clk should be the platform agnostic bit that lets us
+> do tree walks, build topology, etc etc.
+> 
+> If you really want a .parent outside of struct clk then duplicate it
+> in your struct clk_hw_imx
+I don't have clk_hw_imx. I just use generic clks like clk_hw_gate, clk_hw_divider,
+clk_hw_mux, and some specific clks.
+>  and teach your .ops about it (analogous to
+> struct clk_hw_fixed->rate).
+I have to define things like below:
+stuct pair {
+	struct clk_hw *clk = clk_hw_gate.hw;
+	struct clk_hw_ops *ops;
+};
+and use for (.. ) to register the clk array.
+> 
+> >  - When I define a clk array, I don't need to find another place to store .ops.
+> >   It's not problem for dynamic creating clock.
+> 
+> Something like the following?
+> 
+> static struct clk aess_fclk;
+> 
+> static const clk_hw_ops aess_fclk_ops = {
+>         .recalc = &omap2_clksel_recalc,
+>         .round_rate = &omap2_clksel_round_rate,
+>         .set_rate = &omap2_clksel_set_rate,
+> };
+> 
+> static struct clk_hw_omap aess_fclk_hw = {
+>         .hw = {
+>                 .clk = &aess_fclk,
+>         },
+>         .clksel = &aess_fclk_div,
+>         .clksel_reg = OMAP4430_CM1_ABE_AESS_CLKCTRL,
+>         .clksel_mask = OMAP4430_CLKSEL_AESS_FCLK_MASK,
+> };
+> 
+> static struct clk aess_fclk = {
+>         .name = "aess_fclk",
+>         .ops = &aess_fclk_ops,
+>         .hw = &aess_fclk_hw.hw,
+>         .parent = &abe_clk,
+> };
+If we don't protect struct clk members, how about the below:
+struct clk_hw_omap aess_fclk = {
+	.clk = {
+		.name = "aess_fclk",
+		.ops = &aess_fclk_ops,
+		.parent = &abe_clk,
+		};
+         .clksel = &aess_fclk_div,
+         .clksel_reg = OMAP4430_CM1_ABE_AESS_CLKCTRL,
+         .clksel_mask = OMAP4430_CLKSEL_AESS_FCLK_MASK,
 };
 
-struct driver_priv {
-	struct clk *clk[NR_CLKS];
-};
+> 
+> >  - As I mentioned in another mail, clk group need no lock version prepare/unprepare
+> >   and enable/disable functions
+> 
+> Clock groups are out of scope for this first series.  We should
+> discuss more what the needs are for your clock groups.  If it boils
+> down to just enabling all of the clocks for a given device then you
+> might want to abstract that away with pm_runtime_* calls, and maybe a
+> supplementary layer like OMAP's hwmod.  But I might be way off base, I
+> really don't understand your use case for clock groups.
+clk group is clk function dependency. I talked about it in another email in this thread.
+That's ok to leave it to other framework.
+> 
+> >   Another way is, add a "{struct clk_hw *clks; int count}" in clk_hw, let clk
+> >   core handle it.
+> >   I prefer the second way, but I'm not sure whether it's common enough. It's
+> >   still a problem for dynamic creating clock.
+> 
+> struct clk_hw is just a pointer for navigating from struct clk ->
+> struct your_custom_clk and vice versa.  Again can you elaborate on
+> your needs for managing multiple clocks with a single struct clk_hw?
 
-	
-	for (err = i = 0; i < NR_CLKS; i++) {
-		priv->clk[i] = clk_get(dev, con_ids[i];
-		if (IS_ERR(priv->clk[i])) {
-			err = PTR_ERR(priv->clk[i]);
-			break;
-		}
-	}
+> 
+> Thanks,
+> Mike
+> 
+> >
+> > Thanks
+> > Richard
+> >>
+> >> It is a small nitpick, but it affects the API for everybody so best to
+> >> get it right now before folks start migrating over to it.
+> >>
+> >> Thanks,
+> >> Mike
+> >>
+> >> >        int             (*set_rate)(struct clk_hw *,
+> >> >                                        unsigned long, unsigned long *);
+> >> >        long            (*round_rate)(struct clk_hw *, unsigned long);
+> >> >        int             (*set_parent)(struct clk_hw *, struct clk *);
+> >> >        struct clk *    (*get_parent)(struct clk_hw *);
+> >> >  };
+> >>
+> >> _______________________________________________
+> >> linux-arm-kernel mailing list
+> >> linux-arm-kernel@lists.infradead.org
+> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> >>
+> >
+> >
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-	if (err) {
-		for (i = 0; i < NR_CLKS && !IS_ERR(priv->clk[i]); i++)
-			clk_put(priv->clk[i]);
-		return err;
-	}
-
-This approach also has the advantage that we know what order the clocks
-will be in the array, and so we can sensibly index the array to obtain
-a particular clock.
-
-However, going back to the bus fabric case, a driver probably doesn't
-have the knowledge - it's a platform topology thing - one which can't
-be represented by a clock tree.
-
-It might help if we represented our busses closer to reality - like PCI
-does - rather than a flattened set of platform devices.  Couple that with
-runtime PM and a driver for the bus fabric, and it should fall out
-fairly naturally from the infrastructure we already have.
