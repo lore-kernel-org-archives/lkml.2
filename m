@@ -1,89 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab1JQWEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 18:04:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58376 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab1JQWEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 18:04:54 -0400
-Date: Tue, 18 Oct 2011 00:03:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111017220321.GA18523@elte.hu>
-References: <20111012213555.GC24461@hostway.ca>
- <20111013232521.GA5654@hostway.ca>
- <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
- <20111017045806.GA11561@elte.hu>
- <alpine.LFD.2.02.1110171101250.3240@ionos>
- <20111017184916.GA5545@elte.hu>
- <4E9C917B.2050802@zytor.com>
- <20111017211951.GA8043@elte.hu>
- <4E9C9CAE.9090207@zytor.com>
- <20111017213958.GA27126@elte.hu>
+	id S1753512Ab1JQWFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 18:05:55 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:42992 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1JQWFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 18:05:54 -0400
+Date: Mon, 17 Oct 2011 23:49:56 +0200
+From: Nico Schottelius <nico-linux-20111017@schottelius.org>
+To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
+Message-ID: <20111017214956.GA2712@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+References: <20111017175906.GA3461@schottelius.org>
+ <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
+ <20111017214050.GA1408@schottelius.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="5mCyUwZo2JvN/JJP"
 Content-Disposition: inline
-In-Reply-To: <20111017213958.GA27126@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20111017214050.GA1408@schottelius.org>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.1.0-rc6-g1f2c7e9 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > > In particular we could try something like:
-> > > 
-> > > 	(high*2^32 + low)/1e9 ~==  ( high * (2^64/1e9) ) / 2^32
-> > > 
-> > > ... which reduces it all to a 64-bit multiplication (or two 
-> > > 32-bit multiplications) with a known constant, at the cost of 1 
-> > > nsec imprecision of the result - but that's an OK approximation 
-> > > in my opinion.
-> > > 
-> > 
-> > We can do much better than that with reciprocal multiplication.
-> 
-> Yes, 2^64/1e9 is the reciprocal.
++ xev attachement.
 
-So basically, to extend on the pseudocode above, we could do the 
-equivalent of:
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
 
-/* 2^64/1e9: */
-#define MAGIC 18446744073ULL
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=xev
 
-        secs_fast = ((nsecs >> 32) * MAGIC) >> 32;
-        secs_fast += (nsecs & 0xFFFFFFFF)/1000000000;
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 631172, (150,8), root:(794,419),
+    state 0x0, keycode 232 (keysym 0x1008ff03, XF86MonBrightnessDown), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-to get to the precise 'timeval.secs' field - these are all 32-bit 
-operations: a 32-bit multiplication and a 32-bit division if i 
-counted it right.
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 631268, (150,8), root:(794,419),
+    state 0x0, keycode 232 (keysym 0x1008ff03, XF86MonBrightnessDown), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-(Likewise we can get the remainder as well, for timeval.nsecs.)
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 631852, (150,8), root:(794,419),
+    state 0x0, keycode 233 (keysym 0x1008ff02, XF86MonBrightnessUp), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-So I think if we add 32-bit optimized reciprocal multiplication based 
-timeval and timespec routines, we can change ktime_t to a simple 
-scalar type on 64-bit and 32-bit architectures alike.
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 631972, (150,8), root:(794,419),
+    state 0x0, keycode 233 (keysym 0x1008ff02, XF86MonBrightnessUp), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-It would likely be faster as well: the 32-bit ktime operations are 
-more complex than straightforward u64 operations.
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 632660, (150,8), root:(794,419),
+    state 0x0, keycode 128 (keysym 0x1008ff4a, XF86LaunchA), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-Thomas, what do you think?
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 632772, (150,8), root:(794,419),
+    state 0x0, keycode 128 (keysym 0x1008ff4a, XF86LaunchA), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-Thanks,
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 633596, (150,8), root:(794,419),
+    state 0x0, keycode 212 (keysym 0x1008ff4b, XF86LaunchB), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
 
-	Ingo
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 633700, (150,8), root:(794,419),
+    state 0x0, keycode 212 (keysym 0x1008ff4b, XF86LaunchB), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 634636, (150,8), root:(794,419),
+    state 0x0, keycode 71 (keysym 0xffc2, F5), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 634772, (150,8), root:(794,419),
+    state 0x0, keycode 71 (keysym 0xffc2, F5), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 635508, (150,8), root:(794,419),
+    state 0x0, keycode 173 (keysym 0x1008ff16, XF86AudioPrev), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 635636, (150,8), root:(794,419),
+    state 0x0, keycode 173 (keysym 0x1008ff16, XF86AudioPrev), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 637308, (150,8), root:(794,419),
+    state 0x0, keycode 172 (keysym 0x1008ff14, XF86AudioPlay), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 637428, (150,8), root:(794,419),
+    state 0x0, keycode 172 (keysym 0x1008ff14, XF86AudioPlay), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 638108, (150,8), root:(794,419),
+    state 0x0, keycode 171 (keysym 0x1008ff17, XF86AudioNext), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 638252, (150,8), root:(794,419),
+    state 0x0, keycode 171 (keysym 0x1008ff17, XF86AudioNext), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 639316, (150,8), root:(794,419),
+    state 0x0, keycode 121 (keysym 0x1008ff12, XF86AudioMute), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 639444, (150,8), root:(794,419),
+    state 0x0, keycode 121 (keysym 0x1008ff12, XF86AudioMute), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 641236, (150,8), root:(794,419),
+    state 0x0, keycode 122 (keysym 0x1008ff11, XF86AudioLowerVolume), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 641340, (150,8), root:(794,419),
+    state 0x0, keycode 122 (keysym 0x1008ff11, XF86AudioLowerVolume), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 642788, (150,8), root:(794,419),
+    state 0x0, keycode 123 (keysym 0x1008ff13, XF86AudioRaiseVolume), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 642892, (150,8), root:(794,419),
+    state 0x0, keycode 123 (keysym 0x1008ff13, XF86AudioRaiseVolume), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 644436, (150,8), root:(794,419),
+    state 0x0, keycode 169 (keysym 0x1008ff2c, XF86Eject), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 644436, (150,8), root:(794,419),
+    state 0x0, keycode 169 (keysym 0x1008ff2c, XF86Eject), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+MappingNotify event, serial 27, synthetic NO, window 0x0,
+    request MappingKeyboard, first_keycode 8, count 248
+
+KeyPress event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 648822, (150,8), root:(794,419),
+    state 0x0, keycode 124 (keysym 0x1008ff2a, XF86PowerOff), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XmbLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+KeyRelease event, serial 27, synthetic NO, window 0x1200001,
+    root 0x131, subw 0x0, time 648822, (150,8), root:(794,419),
+    state 0x0, keycode 124 (keysym 0x1008ff2a, XF86PowerOff), same_screen YES,
+    XLookupString gives 0 bytes: 
+    XFilterEvent returns: False
+
+--5mCyUwZo2JvN/JJP--
