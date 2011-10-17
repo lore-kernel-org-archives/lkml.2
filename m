@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab1JQCGh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 22:06:37 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:37328 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab1JQCGg (ORCPT
+	id S1754118Ab1JQCHi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 22:07:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51614 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632Ab1JQCHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 22:06:36 -0400
-X-Originating-IP: 217.70.178.137
-X-Originating-IP: 50.43.15.19
-Date: Sun, 16 Oct 2011 19:06:13 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/55] Preview of RCU changes for 3.2
-Message-ID: <20111017020613.GJ19421@leaf>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Oct 2011 22:07:37 -0400
+From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: [PATCH v2 1/2] irq: Add EXPORT_SYMBOL_GPL to function of irq generic-chip
+Date: Mon, 17 Oct 2011 11:08:46 +0900
+Message-Id: <1318817327-4589-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 11:00:15AM -0700, Paul E. McKenney wrote:
-> Hello!
-> 
-> This patchset adds RCU event tracing, improved diagnostics and
-> documentation, and fixes a number of bugs, including several from an
-> ongoing top-to-bottom inspection of RCU.  The patches are as follows:
-> 
-> 1.	Place per-CPU kthreads' stack and task struct on the corresponding
-> 	node on NUMA systems (courtesy of Eric Dumazet).
-> 2.	Avoid unnecessary self-wakeups for per-CPU kthreads
-> 	(courtesy of Shaohua Li).
-> 3,6,10,12,25,28,33.
-> 	Documentations updates (some courtesy Wanlong Gao).
-> 4.	Add replacement checks for blocking within an RCU read-side
-> 	critical section.
-> 5.	Header-file untangling part 1 of N: move rcu_head to types.h.
-> 7.	Fix mismatched variable declaration (courtesy of Andi Kleen).
-> 8.	Abstract out common grace-period-primitive code.
-> 9.	Update rcutorture to test newish RCU API members.
-> 11.	Drive RCU algorithm selection directly from SMP and PREEMPT.
-> 13.	Make rcu_torture_boost() wait for callbacks before telling
-> 	debug-objects that they are done.
-> 14-17,20,22.
-> 	Add event tracing for RCU.
-> 18.	Update comments to reflect kthreads being used only when
-> 	RCU priority boosting is enabled.
-> 19.	Move RCU_BOOSt data declarations to alow compiler to detect
-> 	mismatches.
-> 20.	Make TINY_RCU use softirqs for RCU_BOOST=n.
-> 23.	Simplify quiescent-state accounting.
-> 24.	Stop passing rcu_read_lock_held() to rcu_dereference_protected()
-> 	(courtesy of Michal Hocko).
-> 26.	Remove unused and redundant RCU API members.
-> 27.	Allow rcutorture's stat_interval parameter to be changed at runtime
-> 	to make it easier to test RCU in guest OSes.
-> 28.	Removed unused nohz_cpu_mask (courtesy of Alex Shi).
-> 30.	Eliminate in_irq() checks in rcu_enter_nohz().
-> 31.	Fix rcu_implicit_dynticks_qs() local-variable size mismatches.
-> 32.	Make rcu_assign_pointer() unconditionally emit memory barrier
-> 	to silence new gcc warnings (courtesy of Eric Dumazet).
-> 34.	Move __rcu_read_lock()'s barrier within if-statement.
-> 35.	Dump local stack for CPU stall warnings if cannot dump all stacks.
-> 36.	Prevent early-boot set_need_resched() from __rcu_pending().
-> 37.	Simplify unboosting checks.
-> 38.	Prohibit RCU grace periods during early boot.
-> 39.	Suppress NMI backtraces when CPU stall ends before dump.
-> 40.	Avoid just-online CPU needlessly rescheding itself.
-> 41.	Permit rt_mutex_unlock() with irqs disabled.
-> 42-43.	Prevent end-of-test rcutorture hangs.
-> 44.	Wire up RCU_BOOST_PRIO, use conventional kthread naming scheme
-> 	(courtesy of Mike Galbraith).
-> 45.	Check for entering dyntick-idle in RCU read-side critical section.
-> 46.	Adjust RCU_FAST_NO_HZ to avoid false quiescent states.
-> 47.	Avoid concurrent end of old GP with start of new GP.
-> 48.	Strengthen powerpc value-returning atomic memory ordering.
-> 49-51.	Detect illegal RCU use from dyntick-idle mode (courtesy of
-> 	Frederic Weisbecker).
-> 52.	Remove an unnecessary layer of abstraction from PROVE_RCU checking.
-> 53.	Detect illegal SRCU use from dyntick-idle mode.
-> 54.	Make SRCU use common lockdep-splat code.
-> 55.	Placeholder patch that disables illegal tracing from dyntick-idle
-> 	mode (illegal because tracing uses RCU).
+Some functions of irq generic-chip is undefined, because
+EXPORT_SYMBOL_GPL is not set to these.
 
-I responded to a few of the patches with comments and potential issues.
-I also don't consider myself qualified to review patch 48/55, "powerpc:
-strengthen value-returning-atomics memory barriers".  For the rest:
+-----
+ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
+ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
+ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
+ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
+-----
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+This is revised that EXPORT_SYMBOL_GPL can be added and referred
+to in functions.
+
+Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+---
+
+V2: Add EXPORT_SYMBOL_GPL to irq_setup_generic_chip, irq_alloc_generic_chip,
+irq_setup_alt_chip and irq_remove_generic_chip only.
+
+ kernel/irq/generic-chip.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index e38544d..6cb7613 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -211,6 +211,7 @@ irq_alloc_generic_chip(const char *name, int num_ct, unsigned int irq_base,
+ 	}
+ 	return gc;
+ }
++EXPORT_SYMBOL_GPL(irq_alloc_generic_chip);
+ 
+ /*
+  * Separate lockdep class for interrupt chip which can nest irq_desc
+@@ -258,6 +259,7 @@ void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
+ 	}
+ 	gc->irq_cnt = i - gc->irq_base;
+ }
++EXPORT_SYMBOL_GPL(irq_setup_generic_chip);
+ 
+ /**
+  * irq_setup_alt_chip - Switch to alternative chip
+@@ -281,6 +283,7 @@ int irq_setup_alt_chip(struct irq_data *d, unsigned int type)
+ 	}
+ 	return -EINVAL;
+ }
++EXPORT_SYMBOL_GPL(irq_setup_alt_chip);
+ 
+ /**
+  * irq_remove_generic_chip - Remove a chip
+@@ -311,6 +314,7 @@ void irq_remove_generic_chip(struct irq_chip_generic *gc, u32 msk,
+ 		irq_modify_status(i, clr, set);
+ 	}
+ }
++EXPORT_SYMBOL_GPL(irq_remove_generic_chip);
+ 
+ #ifdef CONFIG_PM
+ static int irq_gc_suspend(void)
+-- 
+1.7.7
+
