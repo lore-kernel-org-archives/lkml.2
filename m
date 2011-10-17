@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab1JQRur (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:50:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63213 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1JQRuZ (ORCPT
+	id S1751396Ab1JQRwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:52:08 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:57565 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1JQRwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 13:50:25 -0400
-X-Authority-Analysis: v=1.1 cv=Aw1K5MWCW/IlYLbVHOK2DHmxtnIeftPoAvmBFvlQMWA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=SynPNRHhxoAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=hD80L64hAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=2TICIzPm5_ciRUbzbvsA:9 a=QEXdDO2ut3YA:10 a=DHQQ7jDAcw4A:10 a=v3rLFGiuRE8A:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=3ahqdCAx0qoexaMLyigA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20111017175023.109360819@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 13:49:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Geunsik Lim <geunsik.lim@samsung.com>
-Subject: [PATCH 1/2] ftrace: Fix README to state tracing_on to start/stop tracing
-References: <20111017174938.842273454@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Fix-README-to-state-tracing_on-to-start-stop-.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 17 Oct 2011 13:52:07 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>, "Luck, Tony" <tony.luck@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "hughd@chromium.org" <hughd@chromium.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 17 Oct 2011 13:34:20 -0400
+Subject: RE: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Topic: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Index: AcyM8W5zjVDyG6T+Smq3Ji0gFMX0JAAAMa9g
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5747E25E@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
+ <20111017160904.GG5795@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301EE911C66@orsmsx505.amr.corp.intel.com>
+ <20111017172229.GH5795@redhat.com>
+In-Reply-To: <20111017172229.GH5795@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110170202
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-From: Geunsik Lim <geunsik.lim@samsung.com>
+I agree with Tony's concern.
+But as Don told,  the best way to go proceed is fixing backend drivers step by step.
 
-tracing_enabled option is deprecated.
-To start/stop tracing, write to /sys/kernel/debug/tracing/tracing_on
-without tracing_enabled. This patch is based on Linux 3.1.0-rc1
-
-Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-Link: http://lkml.kernel.org/r/1313127022-23830-1-git-send-email-leemgs1@gm=
-ail.com
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index f86efe9..cea1605 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2720,9 +2720,9 @@ static const char readme_msg[] =3D
- 	"# cat /sys/kernel/debug/tracing/trace_options\n"
- 	"noprint-parent nosym-offset nosym-addr noverbose\n"
- 	"# echo print-parent > /sys/kernel/debug/tracing/trace_options\n"
--	"# echo 1 > /sys/kernel/debug/tracing/tracing_enabled\n"
-+	"# echo 1 > /sys/kernel/debug/tracing/tracing_on\n"
- 	"# cat /sys/kernel/debug/tracing/trace > /tmp/trace.txt\n"
--	"# echo 0 > /sys/kernel/debug/tracing/tracing_enabled\n"
-+	"# echo 0 > /sys/kernel/debug/tracing/tracing_on\n"
- ;
-=20
- static ssize_t
---=20
-1.7.6.3
+Seiji
 
 
+>-----Original Message-----
+>From: Don Zickus [mailto:dzickus@redhat.com]
+>Sent: Monday, October 17, 2011 1:22 PM
+>To: Luck, Tony
+>Cc: Seiji Aguchi; linux-kernel@vger.kernel.org; Matthew Garrett; Vivek Goyal; Chen, Gong; Andrew Morton; Brown, Len; Huang,
+>Ying; ak@linux.intel.com; hughd@chromium.org; mingo@elte.hu; jmorris@namei.org; a.p.zijlstra@chello.nl;
+>namhyung@gmail.com; dle-develop@lists.sourceforge.net; Satoru Moriya
+>Subject: Re: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping other cpus in panic path
+>
+>On Mon, Oct 17, 2011 at 09:56:50AM -0700, Luck, Tony wrote:
+>> > All this lock busting probably isn't pretty and causes one to reflect what
+>> > is going on here.  But as long as we are going to keep the kmsg_dump
+>> > design, changes like this seem necessary to make sure the locking stays
+>> > sane(r) for now.
+>>
+>> So should we let the back-end know that locks have been busted?  I worry
+>> that we'll get through the pstore layer by blasting away at any locks that
+>> get in our way - but then the backend (which may well have been written on
+>> the assumption that pstore serialized calls to it) will not do anything
+>> useful (and may cause its own hang).
+>
+>I was kinda alluding to something like that, when I said we probably need
+>follow on patches to clean up the backend.  But maybe it would be smarter
+>to set a flag in pstore to let the backend know we busted the locks
+>instead of letting them do panic checks themselves.  I agree with your
+>concerns.
+>
+>I really can't think of a good overall solution other than slowly
+>step-by-step untangle things by making subtle changes, this round being
+>the serialization of kmsg_dump().
+>
+>My brain is to small to figure this out.  I keep thinking about making an
+>ascii art diagram to see all the various paths and their contexts, but
+>then I keep finding more interesting things to do. :-)
+>
+>Perhaps we should do that and make some rules about what the back-end can
+>and can not do when plugging into kmsg_dump.
+>
+>Cheers,
+>Don
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOnGrfAAoJEIy3vGnGbaoAP4AQAMnPvG/QSAzD4ooQC/K6ReL3
-Ww9OB/z0yA199izmGy6M0mOpYhIBlmm37d2aT4ULAMldg0y7NsJDW+42sAx6wvHc
-twKijNGLhe2TsPRR+ccxssH05A6OeKmOcofouwXUN93eNZal6JdHvrQsEXJts0HB
-Fq33StR1AX1dL/VyLY5icEs7ck7WgCcgDDWyAu6T4/pf4czX3DcfBtcWAM3Aofgg
-SKNH/WqClp/K4hVN1zhyvkkMOyC+6KY/gSzkH2/D9/g+LAdKnwbKz6om+UmuON3P
-HLeceMHtWbvJgYqIDweZib9nbJxxAbHE+IRSE0ntHQwvW8z12zsIPlg1feM33GBZ
-wMolQG01j2dLd7XPgKyTfHnZ87MO2bFIoWsdBaCasyhT03MIgysE/iAQmcTs5lbC
-8fuO+LPOWfiOgne+JTk9j26O30BVzc2P900cJyWFKhC5eaDSmWzqkb0ZNOyWJ43l
-+3l5eJO0MozJQP0SW9O5/v0q6+eCJqoFdjrGhjSWdl6a/at/LnmHMDDY3Ac78MeA
-eZCfoPmULwnFw82eKbSi/jh7y/LexuhlgLeuXBuiZl2S5C3MYTAoKewKo3tAt/Th
-xOEdWl0Vi8LGoS//EXkxWEMnZ96pjcuVQahW/bAm73yy78UlJTq4qx62NRepY02u
-I2/7OPuYf2TAa1qNTQ5d
-=vBtI
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
