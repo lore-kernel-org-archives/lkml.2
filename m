@@ -1,184 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab1JQRBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:01:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63567 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618Ab1JQQ7y (ORCPT
+	id S1756705Ab1JQRBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:01:36 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61960 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab1JQRBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:59:54 -0400
-X-Authority-Analysis: v=1.1 cv=cRnbtTsVO6wWDdOYuq0VmyuiiLG/FStMSb4CWlTvuS0= c=1 sm=0 a=vhdKIqpQuCYA:10 a=A7_kQgbFqTMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Uq1LQkEK12DiPy_JfjoA:9 a=q7RHVR6LALaEXBMc0aMA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=kX_FQbC6cxkiiZXY:21 a=Ar_V3aJfphiZFGJW:21 a=d_daC2v3TaKlaloV8icA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20111017165952.991869955@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 12:05:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 13/17][RFC] ktest: Add OVERRIDE keyword to DEFAULTS section
-References: <20111017160455.498567257@goodmis.org>
-Content-Disposition: inline; filename=0013-ktest-Add-OVERRIDE-keyword-to-DEFAULTS-section.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Mon, 17 Oct 2011 13:01:34 -0400
+Date: Mon, 17 Oct 2011 19:02:18 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Problems with videos and i915 driver
+Message-ID: <20111017170218.GH2971@phenom.ffwll.local>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org
+References: <1318788068.12224.125.camel@gandalf.stny.rr.com>
+ <20111017085546.GB2971@phenom.ffwll.local>
+ <1318851627.12224.135.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318851627.12224.135.camel@gandalf.stny.rr.com>
+X-Operating-System: Linux phenom 3.0.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 17, 2011 at 07:40:27AM -0400, Steven Rostedt wrote:
+> On Mon, 2011-10-17 at 10:55 +0200, Daniel Vetter wrote:
+> > On Sun, Oct 16, 2011 at 02:01:08PM -0400, Steven Rostedt wrote:
+> > > [  102.695526] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> > > [  102.695538] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> > > [  102.699680] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 1 at 0, next 2)
+> > 
+> > Can you please attach i915_error_state? It contains the gpu crashdump we
+> > need to diagnose gpu hangs.
+> > 
+> 
+> As stated you can download the entire drm debug directory from here:
 
-From: Steven Rostedt <srostedt@redhat.com>
+Oops, sorry about missing that.
 
-The OVERRIDE keyword will allow options defined in the given
-DEFAULTS section to override options defined in previous DEFAULT
-sections.
+> For the /debug/drm directory:
+> 
+> http://rostedt.homelinux.com/private/vid-crash/debugfs-i915.tar.bz2
+> 
+> 
+> But for your convenience I'm also attaching the error state file.
 
-Normally, options will error if they were previous defined.
-The OVERRIDE keyword allows options that have been previously
-defined to be changed in the given section.
+Thanks. Your userspace is issueing MI_WAIT_SCANLINES cmds to the gpu,
+which just doesn't work. Can you please upgrade xf86-video-intel to the
+latest released version and check whether it works.
 
-Note, the same option can not be defined in the same DEFAULT section
-even if that section is marked as OVERRIDE.
+Generally userspace with that bug is extremely old (and if the other
+things are equally outdated) rather buggy for Sandybridge. I highly
+suggest updating the entire graphics stack to something modern
+(Sandybridge-wise).
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/ktest/ktest.pl    |   37 +++++++++++++++++++++++++++++------=
---
- tools/testing/ktest/sample.conf |   15 +++++++++++++++
- 2 files changed, 44 insertions(+), 8 deletions(-)
-
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index b4f32e7..7bce412 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -337,10 +337,17 @@ sub process_variables {
- }
-=20
- sub set_value {
--    my ($lvalue, $rvalue) =3D @_;
-+    my ($lvalue, $rvalue, $override, $overrides, $name) =3D @_;
-=20
-     if (defined($opt{$lvalue})) {
--	die "Error: Option $lvalue defined more than once!\n";
-+	if (!$override || defined(${$overrides}{$lvalue})) {
-+	    my $extra =3D "";
-+	    if ($override) {
-+		$extra =3D "In the same override section!\n";
-+	    }
-+	    die "$name: $.: Option $lvalue defined more than once!\n$extra";
-+	}
-+	${$overrides}{$lvalue} =3D $rvalue;
-     }
-     if ($rvalue =3D~ /^\s*$/) {
- 	delete $opt{$lvalue};
-@@ -430,6 +437,9 @@ sub __read_config {
-     my $test_case =3D 0;
-     my $if =3D 0;
-     my $if_set =3D 0;
-+    my $override =3D 0;
-+
-+    my %overrides;
-=20
-     while (<$in>) {
-=20
-@@ -443,6 +453,7 @@ sub __read_config {
-=20
- 	    my $old_test_num;
- 	    my $old_repeat;
-+	    $override =3D 0;
-=20
- 	    if ($type eq "TEST_START") {
-=20
-@@ -468,10 +479,20 @@ sub __read_config {
- 		$skip =3D 0;
- 	    }
-=20
--	    if ($rest =3D~ /\s+ITERATE\s+(\d+)(.*)$/) {
--		$repeat =3D $1;
--		$rest =3D $2;
--		$repeat_tests{"$test_num"} =3D $repeat;
-+	    if (!$skip) {
-+		if ($type eq "TEST_START") {
-+		    if ($rest =3D~ /\s+ITERATE\s+(\d+)(.*)$/) {
-+			$repeat =3D $1;
-+			$rest =3D $2;
-+			$repeat_tests{"$test_num"} =3D $repeat;
-+		    }
-+		} elsif ($rest =3D~ /\sOVERRIDE\b(.*)/) {
-+		    # DEFAULT only
-+		    $rest =3D $1;
-+		    $override =3D 1;
-+		    # Clear previous overrides
-+		    %overrides =3D ();
-+		}
- 	    }
-=20
- 	    if ($rest =3D~ /\sIF\s+(.*)/) {
-@@ -573,10 +594,10 @@ sub __read_config {
- 	    }
-=20
- 	    if ($default || $lvalue =3D~ /\[\d+\]$/) {
--		set_value($lvalue, $rvalue);
-+		set_value($lvalue, $rvalue, $override, \%overrides, $name);
- 	    } else {
- 		my $val =3D "$lvalue\[$test_num\]";
--		set_value($val, $rvalue);
-+		set_value($val, $rvalue, $override, \%overrides, $name);
-=20
- 		if ($repeat > 1) {
- 		    $repeats{$val} =3D $repeat;
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
-onf
-index ae2a93c..0fd3ca3 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -72,6 +72,21 @@
- # the same option name under the same test or as default
- # ktest will fail to execute, and no tests will run.
- #
-+# DEFAULTS OVERRIDE
-+#
-+# Options defined in the DEFAULTS section can not be duplicated
-+# even if they are defined in two different DEFAULT sections.
-+# This is done to catch mistakes where an option is added but
-+# the previous option was forgotten about and not commented.
-+#
-+# The OVERRIDE keyword can be added to a section to allow this
-+# section to override other DEFAULT sections values that have
-+# been defined previously. It will only override options that
-+# have been defined before its use. Options defined later
-+# in a non override section will still error. The same option
-+# can not be defined in the same section even if that section
-+# is marked OVERRIDE.
-+#
- #
- #
- # Both TEST_START and DEFAULTS sections can also have the IF keyword
---=20
-1.7.6.3
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOnF8JAAoJEIy3vGnGbaoALCIP+gIsQ2qD+yQfGxnT/k3LeD6m
-qZEx5eXiazm/21I9F7C3cFlQGS6s+pIFUgkzAqK8uZ3gLBPBBDA3I0aT/xJSPVDB
-bfwwzF9HfJ1qdbtLTI0jY16b1cD0bvGduFcMp5zN9L4SVRa3sFAdzMhyYPJWtZqu
-CsyJ76v56o9yIcJS78JfLnoNi8UuCKIeC0qAYC8ek+lsrZbsvK24R+qPujQJSDEQ
-blUh4XNHswbsHWBJalGkF9U+gBqkCTSa+EAYlm6d5V7MnCsyWYYaF1ObgBu3ggzp
-JudHojjygRLejATlkse3RaFz5VOQ3EAlEF0y37X/NxmIBPGQKx+VnryeuyOVbQo1
-qoHKhfFrfRw2OLV9RDEUQTYLJVlsyHO/MOYFWsItLS67b6f+tAOENbSD9inbapkF
-vm346H3+y5T+rr+8QF06zV+f1/lAufz56LX+p9ZT3RWzWyNYILZDieJgklKCrtjS
-KfEsRGtuaEkxQxc7XKiwxEN/lWfuj/m4yz5x1kqKw79Rj/cYirN+5tegEan9R5jY
-zwbNGkGWmPTEzoPoe44USFJkRqqrt2AvoRmvtP1yiNhaqiK9KH2yUkEKxrumDPw7
-62P2xD6mi5q+2J7c+oFyRi7BgNzPi11fPwKsGJOpA/9tLwkY4iIA8g3vMCyAi7wb
-PEZTq+oTPc+HYZyVfFaJ
-=u/t3
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Yours, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
