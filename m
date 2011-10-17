@@ -1,57 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1JQMoC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 08:44:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33276 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab1JQMoA convert rfc822-to-8bit (ORCPT
+	id S1754214Ab1JQMon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:44:43 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:10345 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753235Ab1JQMom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 08:44:00 -0400
-Subject: Re: [PATCH 0/5] ipc/sem.c: multiple fixes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>
-Date: Mon, 17 Oct 2011 14:43:48 +0200
-In-Reply-To: <1318684879-1887-1-git-send-email-manfred@colorfullife.com>
-References: <1318684879-1887-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318855428.4172.16.camel@twins>
-Mime-Version: 1.0
+	Mon, 17 Oct 2011 08:44:42 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de
+To: mingo@redhat.com
+To: hpa@zytor.com
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: pgf@laptop.org
+Subject: [PATCH] x86, olpc: add debugfs interface for EC commands
+Message-Id: <20111017124436.5DD729D401E@zog.reactivated.net>
+Date: Mon, 17 Oct 2011 13:44:36 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=XPBLPNO_vBAA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=z9N-Lmhe6hI0i5wcIpgA:9 a=YpQBrU8AaxtZSlqTKBQA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-15 at 15:21 +0200, Manfred Spraul wrote:
-> Hi all,
-> 
-> The wakeup scheme used by semtimedop() does not work as intended on -rt.
-> 
-> The following series:
-> - fixes one bug that I noticed while thinking about a -rt compatible
->   implementation
-> - prevents the code from returning to user space due to spurious wakeups.
->   (noticed by Peter Zijlstra)
-> - moves private structures from include/linux/sem.h to ipc/sem.c
-> - saves some memory if sysvipc is disabled.
-> - reworks the wakeup scheme and adds a 2nd wakeup scheme that is based
->   on a completion. For CONFIG_PREEMPT_RT_BASE, this scheme is used.
-> 
-> What do you think?
-> The rework of the wakeup should also help to convert the code to
-> using the wake_up_list framework.
-> 
-> Andrew: Could you replace the patches in -mm with this series?
-> I would prefer to keep the current scheme as the default, it's
-> ~5% faster (6.5 usec vs. 6.8 usec per wakeup).
-> 
-> The patches pass checkpatch.pl and I didn't observe any problems
-> with my test apps.
+Add a debugfs interface for sending commands to the OLPC EC and reading
+their responses. This is useful for EC development and debugging.
 
-For patches 1-4:
+Based on code by Paul Fox.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/platform/olpc/olpc.c |  101 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 101 insertions(+), 0 deletions(-)
 
-I still need to kick my brain in gear and parse patch 5.
+diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+index 7cce722..860aff9 100644
+--- a/arch/x86/platform/olpc/olpc.c
++++ b/arch/x86/platform/olpc/olpc.c
+@@ -20,6 +20,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/syscore_ops.h>
++#include <linux/debugfs.h>
+ 
+ #include <asm/geode.h>
+ #include <asm/setup.h>
+@@ -31,6 +32,13 @@ EXPORT_SYMBOL_GPL(olpc_platform_info);
+ 
+ static DEFINE_SPINLOCK(ec_lock);
+ 
++/* debugfs interface to EC commands */
++#define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
++#define EC_MAX_CMD_REPLY (8)
++static struct dentry *ec_debugfs_dir;
++static unsigned char ec_debugfs_resp[EC_MAX_CMD_REPLY];
++static unsigned int ec_debugfs_resp_bytes;
++
+ /* EC event mask to be applied during suspend (defining wakeup sources). */
+ static u16 ec_wakeup_mask;
+ 
+@@ -269,6 +277,98 @@ int olpc_ec_sci_query(u16 *sci_value)
+ }
+ EXPORT_SYMBOL_GPL(olpc_ec_sci_query);
+ 
++static ssize_t ec_gen_write(struct file *file, const char __user *buf,
++			    size_t size, loff_t *ppos)
++{
++	int i, m;
++	unsigned char ec_cmd[EC_MAX_CMD_ARGS];
++	unsigned int ec_cmd_int[EC_MAX_CMD_ARGS];
++	char cmdbuf[64];
++	int ec_cmd_bytes;
++
++	size = simple_write_to_buffer(cmdbuf, sizeof(cmdbuf), ppos, buf, size);
++
++	m = sscanf(cmdbuf, "%x:%u %x %x %x %x %x", &ec_cmd_int[0],
++		   &ec_debugfs_resp_bytes,
++		   &ec_cmd_int[1], &ec_cmd_int[2], &ec_cmd_int[3],
++		   &ec_cmd_int[4], &ec_cmd_int[5]);
++	if (m <= 0 || ec_debugfs_resp_bytes > EC_MAX_CMD_REPLY) {
++		printk(KERN_DEBUG "olpc-ec: bad ec cmd:  "
++		       "cmd:response-count [arg1 [arg2 ...]]\n");
++		return -EINVAL;
++	}
++
++	/* convert scanf'd ints to char */
++	for (i = 0; i < EC_MAX_CMD_ARGS; i++)
++		ec_cmd[i] = ec_cmd_int[i];
++
++	ec_cmd_bytes = m - 2;
++
++	printk(KERN_DEBUG "olpc-ec: debugfs cmd 0x%02x with %d args "
++	       "%02x %02x %02x %02x %02x, want %d returns\n",
++	       ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2], ec_cmd[3],
++	       ec_cmd[4], ec_cmd[5], ec_debugfs_resp_bytes);
++
++	olpc_ec_cmd((unsigned char) ec_cmd[0],
++		(ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
++		ec_cmd_bytes, ec_debugfs_resp, ec_debugfs_resp_bytes);
++
++	printk(KERN_DEBUG "olpc-ec: response "
++	       "%02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
++	       ec_debugfs_resp[0], ec_debugfs_resp[1], ec_debugfs_resp[2],
++	       ec_debugfs_resp[3], ec_debugfs_resp[4], ec_debugfs_resp[5],
++	       ec_debugfs_resp[6], ec_debugfs_resp[7], ec_debugfs_resp_bytes);
++
++	return size;
++}
++
++static ssize_t ec_gen_read(struct file *file, char __user *buf,
++			   size_t size, loff_t *ppos)
++{
++	unsigned int i, r;
++	char *rp;
++	char respbuf[64];
++
++	rp = respbuf;
++	rp += sprintf(rp, "%02x", ec_debugfs_resp[0]);
++	for (i = 1; i < ec_debugfs_resp_bytes; i++)
++		rp += sprintf(rp, ", %02x", ec_debugfs_resp[i]);
++	rp += sprintf(rp, "\n");
++
++	r = rp - respbuf;
++
++	return simple_read_from_buffer(buf, size, ppos, respbuf, r);
++}
++
++static const struct file_operations ec_debugfs_genops = {
++	.write	 = ec_gen_write,
++	.read	 = ec_gen_read,
++};
++
++static char ec_debugfs_help_text[] =
++	"generic write:   CC:N A A A A ...\n"
++	" CC is the (hex) command, N is the (optional) count of expected\n"
++	" reply bytes, and A A A A are optional (hex) arguments.\n"
++	"generic read:  will show hex reply bytes, *whether or not* they\n"
++	" came from the immediately previous command\n";
++
++static struct debugfs_blob_wrapper ec_debugfs_help = {
++	ec_debugfs_help_text,
++	sizeof(ec_debugfs_help_text)
++};
++
++static void setup_debugfs(void)
++{
++	ec_debugfs_dir = debugfs_create_dir("olpc-ec", 0);
++	if (ec_debugfs_dir == ERR_PTR(-ENODEV))
++		return;
++
++	debugfs_create_file("generic", 0600, ec_debugfs_dir, NULL,
++			    &ec_debugfs_genops);
++
++	debugfs_create_blob("help", 0444, ec_debugfs_dir, &ec_debugfs_help);
++}
++
+ static int olpc_ec_suspend(void)
+ {
+ 	return olpc_ec_mask_write(ec_wakeup_mask);
+@@ -372,6 +472,7 @@ static int __init olpc_init(void)
+ 	}
+ 
+ 	register_syscore_ops(&olpc_syscore_ops);
++	setup_debugfs();
+ 
+ 	return 0;
+ }
+-- 
+1.7.6.4
+
