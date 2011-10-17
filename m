@@ -1,116 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab1JQOff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:35:35 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:49370
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756023Ab1JQOfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:35:32 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LT7SIW-02-FZH-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 4/5] oprofile: Remove exit function for timer mode
-Date: Mon, 17 Oct 2011 16:27:03 +0200
-Message-ID: <1318861624-715-5-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1318861624-715-1-git-send-email-robert.richter@amd.com>
-References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
+	id S1756092Ab1JQOfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:35:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56951 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756056Ab1JQOfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:35:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,359,1315206000"; 
+   d="scan'208";a="63334394"
+Message-ID: <4E9C3D39.9020109@linux.intel.com>
+Date: Mon, 17 Oct 2011 07:35:37 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Matthew Garrett <mjg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+References: <20111014154348.ae6267aa.akpm@linux-foundation.org>  <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop>  <20111017013921.GA30035@tango.0pointer.de>  <20111017032232.GA4816@srcf.ucam.org> <4E9BBB6D.4050004@linux.intel.com>  <1318837019.6594.29.camel@twins> <alpine.LFD.2.02.1110171119580.3240@ionos>  <20111017124647.GA12838@srcf.ucam.org> <1318856786.4172.22.camel@twins>  <20111017141147.GA14581@srcf.ucam.org> <1318861707.4172.32.camel@twins>
+In-Reply-To: <1318861707.4172.32.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove exit functions by moving init/exit code to oprofile's setup/
-shutdown functions. Doing so the oprofile module exit code will be
-easier and less error-prone.
+On 10/17/2011 7:28 AM, Peter Zijlstra wrote:
+> Or even when I minimize firefox. That said, ff will probably crash as 
+> soon as I open a second tab because the retarded thing will very 
+> likely continue animating everything on the invisible tab anyway. You 
+> could start by making the X lib of the day, is that XCB these days?, 
+> issue an error print (you get plenty of those anyway) and progress to 
+> full on crashing later. This gives developers a migration window and 
+> incentive to fix up their apps.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- drivers/oprofile/oprof.c     |    8 ++------
- drivers/oprofile/timer_int.c |   30 +++++++++++++++---------------
- 2 files changed, 17 insertions(+), 21 deletions(-)
+so back in the time that worked on a project that used Qt as their 
+toolkit (geez is it that long ago already ;-) )... we fixed Qt to stop 
+doing this.
+The right level for this sort of thing is the toolkit level (which by 
+and large also does the animations), not Xlib.
+The toolkit level also will then need to provide the right notifications 
+to the app for things the toolkit does not do
+(eg "we're at least partially visible" versus "now none of our pixels 
+are on the screen").
 
-diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-index f8c752e..f7cd069 100644
---- a/drivers/oprofile/oprof.c
-+++ b/drivers/oprofile/oprof.c
-@@ -262,9 +262,7 @@ static int __init oprofile_init(void)
- 		return 0;
- 
- 	/* failed */
--	if (timer_mode)
--		oprofile_timer_exit();
--	else
-+	if (!timer_mode)
- 		oprofile_arch_exit();
- 
- 	return err;
-@@ -274,9 +272,7 @@ static int __init oprofile_init(void)
- static void __exit oprofile_exit(void)
- {
- 	oprofilefs_unregister();
--	if (timer_mode)
--		oprofile_timer_exit();
--	else
-+	if (!timer_mode)
- 		oprofile_arch_exit();
- }
- 
-diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
-index 878fba1..93404f7 100644
---- a/drivers/oprofile/timer_int.c
-+++ b/drivers/oprofile/timer_int.c
-@@ -97,24 +97,24 @@ static struct notifier_block __refdata oprofile_cpu_notifier = {
- 	.notifier_call = oprofile_cpu_notify,
- };
- 
--int oprofile_timer_init(struct oprofile_operations *ops)
-+static int oprofile_hrtimer_setup(void)
- {
--	int rc;
--
--	rc = register_hotcpu_notifier(&oprofile_cpu_notifier);
--	if (rc)
--		return rc;
--	ops->create_files = NULL;
--	ops->setup = NULL;
--	ops->shutdown = NULL;
--	ops->start = oprofile_hrtimer_start;
--	ops->stop = oprofile_hrtimer_stop;
--	ops->cpu_type = "timer";
--	printk(KERN_INFO "oprofile: using timer interrupt.\n");
--	return 0;
-+	return register_hotcpu_notifier(&oprofile_cpu_notifier);
- }
- 
--void oprofile_timer_exit(void)
-+static void oprofile_hrtimer_shutdown(void)
- {
- 	unregister_hotcpu_notifier(&oprofile_cpu_notifier);
- }
-+
-+int oprofile_timer_init(struct oprofile_operations *ops)
-+{
-+	ops->create_files	= NULL;
-+	ops->setup		= oprofile_hrtimer_setup;
-+	ops->shutdown		= oprofile_hrtimer_shutdown;
-+	ops->start		= oprofile_hrtimer_start;
-+	ops->stop		= oprofile_hrtimer_stop;
-+	ops->cpu_type		= "timer";
-+	printk(KERN_INFO "oprofile: using timer interrupt.\n");
-+	return 0;
-+}
--- 
-1.7.7
+It ended up being a thing for the toolkit and a minor tweak in the 
+compositor... and it worked quite ok, the app guys actually
+asked for the API (because they knew I would beat them up for getting it 
+wrong)...
 
+doing things on the xlib level (or even X level) means you take away the 
+chance for the App(tm) to do things the right way;
+make it easy for the app, not hard.
 
