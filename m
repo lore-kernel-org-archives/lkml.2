@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1JQVlU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 17:41:20 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:33900 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab1JQVlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 17:41:17 -0400
-Date: Mon, 17 Oct 2011 23:40:50 +0200
-From: Nico Schottelius <nico-linux-20111017@schottelius.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
-Message-ID: <20111017214050.GA1408@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-References: <20111017175906.GA3461@schottelius.org>
- <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
+	id S1754420Ab1JQVlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 17:41:35 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49371 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753703Ab1JQVld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 17:41:33 -0400
+Date: Mon, 17 Oct 2011 23:39:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111017213958.GA27126@elte.hu>
+References: <1318060551.8395.0.camel@twins>
+ <20111012213555.GC24461@hostway.ca>
+ <20111013232521.GA5654@hostway.ca>
+ <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+ <20111017045806.GA11561@elte.hu>
+ <alpine.LFD.2.02.1110171101250.3240@ionos>
+ <20111017184916.GA5545@elte.hu>
+ <4E9C917B.2050802@zytor.com>
+ <20111017211951.GA8043@elte.hu>
+ <4E9C9CAE.9090207@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.1.0-rc5-00161-gad1c761 x86_64)
+In-Reply-To: <4E9C9CAE.9090207@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jiri,
 
-Jiri Kosina [Mon, Oct 17, 2011 at 08:16:55PM +0200]:
-> > [...]
-> > - The fn key does not modify the cursor behaviour:
-> >   FN+Cursor up should result in Page up,
-> >   FN+Cursor down should result in Page down, etc.
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 10/17/2011 02:19 PM, Ingo Molnar wrote:
 > > 
-> >   Actual result: Cursor keys are passed in as usual
+> > it's 64/32 division - it's the /1000000000 /1000000 /1000 divisions 
+> > in the large majority of cases, to convert between 
+> > seconds/milliseconds/microseconds and scalar nanoseconds.
 > > 
-> > - The multitouch trackpad only works if bcm5974 is loaded before usbhid
-> >   -> otherwise only left click works
+> > the kernel-internal ktime_t in the 32-bit optimized case is:
 > > 
-> > - If bcm5974 is loaded before usbhid, left moving the mouse while
-> >   holding down the mouse button (i.e. the trackpad) does not work,
-> >   but results in a right click
+> > union ktime {
+> >         s32     sec, nsec;
+> > };
 > > 
-> > Anyone a pointer on how to fix these issues?
+> > which is the same as timespec and arithmetically close to timeval, 
+> > which many ABIs use. So conversion is easy in that case - but 
+> > arithmetics gets a bit harder.
+> > 
+> > If we used a scalar 64-bit form for all kernel internal time 
+> > representations:
+> > 
+> > 	s64	nsecs;
+> > 
+> > then conversions back to timespec/timeval would involve dividing this 
+> > 64-bit value with 1000000000 or 1000000.
+> > 
+> > Is there no faster approximation for those than bit by bit?
+> > 
+> > In particular we could try something like:
+> > 
+> > 	(high*2^32 + low)/1e9 ~==  ( high * (2^64/1e9) ) / 2^32
+> > 
+> > ... which reduces it all to a 64-bit multiplication (or two 32-bit 
+> > multiplications) with a known constant, at the cost of 1 nsec 
+> > imprecision of the result - but that's an OK approximation in my 
+> > opinion.
+> > 
 > 
-> Please try with my hid.git tree, preferably for-next branch. Namely 
-> commit 4b086910ad1.
+> We can do much better than that with reciprocal multiplication.  
 
-Thanks a lot, fn works perfectly now!
+Yes, 2^64/1e9 is the reciprocal.
 
-If I switch fnmode to 2
-(echo 2 > /sys/module/hid_apple/parameters/fnmode),
-there are though some mis-mapping for the Multimedia Keys.
+Thanks,
 
-I've attached the xev output of fn+{F1-F12}.
-
-F1-F4 are correct, though
-  F3 = Expose on MacOS X (**)
-  F4 = Dashboard (**)
-F5: not mapped at all: Is KeyboardLightDecrease on MacOSX (*)
-F6 is XF86AudioPrev incorrect: Should be  KeyboardLightIncrease (*)
-F7 is XF86AudioPlay incorrect: Should be XF86AudioPrev
-F8 is XF86AudioNext incorrect: Should be XF86AudioPlay
-F9 is XF86AudioMute incorrect: Should be XF86AudioNext
-F10 is XF86AudioLowerVolume incorrect: Should be XF86AudioMute
-F11 is XF86AudioRaiseVolume incorrect: Should be XF86AudioLowerVolume 
-F12 is XF86Eject incorrect: Should be  XF86AudioRaiseVolume 
-
-Thus F7-12 are shifted by one to left in reality and as the MacBook Air
-does not have an optical drive, there is no eject button.
-
-One thing that does not work on the trackpad that works on MacOS X:
-
-Having the thumb (or any other finger) on the trackpad (not moving)
-and moving another finger to move the pointer does not work.
-
-This always results in a scroll event, which is probably never
-desired but only when two fingers are moved.
-
-But in general, this looks like a great step towards usability on the
-Macbook Air!
-
-When can we expect this to be merged into Linus' tree? Imho this should
-be moved there asap, to prevent other users to run into the same
-trouble.
-
-Cheers,
-
-Nico
-
-(*) If Xorg/Linux has something like this, if not it should be added
-(**) XF86LaunchA/B work fine as well, but could be renamed for easier
-     mapping
-
-p.s.: Search for "mac book air manual" to see the actual keyboard
-      mappings in the pdf, page 28.
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+	Ingo
