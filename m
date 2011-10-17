@@ -1,154 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab1JQSDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:03:38 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58327 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab1JQSDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:03:36 -0400
-Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative
- suspend/hibernate mode
-From: John Stultz <john.stultz@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, NeilBrown <neilb@suse.de>
-In-Reply-To: <201110152329.03774.rjw@sisk.pl>
-References: <201110132145.42270.rjw@sisk.pl>
-	 <201110150049.39219.rjw@sisk.pl> <1318637079.3375.262.camel@work-vm>
-	 <201110152329.03774.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 09:48:20 -0700
-Message-ID: <1318870100.3125.30.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751890Ab1JQSEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:04:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52972 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1JQSEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:04:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Greg KH <gregkh@suse.de>, Lee Jones <lee.jones@linaro.org>,
+        jamie@jamieiles.com, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/6] drivers/base: add bus for System-on-Chip devices
+Date: Mon, 17 Oct 2011 20:03:42 +0200
+Message-ID: <2152965.Ns7xt0yLIG@wuerfel>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111017161616.GA5108@suse.de>
+References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org> <1318852378-14180-3-git-send-email-lee.jones@linaro.org> <20111017161616.GA5108@suse.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:w2R4l1q5feZ1mC95vN78R22S1gRF6488cWHjVeHkBxM
+ 1hGKgb/VaSSEYvugn/invYlF9LrB6vSHw4EfR01LrJ5368QFBE
+ lUfIj/PFsRYBgGEd2elm3YENbaKLrUKrsnkHg5qH8q8ear1UUM
+ WE1tp8SbJ7olLld1WCGuW/fxJztfWrrsuN7w3B8O7f+746fcnb
+ M4jSiAdz+E4x9GXZ0vD/Mx821XkUnxLckXtVeXH+p60Hy+iqW2
+ UPF43uC7CrBhyeaEuNXM5rTemdFzuMy4S5gie2FjQFHIPL/kSX
+ Wg2xhuzcVwkxfCANOrRsPhHFsBSzM3HsQKdIRgDQfGRMbhYd8E
+ yF2jRxeLhm9ddt+0IKRQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-15 at 23:29 +0200, Rafael J. Wysocki wrote:
-> So I think (please correct me if I'm wrong) that you're worried about the
-> following situation:
+On Monday 17 October 2011 09:16:16 Greg KH wrote:
+> On Mon, Oct 17, 2011 at 12:52:54PM +0100, Lee Jones wrote:
+
+> > +static ssize_t soc_info_get(struct device *dev,
+> > +                         struct device_attribute *attr,
+> > +                         char *buf);
+> > +
+> > +static DEVICE_ATTR(machine,  S_IRUGO, soc_info_get,  NULL);
+> > +static DEVICE_ATTR(family,   S_IRUGO, soc_info_get,  NULL);
+> > +static DEVICE_ATTR(soc_id,   S_IRUGO, soc_info_get,  NULL);
+> > +static DEVICE_ATTR(revision, S_IRUGO, soc_info_get,  NULL);
+> > +
+> > +static ssize_t soc_info_get(struct device *dev,
+> > +                         struct device_attribute *attr,
+> > +                         char *buf)
+> > +{
+> > +     struct soc_device *soc_dev =
+> > +             container_of(dev, struct soc_device, dev);
+> > +
+> > +     if (attr == &dev_attr_machine)
+> > +             return sprintf(buf, "%s\n", soc_dev->attr->machine);
+> > +     if (attr == &dev_attr_family)
+> > +             return sprintf(buf, "%s\n", soc_dev->attr->family);
+> > +     if (attr == &dev_attr_revision)
+> > +             return sprintf(buf, "%s\n", soc_dev->attr->revision);
+> > +     if (attr == &dev_attr_soc_id)
+> > +             return sprintf(buf, "%s\n", soc_dev->attr->soc_id);
+> > +
+> > +     return -EINVAL;
+> > +
+> > +}
 > 
-> - The process opens /dev/sleepctl and sets the timeout
-> - It sets up a wake alarm to trigger at time T.
-> - It goes to sleep and sets it wakeup time to time T too, e.g. using select()
->   with a timeout.
-> - The system doesn't go to sleep in the meantime.
-> - The wake alarm triggers a bit earlier than the process is woken up and
->   system suspend is started in between of the two events.
+> If you move around things a bit here, you can save 4 lines of code,
+> please do so.
+
+I don't think that works: the DEVICE_ATTR definitions require a prototype
+for the function, and the function compares the device attribute.
+
+An earlier version of this patch avoided the forward declaration by doing
+a more expensive strcmp instead of the pointer comparison, which avoided
+this problem, and I recommended against that.
+
+> > +
+> > +struct soc_device {
+> > +     struct device dev;
+> > +     struct soc_device_attribute *attr;
+> > +};
 > 
-> This race particular race is avoidable if the process sets its wakeup time
-> to T - \Delta T, where \Delta T is enough for the process to be scheduled
-> and run ioctl(sleepfd, SLEEPCTL_STAY_AWAKE).  So the complete sequence may
-> look like this:
-> 
-> - The process opens /dev/sleepctl as sleepfd1 and sets the timeout to 0.
-> - The process opens /dev/sleepctl as sleepfd2 and sets the timeout to T_2.
->   T_2 should be sufficient for the process to be able to call
->   ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) when woken up.
-> - It sets up a wake alarm to trigger at time T.
-> - It goes to sleep and sets it wakeup time to time T - \Delta T, such that
->   \Delta T is sufficient for the process to call
->   ioctl(sleepfd2, SLEEPCT_STAY_AWAKE).
-> 
-> Then, if system suspend happens before T - \Delta T, the process will be
-> woken up along with the wakealarm event at time T and it will be able to call
-> ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) before T_2 expires.  If system suspend
-> doesn't happen in that time frame, the process will wake up at T - \Delta T
-> and it will be able to call ioctl(sleepfd1, SLEEPCT_STAY_AWAKE) (even if
-> system suspend triggers after the process has been woken up and before it's
-> able to run the ioctl, it doesn't matter, because the wakealarm wakeup will
-> trigger the sleepfd2's STAY_AWAKE anyway).
+> Why is this needed to be defined here?  It should be in the .c file as
+> no external code needs to know what it looks like.
 
-So, the alarmtimer code is a bit more simple then what you describe
-above (alarmtimers are just like regular posix timers, only enable an
-RTC wakeup for the soonest event when the system goes into suspend).
+You also commented that the argument to soc_device_unregister should
+be a soc_device (as, consequently, the return type of soc_device_register).
+Agree with that comment, but it means that the definition of struct
+soc_device needs to remain visible in order to be used as the parent
+for other devices.
 
-However, such a dual-timer style behavior seems like it could work for
-timer driven wakeups (and have been suggested to me by others as well).
-Just to reiterate my understanding so that we're sure we're on the same
-wavelength:
-
-For any timer-style wakeup event, you set another non-wakeup timer for
-some small period of time before the wakeup timer. Then when the
-non-wakeup timer fires, the application inhibits suspend and waits for
-the wakeup timer.  
-
-Thus if the system is supended, the system will stay asleep until the
-wakeup event, where we'll hold off suspend for a timeout length so the
-task can run. If the system is not suspended, the early timer inhibits
-suspend to block the possible race.
-
-So yes, while not a very elegant solution in my mind (as its still racy
-like any timeout based solution), it would seem to be workable in
-practice, assuming wide error margins are used as the kernel does not
-guarantee that timers will fire at a specific time (only after the
-requested time). 
-
-And this again assumes we'll see no timing issues as a result of system
-load or realtime task processing.
-
-
-> Still, there appear to be similar races that aren't avoidable (for example,
-> if the time the wake alarm will trigger is not known to the process in
-> advance), so I have an idea how to address them.  Namely, suppose we have
-> one more ioctl, SLEEPCTL_WAIT_EVENT, that's equivalent to a combination
-> of _RELAX, wait and _STAY_AWAKE such that the process will be sent a signal
-> (say SIGPWR) on the first wakeup event and it's _STAY_AWAKE will trigger
-> automatically.
-
-So actually first sentence above is key, so let me talk about that
-before I get into your new solution: As long as we know the timer is
-going to fire, we can set the pre-timer to inhibit suspend. But most
-wakeup events (network packets, keyboard presses, other buttons) are not
-timer based, and we don't know when they would arrive. Thus the same
-race could trigger between a wakeup-button press and a suspend call. 
-
-1) wakeup key press
-2) suspend call
-3) key-press task scheduled
-
-That's why I suggested adding the timeout on any wake event, instead of
-resume. This would block the suspend call inbetween the wake event and
-the application processing it. 
-
-Really, the interaction is between the wakeup event and it being
-processed in userland. Resume, if it occurs, should really be
-transparent to that interaction. So that's why I think the
-resume-specific behavior in your original proposal doesn't make sense.
-
-
-> So in the scenarion above:
-> 
-> - The process opens /dev/sleepctl, sets the timeout to 0 and calls
->   ioctl(sleepfd, SLEEPCTL_STAY_AWAKE).
-> - It sets up a wake alarm to trigger at time T.
-> - It runs ioctl(sleepctl, SLEEPCTL_WAIT_EVENT) which "relaxes" its sleepfd
->   and makes it go to sleep until the first wakeup event happens.
-> - The process' signal handler checks if the current time is >= T and makes
->   the process go to the previous step if not.
-
-
-So I'm not sure if I'm understanding your suggestion totally. Is it that
-when you call SLEEP_CTL_WAIT_EVENT, the ioctl sets SLEEP_CTL_RELAX, and
-then the ioctl call blocks? 
-
-Then when the signal handler triggers, where exactly does the
-SLEEP_CTL_STAY_AWAKE call get made? Is it in the signal handler (after
-the task has been scheduled)? Or is it done by the kernel on task
-wakeup?
-
-If its the former, I don't see how it blocks the race. 
-
-If its the latter, then it seems this proposal starts to somewhat
-approximate to my proposal (ie: kernel allows suspend on blocking on a
-specific device, then disables it on task wakeup).
-
-thanks
--john
-
-
-
+	Arnd
