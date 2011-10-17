@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab1JQMsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 08:48:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54573 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753402Ab1JQMsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 08:48:09 -0400
-Date: Mon, 17 Oct 2011 13:48:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, zdevai@gmail.com
-Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
-Message-ID: <20111017124807.GD27266@opensource.wolfsonmicro.com>
-References: <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com>
- <4E9BF8D9.8030301@cam.ac.uk>
- <20111017101959.GC3042@opensource.wolfsonmicro.com>
- <4E9C0423.5010909@cam.ac.uk>
- <20111017104642.GD3042@opensource.wolfsonmicro.com>
- <4E9C0DD7.7080105@cam.ac.uk>
- <20111017111807.GA27266@opensource.wolfsonmicro.com>
- <4E9C1249.5020408@cam.ac.uk>
- <20111017120813.GB27266@opensource.wolfsonmicro.com>
- <4E9C201D.30905@cam.ac.uk>
+	id S1753248Ab1JQMuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:50:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751404Ab1JQMuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 08:50:50 -0400
+Date: Mon, 17 Oct 2011 14:50:27 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+Message-ID: <20111017125027.GF2190@jolsa.brq.redhat.com>
+References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
+ <20110929220548.GA17597@ghostprotocols.net>
+ <20111003102235.GB1838@jolsa.redhat.com>
+ <20111003162704.GB24281@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E9C201D.30905@cam.ac.uk>
-X-Cookie: Be cautious in your daily affairs.
+In-Reply-To: <20111003162704.GB24281@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 01:31:25PM +0100, Jonathan Cameron wrote:
-> On 10/17/11 13:08, Mark Brown wrote:
-> > On Mon, Oct 17, 2011 at 12:32:25PM +0100, Jonathan Cameron wrote:
+On Mon, Oct 03, 2011 at 01:27:04PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Oct 03, 2011 at 12:22:35PM +0200, Jiri Olsa escreveu:
+> > On Thu, Sep 29, 2011 at 07:05:48PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
+> > > > The event processing relies on all events having the same sample_type.
+> > > > 
+> > > > This is being checked when the session is being opened read only.
+> > > > It also needs to be checked when we do record, since events could be
+> > > > read during processing build IDs at the end of the record command.
+> > > > 
+> > > > If we process events with different sample_type the processing might
+> > > > skip some events or hang.
+> > > > 
+> > > > Following command hangs on my setup:
+> > > >   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
+> > > >    -e LLC-loads -- date '+%F'
+> > > > 
+> > > > because hardware and tracepoint events have different sample type.
+> > > > 
+> > > > With the patch applied the record command displays
+> > > > "Non matching sample_type" message and exits.
+> > > 
+> > > That is way too cryptic :-\
+> > > 
+> > > What is that makes the sample type not match in this case? Can we make
+> > > it match instead?
+> > > 
+> > > This is something to be properly fixed by _allowing_ non matching sample
+> > > types, the evsel/evlist abstractions are getting we close but not there
+> > > yet, multiple files in a perf.data/ directory are needed.
+> > > 
+> > > Till then can you check if we can make it match or else just say that
+> > > the mix of events is not yet supported, please collect them in different
+> > > sessions or something along those lines?
+> > > 
+> > > - Arnaldo
+> > hi,
+> > thanks for comments..
+> > I just was this got in the tip tree git://tesla.tglx.de/git/linux-2.6-tip
+> > 
+> > perf tools: Exit record if events have non matching sample type
+> > commit 6f9a4869e15de8af2fd715af876bc3e6b00757a7
+> > Author: Jiri Olsa <jolsa@redhat.com>
+> > Date:   Thu Sep 29 19:49:50 2011 +0200
+> > 
+> > I've read the email trail.. I'll check the sources and try to come up
+> > with something.. ;)
+> 
+> Couldn't understand, will check if the patch was already applied, if so,
+> why bother commenting, right? :-)
 
-Your mails would be much more legible if you'd leave blank lines between
-paragraphs and if you could wrap your mails at less than 80 columns.
+ops, I mixed my branches, the change was not commited yet
 
-> >> (have insist on indexing even with named channels because it is needed as
-> >> events codes don't want to carry a string.).
-
-> > This is orthogonal to the request interface, though.
-
-> No it isn't - because it will effect the numbering of the gneral purpose ones.
-
-I don't think the numbers reported in events should be forced to be
-directly associated with the numbers (consider the case with mixes of
-high sensitivity and low sensitivity inputs for example).
-
-> >> Not hard wired so to my mind these are just general purpose temperature inputs.
-> >> Hence naming doesn't make sense (at least not outside of board file or DT).
-
-> > No, they're hard wired - like I say they're wired to a particular place.
-
-> If it isn't physically in the pmic package then it doesn't belong in the driver.
-
-In the case of the die temperature measurement things are obviously
-entirely within the PMIC.  In the case of battery temperature monitoring
-the actual sensor is outside the device but it's fixed function due to
-cross connection with the autonomous control logic for the battery
-chargers.
-
-> Note the numbering is still going to be Linux specific just within a given type
-> of channel. ADC channels regularly have completely inconsistent (and/or stupid) names
-> in device data sheets.
-
-> 0...4
-> 1...5
-> AUXA....AUXD
-> TEMP_EXT1...TEMP_EXT5 (all of which are just normal adc channels that some
-> designer decided would be used only for connecting analog temperature sensors.)
-
-None of those look at all unreasonable?
-
-> All of these get mapped to 0...4.  Anything else leads to totally unpredictable
-> guessing games when trying to find the channel.
-
-I dunno, things like introducing an offset of 1 into the numbers the
-datasheet uses can be pretty painful to work with - it's not obvious
-when looking at the code that you've got the number wrong.  With the
-PMICs it's been really helpful to do things like map the LDOs and DCDCs
-separately even though at the level where you're gluing things together
-there's no meaningful difference.
-
-Once we're running it's a different story, it's just when expressing the
-wiring to the system that I'm worried.
+sry, jirka
