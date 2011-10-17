@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab1JQGud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 02:50:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49401 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab1JQGuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 02:50:32 -0400
-Date: Mon, 17 Oct 2011 08:48:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-Message-ID: <20111017064855.GA18858@elte.hu>
-References: <1318616873-26739-1-git-send-email-acme@infradead.org>
- <20111015145946.GB9516@elte.hu>
- <4E99BC44.40400@gmail.com>
- <20111015170452.GD29782@elte.hu>
- <4E99C6E6.2040201@gmail.com>
- <20111015190620.GA21352@ghostprotocols.net>
- <4E99DA6C.3030906@gmail.com>
- <20111017011521.GD21352@ghostprotocols.net>
+	id S1754143Ab1JQHCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:02:31 -0400
+Received: from mx06.lb01.inode.at ([62.99.145.6]:9216 "EHLO mx.inode.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752532Ab1JQHCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 03:02:30 -0400
+From: Michael Thalmeier <michael.thalmeier@hale.at>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: rt <linux-rt-users@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        michael@thalmeier.at
+Subject: [PATCH] rt18: fix warnings in ftrace.h
+Date: Mon, 17 Oct 2011 09:01:07 +0200
+Message-Id: <1318834867-14031-1-git-send-email-michael.thalmeier@hale.at>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <alpine.LFD.2.02.1110131146370.3240@ionos>
+References: <alpine.LFD.2.02.1110131146370.3240@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017011521.GD21352@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-HALE-MailScanner-Information: Please contact the ISP for more information
+X-MailScanner-ID: p9H72Qkb001914
+X-HALE-MailScanner: Found to be clean
+X-HALE-MailScanner-From: michael.thalmeier@hale.at
+MailScanner-NULL-Check: 1319439748.96664@Ja09Jx3Wk+vQ1h50KV0C2g
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When CONFIG_FUNCTION_TRACER is not set usage of unknown struct ftrace_hash in
+ftrace_func_command results in a lot of warnings.
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-> Em Sat, Oct 15, 2011 at 01:09:32PM -0600, David Ahern escreveu:
-> > On 10/15/2011 01:06 PM, Arnaldo Carvalho de Melo wrote:
-> > >>
-> > >> It should. The message comes from map__load() when it detects a deleted
-> > >> mapping such as:
-> > >>
-> > >> 7f9e8d5c7000-7f9e8d5c8000 rw-p 0000c000 fd:02 1046947
-> > >>  /lib64/libpam.so.0.82.2.#prelink#.cM3f72 (deleted)
-> > >>
-> > >> I have removed prelink from most of my systems (managed to find one lone
-> > >> server with the above).
-> > > 
-> > > 	Can you send me a patch that clarifies this situation?
-> > 
-> > Clarifies in what way? The code checks for "(deleted)" on the dso and
-> > suggests a restart of the process.
-> 
-> Perhaps telling that prelinking is the reason, so that users that 
-> don't recall updating anything understands the situation.
+Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
+---
+ include/linux/ftrace.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Yeah. I am certainly aware of prelinking yet it did not occur to me 
-when i saw the message.
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index ed0eb52..f0c0e8a 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -19,6 +19,8 @@
+ 
+ #include <asm/ftrace.h>
+ 
++struct ftrace_hash;
++
+ #ifdef CONFIG_FUNCTION_TRACER
+ 
+ extern int ftrace_enabled;
+@@ -29,8 +31,6 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
+ 
+ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip);
+ 
+-struct ftrace_hash;
+-
+ enum {
+ 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
+ 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
+-- 
+1.7.6.4
 
-Thanks,
 
-	Ingo
+
+--
+Scanned by MailScanner.
+
