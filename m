@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1JQNQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:16:49 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40943 "EHLO
+	id S1755243Ab1JQNQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 09:16:50 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:40950 "EHLO
 	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab1JQNQp (ORCPT
+	with ESMTP id S1754809Ab1JQNQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Oct 2011 09:16:45 -0400
 X-Cam-AntiVirus: no malware found
@@ -16,9 +16,9 @@ Cc: guenter.roeck@ericsson.com, khali@linux-fr.org, dmitry.torokhov@gmail.com,
         broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
         alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 2/6] IIO:ADC: max1363 initial import.
-Date: Mon, 17 Oct 2011 14:16:17 +0100
-Message-Id: <1318857381-13787-3-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 6/6] IIO: ABI documetation.
+Date: Mon, 17 Oct 2011 14:16:21 +0100
+Message-Id: <1318857381-13787-7-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk>
 References: <1318857381-13787-1-git-send-email-jic23@cam.ac.uk>
@@ -26,1243 +26,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides basic channel reading via sysfs.
-For what is coming in this driver see the version still
-in staging.
-
-A couple of macros take more parameters than they use to reduce churn when
-driver is updated to include events and buffer support.
+Elements lifted from staging documentation,
+drivers/staging/iio/Documentation/sysfs-bus-iio
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/iio/Kconfig            |    6 +
- drivers/iio/Makefile           |    2 +
- drivers/iio/adc/Kconfig        |   19 +
- drivers/iio/adc/Makefile       |    6 +
- drivers/iio/adc/max1363.h      |  148 ++++++
- drivers/iio/adc/max1363_core.c |  998 ++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 1179 insertions(+), 0 deletions(-)
+ Documentation/ABI/testing/sysfs-bus-iio |  223 +++++++++++++++++++++++++++++++
+ 1 files changed, 223 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index 5d9a97d..cebe21f 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -9,3 +9,9 @@ menuconfig IIO
- 	  The Industrial input / output subsystem provides a unified
- 	  framework for many different types of embedded sensor.
- 	  See Documentation/iio for more information.
-+
-+if IIO
-+
-+source "drivers/iio/adc/Kconfig"
-+
-+endif # IIO
-diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-index 733846b..42d6d12 100644
---- a/drivers/iio/Makefile
-+++ b/drivers/iio/Makefile
-@@ -4,3 +4,5 @@
- 
- obj-$(CONFIG_IIO) += iio.o
- industrialio-y := core.o
-+
-+obj-y += adc/
-diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
 new file mode 100644
-index 0000000..0673d78
+index 0000000..965c7cf
 --- /dev/null
-+++ b/drivers/iio/adc/Kconfig
-@@ -0,0 +1,19 @@
-+#
-+# ADC drivers
-+#
-+menu "Analog to digital convertors"
++++ b/Documentation/ABI/testing/sysfs-bus-iio
+@@ -0,0 +1,223 @@
++What:		/sys/bus/iio/devices/iio:deviceX
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Hardware chip or device accessed by one communication port.
++		Corresponds to a grouping of sensor channels. X is the IIO
++		index of the device.
 +
-+config IIO_MAX1363
-+	tristate "Maxim max1363 ADC driver"
-+	depends on I2C
-+	help
-+	  Say yes here to build support for many Maxim i2c analog to digital
-+	  convertors (ADC). (max1361, max1362, max1363, max1364, max1036,
-+	  max1037, max1038, max1039, max1136, max1136, max1137, max1138,
-+	  max1139, max1236, max1237, max11238, max1239, max11600, max11601,
-+	  max11602, max11603, max11604, max11605, max11606, max11607,
-+	  max11608, max11609, max11610, max11611, max11612, max11613,
-+	  max11614, max11615, max11616, max11617, max11644, max11645,
-+	  max11646, max11647) Provides direct access via sysfs.
++What:		/sys/bus/iio/devices/iio:deviceX/name
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Description of the physical chip / device for device X.
++		Typically a part number.
 +
-+endmenu
-diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-new file mode 100644
-index 0000000..8d6a7f9
---- /dev/null
-+++ b/drivers/iio/adc/Makefile
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for IIO ADCs
-+#
++What:		/sys/bus/iio/devices/iio:deviceX/sampling_frequency
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Some devices have internal clocks.  This parameter sets the
++		resulting sampling frequency.
 +
-+iio_max1363-y := max1363_core.o
-+obj-$(CONFIG_IIO_MAX1363) += iio_max1363.o
++What:		/sys/bus/iio/devices/iio:deviceX/sampling_frequency_available
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		When the internal sampling clock can only take a small
++		discrete set of values, this file lists those available.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw (unscaled no bias removal etc) voltage measurement from
++		channel Y. In special cases where the channel does not
++		correspond to externally available input one of the named
++		versions may be used. The number must always be specified and
++		unique to allow association with event codes. Units after
++		application of scale and offset are microvolts.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY-voltageZ_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw (unscaled) differential voltage measurement equivalent to
++		channel Y - channel Z where these channel numbers apply to the
++		physically equivalent inputs when non differential readings are
++		separately available. In differential only parts, then all that
++		is required is a consistent labeling.  Units after application
++		of scale and offset are microvolts.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_temp_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_tempX_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_temp_x_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_temp_y_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_temp_z_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw (unscaled no bias removal etc) temperature measurement.
++		It an axis is specified it generally means that the temperature
++		sensor is associated with one part of a compound device (e.g.
++		a gyroscope axis). Units after application of scale and offset
++		are milli degrees Celsuis.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_z_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Acceleration in direction x, y or z (may be arbitrarily assigned
++		but should match other such assignments on device).
++		Has all of the equivalent parameters as per voltageY. Units
++		after application of scale and offset are m/s^2.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_x_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_y_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_z_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Angular velocity about axis x, y or z (may be arbitrarily
++		assigned) Data converted by application of offset then scale to
++		radians per second. Has all the equivalent parameters as
++		per voltageY. Units after application of scale and offset are
++		radians per second.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_incli_x_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_incli_y_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_incli_z_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Inclination raw reading about axis x, y or z (may be
++		arbitrarily assigned). Data converted by application of offset
++		and scale to Degrees.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_raw
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Magnetic field along axis x, y or z (may be arbitrarily
++		assigned).  Data converted by application of offset
++		then scale to Gauss.
++
++What:		/sys/bus/iio/devices/device[n]/illuminance0_input
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		This should return the calculated lux from the light sensor.
++		Units are lumens.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_intensityY_infrared_input
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		This property is supported by sensors that have an infrared
++		sensitive element.  Unfortunately this reading is very
++		frequency range dependent and hence tends not to have well
++		defined units.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_intensityY_both_input
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		This property is supported by sensors that have an infrared
++		and visible light sensing element. The visible portion is
++		usually extracted by subtracting the value from a separate
++		infrared only sensor.  Unfortunately this reading is very
++		frequency range dependent and hence tends not to have well
++		defined	units.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_z_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltage_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_tempY_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_temp_offset
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If known for a device, offset to be added to <type>[Y]_raw prior
++		to scaling by <type>[Y]_scale in order to obtain value in the
++		<type> units as specified in <type>[y]_raw documentation.
++		Not present if the offset is always 0 or unknown. If Y or
++		axis <x|y|z> is not present, then the offset applies to all
++		in channels of <type>.
++		May be writable if a variable offset can be applied on the
++		device. Note that this is different to calibbias which
++		is for devices (or drivers) that apply offsets to compensate
++		for variation between different instances of the part, typically
++		adjusted by using some hardware supported calibration procedure.
++		Calibbias is applied internally, offset is applied in userspace
++		to the _raw output.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltage_scale
++What:		/sys/bus/iio/devices/iio:deviceX/out_voltageY_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_peak_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If known for a device, scale to be applied to <type>Y[_name]_raw
++		post addition of <type>[Y][_name]_offset in order to obtain the
++		measured value in <type> units as specified in
++		<type>[Y][_name]_raw documentation..  If shared across all in
++		channels then Y and <x|y|z> are not present and the value is
++		called <type>[Y][_name]_scale. The peak modifier means this
++		value is applied to <type>Y[_name]_peak_raw values.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale_available
++What:		/sys/.../iio:deviceX/in_voltageX_scale_available
++What:		/sys/.../iio:deviceX/in_voltage-voltage_scale_available
++What:		/sys/.../iio:deviceX/out_voltageX_scale_available
++What:		/sys/.../iio:deviceX/in_capacitance_scale_available
++KernelVersion:	2.635
++Contact:	linux-iio@vger.kernel.org
++Description:
++		If a discrete set of scale values are available, they
++		are listed in this attribute.
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_calibbias
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_calibbias
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_z_calibbias
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_x_calibbias
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_y_calibbias
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_z_calibbias
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Hardware applied calibration offset. (assumed to fix production
++		inaccuracies).
++
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltageY_supply_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_voltage_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_accel_z_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_x_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_y_calibscale
++What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_z_calibscale
++What:		/sys/.../iio:deviceX/in_intensityY_infrared_calibscale
++What:		/sys/.../iio:deviceX/in_intensityY_both_calibscale
++KernelVersion:	2.6.35
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Hardware applied calibration scale factor. (assumed to fix
++		production inaccuracies).  If shared across all channels,
++		<type>_calibscale is used.
 \ No newline at end of file
-diff --git a/drivers/iio/adc/max1363.h b/drivers/iio/adc/max1363.h
-new file mode 100644
-index 0000000..5135f15
---- /dev/null
-+++ b/drivers/iio/adc/max1363.h
-@@ -0,0 +1,148 @@
-+ /*
-+  * Copyright (C) 2008-2011 Jonathan Cameron
-+  *
-+  * This program is free software; you can redistribute it and/or modify
-+  * it under the terms of the GNU General Public License version 2 as
-+  * published by the Free Software Foundation.
-+  */
-+
-+#include <linux/kernel.h>
-+
-+#ifndef _MAX1363_H_
-+#define  _MAX1363_H_
-+
-+#define MAX1363_MAX_CHANNELS 25
-+#define MAX1363_SETUP_BYTE(a) ((a) | 0x80)
-+
-+/* There is a fair bit more defined here than currently
-+ * used, but the intention is to support everything these
-+ * chips do in the long run */
-+
-+/* see data sheets */
-+/* max1363 and max1236, max1237, max1238, max1239 */
-+#define MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_VDD	0x00
-+#define MAX1363_SETUP_AIN3_IS_REF_EXT_TO_REF	0x20
-+#define MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_INT	0x40
-+#define MAX1363_SETUP_AIN3_IS_REF_REF_IS_INT	0x60
-+#define MAX1363_SETUP_POWER_UP_INT_REF		0x10
-+#define MAX1363_SETUP_POWER_DOWN_INT_REF	0x00
-+
-+/* think about including max11600 etc - more settings */
-+#define MAX1363_SETUP_EXT_CLOCK			0x08
-+#define MAX1363_SETUP_INT_CLOCK			0x00
-+#define MAX1363_SETUP_UNIPOLAR			0x00
-+#define MAX1363_SETUP_BIPOLAR			0x04
-+#define MAX1363_SETUP_RESET			0x00
-+#define MAX1363_SETUP_NORESET			0x02
-+/* max1363 only - though don't care on others.
-+ * For now monitor modes are not implemented as the relevant
-+ * line is not connected on my test board.
-+ * The definitions are here as I intend to add this soon.
-+ */
-+#define MAX1363_SETUP_MONITOR_SETUP		0x01
-+
-+/* Specific to the max1363 */
-+#define MAX1363_MON_RESET_CHAN(a) (1 << ((a) + 4))
-+#define MAX1363_MON_INT_ENABLE			0x01
-+
-+/* defined for readability reasons */
-+/* All chips */
-+#define MAX1363_CONFIG_BYTE(a) ((a))
-+
-+#define MAX1363_CONFIG_SE			0x01
-+#define MAX1363_CONFIG_DE			0x00
-+#define MAX1363_CONFIG_SCAN_TO_CS		0x00
-+#define MAX1363_CONFIG_SCAN_SINGLE_8		0x20
-+#define MAX1363_CONFIG_SCAN_MONITOR_MODE	0x40
-+#define MAX1363_CONFIG_SCAN_SINGLE_1		0x60
-+/* max123{6-9} only */
-+#define MAX1236_SCAN_MID_TO_CHANNEL		0x40
-+
-+/* max1363 only - merely part of channel selects or don't care for others*/
-+#define MAX1363_CONFIG_EN_MON_MODE_READ 0x18
-+
-+#define MAX1363_CHANNEL_SEL(a) ((a) << 1)
-+
-+/* max1363 strictly 0x06 - but doesn't matter */
-+#define MAX1363_CHANNEL_SEL_MASK		0x1E
-+#define MAX1363_SCAN_MASK			0x60
-+#define MAX1363_SE_DE_MASK			0x01
-+
-+/**
-+ * struct max1363_mode - scan mode information
-+ * @conf:	The corresponding value of the configuration register
-+ * @modemask:	Bit mask corresponding to channels enabled in this mode
-+ */
-+struct max1363_mode {
-+	int8_t		conf;
-+	DECLARE_BITMAP(modemask, MAX1363_MAX_CHANNELS);
-+};
-+
-+/* This must be maintained along side the max1363_mode_table in max1363_core */
-+enum max1363_modes {
-+	/* Single read of a single channel */
-+	_s0, _s1, _s2, _s3, _s4, _s5, _s6, _s7, _s8, _s9, _s10, _s11,
-+	/* Differential single read */
-+	d0m1, d2m3, d4m5, d6m7, d8m9, d10m11,
-+	d1m0, d3m2, d5m4, d7m6, d9m8, d11m10,
-+	/* Scan to channel and mid to channel where overlapping */
-+	s0to1, s0to2, s2to3, s0to3, s0to4, s0to5, s0to6,
-+	s6to7, s0to7, s6to8, s0to8, s6to9,
-+	s0to9, s6to10, s0to10, s6to11, s0to11,
-+	/* Differential scan to channel and mid to channel where overlapping */
-+	d0m1to2m3, d0m1to4m5, d0m1to6m7, d6m7to8m9,
-+	d0m1to8m9, d6m7to10m11, d0m1to10m11, d1m0to3m2,
-+	d1m0to5m4, d1m0to7m6, d7m6to9m8, d1m0to9m8,
-+	d7m6to11m10, d1m0to11m10,
-+};
-+
-+struct iio_info;
-+struct iio_chan_spec;
-+
-+/**
-+ * struct max1363_chip_info - chip specifc information
-+ * @name:		indentification string for chip
-+ * @bits:		accuracy of the adc in bits
-+ * @int_vref_mv:	the internal reference voltage
-+ * @info:		iio core function callbacks structure
-+ * @mode_list:		array of available scan modes
-+ * @num_modes:		the number of scan modes available
-+ * @default_mode:	the scan mode in which the chip starts up
-+ * @channels:		channel specification
-+ * @num_channels:	number of channels
-+ */
-+struct max1363_chip_info {
-+	const struct iio_info		*info;
-+	struct iio_chan_spec		*channels;
-+	int				num_channels;
-+	const enum max1363_modes	*mode_list;
-+	enum max1363_modes		default_mode;
-+	u16				int_vref_mv;
-+	u8				num_modes;
-+	u8				bits;
-+};
-+
-+struct regulator;
-+struct i2c_client;
-+
-+/**
-+ * struct max1363_state - driver instance specific data
-+ * @client:		i2c_client
-+ * @setupbyte:		cache of current device setup byte
-+ * @configbyte:		cache of current device config byte
-+ * @chip_info:		chip model specific constants, available modes etc
-+ * @current_mode:	the scan mode of this chip
-+ * @requestedmask:	a valid requested set of channels
-+ * @reg:		supply regulator
-+ */
-+struct max1363_state {
-+	struct i2c_client		*client;
-+	u8				setupbyte;
-+	u8				configbyte;
-+	const struct max1363_chip_info	*chip_info;
-+	const struct max1363_mode	*current_mode;
-+	u32				requestedmask;
-+	struct regulator		*reg;
-+};
-+
-+#endif /* _MAX1363_H_ */
-diff --git a/drivers/iio/adc/max1363_core.c b/drivers/iio/adc/max1363_core.c
-new file mode 100644
-index 0000000..ee06d48
---- /dev/null
-+++ b/drivers/iio/adc/max1363_core.c
-@@ -0,0 +1,998 @@
-+/*
-+ * iio/adc/max1363.c
-+ *
-+ * Copyright (C) 2008-2011 Jonathan Cameron
-+ *
-+ * based on linux/drivers/i2c/chips/max123x
-+ * Copyright (C) 2002-2004 Stefan Eletzhofer
-+ *
-+ * based on linux/drivers/acron/char/pcf8583.c
-+ * Copyright (C) 2000 Russell King
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/sysfs.h>
-+#include <linux/i2c.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+
-+#include "max1363.h"
-+
-+#define MAX1363_MODE_SINGLE(_num, _mask) {				\
-+		.conf = MAX1363_CHANNEL_SEL(_num)			\
-+			| MAX1363_CONFIG_SCAN_SINGLE_1			\
-+			| MAX1363_CONFIG_SE,				\
-+			.modemask[0] = _mask,				\
-+			}
-+
-+#define MAX1363_MODE_SCAN_TO_CHANNEL(_num, _mask) {			\
-+		.conf = MAX1363_CHANNEL_SEL(_num)			\
-+			| MAX1363_CONFIG_SCAN_TO_CS			\
-+			| MAX1363_CONFIG_SE,				\
-+			.modemask[0] = _mask,				\
-+			}
-+
-+/* note not available for max1363 hence naming */
-+#define MAX1236_MODE_SCAN_MID_TO_CHANNEL(_mid, _num, _mask) {		\
-+		.conf = MAX1363_CHANNEL_SEL(_num)			\
-+			| MAX1236_SCAN_MID_TO_CHANNEL			\
-+			| MAX1363_CONFIG_SE,				\
-+			.modemask[0] = _mask				\
-+}
-+
-+#define MAX1363_MODE_DIFF_SINGLE(_nump, _numm, _mask) {			\
-+		.conf = MAX1363_CHANNEL_SEL(_nump)			\
-+			| MAX1363_CONFIG_SCAN_SINGLE_1			\
-+			| MAX1363_CONFIG_DE,				\
-+			.modemask[0] = _mask				\
-+			}
-+
-+/* Can't think how to automate naming so specify for now */
-+#define MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(_num, _numvals, _mask) {	\
-+		.conf = MAX1363_CHANNEL_SEL(_num)			\
-+			| MAX1363_CONFIG_SCAN_TO_CS			\
-+			| MAX1363_CONFIG_DE,				\
-+			.modemask[0] = _mask				\
-+			}
-+
-+/* note not available for max1363 hence naming */
-+#define MAX1236_MODE_DIFF_SCAN_MID_TO_CHANNEL(_num, _numvals, _mask) {	\
-+		.conf = MAX1363_CHANNEL_SEL(_num)			\
-+			| MAX1236_SCAN_MID_TO_CHANNEL			\
-+			| MAX1363_CONFIG_SE,				\
-+			.modemask[0] = _mask				\
-+}
-+
-+static const struct max1363_mode max1363_mode_table[] = {
-+	/* All of the single channel options first */
-+	MAX1363_MODE_SINGLE(0, 1 << 0),
-+	MAX1363_MODE_SINGLE(1, 1 << 1),
-+	MAX1363_MODE_SINGLE(2, 1 << 2),
-+	MAX1363_MODE_SINGLE(3, 1 << 3),
-+	MAX1363_MODE_SINGLE(4, 1 << 4),
-+	MAX1363_MODE_SINGLE(5, 1 << 5),
-+	MAX1363_MODE_SINGLE(6, 1 << 6),
-+	MAX1363_MODE_SINGLE(7, 1 << 7),
-+	MAX1363_MODE_SINGLE(8, 1 << 8),
-+	MAX1363_MODE_SINGLE(9, 1 << 9),
-+	MAX1363_MODE_SINGLE(10, 1 << 10),
-+	MAX1363_MODE_SINGLE(11, 1 << 11),
-+
-+	MAX1363_MODE_DIFF_SINGLE(0, 1, 1 << 12),
-+	MAX1363_MODE_DIFF_SINGLE(2, 3, 1 << 13),
-+	MAX1363_MODE_DIFF_SINGLE(4, 5, 1 << 14),
-+	MAX1363_MODE_DIFF_SINGLE(6, 7, 1 << 15),
-+	MAX1363_MODE_DIFF_SINGLE(8, 9, 1 << 16),
-+	MAX1363_MODE_DIFF_SINGLE(10, 11, 1 << 17),
-+	MAX1363_MODE_DIFF_SINGLE(1, 0, 1 << 18),
-+	MAX1363_MODE_DIFF_SINGLE(3, 2, 1 << 19),
-+	MAX1363_MODE_DIFF_SINGLE(5, 4, 1 << 20),
-+	MAX1363_MODE_DIFF_SINGLE(7, 6, 1 << 21),
-+	MAX1363_MODE_DIFF_SINGLE(9, 8, 1 << 22),
-+	MAX1363_MODE_DIFF_SINGLE(11, 10, 1 << 23),
-+
-+	/* The multichannel scans next */
-+	MAX1363_MODE_SCAN_TO_CHANNEL(1, 0x003),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(2, 0x007),
-+	MAX1236_MODE_SCAN_MID_TO_CHANNEL(2, 3, 0x00C),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(3, 0x00F),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(4, 0x01F),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(5, 0x03F),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(6, 0x07F),
-+	MAX1236_MODE_SCAN_MID_TO_CHANNEL(6, 7, 0x0C0),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(7, 0x0FF),
-+	MAX1236_MODE_SCAN_MID_TO_CHANNEL(6, 8, 0x1C0),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(8, 0x1FF),
-+	MAX1236_MODE_SCAN_MID_TO_CHANNEL(6, 9, 0x3C0),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(9, 0x3FF),
-+	MAX1236_MODE_SCAN_MID_TO_CHANNEL(6, 10, 0x7C0),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(10, 0x7FF),
-+	MAX1236_MODE_SCAN_MID_TO_CHANNEL(6, 11, 0xFC0),
-+	MAX1363_MODE_SCAN_TO_CHANNEL(11, 0xFFF),
-+
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(2, 2, 0x003000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(4, 3, 0x007000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(6, 4, 0x00F000),
-+	MAX1236_MODE_DIFF_SCAN_MID_TO_CHANNEL(8, 2, 0x018000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(8, 5, 0x01F000),
-+	MAX1236_MODE_DIFF_SCAN_MID_TO_CHANNEL(10, 3, 0x038000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(10, 6, 0x3F000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(3, 2, 0x0C0000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(5, 3, 0x1C0000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(7, 4, 0x3C0000),
-+	MAX1236_MODE_DIFF_SCAN_MID_TO_CHANNEL(9, 2, 0x600000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(9, 5, 0x7C0000),
-+	MAX1236_MODE_DIFF_SCAN_MID_TO_CHANNEL(11, 3, 0xE00000),
-+	MAX1363_MODE_DIFF_SCAN_TO_CHANNEL(11, 6, 0xFC0000),
-+};
-+
-+static int max1363_write_basic_config(struct i2c_client *client,
-+				      unsigned char d1,
-+				      unsigned char d2)
-+{
-+	u8 tx_buf[2] = {d1, d2};
-+
-+	return i2c_master_send(client, tx_buf, 2);
-+}
-+
-+static int max1363_set_scan_mode(struct max1363_state *st)
-+{
-+	st->configbyte &= ~(MAX1363_CHANNEL_SEL_MASK
-+			    | MAX1363_SCAN_MASK
-+			    | MAX1363_SE_DE_MASK);
-+	st->configbyte |= st->current_mode->conf;
-+
-+	return max1363_write_basic_config(st->client,
-+					  st->setupbyte,
-+					  st->configbyte);
-+}
-+
-+static int max1363_read_single_chan(struct iio_dev *indio_dev,
-+				    struct iio_chan_spec const *chan,
-+				    int *val,
-+				    long m)
-+{
-+	int ret = 0;
-+	s32 data;
-+	char rxbuf[2];
-+	struct max1363_state *st = iio_priv(indio_dev);
-+	struct i2c_client *client = st->client;
-+
-+	mutex_lock(&indio_dev->mlock);
-+
-+	/* Check to see if current scan mode is correct */
-+	if (st->current_mode != &max1363_mode_table[chan->address]) {
-+		/* Update scan mode if needed */
-+		st->current_mode = &max1363_mode_table[chan->address];
-+		ret = max1363_set_scan_mode(st);
-+		if (ret < 0)
-+			goto error_ret;
-+	}
-+	if (st->chip_info->bits != 8) {
-+		/* Get reading */
-+		data = i2c_master_recv(client, rxbuf, 2);
-+		if (data < 0) {
-+			ret = data;
-+			goto error_ret;
-+		}
-+		data = (s32)(rxbuf[1]) | ((s32)(rxbuf[0] & 0x0F)) << 8;
-+	} else {
-+		/* Get reading */
-+		data = i2c_master_recv(client, rxbuf, 1);
-+		if (data < 0) {
-+			ret = data;
-+			goto error_ret;
-+		}
-+		data = rxbuf[0];
-+	}
-+
-+	*val = data;
-+error_ret:
-+	mutex_unlock(&indio_dev->mlock);
-+	return ret;
-+
-+}
-+
-+static int max1363_read_raw(struct iio_dev *indio_dev,
-+			    struct iio_chan_spec const *chan,
-+			    int *val,
-+			    int *val2,
-+			    long m)
-+{
-+	struct max1363_state *st = iio_priv(indio_dev);
-+	int ret;
-+	switch (m) {
-+	case 0:
-+		ret = max1363_read_single_chan(indio_dev, chan, val, m);
-+		if (ret < 0)
-+			return ret;
-+		return IIO_VAL_INT;
-+	case (1 << IIO_CHAN_INFO_SCALE_SHARED):
-+		if ((1 << (st->chip_info->bits + 1)) >
-+		    st->chip_info->int_vref_mv) {
-+			*val = 0;
-+			*val2 = 500000;
-+			return IIO_VAL_INT_PLUS_MICRO;
-+		} else {
-+			*val = (st->chip_info->int_vref_mv)
-+				>> st->chip_info->bits;
-+			return IIO_VAL_INT;
-+		}
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+/* Applies to max1363 */
-+static const enum max1363_modes max1363_mode_list[] = {
-+	_s0, _s1, _s2, _s3,
-+	s0to1, s0to2, s0to3,
-+	d0m1, d2m3, d1m0, d3m2,
-+	d0m1to2m3, d1m0to3m2,
-+};
-+
-+/*
-+ * Bits and scan inded not currently used but left here to
-+ * reduce churn during merge.
-+ */
-+#define MAX1363_CHAN_U(num, addr, scan_index, bits)			\
-+	{								\
-+		.type = IIO_VOLTAGE,					\
-+		.indexed = 1,						\
-+		.channel = num,						\
-+		.address = addr,					\
-+		.info_mask = MAX1363_INFO_MASK				\
-+	}								\
-+
-+/* bipolar channel */
-+#define MAX1363_CHAN_B(num, num2, addr, scan_index, bits)		\
-+	{								\
-+		.type = IIO_VOLTAGE,					\
-+		.differential = 1,					\
-+		.indexed = 1,						\
-+		.channel = num,						\
-+		.channel2 = num2,					\
-+		.address = addr,					\
-+		.info_mask = MAX1363_INFO_MASK,				\
-+	}
-+#define MAX1363_INFO_MASK (1 << IIO_CHAN_INFO_SCALE_SHARED)
-+
-+#define MAX1363_CHAN_UNIPOLAR(index)
-+#define MAX1363_4X_CHANS(bits) {		\
-+	MAX1363_CHAN_U(0, _s0, 0, bits),	\
-+	MAX1363_CHAN_U(1, _s1, 1, bits),	\
-+	MAX1363_CHAN_U(2, _s2, 2, bits),	\
-+	MAX1363_CHAN_U(3, _s3, 3, bits),	\
-+	MAX1363_CHAN_B(0, 1, d0m1, 4, bits),	\
-+	MAX1363_CHAN_B(2, 3, d2m3, 5, bits),	\
-+	MAX1363_CHAN_B(1, 0, d1m0, 6, bits),	\
-+	MAX1363_CHAN_B(3, 2, d3m2, 7, bits),	\
-+	}
-+
-+static struct iio_chan_spec max1036_channels[] = MAX1363_4X_CHANS(8);
-+static struct iio_chan_spec max1136_channels[] = MAX1363_4X_CHANS(10);
-+static struct iio_chan_spec max1236_channels[] = MAX1363_4X_CHANS(12);
-+
-+/* Appies to max1236, max1237 */
-+static const enum max1363_modes max1236_mode_list[] = {
-+	_s0, _s1, _s2, _s3,
-+	s0to1, s0to2, s0to3,
-+	d0m1, d2m3, d1m0, d3m2,
-+	d0m1to2m3, d1m0to3m2,
-+	s2to3,
-+};
-+
-+/* Applies to max1238, max1239 */
-+static const enum max1363_modes max1238_mode_list[] = {
-+	_s0, _s1, _s2, _s3, _s4, _s5, _s6, _s7, _s8, _s9, _s10, _s11,
-+	s0to1, s0to2, s0to3, s0to4, s0to5, s0to6,
-+	s0to7, s0to8, s0to9, s0to10, s0to11,
-+	d0m1, d2m3, d4m5, d6m7, d8m9, d10m11,
-+	d1m0, d3m2, d5m4, d7m6, d9m8, d11m10,
-+	d0m1to2m3, d0m1to4m5, d0m1to6m7, d0m1to8m9, d0m1to10m11,
-+	d1m0to3m2, d1m0to5m4, d1m0to7m6, d1m0to9m8, d1m0to11m10,
-+	s6to7, s6to8, s6to9, s6to10, s6to11,
-+	d6m7to8m9, d6m7to10m11, d7m6to9m8, d7m6to11m10,
-+};
-+
-+#define MAX1363_12X_CHANS(bits) {			\
-+	MAX1363_CHAN_U(0, _s0, 0, bits),		\
-+	MAX1363_CHAN_U(1, _s1, 1, bits),		\
-+	MAX1363_CHAN_U(2, _s2, 2, bits),		\
-+	MAX1363_CHAN_U(3, _s3, 3, bits),		\
-+	MAX1363_CHAN_U(4, _s4, 4, bits),		\
-+	MAX1363_CHAN_U(5, _s5, 5, bits),		\
-+	MAX1363_CHAN_U(6, _s6, 6, bits),		\
-+	MAX1363_CHAN_U(7, _s7, 7, bits),		\
-+	MAX1363_CHAN_U(8, _s8, 8, bits),		\
-+	MAX1363_CHAN_U(9, _s9, 9, bits),		\
-+	MAX1363_CHAN_U(10, _s10, 10, bits),		\
-+	MAX1363_CHAN_U(11, _s11, 11, bits),		\
-+	MAX1363_CHAN_B(0, 1, d0m1, 12, bits),		\
-+	MAX1363_CHAN_B(2, 3, d2m3, 13, bits),		\
-+	MAX1363_CHAN_B(4, 5, d4m5, 14, bits),		\
-+	MAX1363_CHAN_B(6, 7, d6m7, 15, bits),		\
-+	MAX1363_CHAN_B(8, 9, d8m9, 16, bits),		\
-+	MAX1363_CHAN_B(10, 11, d10m11, 17, bits),	\
-+	MAX1363_CHAN_B(1, 0, d1m0, 18, bits),		\
-+	MAX1363_CHAN_B(3, 2, d3m2, 19, bits),		\
-+	MAX1363_CHAN_B(5, 4, d5m4, 20, bits),		\
-+	MAX1363_CHAN_B(7, 6, d7m6, 21, bits),		\
-+	MAX1363_CHAN_B(9, 8, d9m8, 22, bits),		\
-+	MAX1363_CHAN_B(11, 10, d11m10, 23, bits),	\
-+	}
-+
-+static struct iio_chan_spec max1038_channels[] = MAX1363_12X_CHANS(8);
-+static struct iio_chan_spec max1138_channels[] = MAX1363_12X_CHANS(10);
-+static struct iio_chan_spec max1238_channels[] = MAX1363_12X_CHANS(12);
-+
-+static const enum max1363_modes max11607_mode_list[] = {
-+	_s0, _s1, _s2, _s3,
-+	s0to1, s0to2, s0to3,
-+	s2to3,
-+	d0m1, d2m3, d1m0, d3m2,
-+	d0m1to2m3, d1m0to3m2,
-+};
-+
-+static const enum max1363_modes max11608_mode_list[] = {
-+	_s0, _s1, _s2, _s3, _s4, _s5, _s6, _s7,
-+	s0to1, s0to2, s0to3, s0to4, s0to5, s0to6, s0to7,
-+	s6to7,
-+	d0m1, d2m3, d4m5, d6m7,
-+	d1m0, d3m2, d5m4, d7m6,
-+	d0m1to2m3, d0m1to4m5, d0m1to6m7,
-+	d1m0to3m2, d1m0to5m4, d1m0to7m6,
-+};
-+
-+#define MAX1363_8X_CHANS(bits) {		\
-+	MAX1363_CHAN_U(0, _s0, 0, bits),	\
-+	MAX1363_CHAN_U(1, _s1, 1, bits),	\
-+	MAX1363_CHAN_U(2, _s2, 2, bits),	\
-+	MAX1363_CHAN_U(3, _s3, 3, bits),	\
-+	MAX1363_CHAN_U(4, _s4, 4, bits),	\
-+	MAX1363_CHAN_U(5, _s5, 5, bits),	\
-+	MAX1363_CHAN_U(6, _s6, 6, bits),	\
-+	MAX1363_CHAN_U(7, _s7, 7, bits),	\
-+	MAX1363_CHAN_B(0, 1, d0m1, 8, bits),	\
-+	MAX1363_CHAN_B(2, 3, d2m3, 9, bits),	\
-+	MAX1363_CHAN_B(4, 5, d4m5, 10, bits),	\
-+	MAX1363_CHAN_B(6, 7, d6m7, 11, bits),	\
-+	MAX1363_CHAN_B(1, 0, d1m0, 12, bits),	\
-+	MAX1363_CHAN_B(3, 2, d3m2, 13, bits),	\
-+	MAX1363_CHAN_B(5, 4, d5m4, 14, bits),	\
-+	MAX1363_CHAN_B(7, 6, d7m6, 15, bits),	\
-+}
-+static struct iio_chan_spec max11602_channels[] = MAX1363_8X_CHANS(8);
-+static struct iio_chan_spec max11608_channels[] = MAX1363_8X_CHANS(10);
-+static struct iio_chan_spec max11614_channels[] = MAX1363_8X_CHANS(12);
-+
-+static const enum max1363_modes max11644_mode_list[] = {
-+	_s0, _s1, s0to1, d0m1, d1m0,
-+};
-+
-+#define MAX1363_2X_CHANS(bits) {			\
-+	MAX1363_CHAN_U(0, _s0, 0, bits),		\
-+	MAX1363_CHAN_U(1, _s1, 1, bits),		\
-+	MAX1363_CHAN_B(0, 1, d0m1, 2, bits),		\
-+	MAX1363_CHAN_B(1, 0, d1m0, 3, bits),		\
-+	}
-+
-+static struct iio_chan_spec max11646_channels[] = MAX1363_2X_CHANS(10);
-+static struct iio_chan_spec max11644_channels[] = MAX1363_2X_CHANS(12);
-+
-+enum { max1361,
-+       max1362,
-+       max1363,
-+       max1364,
-+       max1036,
-+       max1037,
-+       max1038,
-+       max1039,
-+       max1136,
-+       max1137,
-+       max1138,
-+       max1139,
-+       max1236,
-+       max1237,
-+       max1238,
-+       max1239,
-+       max11600,
-+       max11601,
-+       max11602,
-+       max11603,
-+       max11604,
-+       max11605,
-+       max11606,
-+       max11607,
-+       max11608,
-+       max11609,
-+       max11610,
-+       max11611,
-+       max11612,
-+       max11613,
-+       max11614,
-+       max11615,
-+       max11616,
-+       max11617,
-+       max11644,
-+       max11645,
-+       max11646,
-+       max11647
-+};
-+
-+static const struct iio_info max1238_info = {
-+	.read_raw = &max1363_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static const struct iio_info max1363_info = {
-+	.read_raw = &max1363_read_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+/* max1363 and max1368 tested - rest from data sheet */
-+static const struct max1363_chip_info max1363_chip_info_tbl[] = {
-+	[max1361] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1363_mode_list,
-+		.num_modes = ARRAY_SIZE(max1363_mode_list),
-+		.default_mode = s0to3,
-+		.channels = max1136_channels,
-+		.num_channels = ARRAY_SIZE(max1136_channels),
-+		.info = &max1363_info,
-+	},
-+	[max1362] = {
-+		.bits = 10,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1363_mode_list,
-+		.num_modes = ARRAY_SIZE(max1363_mode_list),
-+		.default_mode = s0to3,
-+		.channels = max1136_channels,
-+		.num_channels = ARRAY_SIZE(max1136_channels),
-+		.info = &max1363_info,
-+	},
-+	[max1363] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1363_mode_list,
-+		.num_modes = ARRAY_SIZE(max1363_mode_list),
-+		.default_mode = s0to3,
-+		.channels = max1236_channels,
-+		.num_channels = ARRAY_SIZE(max1236_channels),
-+		.info = &max1363_info,
-+	},
-+	[max1364] = {
-+		.bits = 12,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1363_mode_list,
-+		.num_modes = ARRAY_SIZE(max1363_mode_list),
-+		.default_mode = s0to3,
-+		.channels = max1236_channels,
-+		.num_channels = ARRAY_SIZE(max1236_channels),
-+		.info = &max1363_info,
-+	},
-+	[max1036] = {
-+		.bits = 8,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1236_mode_list,
-+		.num_modes = ARRAY_SIZE(max1236_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1036_channels,
-+		.num_channels = ARRAY_SIZE(max1036_channels),
-+	},
-+	[max1037] = {
-+		.bits = 8,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1236_mode_list,
-+		.num_modes = ARRAY_SIZE(max1236_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1036_channels,
-+		.num_channels = ARRAY_SIZE(max1036_channels),
-+	},
-+	[max1038] = {
-+		.bits = 8,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1038_channels,
-+		.num_channels = ARRAY_SIZE(max1038_channels),
-+	},
-+	[max1039] = {
-+		.bits = 8,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1038_channels,
-+		.num_channels = ARRAY_SIZE(max1038_channels),
-+	},
-+	[max1136] = {
-+		.bits = 10,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1236_mode_list,
-+		.num_modes = ARRAY_SIZE(max1236_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1136_channels,
-+		.num_channels = ARRAY_SIZE(max1136_channels),
-+	},
-+	[max1137] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1236_mode_list,
-+		.num_modes = ARRAY_SIZE(max1236_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1136_channels,
-+		.num_channels = ARRAY_SIZE(max1136_channels),
-+	},
-+	[max1138] = {
-+		.bits = 10,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1138_channels,
-+		.num_channels = ARRAY_SIZE(max1138_channels),
-+	},
-+	[max1139] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1138_channels,
-+		.num_channels = ARRAY_SIZE(max1138_channels),
-+	},
-+	[max1236] = {
-+		.bits = 12,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1236_mode_list,
-+		.num_modes = ARRAY_SIZE(max1236_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1236_channels,
-+		.num_channels = ARRAY_SIZE(max1236_channels),
-+	},
-+	[max1237] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1236_mode_list,
-+		.num_modes = ARRAY_SIZE(max1236_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1236_channels,
-+		.num_channels = ARRAY_SIZE(max1236_channels),
-+	},
-+	[max1238] = {
-+		.bits = 12,
-+		.int_vref_mv = 4096,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max1239] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11600] = {
-+		.bits = 8,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11607_mode_list,
-+		.num_modes = ARRAY_SIZE(max11607_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1036_channels,
-+		.num_channels = ARRAY_SIZE(max1036_channels),
-+	},
-+	[max11601] = {
-+		.bits = 8,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11607_mode_list,
-+		.num_modes = ARRAY_SIZE(max11607_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1036_channels,
-+		.num_channels = ARRAY_SIZE(max1036_channels),
-+	},
-+	[max11602] = {
-+		.bits = 8,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11608_mode_list,
-+		.num_modes = ARRAY_SIZE(max11608_mode_list),
-+		.default_mode = s0to7,
-+		.info = &max1238_info,
-+		.channels = max11602_channels,
-+		.num_channels = ARRAY_SIZE(max11602_channels),
-+	},
-+	[max11603] = {
-+		.bits = 8,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11608_mode_list,
-+		.num_modes = ARRAY_SIZE(max11608_mode_list),
-+		.default_mode = s0to7,
-+		.info = &max1238_info,
-+		.channels = max11602_channels,
-+		.num_channels = ARRAY_SIZE(max11602_channels),
-+	},
-+	[max11604] = {
-+		.bits = 8,
-+		.int_vref_mv = 4098,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11605] = {
-+		.bits = 8,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11606] = {
-+		.bits = 10,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11607_mode_list,
-+		.num_modes = ARRAY_SIZE(max11607_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1136_channels,
-+		.num_channels = ARRAY_SIZE(max1136_channels),
-+	},
-+	[max11607] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11607_mode_list,
-+		.num_modes = ARRAY_SIZE(max11607_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1136_channels,
-+		.num_channels = ARRAY_SIZE(max1136_channels),
-+	},
-+	[max11608] = {
-+		.bits = 10,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11608_mode_list,
-+		.num_modes = ARRAY_SIZE(max11608_mode_list),
-+		.default_mode = s0to7,
-+		.info = &max1238_info,
-+		.channels = max11608_channels,
-+		.num_channels = ARRAY_SIZE(max11608_channels),
-+	},
-+	[max11609] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11608_mode_list,
-+		.num_modes = ARRAY_SIZE(max11608_mode_list),
-+		.default_mode = s0to7,
-+		.info = &max1238_info,
-+		.channels = max11608_channels,
-+		.num_channels = ARRAY_SIZE(max11608_channels),
-+	},
-+	[max11610] = {
-+		.bits = 10,
-+		.int_vref_mv = 4098,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11611] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11612] = {
-+		.bits = 12,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11607_mode_list,
-+		.num_modes = ARRAY_SIZE(max11607_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1236_channels,
-+		.num_channels = ARRAY_SIZE(max1236_channels),
-+	},
-+	[max11613] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11607_mode_list,
-+		.num_modes = ARRAY_SIZE(max11607_mode_list),
-+		.default_mode = s0to3,
-+		.info = &max1238_info,
-+		.channels = max1236_channels,
-+		.num_channels = ARRAY_SIZE(max1236_channels),
-+	},
-+	[max11614] = {
-+		.bits = 12,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11608_mode_list,
-+		.num_modes = ARRAY_SIZE(max11608_mode_list),
-+		.default_mode = s0to7,
-+		.info = &max1238_info,
-+		.channels = max11614_channels,
-+		.num_channels = ARRAY_SIZE(max11614_channels),
-+	},
-+	[max11615] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11608_mode_list,
-+		.num_modes = ARRAY_SIZE(max11608_mode_list),
-+		.default_mode = s0to7,
-+		.info = &max1238_info,
-+		.channels = max11614_channels,
-+		.num_channels = ARRAY_SIZE(max11614_channels),
-+	},
-+	[max11616] = {
-+		.bits = 12,
-+		.int_vref_mv = 4098,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11617] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max1238_mode_list,
-+		.num_modes = ARRAY_SIZE(max1238_mode_list),
-+		.default_mode = s0to11,
-+		.info = &max1238_info,
-+		.channels = max1238_channels,
-+		.num_channels = ARRAY_SIZE(max1238_channels),
-+	},
-+	[max11644] = {
-+		.bits = 12,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11644_mode_list,
-+		.num_modes = ARRAY_SIZE(max11644_mode_list),
-+		.default_mode = s0to1,
-+		.info = &max1238_info,
-+		.channels = max11644_channels,
-+		.num_channels = ARRAY_SIZE(max11644_channels),
-+	},
-+	[max11645] = {
-+		.bits = 12,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11644_mode_list,
-+		.num_modes = ARRAY_SIZE(max11644_mode_list),
-+		.default_mode = s0to1,
-+		.info = &max1238_info,
-+		.channels = max11644_channels,
-+		.num_channels = ARRAY_SIZE(max11644_channels),
-+	},
-+	[max11646] = {
-+		.bits = 10,
-+		.int_vref_mv = 2048,
-+		.mode_list = max11644_mode_list,
-+		.num_modes = ARRAY_SIZE(max11644_mode_list),
-+		.default_mode = s0to1,
-+		.info = &max1238_info,
-+		.channels = max11646_channels,
-+		.num_channels = ARRAY_SIZE(max11646_channels),
-+	},
-+	[max11647] = {
-+		.bits = 10,
-+		.int_vref_mv = 4096,
-+		.mode_list = max11644_mode_list,
-+		.num_modes = ARRAY_SIZE(max11644_mode_list),
-+		.default_mode = s0to1,
-+		.info = &max1238_info,
-+		.channels = max11646_channels,
-+		.num_channels = ARRAY_SIZE(max11646_channels),
-+	},
-+};
-+
-+static int max1363_initial_setup(struct max1363_state *st)
-+{
-+	st->setupbyte = MAX1363_SETUP_AIN3_IS_AIN3_REF_IS_VDD
-+		| MAX1363_SETUP_POWER_UP_INT_REF
-+		| MAX1363_SETUP_INT_CLOCK
-+		| MAX1363_SETUP_UNIPOLAR
-+		| MAX1363_SETUP_NORESET;
-+
-+	/* Set scan mode writes the config anyway so wait until then*/
-+	st->setupbyte = MAX1363_SETUP_BYTE(st->setupbyte);
-+	st->current_mode = &max1363_mode_table[st->chip_info->default_mode];
-+	st->configbyte = MAX1363_CONFIG_BYTE(st->configbyte);
-+
-+	return max1363_set_scan_mode(st);
-+}
-+
-+static int __devinit max1363_probe(struct i2c_client *client,
-+				   const struct i2c_device_id *id)
-+{
-+	int ret, i;
-+	struct max1363_state *st;
-+	struct iio_dev *indio_dev;
-+
-+	indio_dev = iio_device_allocate(sizeof(struct max1363_state));
-+	if (indio_dev == NULL) {
-+		ret = -ENOMEM;
-+		goto error_ret;
-+	}
-+	st = iio_priv(indio_dev);
-+	st->reg = regulator_get(&client->dev, "vcc");
-+	if (IS_ERR(st->reg)) {
-+		ret = PTR_ERR(st->reg);
-+		goto error_free_device;
-+	}
-+
-+	ret = regulator_enable(st->reg);
-+	if (ret < 0)
-+		goto error_put_reg;
-+
-+	/* this is only used for device removal purposes */
-+	i2c_set_clientdata(client, indio_dev);
-+
-+	st->chip_info = &max1363_chip_info_tbl[id->driver_data];
-+	st->client = client;
-+
-+	indio_dev->available_scan_masks
-+		= kzalloc(BITS_TO_LONGS(MAX1363_MAX_CHANNELS)*sizeof(long)*
-+			  (st->chip_info->num_modes + 1), GFP_KERNEL);
-+	if (!indio_dev->available_scan_masks) {
-+		ret = -ENOMEM;
-+		goto error_disable_reg;
-+	}
-+
-+	for (i = 0; i < st->chip_info->num_modes; i++)
-+		bitmap_copy(indio_dev->available_scan_masks +
-+			    BITS_TO_LONGS(MAX1363_MAX_CHANNELS)*i,
-+			    max1363_mode_table[st->chip_info->mode_list[i]]
-+			    .modemask, MAX1363_MAX_CHANNELS);
-+	/* Estabilish that the iio_dev is a child of the i2c device */
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->name = id->name;
-+
-+	indio_dev->info = st->chip_info->info;
-+	indio_dev->channels = st->chip_info->channels;
-+	indio_dev->num_channels = st->chip_info->num_channels;
-+	ret = max1363_initial_setup(st);
-+	if (ret < 0)
-+		goto error_free_available_scan_masks;
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret)
-+		goto error_free_available_scan_masks;
-+
-+	return 0;
-+
-+error_free_available_scan_masks:
-+	kfree(indio_dev->available_scan_masks);
-+error_disable_reg:
-+	if (!IS_ERR(st->reg))
-+		regulator_disable(st->reg);
-+error_put_reg:
-+	if (!IS_ERR(st->reg))
-+		regulator_put(st->reg);
-+error_free_device:
-+	iio_device_free(indio_dev);
-+error_ret:
-+	return ret;
-+}
-+
-+static int max1363_remove(struct i2c_client *client)
-+{
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct max1363_state *st = iio_priv(indio_dev);
-+
-+	iio_device_unregister(indio_dev);
-+	
-+	kfree(indio_dev->available_scan_masks);
-+	if (!IS_ERR(st->reg)) {
-+		regulator_disable(st->reg);
-+		regulator_put(st->reg);
-+	}
-+
-+	iio_device_free(indio_dev);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id max1363_id[] = {
-+	{ "max1361", max1361 },
-+	{ "max1362", max1362 },
-+	{ "max1363", max1363 },
-+	{ "max1364", max1364 },
-+	{ "max1036", max1036 },
-+	{ "max1037", max1037 },
-+	{ "max1038", max1038 },
-+	{ "max1039", max1039 },
-+	{ "max1136", max1136 },
-+	{ "max1137", max1137 },
-+	{ "max1138", max1138 },
-+	{ "max1139", max1139 },
-+	{ "max1236", max1236 },
-+	{ "max1237", max1237 },
-+	{ "max1238", max1238 },
-+	{ "max1239", max1239 },
-+	{ "max11600", max11600 },
-+	{ "max11601", max11601 },
-+	{ "max11602", max11602 },
-+	{ "max11603", max11603 },
-+	{ "max11604", max11604 },
-+	{ "max11605", max11605 },
-+	{ "max11606", max11606 },
-+	{ "max11607", max11607 },
-+	{ "max11608", max11608 },
-+	{ "max11609", max11609 },
-+	{ "max11610", max11610 },
-+	{ "max11611", max11611 },
-+	{ "max11612", max11612 },
-+	{ "max11613", max11613 },
-+	{ "max11614", max11614 },
-+	{ "max11615", max11615 },
-+	{ "max11616", max11616 },
-+	{ "max11617", max11617 },
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, max1363_id);
-+
-+static struct i2c_driver max1363_driver = {
-+	.driver = {
-+		.name = "max1363",
-+	},
-+	.probe = max1363_probe,
-+	.remove = max1363_remove,
-+	.id_table = max1363_id,
-+};
-+
-+static __init int max1363_init(void)
-+{
-+	return i2c_add_driver(&max1363_driver);
-+}
-+module_init(max1363_init);
-+
-+static __exit void max1363_exit(void)
-+{
-+	i2c_del_driver(&max1363_driver);
-+}
-+module_exit(max1363_exit);
-+
-+MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
-+MODULE_DESCRIPTION("Maxim 1363 ADC");
-+MODULE_LICENSE("GPL v2");
-+
 -- 
 1.7.7
 
