@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab1JQO2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:28:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51712 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab1JQO2s convert rfc822-to-8bit (ORCPT
+	id S1755970Ab1JQOby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:31:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45539 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755760Ab1JQObw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:28:48 -0400
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
-        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Date: Mon, 17 Oct 2011 16:28:27 +0200
-In-Reply-To: <20111017141147.GA14581@srcf.ucam.org>
-References: <20111014154348.ae6267aa.akpm@linux-foundation.org>
-	 <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop>
-	 <20111017013921.GA30035@tango.0pointer.de>
-	 <20111017032232.GA4816@srcf.ucam.org> <4E9BBB6D.4050004@linux.intel.com>
-	 <1318837019.6594.29.camel@twins> <alpine.LFD.2.02.1110171119580.3240@ionos>
-	 <20111017124647.GA12838@srcf.ucam.org> <1318856786.4172.22.camel@twins>
-	 <20111017141147.GA14581@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Oct 2011 10:31:52 -0400
+Subject: Re: Bug#645366: [fuse-devel] Hang and suspend failure after FUSE
+ server killed (3.1-rc7)
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>, 645366@bugs.debian.org
+Cc: fuse-devel@lists.sourceforge.net,
+        "brian m. carlson" <sandals@crustytoothpaste.net>, rjw@sisk.pl,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 17 Oct 2011 15:31:28 +0100
+In-Reply-To: <87ty77lmts.fsf@tucsk.pomaz.szeredi.hu>
+References: <20111014225213.GA5705@crustytoothpaste.ath.cx>
+	 <1318824752.3340.7.camel@deadeye> <87ty77lmts.fsf@tucsk.pomaz.szeredi.hu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-rppxT0+r4Yr1jotFdNZx"
 X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318861707.4172.32.camel@twins>
+Message-ID: <1318861889.3340.23.camel@deadeye>
 Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 15:11 +0100, Matthew Garrett wrote:
-> On Mon, Oct 17, 2011 at 03:06:26PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-10-17 at 13:46 +0100, Matthew Garrett wrote:
-> > > They're orthogonal. Sometimes you want timer-driven behaviour (how else 
-> > > are you going to draw animations?) and that's obviously going to 
-> > > generate wakeups. This is for the idle case, where the user is no longer 
-> > > sitting in front of the machine but you don't want to trigger a full 
-> > > system suspend. We either need every application that ever uses 
-> > > timer-driven behaviour to support setting its own timer slack on some 
-> > > sort of external policy decision, or we need a way to let the kernel 
-> > > force them to.
-> > 
-> > No!! you want that application to stop drawing stuff that is invisible.
-> > Setting your own timerslack for something you know is pointless is worse
-> > than doing something pointless, its down right stupid.
-> 
-> Whether or not you want the animation to carry on animating is policy, 
-> and you need something to be the policy agent. Let's say firefox is 
-> invisible. I now grab a copy of its window contents. What do I get?
 
-An XDamage and repaint from the X client, after which your copy will
-complete and you get what you asked for?
+--=-rppxT0+r4Yr1jotFdNZx
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > Please, work with the X folks and make it an error to draw to invisible
-> > surfaces. And yes, I know that composition makes that a non-trivial
-> > problem. But at least the blank screen case should be trivial, and I
-> > suspect there's more tractable cases as well. Mostly the desktop is
-> > still a very static place and a few extra timer ticks for when you're
-> > spinning your desktop cube around isn't going to be a problem.
-> 
-> So, just to be clear on this, you want to change the semantics of X and 
-> modify every piece of userspace that currently uses X (because it'll now 
-> otherwise crash when the screen blanks)
+On Mon, 2011-10-17 at 16:22 +0200, Miklos Szeredi wrote:
+> Ben Hutchings <ben@decadent.org.uk> writes:
+>=20
+> > On Fri, 2011-10-14 at 22:52 +0000, brian m. carlson wrote:
+> >> Package: linux-2.6
+> >> Version: 3.1.0~rc7-1~experimental.1
+> >> Severity: normal
+> >>=20
+> >> This morning I was backing up my laptop to another computer via sshfs
+> >> (and fuse).  The afio archiver was writing to this sshfs-mounted
+> >> location.  I decided to abort the operation with Ctrl-C, which caused
+> >> the sshfs mount to become unmounted; however, afio was apparently not
+> >> affected by the SIGINT (probably because processes in disk IO are
+> >> unkillable).
+> >>=20
+> >> Several hours later, I attempted to suspend my computer and it failed =
+to
+> >> do so. The kernel log (attached) indicated that the afio process from
+> >> hours before was preventing the suspend.  Since processes waiting on
+> >> disk IO are unkillable (IMO a bug) and the underlying device to which
+> >> afio was writing was long gone, I was forced to reboot the machine in
+> >> order to get it to suspend.  If I had not noticed that the machine had
+> >> failed to suspend, it could have stayed running in my bag and seriousl=
+y
+> >> overheated.
+> >
+> > This seems to be a bug in FUSE.  Is this known about?  If not, could
+> > someone look into this?
+>=20
+> It's a bug in the fuse-freezer interaction.  Yes, it is known.
+[...]
 
-Or even when I minimize firefox. That said, ff will probably crash as
-soon as I open a second tab because the retarded thing will very likely
-continue animating everything on the invisible tab anyway.
+But the FUSE server was already killed; shouldn't that cause outstanding
+requests to fail immediately?
 
-You could start by making the X lib of the day, is that XCB these days?,
-issue an error print (you get plenty of those anyway) and progress to
-full on crashing later.
+Ben.
 
-This gives developers a migration window and incentive to fix up their
-apps.
+--=20
+Ben Hutchings
+No political challenge can be met by shopping. - George Monbiot
 
->  in preference to merging a piece 
-> of code that's functionally consistent with the rest of the cgroups 
-> infrastructure?
+--=-rppxT0+r4Yr1jotFdNZx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Yep.. because as of yet there isn't a sane use-case to warrant adding
-the maintenance burden. Any cgroup controller is functionally
-consistent, per definition, that doesn't make it useful or even sane.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATpw8QOe/yOyVhhEJAQql9hAApQL4gSZlw4KphZbtNioMKXPQihX+RRGY
+2//CQJKF9EaWCARG/xctQwBrcBKpc3aCpub4anZoXSLwdEre4/yzcO13iYZv6Bye
+h32Z6HY1KuHLkOyKmF6lYgZspdL+6aiNF7qC5rnRcuZh9VnDvbDhcCcWEi1FDp7h
+DSbtKtrVAKavZxmdw8qQh7KSYRqIDWJ8xbBRQ+RUbN3zUxBMdQFyg5jfaGI8yDaa
+p3Ygnc8pcv8T6fU7xSIBnZCBwnKx1yianpQV7eGhfF1JD5g5UVrvH0s+PLRyz8V2
+fb8W7/GotWtRDUGjtAkwGc/C2A2CcMNfP2U0vHMaLBB6m8JKK0epqq9dNn8lE/yl
+dypW+V0If9vqt3wiL30h6DKdAw+B5MGvpFDFYR+Fc/N5uFNLlb7yOmncVHMzwSVr
+WOFWjm/Dy79kbiosWGpNPGgC7n+PUzN072a/vJNi+glsyOoYRnw3t7Bg61Eyf6xA
+Shi6eWpUziKMQ9aAZopzTyN80oH1l93UmenWtE3M4BrDBYVDYT5vHKIYb0pzNtxn
+2vmLv8LhoKFxod9dG9oQojK+qYEqKm0IkxqflWIrpOxegcJk6MCj/XyACSGB6Hvq
+vvKa+Kmkhlcq3sXcA+X+hFhjmHWsy6EkCbVi7Y6bbmxEPzhQ8PuuaAms/qoM0dBv
+aI7qv8wPP5g=
+=GB4c
+-----END PGP SIGNATURE-----
+
+--=-rppxT0+r4Yr1jotFdNZx--
