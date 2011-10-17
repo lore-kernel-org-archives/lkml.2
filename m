@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab1JQP0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:26:47 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59298 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751171Ab1JQP0q (ORCPT
+	id S1756150Ab1JQPb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:31:56 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57089 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab1JQPby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:26:46 -0400
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
-	 <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-	 <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 10:26:42 -0500
-Message-ID: <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 11:31:54 -0400
+Date: Mon, 17 Oct 2011 16:31:43 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Message-ID: <20111017153142.GA17047@srcf.ucam.org>
+References: <20111017124647.GA12838@srcf.ucam.org>
+ <1318856786.4172.22.camel@twins>
+ <20111017141147.GA14581@srcf.ucam.org>
+ <1318861707.4172.32.camel@twins>
+ <20111017144013.GA15447@srcf.ucam.org>
+ <1318862969.4172.45.camel@twins>
+ <20111017145952.GB15769@srcf.ucam.org>
+ <1318864260.4172.54.camel@twins>
+ <20111017151920.GA16664@srcf.ucam.org>
+ <1318864870.4172.61.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318864870.4172.61.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 15:15 +0000, KY Srinivasan wrote:
-> This patch is against Greg's staging tree where recently I merged all
-> of the storage
-> drivers into a single driver. This change may not have percolated up
-> yet - Greg has
-> checked this into his staging tree though.
+On Mon, Oct 17, 2011 at 05:21:10PM +0200, Peter Zijlstra wrote:
 
-OK, that explains the difference.
+> Well what other cases are there? Can we enumerate them and come up 
+> with similar solutions?
 
-> As I deal with the review comments now, do you want me to get these
-> changes
-> applied first to Greg's tree before you would consider moving this
-> driver to drivers/scsi
-> directory, or could you move the driver as it is in Greg's tree under
-> staging and I could give
-> you patches against the moved driver.
+Javascript has timers. We execute rather a lot of javascript from 
+sources we can't influence at all.
 
-Either way is fine by me.  The best route for this is to get the staging
-update into Linus head, then work on the actual SCSI problems.  I'd like
-other SCSI people besides me to review it.
-
-> > OK, so as I read the code, what it can't handle is fragments except at
-> > the ends.  As long as everything always transfers in multiples of 4k,
-> > the problem will never occur.  This means that all devices you present
-> > need to tell the OS they have 4k sectors.  I *think* you can do this by
-> > setting  blk_limits_io_min() in the driver ... but you'll have to test
-> > this.  The minimum sector size gets set also in sd.c when we probe the
-> > disk.  I think that won't override blk_limits_io_min(), but please test
-> > (we don't have any SCSI drivers which have ever used this setting).
-> > 
-> > The way to test, is to read back the /sys/block/<dev>/queue/ settings
-> > when presenting a 512 byte sector disk.  (And the way to activate your
-> > bounce code would be to create a filesystem with a < PAGE_SIZE block
-> > size).
-> 
-> Given that the bounce buffer handling code would typically
-> never be triggered, I not sure how useful it will be to try to get rid
-> of the bounce buffer
-> code using a feature that is not well tested.
-
-As opposed to bounce buffer code which hasn't been well tested either if
-it can't be triggered.
-
->  In any event, I will try your suggestion though. 
-
-Just to be clear: Setting the minimum I/O size is completely well
-tested: it's how we handle 4k sector drives.  What hasn't been tested is
-the ability of the *driver* to enforce the minimum using
-blk_limits_io_min().  As long at that doesn't get overridden by sd when
-it sees a 512b drive, the rest of the block paths (those which actually
-enforce the minimum) have all been well tested.
-
-James
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
