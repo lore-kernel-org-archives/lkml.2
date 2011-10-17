@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1JQUWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 16:22:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53217 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab1JQUWC (ORCPT
+	id S1754544Ab1JQUZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 16:25:07 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34909 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753219Ab1JQUZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 16:22:02 -0400
-Subject: [PATCH] drivers, vmw_balloon.c: Fix typo in code comment.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, dtor@vmware.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 01:34:23 +0600
-Message-ID: <1318880063.10091.14.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Oct 2011 16:25:05 -0400
+X-Sasl-enc: LqMxCWi932JVbFWwDb182OoHquK8WwNP3hdocRZhiR5E 1318883104
+Date: Mon, 17 Oct 2011 13:24:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+Subject: Re: Linux 3.0.7
+Message-ID: <20111017202457.GA6952@kroah.com>
+References: <20111017165654.GA5442@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111017165654.GA5442@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Fix typo in code comment.
+On Mon, Oct 17, 2011 at 09:56:54AM -0700, Greg KH wrote:
+> I'm announcing the release of the 3.0.7 kernel.
+> 
+> All users of the 3.0 kernel series must upgrade.
+> 
+> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
+>         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+> and can be browsed at the normal kernel.org git web browser:
+>         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> 
+> Note, I've had some boot problems with this kernel, and I can't seem to
+> narrow the issue down, but I think it's due to something not related to
+> the kernel itself, but am not positive.  Please test to verify that I
+> didn't mess something up.
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+Ok, this was a userspace problem on my machines, not a kernel issue,
+I've resolved it (hint, don't have an old udev with a new libudev
+package on the same system), and this kernel works fine for me now.
 
-diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
-index 053d36c..2480c21 100644
---- a/drivers/misc/vmw_balloon.c
-+++ b/drivers/misc/vmw_balloon.c
-@@ -151,7 +151,7 @@ MODULE_LICENSE("GPL");
- struct vmballoon_stats {
- 	unsigned int timer;
- 
--	/* allocation statustics */
-+	/* allocation statistics */
- 	unsigned int alloc;
- 	unsigned int alloc_fail;
- 	unsigned int sleep_alloc;
+I've had some reports of it working for others as well, so we can chalk
+this one up to my boxes being broken, not the kernel.
 
+thanks,
 
+greg k-h
