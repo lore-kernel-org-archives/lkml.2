@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab1JQSTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:19:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:48738 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab1JQSTY (ORCPT
+	id S1752418Ab1JQSTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:19:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58991 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751076Ab1JQSTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:19:24 -0400
-X-Authority-Analysis: v=1.1 cv=G2mrdTwFgeQf4gnIVCGl5REDSA/JVLCrZmxI9r5hHjY= c=1 sm=0 a=oe0lC-8eqlkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=1Ha2rNStYJevgBaX_WYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1318875562.4722.4.camel@gandalf.stny.rr.com>
-Subject: Re: Problems with videos and i915 driver
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Date: Mon, 17 Oct 2011 14:19:22 -0400
-In-Reply-To: <20111017175258.GJ2971@phenom.ffwll.local>
-References: <1318788068.12224.125.camel@gandalf.stny.rr.com>
-	 <20111017085546.GB2971@phenom.ffwll.local>
-	 <1318851627.12224.135.camel@gandalf.stny.rr.com>
-	 <20111017170218.GH2971@phenom.ffwll.local>
-	 <1318871219.12224.138.camel@gandalf.stny.rr.com>
-	 <20111017175258.GJ2971@phenom.ffwll.local>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 17 Oct 2011 14:19:53 -0400
+Date: Mon, 17 Oct 2011 14:19:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: John Stultz <john.stultz@linaro.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>
+Subject: Re: [RFC][PATCH 2/2] PM / Sleep: Introduce cooperative suspend/hibernate
+ mode
+In-Reply-To: <1318870100.3125.30.camel@work-vm>
+Message-ID: <Pine.LNX.4.44L0.1110171417070.1749-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 19:52 +0200, Daniel Vetter wrote:
-> On Mon, Oct 17, 2011 at 01:06:59PM -0400, Steven Rostedt wrote:
-> > It's running Fedora 14, and I rather avoid Gnome3 and systemd, which
-> > prevents me from moving her to Fedora 15. If F14 does not provide the
-> > necessary updates, I'll move her over to a Debian system.
+On Mon, 17 Oct 2011, John Stultz wrote:
+
+> So, the alarmtimer code is a bit more simple then what you describe
+> above (alarmtimers are just like regular posix timers, only enable an
+> RTC wakeup for the soonest event when the system goes into suspend).
 > 
-> Generally we're (unfortunately) only now cracking down on a few
-> long-standing Sandybdrige gpu hang issues, so you want something that
-> tracks upstream (and sometimes even git master) pretty closely.
+> However, such a dual-timer style behavior seems like it could work for
+> timer driven wakeups (and have been suggested to me by others as well).
+> Just to reiterate my understanding so that we're sure we're on the same
+> wavelength:
 > 
+> For any timer-style wakeup event, you set another non-wakeup timer for
+> some small period of time before the wakeup timer. Then when the
+> non-wakeup timer fires, the application inhibits suspend and waits for
+> the wakeup timer.  
+> 
+> Thus if the system is supended, the system will stay asleep until the
+> wakeup event, where we'll hold off suspend for a timeout length so the
+> task can run. If the system is not suspended, the early timer inhibits
+> suspend to block the possible race.
+> 
+> So yes, while not a very elegant solution in my mind (as its still racy
+> like any timeout based solution), it would seem to be workable in
+> practice, assuming wide error margins are used as the kernel does not
+> guarantee that timers will fire at a specific time (only after the
+> requested time). 
+> 
+> And this again assumes we'll see no timing issues as a result of system
+> load or realtime task processing.
 
-What git tree is this? I could try it out.
+It shouldn't have to be this complicated.  If a program wants the
+system to be awake at a certain target time, it sets a wakeup timer for
+that time.  Then it vetoes any suspend requests that occur too close to 
+the target time, and continues to veto them until it has finished its 
+job.
 
--- Steve
-
+Alan Stern
 
