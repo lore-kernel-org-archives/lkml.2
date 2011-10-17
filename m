@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab1JQLoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:44:12 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:38652
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab1JQLoK (ORCPT
+	id S1751470Ab1JQLoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:44:37 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46915 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751374Ab1JQLog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:44:10 -0400
-Message-ID: <4E9C1509.6030103@kernel.dk>
-Date: Mon, 17 Oct 2011 13:44:09 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: make gendisk hold a reference to its queue
-References: <20111017024329.GA23507@google.com>
-In-Reply-To: <20111017024329.GA23507@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Oct 2011 07:44:36 -0400
+Date: Mon, 17 Oct 2011 12:40:32 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111017124032.65d8973a@lxorguk.ukuu.org.uk>
+In-Reply-To: <1318848001.6594.45.camel@twins>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
+	<20111007070842.GA27555@hostway.ca>
+	<20111007174848.GA11011@hostway.ca>
+	<1318010515.398.8.camel@twins>
+	<20111008005035.GC22843@hostway.ca>
+	<1318060551.8395.0.camel@twins>
+	<20111012213555.GC24461@hostway.ca>
+	<20111013232521.GA5654@hostway.ca>
+	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+	<20111017045806.GA11561@elte.hu>
+	<alpine.LFD.2.02.1110171101250.3240@ionos>
+	<1318848001.6594.45.camel@twins>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-17 04:43, Tejun Heo wrote:
-> The following command sequence triggers an oops.
-> 
-> # mount /dev/sdb1 /mnt
-> # echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
-> # umount /mnt
-> 
->  general protection fault: 0000 [#1] PREEMPT SMP 
->  CPU 2 
->  Modules linked in:
->  
->  Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
->  RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
-> ...
->  Call Trace:
->   [<ffffffff810d2845>] lock_acquire+0x95/0x140
->   [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
->   [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
->   [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
->   [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
->   [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
->   [<ffffffff811c40df>] blkdev_put+0x5f/0x190
->   [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
->   [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
->   [<ffffffff8119003a>] deactivate_super+0x4a/0x70
->   [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
->   [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
->   [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
-> 
-> This is because bdev holds on to disk but disk doesn't pin the
-> associated queue.  If a SCSI device is removed while the device is
-> still open, the sdev puts the base reference to the queue on release.
-> When the bdev is finally released, the associated queue is already
-> gone along with the bdi and bdev_inode_switch_bdi() ends up
-> dereferencing already freed bdi.
-> 
-> Even if it were not for this bug, disk not holding onto the associated
-> queue is very unusual and error-prone.
-> 
-> Fix it by making add_disk() take an extra reference to its queue and
-> put it on disk_release() and ensuring that disk and its fops owner are
-> put in that order after all accesses to the disk and queue are
-> complete.
+On Mon, 17 Oct 2011 12:40:01 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Thanks, applied.
+> On Mon, 2011-10-17 at 11:03 +0200, Thomas Gleixner wrote:
+> > That's not a micro optimization, it's a massive performance hit if you
+> > force those 32bit archs to do 64/32 all over the place.
+> > 
+> Linus could just say he doesn't care about 32bit and everybody sane
+> should just get a 64bit machine.. but I suspect that's a few more years.
+> 
+> Although I hope not too long, even my phone could do with more than 2G
+> of memory.
 
--- 
-Jens Axboe
+Perhaps it wouldnt; if people didn't keep adding junk to the system ;)
 
