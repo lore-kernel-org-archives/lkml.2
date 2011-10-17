@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab1JQQxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:53:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49963 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab1JQQxE (ORCPT
+	id S1756556Ab1JQQ4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:56:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13200 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753143Ab1JQQ4y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:53:04 -0400
-Date: Mon, 17 Oct 2011 12:52:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: hch@infradead.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] xen/blkback: Support 'feature-barrier' aka old-style
- BARRIER requests.
-Message-ID: <20111017165247.GB19724@phenom.dumpdata.com>
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
- <1318260494-27985-2-git-send-email-konrad.wilk@oracle.com>
- <4E9C3B39020000780005BA5D@nat28.tlf.novell.com>
+	Mon, 17 Oct 2011 12:56:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,360,1315206000"; 
+   d="scan'208";a="78918295"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Don Zickus <dzickus@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "hughd@chromium.org" <hughd@chromium.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 17 Oct 2011 09:56:50 -0700
+Subject: RE: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Topic: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Index: AcyM5yprfJgfZyibR+unNyzlM4jHnAABfJcw
+Message-ID: <987664A83D2D224EAE907B061CE93D5301EE911C66@orsmsx505.amr.corp.intel.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
+ <20111017160904.GG5795@redhat.com>
+In-Reply-To: <20111017160904.GG5795@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9C3B39020000780005BA5D@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4E9C5D69.00DF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 01:27:05PM +0100, Jan Beulich wrote:
-> >>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > We emulate the barrier requests by draining the outstanding bio's
-> > and then sending the WRITE_FLUSH command. To drain the I/Os
-> > we use the refcnt that is used during disconnect to wait for all
-> > the I/Os before disconnecting from the frontend. We latch on its
-> > value and if it reaches either the threshold for disconnect or when
-> > there are no more outstanding I/Os, then we have drained all I/Os.
-> > 
-> > Suggested-by: Christopher Hellwig <hch@infradead.org>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/block/xen-blkback/blkback.c |   37 +++++++++++++++++++++++++++++++++-
-> >  drivers/block/xen-blkback/common.h  |    5 ++++
-> >  drivers/block/xen-blkback/xenbus.c  |   18 +++++++++++++++++
-> >  3 files changed, 58 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/block/xen-blkback/blkback.c 
-> > b/drivers/block/xen-blkback/blkback.c
-> > index e0dab61..184b133 100644
-> > --- a/drivers/block/xen-blkback/blkback.c
-> > +++ b/drivers/block/xen-blkback/blkback.c
-> > @@ -452,6 +452,23 @@ static void xen_blk_discard(struct xen_blkif *blkif, 
-> > struct blkif_request *req)
-> >  	make_response(blkif, req->id, req->operation, status);
-> >  }
-> >  
-> > +static void xen_blk_drain_io(struct xen_blkif *blkif)
-> > +{
-> > +	atomic_set(&blkif->drain, 1);
-> > +	do {
-> > +		wait_for_completion_interruptible_timeout(
-> > +				&blkif->drain_complete, HZ);
-> > +
-> > +		if (!atomic_read(&blkif->drain))
-> > +			break;
-> > +		/* The initial value is one, and one refcnt taken at the
-> > +		 * start of the xen_blkif_schedule thread. */
-> > +		if (atomic_read(&blkif->refcnt) <= 2)
-> > +			break;
-> 
-> Shouldn't this test be done the very first thing in the loop? It looks
-> racy the way it's placed now, and it would incur a 1 sec stall if this
-> was the only request currently being processed (as no completion
-> of ane earlier request could signal completion).
+> All this lock busting probably isn't pretty and causes one to reflect what
+> is going on here.  But as long as we are going to keep the kmsg_dump
+> design, changes like this seem necessary to make sure the locking stays
+> sane(r) for now.
 
-Sure does. An earlier version of this (not posted), had this check right
-before going in the loop as all of the requests might have been already
-processed.
+So should we let the back-end know that locks have been busted?  I worry
+that we'll get through the pstore layer by blasting away at any locks that
+get in our way - but then the backend (which may well have been written on
+the assumption that pstore serialized calls to it) will not do anything
+useful (and may cause its own hang).
 
-I accidently dropped that logic as I moved this whole code into a function.
-
+-Tony
