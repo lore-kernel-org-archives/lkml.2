@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab1JQHhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:37:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40792 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab1JQHhT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:37:19 -0400
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Matthew Garrett <mjg@redhat.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
-        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Date: Mon, 17 Oct 2011 09:36:58 +0200
-In-Reply-To: <4E9BBB6D.4050004@linux.intel.com>
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
-	 <1318349729-3108-4-git-send-email-kirill@shutemov.name>
-	 <20111014154348.ae6267aa.akpm@linux-foundation.org>
-	 <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop>
-	 <20111017013921.GA30035@tango.0pointer.de>
-	 <20111017032232.GA4816@srcf.ucam.org> <4E9BBB6D.4050004@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318837019.6594.29.camel@twins>
-Mime-Version: 1.0
+	id S1755057Ab1JQHkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:40:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53315 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755012Ab1JQHkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 03:40:06 -0400
+Date: Mon, 17 Oct 2011 09:38:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Conny Seidel <conny.seidel@amd.com>, Tejun Heo <tj@kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "JBeulich@novell.com" <JBeulich@novell.com>, x86 <x86@kernel.org>
+Subject: Re: WARNING: at arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+...
+Message-ID: <20111017073811.GA3675@elte.hu>
+References: <20111014135516.GC11990@aftab>
+ <20111014165604.GA14286@aftab>
+ <20111014175556.GE4294@google.com>
+ <20111015221215.GA25519@aftab>
+ <20111017000759.3d1f4310.conny.seidel@amd.com>
+ <20111017072352.GA4940@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111017072352.GA4940@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-10-16 at 22:21 -0700, Arjan van de Ven wrote:
-> and..it's not like we let the bad guys go free.
-> We actually seriously hurt their behavior while we throttle their timers 
-> here. 
 
-How are they hurt? The app appears to behave properly (there are no
-repercussions, the app doesn't crash, the developer doesn't get punched
-in the face). This doesn't make the developer improve his app, nor make
-him take greater care for the next app.
+* Borislav Petkov <bp@amd64.org> wrote:
 
-Such behaviour will in fact encourage crap since he seems to be getting
-away with it.
+> On Sun, Oct 16, 2011 at 06:07:59PM -0400, Conny Seidel wrote:
+> > On Sat, 15 Oct 2011 18:12:15 -0400
+> > Borislav Petkov <bp@amd64.org> wrote:
+> > 
+> > >On Fri, Oct 14, 2011 at 01:55:56PM -0400, Tejun Heo wrote:
+> > >> Jan hit similar problem a while back.
+> > >>
+> > >>   http://thread.gmane.org/gmane.linux.kernel/1180954
+> > >>
+> > >> I can't seem to find the patch in mainline.  Jan, Ingo?  Borislav,
+> > >> would the patch there resolve the warning you're seeing too?
+> > >
+> > >There's even a -v2 at
+> > >http://marc.info/?l=linux-kernel&m=131722471001895
+> > >
+> > >We'll run that one to test.
+> > 
+> > Looks good. The warning is gone.
+> 
+> Good. Ingo, you can have our
+> 
+> Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+> Tested-by: Conny Seidel <conny.seidel@amd.com>
+> 
+> for it, it being the -v2 at http://marc.info/?l=linux-kernel&m=131722471001895
+
+Yeah, it's still lined up in -tip:x86/apic for a v3.2 merge.
+
+Thanks,
+
+	Ingo
