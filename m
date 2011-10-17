@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab1JQTgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 15:36:35 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5192 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab1JQTge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 15:36:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,360,1315206000"; 
-   d="scan'208";a="63444265"
-Subject: Re: 3.1.0-rc9+ : wlan stops working w/o any error messages
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: David Rientjes <rientjes@google.com>, werner <w.landgraf@ru.ru>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <201110170952.43916.toralf.foerster@gmx.de>
-References: <201110152119.58509.toralf.foerster@gmx.de>
-	 <alpine.DEB.2.00.1110151416360.15894@chino.kir.corp.google.com>
-	 <201110170931.59534.toralf.foerster@gmx.de>
-	 <201110170952.43916.toralf.foerster@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 12:30:47 -0700
-Message-ID: <1318879847.17584.3.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1753831Ab1JQTjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 15:39:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55024 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab1JQTjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 15:39:42 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: michael.hennerich@analog.com, vapier@gentoo.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Subject: [PATCH] ad525x_dpot: add i2c support for AD5161
+Date: Mon, 17 Oct 2011 21:39:36 +0200
+Message-Id: <1318880376-1310-1-git-send-email-jacmet@sunsite.dk>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 00:52 -0700, Toralf Förster wrote:
-> Toralf Förster wrote at 09:31:58
-> > > What does "iwconfig" show?
-> 
-> And this is the state if the netwerk stops working :
-> 
-> wlan0     IEEE 802.11abgn  ESSID:"IBM"  
->           Mode:Managed  Frequency:2.462 GHz  Access Point: 00:21:55:AC:8B:80   
->           Bit Rate=54 Mb/s   Tx-Power=15 dBm   
->           Retry  long limit:7   RTS thr:off   Fragment thr:off
->           Encryption key:off
->           Power Management:off
->           Link Quality=45/70  Signal level=-65 dBm  
->           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
->           Tx excessive retries:0  Invalid misc:77   Missed beacon:0
-> 
-> 
-When the problem happen, could you please dump the tx_queue status in
-debugfs and send us the information
+Commit 6c536e4ce8e (ad525x_dpot: add support for SPI parts) added support
+for the AD5161 through SPI, but the device supports both I2C and SPI
+(depending on the DIS pin), so add it to -i2c as well.
 
-In order to dump the the tx_queue, please do the following
-1. make sure you compile your kernel with CONFIG_IWLWIFI_DEBUGFS=y
-2. unload and reload the "iwlagn" module
-3. cd to /sys/kernel/debug/ieee80211/phyX/iwlwifi/debug (phX: "X" based
-on your system)
-4. "$sudo cat tx_queue" to show the current tx queue status
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+---
+ drivers/misc/ad525x_dpot-i2c.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks
-Wey
-
-
+diff --git a/drivers/misc/ad525x_dpot-i2c.c b/drivers/misc/ad525x_dpot-i2c.c
+index 4ff73c2..a39e055 100644
+--- a/drivers/misc/ad525x_dpot-i2c.c
++++ b/drivers/misc/ad525x_dpot-i2c.c
+@@ -98,6 +98,7 @@ static const struct i2c_device_id ad_dpot_id[] = {
+ 	{"ad5282", AD5282_ID},
+ 	{"adn2860", ADN2860_ID},
+ 	{"ad5273", AD5273_ID},
++	{"ad5161", AD5161_ID},
+ 	{"ad5171", AD5171_ID},
+ 	{"ad5170", AD5170_ID},
+ 	{"ad5172", AD5172_ID},
+-- 
+1.7.6.3
 
