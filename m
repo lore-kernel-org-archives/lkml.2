@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab1JQOfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:35:34 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:27751
-	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755990Ab1JQOfb (ORCPT
+	id S1756100Ab1JQOgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:36:14 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:27232
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756027Ab1JQOfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:35:31 -0400
+	Mon, 17 Oct 2011 10:35:33 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LT7SIY-02-FZK-02
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LT7SIY-01-BYW-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Ingo Molnar <mingo@elte.hu>
 CC: LKML <linux-kernel@vger.kernel.org>,
         oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Robert Richter <robert.richter@amd.com>, <stable@kernel.org>
-Subject: [PATCH 3/5] oprofile, x86: Fix crash when unloading module (nmi
-Date: Mon, 17 Oct 2011 16:27:02 +0200
-Message-ID: <1318861624-715-4-git-send-email-robert.richter@amd.com>
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 1/5] oprofile, x86: Add kernel parameter
+Date: Mon, 17 Oct 2011 16:27:00 +0200
+Message-ID: <1318861624-715-2-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1318861624-715-1-git-send-email-robert.richter@amd.com>
 References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
@@ -30,88 +30,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If oprofile uses the nmi timer interrupt there is a crash while
-unloading the module. The bug can be triggered with oprofile build as
-module and kernel parameter nolapic set. This patch fixes this.
+We need this to better test x86 NMI timer mode. Otherwise it is very
+hard to setup systems with NMI timer enabled, but we have this e.g. in
+virtual machine environments.
 
-oprofile: using NMI timer interrupt.
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
-PGD 42dbca067 PUD 41da6a067 PMD 0
-Oops: 0002 [#1] PREEMPT SMP
-CPU 5
-Modules linked in: oprofile(-) [last unloaded: oprofile]
-
-Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
-RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
-RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
-RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
-RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
-RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
-R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
-R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
-FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
-Stack:
- ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
- ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
- ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
-Call Trace:
- [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
- [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
- [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
- [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
- [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
-Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
- 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
-RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
- RSP <ffff88041ef71e98>
-CR2: 0000000000000008
----[ end trace 43a541a52956b7b0 ]---
-
-CC: stable@kernel.org # 2.6.37+
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/oprofile/init.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ Documentation/kernel-parameters.txt |    3 +++
+ arch/x86/oprofile/nmi_int.c         |   27 +++++++++++++++++++++------
+ 2 files changed, 24 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/oprofile/init.c b/arch/x86/oprofile/init.c
-index cdfe4c5..f148cf6 100644
---- a/arch/x86/oprofile/init.c
-+++ b/arch/x86/oprofile/init.c
-@@ -21,6 +21,7 @@ extern int op_nmi_timer_init(struct oprofile_operations *ops);
- extern void op_nmi_exit(void);
- extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 854ed5ca..f7735a1 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1848,6 +1848,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			arch_perfmon: [X86] Force use of architectural
+ 				perfmon on Intel CPUs instead of the
+ 				CPU specific event set.
++			timer: [X86] Force use of architectural NMI
++				timer mode (see also oprofile.timer
++				for generic hr timer mode)
  
-+static int nmi_timer;
- 
- int __init oprofile_arch_init(struct oprofile_operations *ops)
- {
-@@ -31,8 +32,9 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- #ifdef CONFIG_X86_LOCAL_APIC
- 	ret = op_nmi_init(ops);
- #endif
-+	nmi_timer = (ret != 0);
- #ifdef CONFIG_X86_IO_APIC
--	if (ret < 0)
-+	if (nmi_timer)
- 		ret = op_nmi_timer_init(ops);
- #endif
- 	ops->backtrace = x86_backtrace;
-@@ -44,6 +46,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- void oprofile_arch_exit(void)
- {
- #ifdef CONFIG_X86_LOCAL_APIC
--	op_nmi_exit();
-+	if (!nmi_timer)
-+		op_nmi_exit();
- #endif
+ 	oops=panic	Always panic on oopses. Default is to just kill the
+ 			process, but there is a small probability of
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 68894fd..7ca4d43 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -613,24 +613,36 @@ static int __init p4_init(char **cpu_type)
+ 	return 0;
  }
+ 
+-static int force_arch_perfmon;
+-static int force_cpu_type(const char *str, struct kernel_param *kp)
++enum __force_cpu_type {
++	reserved = 0,		/* do not force */
++	timer,
++	arch_perfmon,
++};
++
++static int force_cpu_type;
++
++static int set_cpu_type(const char *str, struct kernel_param *kp)
+ {
+-	if (!strcmp(str, "arch_perfmon")) {
+-		force_arch_perfmon = 1;
++	if (!strcmp(str, "timer")) {
++		force_cpu_type = timer;
++		printk(KERN_INFO "oprofile: forcing NMI timer mode\n");
++	} else if (!strcmp(str, "arch_perfmon")) {
++		force_cpu_type = arch_perfmon;
+ 		printk(KERN_INFO "oprofile: forcing architectural perfmon\n");
++	} else {
++		force_cpu_type = 0;
+ 	}
+ 
+ 	return 0;
+ }
+-module_param_call(cpu_type, force_cpu_type, NULL, NULL, 0);
++module_param_call(cpu_type, set_cpu_type, NULL, NULL, 0);
+ 
+ static int __init ppro_init(char **cpu_type)
+ {
+ 	__u8 cpu_model = boot_cpu_data.x86_model;
+ 	struct op_x86_model_spec *spec = &op_ppro_spec;	/* default */
+ 
+-	if (force_arch_perfmon && cpu_has_arch_perfmon)
++	if (force_cpu_type == arch_perfmon && cpu_has_arch_perfmon)
+ 		return 0;
+ 
+ 	/*
+@@ -697,6 +709,9 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 	if (!cpu_has_apic)
+ 		return -ENODEV;
+ 
++	if (force_cpu_type == timer)
++		return -ENODEV;
++
+ 	switch (vendor) {
+ 	case X86_VENDOR_AMD:
+ 		/* Needs to be at least an Athlon (or hammer in 32bit mode) */
 -- 
 1.7.7
 
