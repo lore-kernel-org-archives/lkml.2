@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab1JQMK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 08:10:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:25365 "EHLO relay.sw.ru"
+	id S1752101Ab1JQMNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:13:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37513 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752814Ab1JQMKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 08:10:54 -0400
-Subject: [RFC PATCH 4/5] SUNRPC: put pipefs superblock link on network
-	namespace
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Mon, 17 Oct 2011 16:10:51 +0300
-Message-ID: <20111017121050.4541.25395.stgit@localhost6.localdomain6>
-In-Reply-To: <20111017120629.4541.67395.stgit@localhost6.localdomain6>
-References: <20111017120629.4541.67395.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1750760Ab1JQMND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 08:13:03 -0400
+Date: Mon, 17 Oct 2011 14:13:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: mjg@redhat.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] acerhdf: Lowered default temp fanon/fanoff values
+Message-ID: <20111017121300.GA17411@gere.osrc.amd.com>
+References: <20111014234055.2265c524.peter@piie.net>
+ <20111014234334.a87a2388.peter@piie.net>
+ <20111015223210.GC16432@liondog.tnic>
+ <cone.1318721291.690132.3813.1000@zopiie>
+ <20111016084300.GB32343@liondog.tnic>
+ <20111016114100.88295b72.peter@piie.net>
+ <20111016114251.a710b196.peter@piie.net>
+ <20111016114423.2df6271c.peter@piie.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111016114423.2df6271c.peter@piie.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have modules (like, pNFS blocklayout module) which creates pipes on
-rpc_pipefs. Thus we need per-net operations for them. To make it possible to
-create piepes in per-net operations, we require super block. So we have to put
-sb link on network namespace context. Note, that dont't hardly require to
-create pipes in per-net operations. IOW, if pipefs wan't mounted yet, that no
-sb link reference will peresent on network namespace. In this case we just
-passing through pipe
-creation. The pipe will be created druing pipefs mount notification.
+On Sun, Oct 16, 2011 at 11:44:23AM +0200, Peter Feuerer wrote:
+> From: Peter Feuerer <peter@piie.net>
+> 
+> Due to new supported hardware, of which the actual temperature limits of
+> processor, harddisk and other components are unknown, it feels safer
+> with lower fanon / fanoff settings.
+> 
+> It won't change much for most people, already using acerhdf, as they use
+> their own fanon/fanoff variable settings when loading the module.
+> 
+> Furthermore seems like kernel and userspace tools have been improved
+> to work more efficient and netbooks don't get so hot anymore.
+> 
+> Signed-off-by: Peter Feuerer <peter@piie.net>
+> Cc: Borislav Petkov <petkovbb@gmail.com>
+> Cc: Matthew Garrett <mjg@redhat.com>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+I'm wondering whether the bios_tbl in 2/3 is not growing out of
+proportions currently and since a lot of the fields are repeating, it
+might make sense to fold its functionality in a switch-case statement.
+Maybe in another patch series...
 
----
- net/sunrpc/netns.h    |    2 ++
- net/sunrpc/rpc_pipe.c |    4 ++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+But those patches look ok to me:
 
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index d013bf2..b384252 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -9,6 +9,8 @@ struct cache_detail;
- struct sunrpc_net {
- 	struct proc_dir_entry *proc_net_rpc;
- 	struct cache_detail *ip_map_cache;
-+
-+	struct super_block *pipefs_sb;
- };
- 
- extern int sunrpc_net_id;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index a8a8812..a873f03 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -1039,6 +1039,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	struct inode *inode;
- 	struct dentry *root;
- 	struct net *net = current->nsproxy->net_ns;
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	int err;
- 
- 	sb->s_blocksize = PAGE_CACHE_SIZE;
-@@ -1063,6 +1064,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	if (err)
- 		goto err_depopulate;
- 	sb->s_fs_info = get_net(net);
-+	sn->pipefs_sb = sb;
- 	return 0;
- 
- err_depopulate:
-@@ -1081,7 +1083,9 @@ rpc_mount(struct file_system_type *fs_type,
- void rpc_kill_sb(struct super_block *sb)
- {
- 	struct net *net = sb->s_fs_info;
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 
-+	sn->pipefs_sb = NULL;
- 	put_net(net);
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_UMOUNT,
+Acked-by: Borislav Petkov <bp@alien8.de>
 
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
