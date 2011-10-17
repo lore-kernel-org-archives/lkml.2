@@ -1,193 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1JQHcD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:32:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51607 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab1JQHcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:32:01 -0400
-Message-ID: <4E9BDA43.6060406@cn.fujitsu.com>
-Date: Mon, 17 Oct 2011 15:33:23 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1754894Ab1JQHcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:32:08 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:52531 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754843Ab1JQHcG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 03:32:06 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19oN803Y3FoG7BXgLoylR6aFInDDyhF/La1tev3nu
+	3jjTx1aq1MNPtz
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: David Rientjes <rientjes@google.com>, David Rientjes <rientjes@google.com>
+Subject: Re: 3.1.0-rc9+ : wlan stops working w/o any error messages
+Date: Mon, 17 Oct 2011 09:31:58 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; i686; ; )
+Cc: werner <w.landgraf@ru.ru>, "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
+        ilw@linux.intel.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201110152119.58509.toralf.foerster@gmx.de> <alpine.DEB.2.00.1110151416360.15894@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110151416360.15894@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ben Blum <bblum@andrew.cmu.edu>, Frederic Weisbecker <fweisbec@redhat.com>,
-        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cgroups: don't cache common ancestor in task counter subsys
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-17 15:30:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-17 15:30:13,
-	Serialize complete at 2011-10-17 15:30:13
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110170931.59534.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To reproduce the bug:
 
-  # mount -t cgroup -o tasks xxx /cgroup
-  # mkdir /cgroup/tmp
-  # echo PID > /cgroup/tmp/cgroups.proc (PID has child threads)
-  # echo PID > /cgroup/tasks
-  # ecoh PID > /cgroup/tmp/cgroups.proc
-  (oops!)
+David Rientjes wrote at 23:21:59
+> What's the last kernel prior to 3.1-rc9 that worked for you?
+2.6.39.4 (in general that kernel version rocks, reliable, stable, no problems 
+AFAICS, 3.0.x have problems in the DVB-T area, 3.1 added wlan issues)
 
-the call graph is:
+> What does "iwconfig" show?
+wlan0     IEEE 802.11abgn  ESSID:"IBM"  
+          Mode:Managed  Frequency:2.462 GHz  Access Point: 00:21:55:AC:8B:80   
+          Bit Rate=54 Mb/s   Tx-Power=15 dBm   
+          Retry  long limit:7   RTS thr:off   Fragment thr:off
+          Encryption key:off
+          Power Management:off
+          Link Quality=49/70  Signal level=-61 dBm  
+          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+          Tx excessive retries:0  Invalid misc:0   Missed beacon:0
 
-	for_each_thread()
-	    can_attach_task();
+> What does "dmesg | grep iwlagn" show?
+n22 ~ # dmesg | grep iwlagn
+iwlagn 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+iwlagn 0000:03:00.0: setting latency timer to 64
+iwlagn 0000:03:00.0: pci_resource_len = 0x00002000
+iwlagn 0000:03:00.0: pci_resource_base = f81f8000
+iwlagn 0000:03:00.0: HW Revision ID = 0x0
+iwlagn 0000:03:00.0: irq 48 for MSI/MSI-X
+iwlagn 0000:03:00.0: Detected Intel(R) WiFi Link 5100 AGN, REV=0x54
+iwlagn 0000:03:00.0: L1 Disabled; Enabling L0S
+iwlagn 0000:03:00.0: device EEPROM VER=0x11e, CALIB=0x4
+iwlagn 0000:03:00.0: Device SKU: 0Xf0
+iwlagn 0000:03:00.0: Tunable channels: 13 802.11bg, 24 802.11a channels
+iwlagn 0000:03:00.0: loaded firmware version 8.83.5.1 build 33692
+iwlagn 0000:03:00.0: L1 Disabled; Enabling L0S
+iwlagn 0000:03:00.0: Radio type=0x1-0x2-0x0
+iwlagn 0000:03:00.0: L1 Disabled; Enabling L0S
+iwlagn 0000:03:00.0: Radio type=0x1-0x2-0x0
 
-	for_each_thead()
-	    attach_task();
 
-but not:
-
-	for_each_thread() {
-	    can_attach_task();
-	    attach_task();
-	}
-
-So common_ancestor used in attach_task() is always the value calculated
-in the last can_attach_task() call.
-
-To fix it, instead of caching, we always calculate the value every time
-we want to use it.
-
-Reported-by: Ben Blum <bblum@andrew.cmu.edu>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- Documentation/cgroups/cgroups.txt |    3 ++-
- include/linux/cgroup.h            |    2 +-
- kernel/cgroup.c                   |    7 ++++---
- kernel/cgroup_task_counter.c      |   24 +++++++++++++++++-------
- 4 files changed, 24 insertions(+), 12 deletions(-)
-
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 3bc1dc9..f9e51a8 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -623,7 +623,8 @@ function, so that the subsystem can implement a rollback. If not, not necessary.
- This will be called only about subsystems whose can_attach() operation have
- succeeded.
- 
--void cancel_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+void cancel_attach_task(struct cgroup *cgrp, struct cgroup *oldcgrp,
-+			struct task_struct *tsk)
- (cgroup_mutex held by caller)
- 
- As cancel_attach, but for operations that must be cancelled once per
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 9c8151e..e4659c4 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -475,7 +475,7 @@ struct cgroup_subsys {
- 			       struct task_struct *tsk);
- 	void (*cancel_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			      struct task_struct *tsk);
--	void (*cancel_attach_task)(struct cgroup *cgrp,
-+	void (*cancel_attach_task)(struct cgroup *cgrp, struct cgroup *oldcgrp,
- 				   struct task_struct *tsk);
- 	void (*pre_attach)(struct cgroup *cgrp);
- 	void (*attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp,
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 018df9d..91abc9b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1885,7 +1885,7 @@ out:
- 				break;
- 
- 			if (ss->cancel_attach_task)
--				ss->cancel_attach_task(cgrp, tsk);
-+				ss->cancel_attach_task(cgrp, oldcgrp, tsk);
- 			if (ss->cancel_attach)
- 				ss->cancel_attach(ss, cgrp, tsk);
- 		}
-@@ -2151,7 +2151,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 			}
- 		} else if (retval == -ESRCH) {
- 			if (ss->cancel_attach_task)
--				ss->cancel_attach_task(cgrp, tsk);
-+				ss->cancel_attach_task(cgrp, oldcgrp, tsk);
- 		} else {
- 			BUG_ON(1);
- 		}
-@@ -2191,7 +2191,8 @@ out_cancel_attach:
- 					tsk = flex_array_get_ptr(group, i);
- 					if (tsk == failed_task)
- 						break;
--					ss->cancel_attach_task(cgrp, tsk);
-+					ss->cancel_attach_task(cgrp, oldcgrp,
-+							       tsk);
- 				}
- 			}
- 
-diff --git a/kernel/cgroup_task_counter.c b/kernel/cgroup_task_counter.c
-index 2374905..a647174 100644
---- a/kernel/cgroup_task_counter.c
-+++ b/kernel/cgroup_task_counter.c
-@@ -94,11 +94,14 @@ static void task_counter_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		res_counter_uncharge(cgroup_task_res_counter(old_cgrp), 1);
- }
- 
--/*
-- * Protected amongst can_attach_task/attach_task/cancel_attach_task by
-- * cgroup mutex
-- */
--static struct res_counter *common_ancestor;
-+static struct res_counter *find_common_ancestor(struct cgroup *cgrp,
-+						struct cgroup *old_cgrp)
-+{
-+	struct res_counter *res = cgroup_task_res_counter(cgrp);
-+	struct res_counter *old_res = cgroup_task_res_counter(old_cgrp);
-+
-+	return res_counter_common_ancestor(res, old_res);
-+}
- 
- /*
-  * This does more than just probing the ability to attach to the dest cgroup.
-@@ -112,7 +115,7 @@ static int task_counter_can_attach_task(struct cgroup *cgrp,
- 					struct task_struct *tsk)
- {
- 	struct res_counter *res = cgroup_task_res_counter(cgrp);
--	struct res_counter *old_res = cgroup_task_res_counter(old_cgrp);
-+	struct res_counter *common_ancestor;
- 	int err;
- 
- 	/*
-@@ -123,7 +126,7 @@ static int task_counter_can_attach_task(struct cgroup *cgrp,
- 	 * in the ancestor and spuriously fail due to the temporary
- 	 * charge.
- 	 */
--	common_ancestor = res_counter_common_ancestor(res, old_res);
-+	common_ancestor = find_common_ancestor(cgrp, old_cgrp);
- 
- 	/*
- 	 * If cgrp is the root then res is NULL, however in this case
-@@ -138,8 +141,12 @@ static int task_counter_can_attach_task(struct cgroup *cgrp,
- 
- /* Uncharge the dest cgroup that we charged in task_counter_can_attach_task() */
- static void task_counter_cancel_attach_task(struct cgroup *cgrp,
-+					    struct cgroup *oldcgrp,
- 					    struct task_struct *tsk)
- {
-+	struct res_counter *common_ancestor;
-+
-+	common_ancestor = find_common_ancestor(cgrp, oldcgrp);
- 	res_counter_uncharge_until(cgroup_task_res_counter(cgrp),
- 				   common_ancestor, 1);
- }
-@@ -155,6 +162,9 @@ static void task_counter_attach_task(struct cgroup *cgrp,
- 				     struct cgroup *old_cgrp,
- 				     struct task_struct *tsk)
- {
-+	struct res_counter *common_ancestor;
-+
-+	common_ancestor = find_common_ancestor(cgrp, old_cgrp);
- 	res_counter_uncharge_until(cgroup_task_res_counter(old_cgrp),
- 				   common_ancestor, 1);
- }
 -- 
-1.7.3.1
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
