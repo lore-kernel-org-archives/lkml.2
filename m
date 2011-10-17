@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1JQQ7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:59:51 -0400
+	id S1756668Ab1JQRCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:02:34 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52674 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab1JQQ7s (ORCPT
+	with ESMTP id S1756592Ab1JQQ7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:59:48 -0400
-X-Authority-Analysis: v=1.1 cv=UpSRffbr9y8V5xg6O7MBcDNOk5f8u00m038obrfOR4U= c=1 sm=0 a=vhdKIqpQuCYA:10 a=cduR4O7mHtkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=1_ydI7Sl2YjKxvQt_dMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=aNWANMpNj92KJJjyDagA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 17 Oct 2011 12:59:51 -0400
+X-Authority-Analysis: v=1.1 cv=UpSRffbr9y8V5xg6O7MBcDNOk5f8u00m038obrfOR4U= c=1 sm=0 a=vhdKIqpQuCYA:10 a=oyZzibFUlWoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=EOjbvJ8Y0MT3O1Ua2AYA:9 a=GUWOx1SM66l2TzKvHh8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=bqwy9bwCJzqER_7q:21 a=VKljtPumy7uPvgbQ:21 a=vonPAG2g2hZkY02N30EA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111017165947.145747873@goodmis.org>
+Message-Id: <20111017165950.604878117@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 12:04:56 -0400
+Date: Mon, 17 Oct 2011 12:05:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/17][RFC] ktest: Add TEST_TYPE install option
+Subject: [PATCH 08/17][RFC] ktest: Do not reboot on config or build issues
 References: <20111017160455.498567257@goodmis.org>
-Content-Disposition: inline; filename=0001-ktest-Add-TEST_TYPE-install-option.patch
+Content-Disposition: inline; filename=0008-ktest-Do-not-reboot-on-config-or-build-issues.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,54 +29,86 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-In testing one of my boxes, I found that I only wanted to build and
-install the kernel. I wanted to manually reboot the box and test it.
-Adding a TEST_TYPE option "install" allows this to happen.
+Even if REBOOT_ON_ERROR is set, it becomes annoying that the target
+machine is rebooted when a config option is incorrect or a build
+fails. There's no reason to reboot the target for host only issues.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl    |    7 +++++++
- tools/testing/ktest/sample.conf |    7 ++++---
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ tools/testing/ktest/ktest.pl |   22 ++++++++++++++++++++--
+ 1 files changed, 20 insertions(+), 2 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 8d02ccb..e087cb4 100755
+index 51ddaa5..057676a 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -2929,6 +2929,13 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
- 	build $build_type or next;
+@@ -133,6 +133,9 @@ my %config_help;
+ my %variable;
+ my %force_config;
+=20
++# do not force reboots on config problems
++my $no_reboot =3D 1;
++
+ $config_help{"MACHINE"} =3D << "EOF"
+  The machine hostname that you will test.
+ EOF
+@@ -640,7 +643,7 @@ sub reboot {
+ sub do_not_reboot {
+     my $i =3D $iteration;
+=20
+-    return $test_type eq "build" ||
++    return $test_type eq "build" || $no_reboot ||
+ 	($test_type eq "patchcheck" && $opt{"PATCHCHECK_TYPE[$i]"} eq "build") ||
+ 	($test_type eq "bisect" && $opt{"BISECT_TYPE[$i]"} eq "build");
+ }
+@@ -1285,6 +1288,10 @@ sub build {
+=20
+     unlink $buildlog;
+=20
++    # Failed builds should not reboot the target
++    my $save_no_reboot =3D $no_reboot;
++    $no_reboot =3D 1;
++
+     if (defined($pre_build)) {
+ 	my $ret =3D run_command $pre_build;
+ 	if (!$ret && defined($pre_build_die) &&
+@@ -1353,10 +1360,15 @@ sub build {
+=20
+     if (!$build_ret) {
+ 	# bisect may need this to pass
+-	return 0 if ($in_bisect);
++	if ($in_bisect) {
++	    $no_reboot =3D $save_no_reboot;
++	    return 0;
++	}
+ 	fail "failed build" and return 0;
      }
 =20
-+    if ($test_type eq "install") {
-+	get_version;
-+	install;
-+	success $i;
-+	next;
-+    }
++    $no_reboot =3D $save_no_reboot;
 +
-     if ($test_type ne "build") {
- 	my $failed =3D 0;
- 	start_monitor_and_boot or $failed =3D 1;
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
-onf
-index b8bcd14..eadca3e 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -253,9 +253,10 @@
+     return 1;
+ }
 =20
- # The default test type (default test)
- # The test types may be:
--#   build - only build the kernel, do nothing else
--#   boot - build and boot the kernel
--#   test - build, boot and if TEST is set, run the test script
-+#   build   - only build the kernel, do nothing else
-+#   install - build and install, but do nothing else (does not reboot)
-+#   boot    - build, install, and boot the kernel
-+#   test    - build, boot and if TEST is set, run the test script
- #          (If TEST is not set, it defaults back to boot)
- #   bisect - Perform a bisect on the kernel (see BISECT_TYPE below)
- #   patchcheck - Do a test on a series of commits in git (see PATCHCHECK b=
-elow)
+@@ -2806,6 +2818,9 @@ sub set_test_option {
+ # First we need to do is the builds
+ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+=20
++    # Do not reboot on failing test options
++    $no_reboot =3D 1;
++
+     $iteration =3D $i;
+=20
+     my $makecmd =3D set_test_option("MAKE_CMD", $i);
+@@ -2941,6 +2956,9 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+ 	    die "failed to checkout $checkout";
+     }
+=20
++    $no_reboot =3D 0;
++
++
+     if ($test_type eq "bisect") {
+ 	bisect $i;
+ 	next;
 --=20
 1.7.6.3
 
@@ -89,19 +121,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOnF8DAAoJEIy3vGnGbaoAPgQP/Aifa4E1H5PRgAKhbw40Z7bI
-Dj3bkG2pY+EQsA/37gqnHNK20XjacUYCytZuAaTvw/aRgH06qNMTaNJSQ/pA2Gbi
-ud3UjQRVzOYyVpAKf7edMlmAvF53lMvNl3cp1BjuIBiJPO82HQ2FqyDjWTXPa/gx
-VmAkQSDKF2MzQ//eKeCkUxJ1VSZiqkzdyRrZ31yofTZ1EY6QLVzvzMcyM2bRuR/Z
-tDLj2aQkpUMkIB/Bx1wGmW3XjWDORlzKdp55ln8dcN8A/YoiN7ALeZIWujSACGxI
-NqUg+nGQcfa4i1JaMFmVwGXihdFzui2YOqHzOF0Hu/rOfxgCnpnh0Ul2y/lYDEtZ
-shXh5d7Y4uD0Jr3/nUFTdk55D9JhtFQRe6Y7LQ/MBksHDdwk0kHUTmENsV1EgHS5
-wMuHwyEi33gJ2lPUDvGxOE/oage703sRuq/Q0qCdvK72QwblzrW01nLlhejPDYHn
-NW51o2cbngWdGqUt+/qdnGku9RTSpLsRKNRerEzAc2zGEcewslt/OBAR16EE0mWH
-VPENv8rK7nyJLZEUfPJc1NeRlG2g/ncnxr0lY9VTUeIMDkEcYq9iJyU/75IS27ub
-Zx3HcFoY38KU3rld8GxvNGykpsgyCi30OEa0/V0noxJ35CORgPS8o9ch+EKWnoQd
-+JX4cx7cXcMkAlqvCRP2
-=5zdk
+iQIcBAABAgAGBQJOnF8GAAoJEIy3vGnGbaoA4TEQAO1XBIvJak5hvEY2JPIqX4t1
+4k6dEMTD9FHWUEuXuJtZq34Bx++UsSMQLLRzZGFSY1Uw0agu34d/IjUHB4652CMv
+POGecWVJxDtgjCYgIvE2pAdY8/Ffjdqlh86xgN0Gptc93dT1/BF6wTrWx+uHDuCO
+efeb4mm0gA5tiHkeBPI0O58AVsisMGa3ScduCa5topq61UwbMshudp5dK63cVI7J
+agGwlJwQkUbBVyUxtcw8QPOC7lcLf4qlI98GfK25bRNr8LT8iGcWbgw30/S3ozvT
+WLMafqbwzTV6o0/NC+xI/THgE97Qyck+KKQ3rUdqn78cO0VX4/VocVtINQusX4nJ
+Hhv+SKxmJsh56JO5Ofow7JiM3QmvXbYHHbfbkD/ZdAjrw4+dsSbLvTx22BjWfKR1
+U75G+pOIMNbNSPTfcOZizRF2z+49Rf1iSXjRyjQF8CUxztLbzR1Nu4k/6Z615lhj
+wk8PeQCaQ2JnkEMitj9Hfqg9VtMeEG1dB4LYJkJa0LbcOjIKK9JUhzp5JrUCWPRp
+k3PbkOfBXvLO5dv+xh12yjbcEM+vRxoJJj+geTj/gakwL43PMgRLYx4aVIXXNBpf
+UehuiFl0+kPQ/64BHPvY9tYGXlvyWh0dbqE2ut9TB6eaIex/Dmi7NriUgHLNtUMD
+LuksdqpC4HD1ZcCtlxS+
+=KjiZ
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
