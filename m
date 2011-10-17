@@ -1,117 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab1JQS2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:28:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26349 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab1JQS2e (ORCPT
+	id S1752323Ab1JQS3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:29:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:61292 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab1JQS3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:28:34 -0400
-Message-ID: <4E9C7386.6090607@oracle.com>
-Date: Mon, 17 Oct 2011 11:27:18 -0700
+	Mon, 17 Oct 2011 14:29:18 -0400
+Message-ID: <4E9C73EE.8050706@oracle.com>
+Date: Mon, 17 Oct 2011 11:29:02 -0700
 From: Yinghai Lu <yinghai.lu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
 To: Greg KH <gregkh@suse.de>, Jesse Barnes <jbarnes@virtuousgeek.org>
 CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v4 8_1/8] PCI, sys: Use device_type and attr_groups with
- pci dev
+Subject: [PATCH -v4 8_2/8] PCI, sys: only create rescan under /sys/.../pci/devices/...
+ for pci bridges
 References: <4E9A3092.4080309@oracle.com> <4E9A3436.3010704@oracle.com> <20111016023943.GA3787@suse.de> <4E9A6CCB.4060101@oracle.com> <20111016155517.GA6421@suse.de> <4E9B6A2F.1080706@oracle.com> <20111017014527.GA7322@suse.de>
 In-Reply-To: <20111017014527.GA7322@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4E9C73CD.00E3:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-CT-RefId: str=0001.0A090201.4E9C73F8.0150:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-We want to create rescan in sys only for pci bridge instead of all pci dev.
+Current code will create rescan for every pci device,
+that is not right. the device is already there, there is no reason to rescan it.
 
-We could use attribute_groups/is_visible method to do that.
+We could have rescan for pci bridges. less confusing.
 
-Now pci dev does not use device type yet. So add pci_dev_type to take
-attr_groups with it.
+Need to move rescan attr to pci dev bridge attribute group.
+And We should rescan bridge's secondary bus instead of primary bus.
 
-Add pci_dev_bridge_attrs_are_visible() to control attr_bridge_group only create
-attr for bridge.
-
-This is the framework related change, later could attr to bridge_attr_group,
-to make those attr only show up on pci bridge device.
-
-Also We could add more attr groups with is_visible to reduce messness in
-	pci_create_sysfs_dev_files. ( at least for boot_vga one )
+-v3: Use device_type for pci dev.
+-v4: Seperate pci device type change out
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- drivers/pci/pci-sysfs.c |   30 ++++++++++++++++++++++++++++++
- drivers/pci/pci.h       |    1 +
- drivers/pci/probe.c     |    1 +
- 3 files changed, 32 insertions(+)
+ drivers/pci/pci-sysfs.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 Index: linux-2.6/drivers/pci/pci-sysfs.c
 ===================================================================
 --- linux-2.6.orig/drivers/pci/pci-sysfs.c
 +++ linux-2.6/drivers/pci/pci-sysfs.c
-@@ -1319,3 +1319,33 @@ static int __init pci_sysfs_init(void)
+@@ -303,12 +303,15 @@ dev_rescan_store(struct device *dev, str
+ 
+ 	if (val) {
+ 		mutex_lock(&pci_remove_rescan_mutex);
+-		pci_rescan_bus(pdev->bus);
++		pci_rescan_bus(pdev->subordinate);
+ 		mutex_unlock(&pci_remove_rescan_mutex);
+ 	}
+ 	return count;
  }
  
- late_initcall(pci_sysfs_init);
++static struct device_attribute pci_dev_bridge_rescan_attr =
++	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_rescan_store);
 +
-+static struct attribute *pci_dev_bridge_attrs[] = {
-+	NULL,
-+};
-+
-+static mode_t pci_dev_bridge_attrs_are_visible(struct kobject *kobj,
-+						struct attribute *a, int n)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (!pdev->subordinate)
-+		return 0;
-+
-+	return a->mode;
-+}
-+
-+static struct attribute_group pci_dev_bridge_attr_group = {
-+	.attrs = pci_dev_bridge_attrs,
-+	.is_visible = pci_dev_bridge_attrs_are_visible,
-+};
-+
-+static const struct attribute_group *pci_dev_attr_groups[] = {
-+	&pci_dev_bridge_attr_group,
-+	NULL,
-+};
-+
-+struct device_type pci_dev_type = {
-+	.groups = pci_dev_attr_groups,
-+};
-Index: linux-2.6/drivers/pci/pci.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.h
-+++ linux-2.6/drivers/pci/pci.h
-@@ -159,6 +159,7 @@ static inline int pci_no_d1d2(struct pci
- }
- extern struct device_attribute pci_dev_attrs[];
- extern struct device_attribute pcibus_dev_attrs[];
-+extern struct device_type pci_dev_type;
+ static void remove_callback(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -383,7 +386,6 @@ struct device_attribute pci_dev_attrs[]
+ 	__ATTR(msi_bus, 0644, msi_bus_show, msi_bus_store),
  #ifdef CONFIG_HOTPLUG
- extern struct bus_attribute pci_bus_attrs[];
- #else
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -902,6 +902,7 @@ int pci_setup_device(struct pci_dev *dev
- 	dev->sysdata = dev->bus->sysdata;
- 	dev->dev.parent = dev->bus->bridge;
- 	dev->dev.bus = &pci_bus_type;
-+	dev->dev.type = &pci_dev_type;
- 	dev->hdr_type = hdr_type & 0x7f;
- 	dev->multifunction = !!(hdr_type & 0x80);
- 	dev->error_state = pci_channel_io_normal;
+ 	__ATTR(remove, (S_IWUSR|S_IWGRP), NULL, remove_store),
+-	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_rescan_store),
+ #endif
+ 	__ATTR_NULL,
+ };
+@@ -1321,6 +1323,9 @@ static int __init pci_sysfs_init(void)
+ late_initcall(pci_sysfs_init);
+ 
+ static struct attribute *pci_dev_bridge_attrs[] = {
++#ifdef CONFIG_HOTPLUG
++	&pci_dev_bridge_rescan_attr.attr,
++#endif
+ 	NULL,
+ };
+ 
