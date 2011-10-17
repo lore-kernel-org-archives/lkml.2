@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab1JQNzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 09:55:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59858 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755841Ab1JQNzL (ORCPT
+	id S1755876Ab1JQNz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 09:55:29 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:57807 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab1JQNzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 09:55:11 -0400
-Date: Mon, 17 Oct 2011 14:55:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, zdevai@gmail.com
-Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
-Message-ID: <20111017135508.GE27266@opensource.wolfsonmicro.com>
-References: <20111017101959.GC3042@opensource.wolfsonmicro.com>
- <4E9C0423.5010909@cam.ac.uk>
- <20111017104642.GD3042@opensource.wolfsonmicro.com>
- <4E9C0DD7.7080105@cam.ac.uk>
- <20111017111807.GA27266@opensource.wolfsonmicro.com>
- <4E9C1249.5020408@cam.ac.uk>
- <20111017120813.GB27266@opensource.wolfsonmicro.com>
- <4E9C201D.30905@cam.ac.uk>
- <20111017124807.GD27266@opensource.wolfsonmicro.com>
- <4E9C27B9.50504@cam.ac.uk>
+	Mon, 17 Oct 2011 09:55:25 -0400
+Date: Mon, 17 Oct 2011 15:55:23 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Matthew Garrett <mjg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
+        greg@kroah.com
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Message-ID: <20111017135522.GA8855@tango.0pointer.de>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+ <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+ <20111014154348.ae6267aa.akpm@linux-foundation.org>
+ <20111015112006.GA10173@tango.0pointer.de>
+ <1318705910.2664.5.camel@laptop>
+ <20111017013921.GA30035@tango.0pointer.de>
+ <20111017032232.GA4816@srcf.ucam.org>
+ <1318836877.6594.26.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E9C27B9.50504@cam.ac.uk>
-X-Cookie: Be cautious in your daily affairs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1318836877.6594.26.camel@twins>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 02:03:53PM +0100, Jonathan Cameron wrote:
-> On 10/17/11 13:48, Mark Brown wrote:
+On Mon, 17.10.11 09:34, Peter Zijlstra (peterz@infradead.org) wrote:
 
-> >> 0...4
-> >> 1...5
-> >> AUXA....AUXD
-> >> TEMP_EXT1...TEMP_EXT5 (all of which are just normal adc channels that some
-> >> designer decided would be used only for connecting analog temperature sensors.)
+> 
+> On Mon, 2011-10-17 at 04:22 +0100, Matthew Garrett wrote:
+> > 
+> > I agree. We can't assume perfect software, and I don't think *requiring* 
+> > the duplication of this functionality in every single session 
+> > application is sensible. We want to be able to shut down timer based 
+> > code when the session is idle. We could do this by exposing the slack in 
+> > /proc. We could do this by modifying every piece of code to listen for 
+> > session idle events and (independently) enact session-wide policy. Or we 
+> > could just accept that it's a problem that maps onto what people are 
+> > already using cgroups for and implement it in the same way. 
+> 
+> So what about the app that is both screen oriented and has a server
+> part, say some multi-player game thing. Suppose you run one as a server
+> but leave the client idle (you go have dinner with a pretty lady instead
+> of playing quake, but leave your machine up to serve for your nerd
+> friends).
+> 
+> Should your friends get punished with a horrible gaming experience just
+> because you're having a good time IRL and your screen went blank?
 
-> > None of those look at all unreasonable
+Well, there's already an API to ensure that sessions are not considered
+idle, which is used by movie players and such to disable screen
+savers.
 
-> Fair enough though the temp one is at least stupid, but why should
-> we match them?
+> Sure pushing up timer slack will save you power, but it will also hurt
+> people, what will you do for them? The same that you do for those that
+> want to run a CGROUP=n kernel?
 
-So that the engineer sitting there with the schematics can figure out
-how to tell software about the board hookup with minimal pain.
+As you might have noticed already I am not overly concerned about
+those. And anyway, if you don't enable the timer slack cgroup controller
+we won't make use of it, it's that easy.
 
-> Ok, so we could add to every channel a magic matching field called
-> datasheet_name?  To my mind its silly overhead, but if there is a
-> consensus on it then fine.  Note however that any remotely general
-> purpose userspace will not read these values even if we make
-> them available.
+Lennart
 
-That depends, if the userspace is really general purpose I'd expect it'd
-be exposing this information to let the user point and click (or
-whatever) through the channels.  Otherwise they'll be scratching their
-heads wondering what channel 0 on this particular system actually is.
+-- 
+Lennart Poettering - Red Hat, Inc.
