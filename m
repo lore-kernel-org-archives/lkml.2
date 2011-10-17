@@ -1,123 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab1JQRrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 13:47:09 -0400
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:60851 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750924Ab1JQRrI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 13:47:08 -0400
+	id S1751364Ab1JQRsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 13:48:36 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:8887 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab1JQRse (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 13:48:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=SJ9l0Zbp5xiw0rgAD+75tPiZ+T69r1Thw60SYDm0aL7lKKzNb8eI0WgimAcKiyNM1
+	Fxo+kVyq1kB4j0fHa2t2A==
+Date: Mon, 17 Oct 2011 10:48:19 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Rob Clark <rob.clark@linaro.org>
+cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device
+ independant
+In-Reply-To: <CAN_cFWNkYGSajh7eG1qK+A5tWSHNR2gH4EPiPg9tKd+yw8nRYQ@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1110171031290.2545@sister.anvils>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain> <20110705144140.23872.86541.stgit@localhost.localdomain> <alpine.LSU.2.00.1107071742250.10362@sister.anvils> <20110708093859.299958df@lxorguk.ukuu.org.uk> <alpine.LSU.2.00.1107080917430.1781@sister.anvils>
+ <20110711172517.46907e62@lxorguk.ukuu.org.uk> <alpine.LSU.2.00.1107111033440.1752@sister.anvils> <CAMeQTsb7ZMbyt8avYNOiBssERmk6vEbg7RR6TQw7CaD55MK22A@mail.gmail.com> <alpine.LSU.2.00.1110101102330.21957@sister.anvils>
+ <CAN_cFWNkYGSajh7eG1qK+A5tWSHNR2gH4EPiPg9tKd+yw8nRYQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20111017064217.GA20184@b20223-02.ap.freescale.net>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-5-git-send-email-mturquette@ti.com> <20111012064646.GA31037@b20223-02.ap.freescale.net>
- <CAJOA=zPw7BF1iNFaG9js2k6++qPnXz5S3dq4rsPmUWOcUztL0g@mail.gmail.com>
- <20111016182649.GB13565@pengutronix.de> <20111017064217.GA20184@b20223-02.ap.freescale.net>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 17 Oct 2011 10:46:45 -0700
-Message-ID: <CAJOA=zPqBCZekAyPBAberrOdGcfhrgdtLWnBD=iirDZpacNCtw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-To: Richard Zhao <richard.zhao@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, linaro-dev@lists.linaro.org,
-        eric.miao@linaro.org, grant.likely@secretlab.ca,
-        Jamie Iles <jamie@jamieiles.com>, jeremy.kerr@canonical.com,
-        sboyd@quiinc.com, linux@arm.linux.org.uk, magnus.damm@gmail.com,
-        dsaxena@linaro.org, shawn.guo@freescale.com, arnd.bergmann@linaro.org,
-        patches@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, paul@pwsan.com,
-        linus.walleij@stericsson.com, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
-        Richard Zhao <richard.zhao@freescale.com>, skannan@quicinc.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 16, 2011 at 11:42 PM, Richard Zhao <richard.zhao@linaro.org> wrote:
-> On Sun, Oct 16, 2011 at 08:26:49PM +0200, Sascha Hauer wrote:
->> On Wed, Oct 12, 2011 at 07:59:19AM -0700, Turquette, Mike wrote:
->> > On Tue, Oct 11, 2011 at 11:46 PM, Richard Zhao
->> > <richard.zhao@freescale.com> wrote:
->> > > On Thu, Sep 22, 2011 at 03:26:59PM -0700, Mike Turquette wrote:
->> > >> From: Jeremy Kerr <jeremy.kerr@canonical.com>
->> > >>
->> > >> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
->> > >> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> > >> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
->> > >> Signed-off-by: Mike Turquette <mturquette@ti.com>
->> > >> ---
->> > >> Changes since v1:
->> > >> Add copyright header
->> > >> Fold in Jamie's patch for set-to-disable clks
->> > >> Use BIT macro instead of shift
->> > >>
->> > >>  drivers/clk/Kconfig    |    4 ++
->> > >>  drivers/clk/Makefile   |    1 +
->> > >>  drivers/clk/clk-gate.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++
->> > >>  include/linux/clk.h    |   13 ++++++++
->> > >>  4 files changed, 96 insertions(+), 0 deletions(-)
->> > >>  create mode 100644 drivers/clk/clk-gate.c
->> > >
->> > > I feel hard to tell the tree the clk parent, at register/init time. For the
->> > > simple gate clk, the only way is to set .get_parent. But normally, for clk
->> > > without any divider we set .get_parent to NULL. Maybe we can put .parent to
->> > > struct clk_hw?
->> >
->> > For non-mux clocks, whose parent is *always* going to be the same, you
->> > should create a duplicate .parent in the clk_hw_* structure and then
->> > have .get_parent return clk_hw_*->parent.
->>
->> Maybe I do not understand what you mean here, but I think there is
->> something missing in the gate.
-> yes, clk_gate can not set fixed parent in v2 patch. Mike means add .parent int clk_gate
-> and set .get_parent in the ops.
+On Sat, 15 Oct 2011, Rob Clark wrote:
+> On Mon, Oct 10, 2011 at 1:37 PM, Hugh Dickins <hughd@google.com> wrote:
+> >
+> > I haven't rushed to address the 4GB issue, but what I have in mind is
+> > killing two-and-a-half birds with one stone, by putting a little cookie
+> > into the swapper_space radix_tree when we free a swapcache page, that
+> > specifies node/zone and hashes object/offset.
+> 
+> Without really knowing the details about how hard it would be to
+> implement, it would solve one additional problem if we could have a
+> per-mapping callback fxn for allocating pages.
+> 
+> At least on ARM (but I guess probably some other architectures too),
+> we really want to avoid having a page mapped cachable in the kernel,
+> and uncached/writecombine in userspace.  With a per-mapping page
+> allocation fxn, we could do something like
+> dma_alloc_coherant/writecombine (for example) to allocate backing
+> pages for GEM buffers which are mmap'd to userspace as something other
+> than cachable.
 
-Yes, it seems I was unclear.  I mean to say that a .parent can be
-added to any clk hw implementation (clk_hw_imx or whatever) and the
-paired .ops (in this case, .get_parent) will know about it's
-existence.
+It feels to me like GEM is pulling shmem in an ever more alien direction:
+these device constraints are so foreign to the nature of tmpfs; and
+beyond my expertise, so that I'd be ever more likely to make the wrong
+decisions (mixing swap and uncached pages? hmmm).
 
-Regards,
-Mike
+We ought to re-examine whether GEM should be using tmpfs at all, whether
+it would be better served by its own filesystem or other infrastructure.
 
->>
->> >
->> > This is analogous to the way clk_hw_fixed returns clk_hw_fixed->rate
->> > when .recalc is called on it.
->> >
->> > >> +
->> > >> +static unsigned long clk_gate_get_rate(struct clk_hw *clk)
->> > >> +{
->> > >> +     return clk_get_rate(clk_get_parent(clk->clk));
->> > >> +}
->>
->> clk_get_parent goes down to clk_gate_set_enable_ops.get_parent below...
->>
->> > >> +
->> > >> +
->> > >> +struct clk_hw_ops clk_gate_set_enable_ops = {
->> > >> +     .recalc_rate = clk_gate_get_rate,
->> > >> +     .enable = clk_gate_enable_set,
->> > >> +     .disable = clk_gate_disable_clear,
->> > >> +};
->>
->> ...but this does not have a get_parent pointer, so clk_get_parent()
->> for a gate always returns NULL which means that a gate never has
->> a valid rate.
->>
->> Sascha
->>
->> --
->> Pengutronix e.K.                           |                             |
->> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
->> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
->
->
+Really, the one reason for wanting tmpfs is to have the benefit of offload
+to swap (and that is indeed a feature I wouldn't care to distribute around
+to drivers).
+
+Hugh
