@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab1JQPzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:55:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34120 "EHLO mx2.suse.de"
+	id S1756394Ab1JQQBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:01:22 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48782 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512Ab1JQPzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:55:07 -0400
-Date: Mon, 17 Oct 2011 08:54:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
- staging
-Message-ID: <20111017155442.GA14911@suse.de>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
- <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
- <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
- <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
+	id S1752819Ab1JQQBV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 12:01:21 -0400
+Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
+Mime-Version: 1.0 (Apple Message framework v1251.1)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20111014183144.GD28556@local>
+Date: Mon, 17 Oct 2011 11:00:55 -0500
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, gregkh@suse.de,
+        Kai Jiang <Kai.Jiang@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4D73F261-3795-4F71-9921-568C1B9F06E0@kernel.crashing.org>
+References: <1318521058-15662-1-git-send-email-galak@kernel.crashing.org> <20111014183144.GD28556@local>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 10:26:42AM -0500, James Bottomley wrote:
-> On Mon, 2011-10-17 at 15:15 +0000, KY Srinivasan wrote:
-> > This patch is against Greg's staging tree where recently I merged all
-> > of the storage
-> > drivers into a single driver. This change may not have percolated up
-> > yet - Greg has
-> > checked this into his staging tree though.
-> 
-> OK, that explains the difference.
-> 
-> > As I deal with the review comments now, do you want me to get these
-> > changes
-> > applied first to Greg's tree before you would consider moving this
-> > driver to drivers/scsi
-> > directory, or could you move the driver as it is in Greg's tree under
-> > staging and I could give
-> > you patches against the moved driver.
-> 
-> Either way is fine by me.  The best route for this is to get the staging
-> update into Linus head, then work on the actual SCSI problems.  I'd like
-> other SCSI people besides me to review it.
 
-That will happen for the 3.2-rc1 release, so that might be the better
-time to review this.
+On Oct 14, 2011, at 1:31 PM, Hans J. Koch wrote:
 
-greg k-h
+> On Thu, Oct 13, 2011 at 10:50:58AM -0500, Kumar Gala wrote:
+>> From: Kai Jiang <Kai.Jiang@freescale.com>
+>> 
+>> To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
+>> extend the width of 'addr' in struct uio_mem.  Numerous platforms like
+>> embedded PPC, ARM, and X86 have support for systems with larger physical
+>> address than logical.
+>> 
+>> Since 'addr' may contain a physical, logical, or virtual address the
+>> easiest solution is to just change the type to 'phys_addr_t' which
+>> should always be greater than or equal to the sizeof(void *) such that
+>> it can properly hold any of the address types.
+>> 
+>> For physical address we can support up to a 44-bit physical address on a
+>> typical 32-bit system as we utilize remap_pfn_range() for the mapping of
+>> the memory region and pfn's are represnted by shifting the address by
+>> the page size (typically 4k).
+>> 
+>> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
+>> Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
+>> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+> 
+> Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
+> 
+> That looks good to me. There's an unnecessary cast (see below), but I fixed that
+> on the way.
+> 
+> Greg, please pull this from branch uio-for-gregkh from
+> 
+> git://hansjkoch.de/git/linux-hjk
+> 
+> Thanks,
+> Hans
+
+I think removing that cast is wrong:
+
+drivers/uio/uio.c: In function 'uio_vma_fault':
+drivers/uio/uio.c:637:26: warning: cast to pointer from integer of different size
+
+- k
+
+
