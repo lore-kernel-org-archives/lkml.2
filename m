@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1JQTPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 15:15:47 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:55963 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab1JQTPq (ORCPT
+	id S1753506Ab1JQTVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 15:21:21 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61093 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1JQTVT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 15:15:46 -0400
-Date: Mon, 17 Oct 2011 15:11:13 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        NeilBrown <neilb@suse.de>, paulmck@linux.vnet.ibm.com,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] cgroups: convert ss->attach to use whole
- threadgroup flex_array (cpuset, memcontrol)
-Message-ID: <20111017191113.GA28095@ghc17.ghc.andrew.cmu.edu>
-References: <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
- <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
- <20111014122126.GL14968@somewhere>
- <20111014135323.GA3653@ghc17.ghc.andrew.cmu.edu>
- <20111014135457.GB3653@ghc17.ghc.andrew.cmu.edu>
- <20111014152218.GO14968@somewhere>
+	Mon, 17 Oct 2011 15:21:19 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=jZ5B+/o/M7vm9wZGOw1twIC7ElEvakXDXhFUfse14uzgvki0Djwinw1Jl338W6zct
+	Hcek36heJlnWqmkRRO8ow==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014152218.GO14968@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1900_1999 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+In-Reply-To: <alpine.LNX.2.00.1110171710570.3541@pobox.suse.cz>
+References: <1318637934-30006-1-git-send-email-tlambert@chromium.org>
+	<alpine.LNX.2.00.1110171710570.3541@pobox.suse.cz>
+Date: Mon, 17 Oct 2011 12:21:16 -0700
+X-Google-Sender-Auth: _TMXw8OUjiT0oL4Rqwwut9Z-BoE
+Message-ID: <CAA_E9NH0EznO9xc7L=5GuqbZyFSWQU1J1HWzAYbuP5YTFzuXaw@mail.gmail.com>
+Subject: Re: [PATCH] Driver for Primax keyboards violating USB HID spec
+From: Terry Lambert <tlambert@chromium.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 05:22:20PM +0200, Frederic Weisbecker wrote:
-> On Fri, Oct 14, 2011 at 09:54:57AM -0400, Ben Blum wrote:
-> > On Fri, Oct 14, 2011 at 09:53:23AM -0400, Ben Blum wrote:
-> > > On Fri, Oct 14, 2011 at 02:21:30PM +0200, Frederic Weisbecker wrote:
-> > > > On Thu, Oct 13, 2011 at 08:36:01PM -0400, Ben Blum wrote:
-> > > > > Convert ss->attach to take a flex_array of tasks instead of just the leader.
-> > > > > 
-> > > > > From: Ben Blum <bblum@andrew.cmu.edu>
-> > > > > 
-> > > > > This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
-> > > > > memcontrol) to accurately find the group's mm even when a non-leader does exec
-> > > > > and leaves the leader with a NULL mm pointer.
-> > > > > 
-> > > > > Also converts cpuset and memcontrol to take the flex_array and iterate down it
-> > > > > until an mm is found, instead of just attempting to use the leader's mm.
-> > > > > 
-> > > > > Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
-> > > > 
-> > > > I think there are patches from Tejun that handle that did that already?
-> > > > 
-> > > > https://lkml.org/lkml/2011/8/23/418
-> > > > 
-> > > 
-> > > Yeah, I'm not hoping to preempt them or anything; I'm just presenting
-> > > this alternate approach, since (1) this way addresses the ss->attach()
-> > > problem directly without needing to add locking anywhere else, while the
-> > > focus of the discussion around Tejun's patches seems to have moved to
-> > > more global concerns, and (2) these patches and his patches ought to be
-> > > compatible with each other.
-> > 
-> > though, I did wonder if, given this approach, I shouldn't just get rid
-> > of attach_task and can_attach_task and use the flex_array for all of
-> > the calls. would that be nicer?
-> 
-> That's what Tejun's patches do.
-> 
+Cool, thanks! I was mildly unsure of that anyway, and had copied it
+from a similar one for the Microsoft HID driver.
 
-Oh, I must have missed that bit. In which case, sorry for the noise, and
-I support Tejun's change.
+-- Terry
 
--- Ben
+On Mon, Oct 17, 2011 at 8:11 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Fri, 14 Oct 2011, Terry Lambert wrote:
+>
+>> Primax keyboards with the issue this driver addresses report modifier
+>> keys as in band key events instead of as out of band modifier bits,
+>> resulting in the modifier keys generating key up events immediately
+>> before the keys they are intended to modify.  This driver rewrites
+>> the raw report data from such keyboards into USB HID 1.11 compliant
+>> report data.  It only matches the USB vendor and product IDs for the
+>> keyboard it has been tested on. Since there are several keyboards,
+>> notably a number of laptops and folding USB keyboards known to have
+>> similar unresolved problem reports, the list is expected to grow.
+>>
+>> Signed-off-by: Terry Lambert <tlambert@chromium.org>
+>> ---
+>>  drivers/hid/Kconfig      |    8 +++
+>>  drivers/hid/Makefile     |    1 +
+>>  drivers/hid/hid-core.c   |    1 +
+>>  drivers/hid/hid-ids.h    |    3 +
+>>  drivers/hid/hid-primax.c |  117 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  5 files changed, 130 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/hid/hid-primax.c
+>>
+>> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+>> index 1130a89..a097e17 100644
+>> --- a/drivers/hid/Kconfig
+>> +++ b/drivers/hid/Kconfig
+>> @@ -441,6 +441,14 @@ config HID_PICOLCD_LEDS
+>>       ---help---
+>>         Provide access to PicoLCD's GPO pins via leds class.
+>>
+>> +config HID_PRIMAX
+>> +     tristate "Primax non-fully HID-compliant devices" if EXPERT
+>> +     depends on USB_HID
+>> +     default !EXPERT
+>
+> I have removed thi 'EXPERT' dependency (please see changelog of commit
+> 73d5e8f77e8 for rationale behind that) and applied. Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs
+>
