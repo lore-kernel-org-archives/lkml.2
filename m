@@ -1,112 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab1JQOVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:21:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab1JQOUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:20:50 -0400
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: lnux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [RFC 2/3] PM / Hibernate : do not count debug pages as savable
-Date: Mon, 17 Oct 2011 16:19:54 +0200
-Message-Id: <1318861195-3877-2-git-send-email-sgruszka@redhat.com>
-In-Reply-To: <1318861195-3877-1-git-send-email-sgruszka@redhat.com>
-References: <1318861195-3877-1-git-send-email-sgruszka@redhat.com>
+	id S1755830Ab1JQOZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:25:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59324 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab1JQOZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:25:20 -0400
+Date: Mon, 17 Oct 2011 16:22:39 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Josh Wu <josh.wu@atmel.com>
+cc: linux-media@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.ferre@atmel.com, s.nawrocki@samsung.com
+Subject: Re: [PATCH v4 2/3] at91: add parameters for at91_add_device_isi
+ function
+In-Reply-To: <1318331020-22031-3-git-send-email-josh.wu@atmel.com>
+Message-ID: <Pine.LNX.4.64.1110171616150.18438@axis700.grange>
+References: <1318331020-22031-1-git-send-email-josh.wu@atmel.com>
+ <1318331020-22031-3-git-send-email-josh.wu@atmel.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:njm5bgpu45RS0JHOPDFm2VYJ4JyUOsgVRviTbnS4eyC
+ Se3sJtrOSdGn42EcEEKjXeZYtFlBVZM2TdTwqiS95Dl92ttC/b
+ UNS9eCw3+/1MmqcgIWadQ2v8/EwhZ41n7qUZxHznHSbKojVD3f
+ Ri+NhZQOCAqUctGYd6/vEJiDk7yz7cowDhkSFNVOeXTQWwG0+e
+ TbAI63uMR8Kgx3tkdbnU3+ZvqKh+KLVUIjRZK/9ch2MnFpS8fw
+ 8O+wfeDjVby5S57C1WRBIhV6TmXdKdDgWfYSXmB3Lcfpr/ZbHI
+ xi+I93TKR5007dQizUX+bDU2yP0x6ednwSEclxkFQz6l88Zjfa
+ 6GI0nBD0bInlSKuFc2xM6ivhrj972LnS1BqI37yYWHhxIfapH2
+ Idw6e/gMASOWA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When debugging memory corruption with CONFIG_DEBUG_PAGEALLOC and
-corrupt_dbg > 0, we have lot of free pages that are not marked so.
-Snapshot code account them as savable, what cause hibernate memory
-preallocation failure.
+On Tue, 11 Oct 2011, Josh Wu wrote:
 
-It is pretty hard to make hibernate allocation succeed with
-corrupt_dbg=1. This change at least make it possible when system has
-relatively big amount of RAM.
+> This patch add parameters for at91_add_device_isi function
+> 
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> ---
+>  arch/arm/mach-at91/at91sam9263_devices.c |   13 ++++++++++---
+>  arch/arm/mach-at91/include/mach/board.h  |    4 +++-
+>  2 files changed, 13 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+> index a050f41..7990e8e 100644
+> --- a/arch/arm/mach-at91/at91sam9263_devices.c
+> +++ b/arch/arm/mach-at91/at91sam9263_devices.c
+> @@ -885,7 +885,8 @@ static struct platform_device at91sam9263_isi_device = {
+>  	.num_resources	= ARRAY_SIZE(isi_resources),
+>  };
+>  
+> -void __init at91_add_device_isi(void)
+> +void __init at91_add_device_isi(struct isi_platform_data * data,
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Not sure if anything in CodingStyle prohibits this, but the rest of this 
+file uses
+
+static type fn(struct s *p)
+
+i.e., without an extra space after the '*'. Would be better to keep that 
+style.
+
+> +		bool use_pck_as_mck)
+>  {
+>  	at91_set_A_periph(AT91_PIN_PE0, 0);	/* ISI_D0 */
+>  	at91_set_A_periph(AT91_PIN_PE1, 0);	/* ISI_D1 */
+> @@ -898,14 +899,20 @@ void __init at91_add_device_isi(void)
+>  	at91_set_A_periph(AT91_PIN_PE8, 0);	/* ISI_PCK */
+>  	at91_set_A_periph(AT91_PIN_PE9, 0);	/* ISI_HSYNC */
+>  	at91_set_A_periph(AT91_PIN_PE10, 0);	/* ISI_VSYNC */
+> -	at91_set_B_periph(AT91_PIN_PE11, 0);	/* ISI_MCK (PCK3) */
+>  	at91_set_B_periph(AT91_PIN_PE12, 0);	/* ISI_PD8 */
+>  	at91_set_B_periph(AT91_PIN_PE13, 0);	/* ISI_PD9 */
+>  	at91_set_B_periph(AT91_PIN_PE14, 0);	/* ISI_PD10 */
+>  	at91_set_B_periph(AT91_PIN_PE15, 0);	/* ISI_PD11 */
+> +
+> +	if (use_pck_as_mck) {
+> +		at91_set_B_periph(AT91_PIN_PE11, 0);	/* ISI_MCK (PCK3) */
+> +
+> +		/* TODO: register the PCK for ISI_MCK and set its parent */
+
+
+
+> +	}
+>  }
+>  #else
+> -void __init at91_add_device_isi(void) {}
+> +void __init at91_add_device_isi(struct isi_platform_data * data,
+
+same - no extra space.
+
+> +		int use_pck_as_mck) {}
+>  #endif
+>  
+>  
+> diff --git a/arch/arm/mach-at91/include/mach/board.h b/arch/arm/mach-at91/include/mach/board.h
+> index ed544a0..731c449 100644
+> --- a/arch/arm/mach-at91/include/mach/board.h
+> +++ b/arch/arm/mach-at91/include/mach/board.h
+> @@ -183,7 +183,9 @@ extern void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data);
+>  extern void __init at91_add_device_ac97(struct ac97c_platform_data *data);
+>  
+>   /* ISI */
+> -extern void __init at91_add_device_isi(void);
+> +struct isi_platform_data;
+> +extern void __init at91_add_device_isi(struct isi_platform_data *data,
+> +		bool use_pck_as_mck);
+>  
+>   /* Touchscreen Controller */
+>  struct at91_tsadcc_data {
+> -- 
+> 1.6.3.3
+
+Thanks
+Guennadi
 ---
- include/linux/mm.h      |    7 ++++++-
- kernel/power/snapshot.c |    6 ++++++
- mm/page_alloc.c         |    6 ------
- 3 files changed, 12 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 17e3658..651785b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1630,13 +1630,18 @@ extern void copy_user_huge_page(struct page *dst, struct page *src,
- #ifdef CONFIG_DEBUG_PAGEALLOC
- extern unsigned int _corrupt_dbg;
- 
--
- static inline unsigned int corrupt_dbg(void)
- {
- 	return _corrupt_dbg;
- }
-+
-+static inline bool page_is_corrupt_dbg(struct page *page)
-+{
-+	return test_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
-+}
- #else
- static inline unsigned int corrupt_dbg(void) { return 0; }
-+static inline bool page_is_corrupt_dbg(struct page *page) { return false; }
- #endif /* CONFIG_DEBUG_PAGEALLOC */
- 
- #endif /* __KERNEL__ */
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 06efa54..45cf1b1 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -858,6 +858,9 @@ static struct page *saveable_highmem_page(struct zone *zone, unsigned long pfn)
- 	    PageReserved(page))
- 		return NULL;
- 
-+	if (page_is_corrupt_dbg(page))
-+		return NULL;
-+
- 	return page;
- }
- 
-@@ -920,6 +923,9 @@ static struct page *saveable_page(struct zone *zone, unsigned long pfn)
- 	    && (!kernel_page_present(page) || pfn_is_nosave(pfn)))
- 		return NULL;
- 
-+	if (page_is_corrupt_dbg(page))
-+		return NULL;
-+
- 	return page;
- }
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8d18ae4..8a7770a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -425,15 +425,9 @@ static inline void clear_page_corrupt_dbg(struct page *page)
- 	__clear_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
- }
- 
--static inline bool page_is_corrupt_dbg(struct page *page)
--{
--	return test_bit(PAGE_DEBUG_FLAG_CORRUPT, &page->debug_flags);
--}
--
- #else
- static inline void set_page_corrupt_dbg(struct page *page) { }
- static inline void clear_page_corrupt_dbg(struct page *page) { }
--static inline bool page_is_corrupt_dbg(struct page *page) { return false; }
- #endif
- 
- static inline void set_page_order(struct page *page, int order)
--- 
-1.7.1
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
