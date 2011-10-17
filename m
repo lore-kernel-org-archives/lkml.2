@@ -1,118 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab1JQOGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:06:49 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59037 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753351Ab1JQOGs (ORCPT
+	id S1755858Ab1JQOHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:07:43 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:45873 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab1JQOHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:06:48 -0400
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Steffen Maier <maier@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
-        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-In-Reply-To: <4E9BEB68.1050707@ce.jp.nec.com>
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>
-	 <20110928004722.GA27421@kernel.dk>
-	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
-	 <4E82751C.9050908@kernel.dk>
-	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
-	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-	 <4E832A55.30709@kernel.dk>
-	 <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
-	 <4E832BD2.50409@kernel.dk>  <4E96E2FF.6070601@linux.vnet.ibm.com>
-	 <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
-	 <4E9BEB68.1050707@ce.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Oct 2011 09:06:43 -0500
-Message-ID: <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com>
+	Mon, 17 Oct 2011 10:07:42 -0400
+Date: Mon, 17 Oct 2011 16:07:36 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111017160736.6fc6caef@de.ibm.com>
+In-Reply-To: <1318847658.6594.40.camel@twins>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
+	<20111007070842.GA27555@hostway.ca>
+	<20111007174848.GA11011@hostway.ca>
+	<1318010515.398.8.camel@twins>
+	<20111008005035.GC22843@hostway.ca>
+	<1318060551.8395.0.camel@twins>
+	<20111012213555.GC24461@hostway.ca>
+	<20111013232521.GA5654@hostway.ca>
+	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+	<1318847658.6594.40.camel@twins>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 17:46 +0900, Jun'ichi Nomura wrote:
-> On 10/15/11 01:03, James Bottomley wrote:
-> > On Thu, 2011-10-13 at 15:09 +0200, Steffen Maier wrote:
-> >> This fix also went into 3.0.5 via
-> >> http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob;f=releases/3.0.5/block-free-queue-resources-at-blk_release_queue.patch
-> >> (originated at http://marc.info/?l=linux-scsi&m=131669751909474&w=2 and 
-> >> http://marc.info/?l=linux-scsi&m=131669414205696&w=2)
-> >>
-> >> However, it seems we still have a use-after-free bug, now causing the 
-> >> following oops with kernel 3.0.6 when removing paths to storage while 
-> >> generating load on device-mapper multipath disks:
-> >>
-> >>> Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
-> >>> Oops: 0038 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> >>> Modules linked in: iptable_filter ip_tables x_tables dm_round_robin sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
-> >>> CPU: 1 Not tainted 3.0.6-50.x.20111006-s390xdefault #1
-> >>> Process blast.LzS_64_SL (pid: 26613, task: 0000000063e2a398, ksp: 0000000064de3560)
-> >>> Krnl PSW : 0704100180000000 000000000048a038 (scsi_print_command+0x44/0xf8)
-> >>>            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:1 PM:0 EA:3
-> >>> Krnl GPRS: 000000000000006b 6b6b6b6b6b6b6b6b 000000006717f800 000000000094f2e0
-> >>>            000000000061242e 000000000062bd88 0000000066fb90d8 0000000065391ad7
-> >>>            000000006717f800 000000006717f800 000000006716a090 000000006717f800
-> >>>            0000000000000004 0000000000672f88 0000000064de3838 0000000064de3808
-> >>> Krnl Code: 000000000048a026: f0b80004ebbf        srp     4(12,%r0),3007(%r14),8
-> >>>            000000000048a02c: f0a0000407f4        srp     4(11,%r0),2036,0
-> >>>            000000000048a032: e31020800004        lg      %r1,128(%r2)
-> >>>           >000000000048a038: e31010b00004        lg      %r1,176(%r1)
-> >>>            000000000048a03e: b9020011            ltgr    %r1,%r1
-> >>>            000000000048a042: a7840032            brc     8,48a0a6
-> >>>            000000000048a046: e33020000004        lg      %r3,0(%r2)
-> >>>            000000000048a04c: c04000182f4c        larl    %r4,78fee4
-> >>> Call Trace:
-> >>> ([<000000006717f800>] 0x6717f800)
-> >>>  [<0000000000487f28>] scsi_log_send+0xf0/0x130
-> >>>  [<000000000048824c>] scsi_dispatch_cmd+0xc8/0x4bc
-> >>>  [<0000000000490694>] scsi_request_fn+0x3b8/0x480
-> > 
-> > Correct me if I'm wrong, but this seems to be saying that struct
-> > scsi_cmnd was used after free.  This looks to be a different problem
-> > because the command has a separate refcounting model which wasn't
-> > impacted by the change ... it could be we've just exposed yet another
-> > refcounting problem outside of the queue one.
-> > 
-> > If I had to guess, I'd say a bio got cloned with a SCSI command already
-> > attached, but the ref count on the SCSI command wasn't correctly
-> > adjusted.
+On Mon, 17 Oct 2011 12:34:18 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
+> > And
+> > why does "cputime_add()" exist at all? It seems to always be just a
+> > plain add, and nothing else would seem to ever make sense *anyway*?
 > 
-> As far as dm is concerned, it shouldn't happen.
-> Clone is made from a dm request, not from SCSI one.
-> Also clone is not reused when retrying.
+> Martin and me were discussing the merit of that only a few weeks ago ;-)
 
-It was just a guess.  Assuming the command got freed prematurely, there
-has to be something in the dm path to explain why the SCSI refcounting
-model got screwed up.  Cloning a bio with an attached command was what
-first occurred to me, but perhaps there are other ways I'm not seeing.
+I took my old cputime debug patch and compiled the latest git tree with it.
+The compiler found a few places where fishy things happen:
 
-> >> Initially, we encountered use-after-free bugs in
-> >> scsi_print_command / scsi_dispatch_cmd
-> >> http://marc.info/?l=linux-scsi&m=130824013229933&w=2
-> 
-> It is interesting that both this and the older report
-> got oopsed in scsi_log_send(), while there are other
-> dereferences of 'cmd' around scsi_dispatch_cmd().
-> Are there any reason they are special? Just by accident?
+1) fs/proc/uptime.c
+static int uptime_proc_show(struct seq_file *m, void *v)
+{
+	...
+        cputime_t idletime = cputime_zero;
 
-Right, that's why it looks like the command area got freed rather than
-the command pointer was bogus (6b is a poison free pattern).  Perhaps if
-the reporter could pin down the failing source line, we'd know better
-what was going on?
+        for_each_possible_cpu(i)
+                idletime = cputime64_add(idletime, kstat_cpu(i).cpustat.idle);
+	...
+        cputime_to_timespec(idletime, &idle);
+	...
+}
 
-James
+idletime is a 32-bit integer on x86-32. The sum of the idle time over all
+cpus will quickly overflow, e.g. consider HZ=1000 on a quad-core. It would
+overflow after 12.42 days (2^32 / 1000 / 4 / 86400).
 
+2) kernel/posix-cpu-timers.c
+/*                                                                              
+ * Divide and limit the result to res >= 1                                      
+ *                                                                              
+ * This is necessary to prevent signal delivery starvation, when the result of  
+ * the division would be rounded down to 0.                                     
+ */
+static inline cputime_t cputime_div_non_zero(cputime_t time, unsigned long div)
+{
+        cputime_t res = cputime_div(time, div);
+
+        return max_t(cputime_t, res, 1);
+}
+
+A cputime of 1 on s390 is 0.244 nano seconds, I have my doubts if that will
+prevent signal starvation. Fortunately the function is unused and can be
+removed.
+
+3) kernel/itimer
+enum hrtimer_restart it_real_fn(struct hrtimer *timer)
+{
+        struct signal_struct *sig =
+                container_of(timer, struct signal_struct, real_timer);
+
+        trace_itimer_expire(ITIMER_REAL, sig->leader_pid, 0);
+        kill_pid_info(SIGALRM, SEND_SIG_PRIV, sig->leader_pid);
+
+        return HRTIMER_NORESTART;
+}
+
+trace_itimer_expire take a cputime as third argument. That should be
+cputime_zero in the current notation, same in do_setitimer. After the
+conversion all cputime_zero occurences would be replaced with 0.
+
+4) kernel/sched.c
+#define CPUACCT_BATCH   \
+        min_t(long, percpu_counter_batch * cputime_one_jiffy, INT_MAX)
+
+If cputime_t is defined as an 64-bit type on a 32-bit architecture the
+CPUACCT_BATCH definition can break. Should work for the existing code
+though.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
