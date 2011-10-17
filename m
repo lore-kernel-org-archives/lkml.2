@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab1JQUZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 16:25:54 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:34692 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753219Ab1JQUZw (ORCPT
+	id S1754674Ab1JQU3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 16:29:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52826 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab1JQU3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 16:25:52 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Subject: Re: [PATCH] drivers, vmw_balloon.c: Fix typo in code comment.
-Date: Mon, 17 Oct 2011 13:25:50 -0700
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-References: <1318880063.10091.14.camel@localhost.localdomain>
-In-Reply-To: <1318880063.10091.14.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110171325.50958.dtor@vmware.com>
+	Mon, 17 Oct 2011 16:29:10 -0400
+From: Dan McGee <dpmcgee@gmail.com>
+To: linux-raid@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>
+Subject: [PATCH] lib/raid6: Fix filename emitted in generated code
+Date: Mon, 17 Oct 2011 15:29:08 -0500
+Message-Id: <1318883348-29961-1-git-send-email-dpmcgee@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 17, 2011 12:34:23 PM Rakib Mullick wrote:
->  Fix typo in code comment.
-> 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+The files were renamed in commit cc4589ebf; fix the name in the file
+itself.
 
-Acked-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Dan McGee <dpmcgee@gmail.com>
+---
+ lib/raid6/int.uc |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> ---
-> 
-> diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
-> index 053d36c..2480c21 100644
-> --- a/drivers/misc/vmw_balloon.c
-> +++ b/drivers/misc/vmw_balloon.c
-> @@ -151,7 +151,7 @@ MODULE_LICENSE("GPL");
->  struct vmballoon_stats {
->  	unsigned int timer;
-> 
-> -	/* allocation statustics */
-> +	/* allocation statistics */
->  	unsigned int alloc;
->  	unsigned int alloc_fail;
->  	unsigned int sleep_alloc;
+diff --git a/lib/raid6/int.uc b/lib/raid6/int.uc
+index d1e276a..5b50f8d 100644
+--- a/lib/raid6/int.uc
++++ b/lib/raid6/int.uc
+@@ -11,7 +11,7 @@
+  * ----------------------------------------------------------------------- */
+ 
+ /*
+- * raid6int$#.c
++ * int$#.c
+  *
+  * $#-way unrolled portable integer math RAID-6 instruction set
+  *
+-- 
+1.7.7
+
