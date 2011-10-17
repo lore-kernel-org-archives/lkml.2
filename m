@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1JQOi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:38:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56732 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab1JQOi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:38:26 -0400
-Date: Mon, 17 Oct 2011 16:38:20 +0200
-From: Mel Gorman <mgorman@suse.de>
-To: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        nfont@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        rientjes@google.com
-Subject: [PATCH] mm: memory hotplug: Check if pages are correctly reserved on
- a per-section basis
-Message-ID: <20111017143820.GA7626@suse.de>
-References: <20111010071119.GE6418@suse.de>
- <20111010150038.ac161977.akpm@linux-foundation.org>
- <20111010232403.GA30513@kroah.com>
- <20111010162813.7a470ae4.akpm@linux-foundation.org>
- <20111011072406.GA2503@suse.de>
+	id S1755943Ab1JQOk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:40:59 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57432 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab1JQOk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:40:58 -0400
+Date: Mon, 17 Oct 2011 15:40:13 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Message-ID: <20111017144013.GA15447@srcf.ucam.org>
+References: <1318705910.2664.5.camel@laptop>
+ <20111017013921.GA30035@tango.0pointer.de>
+ <20111017032232.GA4816@srcf.ucam.org>
+ <4E9BBB6D.4050004@linux.intel.com>
+ <1318837019.6594.29.camel@twins>
+ <alpine.LFD.2.02.1110171119580.3240@ionos>
+ <20111017124647.GA12838@srcf.ucam.org>
+ <1318856786.4172.22.camel@twins>
+ <20111017141147.GA14581@srcf.ucam.org>
+ <1318861707.4172.32.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111011072406.GA2503@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1318861707.4172.32.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Resending as I am not seeing it in -next so maybe it got lost)
+On Mon, Oct 17, 2011 at 04:28:27PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-10-17 at 15:11 +0100, Matthew Garrett wrote:
+> > Whether or not you want the animation to carry on animating is policy, 
+> > and you need something to be the policy agent. Let's say firefox is 
+> > invisible. I now grab a copy of its window contents. What do I get?
+> 
+> An XDamage and repaint from the X client, after which your copy will
+> complete and you get what you asked for?
 
-mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
+An XDamage and then an asynchronous RPC call to the remote server to 
+identify the contents of the next frame before drawing them, plus some 
+sort of new synchronisation mechanism for blocking the X query until 
+that point?
 
-It is expected that memory being brought online is PageReserved
-similar to what happens when the page allocator is being brought up.
-Memory is onlined in "memory blocks" which consist of one or more
-sections. Unfortunately, the code that verifies PageReserved is
-currently assuming that the memmap backing all these pages is virtually
-contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
-As a result, memory hot-add is failing on those configurations with
-the message;
+> >  in preference to merging a piece 
+> > of code that's functionally consistent with the rest of the cgroups 
+> > infrastructure?
+> 
+> Yep.. because as of yet there isn't a sane use-case to warrant adding
+> the maintenance burden. Any cgroup controller is functionally
+> consistent, per definition, that doesn't make it useful or even sane.
 
-kernel: section number XXX page number 256 not reserved, was it already online?
+Timers are a resource. People want to manage that resource. cgroups are 
+a convenient mechanism for managing resources.
 
-This patch updates the PageReserved check to lookup struct page once
-per section to guarantee the correct struct page is being checked.
-
-[Check pages within sections properly: rientjes@google.com]
-[original patch by: nfont@linux.vnet.ibm.com]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- drivers/base/memory.c |   58 +++++++++++++++++++++++++++++++++---------------
- 1 files changed, 40 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 2840ed4..ffb69cd 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
- }
- 
- /*
-+ * The probe routines leave the pages reserved, just as the bootmem code does.
-+ * Make sure they're still that way.
-+ */
-+static bool pages_correctly_reserved(unsigned long start_pfn,
-+					unsigned long nr_pages)
-+{
-+	int i, j;
-+	struct page *page;
-+	unsigned long pfn = start_pfn;
-+
-+	/*
-+	 * memmap between sections is not contiguous except with
-+	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
-+	 * and assume memmap is contiguous within each section
-+	 */
-+	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
-+		if (WARN_ON_ONCE(!pfn_valid(pfn)))
-+			return false;
-+		page = pfn_to_page(pfn);
-+
-+		for (j = 0; j < PAGES_PER_SECTION; j++) {
-+			if (PageReserved(page + j))
-+				continue;
-+
-+			printk(KERN_WARNING "section number %ld page number %d "
-+				"not reserved, was it already online?\n",
-+				pfn_to_section_nr(pfn), j);
-+
-+			return false;
-+		}
-+	}
-+
-+	return true;
-+}
-+
-+/*
-  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
-  * OK to have direct references to sparsemem variables in here.
-  */
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	int i;
- 	unsigned long start_pfn, start_paddr;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
-@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
- 
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
- 
--	/*
--	 * The probe routines leave the pages reserved, just
--	 * as the bootmem code does.  Make sure they're still
--	 * that way.
--	 */
--	if (action == MEM_ONLINE) {
--		for (i = 0; i < nr_pages; i++) {
--			if (PageReserved(first_page+i))
--				continue;
--
--			printk(KERN_WARNING "section number %ld page number %d "
--				"not reserved, was it already online?\n",
--				phys_index, i);
--			return -EBUSY;
--		}
--	}
--
- 	switch (action) {
- 		case MEM_ONLINE:
- 			start_pfn = page_to_pfn(first_page);
-+
-+			if (!pages_correctly_reserved(start_pfn, nr_pages))
-+				return -EBUSY;
-+
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
