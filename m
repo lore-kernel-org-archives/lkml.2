@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab1JQQ75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 12:59:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52674 "EHLO
+	id S1756693Ab1JQQ77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 12:59:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52648 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab1JQQ7y (ORCPT
+	with ESMTP id S1756599Ab1JQQ7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 12:59:54 -0400
-X-Authority-Analysis: v=1.1 cv=UpSRffbr9y8V5xg6O7MBcDNOk5f8u00m038obrfOR4U= c=1 sm=0 a=vhdKIqpQuCYA:10 a=lUDviX6bF28A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=0slnyGKvdMgyuT5Kp-wA:9 a=VBQ40wU664IUMDWz9xwA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXFwqY4a_d1CbH8MFvwA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 17 Oct 2011 12:59:55 -0400
+X-Authority-Analysis: v=1.1 cv=Aw1K5MWCW/IlYLbVHOK2DHmxtnIeftPoAvmBFvlQMWA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=G63vQC6HLSgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=eP9BnrXZSuA4vl4ctZUA:9 a=BxVY7RNYDVBY2LKuSxcA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=CeDq2egx64_vBY1nBrIA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111017165953.474825888@goodmis.org>
+Message-Id: <20111017165953.911347826@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 17 Oct 2011 12:05:09 -0400
+Date: Mon, 17 Oct 2011 12:05:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 14/17][RFC] ktest: Add DEFINED keyword for IF statements
+Subject: [PATCH 15/17][RFC] ktest: Sort make_min_config configs by dependecies
 References: <20111017160455.498567257@goodmis.org>
-Content-Disposition: inline; filename=0014-ktest-Add-DEFINED-keyword-for-IF-statements.patch
+Content-Disposition: inline; filename=0015-ktest-Sort-make_min_config-configs-by-dependecies.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,89 +29,156 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Have IF statements process if a config variable or option has been
-defined or not. Can use NOT DEFINED in the case for telling if
-a variable or option has not been defined.
+The make_min_config test will turn off one config at a time and check
+if the config boots or not, and if it does, it will remove that config
+plus any config that depended on that config.
 
-DEFAULTS IF NOT DEFINED SSH_USER
-SSH_USER =3D root
+ktest already looks if a config has a dependency and will try the
+dependency config first. But by sorting the configs and trying the
+config with the most configs dependent on it, we can shrink the
+minconfig faster.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl    |   17 ++++++++++++++++-
- tools/testing/ktest/sample.conf |   17 +++++++++++++++++
- 2 files changed, 33 insertions(+), 1 deletions(-)
+ tools/testing/ktest/ktest.pl |   71 +++++++++++++++++++++++++++++---------=
+----
+ 1 files changed, 49 insertions(+), 22 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 7bce412..76a5964 100755
+index 76a5964..2a9d042 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -396,6 +396,13 @@ sub process_compare {
-     return $ret;
+@@ -2372,12 +2372,31 @@ sub patchcheck {
  }
 =20
-+sub value_defined {
-+    my ($val) =3D @_;
+ my %depends;
++my %depcount;
+ my $iflevel =3D 0;
+ my @ifdeps;
+=20
+ # prevent recursion
+ my %read_kconfigs;
+=20
++sub add_dep {
++    # $config depends on $dep
++    my ($config, $dep) =3D @_;
 +
-+    return defined($variable{$2}) ||
-+	defined($opt{$2});
++    if (defined($depends{$config})) {
++	$depends{$config} .=3D " " . $dep;
++    } else {
++	$depends{$config} =3D $dep;
++    }
++
++    # record the number of configs depending on $dep
++    if (defined $depcount{$dep}) {
++	$depcount{$dep}++;
++    } else {
++	$depcount{$dep} =3D 1;
++    }=20
 +}
 +
- sub process_if {
-     my ($name, $value) =3D @_;
+ # taken from streamline_config.pl
+ sub read_kconfig {
+     my ($kconfig) =3D @_;
+@@ -2424,30 +2443,19 @@ sub read_kconfig {
+ 	    $config =3D $2;
 =20
-@@ -409,13 +416,21 @@ sub process_if {
- 	return $ret;
+ 	    for (my $i =3D 0; $i < $iflevel; $i++) {
+-		if ($i) {
+-		    $depends{$config} .=3D " " . $ifdeps[$i];
+-		} else {
+-		    $depends{$config} =3D $ifdeps[$i];
+-		}
+-		$state =3D "DEP";
++		add_dep $config, $ifdeps[$i];
+ 	    }
+=20
+ 	# collect the depends for the config
+ 	} elsif ($state eq "NEW" && /^\s*depends\s+on\s+(.*)$/) {
+=20
+-	    if (defined($depends{$1})) {
+-		$depends{$config} .=3D " " . $1;
+-	    } else {
+-		$depends{$config} =3D $1;
+-	    }
++	    add_dep $config, $1;
+=20
+ 	# Get the configs that select this config
+-	} elsif ($state ne "NONE" && /^\s*select\s+(\S+)/) {
+-	    if (defined($depends{$1})) {
+-		$depends{$1} .=3D " " . $config;
+-	    } else {
+-		$depends{$1} =3D $config;
+-	    }
++	} elsif ($state eq "NEW" && /^\s*select\s+(\S+)/) {
++
++	    # selected by depends on config
++	    add_dep $1, $config;
+=20
+ 	# Check for if statements
+ 	} elsif (/^if\s+(.*\S)\s*$/) {
+@@ -2559,11 +2567,18 @@ sub make_new_config {
+     close OUT;
+ }
+=20
++sub chomp_config {
++    my ($config) =3D @_;
++
++    $config =3D~ s/CONFIG_//;
++
++    return $config;
++}
++
+ sub get_depends {
+     my ($dep) =3D @_;
+=20
+-    my $kconfig =3D $dep;
+-    $kconfig =3D~ s/CONFIG_//;
++    my $kconfig =3D chomp_config $dep;
+=20
+     $dep =3D $depends{"$kconfig"};
+=20
+@@ -2613,8 +2628,7 @@ sub test_this_config {
+ 	return undef;
      }
 =20
-+    if ($val =3D~ /^\s*(NOT\s*)?DEFINED\s+(\S+)\s*$/) {
-+	if (defined $1) {
-+	    return !value_defined($2);
-+	} else {
-+	    return value_defined($2);
+-    my $kconfig =3D $config;
+-    $kconfig =3D~ s/CONFIG_//;
++    my $kconfig =3D chomp_config $config;
+=20
+     # Test dependencies first
+     if (defined($depends{"$kconfig"})) {
+@@ -2704,6 +2718,14 @@ sub make_min_config {
+=20
+     my @config_keys =3D keys %min_configs;
+=20
++    # All configs need a depcount
++    foreach my $config (@config_keys) {
++	my $kconfig =3D chomp_config $config;
++	if (!defined $depcount{$kconfig}) {
++		$depcount{$kconfig} =3D 0;
 +	}
 +    }
 +
-     if ($val =3D~ /^\s*0\s*$/) {
- 	return 0;
-     } elsif ($val =3D~ /^\s*\d+\s*$/) {
- 	return 1;
-     }
+     # Remove anything that was set by the make allnoconfig
+     # we shouldn't need them as they get set for us anyway.
+     foreach my $config (@config_keys) {
+@@ -2742,8 +2764,13 @@ sub make_min_config {
+ 	# Now disable each config one by one and do a make oldconfig
+ 	# till we find a config that changes our list.
 =20
--    die ("$name: $.: Undefined variable $val in if statement\n");
-+    die ("$name: $.: Undefined content $val in if statement\n");
-     return 1;
- }
-=20
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
-onf
-index 0fd3ca3..7b49f07 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -137,6 +137,23 @@
- # ELSE
- # BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-64
- #
-+# The DEFINED keyword can be used by the IF statements too.
-+# It returns true if the given config variable or option has been defined
-+# or false otherwise.
-+#
-+#=20
-+# DEFAULTS IF DEFINED USE_CC
-+# CC :=3D ${USE_CC}
-+# ELSE
-+# CC :=3D gcc
-+#
-+#
-+# As well as NOT DEFINED.
-+#
-+# DEFAULTS IF NOT DEFINED MAKE_CMD
-+# MAKE_CMD :=3D make ARCH=3Dx86
-+#
-+#
- #
- # INCLUDE file
- #
+-	# Put configs that did not modify the config at the end.
+ 	my @test_configs =3D keys %min_configs;
++
++	# Sort keys by who is most dependent on
++	@test_configs =3D sort  { $depcount{chomp_config($b)} <=3D> $depcount{cho=
+mp_config($a)} }
++			  @test_configs ;
++
++	# Put configs that did not modify the config at the end.
+ 	my $reset =3D 1;
+ 	for (my $i =3D 0; $i < $#test_configs; $i++) {
+ 	    if (!defined($nochange_config{$test_configs[0]})) {
 --=20
 1.7.6.3
 
@@ -124,19 +191,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOnF8JAAoJEIy3vGnGbaoAu5sQAKYfnl6o0dnK2bPQW1e6em+d
-cXmfg1PVHDC2sy0jC3CUACFrK6cqmIeZVxTXPplYzrwLdAxvJmeOhHQh22NtxELG
-zFXX3a7KSVECq2hCk5d5zMxrHi0IVpyCNjX12wJqeMr9UUJV/n5d3iD8cEFHhYzN
-FsmMSbJXrnXJfCn9KHsacpL75hkdvsQMaRwoikUpuawjHfKgA/Hsl+6NdAfgRXIS
-zG7dvaxY4To1xUpPbST6oS0KWeCaqO/UJu7RYkivTzVVKK0yAAxJt4zBPbMGaBym
-dU3P3+OHRPAWHRu3ZvuBqLDJfuLA2yv3XRVv8GfJBnKuhC2qvB2spdqeCj7KcZQA
-Xi5HVmYaxg+MMjHdyseFO2ODqjMrpnQy6KIW2SmiQjwwHwmecUXSknPjVTqPyuJe
-YirMYMOTZ28vrHIYE5VZRmms+OnXK04BvE1GUOIxybBsJIx/HwgtrhtVNYvsrLrt
-GHF2TXtOVGoZccyr+1soOHfZYvaCeE5Cz1MQ7DbHFPOEMumylpbL1JLopx0M9s8W
-U1NxTzX+k3hIluqu/4JSF4fttY3e++OxYvQXWv1BxCXL27oi7UYldpA+WG1zLYdN
-v5RCTzLFzOksqpEdtiED/ZT95xaoBez5ZfZftqlh4WJvxw62iBgQ6yiUSnTNkHpv
-/8Py3YiWdMZg3W0gwBkJ
-=L89i
+iQIcBAABAgAGBQJOnF8KAAoJEIy3vGnGbaoAO50P/2MfFdD3Nlk57HrrAY8wWb4J
+mRpz5tRyMX8IC4M5IecbrXCqYcSlK5J68412+3TSaIAlE2vbwFSgwIX3VbI42b8F
+q+T5RBIP2eCf1eDhj0bnISM7m/FazLLcpW4dPJihJlGWd4CaO4s2IggbKMhOXrTH
+Bob5i5hoJNSPk1GeEszztIhn0Jzl5L31ohJj9cNSIc46fUv1E4T9bD605Q42eCLp
+jt1uhwDOqJJLaUF5PxtAyOqq4BU3xjvIXCKXGBH/7fdPkPe8fUTF8M5KQRX+RZMo
+OnryEV+4NeD3NjrWNIsaKv9//CQt4miArPZc+VR9Zx9WehgBgPO+fNQaFMa0ofDz
+MXKXGxgAVYQvetrLsFr+6eyO362W8yIncrIMl2aPMsYR3oh4+3gdL4RtxN25jBv5
+YrDwZDdlLx09/gIRq8lT7k2TUeOEQv5S30UKGviQCh8MS63ZA+OgO+PFgZagH0xb
+4w1gYokWyy9BY10dlSd107zhIKdHSmfDaveVLeDsJPrO85RHiLJIXc4oVkFjlkBE
+v8N2bjHQ44Z7HMBWLdDFXDCvcedW//XvQWFKlAuhycvsgsvNCibYleVlEEiKNLCC
+GZKAWKxGQueuq4QYTXxjynwRf0VAcDRHNITHAuWYzYNLO2lQ6behMLa3P9AZTX0X
+5KGJ8ipjeeGG2Sec4G87
+=YkD7
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
