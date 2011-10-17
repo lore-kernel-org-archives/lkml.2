@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab1JQPyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:54:49 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60472 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751512Ab1JQPys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:54:48 -0400
-Date: Mon, 17 Oct 2011 16:48:39 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Matthew Garrett <mjg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
-        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-Message-ID: <20111017164839.3887ee3e@lxorguk.ukuu.org.uk>
-In-Reply-To: <1318864870.4172.61.camel@twins>
-References: <1318837019.6594.29.camel@twins>
-	<alpine.LFD.2.02.1110171119580.3240@ionos>
-	<20111017124647.GA12838@srcf.ucam.org>
-	<1318856786.4172.22.camel@twins>
-	<20111017141147.GA14581@srcf.ucam.org>
-	<1318861707.4172.32.camel@twins>
-	<20111017144013.GA15447@srcf.ucam.org>
-	<1318862969.4172.45.camel@twins>
-	<20111017145952.GB15769@srcf.ucam.org>
-	<1318864260.4172.54.camel@twins>
-	<20111017151920.GA16664@srcf.ucam.org>
-	<1318864870.4172.61.camel@twins>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756389Ab1JQPzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:55:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34120 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751512Ab1JQPzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 11:55:07 -0400
+Date: Mon, 17 Oct 2011 08:54:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+ staging
+Message-ID: <20111017155442.GA14911@suse.de>
+References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
+ <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
+ <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
+ <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hard enforcement is very much better than papering over because it makes
-> the individual developer instantly aware that he's got a problem.
+On Mon, Oct 17, 2011 at 10:26:42AM -0500, James Bottomley wrote:
+> On Mon, 2011-10-17 at 15:15 +0000, KY Srinivasan wrote:
+> > This patch is against Greg's staging tree where recently I merged all
+> > of the storage
+> > drivers into a single driver. This change may not have percolated up
+> > yet - Greg has
+> > checked this into his staging tree though.
+> 
+> OK, that explains the difference.
+> 
+> > As I deal with the review comments now, do you want me to get these
+> > changes
+> > applied first to Greg's tree before you would consider moving this
+> > driver to drivers/scsi
+> > directory, or could you move the driver as it is in Greg's tree under
+> > staging and I could give
+> > you patches against the moved driver.
+> 
+> Either way is fine by me.  The best route for this is to get the staging
+> update into Linus head, then work on the actual SCSI problems.  I'd like
+> other SCSI people besides me to review it.
 
-Not always
+That will happen for the 3.2-rc1 release, so that might be the better
+time to review this.
 
-If you do weird container crap with timers than app authors will simply
-point out that the weird container crap is buggy as it works properly in
-a normal environment.
-
+greg k-h
