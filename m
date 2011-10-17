@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab1JQLZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:25:19 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60009 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab1JQLZR convert rfc822-to-8bit (ORCPT
+	id S1751425Ab1JQL26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 07:28:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56423 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab1JQL24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:25:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111013165431.b84ffab4.akpm@linux-foundation.org>
-References: <1318408317.2891.3.camel@br98xy6r> <20111013165431.b84ffab4.akpm@linux-foundation.org>
-From: =?ISO-8859-1?Q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>
-Date: Mon, 17 Oct 2011 09:24:57 -0200
-Message-ID: <CAGje9yQOmBe45DC_k67AL4V24Pkr_+6MRFK4Gfj9uYNEGVOpkg@mail.gmail.com>
-Subject: Re: [PATCH] Fix strim() semantics for strings that have only blanks
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Oct 2011 07:28:56 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <iommu@lists.linux-foundation.org>
+Cc: <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH v4 0/7] iommu: split mapping to page sizes as supported by the hardware
+Date: Mon, 17 Oct 2011 13:27:19 +0200
+Message-Id: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michael,
+v3->v4:
+- simplify splitter logic (Joerg)
+- declare supported page-sizes in the iommu_ops, without extending iommu_register (Joerg)
+- iommu_unmap should now return bytes too (Joerg)
+- don't cache min_pgsize anymore (Joerg)
+- handle cases when ->unmap() actually unmaps more than requested (Joerg)
+- unroll iommu_unmap completely in case it fails (KyongHo)
+- use size_t for size parameters (KyongHo)
+- add a patch to remove the bytes->order->bytes conversion we had
+- rabase to master branch of the iommu tree (Joerg)
 
-On Thu, Oct 13, 2011 at 8:54 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 12 Oct 2011 10:31:57 +0200
-> Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
->
->> Hello Andre,
->>
->> With git commit 84c95c9acf088c99d8793d78036b67faa5d0b851 a patch from
->> you went upstream where you wanted to improve the performance of the
->> strim() function.
->>
->> Unfortunately this changed the semantics of strim() and broke my code. Before
->> the patch it was possible to use strim() without using the return value for
->> removing trailing spaces from strings that had either only blanks or only
->> trailing blanks.
->>
->> Now this does not work any longer for strings that *only* have blanks.
->>
->> Before patch: "   " -> ""    (empty string)
->> After patch:  "   " -> "   " (no change)
->>
->> I think we should remove your patch to restore the old behavior.
->>
->> >From the description (lib/string.c):
->>
->>  * Note that the first trailing whitespace is replaced with a %NUL-terminator
->>
->> => The first trailing whitespace of a string that only has whitespace
->>    characters is the first whitespace
->
-> Yes, that change makes sense.
+v2->v3:
+- s/KB/KiB/ (David W)
 
-breaking your code was not good at all. Is it maintained off tree?
-I believe It happened because you use strim() without using its return.
-In any case, I'm OK on reverting it to fix your problem.
+v1->v2:
+- split to patches (by keeping the old code around until all drivers are converted) (Joerg)
 
-Thanks,
-André
+Tested with OMAP3 (omap3isp) and OMAP4 (rpmsg/remoteproc).
+Compile tested with X86_64.
+
+Ohad Ben-Cohen (7):
+  iommu/core: stop converting bytes to page order back and forth
+  iommu/core: split mapping to page sizes as supported by the hardware
+  iommu/omap: announce supported page sizes
+  iommu/msm: announce supported page sizes
+  iommu/amd: announce supported page sizes
+  iommu/intel: announce supported page sizes
+  iommu/core: remove the temporary pgsize settings
+
+ drivers/iommu/amd_iommu.c   |   32 +++++++++---
+ drivers/iommu/intel-iommu.c |   30 ++++++++---
+ drivers/iommu/iommu.c       |  119 ++++++++++++++++++++++++++++++++++++++----
+ drivers/iommu/msm_iommu.c   |   25 ++++-----
+ drivers/iommu/omap-iommu.c  |   18 +++---
+ drivers/iommu/omap-iovmm.c  |   17 ++----
+ include/linux/iommu.h       |   26 +++++++--
+ virt/kvm/iommu.c            |    8 ++--
+ 8 files changed, 205 insertions(+), 70 deletions(-)
+
+-- 
+1.7.4.1
+
