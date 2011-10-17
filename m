@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab1JQHcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 03:32:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:52531 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754843Ab1JQHcG convert rfc822-to-8bit (ORCPT
+	id S1754877Ab1JQHfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 03:35:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40775 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab1JQHfR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 03:32:06 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19oN803Y3FoG7BXgLoylR6aFInDDyhF/La1tev3nu
-	3jjTx1aq1MNPtz
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: David Rientjes <rientjes@google.com>, David Rientjes <rientjes@google.com>
-Subject: Re: 3.1.0-rc9+ : wlan stops working w/o any error messages
-Date: Mon, 17 Oct 2011 09:31:58 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; i686; ; )
-Cc: werner <w.landgraf@ru.ru>, "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        ilw@linux.intel.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201110152119.58509.toralf.foerster@gmx.de> <alpine.DEB.2.00.1110151416360.15894@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110151416360.15894@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 17 Oct 2011 03:35:17 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
+        greg@kroah.com
+Date: Mon, 17 Oct 2011 09:34:37 +0200
+In-Reply-To: <20111017032232.GA4816@srcf.ucam.org>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+	 <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+	 <20111014154348.ae6267aa.akpm@linux-foundation.org>
+	 <20111015112006.GA10173@tango.0pointer.de> <1318705910.2664.5.camel@laptop>
+	 <20111017013921.GA30035@tango.0pointer.de>
+	 <20111017032232.GA4816@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201110170931.59534.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318836877.6594.26.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-10-17 at 04:22 +0100, Matthew Garrett wrote:
+> 
+> I agree. We can't assume perfect software, and I don't think *requiring* 
+> the duplication of this functionality in every single session 
+> application is sensible. We want to be able to shut down timer based 
+> code when the session is idle. We could do this by exposing the slack in 
+> /proc. We could do this by modifying every piece of code to listen for 
+> session idle events and (independently) enact session-wide policy. Or we 
+> could just accept that it's a problem that maps onto what people are 
+> already using cgroups for and implement it in the same way. 
 
-David Rientjes wrote at 23:21:59
-> What's the last kernel prior to 3.1-rc9 that worked for you?
-2.6.39.4 (in general that kernel version rocks, reliable, stable, no problems 
-AFAICS, 3.0.x have problems in the DVB-T area, 3.1 added wlan issues)
+So what about the app that is both screen oriented and has a server
+part, say some multi-player game thing. Suppose you run one as a server
+but leave the client idle (you go have dinner with a pretty lady instead
+of playing quake, but leave your machine up to serve for your nerd
+friends).
 
-> What does "iwconfig" show?
-wlan0     IEEE 802.11abgn  ESSID:"IBM"  
-          Mode:Managed  Frequency:2.462 GHz  Access Point: 00:21:55:AC:8B:80   
-          Bit Rate=54 Mb/s   Tx-Power=15 dBm   
-          Retry  long limit:7   RTS thr:off   Fragment thr:off
-          Encryption key:off
-          Power Management:off
-          Link Quality=49/70  Signal level=-61 dBm  
-          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-          Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+Should your friends get punished with a horrible gaming experience just
+because you're having a good time IRL and your screen went blank?
 
-> What does "dmesg | grep iwlagn" show?
-n22 ~ # dmesg | grep iwlagn
-iwlagn 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-iwlagn 0000:03:00.0: setting latency timer to 64
-iwlagn 0000:03:00.0: pci_resource_len = 0x00002000
-iwlagn 0000:03:00.0: pci_resource_base = f81f8000
-iwlagn 0000:03:00.0: HW Revision ID = 0x0
-iwlagn 0000:03:00.0: irq 48 for MSI/MSI-X
-iwlagn 0000:03:00.0: Detected Intel(R) WiFi Link 5100 AGN, REV=0x54
-iwlagn 0000:03:00.0: L1 Disabled; Enabling L0S
-iwlagn 0000:03:00.0: device EEPROM VER=0x11e, CALIB=0x4
-iwlagn 0000:03:00.0: Device SKU: 0Xf0
-iwlagn 0000:03:00.0: Tunable channels: 13 802.11bg, 24 802.11a channels
-iwlagn 0000:03:00.0: loaded firmware version 8.83.5.1 build 33692
-iwlagn 0000:03:00.0: L1 Disabled; Enabling L0S
-iwlagn 0000:03:00.0: Radio type=0x1-0x2-0x0
-iwlagn 0000:03:00.0: L1 Disabled; Enabling L0S
-iwlagn 0000:03:00.0: Radio type=0x1-0x2-0x0
-
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Sure pushing up timer slack will save you power, but it will also hurt
+people, what will you do for them? The same that you do for those that
+want to run a CGROUP=n kernel?
