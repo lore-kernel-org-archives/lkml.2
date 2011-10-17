@@ -1,94 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab1JQKm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 06:42:56 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:42715 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755305Ab1JQKka (ORCPT
+	id S1755339Ab1JQKqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 06:46:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55081 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752574Ab1JQKqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 06:40:30 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 02/10] x86, efi: Make efi_call_phys_prelog() CONFIG_RELOCATABLE-aware
-Date: Mon, 17 Oct 2011 11:40:09 +0100
-Message-Id: <1318848017-12301-3-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1318848017-12301-1-git-send-email-matt@console-pimps.org>
-References: <1318848017-12301-1-git-send-email-matt@console-pimps.org>
+	Mon, 17 Oct 2011 06:46:47 -0400
+Date: Mon, 17 Oct 2011 11:46:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, zdevai@gmail.com
+Subject: Re: [PATCH] staging:iio:proof of concept in kernel interface.
+Message-ID: <20111017104642.GD3042@opensource.wolfsonmicro.com>
+References: <1318333383-17663-1-git-send-email-jic23@cam.ac.uk>
+ <1318333383-17663-2-git-send-email-jic23@cam.ac.uk>
+ <20111013143224.GO1098@sirena.org.uk>
+ <4E96F9AC.9000001@cam.ac.uk>
+ <20111013204410.GA17160@sirena.org.uk>
+ <4E985C60.9020308@cam.ac.uk>
+ <CAKnu2MrUkY2upFh5d6GGTNUr-=r_JKcxh5OQNV63bdOCa4F+zg@mail.gmail.com>
+ <4E9BF8D9.8030301@cam.ac.uk>
+ <20111017101959.GC3042@opensource.wolfsonmicro.com>
+ <4E9C0423.5010909@cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9C0423.5010909@cam.ac.uk>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Mon, Oct 17, 2011 at 11:32:03AM +0100, Jonathan Cameron wrote:
 
-efi_call_phys_prelog() assumes that the kernel was loaded at a
-physical address within the first 8MB of ram, usually
-0x1000000. However, this isn't the case with a CONFIG_RELOCATABLE=y
-kernel which could have been loaded anywhere in the physical address
-space.
+> Initially I'd be tempted to only support numbered channels (on adc side).
+> Later we can add the named option - iff it has real use cases.
 
-Replace the hardcoded pgd_index(0) and pgd_index(PAGE_OFFSET) with the
-runtime addresses of the kernel in the physical and virtual space,
-respectively.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/platform/efi/efi_32.c |   22 +++++++++++++---------
- 1 files changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
-index 5cab48e..1156e9a 100644
---- a/arch/x86/platform/efi/efi_32.c
-+++ b/arch/x86/platform/efi/efi_32.c
-@@ -44,8 +44,12 @@ void efi_call_phys_prelog(void)
- {
- 	unsigned long cr4;
- 	unsigned long temp;
-+	unsigned long phys_addr, virt_addr;
- 	struct desc_ptr gdt_descr;
- 
-+	virt_addr = (unsigned long)_text;
-+	phys_addr = virt_addr - PAGE_OFFSET;
-+
- 	local_irq_save(efi_rt_eflags);
- 
- 	/*
-@@ -57,18 +61,18 @@ void efi_call_phys_prelog(void)
- 
- 	if (cr4 & X86_CR4_PAE) {
- 		efi_bak_pg_dir_pointer[0].pgd =
--		    swapper_pg_dir[pgd_index(0)].pgd;
--		swapper_pg_dir[0].pgd =
--		    swapper_pg_dir[pgd_index(PAGE_OFFSET)].pgd;
-+		    swapper_pg_dir[pgd_index(phys_addr)].pgd;
-+		swapper_pg_dir[pgd_index(phys_addr)].pgd =
-+		    swapper_pg_dir[pgd_index(virt_addr)].pgd;
- 	} else {
- 		efi_bak_pg_dir_pointer[0].pgd =
--		    swapper_pg_dir[pgd_index(0)].pgd;
-+		    swapper_pg_dir[pgd_index(phys_addr)].pgd;
- 		efi_bak_pg_dir_pointer[1].pgd =
--		    swapper_pg_dir[pgd_index(0x400000)].pgd;
--		swapper_pg_dir[pgd_index(0)].pgd =
--		    swapper_pg_dir[pgd_index(PAGE_OFFSET)].pgd;
--		temp = PAGE_OFFSET + 0x400000;
--		swapper_pg_dir[pgd_index(0x400000)].pgd =
-+		    swapper_pg_dir[pgd_index(phys_addr + 0x400000)].pgd;
-+		swapper_pg_dir[pgd_index(phys_addr)].pgd =
-+		    swapper_pg_dir[pgd_index(virt_addr)].pgd;
-+		temp = virt_addr + 0x400000;
-+		swapper_pg_dir[pgd_index(phys_addr + 0x400000)].pgd =
- 		    swapper_pg_dir[pgd_index(temp)].pgd;
- 	}
- 
--- 
-1.7.4.4
-
+I think the PMIC case is a real one, assigning numbers people need to
+use to find things is doesn't really reflect actual usage.
