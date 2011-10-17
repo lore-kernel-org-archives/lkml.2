@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab1JQOn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 10:43:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26258 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab1JQOn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 10:43:28 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 2/3] sparc: gup_pte_range() support THP based tail recounting
-Date: Mon, 17 Oct 2011 16:41:56 +0200
-Message-Id: <1318862517-7042-3-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1318862517-7042-1-git-send-email-aarcange@redhat.com>
-References: <1316793432.9084.47.camel@twins>
- <1318862517-7042-1-git-send-email-aarcange@redhat.com>
+	id S1756010Ab1JQOp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 10:45:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53324 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab1JQOpy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 10:45:54 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Date: Mon, 17 Oct 2011 16:45:30 +0200
+In-Reply-To: <4E9C3D39.9020109@linux.intel.com>
+References: <20111014154348.ae6267aa.akpm@linux-foundation.org>
+	  <20111015112006.GA10173@tango.0pointer.de>
+	 <1318705910.2664.5.camel@laptop>
+	  <20111017013921.GA30035@tango.0pointer.de>
+	  <20111017032232.GA4816@srcf.ucam.org> <4E9BBB6D.4050004@linux.intel.com>
+	  <1318837019.6594.29.camel@twins>
+	 <alpine.LFD.2.02.1110171119580.3240@ionos>
+	  <20111017124647.GA12838@srcf.ucam.org> <1318856786.4172.22.camel@twins>
+	  <20111017141147.GA14581@srcf.ucam.org> <1318861707.4172.32.camel@twins>
+	 <4E9C3D39.9020109@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318862730.4172.41.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up to this point the code assumed old refcounting for hugepages
-(pre-thp). This updates the code directly to the thp mapcount tail
-page refcounting.
+On Mon, 2011-10-17 at 07:35 -0700, Arjan van de Ven wrote:
+> On 10/17/2011 7:28 AM, Peter Zijlstra wrote:
+> > Or even when I minimize firefox. That said, ff will probably crash as 
+> > soon as I open a second tab because the retarded thing will very 
+> > likely continue animating everything on the invisible tab anyway. You 
+> > could start by making the X lib of the day, is that XCB these days?, 
+> > issue an error print (you get plenty of those anyway) and progress to 
+> > full on crashing later. This gives developers a migration window and 
+> > incentive to fix up their apps.
+> 
+> so back in the time that worked on a project that used Qt as their 
+> toolkit (geez is it that long ago already ;-) )... we fixed Qt to stop 
+> doing this.
+> The right level for this sort of thing is the toolkit level (which by 
+> and large also does the animations), not Xlib.
+> The toolkit level also will then need to provide the right notifications 
+> to the app for things the toolkit does not do
+> (eg "we're at least partially visible" versus "now none of our pixels 
+> are on the screen").
+> 
+> It ended up being a thing for the toolkit and a minor tweak in the 
+> compositor... and it worked quite ok, the app guys actually
+> asked for the API (because they knew I would beat them up for getting it 
+> wrong)...
+> 
+> doing things on the xlib level (or even X level) means you take away the 
+> chance for the App(tm) to do things the right way;
+> make it easy for the app, not hard.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- arch/sparc/mm/gup.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+I'm not immediately seeing how enforcing these semantics through X makes
+it harder for the app, or would in fact get in the way of the toolkit
+providing similar features.
 
-diff --git a/arch/sparc/mm/gup.c b/arch/sparc/mm/gup.c
-index a986b5d..afcebac 100644
---- a/arch/sparc/mm/gup.c
-+++ b/arch/sparc/mm/gup.c
-@@ -12,6 +12,17 @@
- #include <linux/rwsem.h>
- #include <asm/pgtable.h>
- 
-+static inline void get_huge_page_tail(struct page *page)
-+{
-+	/*
-+	 * __split_huge_page_refcount() cannot run
-+	 * from under us.
-+	 */
-+	VM_BUG_ON(page_mapcount(page) < 0);
-+	VM_BUG_ON(atomic_read(&page->_count) != 0);
-+	atomic_inc(&page->_mapcount);
-+}
-+
- /*
-  * The performance critical leaf functions are made noinline otherwise gcc
-  * inlines everything into a single function which results in too much
-@@ -56,6 +67,8 @@ static noinline int gup_pte_range(pmd_t pmd, unsigned long addr,
- 			put_page(head);
- 			return 0;
- 		}
-+		if (head != page)
-+			get_huge_page_tail(page);
- 
- 		pages[*nr] = page;
- 		(*nr)++;
+But they key point to my argument is that at whatever level you're going
+to do this, it needs to be unforgivingly enforced. Otherwise its useless
+because people either don't know or don't care.
+
+Esp. when you then go do crap like proposed and fudge the timers so that
+the impact of doing it wrong is dampened.
+
+
