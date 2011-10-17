@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1JQSdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:33:44 -0400
-Received: from smtp-out-020.synserver.de ([212.40.185.20]:1131 "HELO
-	smtp-out-014.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752650Ab1JQSdm (ORCPT
+	id S1752870Ab1JQSdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:33:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64048 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab1JQSdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:33:42 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 10856
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: Michael Hennerich <michael.hennerich@analog.com>,
-        alsa-devel@alsa-project.org, drivers@analog.com,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] MAINTAINERS: Add maintainer for Analog Devices sound CODECs
-Date: Mon, 17 Oct 2011 20:33:05 +0200
-Message-Id: <1318876385-26902-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 17 Oct 2011 14:33:51 -0400
+Message-ID: <4E9C7518.7080005@lwfinger.net>
+Date: Mon, 17 Oct 2011 13:34:00 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: wireless <linux-wireless@vger.kernel.org>, v4mp <gaigo88@hotmail.it>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Problem with xhci-hcd and Alfa AWUS036NHR
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAINTAINERS  entry for the ADI sound CODEC drivers currently only lists the
-ADI devices-drivers-devel mailing-list. Add myself as additional contact, since
-I'm the person at ADI who is currently doing most of the work on these drivers.
+I am trying to help v4mp <gaigo88@hotmail.it> with a wireless problem.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- MAINTAINERS |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+He is running Ubuntu natty 3.0.4-030004-generic and get the following items in 
+his dmesg output:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0b4ccdd..b2dabb7 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -530,6 +530,7 @@ S:	Maintained
- F:	drivers/infiniband/hw/amso1100/
- 
- ANALOG DEVICES INC ASOC CODEC DRIVERS
-+M:	Lars-Peter Clausen <lars@metafoo.de>
- L:	device-drivers-devel@blackfin.uclinux.org
- L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
- W:	http://wiki.analog.com/
--- 
-1.7.2.5
+[    3.963920] xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
+[    3.970920] xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
+[    3.975037] xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
+[    3.976097] usb 3-2: ep 0x81 - rounding interval to 64 microframes, ep desc 
+says 80 microframes
+[    3.984899] xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
 
+and later many of
+
+[  545.272708] xhci_hcd 0000:05:00.0: ERROR no room on ep ring
+
+A nearly complete dmesg output is at http://pastebin.com/7tfcBfbD. I asked the 
+OP to paste the entire output, but he gave me what is posted there.
+
+Is there a bug in the rtl8192cu USB handling that would let the device work with 
+ehci-hcd and ohci-hcd, but fail with xhci-hcd?
+
+Would commit 44f4c3e (USB: xhci: Set change bit when warm reset change is set) 
+have any effect on this? I do not know if this is in 3.0.4.
+
+I did not find any other recent commits that are aimed at xhci and looked as if 
+they might address this issue. Did I miss any?
+
+Note: The Alfa device works fine on my system with only ohci and ehci controllers.
+
+Thanks,
+
+Larry
