@@ -1,124 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab1JQPQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 11:16:57 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38256 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab1JQPQ4 (ORCPT
+	id S1756206Ab1JQPSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 11:18:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38927 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab1JQPSu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 11:16:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	<1317295068.1573.1780.camel@vkoul-udesk3>
-	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	<20111003161349.GB28287@flint.arm.linux.org.uk>
-	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321C11@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZheocjVhD4PTXQo3R7rqgiyt4BCo8Fx_sJ7AmDCjB=zMxQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
-Date: Mon, 17 Oct 2011 20:46:54 +0530
-Message-ID: <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
-        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Oct 2011 11:18:50 -0400
+Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        linux-api@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com
+Date: Mon, 17 Oct 2011 17:18:33 +0200
+References: <20111017032232.GA4816@srcf.ucam.org>
+	 <4E9BBB6D.4050004@linux.intel.com> <1318837019.6594.29.camel@twins>
+	 <alpine.LFD.2.02.1110171119580.3240@ionos>
+	 <20111017124647.GA12838@srcf.ucam.org> <1318856786.4172.22.camel@twins>
+	 <20111017141147.GA14581@srcf.ucam.org> <1318861707.4172.32.camel@twins>
+	 <20111017144013.GA15447@srcf.ucam.org> <1318862969.4172.45.camel@twins>
+	 <20111017145952.GB15769@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318864713.4172.59.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2011 19:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
-> On Sat, Oct 15, 2011 at 7:26 AM, Jassi Brar <jaswinder.singh@linaro.org>
-> wrote:
->>
->> On 15 October 2011 00:45, Bounine, Alexandre
->> <Alexandre.Bounine@idt.com> wrote:
->>
->> >> But doesn't the info, pointed to by this (void *), remain same for
->> >> every
->> >> transfer to a particular target/remote device ?
->> > No. An address within the target may (and most likely will) be
-> changed for
->> > every transfer. Target destination ID will be the same for given
-> virtual channel.
->> >
->> Thanks for the info.
->>
->> > Virtual channel may bring the same challenge and I may need a
-> channel locking
->> > if more than one requester try to read/write data to the same target
-> RIO device.
->> >
->> One can't avoid taking care of locking, but using virtual channels
->> keeps the dma_chan usage consistent.
->>
-> Using virtual channels adds layers of complexity
-Perhaps you didn't get me ... I suggest the dma controller driver
-(not client drivers) create virtual channels corresponding to each
-device it can talk to. A bunch of virtual channels could be served
-by a single appropriate physical channel.
-It is actually quite common, see amba-pl08x.c or pl330.c for example.
+On Mon, 2011-10-17 at 17:11 +0200, Peter Zijlstra wrote:
+> For a while people were promoting the idea that its good to be lenient
+> in what you accept as input and strict in what you send out. I think
+> people are starting to realize that was a horrid mistake since now
+> they're getting utter crap and people don't even know what right is
+> anymore. 
 
-> which may be avoided with simple API changes:
-> - virtual channel allocation: statically vs. dynamically
-Yes, it would be cool but it's not possible right now.
+Since different apps might have treated similar non-conformant input
+differently and now no single behaviour is correct.
 
-> - linking virtual channel to the physical one
->
-Perhaps you mean what I suggested ?
-
->
->> RapidIO supports 34(32+2), 50(48+2) and 66(64+2) bit addressing
->> which makes me wonder if the (upper or lower) 2 bits could be attached
->> to
->> the identity of the target device ?
->> (tsi721 driver actually discards the upper 2 bits while claiming to
->> support
->> 66bit addressing so I couldn't make anything out of it and specs don't
->> seem to say much about it)
->>
->> If there is no user of 66bit addressing and isn't coming in very near
->> future,
->> we might as well drop that case for now(tsi721 already does) because
->> that 'completeness' of support modifies the semantics of dmaengine
-> apis
->> today for no real use.
-> This is marked to be fixed in tsi721 driver. Also, this is a local
-> deficiency
-> and changing it that does not affect other components of the RIO
-> subsystem.
-> Contrary to that, defining an upper layer affects all future development
-> and
-> may result in greater pain if it needs to be adjusted later.
->
-I just wanted to know
-
-1) The role of the 'extra' 2bits ?
-
-2) Are there real use-cases that are blocked on this support right now ?
-    If there are indeed, do you think the transfer would be _randomly_
-   distributed over the 66-bit address space ? Because otherwise, maybe
-   the upper 2 bits could be used to "activate" one of the 4 "segments"
-   using slave config call.
-
-We should try our best to avoid opening the can of worms by adding
-(void *) hook to each transfer, because any client driver could want to
-pass its own private data to dmac and there would be no way for a dmac
-driver to know what to cast the void pointer to.
-Thanks.
+I think either dhowells or dwmw2 had a good blog post on that a while
+back.
