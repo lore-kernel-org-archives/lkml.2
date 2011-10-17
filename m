@@ -1,108 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab1JQL7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 07:59:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35787 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab1JQL7N (ORCPT
+	id S1752168Ab1JQMCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 08:02:49 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4842 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751442Ab1JQMCs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 07:59:13 -0400
-Date: Mon, 17 Oct 2011 12:59:08 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, linus.walleij@stericsson.com, jamie@jamieiles.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 6/6] mach-ux500: remove intermediary add_platform_device*
- functions
-Message-ID: <20111017115908.GE4992@totoro>
-References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
- <1318852378-14180-7-git-send-email-lee.jones@linaro.org>
+	Mon, 17 Oct 2011 08:02:48 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+From: "Steve (Steven) Ulrich" <steve.ulrich@broadcom.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 17 Oct 2011 05:02:40 -0700
+Subject: Broken links to older kernels on kernel.org - will they be
+ restored?
+Thread-Topic: Broken links to older kernels on kernel.org - will they be
+ restored?
+Thread-Index: AcyMxKuC3pL1Cxd3S1GABPqv/W2dfw==
+Message-ID: <DBFBCB90599B2C46992032279293D10020AE1FEE23@SJEXCHCCR01.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318852378-14180-7-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 6282C5550EG1676460-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Several of the top-level hyperlinks on kernel.org appear to be broken.  For example, the [Full Source] link for 2.6.34.10 produces the following output:
 
-On Mon, Oct 17, 2011 at 12:52:58PM +0100, Lee Jones wrote:
-> These are no longer required since a 'parent' pointer is now
-> passed to each registering device.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/mach-ux500/devices-common.c |   53 ----------------------------------
->  arch/arm/mach-ux500/devices-common.h |   34 +++++++++------------
->  arch/arm/mach-ux500/devices-db8500.h |   10 ++++--
->  3 files changed, 22 insertions(+), 75 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/devices-common.c b/arch/arm/mach-ux500/devices-common.c
-> index b8d9a99..170975f 100644
-> --- a/arch/arm/mach-ux500/devices-common.c
-> +++ b/arch/arm/mach-ux500/devices-common.c
-> @@ -59,59 +59,6 @@ dbx500_add_amba_device(struct device *parent, const char *name,
->  }
->  
->  static struct platform_device *
-> -dbx500_add_platform_device(const char *name, int id, void *pdata,
-> -			   struct resource *res, int resnum)
-> -{
-> -	struct platform_device *dev;
-> -	int ret;
-> -
-> -	dev = platform_device_alloc(name, id);
-> -	if (!dev)
-> -		return ERR_PTR(-ENOMEM);
-> -
-> -	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> -	dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
-> -
-> -	ret = platform_device_add_resources(dev, res, resnum);
-> -	if (ret)
-> -		goto out_free;
-> -
-> -	dev->dev.platform_data = pdata;
-> -
-> -	ret = platform_device_add(dev);
-> -	if (ret)
-> -		goto out_free;
-> -
-> -	return dev;
-> -
-> -out_free:
-> -	platform_device_put(dev);
-> -	return ERR_PTR(ret);
-> -}
-[...]
-> diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
-> index f8adff8..089371e 100644
-> --- a/arch/arm/mach-ux500/devices-common.h
-> +++ b/arch/arm/mach-ux500/devices-common.h
-[...]
-> -static inline struct platform_device *
-> -dbx500_add_msp_i2s(int id, resource_size_t base, int irq,
-> -		   struct msp_i2s_platform_data *pdata)
-> -{
-> -	return dbx500_add_platform_device_4k1irq("MSP_I2S", id, base, irq,
-> -						 pdata);
-> +	struct resource resources[] = {
-> +		DEFINE_RES_MEM(base, SZ_4K),
-> +		DEFINE_RES_IRQ(irq),
-> +	};
-> +
-> +	return platform_device_register_resndata(parent, "nmk-i2c",
-> +						 id, resources,
-> +						 ARRAY_SIZE(resources),
-> +						 pdata, sizeof(*pdata));
->  }
+Not Found
 
-I think you need platform_device_register_full() rather than 
-platform_device_register_resndata() here as dbx500_add_platform_device() 
-also set a dma mask which platform_device_register_resndata() doesn't 
-do.  Otherwise a nice diffstat!
+The requested URL /pub/linux/kernel/v2.6/longterm/v2.6.34/linux-2.6.34.10.tar.bz2 was not found on this server.
 
-Jamie
+Is there a estimated date for when these older links will be restored?
+
+Thanks in advance,
+Steve Ulrich
+
+
