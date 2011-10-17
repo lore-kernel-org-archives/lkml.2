@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1JQSOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 14:14:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57787 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1JQSOL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 14:14:11 -0400
-Subject: [PATCH] drivers, vmw_balloon.c: Determine page allocation flag
- can_sleep outside loop.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dtor@vmware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 00:13:47 +0600
-Message-ID: <1318875227.10091.5.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752212Ab1JQSRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 14:17:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43563 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314Ab1JQSRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 14:17:01 -0400
+Date: Mon, 17 Oct 2011 20:16:55 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Nico Schottelius <nico-linux-20111017@schottelius.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
+In-Reply-To: <20111017175906.GA3461@schottelius.org>
+Message-ID: <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
+References: <20111017175906.GA3461@schottelius.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- In vmballoon_reserve_page function, flags has been passed from the callee function (vmballoon_inflate here). So, we can determine can_sleep outside the loop.
+On Mon, 17 Oct 2011, Nico Schottelius wrote:
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+> Hello LKML,
+> 
+> after several days of reading various forums and mailinglists,
+> it seems that keyboard and mouse support on the MacBook Air is
+> pretty broken:
+> 
+> - The fn key does not modify the cursor behaviour:
+>   FN+Cursor up should result in Page up,
+>   FN+Cursor down should result in Page down, etc.
+> 
+>   Actual result: Cursor keys are passed in as usual
+> 
+> - The multitouch trackpad only works if bcm5974 is loaded before usbhid
+>   -> otherwise only left click works
+> 
+> - If bcm5974 is loaded before usbhid, left moving the mouse while
+>   holding down the mouse button (i.e. the trackpad) does not work,
+>   but results in a right click
+> 
+> Anyone a pointer on how to fix these issues?
 
-diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
-index 053d36c..6983d80 100644
---- a/drivers/misc/vmw_balloon.c
-+++ b/drivers/misc/vmw_balloon.c
-@@ -412,6 +412,7 @@ static int vmballoon_reserve_page(struct vmballoon *b, bool can_sleep)
- 	gfp_t flags;
- 	unsigned int hv_status;
- 	bool locked = false;
-+	flags = can_sleep ? VMW_PAGE_ALLOC_CANSLEEP : VMW_PAGE_ALLOC_NOSLEEP;
- 
- 	do {
- 		if (!can_sleep)
-@@ -419,7 +420,6 @@ static int vmballoon_reserve_page(struct vmballoon *b, bool can_sleep)
- 		else
- 			STATS_INC(b->stats.sleep_alloc);
- 
--		flags = can_sleep ? VMW_PAGE_ALLOC_CANSLEEP : VMW_PAGE_ALLOC_NOSLEEP;
- 		page = alloc_page(flags);
- 		if (!page) {
- 			if (!can_sleep)
+Please try with my hid.git tree, preferably for-next branch. Namely 
+commit 4b086910ad1.
 
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
 
