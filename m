@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1JQBjZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Oct 2011 21:39:25 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:45538 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab1JQBjX (ORCPT
+	id S1753757Ab1JQBkU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Oct 2011 21:40:20 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60272 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1JQBkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Oct 2011 21:39:23 -0400
-Date: Mon, 17 Oct 2011 03:39:21 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH, v10 3/3] cgroups: introduce timer slack controller
-Message-ID: <20111017013921.GA30035@tango.0pointer.de>
-References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
- <1318349729-3108-4-git-send-email-kirill@shutemov.name>
- <20111014154348.ae6267aa.akpm@linux-foundation.org>
- <20111015112006.GA10173@tango.0pointer.de>
- <1318705910.2664.5.camel@laptop>
+	Sun, 16 Oct 2011 21:40:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318705910.2664.5.camel@laptop>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+In-Reply-To: <20111013232521.GA5654@hostway.ca>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
+ <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca>
+ <1318010515.398.8.camel@twins> <20111008005035.GC22843@hostway.ca>
+ <1318060551.8395.0.camel@twins> <20111012213555.GC24461@hostway.ca> <20111013232521.GA5654@hostway.ca>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Oct 2011 18:39:57 -0700
+X-Google-Sender-Auth: cqwWZtXSnSNHmDcS8XMcLQDw23I
+Message-ID: <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+Subject: Re: Linux 3.1-rc9
+To: Simon Kirby <sim@hostway.ca>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15.10.11 21:11, Peter Zijlstra (peterz@infradead.org) wrote:
+On Thu, Oct 13, 2011 at 4:25 PM, Simon Kirby <sim@hostway.ca> wrote:
+>
+> Looks good. No hangs or crashes for two days on any of them running
+> 3.1-rc9 plus this patch. Not sure if you want to deuglify it, but it
+> seems to work...
+>
+> Tested-by: Simon Kirby <sim@hostway.ca>
 
-> > consider you have one or more desktop user sessions logged in, each one
-> > in a timer slack cgroup. Now, userspace already tracks when sessions
-> > become idle (i.e. currently desktop userspace then starts a screensaver,
-> > or turns off the screen, or similar), and we'd like to increase the timer slack
-> > for the session cgroups individually as the individual session becomes
-> > idle, and decrease it again if the session stops being idle.
-> 
-> > What matters for us here is that the timer slack cgroup controller
-> > provides us with a very nice way to change the timerslack for the whole
-> > set of session processes in one go and from the outside. i.e. the idle
-> > logic in userspace would be trivially easy to implement, since we
-> > already track per-session idle states and with the timerlsack cgroup
-> > controller we'd have to touch only a single kernel file to make our
-> > changes.
-> 
-> I would argue this is an excellent reason not to merge this. This really
-> is in the camp of lets paper over shitty userspace instead of fix it.
-> 
-> Such a scheme takes away the immediate need to fix crap and therefore
-> crap will not get fixed. Why not focus on creating tools (I think
-> powertop really already does everything you need) and track down WTF
-> apps are firing so many timers when the screen if off.
+Peter, what's the status of this one?
 
-Well, maybe that works in fantasy land. In real life however there's
-stuff like closed source crap, and all kinds of other things you cannot
-fix. In a world where everybody wants "apps" (i.e. 3rd party code
-running with limited privileges) your chance to fix every bit of code is
-gone.
+Quite frankly, I personally consider it to be broken - why are we
+introducing this new lock for this very special thing? A spinlock to
+protect a *single* word of counter seems broken.
 
-Despite that: even if all software was open source, and even if we had
-the manpower to fix every single project: do you honestly believe it is
-such a good idea to build the idle state tracking into each program so
-that it can change the timer slack from the inside, if this could be
-done in a much much simpler way from the outside?
+It seems more likely that the real bug is that kernel/sched_stats.h
+currently takes cputimer->lock without disabling interrupts. Everybody
+else uses irq-safe locking, why would sched_stats.h not need that?
 
-So yeah, because there'll always be closed source userspace, and because
-I believe hacking userspace software should be easy and accessible to
-everybody, and because we also should make it difficult to fuck up
-runtime behaviour of the machine (such as power usage) I believe
-enforcing logic the way we can do it with timerslack cgroups is a good
-thing, not a bad thing.
+However, I don't see why that spinlock is needed at all. Why aren't
+those fields just atomics (or at least just "sum_exec_runtime")? And
+why does "cputime_add()" exist at all? It seems to always be just a
+plain add, and nothing else would seem to ever make sense *anyway*?
 
-> Also, the downside of your approach is that you treat all applications
-> the same, what if there is a genuine need for reasonable timer response
-> and your 'policy' wrecks things?
+In other words, none of that code makes any sense to me at all. And
+the patch in question that fixes a hang for Simon seems to make it
+even worse. Can somebody explain to me why it looks that crappy?
 
-Well, if some thread needs reasonable timer response, then they probably
-should be enabling RT anyway and IIRC the patch excludes RT threads when
-it mucks with the timer slack. But I guess Kirill can comment on this
-much better than I could.
+Please?
 
-Lennart
+That stupid definition of cputime_add() has apparently existed as-is
+since it was introduced in 2005. Why do we have code like this:
 
--- 
-Lennart Poettering - Red Hat, Inc.
+    times->utime = cputime_add(times->utime, t->utime);
+
+instead of just
+
+    times->utime += t->utime;
+
+which seems not just shorter, but more readable too? The reason is not
+some type safety in the cputime_add() thing, it's just a macro.
+
+Added Martin and Ingo to the discussion - Martin because he added that
+cputime_add in the first place, and Ingo because he gets the most hits
+on kernel/sched_stats.h. Guys - you can see the history on lkml.
+
+                                 Linus
