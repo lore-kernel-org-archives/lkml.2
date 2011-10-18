@@ -1,46 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab1JRNpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:45:41 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:37102 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab1JRNpk (ORCPT
+	id S932301Ab1JRNqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:46:00 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:35991 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab1JRNp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:45:40 -0400
-Date: Tue, 18 Oct 2011 15:45:37 +0200
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Elmar Vonlanthen <evonlanthen@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        Timo =?iso-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>
-Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
-	causes kernel oops
-Message-ID: <20111018134537.GA17055@gondor.apana.org.au>
-References: <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com> <1318905032.2571.35.camel@edumazet-laptop> <20111018093411.GA15165@gondor.apana.org.au> <1318932093.2657.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111018100527.GA15383@gondor.apana.org.au> <1318933423.2657.44.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111018104504.GA15913@gondor.apana.org.au> <1318937878.2657.50.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111018114945.GA16359@gondor.apana.org.au> <1318942560.2657.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	Tue, 18 Oct 2011 09:45:58 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9D8317.8020506@cam.ac.uk>
+Date: Tue, 18 Oct 2011 14:45:59 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318942560.2657.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/7] input/cma3000_d0x: Support devices without pdata
+References: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com> <1318939596-27330-2-git-send-email-ricardo.ribalda@gmail.com> <4E9D76D9.7070302@cam.ac.uk> <CAPybu_3mC5HnHZeic+D7G=K3oz_yyMAOkepBZmGmj6gPEZoY4A@mail.gmail.com>
+In-Reply-To: <CAPybu_3mC5HnHZeic+D7G=K3oz_yyMAOkepBZmGmj6gPEZoY4A@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 02:56:00PM +0200, Eric Dumazet wrote:
->
-> I am ok by this way, but we might hit another similar problem elsewhere.
+On 10/18/11 13:58, Ricardo Ribalda Delgado wrote:
+> Hello Jonathan
 > 
-> (igmp.c ip6_output, ...)
+> I think I am going to do it like ads1015.c. I will check for the
+> pdata, then for the dt info (if it is there) and finally go for the
+> default, if all fails. What do you think? Shall I fix it in cma3000
+> and cmr3000?
+That sounds like the best plan to me.  Fix them both.
 > 
-> We effectively want to remove LL_ALLOCATED_SPACE() usage and obfuscate
-> code...
+>  Thanks again
+> 
+> On Tue, Oct 18, 2011 at 14:53, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>> On 10/18/11 13:06, Ricardo Ribalda Delgado wrote:
+>>> Architectures based on device-tree does not have platform data
+>>> associated to the spi/i2c devices.
+>>> This patch allows those architectures to use the cma3000 driver with
+>>> a default configuration.
+>> Fine except for this description. Looks to be a perfectly reasonable
+>> way of specifying these in DT.  So fix that and I'm happy.
+>> Whoever wants to pass this in from DT can do a patch for it!
+>>>
+>>> ---
+>>>
+>>> v2: Fixes suggested by Jonathan Cameron
+>>>     -Spelling
+>>>     -Simplify pdata!=NULL check
+>>>
+>>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+>>> ---
+>>>  drivers/input/misc/cma3000_d0x.c |   20 +++++++++++++++-----
+>>>  1 files changed, 15 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+>>> index 1633b63..f2e87e3 100644
+>>> --- a/drivers/input/misc/cma3000_d0x.c
+>>> +++ b/drivers/input/misc/cma3000_d0x.c
+>>> @@ -62,6 +62,18 @@
+>>>  #define BIT_TO_2G  18
+>>>  #define BIT_TO_8G  71
+>>>
+>>> +static struct cma3000_platform_data cma3000_default_pdata = {
+>>> +     .mdthr = 0x8,
+>>> +     .mdfftmr = 0x33,
+>>> +     .ffthr = 0x8,
+>>> +     .mode = CMAMODE_MEAS400,
+>>> +     .g_range = CMARANGE_2G,
+>>> +     .fuzz_x = BIT_TO_2G,
+>>> +     .fuzz_y = BIT_TO_2G,
+>>> +     .fuzz_z = BIT_TO_2G,
+>>> +     .irqflags = 0,
+>>> +};
+>>> +
+>>>  struct cma3000_accl_data {
+>>>       const struct cma3000_bus_ops *bus_ops;
+>>>       const struct cma3000_platform_data *pdata;
+>>> @@ -289,13 +301,11 @@ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+>>>       int rev;
+>>>       int error;
+>>>
+>>> -     if (!pdata) {
+>>> -             dev_err(dev, "platform data not found\n");
+>>> -             error = -EINVAL;
+>>> -             goto err_out;
+>>> +     if (pdata == NULL) {
+>>> +             dev_info(dev, "platform data not found, using default\n");
+>>> +             pdata = &cma3000_default_pdata;
+>>>       }
+>>>
+>>> -
+>>>       /* if no IRQ return error */
+>>>       if (irq == 0) {
+>>>               error = -EINVAL;
+>>
+>>
+> 
+> 
+> 
 
-Here's another idea, provide a helper to do the skb allocation
-and the skb_reserve in one go.  That way this ugliness would only
-need to be done once.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
