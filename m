@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab1JRPeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:34:12 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51255 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932579Ab1JRPeI (ORCPT
+	id S932709Ab1JRPeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:34:20 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55028 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932579Ab1JRPeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:34:08 -0400
+	Tue, 18 Oct 2011 11:34:15 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V7 00/26]  New ACL format for better NFSv4 acl interoperability
-Date: Tue, 18 Oct 2011 21:02:35 +0530
-Message-Id: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V7 02/26] vfs: Add hex format for MAY_* flag values
+Date: Tue, 18 Oct 2011 21:02:37 +0530
+Message-Id: <1318951981-5508-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 11101805-5140-0000-0000-0000001445C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-The following set of patches implements VFS and ext4 changes needed to implement
-a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-extended by file masks to fit into the standard POSIX file permission model.
-They are designed to work seamlessly locally as well as across the NFSv4 and
-CIFS/SMB2 network file system protocols.
+We are going to add more flags and having them in hex format
+make it simpler
 
-A user-space utility for displaying and changing richacls is available at [4]
-(a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/linux/fs.h |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
-[4] git://github.com/kvaneesh/richacl-tools.git master
-
-To test richacl on ext4 use tune2fs -O richacl to enable richacl feature and mount
-the file system using -o acl mount option.
-
-More details regarding richacl can be found at
-http://acl.bestbits.at/richacl/
-
-Changes from v6:
-a) Update patches based on review comments.
-b) Add Acked-by:
-c) rebase to 3.1-rc10
-
-git repository With all the patches can be found at
-git://github.com/kvaneesh/linux.git richacl
-
-IMHO the patches are ready to be merged upstream. How do we push these changes
-to Linus tree ? Andrew, Viro, any comment on how we can get this merged upstream ?
-
--aneesh
-
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 277f497..c1884e9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -58,14 +58,15 @@ struct inodes_stat_t {
+ 
+ #define NR_FILE  8192	/* this can well be larger on a larger system */
+ 
+-#define MAY_EXEC 1
+-#define MAY_WRITE 2
+-#define MAY_READ 4
+-#define MAY_APPEND 8
+-#define MAY_ACCESS 16
+-#define MAY_OPEN 32
+-#define MAY_CHDIR 64
+-#define MAY_NOT_BLOCK 128	/* called from RCU mode, don't block */
++#define MAY_EXEC		0x00000001
++#define MAY_WRITE		0x00000002
++#define MAY_READ		0x00000004
++#define MAY_APPEND		0x00000008
++#define MAY_ACCESS		0x00000010
++#define MAY_OPEN		0x00000020
++#define MAY_CHDIR		0x00000040
++/* called from RCU mode, don't block */
++#define MAY_NOT_BLOCK		0x00000080
+ 
+ /*
+  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+-- 
+1.7.5.4
 
