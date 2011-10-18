@@ -1,341 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab1JRXcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 19:32:13 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:41747 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751490Ab1JRXcM (ORCPT
+	id S1752501Ab1JRXeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 19:34:11 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60635 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab1JRXeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 19:32:12 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz84d07h8275bhz2fh668h839h93fh)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E9E0C66.3020405@am.sony.com>
-Date: Tue, 18 Oct 2011 16:31:50 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Russell King <rmk@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] ARM: Add static kernel function stack size analyzer,
- for ARM
-References: <4E9E0B71.9020708@am.sony.com>
-In-Reply-To: <4E9E0B71.9020708@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Tue, 18 Oct 2011 19:34:09 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
+        tglx@linutronix.de, eranian@google.com,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf tools: handle endianness of feature bitmap
+Date: Tue, 18 Oct 2011 17:34:01 -0600
+Message-Id: <1318980841-12616-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tool can be used to analyze the function stack size for ARM kernels,
-statically, based on a disassembly of vmlinux (or an individual .o file
+Feature bitmap is declared as an array of unsigned longs --
+not good since its size can differ between the host that
+generated the data file and the host analyzing the file.
 
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+We need to handle endianness, but we don't know the size of
+the unsigned long where the file was generated. Take a best
+guess at determining it: try 64-bit swap first (ie., file
+created on a 64-bit host), and check if the hostname feature
+bit is set (this feature bit is forced on as of fbe96f2).
+If the bit is not, undo the 64-bit swap and try a 32-bit
+swap. If the hostname bit is still not set (e.g., older data
+file), punt and fallback to the original behavior --
+clearing all feature bits and setting buildid.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
- scripts/stack_size |  289 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 289 insertions(+), 0 deletions(-)
- create mode 100755 scripts/stack_size
+ tools/perf/util/header.c |   42 +++++++++++++++++++++++++++++++-----------
+ 1 files changed, 31 insertions(+), 11 deletions(-)
 
-diff --git a/scripts/stack_size b/scripts/stack_size
-new file mode 100755
-index 0000000..af9fdac
---- /dev/null
-+++ b/scripts/stack_size
-@@ -0,0 +1,289 @@
-+#!/usr/bin/python
-+# stack_size - a program to parse ARM assembly files and produce
-+# a listing of stack sizes for the functions encountered.
-+#
-+# To use: compile your kernel as normal, then run this program on vmlinux:
-+# $ scripts/stac_size vmlinux
-+#
-+# If you have cross-compiled, then your CROSS_COMPILE environment variable
-+# should be set to the cross prefix for your toolchain
-+#
-+# Author: Tim Bird <tim dot bird ~(at)~ am dot sony dot com>
-+# Copyright 2011 Sony Network Entertainment, Inc
-+#
-+# GPL version 2.0 applies.
-+#
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 2143a32..65627a3 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1703,21 +1703,41 @@ int perf_file_header__read(struct perf_file_header *header,
+ 			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
+ 		else
+ 			return -1;
++	} else if (ph->needs_swap) {
++		unsigned int i;
++		/*
++		 * feature bitmap is declared as an array of unsigned longs --
++		 * not good since its size can differ between the host that
++		 * generated the data file and the host analyzing the file.
++		 *
++		 * We need to handle endianness, but we don't know the size of
++		 * the unsigned long where the file was generated. Take a best
++		 * guess at determining it: try 64-bit swap first (ie., file
++		 * created on a 64-bit host), and check if the hostname feature
++		 * bit is set (this feature bit is forced on as of fbe96f2).
++		 * If the bit is not, undo the 64-bit swap and try a 32-bit
++		 * swap. If the hostname bit is still not set (e.g., older data
++		 * file), punt and fallback to the original behavior --
++		 * clearing all feature bits and setting buildid.
++		 */
++		for (i = 0; i < BITS_TO_LONGS(HEADER_FEAT_BITS); ++i)
++			header->adds_features[i] = bswap_64(header->adds_features[i]);
 +
-+import os, sys
-+version = "1.0"
++		if (!test_bit(HEADER_HOSTNAME, header->adds_features)) {
++			for (i = 0; i < BITS_TO_LONGS(HEADER_FEAT_BITS); ++i) {
++				header->adds_features[i] = bswap_64(header->adds_features[i]);
++				header->adds_features[i] = bswap_32(header->adds_features[i]);
++			}
++		}
 +
-+debug = 0
-+
-+def dprint(msg):
-+	global debug
-+	if debug:
-+		print msg
-+
-+def usage():
-+	print """Usage: %s [options] <filename>
-+
-+Show stack size for functions in a program or object file.
-+Generate and parse the ARM assembly for the indicated filename,
-+and print out the size of the stack for each function.
-+
-+If you used a cross-compiler, please set the cross-compiler prefix
-+in the environment variable 'CROSS_COMPILE', before using this tool.
-+
-+Options:
-+ -h       show this usage help
-+ -t <n>   show the top n functions with the largest stacks
-+          (default is to show top 10 functions with largest stacks)
-+ -f       show full function list
-+ -g       show histogram of stack depths
-+ -V or --version    show version information and exit
-+
-+Notes: This leaves the assembly file in the same directory as the source
-+filename, called '<filename>.S'  This program currently only supports
-+ARM EABI.
-+
-+""" % os.path.basename(sys.argv[0])
-+	sys.exit(0)
-+
-+class function_class():
-+	def __init__(self, name, addr):
-+		self.name = name
-+		self.addr = addr
-+		self.depth = 0
-+
-+	def __repr__(self):
-+		return "function: %s with depth %d" % (self.name, self.depth)
-+
-+def open_assembly(filename):
-+	base = filename
-+	if base.endswith(".o"):
-+		base = base[:-2]
-+
-+	assembly_filename = "%s.S" % base
-+
-+	try:
-+		fd = open(assembly_filename)
-+	except:
-+		print "Could not find %s - trying to generate from %s\n" % \
-+			(assembly_filename, filename)
-+		print "This might take a few minutes..."
-+		try:
-+			cross = os.environ["CROSS_COMPILE"]
-+		except:
-+			cross = ""
-+		cmd = "%sobjdump -d %s >%s" % \
-+			(cross, filename, assembly_filename)
-+		print "Using command: '%s'" % cmd
-+		os.system(cmd)
-+
-+	try:
-+		fd = open(assembly_filename)
-+	except:
-+		print "Could not find %s, and conversion didn't work\n" % \
-+			(assembly_filename)
-+		sys.exit(1)
-+
-+	return fd;
-+
-+def do_show_histogram(functions):
-+	depth_count = {}
-+
-+	max_depth_bucket = 0
-+	for funcname in functions.keys():
-+		depth = functions[funcname].depth
-+		depth_bucket = depth/10
-+		if depth_bucket > max_depth_bucket:
-+			max_depth_bucket = depth_bucket
-+
-+		try:
-+			depth_count[depth_bucket] += 1
-+		except:
-+			depth_count[depth_bucket] = 1
-+
-+	print "=========== HISTOGRAM =============="
-+	for i in range(0,max_depth_bucket+1):
-+		try:
-+			count = depth_count[i]
-+		except:
-+			count = 0
-+
-+		# use numbers for bars that are too long
-+		if count<72:
-+			bar = count*"*"
-+		else:
-+			bar = (72-8)*"*" + "(%d)*" % count
-+		print "%3d: %s" % (i*10,bar)
-+
-+def cmp_depth(f1, f2):
-+	return cmp(f1.depth, f2.depth)
-+
-+def main():
-+	global debug
-+
-+	full_list = 0
-+	show_histogram = 0
-+	debug = 0
-+	top_count = 10
-+
-+	if "-h" in sys.argv:
-+		usage()
-+
-+	if "-f" in sys.argv:
-+		full_list = 1
-+		sys.argv.remove("-f")
-+
-+	if "-g" in sys.argv:
-+		show_histogram = 1
-+		sys.argv.remove("-g")
-+
-+	if "-t" in sys.argv:
-+		top_count = sys.argv[sys.argv.index("-t")+1]
-+		sys.argv.remove(top_count)
-+		sys.argv.remove("-t")
-+		top_count = int(top_count)
-+
-+	if "--debug" in sys.argv:
-+		debug = 1
-+		sys.argv.remove("--debug")
-+
-+	if "--version" in sys.argv or "-V" in sys.argv:
-+		print "%s version %s" % (os.path.basename(sys.argv[0]),version)
-+		sys.exit(0)
-+
-+	try:
-+		filename = sys.argv[1]
-+	except:
-+		print "Error: missing filename to scan"
-+		usage()
-+
-+	fd = open_assembly(filename)
-+
-+	functions = {}
-+	func = None
-+
-+	max_cur_depth = 0
-+	depth = 0
-+	func_line_count = 0
-+	PROGRAM_ENTRY_MAXLINES = 4
-+
-+	for line in fd.xreadlines():
-+		# parse lines
-+
-+		# find function starts
-+		try:
-+			if line[8:10]==" <":
-+				func_line = line
-+				(func_addr_s,rest) = func_line.split(" ",1)
-+				funcname = rest[1:-3]
-+				#print line,
-+				func_addr = int(func_addr_s, 16)
-+				#print "func_addr=%x, func=%s" % (func_addr, func)
-+				# record depth of last function
-+				if func:
-+					func.depth = max_cur_depth
-+					dprint("stack depth: %d" % max_cur_depth)
-+
-+				# start new function
-+				dprint("function: %s" % funcname)
-+				func = function_class(funcname, func_addr)
-+				functions[funcname] = func
-+				depth = 0
-+				max_cur_depth = 0
-+				func_line_count = 0
-+
-+		except:
-+			pass
-+
-+		func_line_count += 1
-+
-+		# calculate stack depth
-+		# pattern is: initial register push (with "push {...}
-+		# reservation of local stack space
-+		if line.find("push\t") != -1 and \
-+		    func_line_count<PROGRAM_ENTRY_MAXLINES:
-+			# parse push
-+			(before, args) = line.split("push",1)
-+			dprint("push args=%s" % args)
-+			regs = line.split(",")
-+			depth += 4 * len(regs)
-+			if depth>max_cur_depth:
-+				max_cur_depth = depth
-+
-+			dprint("depth=%d" % depth)
-+
-+		if line.find("sub\tsp, sp, #") != -1 and \
-+		    func_line_count<PROGRAM_ENTRY_MAXLINES:
-+			# parse sub
-+			(before, args) = line.split("sub",1)
-+			if debug:
-+				print "sub args=%s" % args
-+			(sp1,sp2,imm) = line.split(",",2)
-+			# next line splits: ' #84\t ; 0x54\n'
-+			# into ['#84',';','0x54']
-+			# take [0]th element, and strip leading '#'
-+			#print "imm='%s'" % imm
-+			depth += int(imm.split()[0][1:])
-+			if depth>max_cur_depth:
-+				max_cur_depth = depth
-+
-+			dprint("depth=%d" % depth)
-+
-+		# disable check for pops (used for debugging)
-+		if None and line.find("pop\t") != -1:
-+			# parse pop
-+			(before, args) = line.split("pop",1)
-+			dprint("pop args=%s" % args)
-+			regs = line.split(",")
-+			depth -= 4 * len(regs)
-+			if depth<0:
-+				print "Parser Error: function: %s, depth=%d" % \
-+					(funcname, depth)
-+			dprint("depth=%d" % depth)
-+
-+	# record depth of last function
-+	if func:
-+		func.depth = max_cur_depth
-+		dprint("max stack depth: %d" % max_cur_depth)
-+
-+	fd.close()
-+
-+	if not functions:
-+		print "No functions found. Done."
-+		return
-+
-+	# calculate results
-+	max_depth = 0
-+	maxfunc = func
-+	for func in functions.values():
-+		if func.depth > max_depth:
-+			max_depth = func.depth
-+			maxfunc = func
-+
-+	print "============ RESULTS ==============="
-+	print "number of functions     = %d" % len(functions)
-+	print "max function stack depth= %d" % maxfunc.depth
-+	print "function with max depth = %s\n" % maxfunc.name
-+
-+	if full_list or top_count:
-+		funclist = functions.values()
-+		funclist.sort(cmp_depth)
-+		print "%-32s %s" % ("Function Name        ","Stack Depth")
-+		print "%-32s %s" % ("=====================","===========")
-+
-+		if full_list:
-+			top_count = len(funclist)
-+
-+		start = len(funclist)-top_count
-+		for i in range(start, start+top_count):
-+			func = funclist[i]
-+			print "%-32s %4d" % (func.name, func.depth)
-+
-+	if show_histogram:
-+		do_show_histogram(functions)
-+
-+if __name__=="__main__":
-+	main()
++		if (!test_bit(HEADER_HOSTNAME, header->adds_features)) {
++			bitmap_zero(header->adds_features, HEADER_FEAT_BITS);
++			set_bit(HEADER_BUILD_ID, header->adds_features);
++		}
+ 	}
+ 
+ 	memcpy(&ph->adds_features, &header->adds_features,
+ 	       sizeof(ph->adds_features));
+-	/*
+-	 * FIXME: hack that assumes that if we need swap the perf.data file
+-	 * may be coming from an arch with a different word-size, ergo different
+-	 * DEFINE_BITMAP format, investigate more later, but for now its mostly
+-	 * safe to assume that we have a build-id section. Trace files probably
+-	 * have several other issues in this realm anyway...
+-	 */
+-	if (ph->needs_swap) {
+-		memset(&ph->adds_features, 0, sizeof(ph->adds_features));
+-		perf_header__set_feat(ph, HEADER_BUILD_ID);
+-	}
+ 
+ 	ph->event_offset = header->event_types.offset;
+ 	ph->event_size   = header->event_types.size;
 -- 
-1.6.6
+1.7.6.4
 
