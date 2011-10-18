@@ -1,132 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab1JRVQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:16:50 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:65196 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab1JRVQs convert rfc822-to-8bit (ORCPT
+	id S1754225Ab1JRVXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 17:23:12 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34760 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752902Ab1JRVXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 17:16:48 -0400
+	Tue, 18 Oct 2011 17:23:10 -0400
+X-Sasl-enc: LYHI1x1vf5po+Xplz5pp7R7SLy1czGZg8q0QJqjvH64j 1318972989
+Date: Tue, 18 Oct 2011 14:21:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>, Allen Martin <AMartin@nvidia.com>,
+        Tom Warren <twarren@nvidia.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] TTY: serial_core: Fix crash if DCD drop during suspend
+Message-ID: <20111018212105.GA10426@kroah.com>
+References: <1318024753-15336-1-git-send-email-dianders@chromium.org>
+ <1318379144-27187-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <8E203115BDCF42ACA065296214E5B7A0@usish.com.cn>
-References: <20110702181146.GM23059@one.firstfloor.org> <Pine.LNX.4.44L0.1107021544550.16190-100000@netrider.rowland.org>
- <CAA9_cmcPhkA5myxeR5aJWBQ=-C3VuG_M9Appp5WyrLoU5fnw2w@mail.gmail.com> <8E203115BDCF42ACA065296214E5B7A0@usish.com.cn>
-From: Ankit Jain <mail@ankitjain.org>
-Date: Wed, 19 Oct 2011 02:46:26 +0530
-X-Google-Sender-Auth: D567RG7-6lTV4VwaTXMu7MImliQ
-Message-ID: <CAD1RLj1SJBPg0F4Dyu_EL05FVm9c7ZZj7_=oRPAdQU4BDUwu5g@mail.gmail.com>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-To: Jack Wang <jack_wang@usish.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Andi Kleen <andi@firstfloor.org>, axboe@kernel.dk,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Dave Jones <davej@redhat.com>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318379144-27187-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 3:28 PM, Jack Wang <jack_wang@usish.com> wrote:
->>
-<snip>
->> On Sat, Jul 2, 2011 at 12:59 PM, Alan Stern <stern@rowland.harvard.edu>
-> wrote:
->> > On Sat, 2 Jul 2011, Andi Kleen wrote:
->> >
->> >> > The problem is that blk_peek_request() calls scsi_prep_fn(), which
->> >> > does this:
->> >> >
->> >> >     struct scsi_device *sdev = q->queuedata;
->> >> >     int ret = BLKPREP_KILL;
->> >> >
->> >> >     if (req->cmd_type == REQ_TYPE_BLOCK_PC)
->> >> >             ret = scsi_setup_blk_pc_cmnd(sdev, req);
->> >> >     return scsi_prep_return(q, req, ret);
->> >> >
->> >> > It doesn't check to see if sdev is NULL, nor does
->> >> > scsi_setup_blk_pc_cmnd().  That accounts for this error:
->> >>
->> >> I actually added a NULL check in scsi_setup_blk_pc_cmnd early on,
->> >> but that just caused RCU CPU stalls afterwards and then eventually
->> >> a hung system.
->> >
->> > The RCU problem is likely to be a separate issue.  It might even be a
->> > result of the use-after-free problem with the elevator.
->> >
->> > At any rate, it's clear that the crash in the refcounting log you
->> > posted occurred because scsi_setup_blk_pc_cmnd() called
->> > scsi_prep_state_check(), which tried to dereference the NULL pointer.
->> >
->> > Would you like to try this patch to see if it fixes the problem?  As I
->> > said before, I'm not certain it's the best thing to do, but it worked
->> > on my system.
->> >
->> > Alan Stern
->> >
->> >
->> >
->> >
->> > Index: usb-3.0/drivers/scsi/scsi_lib.c
->> > ===================================================================
->> > --- usb-3.0.orig/drivers/scsi/scsi_lib.c
->> > +++ usb-3.0/drivers/scsi/scsi_lib.c
->> > @@ -1247,6 +1247,8 @@ int scsi_prep_fn(struct request_queue *q
->> >        struct scsi_device *sdev = q->queuedata;
->> >        int ret = BLKPREP_KILL;
->> >
->> > +       if (!sdev)
->> > +               return ret;
->> >        if (req->cmd_type == REQ_TYPE_BLOCK_PC)
->> >                ret = scsi_setup_blk_pc_cmnd(sdev, req);
->> >        return scsi_prep_return(q, req, ret);
->> > Index: usb-3.0/drivers/scsi/scsi_sysfs.c
->> > ===================================================================
->> > --- usb-3.0.orig/drivers/scsi/scsi_sysfs.c
->> > +++ usb-3.0/drivers/scsi/scsi_sysfs.c
->> > @@ -322,6 +322,8 @@ static void scsi_device_dev_release_user
->> >                kfree(evt);
->> >        }
->> >
->> > +       /* Freeing the queue signals to block that we're done */
->> > +       scsi_free_queue(sdev->request_queue);
->> >        blk_put_queue(sdev->request_queue);
->> >        /* NULL queue means the device can't be used */
->> >        sdev->request_queue = NULL;
->> > @@ -936,8 +938,6 @@ void __scsi_remove_device(struct scsi_de
->> >        /* cause the request function to reject all I/O requests */
->> >        sdev->request_queue->queuedata = NULL;
->> >
->> > -       /* Freeing the queue signals to block that we're done */
->> > -       scsi_free_queue(sdev->request_queue);
->> >        put_device(dev);
->> >  }
->>
->> This patch seems to resolve the block/scsi null-ptr de-references in
->> our libsas/isci environment, we have yet to try James' alternative
->> [1].  Do we potentially need both?
->>
->> Commit 86cbfb56 moved scsi_free_queue to __scsi_remove_device() but it
->> seems only the "sdev->request_queue->queuedata = NULL" needed to be
->> moved?
->>
->> The conversation appeared to be awaiting test results...
->>
->> [1]: http://marc.info/?l=linux-scsi&m=131007155700831&w=2
->>
->> --
->> Dan
-> [Jack Wang]
-> This patch fix kernel panic issue when hot-plut disk during I/O, I test it
-> using pm8001 with 3.0.0-rc6 with above patch.
+On Tue, Oct 11, 2011 at 05:25:44PM -0700, Doug Anderson wrote:
+> This crash was showing up 100% of the time on Tegra CPUs when an
+> agetty was running on the serial port and the console was not running
+> on the serial port.  The reason the Tegra saw it so reliably is that
+> the Tegra CPU internally ties DTR to DCD/DSR.  That means when we
+> dropped DTR during suspend we would get always get an immediate DCD
+> drop.
+> 
+> The specific order of operations that were running:
+> * uart_suspend_port() would be called to put the uart in suspend mode
+> * we'd drop DTR (ops->set_mctrl(uport, 0)).
+> * the DTR drop would be looped back in the CPU to be a DCD drop.
+> * the DCD drop would look to the serial driver as a hangup
+> * the hangup would call uart_shutdown()
+> * ... suspend / resume happens ...
+> * uart_resume_port() would be called and run the code in the
+>   (port->flags & ASYNC_SUSPENDED) block, which would startup the port
+>   (and enable tx again).
+> * Since the UART would be available for tx, we'd immediately get
+>   an interrupt, eventually calling transmit_chars()
+> * The transmit_chars() function would crash.  The first crash would
+>   be a dereference of a NULL tty member, but since the port has been
+>   shutdown that was just a symptom.
+> 
+> I have proposed a patch that would fix the Tegra CPUs here (see
+> https://lkml.org/lkml/2011/10/11/444 - tty/serial: Prevent drop of DCD
+> on suspend for Tegra UARTs).  However, even with that fix it is still
+> possible for systems that have an externally visible DCD line to see a
+> crash if the DCD drops at just the right time during suspend: thus
+> this patch is still useful.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Acked-by: Alan Cox <alan@linux.intel.com>
+> ---
+> v2: Updated change description and comments based on deeper digging.
 
-I don't see this patch in scsi-misc-2.6 or linus' tree. Is there a
-different patch that fixes the
-issue?
+This patch doesn't apply at all to the linux-next tree, can you redo it
+so that I know it is correct, and resend it?  (remember to keep Alan's
+Ack on it.)
 
--Ankit
+thanks,
+
+greg k-h
