@@ -1,92 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab1JRSVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:21:18 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49044 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab1JRSVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:21:16 -0400
-Date: Tue, 18 Oct 2011 20:19:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Xu, Anhua" <anhua.xu@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: perf tools: interface for improved PEBS ABI can accept wrong
- parameter
-Message-ID: <20111018181943.GC21666@elte.hu>
-References: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752056Ab1JRSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:22:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60022 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1JRSWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 14:22:14 -0400
+From: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+Subject: [PATCH] Smack: allow to access /smack/access as normal user
+Date: Tue, 18 Oct 2011 21:21:36 +0300
+Message-Id: <1318962096-23724-1-git-send-email-jarkko.j.sakkinen@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Allow query access as a normal user removing the need
+for CAP_MAC_ADMIN. Give RW access to /smack/access
+for UGO. Do not import smack labels in access check.
 
-Added more Cc:s of maintainers.
+Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+---
+ security/smack/smack.h        |    1 +
+ security/smack/smack_access.c |   27 +++++++++++++++++-------
+ security/smack/smackfs.c      |   45 +++++++++++++++++++++++++++-------------
+ 3 files changed, 50 insertions(+), 23 deletions(-)
 
-thanks,
-
-	Ingo
-
-* Xu, Anhua <anhua.xu@intel.com> wrote:
-
-> For the commit: ab60834 perf, x86: Improve the PEBS ABI
-> The precise_ip is restricted to 2 bits. The values larger than 3 are truncated less or equal to 3.
-> This can effectively restricted value passing to syscall. But the user space interface can accept other wrong values which are larger than 3 and lowest 2 bits are 0 can meet the requirement.
-> 
-> # Here is an example, Monitor "All branches" events on Sandybridge platform( Please refer to SDM 3B Table 30-21 to check Sandybridge specific events )
-> 
-> perf top -e r04c4:p  # precise_ip = 1 , Correct
-> perf top -e r04c4:pp  # precise_ip =2, Correct
-> perf top -e r04c4:ppp  # not supported, Correct
-> perf top -e r04c4:pppppp  # should not be supported, but after truncation , the number of 'p' treated as 2 which is accepted
-> 
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index c816075..07d3cf9 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -216,6 +216,7 @@ struct perf_event_attr {
->  				 *
->  				 *  See also PERF_RECORD_MISC_EXACT_IP
->  				 */
-> +#define SAMPLE_IP_MAX	3 
->  				precise_ip     :  2, /* skid constraint       */
->  				mmap_data      :  1, /* non-exec mmap data    */
->  				sample_id_all  :  1, /* sample_type all events */
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index 928918b..a2068cc 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
->  	attr->exclude_user   = eu;
->  	attr->exclude_kernel = ek;
->  	attr->exclude_hv     = eh;
-> -	attr->precise_ip     = precise;
-> +	if ( precise < SAMPLE_IP_MAX )
-> +		attr->precise_ip = precise;
-> +	else
-> +		return -1;
->  
->  	return 0;
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index 9da2b2d..2ad0065 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -208,6 +208,7 @@ int smk_curacc(char *, u32, struct smk_audit_info *);
+ int smack_to_cipso(const char *, struct smack_cipso *);
+ char *smack_from_cipso(u32, char *);
+ char *smack_from_secid(const u32);
++void smk_parse_smack(const char *string, int len, char *smack);
+ char *smk_import(const char *, int);
+ struct smack_known *smk_import_entry(const char *, int);
+ struct smack_known *smk_find_entry(const char *);
+diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+index a885f62..cc7cb6e 100644
+--- a/security/smack/smack_access.c
++++ b/security/smack/smack_access.c
+@@ -353,17 +353,13 @@ struct smack_known *smk_find_entry(const char *string)
+ }
+ 
+ /**
+- * smk_import_entry - import a label, return the list entry
+- * @string: a text string that might be a Smack label
++ * smk_parse_smack - parse smack label from a text string
++ * @string: a text string that might contain a Smack label
+  * @len: the maximum size, or zero if it is NULL terminated.
+- *
+- * Returns a pointer to the entry in the label list that
+- * matches the passed string, adding it if necessary.
++ * @smack: parsed smack label, or NULL if parse error
+  */
+-struct smack_known *smk_import_entry(const char *string, int len)
++void smk_parse_smack(const char *string, int len, char *smack)
+ {
+-	struct smack_known *skp;
+-	char smack[SMK_LABELLEN];
+ 	int found;
+ 	int i;
+ 
+@@ -381,7 +377,22 @@ struct smack_known *smk_import_entry(const char *string, int len)
+ 		} else
+ 			smack[i] = string[i];
+ 	}
++}
++
++/**
++ * smk_import_entry - import a label, return the list entry
++ * @string: a text string that might be a Smack label
++ * @len: the maximum size, or zero if it is NULL terminated.
++ *
++ * Returns a pointer to the entry in the label list that
++ * matches the passed string, adding it if necessary.
++ */
++struct smack_known *smk_import_entry(const char *string, int len)
++{
++	struct smack_known *skp;
++	char smack[SMK_LABELLEN];
+ 
++	smk_parse_smack(string, len, smack);
+ 	if (smack[0] == '\0')
+ 		return NULL;
+ 
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index 381eecf..6aceef5 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -191,19 +191,37 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
+ }
+ 
+ /**
+- * smk_parse_rule - parse subject, object and access type
++ * smk_parse_rule - parse Smack rule from load string
+  * @data: string to be parsed whose size is SMK_LOADLEN
+- * @rule: parsed entities are stored in here
++ * @rule: Smack rule
++ * @import: if non-zero, import labels
+  */
+-static int smk_parse_rule(const char *data, struct smack_rule *rule)
++static int smk_parse_rule(const char *data, struct smack_rule *rule, int import)
+ {
+-	rule->smk_subject = smk_import(data, 0);
+-	if (rule->smk_subject == NULL)
+-		return -1;
++	char smack[SMK_LABELLEN];
++	struct smack_known *skp;
+ 
+-	rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
+-	if (rule->smk_object == NULL)
+-		return -1;
++	if (import) {
++		rule->smk_subject = smk_import(data, 0);
++		if (rule->smk_subject == NULL)
++			return -1;
++
++		rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
++		if (rule->smk_object == NULL)
++			return -1;
++	} else {
++		smk_parse_smack(data, 0, smack);
++		skp = smk_find_entry(smack);
++		if (skp == NULL)
++			return -1;
++		rule->smk_subject = skp->smk_known;
++
++		smk_parse_smack(data + SMK_LABELLEN, 0, smack);
++		skp = smk_find_entry(smack);
++		if (skp == NULL)
++			return -1;
++		rule->smk_object = skp->smk_known;
++	}
+ 
+ 	rule->smk_access = 0;
+ 
+@@ -327,7 +345,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	if (smk_parse_rule(data, rule))
++	if (smk_parse_rule(data, rule, 1))
+ 		goto out_free_rule;
+ 
+ 	if (rule_list == NULL) {
+@@ -1499,14 +1517,11 @@ static ssize_t smk_write_access(struct file *file, const char __user *buf,
+ 	char *data;
+ 	int res;
+ 
+-	if (!capable(CAP_MAC_ADMIN))
+-		return -EPERM;
+-
+ 	data = simple_transaction_get(file, buf, count);
+ 	if (IS_ERR(data))
+ 		return PTR_ERR(data);
+ 
+-	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule))
++	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule, 0))
+ 		return -EINVAL;
+ 
+ 	res = smk_access(rule.smk_subject, rule.smk_object, rule.smk_access,
+@@ -1560,7 +1575,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+ 		[SMK_LOAD_SELF] = {
+ 			"load-self", &smk_load_self_ops, S_IRUGO|S_IWUGO},
+ 		[SMK_ACCESSES] = {
+-			"access", &smk_access_ops, S_IRUGO|S_IWUSR},
++			"access", &smk_access_ops, S_IRUGO|S_IWUGO},
+ 		/* last one */
+ 			{""}
+ 	};
 -- 
-Thanks,
+1.7.5.4
 
-	Ingo
