@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab1JRXWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 19:22:25 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:36145 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751468Ab1JRXWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 19:22:23 -0400
-Date: Tue, 18 Oct 2011 23:22:42 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        akpm@linux-foundation.org, oleg@redhat.com, richard@nod.at,
-        mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        dhowells@redhat.com, eparis@redhat.com,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH 9/9] make net/core/scm.c uid comparisons user namespace
- aware
-Message-ID: <20111018232242.GA22950@hallyn.com>
-References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
- <1318974898-21431-10-git-send-email-serge@hallyn.com>
- <1318976049.2273.7.camel@Joe-Laptop>
+	id S1752073Ab1JRX3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 19:29:24 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:14838
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751468Ab1JRX3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 19:29:22 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+X-FB-SS: 13,
+Message-ID: <4E9E0B71.9020708@am.sony.com>
+Date: Tue, 18 Oct 2011 16:27:45 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318976049.2273.7.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King <rmk@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] ARM 4Kstacks: introduction
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Joe Perches (joe@perches.com):
-> On Tue, 2011-10-18 at 21:54 +0000, Serge Hallyn wrote:
-> > From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-> 
-> Hi Serge.
-> 
-> Just some trivial style notes.
-> 
-> > Currently uids are compared without regard for the user namespace.
-> > Fix that to prevent tasks in a different user namespace from
-> > wrongly matching on SCM_CREDENTIALS.
-> []
-> > diff --git a/net/core/scm.c b/net/core/scm.c
-> 
-> > -static __inline__ int scm_check_creds(struct ucred *creds)
-> > +static __inline__ bool uidequiv(const struct cred *src, struct ucred *tgt,
-> > +			       struct user_namespace *ns)
-> 
-> Perhaps inline is better than __inline__ and do these
-> functions really need to be marked inline at all?
+I'm about to submit a set of patches (really pretty small)
+to add 4K stack support to ARM (defaulted to 'N').
 
-Dunno, I was just sticking with the current style.
+This has been kicking around in my Sony tree for a few years,
+and it's about time to mainline it.  The first patch is
+the actual 4KSTACKS patch.  See subsequent patches
+for tools to help with stack reduction to avoid the problems
+that apparently led to the removal of this feature on x86.
 
-> > +{
-> > +	if (src->user_ns != ns)
-> > +		goto check_capable;
-> > +	if (src->uid == tgt->uid || src->euid == tgt->uid ||
-> > +	    src->suid == tgt->uid)
-> 
-> Perhaps this is less prone to typo errors and are a bit
-> more readable as:
-> 
-> 	if (tgt->uid == src->uid ||
-> 	    tgt->uid == src->euid ||
-> 	    tgt->uid == src->suid)
+This set includes:
+  0001-Add-support-for-4K-kernel-stacks-to-ARM.patch
+  0002-Add-static-kernel-function-stack-size-analyzer-for-ARM.patch
+  0003-Decrease-poll-and-select-stack-usage-when-using-4K-stacks.patch
 
-I do like that better.
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
-thanks,
--serge
