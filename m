@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab1JRLhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 07:37:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38511 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab1JRLhj (ORCPT
+	id S1757513Ab1JRLsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 07:48:01 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:37542 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754132Ab1JRLr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 07:37:39 -0400
-Message-ID: <1318937878.2657.50.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
- kernel oops
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Elmar Vonlanthen <evonlanthen@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        Timo =?ISO-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>
-Date: Tue, 18 Oct 2011 13:37:58 +0200
-In-Reply-To: <20111018104504.GA15913@gondor.apana.org.au>
-References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com>
-	 <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com>
-	 <1318905032.2571.35.camel@edumazet-laptop>
-	 <20111018093411.GA15165@gondor.apana.org.au>
-	 <1318932093.2657.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111018100527.GA15383@gondor.apana.org.au>
-	 <1318933423.2657.44.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20111018104504.GA15913@gondor.apana.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 18 Oct 2011 07:47:59 -0400
+X-SpamScore: -13
+X-BigFish: VS-13(zz1dbaL1432N98dKzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 18 Oct 2011 19:58:37 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Rajendra Nayak <rnayak@ti.com>
+CC: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
+        <patches@linaro.org>, <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111018115836.GC30703@S2100-06.ap.freescale.net>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <20111016145536.GA29885@S2100-06.ap.freescale.net>
+ <4E9BAC4D.3010402@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4E9BAC4D.3010402@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 18 octobre 2011 à 12:45 +0200, Herbert Xu a écrit :
-> On Tue, Oct 18, 2011 at 12:23:43PM +0200, Eric Dumazet wrote:
-> > 
-> > You're right, if reallocations are OK in all paths.
+On Mon, Oct 17, 2011 at 09:47:17AM +0530, Rajendra Nayak wrote:
 > 
-> If it wasn't OK then making needed_headroom constant won't work
-> anyway.
+> >I do not see that of_get_regulation_constraints() covers the following
+> >fields.  We do not support them for DT probe?
 > 
-> > We'll need to change LL_RESERVED_SPACE() / LL_RESERVED_SPACE_EXTRA() /
-> > LL_ALLOCATED_SPACE() macros and provide the [read once] values, instead
-> > of a [read once] pointer to values.
+> I left these out as I wasn't sure how such (if at all) Linux
+> specific params should be passed through dt, and I am still not
+> quite sure :(
 > 
-> I'm not sure what you mean here.  I don't see any need to change
-> these macros.  All we need is to save the value in a local variable:
-> 
-> 	hh_len = LL_RESERVED_SPACE(dev);
-> 
-> 	skb = alloc_skb(hh_len + len);
-> 	skb_reserve(skb, hh_len);
-> 
+I'm seeing some linux specific parameters encoded in the device tree
+below.
 
-Not really Herbert. Please read again my patch changelog.
+  Documentation/devicetree/bindings/gpio/gpio_keys.txt
+  Documentation/devicetree/bindings/gpio/led.txt
 
-In the bug we try to fix, we have :
+Mark,
 
-skb = sock_alloc_send_skb(sk, ... + LL_ALLOCATED_SPACE(rt->dst.dev) 
+I understand that ideally device tree is supposed to describe pure
+hardware configurations.  But practically, when migrating a driver
+to device tree probe, we are trying to move the configurations
+described by platform_data into device tree to save the use of
+platform_data for device tree probe.  Then some of the configuration
+may not be so purely hardware related.  But I do not see this is a
+critical problem.
 
-... < increase of dev->needed_headroom by another cpu/task >
+What do you think?  Is it what you want that we classify the
+configurations clearly and put only strict hardware configurations
+into device tree and keep others still in platform_data?
 
-skb_reserve(skb, LL_RESERVED_SPACE(rt->dst.dev));
-
-skb_put() -> crash because we reserved too much space
-
-So we really want LL_ALLOCATED_SPACE() and LL_RESERVED_SPACE() use the
-same needed_headroom, or else you can have LL_RESERVED_SPACE() >
-LL_ALLOCATED_SPACE().
-
-There are several way to fix this, but this kind of code assumed the
-dev->needed... values were consistent for the whole block.
-
-
+-- 
+Regards,
+Shawn
 
