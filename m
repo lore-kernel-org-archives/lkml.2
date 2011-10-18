@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1JRGEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 02:04:36 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:60514 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751190Ab1JRGEf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 02:04:35 -0400
+	id S1752805Ab1JRGHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 02:07:31 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51670 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751306Ab1JRGHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 02:07:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1110141218240.19504@utopia.booyaka.com>
-References: <1318319355-20168-1-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1110131227270.24155@utopia.booyaka.com>
-	<alpine.DEB.2.00.1110131857350.24155@utopia.booyaka.com>
-	<CAP05o4JMnhd+59ocTw+z9a7ukSmDn1deL5T4D9q5ZeKw_tEg0w@mail.gmail.com>
-	<alpine.DEB.2.00.1110141218240.19504@utopia.booyaka.com>
-Date: Tue, 18 Oct 2011 11:34:31 +0530
-Message-ID: <CAP05o4+uU66GteMU6sUS_GPoTZf-tDwn_tQ-9W-3hn5PvjZp+Q@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v14] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
+In-Reply-To: <20111013173204.GL28290@legolas.emea.dhcp.ti.com>
+References: <1318319609-20522-1-git-send-email-keshava_mgowda@ti.com>
+	<20111013173204.GL28290@legolas.emea.dhcp.ti.com>
+Date: Tue, 18 Oct 2011 11:37:28 +0530
+Message-ID: <CAP05o4K6RS5YawJ8POy7ZifJ7W8MRA0d77iwjZZ1ojTQnQS=nA@mail.gmail.com>
+Subject: Re: [PATCH v14] mfd: omap: usb: Runtime PM support
 From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
+To: balbi@ti.com, sameo@linux.intel.com
 Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
+        linux-kernel@vger.kernel.org, khilman@ti.com, b-cousson@ti.com,
+        paul@pwsan.com, gadiyar@ti.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 11:50 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> Hi Keshava
+On Thu, Oct 13, 2011 at 11:02 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Oct 11, 2011 at 01:23:29PM +0530, Keshava Munegowda wrote:
+>> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>>
+>> The usbhs core driver does not enable/disable the interface and
+>> functional clocks directly, These clocks are handled by runtime pm,
+>> hence instead of the clock enable/disable, the runtime pm APIS are
+>> used. however,the optional clocks and port clocks are handled by
+>> the usbhs core.
+>>
+>> Dependency:
+>> This patch is dependent on this series:
+>> [PATCH 0/5 v13 or latest version] omap: usb: host: Runtime PM preparation
+>> for EHCI and OHCI drivers.
+>>
+>> Validation performed:
+>> The global suspend/resume of EHCI and OHCI is validated on
+>> OMAP3430 sdp board with this patch combined with the series:
+>> [PATCH 0/5 v13 or latest version] omap: usb: host: Runtime PM preparation
+>> for EHCI and OHCI drivers.
+>>
+>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>> Reviewed-by: Kevin Hilman <khilman@ti.com>
+>> Reviewed-by: Partha Basak <parthab@india.ti.com>
 >
-> On Fri, 14 Oct 2011, Munegowda, Keshava wrote:
->
->> This updated patch is working perfectly on 3430 sdp.
->
-> Great, thanks for testing this and the OMAP4 patch.  So, just FYI, I've
-> pulled these patches into the branch 'usbhost_runtime_pm_14_devel_3.2' on
-> git://git.pwsan.com/linux-2.6 - but I can't send these upstream until
-> Samuel acks the MFD patch in this series.
 
-Thanks Paul!  I request Samuel to ack on MFD patches.
-Thanks a lot for helping me to complete the basic runtime pm adaptions.
+
+Hi Sameo
+        The prior series of this patch is acked by balbi , paul ,
+benoit and kevin.
+I request if you think everything is OK in this patch please ack ;
+otherwise if you have any review comment I have to close them ASAP.
+
+Thanks and Regards
+keshava
