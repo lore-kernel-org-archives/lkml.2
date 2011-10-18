@@ -1,67 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab1JRJgo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:36:44 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:46026 "EHLO mx2.parallels.com"
+	id S1756938Ab1JRJkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:40:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55463 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab1JRJgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:36:43 -0400
-Message-ID: <4E9D4887.4030003@parallels.com>
-Date: Tue, 18 Oct 2011 13:36:07 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        rostedt <rostedt@goodmis.org>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: Scheduler BOF @ LinuxCon.EU/ELCE
-References: <1318872925.4172.81.camel@twins>
-In-Reply-To: <1318872925.4172.81.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753200Ab1JRJkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 05:40:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,364,1315206000"; 
+   d="scan'208";a="79183048"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] x86, mrst: add platform support for MSIC MFD driver
+Date: Tue, 18 Oct 2011 12:41:22 +0300
+Message-Id: <1318930882-10017-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <20111018091311.GD7694@sortiz-mobl>
+References: <20111018091311.GD7694@sortiz-mobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2011 09:35 PM, Peter Zijlstra wrote:
-> Hi,
->
-> several people have expressed interest of talking to me about the
-> scheduler during the RTLWS/KS/LinuxCon.EU time-frame. Since I've just
-> about lost track of who all wanted to talk about what and who can and
-> can not make it out to Prague I need help ;-)
->
-> Also, since I'm too dis-organized (and mostly busy) to really arrange
-> something, can someone volunteer to arrange a BOF or cafe with beer to
-> discuss things?
->
-> The topics I'm most interested in are:
->
->   - power optimized load-balancing;
->      do packing based on cpu utilization
->      fix the current interface of sched_{mc,ht}_power_savings
->
->   - integration of the cpufreq/idle governors and the scheduler
->      use the idle guestimate for NO_HZ
->      use $foo for $prev-topic to reduce double accounting etc.
->
->   - what can we do about the cgroup crap and how can we win some
->     of the performance back;
->      start with fixing the cgroup enabled but unused case
->      continue from there..
+The MSIC MFD driver creates platform devices for MSIC device drivers so we
+don't need to create them in platform code anymore.
 
-definitely count me in for that.
+This patch adds a new runtime check which determines whether we are running
+on a Medfield platform and enables the MSIC MFD driver accordingly.
 
-I won't be in for KS, just linuxcon, and I am busy on Wed 26th.
-I believe Steve Roasted's (*) suggestion is a sane one: Many of us
-will be in other meetings during this time frame, so maybe is saner to 
-find a free slot in the conference agenda.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ arch/x86/platform/mrst/mrst.c |  169 +++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 154 insertions(+), 15 deletions(-)
 
-(*) not a typo
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 51ec016..8a7cb32 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -25,6 +25,7 @@
+ #include <linux/irq.h>
+ #include <linux/module.h>
+ #include <linux/notifier.h>
++#include <linux/mfd/intel_msic.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mpspec_def.h>
+@@ -481,6 +482,128 @@ static void __init *no_platform_data(void *info)
+ 	return NULL;
+ }
+ 
++static struct resource msic_resources[] = {
++	{
++		.start	= INTEL_MSIC_IRQ_PHYS_BASE,
++		.end	= INTEL_MSIC_IRQ_PHYS_BASE + 64 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static struct intel_msic_platform_data msic_pdata;
++
++static struct platform_device msic_device = {
++	.name		= "intel_msic",
++	.id		= -1,
++	.dev		= {
++		.platform_data	= &msic_pdata,
++	},
++	.num_resources	= ARRAY_SIZE(msic_resources),
++	.resource	= msic_resources,
++};
++
++static inline bool mrst_has_msic(void)
++{
++	return mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL;
++}
++
++static int msic_scu_status_change(struct notifier_block *nb,
++				  unsigned long code, void *data)
++{
++	if (code == SCU_DOWN) {
++		platform_device_unregister(&msic_device);
++		return 0;
++	}
++
++	return platform_device_register(&msic_device);
++}
++
++static int __init msic_init(void)
++{
++	static struct notifier_block msic_scu_notifier = {
++		.notifier_call	= msic_scu_status_change,
++	};
++
++	/*
++	 * We need to be sure that the SCU IPC is ready before MSIC device
++	 * can be registered.
++	 */
++	if (mrst_has_msic())
++		intel_scu_notifier_add(&msic_scu_notifier);
++
++	return 0;
++}
++arch_initcall(msic_init);
++
++/*
++ * msic_generic_platform_data - sets generic platform data for the block
++ * @info: pointer to the SFI device table entry for this block
++ * @block: MSIC block
++ *
++ * Function sets IRQ number from the SFI table entry for given device to
++ * the MSIC platform data.
++ */
++static void *msic_generic_platform_data(void *info, enum intel_msic_block block)
++{
++	struct sfi_device_table_entry *entry = info;
++
++	BUG_ON(block < 0 || block >= INTEL_MSIC_BLOCK_LAST);
++	msic_pdata.irq[block] = entry->irq;
++
++	return no_platform_data(info);
++}
++
++static void *msic_battery_platform_data(void *info)
++{
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_BATTERY);
++}
++
++static void *msic_gpio_platform_data(void *info)
++{
++	static struct intel_msic_gpio_pdata pdata;
++	int gpio = get_gpio_by_name("msic_gpio_base");
++
++	if (gpio < 0)
++		return NULL;
++
++	pdata.gpio_base = gpio;
++	msic_pdata.gpio = &pdata;
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_GPIO);
++}
++
++static void *msic_audio_platform_data(void *info)
++{
++	struct platform_device *pdev;
++
++	pdev = platform_device_register_simple("sst-platform", -1, NULL, 0);
++	if (IS_ERR(pdev)) {
++		pr_err("failed to create audio platform device\n");
++		return NULL;
++	}
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_AUDIO);
++}
++
++static void *msic_power_btn_platform_data(void *info)
++{
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_POWER_BTN);
++}
++
++static void *msic_ocd_platform_data(void *info)
++{
++	static struct intel_msic_ocd_pdata pdata;
++	int gpio = get_gpio_by_name("ocd_gpio");
++
++	if (gpio < 0)
++		return NULL;
++
++	pdata.gpio = gpio;
++	msic_pdata.ocd = &pdata;
++
++	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_OCD);
++}
++
+ static const struct devs_id __initconst device_ids[] = {
+ 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
+ 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
+@@ -489,7 +612,14 @@ static const struct devs_id __initconst device_ids[] = {
+ 	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
+ 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
+ 	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
+-	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
++
++	/* MSIC subdevices */
++	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data},
++	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data},
++	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data},
++	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data},
++	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data},
++
+ 	{},
+ };
+ 
+@@ -610,19 +740,37 @@ static void __init install_irq_resource(struct platform_device *pdev, int irq)
+ 	platform_device_add_resources(pdev, &res, 1);
+ }
+ 
+-static void __init sfi_handle_ipc_dev(struct platform_device *pdev)
++static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
+ {
+ 	const struct devs_id *dev = device_ids;
++	struct platform_device *pdev;
+ 	void *pdata = NULL;
+ 
+ 	while (dev->name[0]) {
+ 		if (dev->type == SFI_DEV_TYPE_IPC &&
+-			!strncmp(dev->name, pdev->name, SFI_NAME_LEN)) {
+-			pdata = dev->get_platform_data(pdev);
++			!strncmp(dev->name, entry->name, SFI_NAME_LEN)) {
++			pdata = dev->get_platform_data(entry);
+ 			break;
+ 		}
+ 		dev++;
+ 	}
++
++	/*
++	 * On Medfield the platform device creation is handled by the MSIC
++	 * MFD driver so we don't need to do it here.
++	 */
++	if (mrst_has_msic())
++		return;
++
++	/* ID as IRQ is a hack that will go away */
++	pdev = platform_device_alloc(entry->name, entry->irq);
++	if (pdev == NULL) {
++		pr_err("out of memory for SFI platform device '%s'.\n",
++			entry->name);
++		return;
++	}
++	install_irq_resource(pdev, entry->irq);
++
+ 	pdev->dev.platform_data = pdata;
+ 	intel_scu_device_register(pdev);
+ }
+@@ -675,7 +823,6 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 	struct sfi_device_table_entry *pentry;
+ 	struct spi_board_info spi_info;
+ 	struct i2c_board_info i2c_info;
+-	struct platform_device *pdev;
+ 	int num, i, bus;
+ 	int ioapic;
+ 	struct io_apic_irq_attr irq_attr;
+@@ -703,17 +850,9 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 
+ 		switch (pentry->type) {
+ 		case SFI_DEV_TYPE_IPC:
+-			/* ID as IRQ is a hack that will go away */
+-			pdev = platform_device_alloc(pentry->name, irq);
+-			if (pdev == NULL) {
+-				pr_err("out of memory for SFI platform device '%s'.\n",
+-							pentry->name);
+-				continue;
+-			}
+-			install_irq_resource(pdev, irq);
+ 			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
+-				"irq = 0x%2x\n", i, pentry->name, irq);
+-			sfi_handle_ipc_dev(pdev);
++				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
++			sfi_handle_ipc_dev(pentry);
+ 			break;
+ 		case SFI_DEV_TYPE_SPI:
+ 			memset(&spi_info, 0, sizeof(spi_info));
+-- 
+1.7.5.4
+
