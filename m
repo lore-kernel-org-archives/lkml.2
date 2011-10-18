@@ -1,120 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab1JRSU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:20:58 -0400
-Received: from peace.netnation.com ([204.174.223.2]:37082 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab1JRSU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:20:57 -0400
-Date: Tue, 18 Oct 2011 11:20:46 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111018182046.GF1309@hostway.ca>
-References: <20111013232521.GA5654@hostway.ca> <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com> <1318847658.6594.40.camel@twins> <CA+55aFxaGKEyhXdHXNxvPrPQ-SGSpbXdfoeXrxfjPx3VXsgvtg@mail.gmail.com> <1318874090.4172.84.camel@twins> <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com> <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos> <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
+	id S1752105Ab1JRSVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:21:18 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49044 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752001Ab1JRSVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 14:21:16 -0400
+Date: Tue, 18 Oct 2011 20:19:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Xu, Anhua" <anhua.xu@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: perf tools: interface for improved PEBS ABI can accept wrong
+ parameter
+Message-ID: <20111018181943.GC21666@elte.hu>
+References: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318928713.21167.4.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 11:05:13AM +0200, Peter Zijlstra wrote:
 
-> Subject: cputimer: Cure lock inversion
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Mon Oct 17 11:50:30 CEST 2011
+Added more Cc:s of maintainers.
+
+thanks,
+
+	Ingo
+
+* Xu, Anhua <anhua.xu@intel.com> wrote:
+
+> For the commit: ab60834 perf, x86: Improve the PEBS ABI
+> The precise_ip is restricted to 2 bits. The values larger than 3 are truncated less or equal to 3.
+> This can effectively restricted value passing to syscall. But the user space interface can accept other wrong values which are larger than 3 and lowest 2 bits are 0 can meet the requirement.
 > 
-> There's a lock inversion between the cputimer->lock and rq->lock; notably
-> the two callchains involved are:
+> # Here is an example, Monitor "All branches" events on Sandybridge platform( Please refer to SDM 3B Table 30-21 to check Sandybridge specific events )
 > 
->  update_rlimit_cpu()
->    sighand->siglock
->    set_process_cpu_timer()
->      cpu_timer_sample_group()
->        thread_group_cputimer()
->          cputimer->lock
->          thread_group_cputime()
->            task_sched_runtime()
->              ->pi_lock
->              rq->lock
+> perf top -e r04c4:p  # precise_ip = 1 , Correct
+> perf top -e r04c4:pp  # precise_ip =2, Correct
+> perf top -e r04c4:ppp  # not supported, Correct
+> perf top -e r04c4:pppppp  # should not be supported, but after truncation , the number of 'p' treated as 2 which is accepted
 > 
->  scheduler_tick()
->    rq->lock
->    task_tick_fair()
->      update_curr()
->        account_group_exec()
->          cputimer->lock
 > 
-> Where the first one is enabling a CLOCK_PROCESS_CPUTIME_ID timer, and
-> the second one is keeping up-to-date.
-> 
-> This problem was introduced by e8abccb7193 ("posix-cpu-timers: Cure
-> SMP accounting oddities").
-> 
-> Cure the problem by removing the cputimer->lock and rq->lock nesting,
-> this leaves concurrent enablers doing duplicate work, but the time
-> wasted should be on the same order otherwise wasted spinning on the
-> lock and the greater-than assignment filter should ensure we preserve
-> monotonicity.
-> 
-> Reported-by: Dave Jones <davej@redhat.com>
-> Reported-by: Simon Kirby <sim@hostway.ca>
-> Cc: stable@kernel.org
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/posix-cpu-timers.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> Index: linux-2.6/kernel/posix-cpu-timers.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/posix-cpu-timers.c
-> +++ linux-2.6/kernel/posix-cpu-timers.c
-> @@ -274,9 +274,7 @@ void thread_group_cputimer(struct task_s
->  	struct task_cputime sum;
->  	unsigned long flags;
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index c816075..07d3cf9 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -216,6 +216,7 @@ struct perf_event_attr {
+>  				 *
+>  				 *  See also PERF_RECORD_MISC_EXACT_IP
+>  				 */
+> +#define SAMPLE_IP_MAX	3 
+>  				precise_ip     :  2, /* skid constraint       */
+>  				mmap_data      :  1, /* non-exec mmap data    */
+>  				sample_id_all  :  1, /* sample_type all events */
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 928918b..a2068cc 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+>  	attr->exclude_user   = eu;
+>  	attr->exclude_kernel = ek;
+>  	attr->exclude_hv     = eh;
+> -	attr->precise_ip     = precise;
+> +	if ( precise < SAMPLE_IP_MAX )
+> +		attr->precise_ip = precise;
+> +	else
+> +		return -1;
 >  
-> -	spin_lock_irqsave(&cputimer->lock, flags);
->  	if (!cputimer->running) {
-> -		cputimer->running = 1;
->  		/*
->  		 * The POSIX timer interface allows for absolute time expiry
->  		 * values through the TIMER_ABSTIME flag, therefore we have
-> @@ -284,8 +282,11 @@ void thread_group_cputimer(struct task_s
->  		 * it.
->  		 */
->  		thread_group_cputime(tsk, &sum);
-> +		spin_lock_irqsave(&cputimer->lock, flags);
-> +		cputimer->running = 1;
->  		update_gt_cputime(&cputimer->cputime, &sum);
-> -	}
-> +	} else
-> +		spin_lock_irqsave(&cputimer->lock, flags);
->  	*times = cputimer->cputime;
->  	spin_unlock_irqrestore(&cputimer->lock, flags);
+>  	return 0;
 >  }
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Tested-by: Simon Kirby <sim@hostway.ca>
+-- 
+Thanks,
 
-Looks good running on three boxes since this morning (unpatched kernel
-hangs in ~15 minutes).
-
-While I have your eyes, does this hang trace make any sense (which
-happened a couple of times with your previous patch applied)?
-
-http://0x.ca/sim/ref/3.1-rc9/3.1-rc9-tcp-lockup.log
-
-I don't see how all CPUs could be spinning on the same lock without
-reentry, and I don't see the any in the backtraces.
-
-Simon-
+	Ingo
