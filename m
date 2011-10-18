@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1JRXeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 19:34:23 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:57528
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752007Ab1JRXeW (ORCPT
+	id S1752690Ab1JRXle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 19:41:34 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54813 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab1JRXlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 19:34:22 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h93fh)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E9E0CEA.6030102@am.sony.com>
-Date: Tue, 18 Oct 2011 16:34:02 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Tue, 18 Oct 2011 19:41:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=wtyqlwB7fD+RioB7H/ES1/U4pz4Pw274pPF6byyNUMxJmMsj57w1eBbzC4m1JLxAk
+	596W2URarLNrUrWOwGXbg==
+Date: Tue, 18 Oct 2011 16:41:27 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Prarit Bhargava <prarit@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] Add TAINT_FIRMWARE_WORKAROUND on MTRR fixup
+In-Reply-To: <1318958650-12447-1-git-send-email-prarit@redhat.com>
+Message-ID: <alpine.DEB.2.00.1110181637400.8149@chino.kir.corp.google.com>
+References: <1318958650-12447-1-git-send-email-prarit@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Russell King <rmk@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] ARM 4Kstacks: Decrease poll and select stack usage, when
- using 4K stacks
-References: <4E9E0B71.9020708@am.sony.com>
-In-Reply-To: <4E9E0B71.9020708@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the max allowed size for struct poll_wqueue to avoid
-using too much stack space in do_select() and do_sys_poll(),
-when the kernel is using 4K stacks.
+On Tue, 18 Oct 2011, Prarit Bhargava wrote:
 
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
----
- include/linux/poll.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> TAINT_FIRMWARE_WORKAROUND should be set when an MTRR fixup is done.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: x86@kernel.org
 
-diff --git a/include/linux/poll.h b/include/linux/poll.h
-index cf40010..b7153a3 100644
---- a/include/linux/poll.h
-+++ b/include/linux/poll.h
-@@ -16,7 +16,11 @@
- extern struct ctl_table epoll_table[]; /* for sysctl */
- /* ~832 bytes of stack space used max in sys_select/sys_poll before allocating
-    additional memory. */
-+#ifndef CONFIG_4KSTACKS
- #define MAX_STACK_ALLOC 832
-+#else
-+#define MAX_STACK_ALLOC 448
-+#endif
- #define FRONTEND_STACK_ALLOC	256
- #define SELECT_STACK_ALLOC	FRONTEND_STACK_ALLOC
- #define POLL_STACK_ALLOC	FRONTEND_STACK_ALLOC
--- 
-1.6.6
+Acked-by: David Rientjes <rientjes@google.com>
 
+Adding the x86 maintainers to the cc, not sure if x86@kernel.org is 
+silently failing (or is it just an alias to them that is already back up 
+working)?
+
+> ---
+>  arch/x86/kernel/cpu/mtrr/generic.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
+> index a71efcd..e1fe7f4 100644
+> --- a/arch/x86/kernel/cpu/mtrr/generic.c
+> +++ b/arch/x86/kernel/cpu/mtrr/generic.c
+> @@ -547,6 +547,7 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+>  
+>  		if (tmp != mask_lo) {
+>  			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
+> +			add_taint(TAINT_FIRMWARE_WORKAROUND);
+>  			mask_lo = tmp;
+>  		}
+>  	}
