@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab1JRMH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:07:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40969 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932332Ab1JRMHw convert rfc822-to-8bit (ORCPT
+	id S932430Ab1JRMIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:08:16 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35420 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932291Ab1JRMIM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:07:52 -0400
+	Tue, 18 Oct 2011 08:08:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E9D3A0D.9070108@cam.ac.uk>
+In-Reply-To: <4E9D3EAE.9020003@cam.ac.uk>
 References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com>
- <1318926486-10330-3-git-send-email-ricardo.ribalda@gmail.com> <4E9D3A0D.9070108@cam.ac.uk>
+ <1318926486-10330-6-git-send-email-ricardo.ribalda@gmail.com> <4E9D3EAE.9020003@cam.ac.uk>
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 18 Oct 2011 14:07:11 +0200
-Message-ID: <CAPybu_0hXDjKnmQF6OtoeC=mmqfNRK6pVSf4ZA+2Jn9BHFWV2Q@mail.gmail.com>
-Subject: Re: [PATCH 2/5] input/cma3000_d0x: Check silicon version
+Date: Tue, 18 Oct 2011 14:07:32 +0200
+Message-ID: <CAPybu_1nfTQd1ZbKJOwoxyZuPvKkCh8z2tdrcpwuzQSz5CM4Rg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Input: add CMR3000 gyrsocope driver
 To: Jonathan Cameron <jic23@cam.ac.uk>
 Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
         aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
@@ -28,26 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello Jonathan
 
->> +     if (rev != CMA3000_REV) {
->> +             error = -EINVAL;
->> +             pr_err("CMA3000 Accelerometer: Unknown Revision %x\n", rev);
-> warning perhaps rather than error?
+On Tue, Oct 18, 2011 at 10:54, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+> On 10/18/11 09:28, Ricardo Ribalda Delgado wrote:
 
-IMHO it should be an error. If the revision is different, either you
-are in front of a unknown chip or the chip is going to behave
-differently and lead into an unstable system. Better be safe than
-sorry.
+> Quick review done below.  Quite a bit of overlap with earlier reviews.
+> Sorry I couldn't take a closer look.
 
-> Patch could do with a statement of why anyone would care about this.
->>       error = request_threaded_irq(irq, NULL, cma3000_thread_irq,
->>                                    pdata->irqflags | IRQF_ONESHOT,
->>                                    "cma3000_d0x", data);
+I am fixing also previous errors
 
-You are right... not so useful information :). Maybe as part of a
-sysfs file, but definately not as as a printk
+> accl?  I thought this was a gyro so this seems odd.
+copy paste :), fixing it
 
->
->
+> I'd much rather see these done explicity in the code.
+> This sort of macro just obscures the works to save a few lines
+> of code.
+>> +#define CMR3000_READ(data, reg, msg) \
+>> +     (data->bus_ops->read(data->dev, reg, msg))
+>> +#define CMR3000_SET(data, reg, val, msg) \
+>> +     ((data)->bus_ops->write(data->dev, reg, val, msg))
+>> +
+
+Fixing it
+
+
+>> +void cmr3000_exit(struct cmr3000_accl_data *data)
+>> +{
+>> +     free_irq(data->irq, data);
+>> +     input_unregister_device(data->input_dev);
+> cleaner to unwind in reverse order of setup unless you have
+> a good reason and that should be commented.
+
+Fixing it, and also fixing it on the cma3000
+
+> Match comment to name fo structure.
+>> + * struct cmr3000_i2c_platform_data - CMR3000 Platform data
+>> + * @fuzz_x: Noise on X Axis
+>> + * @fuzz_y: Noise on Y Axis
+>> + * @fuzz_z: Noise on Z Axis
+>> + * @mode: Operating mode
+>> + * @irq_level: Irq level
+>> + */
+>> +struct cmr3000_platform_data {
+>> +     int fuzz_x;
+>> +     int fuzz_y;
+>> +     int fuzz_z;
+>> +     uint8_t irq_level;
+>> +     uint8_t mode;
+>> +     unsigned long irqflags;
+>> +};
+
+Fixing it, and also fixing it on the cma3000
+
+
+Thanks!
 
 
 
