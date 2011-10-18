@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab1JROPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:15:09 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:51156 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755565Ab1JROPG (ORCPT
+	id S932347Ab1JROP1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:15:27 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53088 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199Ab1JROPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:15:06 -0400
-X-Sasl-enc: 2Z/Zq4PRfKGw0iAUGwuZ4YcWVGl/jQFnQ8MW5z1jmC+u 1318947305
-Date: Tue, 18 Oct 2011 07:14:05 -0700
-From: Greg KH <greg@kroah.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Josh Boyer <jwboyer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] Update email address for stable patch submission
-Message-ID: <20111018141405.GC17101@kroah.com>
-References: <20111018011638.GQ1165@zod.bos.redhat.com>
- <20111018065852.GA6056@infradead.org>
- <alpine.DEB.2.00.1110180105080.8959@chino.kir.corp.google.com>
+	Tue, 18 Oct 2011 10:15:24 -0400
+Date: Tue, 18 Oct 2011 15:15:20 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Lee Jones <lee.jones@linaro.org>, Greg KH <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, jamie@jamieiles.com
+Subject: Re: [PATCH 2/6] drivers/base: add bus for System-on-Chip devices
+Message-ID: <20111018141520.GA10054@totoro>
+References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
+ <20111017161854.GB5108@suse.de>
+ <4E9D5FAB.2080605@linaro.org>
+ <201110181605.12512.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110180105080.8959@chino.kir.corp.google.com>
+In-Reply-To: <201110181605.12512.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 01:07:38AM -0700, David Rientjes wrote:
-> On Tue, 18 Oct 2011, Christoph Hellwig wrote:
-> 
-> > > The stable@kernel.org email address has been replaced with the
-> > > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-> > > reference the new list instead of the semi-defunct email alias.
-> > 
-> > Does this mean it already stopped working?  I recently sent pathces
-> > there but neither got an ACK nor a bounce or similar.
-> > 
-> 
-> It was bouncing (and noticably so) as of a week ago but I believe hpa has 
-> since setup an alias to point to stable@vger.kernel.org.  Linus cc'd his 
-> own commit to it yesterday, a84a79e4d369, so as long as you didn't get a 
-> bounce email it should have gone through.
-> 
->  [ I believe Greg also has gone through everything with a
->    "Cc: stable@kernel.org" in Linus' tree as well, either automatically 
->    or because of the bounces. ]
+Hi Arnd,
 
-Automatically, scripts are nice :)
+On Tue, Oct 18, 2011 at 04:05:12PM +0200, Arnd Bergmann wrote:
+> On Tuesday 18 October 2011, Lee Jones wrote:
+> > On 17/10/11 17:18, Greg KH wrote:
+> > > On Mon, Oct 17, 2011 at 12:52:54PM +0100, Lee Jones wrote:
+> > >> +
+> > >> +	bus_unregister(&soc_bus_type);
+> > > 
+> > > What happens if you have more than one SOC device?  I think you just
+> > > oopsed.
+> > 
+> > I think you're right.
+> > 
+> > When to you suggest we unregister the bus?
+> 
+> Do it in the same way as registering it, as a module_exit() function
+> below the initcall that instantiates it. These interfaces usually come
+> in pairs, so if something does not look symmetric, you should better
+> have another look.
+
+I can't think of a system where it make sense to have this as a loadable 
+module so can't we just register the bus_type and never unregister it 
+like the platform and spi busses for example?
+
+Also, (and I'm right at the edge of my knowledge here!) wouldn't you 
+also need to add reference counting of the module when 
+creating/destroying a soc device to prevent the module and bus 
+disappearing whilst you had devices with a reference to it?
+
+Jamie
