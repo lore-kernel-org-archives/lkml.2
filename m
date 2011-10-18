@@ -1,184 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab1JROgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:36:03 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:50390 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083Ab1JROgB (ORCPT
+	id S932370Ab1JROgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:36:18 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:43885 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932140Ab1JROgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:36:01 -0400
-Date: Tue, 18 Oct 2011 12:35:50 -0200
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Philipp Herz - Profihost AG <p.herz@profihost.ag>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Vanilla-Kernel 3 - page allocation failure
-Message-ID: <20111018143550.GE3782@oc1711230544.ibm.com>
-References: <4E9D53FF.7090609@profihost.ag>
- <20111018113251.GA3782@oc1711230544.ibm.com>
- <4E9D6C0A.1030801@profihost.ag>
- <20111018123838.GD3782@oc1711230544.ibm.com>
- <4E9D7E1C.9080202@profihost.ag>
+	Tue, 18 Oct 2011 10:36:17 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: d8wqhpoVM1kj0N0JvSZFibNzT.lonj1cj9a.rbbilB5XLq7
+ H.5HVbL2N4sSVlsMj4v1gQeUWXqaFEypQovyFv.5JhHKRMgnuDOqX1tjwJdh
+ _vECexMNmJiVAmkAsa57NDRlRUacClF9br2gdrCN3DbqE48_xXQjc4iGrpbi
+ TBwLBdFkqRD35u_X4gMCsZ8hWBI_JAFH2PgPoKSulPE7YepYgIHe9f37JUH2
+ .fgP_.ZYug.zek3nUXhWavVWogNrIMmmNxwqFv2.UNKiQjPC_hNYs9Zo6qE7
+ X.hmJNzMzQT1njAE1OJSU5ZhUxwWfCuO1j4AD3i0gJgVrdPv4amaMLOVHSCk
+ hcqACnl8adV8zZM148rOIhbk79gsdtHQi8Mp3bP9imbF9Ex0cCGTvdUIJDha
+ HxToYk2wzO4vLkVxLUAMNXWE-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 18 Oct 2011 09:36:14 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Dimitri Sivanich <sivanich@sgi.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+In-Reply-To: <20111018134835.GA16222@sgi.com>
+Message-ID: <alpine.DEB.2.00.1110180933470.687@router.home>
+References: <20111013135032.7c2c54cd.akpm@linux-foundation.org> <alpine.DEB.2.00.1110131602020.26553@router.home> <20111013142434.4d05cbdc.akpm@linux-foundation.org> <20111014122506.GB26737@sgi.com> <20111014135055.GA28592@sgi.com> <alpine.DEB.2.00.1110140856420.6411@router.home>
+ <20111014141921.GC28592@sgi.com> <alpine.DEB.2.00.1110140932530.6411@router.home> <alpine.DEB.2.00.1110140958550.6411@router.home> <20111014161603.GA30561@sgi.com> <20111018134835.GA16222@sgi.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9D7E1C.9080202@profihost.ag>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 03:24:44PM +0200, Philipp Herz - Profihost AG wrote:
-> Hello Cascardo
-> 
-> > Usually, after the stack dump, there is some
-> > statistics about memory.
-> Yes, i have seen this in other posts as well.
-> 
-> > I have seen that these may be suppressed
-> > if you have a NUMA system with lots of nodes.
-> Yes, in our case it seems to be suppressed.
-> 
-> > Check for NODE_SHIFT in your
-> > config. If it's greater than 8, that output may have been suppressed.
-> CONFIG_NODES_SHIFT=10 will be the answer.
-> 
-> Is there any way to get those stats without recompiling the kernel?
-> 
-> > But you may have just ignored the statistics because of the
-> > stack dump.
-> No, i was also wondering why other do have these ;-)
-> 
-> Regards,
-> Philipp
-> 
+On Tue, 18 Oct 2011, Dimitri Sivanich wrote:
 
-echo m > /proc/sysrq-trigger
+> After further testing, substantial increases in ZVC delta along with cache alignment
+> of the vm_stat array bring the tmpfs writeback throughput numbers to about where
+> they are with vm.overcommit_memory==OVERCOMMIT_NEVER.  I still need to determine how
+> high the ZVC delta needs to be to achieve this performance, but it is greater than 125.
 
-will show you that same output, but not at the time the memory failure
-happens. It may still show you what is the condition of memory on your
-nodes.
+Sounds like this is the way to go then.
 
-I am not that much versed in the VM. It just happens that I had very
-similar issues lately and was trying to undertand it a little more. I
-still have to solve these issues myself.
+> Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
+> same default behavior as what we currently have?
 
-In my case, the workload is IO bound on extX filesystems and I see that
-other systems have these failures due to this memory pressure. Usually,
-after stopping the workload and unmounting the filesystems, I get most
-of the memory in the system freed.
+I think so.
 
-Most of the failures are from GFP_ATOMIC allocations, because those
-won't reclaim memory, but they won't allocate if there is only freed
-memory below the threshold. Setting this threshold to a lower value
-like it was suggested (min_free_kbytes) would have helped, but, then,
-this allows whatever is putting pressure on your memory to also allocate
-below the threshold and you end up in the same situation (or a worse
-one).
+> If the thresholds get set higher, it could be that some values that don't normally have
+> as big a delta may not get updated frequently enough.  Should we maybe update all values
+> everytime a threshold is hit, as the patch below was intending?
 
-Do your workload works better on a previous version? I had problems
-using something like 2.6.32.
+Mel can probably chime in on the accuracy needed for reclaim etc. We
+already have an automatic reduction of the delta if the vm gets into
+problems.
 
-Regards,
-Cascardo.
+> Note that having each counter in a separate cacheline does not have much, if any,
+> effect.
 
-> Am 18.10.2011 14:38, schrieb Thadeu Lima de Souza Cascardo:
-> >On Tue, Oct 18, 2011 at 02:07:38PM +0200, Philipp Herz - Profihost AG wrote:
-> >>Hello Cascardo,
-> >>
-> >>thanks for your detailed answer!
-> >>
-> >>I have uploaded two call traces to pastebin for further investigation.
-> >>
-> >>Maybe this can help you.
-> >>
-> >>* http://pastebin.com/Psg2dGYC (kworker)
-> >>* http://pastebin.com/pPFjZqxL (php5)
-> >>
-> >>Regards,
-> >>Philipp
-> >>
-> >
-> >Hello, Philipp.
-> >
-> >That only tells us that you have a TCP workload in your system. This is
-> >the subsystem that is trying to allocate memory. However, we do not know
-> >why there is failure. Usually, after the stack dump, there is some
-> >statistics about memory. I have seen that these may be suppressed if you
-> >have a NUMA system with lots of nodes. Check for NODE_SHIFT in your
-> >config. If it's greater than 8, that output may have been suppressed.
-> >But you may have just ignored the statistics because of the stack dump.
-> >
-> >Regards,
-> >Cascardo.
-> >
-> >>
-> >>Am 18.10.2011 13:32, schrieb Thadeu Lima de Souza Cascardo:
-> >>>On Tue, Oct 18, 2011 at 12:25:03PM +0200, Philipp Herz - Profihost AG wrote:
-> >>>>After updating kernel (x86_64) to stable version 3 there are a few
-> >>>>messages appearing in the kernel log such as
-> >>>>
-> >>>>kworker/0:1: page allocation failure: order:1, mode:0x20
-> >>>>mysql: page allocation failure: order:1, mode:0x20
-> >>>>php5: page allocation failure: order:1, mode:0x20
-> >>>>
-> >>>>Searching the net showed that these messages are known to occur since 2004.
-> >>>>
-> >>>>Some people were able to get rid of them by setting
-> >>>>/proc/sys/vm/min_free_kbytes to a high enough value. This does not
-> >>>>help in our case.
-> >>>>
-> >>>>
-> >>>>Is there a kernel comand line argument to avoid these messages?
-> >>>>
-> >>>>As of mm/page_alloc.c these messages are marked to be only warning
-> >>>>messages and would not appear if 'gpf_mask' was set to __GFP_NOWARN
-> >>>>in function warn_alloc_failed.
-> >>>>
-> >>>>How does this mask get set? Is it set by the "external" process
-> >>>>knocking at the memory manager?
-> >>>>
-> >>>
-> >>>Hello, Philipp.
-> >>>
-> >>>This happens when kernel tries to allocate memory, sometimes in response
-> >>>to some request by the user space, but also in other contexts. For
-> >>>example, an interrupt by a network driver may try to allocate memory. In
-> >>>this context, it will use GFP_ATOMIC as a mask, for example. The most
-> >>>usual flags in the kernel are GFP_KERNEL and GFP_ATOMIC.
-> >>>
-> >>>>What is the magic behind the 'order' and 'mode'?
-> >>>>
-> >>>
-> >>>The order is the binary log of the number of pages requested. So, order 1
-> >>>allocations are 2 pages, order 4 would be 16 pages, for example.
-> >>>
-> >>>The mode is, in fact, gfp_flags. 0x20 is GFP_ATOMIC. This kind of
-> >>>allocation cannot do IO or access the filesystem. Also, it cannot wait
-> >>>for reclaim memory from cache.
-> >>>
-> >>>This warning is usually followed by some statistics about memory use
-> >>>in your system. Please post it to give more information about this
-> >>>situation.
-> >>>
-> >>>I have watched some of this happen when lots of cache is used by some
-> >>>filesystems. Perhaps, some tweaking of the vm sysctl options may help,
-> >>>but I can point any magic tweaking right now.
-> >>>
-> >>>Regards,
-> >>>Cascardo.
-> >>>
-> >>>>I'm not a subscriber, so please CC me a copy of messages related to
-> >>>>the subject. I'm not sure if I can help much by looking at the
-> >>>>inside of the kernel, but I will try my best to answer any questions
-> >>>>concerning this issue.
-> >>>>
-> >>>>Best regards, Philipp
-> >>>>--
-> >>>>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>>>the body of a message to majordomo@vger.kernel.org
-> >>>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>>Please read the FAQ at  http://www.tux.org/lkml/
-> >>>
-> >>
-> >
-> 
+It may have a good effect if you group the counters according to their
+uses into different cachelines. Counters that are typically updates
+together need to be close to each other. Also you could modify my patch to
+only update counters in the same cacheline. I think doing all counters
+caused the problems with that patch because we now touch multiple
+cachelines and increase the cache footprint of critical vm functions.
+
