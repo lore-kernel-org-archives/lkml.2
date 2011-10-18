@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab1JRPev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:34:51 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:45604 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab1JRPes (ORCPT
+	id S932755Ab1JRPe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:34:29 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46740 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932579Ab1JRPe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:34:48 -0400
+	Tue, 18 Oct 2011 11:34:26 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V7 12/26] vfs: Make acl_permission_check() work for richacls
-Date: Tue, 18 Oct 2011 21:02:47 +0530
-Message-Id: <1318951981-5508-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V7 06/26] vfs: Add IS_RICHACL() test for richacl support
+Date: Tue, 18 Oct 2011 21:02:41 +0530
+Message-Id: <1318951981-5508-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,38 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
+Introduce a new MS_RICHACL super-block flag and a new IS_RICHACL() test
+which file systems like nfs can use.  IS_ACL() is true if IS_POSIXACL()
+or IS_RICHACL() is true.
+
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ include/linux/fs.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index eb8f918..0c28f95 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -230,6 +230,20 @@ static int acl_permission_check(struct inode *inode, int mask)
- 	if (current_user_ns() != inode_userns(inode))
- 		goto other_perms;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 1994b84..7b4bfe6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -210,6 +210,7 @@ struct inodes_stat_t {
+ #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+ #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+ #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
++#define MS_RICHACL	(1<<25) /* Supports richacls */
+ #define MS_NOSEC	(1<<28)
+ #define MS_BORN		(1<<29)
+ #define MS_ACTIVE	(1<<30)
+@@ -270,6 +271,7 @@ struct inodes_stat_t {
+ #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
+ #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
+ #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
++#define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
  
-+	if (IS_RICHACL(inode)) {
-+		int error = check_acl(inode, mask);
-+		if (error != -EAGAIN)
-+			return error;
-+		if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
-+			    MAY_CHMOD | MAY_SET_TIMES)) {
-+			/*
-+			 * The file permission bit cannot grant these
-+			 * permissions.
-+			 */
-+			return -EACCES;
-+		}
-+	}
-+
- 	if (likely(current_fsuid() == inode->i_uid))
- 		mode >>= 6;
- 	else {
+ #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
+ #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
+@@ -283,7 +285,7 @@ struct inodes_stat_t {
+  * IS_ACL() tells the VFS to not apply the umask
+  * and use check_acl for acl permission checks when defined.
+  */
+-#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
++#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL | MS_RICHACL)
+ 
+ /* the read-only stuff doesn't really belong here, but any other place is
+    probably as bad and I don't want to create yet another include file. */
 -- 
 1.7.5.4
 
