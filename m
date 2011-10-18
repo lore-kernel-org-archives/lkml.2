@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab1JRJEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:04:39 -0400
-Received: from a.relay.invitel.net ([62.77.203.3]:51848 "EHLO
-	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757145Ab1JRJEi (ORCPT
+	id S1757145Ab1JRJFc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:05:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40399 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880Ab1JRJFa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:04:38 -0400
-Date: Tue, 18 Oct 2011 11:04:36 +0200
-From: =?iso-8859-1?B?R+Fib3IgTOlu4XJ0?= <lgb@lgb.hu>
-To: linux-kernel@vger.kernel.org
-Subject: Re: barrier-based sync failed - disabling barriers
-Message-ID: <20111018090436.GB21728@vega.lgb.hu>
-Reply-To: lgb@lgb.hu
-References: <20111018081159.GA21728@vega.lgb.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111018081159.GA21728@vega.lgb.hu>
-X-Operating-System: vega Linux 2.6.38-12-generic i686
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Oct 2011 05:05:30 -0400
+Subject: Re: Linux 3.1-rc9
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Tue, 18 Oct 2011 11:05:13 +0200
+In-Reply-To: <alpine.LFD.2.02.1110181037120.3240@ionos>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
+	  <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca>
+	  <1318010515.398.8.camel@twins> <20111008005035.GC22843@hostway.ca>
+	  <1318060551.8395.0.camel@twins> <20111012213555.GC24461@hostway.ca>
+	  <20111013232521.GA5654@hostway.ca>
+	  <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+	  <1318847658.6594.40.camel@twins>
+	  <CA+55aFxaGKEyhXdHXNxvPrPQ-SGSpbXdfoeXrxfjPx3VXsgvtg@mail.gmail.com>
+	  <1318874090.4172.84.camel@twins>
+	  <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>
+	 <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>
+	 <alpine.LFD.2.02.1110181037120.3240@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318928713.21167.4.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 10:11:59AM +0200, Gábor Lénárt wrote:
-> I have a kernel log entry I've never seen before:
+On Tue, 2011-10-18 at 10:39 +0200, Thomas Gleixner wrote:
+> On Mon, 17 Oct 2011, Thomas Gleixner wrote:
+> > That said, I really need some sleep before I can make a final
+> > judgement on that horror. The call paths are such an intermingled mess
+> > that it's not funny anymore. I do that tomorrow morning first thing.
 > 
-> JBD: barrier-based sync failed on cciss!c0d0p3-8 - disabling barriers
-> JBD: barrier-based sync failed on cciss!c0d0p1-8 - disabling barriers
-> 
-> Should I worry? Can it be blamed for the poor I/O performance? How can I
-> solve this problem? Even if it doesn't mean too much (what I should
-> worry about), it's a bit annoying (as always) to see odd messages.
-> 
-> The ext4 filesystems were created by the installer of an older (ubuntu)
-> distribution, I guess, it can cause problems after the upgrade. Can I
-> convert/modify the filesystem (like with tune2fs) not to have these
-> messages and problem?
+> The patch is safe and the exit race just existed in my confused tired
+> brain. Peter, can you please provide a changelog. That wants a cc
+> stable as well, because that deadlock causing commit hit 3.0.7 :( 
 
+---
+Subject: cputimer: Cure lock inversion
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon Oct 17 11:50:30 CEST 2011
 
-Sorry, I forgot to give some information:
+There's a lock inversion between the cputimer->lock and rq->lock; notably
+the two callchains involved are:
 
-Linux nopea1 2.6.32-34-server #77-Ubuntu SMP Tue Sep 13 20:54:38 UTC 2011 x86_64 GNU/Linux
-Ubuntu 10.04.3 LTS "lucid"
-Hardware name: ProLiant DL360 G5
-/dev/cciss/c0d0: (Smart Array E200i) RAID 1 Volume 0 status: OK. 
+ update_rlimit_cpu()
+   sighand->siglock
+   set_process_cpu_timer()
+     cpu_timer_sample_group()
+       thread_group_cputimer()
+         cputimer->lock
+         thread_group_cputime()
+           task_sched_runtime()
+             ->pi_lock
+             rq->lock
 
-Filesystem volume name:   /
-Last mounted on:          /
-Filesystem UUID:          06a107ec-cf2a-4dca-bb95-ab7745402f5b
-Filesystem magic number:  0xEF53
-Filesystem revision #:    1 (dynamic)
-Filesystem features:      has_journal ext_attr resize_inode dir_index
-filetype needs_recovery extent flex_bg sparse_super large_file huge_file
-uninit_bg dir_nlink extra_isize
-Filesystem flags:         signed_directory_hash 
-Default mount options:    (none)
-Filesystem state:         clean
-Errors behavior:          Continue
-Filesystem OS type:       Linux
-Inode count:              610800
-Block count:              2441876
-Reserved block count:     0
-Free blocks:              2079823
-Free inodes:              577158
-First block:              0
-Block size:               4096
-Fragment size:            4096
-Reserved GDT blocks:      596
-Blocks per group:         32768
-Fragments per group:      32768
-Inodes per group:         8144
-Inode blocks per group:   509
-Flex block group size:    16
-Filesystem created:       Wed Oct 12 17:24:42 2011
-Last mount time:          Tue Oct 18 10:01:29 2011
-Last write time:          Wed Oct 12 19:39:53 2011
-Mount count:              6
-Maximum mount count:      35
-Last checked:             Wed Oct 12 17:24:42 2011
-Check interval:           15552000 (6 months)
-Next check after:         Mon Apr  9 17:24:42 2012
-Lifetime writes:          833 MB
-Reserved blocks uid:      0 (user root)
-Reserved blocks gid:      0 (group root)
-First inode:              11
-Inode size:               256
-Required extra isize:     28
-Desired extra isize:      28
-Journal inode:            8
-Default directory hash:   half_md4
-Directory Hash Seed:      0914f7b2-bfa3-4718-811d-fc02c7361b32
-Journal backup:           inode blocks
-Journal features:         journal_incompat_revoke
-Journal size:             128M
-Journal length:           32768
-Journal sequence:         0x0000055a
-Journal start:            1
+ scheduler_tick()
+   rq->lock
+   task_tick_fair()
+     update_curr()
+       account_group_exec()
+         cputimer->lock
 
+Where the first one is enabling a CLOCK_PROCESS_CPUTIME_ID timer, and
+the second one is keeping up-to-date.
 
-- Gábor
+This problem was introduced by e8abccb7193 ("posix-cpu-timers: Cure
+SMP accounting oddities").
+
+Cure the problem by removing the cputimer->lock and rq->lock nesting,
+this leaves concurrent enablers doing duplicate work, but the time
+wasted should be on the same order otherwise wasted spinning on the
+lock and the greater-than assignment filter should ensure we preserve
+monotonicity.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Simon Kirby <sim@hostway.ca>
+Cc: stable@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/posix-cpu-timers.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+Index: linux-2.6/kernel/posix-cpu-timers.c
+===================================================================
+--- linux-2.6.orig/kernel/posix-cpu-timers.c
++++ linux-2.6/kernel/posix-cpu-timers.c
+@@ -274,9 +274,7 @@ void thread_group_cputimer(struct task_s
+ 	struct task_cputime sum;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&cputimer->lock, flags);
+ 	if (!cputimer->running) {
+-		cputimer->running = 1;
+ 		/*
+ 		 * The POSIX timer interface allows for absolute time expiry
+ 		 * values through the TIMER_ABSTIME flag, therefore we have
+@@ -284,8 +282,11 @@ void thread_group_cputimer(struct task_s
+ 		 * it.
+ 		 */
+ 		thread_group_cputime(tsk, &sum);
++		spin_lock_irqsave(&cputimer->lock, flags);
++		cputimer->running = 1;
+ 		update_gt_cputime(&cputimer->cputime, &sum);
+-	}
++	} else
++		spin_lock_irqsave(&cputimer->lock, flags);
+ 	*times = cputimer->cputime;
+ 	spin_unlock_irqrestore(&cputimer->lock, flags);
+ }
+
