@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab1JRJeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:34:17 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:48565 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1JRJeQ (ORCPT
+	id S1755426Ab1JRJfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:35:55 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53091 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab1JRJfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:34:16 -0400
-Date: Tue, 18 Oct 2011 11:34:11 +0200
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Elmar Vonlanthen <evonlanthen@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        Timo =?iso-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>
-Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
-	causes kernel oops
-Message-ID: <20111018093411.GA15165@gondor.apana.org.au>
-References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com> <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com> <1318905032.2571.35.camel@edumazet-laptop>
+	Tue, 18 Oct 2011 05:35:54 -0400
+Date: Tue, 18 Oct 2011 11:35:34 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Christoph Egger <Christoph.Egger@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for microcode
+ update in Xen dom0
+Message-ID: <20111018093534.GA17076@aftab>
+References: <20111012101615.GA14966@aftab>
+ <4E95D9E7.6090304@zytor.com>
+ <4E95E7FE.6050302@goop.org>
+ <20111012194543.GD14966@aftab>
+ <20111012204048.GA22260@phenom.oracle.com>
+ <4E960746.90805@zytor.com>
+ <20111012214013.GD28723@aftab>
+ <4E9D3F36.6070201@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318905032.2571.35.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E9D3F36.6070201@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 04:30:32AM +0200, Eric Dumazet wrote:
->
-> If David/Herbert/Timo agree, then patch should find its way into current
-> kernel, then to stable trees as well.
+On Tue, Oct 18, 2011 at 04:56:22AM -0400, Christoph Egger wrote:
+> I think this approach is good to get the microcode applied as
+> early as possible at boot time. But on servers you usually do not want
+> to reboot the machine unless you do a BIOS update which will apply
+> the new microcode anyway. So for applying the microcode update
+> at runtime I would like to keep the existing API.
 
-Actually, I think we should instead fix the users of needed_headroom
-to not read it twice which is causing problems here.
+No, you don't want to keep the existing API and you know it. I've
+explained to you last week why.
 
-GRE tunnels by their nature do not have a fixed value for
-needed_headroom.  As the underlying routes change the necessary
-headroom may need to be adjusted due to further encapsulation such
-as IPsec.
-
-Keeping it constant from tunnel creation may result in suboptimal
-performance due to unnecessary header reallocations.
-
-However, until we audit the stack to see if there are further
-instances of double-readings such as the one causing the crash
-here, I'm fine with your patch making it constant.
-
-Once we're sure that all of the double-readings are gone we
-can revert to a dynamic needed_headroom.
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Regards/Gruss,
+Boris.
+
+Operating Systems Research Center
+Advanced Micro Devices, Inc.
