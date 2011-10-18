@@ -1,392 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab1JRNIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:08:32 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:40997 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757794Ab1JRNIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:08:31 -0400
-Date: Tue, 18 Oct 2011 15:08:26 +0200
-From: Mel Gorman <mel@csn.ul.ie>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/9] mm: MIGRATE_CMA migration type added
-Message-ID: <20111018130826.GD6660@csn.ul.ie>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <1317909290-29832-5-git-send-email-m.szyprowski@samsung.com>
+	id S1757814Ab1JRNJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:09:54 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:56968
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757636Ab1JRNJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 09:09:52 -0400
+X-SpamScore: -6
+X-BigFish: VS-6(zz1432N98dKc8kzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+Date: Tue, 18 Oct 2011 21:20:33 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Rajendra Nayak <rnayak@ti.com>
+CC: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
+        <patches@linaro.org>, <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111018132032.GD30703@S2100-06.ap.freescale.net>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1317909290-29832-5-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1318263578-7407-4-git-send-email-rnayak@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 03:54:44PM +0200, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+On Mon, Oct 10, 2011 at 09:49:36PM +0530, Rajendra Nayak wrote:
+> The helper routine is meant to be used by regulator drivers
+> to extract the regulator_init_data structure from the data
+> that is passed from device tree.
+> 'consumer_supplies' which is part of regulator_init_data is not extracted
+> as the regulator consumer mappings are passed through DT differently,
+> implemented in subsequent patches.
+> Similarly the regulator<-->parent/supply mapping is handled in
+> subsequent patches.
 > 
-> The MIGRATE_CMA migration type has two main characteristics:
-> (i) only movable pages can be allocated from MIGRATE_CMA
-> pageblocks and (ii) page allocator will never change migration
-> type of MIGRATE_CMA pageblocks.
+> Also add documentation for regulator bindings to be used to pass
+> regulator_init_data struct information from device tree.
 > 
-> This guarantees that page in a MIGRATE_CMA page block can
-> always be migrated somewhere else (unless there's no memory left
-> in the system).
-> 
-
-Or the count is premanently elevated by a device driver for some reason or if
-the page is backed by a filesystem with a broken or unusable migrate_page()
-function. This is unavoidable, I'm just pointing out that you can stil have
-migration failures, particularly if GFP_MOVABLE has been improperly
-used.
-
-> It is designed to be used with Contiguous Memory Allocator
-> (CMA) for allocating big chunks (eg. 10MiB) of physically
-> contiguous memory.  Once driver requests contiguous memory,
-> CMA will migrate pages from MIGRATE_CMA pageblocks.
-> 
-> To minimise number of migrations, MIGRATE_CMA migration type
-> is the last type tried when page allocator falls back to other
-> migration types then requested.
-> 
-
-It would be preferable if you could figure out how to reuse the
-MIGRATE_RESERVE type for just the bitmap. Like MIGRATE_CMA, it does not
-change type except when min_free_kbytes changes. However, it is
-something that could be done in the future to keep the size of the
-pageblock bitmap where it is now.
-
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> [m.szyprowski: cleaned up Kconfig, renamed some functions, removed ifdefs]
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> [m.nazarewicz: fixed incorrect handling of pages from ISOLATE page blocks]
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
 > ---
->  include/linux/mmzone.h         |   41 +++++++++++++++++----
->  include/linux/page-isolation.h |    1 +
->  mm/Kconfig                     |    8 ++++-
->  mm/compaction.c                |   10 +++++
->  mm/page_alloc.c                |   79 ++++++++++++++++++++++++++++++----------
->  5 files changed, 112 insertions(+), 27 deletions(-)
+>  .../devicetree/bindings/regulator/regulator.txt    |   44 +++++++++
+>  drivers/regulator/Kconfig                          |    8 ++
+>  drivers/regulator/Makefile                         |    1 +
+>  drivers/regulator/of_regulator.c                   |   93 ++++++++++++++++++++
+>  include/linux/regulator/of_regulator.h             |   21 +++++
+>  5 files changed, 167 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/regulator/regulator.txt
+>  create mode 100644 drivers/regulator/of_regulator.c
+>  create mode 100644 include/linux/regulator/of_regulator.h
 > 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 862a834..cc34965 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -35,13 +35,35 @@
->   */
->  #define PAGE_ALLOC_COSTLY_ORDER 3
->  
-> -#define MIGRATE_UNMOVABLE     0
-> -#define MIGRATE_RECLAIMABLE   1
-> -#define MIGRATE_MOVABLE       2
-> -#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
-> -#define MIGRATE_RESERVE       3
-> -#define MIGRATE_ISOLATE       4 /* can't allocate from here */
-> -#define MIGRATE_TYPES         5
-> +enum {
-> +	MIGRATE_UNMOVABLE,
-> +	MIGRATE_RECLAIMABLE,
-> +	MIGRATE_MOVABLE,
-> +	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
-> +	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
-> +	/*
-> +	 * MIGRATE_CMA migration type is designed to mimic the way
-> +	 * ZONE_MOVABLE works.  Only movable pages can be allocated
-> +	 * from MIGRATE_CMA pageblocks and page allocator never
-> +	 * implicitly change migration type of MIGRATE_CMA pageblock.
-> +	 *
-> +	 * The way to use it is to change migratetype of a range of
-> +	 * pageblocks to MIGRATE_CMA which can be done by
-> +	 * __free_pageblock_cma() function.  What is important though
-> +	 * is that a range of pageblocks must be aligned to
-> +	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
-> +	 * a single pageblock.
-> +	 */
-> +	MIGRATE_CMA,
-
-This does mean that MIGRATE_CMA also does not have a per-cpu list. I
-don't know if that matters to you but all allocations using MIGRATE_CMA
-will take the zone lock. I'm not sure this can be easily avoided because
-if there is a per-CPU list for MIGRATE_CMA, it might use a new cache
-line for it and incur a different set of performance problems.
-
-> +	MIGRATE_ISOLATE,	/* can't allocate from here */
-> +	MIGRATE_TYPES
-> +};
+> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+> new file mode 100644
+> index 0000000..a623fdd
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+> @@ -0,0 +1,44 @@
+> +Voltage/Current Regulators
 > +
-> +#ifdef CONFIG_CMA_MIGRATE_TYPE
-> +#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-> +#else
-> +#  define is_migrate_cma(migratetype) false
-> +#endif
->  
->  #define for_each_migratetype_order(order, type) \
->  	for (order = 0; order < MAX_ORDER; order++) \
-> @@ -54,6 +76,11 @@ static inline int get_pageblock_migratetype(struct page *page)
->  	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
->  }
->  
-> +static inline bool is_pageblock_cma(struct page *page)
-> +{
-> +	return is_migrate_cma(get_pageblock_migratetype(page));
-> +}
+> +Optional properties:
+> +- regulator-min-uV: smallest voltage consumers may set
+> +- regulator-max-uV: largest voltage consumers may set
+> +- regulator-uV-offset: Offset applied to voltages to compensate for voltage drops
+> +- regulator-min-uA: smallest current consumers may set
+> +- regulator-max-uA: largest current consumers may set
+> +- regulator-change-voltage: boolean, Output voltage can be changed by software
+> +- regulator-change-current: boolean, Output current can be chnaged by software
+> +- regulator-change-mode: boolean, Operating mode can be changed by software
+> +- regulator-change-status: boolean, Enable/Disable control for regulator exists
+> +- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
+> +- regulator-mode-fast: boolean, allow/set fast mode for the regulator
+> +- regulator-mode-normal: boolean, allow/set normal mode for the regulator
+> +- regulator-mode-idle: boolean, allow/set idle mode for the regulator
+> +- regulator-mode-standby: boolean, allow/set standby mode for the regulator
+> +- regulator-input-uV: Input voltage for regulator when supplied by another regulator
+> +- regulator-always-on: boolean, regulator should never be disabled
+> +- regulator-boot-on: bootloader/firmware enabled regulator
+> +- <name>-supply: phandle to the parent supply/regulator node
 > +
->  struct free_area {
->  	struct list_head	free_list[MIGRATE_TYPES];
->  	unsigned long		nr_free;
-> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-> index 774ecec..9b6aa8a 100644
-> --- a/include/linux/page-isolation.h
-> +++ b/include/linux/page-isolation.h
-> @@ -48,4 +48,5 @@ int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn);
->  unsigned long scan_lru_pages(unsigned long start, unsigned long end);
->  int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
->  
-> +extern void init_cma_reserved_pageblock(struct page *page);
->  #endif
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 10d7986..d067b84 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -192,7 +192,7 @@ config COMPACTION
->  config MIGRATION
->  	bool "Page migration"
->  	def_bool y
-> -	depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION
-> +	depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION || CMA_MIGRATE_TYPE
->  	help
+> +Example:
+> +
+> +	xyzreg: regulator@0 {
 
-CMA_MIGRATE_TYPE is an implementation detail of how CMA is implemented.
-It makes more sense for the Kconfig option to be simply CMA.
+Does this node have a compatible string?  With looking at the code,
+I guess it has a compatible string in your dts file.
 
->  	  Allows the migration of the physical location of pages of processes
->  	  while the virtual addresses are not changed. This is useful in
-> @@ -201,6 +201,12 @@ config MIGRATION
->  	  pages as migration can relocate pages to satisfy a huge page
->  	  allocation instead of reclaiming.
+> +		regulator-min-uV = <1000000>;
+> +		regulator-max-uV = <2500000>;
+> +		regulator-mode-fast;
+> +		regulator-change-voltage;
+> +		regulator-always-on;
+> +		vin-supply = <&vin>;
+> +	};
+> +
+> +The same binding used by a regulator to reference its
+> +supply can be used by any consumer to reference its
+> +regulator/supply
+> +
+> +Example of a device node referencing a regulator node,
+> +
+> +	devicenode: node@0x0 {
+> +		...
+> +		...
+> +		<name>-supply = <&xyzreg>;
+> +	};
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index c7fd2c0..981c92e 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -64,6 +64,14 @@ config REGULATOR_USERSPACE_CONSUMER
 >  
-> +config CMA_MIGRATE_TYPE
-> +	bool
+>            If unsure, say no.
+>  
+> +config OF_REGULATOR
+> +	tristate "OF regulator helpers"
+> +	depends on OF
+> +	default y if OF
 > +	help
-> +	  This enables the use the MIGRATE_CMA migrate type, which lets lets CMA
-> +	  work on almost arbitrary memory range and not only inside ZONE_MOVABLE.
+> +	  OpenFirmware regulator framework helper routines that can
+> +	  used by regulator drivers to extract data from device tree.
 > +
->  config PHYS_ADDR_T_64BIT
->  	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+>  config REGULATOR_BQ24022
+>  	tristate "TI bq24022 Dual Input 1-Cell Li-Ion Charger IC"
+>  	help
+> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+> index 040d5aa..e6bc009 100644
+> --- a/drivers/regulator/Makefile
+> +++ b/drivers/regulator/Makefile
+> @@ -7,6 +7,7 @@ obj-$(CONFIG_REGULATOR) += core.o dummy.o
+>  obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
+>  obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
+>  obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
+> +obj-$(CONFIG_OF_REGULATOR) += of_regulator.o
 >  
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 97254e4..9cf6b2b 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -115,6 +115,16 @@ static bool suitable_migration_target(struct page *page)
->  	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
->  		return false;
->  
-> +	/* Keep MIGRATE_CMA alone as well. */
-> +	/*
-> +	 * XXX Revisit.  We currently cannot let compaction touch CMA
-> +	 * pages since compaction insists on changing their migration
-> +	 * type to MIGRATE_MOVABLE (see split_free_page() called from
-> +	 * isolate_freepages_block() above).
-> +	 */
-> +	if (is_migrate_cma(migratetype))
-> +		return false;
-> +
-
-This is another reason why CMA and compaction should be using almost
-identical code. It does mean that the compact_control may need to be
-renamed and get flags to control things like the setting of pageblock
-flags but it would be preferable to having two almost identical pieces
-of code.
-
->  	/* If the page is a large free page, then allow migration */
->  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
->  		return true;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 8010854..6758b9a 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -733,6 +733,29 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
->  	}
->  }
->  
-> +#ifdef CONFIG_CMA_MIGRATE_TYPE
+>  obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
+>  obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
+> diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+> new file mode 100644
+> index 0000000..9262d06
+> --- /dev/null
+> +++ b/drivers/regulator/of_regulator.c
+> @@ -0,0 +1,93 @@
 > +/*
-> + * Free whole pageblock and set it's migration type to MIGRATE_CMA.
+> + * OF helpers for regulator framework
+> + *
+> + * Copyright (C) 2011 Texas Instruments, Inc.
+> + * Rajendra Nayak <rnayak@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
 > + */
-> +void __init init_cma_reserved_pageblock(struct page *page)
+> +
+> +#include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/regulator/machine.h>
+> +
+> +static void of_get_regulation_constraints(struct device_node *np,
+> +					struct regulator_init_data **init_data)
 > +{
-> +	struct page *p = page;
-> +	unsigned i = pageblock_nr_pages;
+> +	const __be32 *min_uV, *max_uV, *uV_offset;
+> +	const __be32 *min_uA, *max_uA, *input_uV;
+> +	unsigned int valid_modes_mask = 0, valid_ops_mask = 0;
 > +
-> +	prefetchw(p);
-> +	do {
-> +		if (--i)
-> +			prefetchw(p + 1);
-
-There is no need to use prefetch here. It's a sequential read by a fixed
-stride. The hardware prefetcher on modern CPUs (well for x86 anyway) have
-no problem identifying this sort of pattern.
-
-> +		__ClearPageReserved(p);
-> +		set_page_count(p, 0);
-> +	} while (++p, i);
+> +	min_uV = of_get_property(np, "regulator-min-uV", NULL);
+> +	if (min_uV)
+> +		(*init_data)->constraints.min_uV = be32_to_cpu(*min_uV);
+> +	max_uV = of_get_property(np, "regulator-max-uV", NULL);
+> +	if (max_uV)
+> +		(*init_data)->constraints.max_uV = be32_to_cpu(*max_uV);
+> +	uV_offset = of_get_property(np, "regulator-uV-offset", NULL);
+> +	if (uV_offset)
+> +		(*init_data)->constraints.uV_offset = be32_to_cpu(*uV_offset);
+> +	min_uA = of_get_property(np, "regulator-min-uA", NULL);
+> +	if (min_uA)
+> +		(*init_data)->constraints.min_uA = be32_to_cpu(*min_uA);
+> +	max_uA = of_get_property(np, "regulator-max-uA", NULL);
+> +	if (max_uA)
+> +		(*init_data)->constraints.max_uA = be32_to_cpu(*max_uA);
+> +	input_uV = of_get_property(np, "regulator-input-uV", NULL);
+> +	if (input_uV)
+> +		(*init_data)->constraints.input_uV = be32_to_cpu(*input_uV);
 > +
-> +	set_page_refcounted(page);
-> +	set_pageblock_migratetype(page, MIGRATE_CMA);
-> +	__free_pages(page, pageblock_order);
-> +	totalram_pages += pageblock_nr_pages;
+> +	/* valid modes mask */
+> +	if (of_find_property(np, "regulator-mode-fast", NULL))
+> +				valid_modes_mask |= REGULATOR_MODE_FAST;
+> +	if (of_find_property(np, "regulator-mode-normal", NULL))
+> +				valid_modes_mask |= REGULATOR_MODE_NORMAL;
+> +	if (of_find_property(np, "regulator-mode-idle", NULL))
+> +				valid_modes_mask |= REGULATOR_MODE_IDLE;
+> +	if (of_find_property(np, "regulator-mode-standby", NULL))
+> +				valid_modes_mask |= REGULATOR_MODE_STANDBY;
+> +
+> +	/* valid ops mask */
+> +	if (of_find_property(np, "regulator-change-voltage", NULL))
+> +				valid_ops_mask |= REGULATOR_CHANGE_VOLTAGE;
+> +	if (of_find_property(np, "regulator-change-current", NULL))
+> +				valid_ops_mask |= REGULATOR_CHANGE_CURRENT;
+> +	if (of_find_property(np, "regulator-change-mode", NULL))
+> +				valid_ops_mask |= REGULATOR_CHANGE_MODE;
+> +	if (of_find_property(np, "regulator-change-status", NULL))
+> +				valid_ops_mask |= REGULATOR_CHANGE_STATUS;
+> +
+> +	(*init_data)->constraints.valid_modes_mask = valid_modes_mask;
+> +	(*init_data)->constraints.valid_ops_mask = valid_ops_mask;
+> +
+> +	if (of_find_property(np, "regulator-always-on", NULL))
+> +				(*init_data)->constraints.always_on = true;
+> +	if (of_find_property(np, "regulator-boot-on", NULL))
+> +				(*init_data)->constraints.boot_on = true;
 > +}
-> +#endif
->  
->  /*
->   * The order of subdivision here is critical for the IO subsystem.
-> @@ -841,11 +864,11 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
->   * This array describes the order lists are fallen back to when
->   * the free lists for the desirable migrate type are depleted
->   */
-> -static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
-> +static int fallbacks[MIGRATE_TYPES][4] = {
->  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
->  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
-> -	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
-> -	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
-> +	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_CMA    , MIGRATE_RESERVE },
-> +	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
->  };
->  
->  /*
-> @@ -940,12 +963,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
->  	/* Find the largest possible block of pages in the other list */
->  	for (current_order = MAX_ORDER-1; current_order >= order;
->  						--current_order) {
-> -		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
-> +		for (i = 0; i < ARRAY_SIZE(fallbacks[0]); i++) {
+> +
+> +/**
+> + * of_get_regulator_init_data - extract regulator_init_data structure info
+> + * @dev: device requesting for regulator_init_data
+> + *
+> + * Populates regulator_init_data structure by extracting data from device
+> + * tree node, returns a pointer to the populated struture or NULL if memory
+> + * alloc fails.
+> + */
+> +struct regulator_init_data *of_get_regulator_init_data(struct device *dev)
 
-I don't see why this change is necessary.
+I remember that Mark ever had a comment on a previous regulator DT
+series from Haojian Zhuang, saying this DT parsing procedure can
+probably just be private to regulator core and invisible to regulator
+drivers.  That said whenever regulator_register() gets called with
+parameter init_data as NULL, it should try to retrieve
+regulator_init_data from device tree.  It will ease regulator drivers
+a little.  They will only need to call regulator_register() with NULL
+init_data for DT case.  More importantly, doing so will help solve the
+dual 'dev' problem I see below.
 
->  			migratetype = fallbacks[start_migratetype][i];
->  
->  			/* MIGRATE_RESERVE handled later if necessary */
->  			if (migratetype == MIGRATE_RESERVE)
-> -				continue;
-> +				break;
->  
->  			area = &(zone->free_area[current_order]);
->  			if (list_empty(&area->free_list[migratetype]))
-> @@ -960,19 +983,29 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
->  			 * pages to the preferred allocation list. If falling
->  			 * back for a reclaimable kernel allocation, be more
->  			 * aggressive about taking ownership of free pages
-> +			 *
-> +			 * On the other hand, never change migration
-> +			 * type of MIGRATE_CMA pageblocks nor move CMA
-> +			 * pages on different free lists. We don't
-> +			 * want unmovable pages to be allocated from
-> +			 * MIGRATE_CMA areas.
->  			 */
-> -			if (unlikely(current_order >= (pageblock_order >> 1)) ||
-> -					start_migratetype == MIGRATE_RECLAIMABLE ||
-> -					page_group_by_mobility_disabled) {
-> -				unsigned long pages;
-> +			if (!is_pageblock_cma(page) &&
-> +			    (unlikely(current_order >= pageblock_order / 2) ||
-> +			     start_migratetype == MIGRATE_RECLAIMABLE ||
-> +			     page_group_by_mobility_disabled)) {
-> +				int pages;
->  				pages = move_freepages_block(zone, page,
-> -								start_migratetype);
-> +							     start_migratetype);
->  
-> -				/* Claim the whole block if over half of it is free */
-> +				/*
-> +				 * Claim the whole block if over half
-> +				 * of it is free
-> +				 */
->  				if (pages >= (1 << (pageblock_order-1)) ||
-> -						page_group_by_mobility_disabled)
-> +				    page_group_by_mobility_disabled)
->  					set_pageblock_migratetype(page,
-> -								start_migratetype);
-> +							start_migratetype);
->  
+> +{
+> +	struct regulator_init_data *init_data;
+> +
+> +	if (!dev->of_node)
+> +		return NULL;
+> +
+> +	init_data = devm_kzalloc(dev, sizeof(*init_data), GFP_KERNEL);
+> +	if (!init_data)
+> +		return NULL; /* Out of memory? */
+> +
+> +	of_get_regulation_constraints(dev->of_node, &init_data);
 
-I only glanced through this because I'm thinking at this point that
-MIGRATE_CMA should be like or identical to MIGRATE_RESERVE. That said, I
-didn't spot anything obviously wrong other than some of the changes are
-only affecting indentation.
+Beside the 'dev' here with of_node attached, there will be another
+'dev' created by regulator core function regulator_register(), which
+is wrapped by 'regulator_dev'.
 
->  				migratetype = start_migratetype;
->  			}
-> @@ -982,11 +1015,14 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
->  			rmv_page_order(page);
->  
->  			/* Take ownership for orders >= pageblock_order */
-> -			if (current_order >= pageblock_order)
-> +			if (current_order >= pageblock_order &&
-> +			    !is_pageblock_cma(page))
->  				change_pageblock_range(page, current_order,
->  							start_migratetype);
->  
-> -			expand(zone, page, order, current_order, area, migratetype);
-> +			expand(zone, page, order, current_order, area,
-> +			       is_migrate_cma(start_migratetype)
-> +			     ? start_migratetype : migratetype);
->  
->  			trace_mm_page_alloc_extfrag(page, order, current_order,
->  				start_migratetype, migratetype);
-> @@ -1058,7 +1094,10 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
->  			list_add(&page->lru, list);
->  		else
->  			list_add_tail(&page->lru, list);
-> -		set_page_private(page, migratetype);
-> +		if (is_pageblock_cma(page))
-> +			set_page_private(page, MIGRATE_CMA);
-> +		else
-> +			set_page_private(page, migratetype);
->  		list = &page->lru;
->  	}
->  	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
-> @@ -1302,7 +1341,9 @@ int split_free_page(struct page *page)
->  	if (order >= pageblock_order - 1) {
->  		struct page *endpage = page + (1 << order) - 1;
->  		for (; page < endpage; page += pageblock_nr_pages)
-> -			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
-> +			if (!is_pageblock_cma(page))
-> +				set_pageblock_migratetype(page,
-> +							  MIGRATE_MOVABLE);
->  	}
->  
->  	return 1 << order;
-> @@ -5592,8 +5633,8 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
->  	 */
->  	if (zone_idx(zone) == ZONE_MOVABLE)
->  		return true;
-> -
-> -	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE)
-> +	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE ||
-> +	    is_pageblock_cma(page))
->  		return true;
->  
->  	pfn = page_to_pfn(page);
+So we have two 'dev'.  One is created by DT core with of_node attached,
+and used to retrieve regulator_init_data from device tree.  Another one
+is created in regulator_register() and used by regulator core.
+
+IMO, this is not what we want.  Instead of having two 'dev' for given
+regulator, we should use the same 'dev' created in regulator_register()
+to retrieve regulator_init_data from device tree, so that we do not need
+the 'dev' created by DT core.  That said, with DT parsing procedure
+moved into regulator core, we can get of_node for given regulator and
+attach it to the 'dev' created by regulator core.
+
+Will elaborate it a little more in patch #5.
+
+Regards,
+Shawn
+
+> +	return init_data;
+> +}
+> diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
+> new file mode 100644
+> index 0000000..c5a1ad6
+> --- /dev/null
+> +++ b/include/linux/regulator/of_regulator.h
+> @@ -0,0 +1,21 @@
+> +/*
+> + * OpenFirmware regulator support routines
+> + *
+> + */
+> +
+> +#ifndef __LINUX_OF_REG_H
+> +#define __LINUX_OF_REG_H
+> +
+> +#if defined(CONFIG_OF_REGULATOR)
+> +extern struct regulator_init_data
+> +	*of_get_regulator_init_data(struct device *dev);
+> +#else
+> +static inline struct regulator_init_data
+> +	*of_get_regulator_init_data(struct device *dev)
+> +{
+> +	return NULL;
+> +}
+> +#endif /* CONFIG_OF_REGULATOR */
+> +
+> +#endif /* __LINUX_OF_REG_H */
+> +
 > -- 
-> 1.7.1.569.g6f426
+> 1.7.1
 > 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> 
+
