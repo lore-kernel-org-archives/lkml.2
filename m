@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab1JRObj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:31:39 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:65403 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757992Ab1JRObi convert rfc822-to-8bit (ORCPT
+	id S932252Ab1JROdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:33:25 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:34994 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755414Ab1JROdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:31:38 -0400
-Subject: re-send: gpio-pca953x interrupt feature unreliable!!
-Content-Transfer-Encoding: 8BIT
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <D108B135-F9CF-46C5-9E42-9705DB0B040C@gmail.com>
-Date: Tue, 18 Oct 2011 10:34:43 -0400
-Cc: open list <linux-kernel@vger.kernel.org>,
-        broonie@opensource.wolfsonmicro.com, haojian.zhuang@marvell.com
-To: maz@misterjones.org, grant.likely@secretlab.ca
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Tue, 18 Oct 2011 10:33:24 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: AQE4MLsVM1lCCOKa7QjNp_pAOZtHxAYlEbnDdy_XMUWgonH
+ ejSbXXFFivKWbGk1qTK2NjCmntDHYuOui1034INMUnKirqZzB4gEKNY5iHC9
+ bfy7qmJeU5GHyEDjFxFhvjE9.zck82LCUCDCpMidMyM8tUqBoEabByXe6V5D
+ VWhsj56VAdOyzROp3frvvGYC3Fc6_oYiztuoaufpQMQ_QUggNakXQRzN_Pbf
+ dOcDplRhZulzcWJsAumyEjQvIZHGltAR.dF.ot2_57_KkSFbOL6pQ.j_8PwV
+ tTNym5ffTGK4DFn8uCQgsPEADhKNHN4Rrq3yzDbKGIWE_GwBVFbgZS41CNGx
+ xRMLLqqvR47opZXIR0UMcaVy0KT2zkDdl82E0N049I0_cDcs-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 18 Oct 2011 09:33:21 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: "Alex,Shi" <alex.shi@intel.com>
+cc: "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [PATCH] Code clean up for percpu_xxx() functions
+In-Reply-To: <1318908091.23426.52.camel@debian>
+Message-ID: <alpine.DEB.2.00.1110180932330.687@router.home>
+References: <1318237851.27949.190.camel@debian>  <alpine.DEB.2.00.1110101026080.16264@router.home>  <1318324774.27949.693.camel@debian>  <alpine.DEB.2.00.1110110910480.3388@router.home>  <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+  <alpine.DEB.2.00.1110120910540.26610@router.home> <1318908091.23426.52.camel@debian>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does Anyone care?
-===============Re-Send==================
-Hi all,
+On Tue, 18 Oct 2011, Alex,Shi wrote:
 
-(Using 3.1.0-rc4)
+> > I think its good to have it all in a single patch.
+> >
+>
+> I thought over your requirements, but it is difficult for me to know
+> lots of fields in kernel, like for xen/kvm/network etc. So, to avoid
+> introduce bugs here, could we do this blind changes, and then change
+> each of fields and get owner's ack separately.
 
-I have detected a flaw in the interrupt support of the gpio-pca953x driver. This is how I discovered the issue:
-
-I have a interrupt client device which has it's interrupt signal connected to one of the GPIOs of the pca9555. The client is an ad714x device. It's interrupt routine is falling edge triggered (so says the driver, but according to the AD714x specs, it should be level,low, however this is another topic). The pca9555 is interrupting the CPU through INTA of an ethernet PCI card for which I have only done "echo 1 > /bus/pci/devices/00xyz/enable". It is "(level, low)" which matches the pca953x request_Isr call (IRQF_TRIGGER_LOW | IRQF_ONESHOT). I used two GPOs on some other device to get the !ISR signals. These show the nested nature of the cli ISR called from the pca953x's ISR.
-
-ASCII art of my probing (use a monospace font)
-             ____          _______
-client !INT      |________|       |________(lost)___
-             ___________                   _________
-cli !ISR                |____|____________|
-             ____      ___         _________________
-pca953x !INT     |____|   |_______|
-             ______                             ____
-pca953x !ISR       |___________________________|
-
-(note: the little spike in the cli !ISR marks the end of reading the client's registers, the rest of the ISR is updating driver state machines, etc.)
-
-Summary: The client enters interrupt, which immediately puts the pca953x in interrupt as well. When the pca953x enters it's isr thread, it reads the input status register, this immediately clears the pca953x interrupt. The pca953x ISR then figure's out it should invoke the nested ISR for the client. The client ISR starts by reading the client's status register, which clears the client interrupt. This immediately puts the pca953x back into interrupt since it's a different state that what was last read in the pca953x. This should't be a problem. The real problem is that the client goes back in interrupt before the client ISR even has time to finish. At that moment, the pca953x's input are back to the way they where when the pca953x ISR began and it read the input status register. When all of the ISR routines are done, the client has it's INT line asserted and no more interrupt will come from the pca953x.
-
-The pca953x specs clearly state this: "Resetting the interrupt circuit is achieved when data on the port is changed to the original setting, data is read from the port that generated the interrupt."
-
-So in essence, although the pca953x's design and doc says only edges are detected and supported, the chip design makes it impossible to guarantee that all edges will be caught. In fact, since the chip only has an input state register and no latching interrupt status register, the driver could be slightly modified to support only level based interrupt clients.
-
-I would propose a patch, but I am missing knowledge on the internals of the kernel's irq code, so here's a description, hoping to get some feedback.  In the pca953x_irq_handler (threaded), just after reading the pca953x's input status register (which clears the pca953x INT), just before calling the nested handlers, we could re-enable the IRQ so that the pca953x_irq_handler would be re-scheduled right after if needed. Now this would always happen since the client's clearing of it's INT constitute a change. This is why a hard IRQ handler should be added to re-disable the interrupt to avoid the storm caused by the level,low interrupt. In addition to all this, the driver should be changed to support only LEVEL based clients, since this is what it can reliably detect.
-
-Any thoughts? Hints on the precise APIs to use?
-
-/jfd
-
-
-
-
-
+Well do the obvious (where you can see that interrupts or preemption are
+disabled in the function or in a calling function). Leave the rest as is
+and provide separate patches for them?
