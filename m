@@ -1,66 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab1JRNUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:20:47 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34820 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab1JRNUp (ORCPT
+	id S1757924Ab1JRNYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:24:49 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:53405 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755018Ab1JRNYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:20:45 -0400
-In-Reply-To: <1318935055.3385.0.camel@zakaz.uk.xensource.com>
-References: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>	 <1318927016.16132.49.camel@zakaz.uk.xensource.com>
-	 <1318931232.16132.65.camel@zakaz.uk.xensource.com>	 <OFB632D60B.6534A38B-ON6525792D.003A1B21-6525792D.003B0DB8@in.ibm.com> <1318935055.3385.0.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] Fix guest memory leak and panic
-X-KeepSent: F565DE9F:92BF6FE5-6525792D:00488336;
- type=4; name=$KeepSent
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
-Message-ID: <OFF565DE9F.92BF6FE5-ON6525792D.00488336-6525792D.00494D56@in.ibm.com>
-From: Krishna Kumar2 <krkumar2@in.ibm.com>
-Date: Tue, 18 Oct 2011 18:52:19 +0530
-X-MIMETrack: Serialize by Router on d23ml172/23/M/IBM(Release 8.5.1FP5|September 29, 2010) at
- 18/10/2011 18:52:22
+	Tue, 18 Oct 2011 09:24:47 -0400
+Message-ID: <4E9D7E1C.9080202@profihost.ag>
+Date: Tue, 18 Oct 2011 15:24:44 +0200
+From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+Reply-To: p.herz@profihost.ag
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+References: <4E9D53FF.7090609@profihost.ag> <20111018113251.GA3782@oc1711230544.ibm.com> <4E9D6C0A.1030801@profihost.ag> <20111018123838.GD3782@oc1711230544.ibm.com>
+In-Reply-To: <20111018123838.GD3782@oc1711230544.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Campbell <Ian.Campbell@citrix.com> wrote on 10/18/2011 04:20:55 PM:
+Hello Cascardo
 
-> > > Sigh, only one out of the ten callers of (__)skb_frag_set_page
-expects
-> > > skb_frag_set_page to take a new reference. I think that's pretty
-> > > comprehensive evidence that the current behaviour is unexpected and
-> > > wrong.
-> >
-> > Looks good!
+ > Usually, after the stack dump, there is some
+ > statistics about memory.
+Yes, i have seen this in other posts as well.
+
+ > I have seen that these may be suppressed
+ > if you have a NUMA system with lots of nodes.
+Yes, in our case it seems to be suppressed.
+
+ > Check for NODE_SHIFT in your
+ > config. If it's greater than 8, that output may have been suppressed.
+CONFIG_NODES_SHIFT=10 will be the answer.
+
+Is there any way to get those stats without recompiling the kernel?
+
+ > But you may have just ignored the statistics because of the
+ > stack dump.
+No, i was also wondering why other do have these ;-)
+
+Regards,
+Philipp
+
+Am 18.10.2011 14:38, schrieb Thadeu Lima de Souza Cascardo:
+> On Tue, Oct 18, 2011 at 02:07:38PM +0200, Philipp Herz - Profihost AG wrote:
+>> Hello Cascardo,
+>>
+>> thanks for your detailed answer!
+>>
+>> I have uploaded two call traces to pastebin for further investigation.
+>>
+>> Maybe this can help you.
+>>
+>> * http://pastebin.com/Psg2dGYC (kworker)
+>> * http://pastebin.com/pPFjZqxL (php5)
+>>
+>> Regards,
+>> Philipp
+>>
 >
-> Thanks.
-
-Tested this patch for virtio_net - hang/panic is fixed.
-MemFree also doesn't reduce at end of test compared to
-the start.
-
-Tested-by: krkumar2@in.ibm.com
-
-- KK
-
-> > Does it make sense to commit both of these patches? The
-> > reason being - my patch becomes a cleanup of set_skb_frag()
-> > in virtio_net driver.
+> Hello, Philipp.
 >
-> I think your patch remains a valid cleanup but I don't maintain that
-> code.
+> That only tells us that you have a TCP workload in your system. This is
+> the subsystem that is trying to allocate memory. However, we do not know
+> why there is failure. Usually, after the stack dump, there is some
+> statistics about memory. I have seen that these may be suppressed if you
+> have a NUMA system with lots of nodes. Check for NODE_SHIFT in your
+> config. If it's greater than 8, that output may have been suppressed.
+> But you may have just ignored the statistics because of the stack dump.
 >
-> Ian.
+> Regards,
+> Cascardo.
 >
+>>
+>> Am 18.10.2011 13:32, schrieb Thadeu Lima de Souza Cascardo:
+>>> On Tue, Oct 18, 2011 at 12:25:03PM +0200, Philipp Herz - Profihost AG wrote:
+>>>> After updating kernel (x86_64) to stable version 3 there are a few
+>>>> messages appearing in the kernel log such as
+>>>>
+>>>> kworker/0:1: page allocation failure: order:1, mode:0x20
+>>>> mysql: page allocation failure: order:1, mode:0x20
+>>>> php5: page allocation failure: order:1, mode:0x20
+>>>>
+>>>> Searching the net showed that these messages are known to occur since 2004.
+>>>>
+>>>> Some people were able to get rid of them by setting
+>>>> /proc/sys/vm/min_free_kbytes to a high enough value. This does not
+>>>> help in our case.
+>>>>
+>>>>
+>>>> Is there a kernel comand line argument to avoid these messages?
+>>>>
+>>>> As of mm/page_alloc.c these messages are marked to be only warning
+>>>> messages and would not appear if 'gpf_mask' was set to __GFP_NOWARN
+>>>> in function warn_alloc_failed.
+>>>>
+>>>> How does this mask get set? Is it set by the "external" process
+>>>> knocking at the memory manager?
+>>>>
+>>>
+>>> Hello, Philipp.
+>>>
+>>> This happens when kernel tries to allocate memory, sometimes in response
+>>> to some request by the user space, but also in other contexts. For
+>>> example, an interrupt by a network driver may try to allocate memory. In
+>>> this context, it will use GFP_ATOMIC as a mask, for example. The most
+>>> usual flags in the kernel are GFP_KERNEL and GFP_ATOMIC.
+>>>
+>>>> What is the magic behind the 'order' and 'mode'?
+>>>>
+>>>
+>>> The order is the binary log of the number of pages requested. So, order 1
+>>> allocations are 2 pages, order 4 would be 16 pages, for example.
+>>>
+>>> The mode is, in fact, gfp_flags. 0x20 is GFP_ATOMIC. This kind of
+>>> allocation cannot do IO or access the filesystem. Also, it cannot wait
+>>> for reclaim memory from cache.
+>>>
+>>> This warning is usually followed by some statistics about memory use
+>>> in your system. Please post it to give more information about this
+>>> situation.
+>>>
+>>> I have watched some of this happen when lots of cache is used by some
+>>> filesystems. Perhaps, some tweaking of the vm sysctl options may help,
+>>> but I can point any magic tweaking right now.
+>>>
+>>> Regards,
+>>> Cascardo.
+>>>
+>>>> I'm not a subscriber, so please CC me a copy of messages related to
+>>>> the subject. I'm not sure if I can help much by looking at the
+>>>> inside of the kernel, but I will try my best to answer any questions
+>>>> concerning this issue.
+>>>>
+>>>> Best regards, Philipp
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
 >
-
