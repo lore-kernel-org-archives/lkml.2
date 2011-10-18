@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab1JROPH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:15:07 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:32996 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755265Ab1JROPE (ORCPT
+	id S1755688Ab1JROUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:20:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17648 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755256Ab1JROUw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:15:04 -0400
-X-Sasl-enc: k3SLzh/hPG/sRCEaV/TMYk8s1SgCGXZzLduoJir6AhYs 1318947304
-Date: Tue, 18 Oct 2011 07:13:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] Update email address for stable patch submission
-Message-ID: <20111018141350.GB17101@kroah.com>
-References: <20111018011638.GQ1165@zod.bos.redhat.com>
- <20111018065852.GA6056@infradead.org>
+	Tue, 18 Oct 2011 10:20:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,365,1315206000"; 
+   d="scan'208";a="63735836"
+From: "Xu, Anhua" <anhua.xu@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 18 Oct 2011 22:20:28 +0800
+Subject: perf tools: interface for improved PEBS ABI can accept wrong
+ parameter
+Thread-Topic: perf tools: interface for improved PEBS ABI can accept wrong
+ parameter
+Thread-Index: AcyNnwjJcllQcT+TSkaHfGlqI+oGrwAAegYA
+Message-ID: <1A42CE6F5F474C41B63392A5F80372B212DC93637D@shsmsx501.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111018065852.GA6056@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 02:58:52AM -0400, Christoph Hellwig wrote:
-> On Mon, Oct 17, 2011 at 09:16:39PM -0400, Josh Boyer wrote:
-> > The stable@kernel.org email address has been replaced with the
-> > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-> > reference the new list instead of the semi-defunct email alias.
-> 
-> Does this mean it already stopped working?  I recently sent pathces
-> there but neither got an ACK nor a bounce or similar.
+For the commit: ab60834 perf, x86: Improve the PEBS ABI
+The precise_ip is restricted to 2 bits. The values larger than 3 are truncated less or equal to 3. This can effectively restricted value passing to syscall. 
+But the user space interface can accept other wrong values which are larger than 3 and lowest 2 bits are 0 can meet the requirement.
 
-It should have bounced.
+# Here is an example, Monitor "All branches" events on Sandybridge platform( Please refer to SDM 3B Table 30-21 to check Sandybridge specific events )
+perf top -e r04c4:p  # precise_ip = 1 , Correct
+perf top -e r04c4:pp  # precise_ip =2, Correct
+perf top -e r04c4:ppp  # not supported, Correct 
+perf top -e r04c4:pppppp  # should not be supported, but after truncation , the number of 'p' treated as 2 which is accepted
 
-But, if you put a "Cc: stable@kernel.org" in the patch, I'm still
-picking that up properly when it goes to Linus's tree.
+Here is the patch:
 
-If I haven't responded to any patches you have sent to stable@ already,
-please resend them to stable@vger.kernel.org and cc: me to ensure it
-gets here.
-
-thanks,
-
-greg k-h
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index c816075..07d3cf9 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -216,6 +216,7 @@ struct perf_event_attr {
+ 				 *
+ 				 *  See also PERF_RECORD_MISC_EXACT_IP
+ 				 */
++#define SAMPLE_IP_MAX	3 
+ 				precise_ip     :  2, /* skid constraint       */
+ 				mmap_data      :  1, /* non-exec mmap data    */
+ 				sample_id_all  :  1, /* sample_type all events */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 928918b..a2068cc 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+ 	attr->exclude_user   = eu;
+ 	attr->exclude_kernel = ek;
+ 	attr->exclude_hv     = eh;
+-	attr->precise_ip     = precise;
++	if ( precise < SAMPLE_IP_MAX )
++		attr->precise_ip = precise;
++	else
++		return -1;
+ 
+ 	return 0;
+ }
