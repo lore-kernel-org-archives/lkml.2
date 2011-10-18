@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab1JRJuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:50:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51316 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab1JRJuW (ORCPT
+	id S1757397Ab1JRJvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:51:18 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:55980
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753973Ab1JRJvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:50:22 -0400
-Date: Tue, 18 Oct 2011 10:49:44 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-Message-ID: <20111018094944.GA30644@flint.arm.linux.org.uk>
-References: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com> <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com> <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com> <20111018074211.GA13483@flint.arm.linux.org.uk> <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+	Tue, 18 Oct 2011 05:51:16 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dK1432N98dKzz1202hzzz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+X-WSS-ID: 0LT9A1C-02-35G-02
+X-M-MSG: 
+Message-ID: <4E9D4BB1.6070207@amd.com>
+Date: Tue, 18 Oct 2011 11:49:37 +0200
+From: Christoph Egger <Christoph.Egger@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; NetBSD amd64; en-US; rv:1.9.2.17) Gecko/20110523 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Borislav Petkov <bp@amd64.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for microcode
+ update in Xen dom0
+References: <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab> <4E9D3F36.6070201@amd.com> <20111018093534.GA17076@aftab>
+In-Reply-To: <20111018093534.GA17076@aftab>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 02:00:45PM +0530, Jassi Brar wrote:
-> On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
-> > On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
-> >> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
-> >> > With item #1 above being a separate topic, I may have a problem with #2
-> >> > as well: dma_addr_t is sized for the local platform and not guaranteed
-> >> > to be a 64-bit value (which may be required by a target).
-> >> > Agree with #3 (if #1 and #2 work).
-> >> >
-> >> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
-> >
-> > That's just an idiotic suggestion - there's no other way to put that.
-> > Let's have some sanity here.
-> >
-> Yeah, I am not proud of the workaround, so I only probed the option.
-> I think I need to explain myself.
-> 
-> The case here is that even a 32-bit RapidIO host could ask transfer against
-> 64-bit address space on a remote device. And vice versa 64->32.
-> 
-> > dma_addr_t is the size of a DMA address for the CPU architecture being
-> > built.  This has no relationship to what any particular DMA engine uses.
-> >
-> Yes, so far the dmaengine ever only needed to transfer within platform's
-> address-space. So the assumption that src and dst addresses could
-> be contained within dma_addr_t, worked.
-> If the damengine is to get rid of that assumption/constraint, the memcpy,
-> slave_sg etc need to accept addresses specified in bigger of the host and
-> remote address space, and u64 is the safe option.
-> Ultimately dma_addr_t is either u32 or u64.
+On 10/18/11 11:35, Borislav Petkov wrote:
+> On Tue, Oct 18, 2011 at 04:56:22AM -0400, Christoph Egger wrote:
+>> I think this approach is good to get the microcode applied as
+>> early as possible at boot time. But on servers you usually do not want
+>> to reboot the machine unless you do a BIOS update which will apply
+>> the new microcode anyway. So for applying the microcode update
+>> at runtime I would like to keep the existing API.
+>
+> No, you don't want to keep the existing API and you know it. I've
+> explained to you last week why.
+>
 
-Let me spell it out:
+By "existing API" I mean the xen hypercall. Sorry for the confusion.
 
-1. Data structures read by the DMA engine hardware should not be defined
-   using the 'dma_addr_t' type, but one of the [bl]e{8,16,32,64} types,
-   or at a push the u{8,16,32,64} types if they're always host-endian.
+Christoph
 
-   This helps to ensure that the layout of the structures read by the
-   hardware are less dependent of the host architecture and each element
-   is appropriately sized (and, with sparse and the endian-sized types,
-   can be endian-checked at compile time.)
-
-2. dma_addr_t is the size of the DMA address for the host architecture.
-   This may be 32-bit or 64-bit depending on the host architecture.
-
-The following points are my opinion:
-
-3. For architectures where there are only 32-bit DMA addresses, dma_addr_t
-   will be a 32-bit type.  For architectures where there are 64-bit DMA
-   addresses, it will be a 64-bit type.
-
-4. If RIO can accept 64-bit DMA addresses but is only connected to 32-bit
-   busses, then the top 32 address bits are not usable (it's truncated in
-   hardware.)  So there's no point passing around a 64-bit DMA address.
-
-5. In the case of a 64-bit dma_addr_t and a 32-bit DMA engine host being
-   asked to transfer >= 4GB, this needs error handing in the DMA engine
-   driver (I don't think its checked for - I know amba-pl08x doesn't.)
-
-6. 32-bit dma_addr_t with 64-bit DMA address space is a problem and is
-   probably a bug in itself - the platform should be using a 64-bit
-   dma_addr_t in this case.  (see 3.)
 
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+---to satisfy European Law for business letters:
+Advanced Micro Devices GmbH
+Einsteinring 24, 85689 Dornach b. Muenchen
+Geschaeftsfuehrer: Alberto Bozzo, Andrew Bowd
+Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
+
