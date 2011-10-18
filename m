@@ -1,57 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab1JRP0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:26:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60575 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab1JRP0b (ORCPT
+	id S932588Ab1JRP1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:27:06 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:51213 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932543Ab1JRP1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:26:31 -0400
-Date: Tue, 18 Oct 2011 17:26:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Linux 3.1-rc9
-In-Reply-To: <CA+55aFy5bpu_Aqp7HOtS3tLG5kQ9ut9qtpgM==DJBQ6s-51NEA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1110181724560.3240@ionos>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca> <1318010515.398.8.camel@twins> <20111008005035.GC22843@hostway.ca> <1318060551.8395.0.camel@twins>
- <20111012213555.GC24461@hostway.ca> <20111013232521.GA5654@hostway.ca> <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com> <1318847658.6594.40.camel@twins> <CA+55aFxaGKEyhXdHXNxvPrPQ-SGSpbXdfoeXrxfjPx3VXsgvtg@mail.gmail.com>
- <1318874090.4172.84.camel@twins> <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com> <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos> <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
- <CA+55aFy5bpu_Aqp7HOtS3tLG5kQ9ut9qtpgM==DJBQ6s-51NEA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 18 Oct 2011 11:27:03 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9D9AC8.9090302@cam.ac.uk>
+Date: Tue, 18 Oct 2011 16:27:04 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 4/7] input/cma3000_d0x: Add CMA3000 spi support
+References: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com> <1318939596-27330-5-git-send-email-ricardo.ribalda@gmail.com> <4E9D7BD2.8090101@cam.ac.uk> <CAPybu_0kxqfo9Lx9V_oOXfBjOG2dnR0NLCV6=PM6cnUYmVb_iQ@mail.gmail.com> <4E9D843A.5020001@cam.ac.uk> <CAPybu_1epNidGGrn7FKVCF78wvUBvNPScaMCz2L1Pb4DJ82DEg@mail.gmail.com>
+In-Reply-To: <CAPybu_1epNidGGrn7FKVCF78wvUBvNPScaMCz2L1Pb4DJ82DEg@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Linus Torvalds wrote:
-
-> On Tue, Oct 18, 2011 at 2:05 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > Subject: cputimer: Cure lock inversion
-> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date: Mon Oct 17 11:50:30 CEST 2011
-> >
-> > There's a lock inversion between the cputimer->lock and rq->lock; notably
-> > the two callchains involved are:
+On 10/18/11 16:18, Ricardo Ribalda Delgado wrote:
+> Hello Jonathan
 > 
-> Thanks, looks nice and small. Simon - can you check that this works for you?
+>  I have separated the read and write commands... but when I was
+> implementing the spi_write I found that most of the drivers just use
+> stack variables for spi_write. Like drivers/hwmon/ads7871.c,
+> drivers/gpio/max7301.c and others... Am I missing something or it is a
+> general "bug"?
+bug unless I am also missing where they prevent dma
+transfers.  spi_read_then_write is fine
+as it does a copy, but spi_write doesn't. 
+Documentation/spi/spi-summary
+
+"Note that there are two types of memory your driver must manage as part
+of interacting with SPI devices.
+
+  - I/O buffers use the usual Linux rules, and must be DMA-safe.
+    You'd normally allocate them from the heap or free page pool.
+    Don't use the stack, or anything that's declared "static".
+"
+
+This was an issue many people (including me) weren't aware of until
+a year or two ago when it was picked up in reviews of a number of drivers.
+It was around that time the ___cacheline_aligned trick was used by
+Michael Hennerich and everyone else picked up on that as often the
+easiest way of doing this in a driver.
+
+Don't suppose there is anything stopping you doing 
+spi_write_then_read(tx, 2, NULL, 0)
+and using the buffers helpfully allocated in the spi core?
+This'll allocate extra space if someone else is using the core
+bounce buffers though...
+
 > 
-> Thomas/Ingo - once confirmed by Simon, should I take it directly or
-> will this come through your trees?
-
-I have it queued in timers/urgent and run it through testing at the
-moment. Will send a pull request once confirmed.
-
-Thanks,
-
-	tglx
+> As you say, it is better to not rewrite the cma3000 driver until
+> Hemanth says so, lets leave it for a future patch.
+> 
+> 
+> 
+> 
+> On Tue, Oct 18, 2011 at 15:50, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>> On 10/18/11 14:43, Ricardo Ribalda Delgado wrote:
+>>> Hello Jonathan
+>>>
+>>>   First of all, thanks for your messages :).
+>>>
+>>>> To make my point about these functions being more complex than needed
+>>>> in more detail....
+>>>>
+>>>> If this were two functions and you drop the zero and 1 mask
+>>>> (which I'm not convinced make any sense. I've also killed the message.
+>>>> We both agree it is the wrong way to go, so post a patch fixing the i2c
+>>>> interface as well.
+>>>
+>>> Of course your functions are much more simpler and beautiful than the
+>>> fat one I wrote, no doubt about it :). Just three comments
+>>>
+>>> - Checking the one mask and the zero mask is the only way we have to
+>>> know if the chip is still there, The absense of that reply should
+>>> trigger an IO error or at least a retry. As you point out, the
+>>> zero/one mask is only violated on startup.  I just wanted to make it
+>>> more risk free, but if you believe it is more clear that way, lets
+>>> remove it
+>> It's somewhat unconventional to verify the existence of a chip like this.
+>> Usually you assume that if it was there once it still is unless there
+>> is a very good reason to think otherwise.  Worth doing an initial check
+>> in your spi_probe and indeed verify there against these known bits.
+>> No need to do it every time though.
+>>>
+>>> - I am not very fun of kmallocing data per write, specially when it is
+>>> part of the irq handler, and you expect this to be low latency. What
+>>> about allocating a buffer on init time, and use it with a mutex?
+>> That's absolutely fine and the right way to do it. You could poke it
+>> into the cma3000_accl_data then use the cachline aligned magic. Its
+>> is tiny so I doubt anyone will mind the overhead for the i2c side of
+>> things.
+>>>
+>>> -I dont like the push error message to the bottom, but that will mean
+>>> a rewrite of the cma3000 driver, shall I go for it?
+>> I would. Though probably worth getting Hemanth to say if he minds first
+>> given it's his driver!
+>>>
+>>>
+>>> Thanks again, and  I will post the new version when you reply this :)
+>>>
+>>>
+>>
+>>
+> 
+> 
+> 
 
