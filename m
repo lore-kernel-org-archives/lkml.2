@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab1JRSwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:52:07 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:58550 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab1JRSwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:52:06 -0400
-X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Oct 2011 14:52:05 EDT
-Message-ID: <4E9DC88F.4070803@slimlogic.co.uk>
-Date: Tue, 18 Oct 2011 19:42:23 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1752771Ab1JRSwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:52:35 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:42976 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752365Ab1JRSwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 14:52:34 -0400
+X-Sasl-enc: 3Q2pDzlroDdUksOob/TnMLm4/3SNKScJTPCmKVJFJnpY 1318963953
+Date: Tue, 18 Oct 2011 11:52:18 -0700
+From: Greg KH <greg@kroah.com>
+To: jim.cromie@gmail.com, jbaron@redhat.com
+Cc: joe@perches.com, bart.vanassche@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/26] dynamic_debug: add pending queries, etc (~resend)
+Message-ID: <20111018185218.GA22653@kroah.com>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+ <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
-To: Kyle Manna <kyle.manna@fuel7.com>
-CC: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: Re: [PATCH 0/6] mfd: TPS65910 bug fixes and enhancements
-References: <1318962388-26151-1-git-send-email-kyle.manna@fuel7.com>
-In-Reply-To: <1318962388-26151-1-git-send-email-kyle.manna@fuel7.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/11 19:26, Kyle Manna wrote:
-> This series of patches fixes a number of small problems with the TPS65910 that
-> were discovered on a custom board.
->
-> Additionally, the last patch enhances the platform to driver interface using the
-> TWL4030 series of regulators as an example.
->
-> Kyle Manna (6):
->    mfd: TPS65910: Handle non-existent devices
->    mfd: TPS65910: Add I2C slave address macros
->    mfd: TPS65910: Fix typo that clobbers genirq
->    mfd: TPS65910: Move linux/gpio.h include to header
->    mfd: TPS65910: Fix tps65910_set_voltage
->    mfd: TPS65910: Improve regulator init data
->
->   drivers/mfd/tps65910.c                 |   23 ++-
->   drivers/regulator/tps65910-regulator.c |  246 +++++++++++++++++++++++++-------
->   include/linux/mfd/tps65910.h           |   36 +++++-
->   3 files changed, 247 insertions(+), 58 deletions(-)
->
-In my opinion patches 5 and 6 are regressions.
+On Fri, Oct 07, 2011 at 02:33:06PM -0600, jim.cromie@gmail.com wrote:
+> This is essentially a rebase, resend, with trivial changes:
+> - drops scx200 - off topic
+> - adds pr_cont_once tweak - remove pr_fmt
+> as before, it has:
+> - Doc tweaks per Randy Dunlap
+> - pr_fmt_$severity, suggested by Joe Perches
+> - does not change pr_fmt() default, per Joe
+> 
+> Rebased onto git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
+> + Jason's 8-12/12 which havent made it into driver-core
+> Ive not resent them here.
 
-set_voltage_sel was added to core api to allow the voltage selection 
-code that a lot of drivers implemented identically to be abstracted to 
-the regulator core.
+As stated before, I'm not going to be able to accept these until I get
+Jason's ack on them.
 
-The twl4030 driver method of defining platform data has left us with a 
-very inflexible way of adding functionality when a new variant of the 
-chip is released. This was remarked on by a number of kernel developers 
-when I upstreamed the twl6025 support. I feel copying the twl driver is 
-the wrong direction to go in in this regard.
-
-Graeme
+Jason?
 
