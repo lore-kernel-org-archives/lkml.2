@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1JRXvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 19:51:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38185 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab1JRXvi (ORCPT
+	id S1752855Ab1JRXxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 19:53:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32379 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1JRXxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 19:51:38 -0400
-Date: Tue, 18 Oct 2011 21:51:33 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/7] perf ui browser: Make the colors configurable and
- change the defaults
-Message-ID: <20111018235133.GA3494@ghostprotocols.net>
-References: <1318974247-6683-1-git-send-email-acme@infradead.org>
- <1318974247-6683-7-git-send-email-acme@infradead.org>
- <4E9E082D.8040403@gmail.com>
+	Tue, 18 Oct 2011 19:53:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=YTGpohhJrLHghq6qchDLGQbh6CCKi1qNNOxaTBIViGIpjAbyz9ns8ylpkv10a7a4t
+	dNixngB7/DT9hI8GtXcYw==
+Date: Tue, 18 Oct 2011 16:53:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jan Kara <jack@suse.cz>
+cc: Mark Mielke <mark@mark.mielke.cc>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Appropriate use of sync() from user space?
+In-Reply-To: <20111018211446.GF4599@quack.suse.cz>
+Message-ID: <alpine.DEB.2.00.1110181652400.8149@chino.kir.corp.google.com>
+References: <4E8CEECF.4050008@mark.mielke.cc> <20111018211446.GF4599@quack.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9E082D.8040403@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 18, 2011 at 05:13:49PM -0600, David Ahern escreveu:
-> > +	{
-> > +		.colorset = HE_COLORSET_MEDIUM,
-> > +		.name	  = "medium",
-> > +		.fg	  = "green",
-> > +		.bg	  = "black",
-> > +	},
-> > +	{
-> > +		.colorset = HE_COLORSET_NORMAL,
-> > +		.name	  = "normal",
-> > +		.fg	  = "brightgreen",
-> > +		.bg	  = "black",
-> > +	},
- 
-> Using gnome3 with Fedora 15 these last 2 color sets don't look so good.
-> The 'black' background is not really black - more of a gray'ish look and
-> the green font does not show up well. Yes, I get that they are
-> configurable, but the defaults should be readable too.
+On Tue, 18 Oct 2011, Jan Kara wrote:
 
-I'm trying to get there :)
+> > Quick summary: We have a vendor who is claiming that it is required
+> > for their userspace program to execute sync(), and I am looking for
+> > some sort of authoritative document or person to refer them to that
+> > will state that this belief is incorrect and/or that this
+> > architecture is not acceptable in a Unix environment.
+> > 
+> > I checked Google and the archives and didn't find anything
+> > appropriate. Unfortunately, the word "sync" is very popular. :-)
+> > 
+> > We have users who have been experiencing 3 to 5 minutes "freezes"
+> > for a particular command which often times out and fails. I traced
+> > this down from the commercial userspace program (IBM Rational
+> > ClearCase / "cleartool mkview") that they are executing to a backend
+> > "view_server" process (also IBM Rational ClearCase) that is running
+> > sync() as a means of synchronizing their database to disk before
+> > proceeding, and VMware using a "large" memory mapped file to back
+> > it's virtual "RAM". The sync() for my computer normally completes in
+> > 7 to 8 seconds. The sync() for some of our users is taking 5 minutes
+> > or longer. This can be demonstrated simply by typing "time sync"
+> > from the command line at intervals. The time itself is relevant
+> > because if it finishes before a timeout elapses - the operation
+> > works (albeit slowly). If the timeout elapses, the operation fails.
+> > 
+> > The vendor stated that sync() is integral to their synchronization
+> > process to ensure all files reach disk before they are accessed, and
+> > that this is not a defect in their product. We have a work around -
+> > run "sync" before calling their command, and this generally avoids
+> > the failures.
+> > 
+> > I think the use of sync() in this regard is a hack. According to
+> > POSIX.1 and the Linux man pages, it seems clear to me that sync()
+> > does not guarantee data integrity (bytes guaranteed to have reached
+> > disk) - and it also seems clear that forcing all system data to
+> > flush out in response to a minor command is over kill. Like cutting
+> > down the forest to harvest fruit from a single tree.
+>   Actually the manpage is wrong. Linux waits for all data to be safely on
+> disk before sync returns. So calling sync is a correct way (although
+> inefficient at times) to achieve data integrity. What kernel version are
+> you using? Different kernel versions are differently efficient when doing
+> sync(2) and quite some effort went to make sync less prone to livelocks in
+> recent kernels...
+> 
 
-Yeah, I also noticed that libslang's "black" is kinda like a
-bright black, really strange, I need to figure this out and also how to
-get the colors currently set in the terminal to get this finally like
---stdio.
-
-I.e. the defaults should be what are on the xterm, like --stdio.
- 
-- Arnaldo
+Let's make sure to keep Michael Kerrisk cc'd if anything needs to be 
+clarified in the manpages.
