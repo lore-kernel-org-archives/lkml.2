@@ -1,186 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab1JRPsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:48:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36602 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932699Ab1JRPsQ (ORCPT
+	id S932913Ab1JRPu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:50:56 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59424 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932611Ab1JRPuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:48:16 -0400
+	Tue, 18 Oct 2011 11:50:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E9D9AC8.9090302@cam.ac.uk>
+References: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1318939596-27330-5-git-send-email-ricardo.ribalda@gmail.com>
+ <4E9D7BD2.8090101@cam.ac.uk> <CAPybu_0kxqfo9Lx9V_oOXfBjOG2dnR0NLCV6=PM6cnUYmVb_iQ@mail.gmail.com>
+ <4E9D843A.5020001@cam.ac.uk> <CAPybu_1epNidGGrn7FKVCF78wvUBvNPScaMCz2L1Pb4DJ82DEg@mail.gmail.com>
+ <4E9D9AC8.9090302@cam.ac.uk>
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+Date: Tue, 18 Oct 2011 17:50:13 +0200
+Message-ID: <CAPybu_1v+=GYWvVP4ua7XWjSor-WQ_TW7PdBJJ7dnbCJpH3Q3Q@mail.gmail.com>
+Subject: Re: [PATCHv2 4/7] input/cma3000_d0x: Add CMA3000 spi support
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
         aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
-        saaguirre@ti.com, jic23@cam.ac.uk, hemanthv@ti.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCHv3 1/7] input/cma3000_d0x: Support devices without pdata
-Date: Tue, 18 Oct 2011 17:48:00 +0200
-Message-Id: <1318952886-835-2-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1318952886-835-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1318952886-835-1-git-send-email-ricardo.ribalda@gmail.com>
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Architectures based on device-tree does not have platform data
-associated to the spi/i2c devices. Instead they can have some of
-the options embedded in the device tree.
+Hello Jonathan
 
-This patch allows the cma3000  driver to get the configuration
-from the platform_data, the device tree, or in the wort case,
-just use a default configuration.
+ I just send the mail with the latest patch version. I will wait for
+hermanthv to see if he wants to replace the msg from the read/write
+functions, and I will follow his style for the cmr3000. I have testest
+the latest changes on my board and it looks ok.
 
----
+  Thanks for your feedback, and I hope it is ok now :)
 
-v3: Fixes suggested by Jonathan Cameron
-    -Add support for the device tree
+On Tue, Oct 18, 2011 at 17:27, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+> On 10/18/11 16:18, Ricardo Ribalda Delgado wrote:
+>> Hello Jonathan
+>>
+>>  I have separated the read and write commands... but when I was
+>> implementing the spi_write I found that most of the drivers just use
+>> stack variables for spi_write. Like drivers/hwmon/ads7871.c,
+>> drivers/gpio/max7301.c and others... Am I missing something or it is a
+>> general "bug"?
+> bug unless I am also missing where they prevent dma
+> transfers.  spi_read_then_write is fine
+> as it does a copy, but spi_write doesn't.
+> Documentation/spi/spi-summary
+>
+> "Note that there are two types of memory your driver must manage as part
+> of interacting with SPI devices.
+>
+>  - I/O buffers use the usual Linux rules, and must be DMA-safe.
+>    You'd normally allocate them from the heap or free page pool.
+>    Don't use the stack, or anything that's declared "static".
+> "
+>
+> This was an issue many people (including me) weren't aware of until
+> a year or two ago when it was picked up in reviews of a number of drivers.
+> It was around that time the ___cacheline_aligned trick was used by
+> Michael Hennerich and everyone else picked up on that as often the
+> easiest way of doing this in a driver.
+>
+> Don't suppose there is anything stopping you doing
+> spi_write_then_read(tx, 2, NULL, 0)
+> and using the buffers helpfully allocated in the spi core?
+> This'll allocate extra space if someone else is using the core
+> bounce buffers though...
+>
+>>
+>> As you say, it is better to not rewrite the cma3000 driver until
+>> Hemanth says so, lets leave it for a future patch.
+>>
+>>
+>>
+>>
+>> On Tue, Oct 18, 2011 at 15:50, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>>> On 10/18/11 14:43, Ricardo Ribalda Delgado wrote:
+>>>> Hello Jonathan
+>>>>
+>>>>   First of all, thanks for your messages :).
+>>>>
+>>>>> To make my point about these functions being more complex than needed
+>>>>> in more detail....
+>>>>>
+>>>>> If this were two functions and you drop the zero and 1 mask
+>>>>> (which I'm not convinced make any sense. I've also killed the message.
+>>>>> We both agree it is the wrong way to go, so post a patch fixing the i2c
+>>>>> interface as well.
+>>>>
+>>>> Of course your functions are much more simpler and beautiful than the
+>>>> fat one I wrote, no doubt about it :). Just three comments
+>>>>
+>>>> - Checking the one mask and the zero mask is the only way we have to
+>>>> know if the chip is still there, The absense of that reply should
+>>>> trigger an IO error or at least a retry. As you point out, the
+>>>> zero/one mask is only violated on startup.  I just wanted to make it
+>>>> more risk free, but if you believe it is more clear that way, lets
+>>>> remove it
+>>> It's somewhat unconventional to verify the existence of a chip like this.
+>>> Usually you assume that if it was there once it still is unless there
+>>> is a very good reason to think otherwise.  Worth doing an initial check
+>>> in your spi_probe and indeed verify there against these known bits.
+>>> No need to do it every time though.
+>>>>
+>>>> - I am not very fun of kmallocing data per write, specially when it is
+>>>> part of the irq handler, and you expect this to be low latency. What
+>>>> about allocating a buffer on init time, and use it with a mutex?
+>>> That's absolutely fine and the right way to do it. You could poke it
+>>> into the cma3000_accl_data then use the cachline aligned magic. Its
+>>> is tiny so I doubt anyone will mind the overhead for the i2c side of
+>>> things.
+>>>>
+>>>> -I dont like the push error message to the bottom, but that will mean
+>>>> a rewrite of the cma3000 driver, shall I go for it?
+>>> I would. Though probably worth getting Hemanth to say if he minds first
+>>> given it's his driver!
+>>>>
+>>>>
+>>>> Thanks again, and  I will post the new version when you reply this :)
+>>>>
+>>>>
+>>>
+>>>
+>>
+>>
+>>
+>
+>
 
-v2: Fixes suggested by Jonathan Cameron
-    -Spelling
-    -Simplify pdata!=NULL check
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/input/misc/cma3000_d0x.c |   84 +++++++++++++++++++++++++++++++++-----
- 1 files changed, 73 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
-index 1633b63..604a32f 100644
---- a/drivers/input/misc/cma3000_d0x.c
-+++ b/drivers/input/misc/cma3000_d0x.c
-@@ -23,6 +23,7 @@
- #include <linux/slab.h>
- #include <linux/input.h>
- #include <linux/input/cma3000.h>
-+#include <linux/of.h>
- 
- #include "cma3000_d0x.h"
- 
-@@ -62,9 +63,21 @@
- #define BIT_TO_2G  18
- #define BIT_TO_8G  71
- 
-+static struct cma3000_platform_data cma3000_default_pdata = {
-+	.mdthr = 0x8,
-+	.mdfftmr = 0x33,
-+	.ffthr = 0x8,
-+	.mode = CMAMODE_MEAS400,
-+	.g_range = CMARANGE_2G,
-+	.fuzz_x = BIT_TO_2G,
-+	.fuzz_y = BIT_TO_2G,
-+	.fuzz_z = BIT_TO_2G,
-+	.irqflags = 0,
-+};
-+
- struct cma3000_accl_data {
- 	const struct cma3000_bus_ops *bus_ops;
--	const struct cma3000_platform_data *pdata;
-+	struct cma3000_platform_data pdata;
- 
- 	struct device *dev;
- 	struct input_dev *input_dev;
-@@ -182,7 +195,7 @@ static int cma3000_reset(struct cma3000_accl_data *data)
- 
- static int cma3000_poweron(struct cma3000_accl_data *data)
- {
--	const struct cma3000_platform_data *pdata = data->pdata;
-+	struct cma3000_platform_data *pdata = &data->pdata;
- 	u8 ctrl = 0;
- 	int ret;
- 
-@@ -280,22 +293,57 @@ void cma3000_resume(struct cma3000_accl_data *data)
- }
- EXPORT_SYMBOL(cma3000_resume);
- 
-+#ifdef CONFIG_OF
-+void cma3000_get_pdata_of(struct device *dev, struct cma3000_accl_data *data)
-+{
-+	const __be32 *property;
-+	int len;
-+
-+	property = of_get_property(dev->of_node, "vti,mdthr", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.mdthr = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,mdfftmr", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.mdfftmr = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,mode", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.mode = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,g_range", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.g_range = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,fuzz_x", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.fuzz_x = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,fuzz_y", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.fuzz_y = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,fuzz_z", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.fuzz_z = be32_to_cpup(property);
-+
-+	property = of_get_property(dev->of_node, "vti,irqflags", &len);
-+	if (property && len == sizeof(int))
-+		data->pdata.irqflags = be32_to_cpup(property);
-+
-+	return;
-+}
-+#endif
-+
- struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
- 				       const struct cma3000_bus_ops *bops)
- {
--	const struct cma3000_platform_data *pdata = dev->platform_data;
-+	struct cma3000_platform_data *pdata;
- 	struct cma3000_accl_data *data;
- 	struct input_dev *input_dev;
- 	int rev;
- 	int error;
- 
--	if (!pdata) {
--		dev_err(dev, "platform data not found\n");
--		error = -EINVAL;
--		goto err_out;
--	}
--
--
- 	/* if no IRQ return error */
- 	if (irq == 0) {
- 		error = -EINVAL;
-@@ -309,10 +357,24 @@ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
- 		goto err_free_mem;
- 	}
- 
-+	/*Init platform data*/
-+	if (dev->platform_data != NULL) {
-+		memcpy(&data->pdata, dev->platform_data, sizeof(data->pdata));
-+	} else {
-+		memcpy(&data->pdata, &cma3000_default_pdata,
-+				sizeof(data->pdata));
-+		#ifdef CONFIG_OF
-+		if (dev->of_node != NULL)
-+			cma3000_get_pdata_of(dev, data);
-+		 else
-+		#endif
-+		dev_info(dev, "platform data not found, using default\n");
-+	}
-+	pdata = &data->pdata;
-+
- 	data->dev = dev;
- 	data->input_dev = input_dev;
- 	data->bus_ops = bops;
--	data->pdata = pdata;
- 	data->irq = irq;
- 	mutex_init(&data->mutex);
- 
 -- 
-1.7.7
-
+Ricardo Ribalda
