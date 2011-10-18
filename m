@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab1JRJGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:06:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40423 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757006Ab1JRJGQ convert rfc822-to-8bit (ORCPT
+	id S1757288Ab1JRJHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:07:22 -0400
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:46786 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756938Ab1JRJHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:06:16 -0400
-Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
-        David Rientjes <rientjes@google.com>
-Date: Tue, 18 Oct 2011 11:06:03 +0200
-In-Reply-To: <1318927629.9641.27.camel@marge.simson.net>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-	 <1316770936.6641.11.camel@marge.simson.net>
-	 <1316775204.7562.9.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
-	 <1316788392.6544.33.camel@marge.simson.net>
-	 <1318224892.6161.45.camel@marge.simson.net>
-	 <1318233815.6527.5.camel@marge.simson.net>
-	 <1318925436.9641.23.camel@marge.simson.net>
-	 <1318927355.21167.3.camel@twins>
-	 <1318927629.9641.27.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318928763.21167.5.camel@twins>
-Mime-Version: 1.0
+	Tue, 18 Oct 2011 05:07:21 -0400
+Message-ID: <4E9D41C5.70902@Calva.COM>
+Date: Tue, 18 Oct 2011 11:07:17 +0200
+From: John Hughes <john@Calva.COM>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+MIME-Version: 1.0
+To: Mattia Dongili <malattia@linux.it>
+CC: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Stelian Pop <stelian@popies.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Subject: Re: sony-laptop driver: Volume keys on Sony Vaio TX3 don't work
+References: <4E9ABBF6.3000504@calvaedi.com> <4E9ADBD3.4070404@calvaedi.com> <4E9B182A.3020101@calvaedi.com> <74494.1318789218@turing-police.cc.vt.edu> <20111016213800.GA12703@kamineko.org> <81436.1318801813@turing-police.cc.vt.edu> <20111017214543.GB1311@kamineko.org>
+In-Reply-To: <20111017214543.GB1311@kamineko.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 10:47 +0200, Mike Galbraith wrote:
-> On Tue, 2011-10-18 at 10:42 +0200, Peter Zijlstra wrote:
-> 
-> > Why special case these two, why not simply disallow moving kthreadd into
-> > _any_ cgroup what so ever and be done with it?
-> 
-> These were the cases where it hurt, and cpusets don't have to be a
-> component of a cgroup.  So we'd still need the cpuset bit.
+On 17/10/11 23:45, Mattia Dongili wrote:
+> On Sun, Oct 16, 2011 at 05:50:13PM -0400, Valdis.Kletnieks@vt.edu wrote:
+>    
+>> On Mon, 17 Oct 2011 06:38:01 +0900, Mattia Dongili said:
+>>      
+>> If that's not an option, perhaps we need a per-model quirk that patches up the
+>> tables at boot time?  If we do that, we may want to re-arrange the table so the
+>> affected entries are at the front or something to help insure we don't patch
+>> the wrong entries if somebody else inserts new lines.
+>>      
+> Wouldn't udev do that already?
+> We may actually want to remove those events that never get looked up in
+> the tables instead.
+>
+>    
+udev does have some per-model stuff for the Vaio's.
 
-but but but,, cpusetes are a cgroup thingy?!
+Doesn't work right because the scancodes reported the sony-laptop driver 
+are not the right ones.
 
-> > 
-> > ---
-> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> > index 453100a..18eed58 100644
-> > --- a/kernel/cgroup.c
-> > +++ b/kernel/cgroup.c
-> > @@ -1824,6 +1824,9 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> >  	struct cgroup *oldcgrp;
-> >  	struct cgroupfs_root *root = cgrp->root;
-> >  
-> > +	if (tsk == kthreadd_task)
-> > +		return -EINVAL;
-> > +
-> >  	/* Nothing to do if the task is already in that cgroup */
-> >  	oldcgrp = task_cgroup_from_root(tsk, root);
-> >  	if (cgrp == oldcgrp)
-> > 
-> 
-> 
+(sony-laptop sends its "event" code as the scancode, but to change the 
+keymap you have to use the index in the sony_laptop_input_keycode_map 
+table.  I have posted one patch for this which makes the scancodes at 
+least consistent but I think I'll do another that makes them be the same 
+as what current udev thinks they should be.  I'll have that ready this 
+evening I thing - have to work now :-( )
 
