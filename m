@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab1JRPad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:30:33 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:41292 "EHLO
+	id S1758034Ab1JRP3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:29:38 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:41203 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab1JRP3l (ORCPT
+	with ESMTP id S1755396Ab1JRP3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:29:41 -0400
+	Tue, 18 Oct 2011 11:29:36 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -15,81 +15,70 @@ To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
 Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
         arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
         Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [RFC PATCH 0/6] IIO in kernel interfaces.
-Date: Tue, 18 Oct 2011 16:29:30 +0100
-Message-Id: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
+Date: Tue, 18 Oct 2011 16:29:33 +0100
+Message-Id: <1318951776-19393-4-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk>
+References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are obviously some rough corners in here that will need cleaning up.
-For now I've just put this out there to see if anyone radically disagrees
-on the direction.  It sits on top the recent rfc to move first bit of IIO
-out of staging with a few buglets fixed.  Best bet if anyone wants to
-test is to pull from:
+Needed for inkernel interfaces.
 
-https://github.com/jic23/linux-iio/tree/outofstaging
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ drivers/iio/iio.c       |    9 +++++++++
+ include/linux/iio/iio.h |    1 +
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-which now also includes these patches.
-
-Intereresting patches are 3 and 4.  5 gives a trivial example of
-a driver using this (hwmon driver that only takes first matching channel
-and sticks it out as in1_input - breaks all sorts elements of the hwmon
-interface spec.)
-
-For now I've gone with Mark Brown's suggestion of a datasheet_name for
-finding the channels on the device.  Patch 2 hacks this name into the
-max1363 driver.  I'll probably put a version matching on channel number and
-type in at a later date.
-
-Here we just have a pull interface.  Push is considerably harder to do
-and needs quite a lot more of the IIO infrastructure to be in place
-(triggers / buffers etc). Events obviously require IIO event handling
-to be there. Hence all of that will have to wait until those elements
-have in of themselves been posted for review.
-
-It is pretty clear to me that hwmon interface for starters needs the
-ability to say - 'give me all mappings that correspond to me'.
-
-This is what I intend to add next followed by some utility functions
-to make it easy to match the hwmon interface.
-
-At that point I'll propose the hwmon driver goes into drivers/hwmon
-(subject to the underlying iio stuff merging).
-
-Fun fun fun.  Thanks to Linus an Mark for their input on this.
-Hope this is roughly what you guys were looking for.
-
-Also on my list to do is to check this very thoroughly for any
-possible race conditions around the removal of the underlying
-device.
-
-Jonathan
-
-Jonathan Cameron (6):
-  IIO: core: add datasheet_name to chan_spec
-  IIO:ADC:max1363 add datasheet_name entries.
-  IIO:CORE add global list of registered IIO devices.
-  IIO:Core add in kernel interface mapping and getting IIO channels.
-  IIO:Temporary example hwmon interface.
-  stargate2: example of map configuration for iio to hwmon example.
-
- arch/arm/mach-pxa/stargate2.c  |   23 ++++++++
- drivers/Makefile               |    2 +-
- drivers/iio/Kconfig            |    7 ++
- drivers/iio/Makefile           |    2 +
- drivers/iio/adc/max1363_core.c |    4 +-
- drivers/iio/iio.c              |  121 ++++++++++++++++++++++++++++++++++++++++
- drivers/iio/iio_hwmon.c        |  104 ++++++++++++++++++++++++++++++++++
- drivers/iio/inkern.c           |   21 +++++++
- include/linux/iio/iio.h        |    9 +++-
- include/linux/iio/inkern.h     |   63 +++++++++++++++++++++
- 10 files changed, 353 insertions(+), 3 deletions(-)
- create mode 100644 drivers/iio/iio_hwmon.c
- create mode 100644 drivers/iio/inkern.c
- create mode 100644 include/linux/iio/inkern.h
-
+diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+index 9e6acc1..246a093 100644
+--- a/drivers/iio/iio.c
++++ b/drivers/iio/iio.c
+@@ -15,6 +15,9 @@
+ #include <linux/iio/iio.h>
+ #include <linux/iio/sysfs.h>
+ 
++static DEFINE_MUTEX(iio_device_list_lock);
++static LIST_HEAD(iio_device_list);
++
+ static DEFINE_IDA(iio_ida);
+ 
+ static struct bus_type iio_bus_type = {
+@@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
+ {
+ 	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
+ 	iio_device_unregister_sysfs(indio_dev);
++	mutex_lock(&iio_device_list_lock);
++	list_del(&indio_dev->dev_list_entry);
++	mutex_unlock(&iio_device_list_lock);
+ }
+ 
+ static struct device_type iio_dev_type = {
+@@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
+ 	if (ret)
+ 		goto error_free_sysfs;
+ 
++	mutex_lock(&iio_device_list_lock);
++	list_add(&indio_dev->dev_list_entry, &iio_device_list);
++	mutex_unlock(&iio_device_list_lock);
+ 	return 0;
+ 
+ error_free_sysfs:
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+index beedc5c..f14e7dc 100644
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -192,6 +192,7 @@ struct iio_info {
+  * @info:		[DRIVER] callbacks and constant info from driver
+  * @groups:		[INTERN] attribute groups
+  * @groupcounter:	[INTERN] index of next attribute group
++ * @dev_list_entry:	[INTERN] entry in global list of iio devices
+  **/
+ struct iio_dev {
+ 	int				id;
 -- 
 1.7.7
 
