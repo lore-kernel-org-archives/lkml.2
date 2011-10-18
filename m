@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab1JRNN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:13:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46320 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757861Ab1JRNNZ (ORCPT
+	id S1757875Ab1JRNNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:13:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51419 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757861Ab1JRNNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:13:25 -0400
+	Tue, 18 Oct 2011 09:13:19 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 18/20] Staging: comedi: fix printk issue in ni_at_a2150.c
-Date: Tue, 18 Oct 2011 18:42:13 +0530
-Message-Id: <1318943535-8251-5-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 17/20] Staging: comedi: fix printk issue in adv_pci_dio.c
+Date: Tue, 18 Oct 2011 18:42:12 +0530
+Message-Id: <1318943535-8251-4-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1318943535-8251-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1318943535-8251-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,153 +23,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ni_at_a2150.c file that fixes up a printk
+This is a patch to the contec_pci_dio.c file that fixes up a printk
 warning found by the checkpatch.pl tool
 converted printks to dev_printk.
 Removed unnecessary printk statements.
-Fixed brace coding issue.
+Fixed NULL initialization issue.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/ni_at_a2150.c |   43 +++++++++----------------
- 1 files changed, 16 insertions(+), 27 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci_dio.c |   22 +++++-----------------
+ 1 files changed, 5 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
-index 32e675e..54ddb2b 100644
---- a/drivers/staging/comedi/drivers/ni_at_a2150.c
-+++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
-@@ -211,17 +211,14 @@ static void __exit driver_a2150_cleanup_module(void)
- module_init(driver_a2150_init_module);
- module_exit(driver_a2150_cleanup_module);
+diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
+index d23799b..ec3abc8 100644
+--- a/drivers/staging/comedi/drivers/adv_pci_dio.c
++++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
+@@ -422,7 +422,7 @@ struct pci_dio_private {
+ 	unsigned short IDIFiltrHigh[8];	/*  IDI's filter value high signal */
+ };
  
--#ifdef A2150_DEBUG
+-static struct pci_dio_private *pci_priv = NULL;	/* list of allocated cards */
++static struct pci_dio_private *pci_priv;	/* list of allocated cards */
+ 
+ #define devpriv ((struct pci_dio_private *)dev->private)
+ #define this_board ((const struct dio_boardtype *)dev->board_ptr)
+@@ -1106,13 +1106,9 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 	unsigned long iobase;
+ 	struct pci_dev *pcidev = NULL;
+ 
+-	printk("comedi%d: adv_pci_dio: ", dev->minor);
 -
- static void ni_dump_regs(struct comedi_device *dev)
- {
--	printk("config bits 0x%x\n", devpriv->config_bits);
--	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
--	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
-+	dev_dbg(dev->hw_dev, "config bits 0x%x\n", devpriv->config_bits);
-+	dev_dbg(dev->hw_dev, "irq dma bits 0x%x\n", devpriv->irq_dma_bits);
-+	dev_dbg(dev->hw_dev, "status bits 0x%x\n",
-+		inw(dev->iobase + STATUS_REG));
- }
- 
--#endif
--
- /* interrupt service routine */
- static irqreturn_t a2150_interrupt(int irq, void *d)
- {
-@@ -347,8 +344,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	static const int timeout = 2000;
- 	int i;
- 
--	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
--	       iobase);
- 	if (irq) {
- 		printk(", irq %u", irq);
- 	} else {
-@@ -359,20 +354,19 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	} else {
- 		printk(", no dma");
- 	}
--	printk("\n");
- 
- 	/* allocate and initialize dev->private */
- 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
+ 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
+-	if (ret < 0) {
+-		printk(", Error: Cann't allocate private memory!\n");
++	if (ret < 0)
  		return -ENOMEM;
+-	}
  
- 	if (iobase == 0) {
--		printk(" io base address required\n");
-+		dev_err(dev->hw_dev, "io base address required\n");
- 		return -EINVAL;
+ 	for_each_pci_dev(pcidev) {
+ 		/*  loop through cards supported by this driver */
+@@ -1140,19 +1136,15 @@ static int pci_dio_attach(struct comedi_device *dev,
  	}
  
- 	/* check if io addresses are available */
- 	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
+ 	if (!dev->board_ptr) {
+-		printk(", Error: Requested type of the card was not found!\n");
++		dev_err(dev->hw_dev, "Error: Requested type of the card was not found!\n");
  		return -EIO;
  	}
+ 
+ 	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
+-		printk
+-		    (", Error: Can't enable PCI device and request regions!\n");
++		dev_err(dev->hw_dev, "Error: Can't enable PCI device and request regions!\n");
+ 		return -EIO;
+ 	}
+ 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
+-	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
+-	       PCI_FUNC(pcidev->devfn), iobase);
+ 
  	dev->iobase = iobase;
-@@ -381,12 +375,13 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (irq) {
- 		/*  check that irq is supported */
- 		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
--			printk(" invalid irq line %u\n", irq);
-+			dev_err(dev->hw_dev, "invalid irq line %u\n", irq);
- 			return -EINVAL;
- 		}
- 		if (request_irq(irq, a2150_interrupt, 0,
- 				driver_a2150.driver_name, dev)) {
--			printk("unable to allocate irq %u\n", irq);
-+			dev_err(dev->hw_dev, "unable to allocate irq %u\n",
-+				irq);
- 			return -EINVAL;
- 		}
- 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
-@@ -395,11 +390,12 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  initialize dma */
- 	if (dma) {
- 		if (dma == 4 || dma > 7) {
--			printk(" invalid dma channel %u\n", dma);
-+			dev_err(dev->hw_dev, "invalid dma channel %u\n", dma);
- 			return -EINVAL;
- 		}
- 		if (request_dma(dma, driver_a2150.driver_name)) {
--			printk(" failed to allocate dma channel %u\n", dma);
-+			dev_err(dev->hw_dev, "failed to allocate dma channel %u\n",
-+				dma);
- 			return -EINVAL;
- 		}
- 		devpriv->dma = dma;
-@@ -466,7 +462,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static int a2150_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
- 
- 	/* only free stuff if it has been allocated by _attach */
- 	if (dev->iobase) {
-@@ -731,12 +726,9 @@ static int a2150_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	outw(trigger_bits, dev->iobase + TRIGGER_REG);
- 
- 	/*  start acquisition for soft trigger */
--	if (cmd->start_src == TRIG_NOW) {
-+	if (cmd->start_src == TRIG_NOW)
- 		outw(0, dev->iobase + FIFO_START_REG);
--	}
--#ifdef A2150_DEBUG
- 	ni_dump_regs(dev);
--#endif
- 
- 	return 0;
- }
-@@ -801,9 +793,7 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 		ni_dump_regs(dev);
- #endif
- 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
--#ifdef A2150_DEBUG
--		printk(" data is %i\n", data[n]);
--#endif
-+		dev_dbg(dev->hw_dev, "data is %i\n", data[n]);
- 		data[n] ^= 0x8000;
+ 	dev->board_name = this_board->name;
+@@ -1177,12 +1169,8 @@ static int pci_dio_attach(struct comedi_device *dev,
  	}
  
-@@ -860,11 +850,10 @@ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
- 	case TRIG_ROUND_NEAREST:
- 	default:
- 		/*  if least upper bound is better approximation */
--		if (lub - *period < *period - glb) {
-+		if (lub - *period < *period - glb)
- 			*period = lub;
--		} else {
-+		else
- 			*period = glb;
--		}
- 		break;
- 	case TRIG_ROUND_UP:
- 		*period = lub;
+ 	ret = alloc_subdevices(dev, n_subdevices);
+-	if (ret < 0) {
+-		printk(", Error: Cann't allocate subdevice memory!\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+-
+-	printk(".\n");
+ 
+ 	subdev = 0;
+ 
 -- 
 1.7.6.4
 
