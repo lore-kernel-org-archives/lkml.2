@@ -1,111 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab1JRNqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:46:00 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:35991 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab1JRNp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:45:58 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E9D8317.8020506@cam.ac.uk>
-Date: Tue, 18 Oct 2011 14:45:59 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+	id S1757926Ab1JRNsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:48:41 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49643 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755195Ab1JRNsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 09:48:39 -0400
+Date: Tue, 18 Oct 2011 08:48:35 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111018134835.GA16222@sgi.com>
+References: <20111013135032.7c2c54cd.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1110131602020.26553@router.home>
+ <20111013142434.4d05cbdc.akpm@linux-foundation.org>
+ <20111014122506.GB26737@sgi.com>
+ <20111014135055.GA28592@sgi.com>
+ <alpine.DEB.2.00.1110140856420.6411@router.home>
+ <20111014141921.GC28592@sgi.com>
+ <alpine.DEB.2.00.1110140932530.6411@router.home>
+ <alpine.DEB.2.00.1110140958550.6411@router.home>
+ <20111014161603.GA30561@sgi.com>
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
-        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
-        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 1/7] input/cma3000_d0x: Support devices without pdata
-References: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com> <1318939596-27330-2-git-send-email-ricardo.ribalda@gmail.com> <4E9D76D9.7070302@cam.ac.uk> <CAPybu_3mC5HnHZeic+D7G=K3oz_yyMAOkepBZmGmj6gPEZoY4A@mail.gmail.com>
-In-Reply-To: <CAPybu_3mC5HnHZeic+D7G=K3oz_yyMAOkepBZmGmj6gPEZoY4A@mail.gmail.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014161603.GA30561@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/11 13:58, Ricardo Ribalda Delgado wrote:
-> Hello Jonathan
+On Fri, Oct 14, 2011 at 11:16:03AM -0500, Dimitri Sivanich wrote:
+> On Fri, Oct 14, 2011 at 10:18:24AM -0500, Christoph Lameter wrote:
+> > Also the whole thing could be optimized by concentrating updates to the
+> > vm_stat array at one point in time. If any local per cpu differential
+> > overflows then update all the counters in the same cacheline for which we have per cpu
+> > differentials.
+> > 
+> > That will defer another acquisition of the cacheline for the next delta
+> > overflowing. After an update all the per cpu differentials would be zero.
+> > 
+> > This could be added to zone_page_state_add....
+> > 
+> > 
+> > Something like this patch? (Restriction of the updates to the same
+> > cacheline missing. Just does everything and the zone_page_state may need
+> > uninlining now)
 > 
-> I think I am going to do it like ads1015.c. I will check for the
-> pdata, then for the dt info (if it is there) and finally go for the
-> default, if all fails. What do you think? Shall I fix it in cma3000
-> and cmr3000?
-That sounds like the best plan to me.  Fix them both.
+> This patch doesn't have much, if any, effect, at least in the 46 writer thread
+> case (NR_VM_EVENT_ITEMS-->NR_VM_ZONE_STAT_ITEMS allowed it to boot :) ).
+> I applied this with the change to align vm_stat.
 > 
->  Thanks again
-> 
-> On Tue, Oct 18, 2011 at 14:53, Jonathan Cameron <jic23@cam.ac.uk> wrote:
->> On 10/18/11 13:06, Ricardo Ribalda Delgado wrote:
->>> Architectures based on device-tree does not have platform data
->>> associated to the spi/i2c devices.
->>> This patch allows those architectures to use the cma3000 driver with
->>> a default configuration.
->> Fine except for this description. Looks to be a perfectly reasonable
->> way of specifying these in DT.  So fix that and I'm happy.
->> Whoever wants to pass this in from DT can do a patch for it!
->>>
->>> ---
->>>
->>> v2: Fixes suggested by Jonathan Cameron
->>>     -Spelling
->>>     -Simplify pdata!=NULL check
->>>
->>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
->>> ---
->>>  drivers/input/misc/cma3000_d0x.c |   20 +++++++++++++++-----
->>>  1 files changed, 15 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
->>> index 1633b63..f2e87e3 100644
->>> --- a/drivers/input/misc/cma3000_d0x.c
->>> +++ b/drivers/input/misc/cma3000_d0x.c
->>> @@ -62,6 +62,18 @@
->>>  #define BIT_TO_2G  18
->>>  #define BIT_TO_8G  71
->>>
->>> +static struct cma3000_platform_data cma3000_default_pdata = {
->>> +     .mdthr = 0x8,
->>> +     .mdfftmr = 0x33,
->>> +     .ffthr = 0x8,
->>> +     .mode = CMAMODE_MEAS400,
->>> +     .g_range = CMARANGE_2G,
->>> +     .fuzz_x = BIT_TO_2G,
->>> +     .fuzz_y = BIT_TO_2G,
->>> +     .fuzz_z = BIT_TO_2G,
->>> +     .irqflags = 0,
->>> +};
->>> +
->>>  struct cma3000_accl_data {
->>>       const struct cma3000_bus_ops *bus_ops;
->>>       const struct cma3000_platform_data *pdata;
->>> @@ -289,13 +301,11 @@ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
->>>       int rev;
->>>       int error;
->>>
->>> -     if (!pdata) {
->>> -             dev_err(dev, "platform data not found\n");
->>> -             error = -EINVAL;
->>> -             goto err_out;
->>> +     if (pdata == NULL) {
->>> +             dev_info(dev, "platform data not found, using default\n");
->>> +             pdata = &cma3000_default_pdata;
->>>       }
->>>
->>> -
->>>       /* if no IRQ return error */
->>>       if (irq == 0) {
->>>               error = -EINVAL;
->>
->>
-> 
-> 
-> 
+> So far cache alignment of vm_data and increasing ZVC delta has the greatest
+> effect.
 
+After further testing, substantial increases in ZVC delta along with cache alignment
+of the vm_stat array bring the tmpfs writeback throughput numbers to about where
+they are with vm.overcommit_memory==OVERCOMMIT_NEVER.  I still need to determine how
+high the ZVC delta needs to be to achieve this performance, but it is greater than 125.
+
+Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
+same default behavior as what we currently have?
+
+If the thresholds get set higher, it could be that some values that don't normally have
+as big a delta may not get updated frequently enough.  Should we maybe update all values
+everytime a threshold is hit, as the patch below was intending?
+
+Note that having each counter in a separate cacheline does not have much, if any,
+effect.
+
+> 
+> > 
+> > ---
+> >  include/linux/vmstat.h |   19 ++++++++++++++++---
+> >  mm/vmstat.c            |   10 ++++------
+> >  2 files changed, 20 insertions(+), 9 deletions(-)
+> > 
+> > Index: linux-2.6/include/linux/vmstat.h
+> > ===================================================================
+> > --- linux-2.6.orig/include/linux/vmstat.h	2011-10-14 09:58:03.000000000 -0500
+> > +++ linux-2.6/include/linux/vmstat.h	2011-10-14 10:08:00.000000000 -0500
+> > @@ -90,10 +90,23 @@ static inline void vm_events_fold_cpu(in
+> >  extern atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
+> > 
+> >  static inline void zone_page_state_add(long x, struct zone *zone,
+> > -				 enum zone_stat_item item)
+> > +				 enum zone_stat_item item, s8 new_value)
+> >  {
+> > -	atomic_long_add(x, &zone->vm_stat[item]);
+> > -	atomic_long_add(x, &vm_stat[item]);
+> > +	enum zone_stat_item i;
+> > +
+> > +	for (i = 0; i < NR_VM_EVENT_ITEMS; i++) {
+> > +		long y;
+> > +
+> > +		if (i == item)
+> > +			y = this_cpu_xchg(zone->pageset->vm_stat_diff[i], new_value) + x;
+> > +		else
+> > +			y = this_cpu_xchg(zone->pageset->vm_stat_diff[i], 0);
+> > +
+> > +		if (y) {
+> > +			atomic_long_add(y, &zone->vm_stat[item]);
+> > +			atomic_long_add(y, &vm_stat[item]);
+> > +		}
+> > +	}
+> >  }
+> > 
+> >  static inline unsigned long global_page_state(enum zone_stat_item item)
+> > Index: linux-2.6/mm/vmstat.c
+> > ===================================================================
+> > --- linux-2.6.orig/mm/vmstat.c	2011-10-14 10:04:20.000000000 -0500
+> > +++ linux-2.6/mm/vmstat.c	2011-10-14 10:08:39.000000000 -0500
+> > @@ -221,7 +221,7 @@ void __mod_zone_page_state(struct zone *
+> >  	t = __this_cpu_read(pcp->stat_threshold);
+> > 
+> >  	if (unlikely(x > t || x < -t)) {
+> > -		zone_page_state_add(x, zone, item);
+> > +		zone_page_state_add(x, zone, item, 0);
+> >  		x = 0;
+> >  	}
+> >  	__this_cpu_write(*p, x);
+> > @@ -262,8 +262,7 @@ void __inc_zone_state(struct zone *zone,
+> >  	if (unlikely(v > t)) {
+> >  		s8 overstep = t >> 1;
+> > 
+> > -		zone_page_state_add(v + overstep, zone, item);
+> > -		__this_cpu_write(*p, -overstep);
+> > +		zone_page_state_add(v + overstep, zone, item, -overstep);
+> >  	}
+> >  }
+> > 
+> > @@ -284,8 +283,7 @@ void __dec_zone_state(struct zone *zone,
+> >  	if (unlikely(v < - t)) {
+> >  		s8 overstep = t >> 1;
+> > 
+> > -		zone_page_state_add(v - overstep, zone, item);
+> > -		__this_cpu_write(*p, overstep);
+> > +		zone_page_state_add(v - overstep, zone, item, overstep);
+> >  	}
+> >  }
+> > 
+> > @@ -343,7 +341,7 @@ static inline void mod_state(struct zone
+> >  	} while (this_cpu_cmpxchg(*p, o, n) != o);
+> > 
+> >  	if (z)
+> > -		zone_page_state_add(z, zone, item);
+> > +		zone_page_state_add(z, zone, item, 0);
+> >  }
+> > 
+> >  void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
