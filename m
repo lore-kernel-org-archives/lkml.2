@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab1JRMFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:05:24 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48404 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754868Ab1JRMFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:05:23 -0400
-Date: Tue, 18 Oct 2011 14:05:06 +0200
-From: Mel Gorman <mel@csn.ul.ie>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/9] mm: move some functions from memory_hotplug.c to
- page_isolation.c
-Message-ID: <20111018120506.GA6660@csn.ul.ie>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <1317909290-29832-2-git-send-email-m.szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1317909290-29832-2-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932191Ab1JRMGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:06:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53163 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893Ab1JRMGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 08:06:45 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, jic23@cam.ac.uk, hemanthv@ti.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCHv2 0/7] Add spi support for CMA3000 driver and new driver CMR3000
+Date: Tue, 18 Oct 2011 14:06:29 +0200
+Message-Id: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 03:54:41PM +0200, Marek Szyprowski wrote:
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Memory hotplug is a logic for making pages unused in the specified
-> range of pfn. So, some of core logics can be used for other purpose
-> as allocating a very large contigous memory block.
-> 
-> This patch moves some functions from mm/memory_hotplug.c to
-> mm/page_isolation.c. This helps adding a function for large-alloc in
-> page_isolation.c with memory-unplug technique.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> [m.nazarewicz: reworded commit message]
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> [m.szyprowski: rebased and updated to Linux v3.0-rc1]
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  include/linux/page-isolation.h |    7 +++
->  mm/memory_hotplug.c            |  111 --------------------------------------
->  mm/page_isolation.c            |  114 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 121 insertions(+), 111 deletions(-)
-> 
-> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-> index 051c1b1..58cdbac 100644
-> --- a/include/linux/page-isolation.h
-> +++ b/include/linux/page-isolation.h
-> @@ -33,5 +33,12 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
->  extern int set_migratetype_isolate(struct page *page);
->  extern void unset_migratetype_isolate(struct page *page);
->  
-> +/*
-> + * For migration.
-> + */
-> +
-> +int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn);
+The following set of patches add spi and device tree support for the cma3000 driver and also
+add support for the cmr3000 gyroscope.
 
-bool
+v2 of the set.
 
-> +unsigned long scan_lru_pages(unsigned long start, unsigned long end);
+Changelog:
 
-Both function names are misleading.
+   v2: -Changes propossed by Jonathan Cameron
+       -More fixes for the cma3000 driver
 
-> +int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
->  
 
-scan_lru_pages as it is used by memory hotplug is also extremely
-expensive. Unplugging memory is rare so the performance is not a concern
-but it make be for CMA.
+Ricardo Ribalda Delgado (7):
+  input/cma3000_d0x: Support devices without pdata
+  input/cma3000_d0x: Check silicon version
+  input/cma3000_d0x: Keep configuration on poweroff
+  input/cma3000_d0x: Add CMA3000 spi support
+  Input: add CMR3000 gyrsocope driver
+  input/cma3000_d0x: Unwind reverse order of init
+  input/cma3000_d0x: Match comment to name of struct
 
-I think it would have made more sense to either express this as an iterator
-like for_each_lru_page_in_range() and use cursors or reuse the compaction
-code. As it is, these functions are a bit rough. I'm biased but this code
-seems to have very similar responsibilities to the compaction.c code for
-isolate_migratepages and how it handles migration. It also knows how to avoid
-isolating so much memory as to put the system in the risk of being livelocked,
-isolate pages from the LRU in batch etc.
-
-This is not a show-stopper as such but personally I would prefer that
-the memory hotplug code be sharing code with compaction than CMA adding
-a new dependency on memory hotplug.
+ drivers/input/misc/Kconfig           |   38 ++++-
+ drivers/input/misc/Makefile          |    3 +
+ drivers/input/misc/cma3000_d0x.c     |   36 +++-
+ drivers/input/misc/cma3000_d0x_spi.c |  178 ++++++++++++++++
+ drivers/input/misc/cmr3000_d0x.c     |  382 ++++++++++++++++++++++++++++++++++
+ drivers/input/misc/cmr3000_d0x.h     |   45 ++++
+ drivers/input/misc/cmr3000_d0x_spi.c |  178 ++++++++++++++++
+ include/linux/input/cma3000.h        |    2 +-
+ include/linux/input/cmr3000.h        |   54 +++++
+ 9 files changed, 905 insertions(+), 11 deletions(-)
+ create mode 100644 drivers/input/misc/cma3000_d0x_spi.c
+ create mode 100644 drivers/input/misc/cmr3000_d0x.c
+ create mode 100644 drivers/input/misc/cmr3000_d0x.h
+ create mode 100644 drivers/input/misc/cmr3000_d0x_spi.c
+ create mode 100644 include/linux/input/cmr3000.h
 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7
+
