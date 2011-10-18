@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab1JRCW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 22:22:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45410 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab1JRCW4 convert rfc822-to-8bit (ORCPT
+	id S1757219Ab1JRCaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 22:30:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48950 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab1JRCah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 22:22:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABqxG0eKhaGUMvdNMOdahnqdYiT8i+3Hhf8vbQyq8TEJUOU0Lg@mail.gmail.com>
-References: <1318896400-32498-1-git-send-email-msb@chromium.org>
-	<CABqxG0eKhaGUMvdNMOdahnqdYiT8i+3Hhf8vbQyq8TEJUOU0Lg@mail.gmail.com>
-Date: Tue, 18 Oct 2011 10:22:55 +0800
-Message-ID: <CABqxG0cP8Vc1FiAoOSB7cWdJyS=c0eFx1Hj6nY9GY=uTL_EgHg@mail.gmail.com>
-Subject: Re: [PATCH] drm: avoid switching to text console if there is no panic timeout
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Oct 2011 22:30:37 -0400
+Message-ID: <1318905032.2571.35.camel@edumazet-laptop>
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
+ kernel oops
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Elmar Vonlanthen <evonlanthen@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Timo =?ISO-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Tue, 18 Oct 2011 04:30:32 +0200
+In-Reply-To: <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com>
+References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com>
+	 <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 10:19 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Tue, Oct 18, 2011 at 8:06 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
->> From: Hugh Dickins <hughd@chromium.org>
->>
->> Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
->> we're going to reboot immediately, the user will not be able to see the
->> messages anyway, and messing with the video mode may display artifacts,
->> and certainly get into several layers of complexity (including mutexes and
->> memory allocations) which we shall be much safer to avoid.
->
-> There's one exception is use printk_delay
+Le lundi 17 octobre 2011 à 09:16 +0200, Elmar Vonlanthen a écrit :
+> 2011/10/14 Eric Dumazet <eric.dumazet@gmail.com>:
+> > Please try following patch :
+> >
+> > [PATCH] ip_gre: dont increase dev->needed_headroom on a live device
+> >
+> > It seems ip_gre is able to change dev->needed_headroom on the fly.
+> >
+> > Its is not legal unfortunately and triggers a BUG in raw_sendmsg()
+> >
+> > skb = sock_alloc_send_skb(sk, ... + LL_ALLOCATED_SPACE(rt->dst.dev)
+> >
+> > < another cpu change dev->needed_headromm (making it bigger)
+> >
+> > ...
+> > skb_reserve(skb, LL_RESERVED_SPACE(rt->dst.dev));
+> >
+> > We end with LL_RESERVED_SPACE() being bigger than LL_ALLOCATED_SPACE()
+> > -> we crash later because skb head is exhausted.
+> >
+> > Bug introduced in commit 243aad83 in 2.6.34 (ip_gre: include route
+> > header_len in max_headroom calculation)
+> >
+> > Reported-by: Elmar Vonlanthen <evonlanthen@gmail.com>
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > CC: Timo Teräs <timo.teras@iki.fi>
+> > CC: Herbert Xu <herbert@gondor.apana.org.au>
+> > ---
+> > diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+> > index 8871067..1505dcf 100644
+> > --- a/net/ipv4/ip_gre.c
+> > +++ b/net/ipv4/ip_gre.c
+> > @@ -835,8 +835,6 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
+> >        if (skb_headroom(skb) < max_headroom || skb_shared(skb)||
+> >            (skb_cloned(skb) && !skb_clone_writable(skb, 0))) {
+> >                struct sk_buff *new_skb = skb_realloc_headroom(skb, max_headroom);
+> > -               if (max_headroom > dev->needed_headroom)
+> > -                       dev->needed_headroom = max_headroom;
+> >                if (!new_skb) {
+> >                        ip_rt_put(rt);
+> >                        dev->stats.tx_dropped++;
+> 
+> Hello
+> 
+> I tried this patch and I was not able anymore to reproduce the kernel
+> oops. So the patch solved the bug.
+> Thank you very much!
+> 
+> Would it be possible to add the patch to the long term kernel 2.6.35
+> as well? Because this is the one I use at the moment in production.
+> 
 
-OTOH the complexity do exist also when timeout is set, IMHO it is worth
+Thanks for testing.
 
->
->>
->> Signed-off-by: Hugh Dickins <hughd@google.com>
->> [ Edited commit message and modified to short-circuit panic_timeout < 0
->>  instead of testing panic_timeout >= 0.  -Mandeep ]
->> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
->> Cc: Dave Airlie <airlied@redhat.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: dri-devel@lists.freedesktop.org
->> ---
->>  drivers/gpu/drm/drm_fb_helper.c |    7 +++++++
->>  1 files changed, 7 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
->> index f7c6854..0e62c93 100644
->> --- a/drivers/gpu/drm/drm_fb_helper.c
->> +++ b/drivers/gpu/drm/drm_fb_helper.c
->> @@ -254,6 +254,13 @@ bool drm_fb_helper_force_kernel_mode(void)
->>  int drm_fb_helper_panic(struct notifier_block *n, unsigned long ununsed,
->>                        void *panic_str)
->>  {
->> +       /*
->> +        * It's a waste of time and effort to switch back to text console
->> +        * if the kernel should reboot before panic messages can be seen.
->> +        */
->> +       if (panic_timeout < 0)
->> +               return 0;
->> +
->>        printk(KERN_ERR "panic occurred, switching back to text console\n");
->>        return drm_fb_helper_force_kernel_mode();
->>  }
->> --
->> 1.7.3.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
->
-> --
-> Regards
-> Dave
->
+If David/Herbert/Timo agree, then patch should find its way into current
+kernel, then to stable trees as well.
+
+Thanks
 
 
-
--- 
-Regards
-Dave
