@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab1JRPeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:34:11 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:51472 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932583Ab1JRPeI (ORCPT
+	id S932622Ab1JRPok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:44:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43884 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab1JRPoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:34:08 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com
-Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V7 01/26] vfs: Indicate that the permission functions take all the MAY_* flags
-Date: Tue, 18 Oct 2011 21:02:36 +0530
-Message-Id: <1318951981-5508-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Tue, 18 Oct 2011 11:44:38 -0400
+Date: Tue, 18 Oct 2011 11:48:28 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: iommu@lists.linux-foundation.org
+Subject: IOMMU keeping mapping over long period of time
+Message-ID: <20111018154828.GA4201@homer.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@kernel.org>
+Hi,
 
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/namei.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+For GPU we are entertaining the idea of keeping pci/dma mapping of page
+around for the whole life span of GPU object (which can be as long as
+the computer uptime). Here we are talking about possibly several GB of
+data.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 0b3138d..2a4574f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -257,7 +257,7 @@ other_perms:
- /**
-  * generic_permission -  check for access rights on a Posix-like filesystem
-  * @inode:	inode to check access rights for
-- * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
-  *
-  * Used to check for read/write/execute permissions on a file.
-  * We use "fsuid" for this, letting us set arbitrary permissions
-@@ -331,7 +331,7 @@ static inline int do_inode_permission(struct inode *inode, int mask)
- /**
-  * inode_permission  -  check for access rights to a given inode
-  * @inode:	inode to check permission on
-- * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
-  *
-  * Used to check for read/write/execute permissions on an inode.
-  * We use "fsuid" for this, letting us set arbitrary permissions
--- 
-1.7.5.4
+GPU for which we are interested have dma mask of 40bits at least, thus
+they can work with high mem page. My main concern is when an iommu is
+active, such amount of continuously mapped page might exhaust the iommu
+address space. My understanding is that Intel & AMD iommu are capable of
+growing their address space but is it somethings we can rely on ?
 
+Cheers,
+Jerome
