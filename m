@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab1JRPju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:39:50 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46771 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932827Ab1JRPep (ORCPT
+	id S932797Ab1JRPeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:34:37 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37405 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932759Ab1JRPee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:34:45 -0400
+	Tue, 18 Oct 2011 11:34:34 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V7 11/26] vfs: Add permission flags for setting file attributes
-Date: Tue, 18 Oct 2011 21:02:46 +0530
-Message-Id: <1318951981-5508-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V7 08/26] vfs: Add new file and directory create permission flags
+Date: Tue, 18 Oct 2011 21:02:43 +0530
+Message-Id: <1318951981-5508-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,155 +24,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-Some permission models can allow processes to take ownership of a file,
-change the file permissions, and set the file timestamps.  Introduce new
-permission mask flags and check for those permissions in
-inode_change_ok().
+Some permission models distinguish between the permission to create a
+non-directory and a directory.  Pass this information down to
+inode_permission() as mask flags
 
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/attr.c          |   70 +++++++++++++++++++++++++++++++++++++++++++--------
- fs/namei.c         |    2 +-
- include/linux/fs.h |    4 +++
- 3 files changed, 64 insertions(+), 12 deletions(-)
+ fs/namei.c         |   26 +++++++++++++++-----------
+ include/linux/fs.h |    2 ++
+ 2 files changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index f15e9e3..00578b9 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -14,6 +14,55 @@
- #include <linux/fcntl.h>
- #include <linux/security.h>
- 
-+static int richacl_change_ok(struct inode *inode, int mask)
-+{
-+	if (!IS_RICHACL(inode))
-+		return -EPERM;
-+
-+	if (inode->i_op->permission)
-+		return inode->i_op->permission(inode, mask);
-+
-+	return check_acl(inode, mask);
-+}
-+
-+static bool inode_uid_change_ok(struct inode *inode, uid_t ia_uid)
-+{
-+	if (current_fsuid() == inode->i_uid && ia_uid == inode->i_uid)
-+		return true;
-+	if (current_fsuid() == ia_uid &&
-+	    richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-+		return true;
-+	if (capable(CAP_CHOWN))
-+		return true;
-+	return false;
-+}
-+
-+static bool inode_gid_change_ok(struct inode *inode, gid_t ia_gid)
-+{
-+	int in_group = in_group_p(ia_gid);
-+	if (current_fsuid() == inode->i_uid &&
-+	    (in_group || ia_gid == inode->i_gid))
-+		return true;
-+	if (in_group && richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-+		return true;
-+	if (capable(CAP_CHOWN))
-+		return true;
-+	return false;
-+}
-+
-+static bool inode_owner_permitted_or_capable(struct inode *inode, int mask)
-+{
-+	struct user_namespace *ns = inode_userns(inode);
-+
-+	if (current_user_ns() == ns && current_fsuid() == inode->i_uid)
-+		return true;
-+	if (richacl_change_ok(inode, mask) == 0)
-+		return true;
-+	if (ns_capable(ns, CAP_FOWNER))
-+		return true;
-+	return false;
-+}
-+
- /**
-  * inode_change_ok - check if attribute changes to an inode are allowed
-  * @inode:	inode to check
-@@ -45,21 +94,20 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
- 		return 0;
- 
- 	/* Make sure a caller can chown. */
--	if ((ia_valid & ATTR_UID) &&
--	    (current_fsuid() != inode->i_uid ||
--	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
--		return -EPERM;
-+	if (ia_valid & ATTR_UID) {
-+		if (!inode_uid_change_ok(inode, attr->ia_uid))
-+			return -EPERM;
-+	}
- 
- 	/* Make sure caller can chgrp. */
--	if ((ia_valid & ATTR_GID) &&
--	    (current_fsuid() != inode->i_uid ||
--	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
--	    !capable(CAP_CHOWN))
--		return -EPERM;
-+	if (ia_valid & ATTR_GID) {
-+		if (!inode_gid_change_ok(inode, attr->ia_gid))
-+			return -EPERM;
-+	}
- 
- 	/* Make sure a caller can chmod. */
- 	if (ia_valid & ATTR_MODE) {
--		if (!inode_owner_or_capable(inode))
-+		if (!inode_owner_permitted_or_capable(inode, MAY_CHMOD))
- 			return -EPERM;
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
-@@ -69,7 +117,7 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
- 
- 	/* Check for setting the inode time. */
- 	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET | ATTR_TIMES_SET)) {
--		if (!inode_owner_or_capable(inode))
-+		if (!inode_owner_permitted_or_capable(inode, MAY_SET_TIMES))
- 			return -EPERM;
- 	}
- 
 diff --git a/fs/namei.c b/fs/namei.c
-index 7bf42e8..eb8f918 100644
+index cf8b2f0..f6184b8 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -174,7 +174,7 @@ void putname(const char *name)
- EXPORT_SYMBOL(putname);
- #endif
- 
--static int check_acl(struct inode *inode, int mask)
-+int check_acl(struct inode *inode, int mask)
+@@ -336,7 +336,8 @@ static inline int do_inode_permission(struct inode *inode, int mask)
+  * for filesystem access without changing the "normal" uids which
+  * are used for other things.
+  *
+- * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
++ * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
++ * MAY_WRITE must also be set in @mask.
+  */
+ int inode_permission(struct inode *inode, int mask)
  {
- #ifdef CONFIG_FS_POSIX_ACL
- 	struct posix_acl *acl;
+@@ -1914,13 +1915,15 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+  *  3. We should have write and exec permissions on dir
+  *  4. We can't do it if dir is immutable (done in permission())
+  */
+-static inline int may_create(struct inode *dir, struct dentry *child)
++static inline int may_create(struct inode *dir, struct dentry *child, int isdir)
+ {
++	int mask = isdir ? MAY_CREATE_DIR : MAY_CREATE_FILE;
++
+ 	if (child->d_inode)
+ 		return -EEXIST;
+ 	if (IS_DEADDIR(dir))
+ 		return -ENOENT;
+-	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
++	return inode_permission(dir, MAY_WRITE | MAY_EXEC | mask);
+ }
+ 
+ /*
+@@ -1968,7 +1971,7 @@ void unlock_rename(struct dentry *p1, struct dentry *p2)
+ int vfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ 		struct nameidata *nd)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2427,7 +2430,7 @@ EXPORT_SYMBOL(user_path_create);
+ 
+ int vfs_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2524,7 +2527,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, int, mode, unsigned, dev)
+ 
+ int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 1);
+ 
+ 	if (error)
+ 		return error;
+@@ -2806,7 +2809,7 @@ SYSCALL_DEFINE1(unlink, const char __user *, pathname)
+ 
+ int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2872,7 +2875,10 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+ 	if (!inode)
+ 		return -ENOENT;
+ 
+-	error = may_create(dir, new_dentry);
++	if (S_ISDIR(inode->i_mode))
++		return -EPERM;
++
++	error = may_create(dir, new_dentry, 0);
+ 	if (error)
+ 		return error;
+ 
+@@ -2886,8 +2892,6 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+ 		return -EPERM;
+ 	if (!dir->i_op->link)
+ 		return -EPERM;
+-	if (S_ISDIR(inode->i_mode))
+-		return -EPERM;
+ 
+ 	error = security_inode_link(old_dentry, dir, new_dentry);
+ 	if (error)
+@@ -3097,7 +3101,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		return error;
+ 
+ 	if (!new_dentry->d_inode)
+-		error = may_create(new_dir, new_dentry);
++		error = may_create(new_dir, new_dentry, is_dir);
+ 	else
+ 		error = may_delete(new_dir, new_dentry, is_dir);
+ 	if (error)
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 724a4f4..ac1d8e5 100644
+index f3ebf86..60361c6 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -71,6 +71,9 @@ struct inodes_stat_t {
- #define MAY_CREATE_DIR		0x00000200
- #define MAY_DELETE_CHILD	0x00000400
- #define MAY_DELETE_SELF		0x00000800
-+#define MAY_TAKE_OWNERSHIP	0x00001000
-+#define MAY_CHMOD		0x00002000
-+#define MAY_SET_TIMES		0x00004000
+@@ -67,6 +67,8 @@ struct inodes_stat_t {
+ #define MAY_CHDIR		0x00000040
+ /* called from RCU mode, don't block */
+ #define MAY_NOT_BLOCK		0x00000080
++#define MAY_CREATE_FILE		0x00000100
++#define MAY_CREATE_DIR		0x00000200
  
  /*
   * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
-@@ -2232,6 +2235,7 @@ extern sector_t bmap(struct inode *, sector_t);
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
- extern int generic_permission(struct inode *, int);
-+extern int check_acl(struct inode *, int);
- 
- static inline bool execute_ok(struct inode *inode)
- {
 -- 
 1.7.5.4
 
