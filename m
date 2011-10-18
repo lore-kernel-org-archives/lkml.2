@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab1JRTbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 15:31:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5666 "EHLO mx1.redhat.com"
+	id S1753665Ab1JRTdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 15:33:32 -0400
+Received: from mail.fuel7.com ([74.222.0.51]:38250 "EHLO mail.fuel7.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab1JRTbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 15:31:46 -0400
-Message-ID: <4E9DD418.7030005@redhat.com>
-Date: Tue, 18 Oct 2011 14:31:36 -0500
-From: David Smith <dsmith@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH] Tracepoint: add exec tracepoint
-References: <4E9DC85F.3080507@redhat.com> <20111018185803.GA32498@infradead.org>
-In-Reply-To: <20111018185803.GA32498@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751338Ab1JRTdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 15:33:31 -0400
+X-Greylist: delayed 1904 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Oct 2011 15:33:31 EDT
+From: Patrick Trantham <patrick.trantham@fuel7.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, patrick.trantham@fuel7.com,
+        kyle.manna@fuel7.com
+Subject: [PATCH] rtc: ISL12022: Add support for ISL12020
+Date: Tue, 18 Oct 2011 14:01:32 -0500
+Message-Id: <1318964492-19805-1-git-send-email-patrick.trantham@fuel7.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2011 01:58 PM, Christoph Hellwig wrote:
+Update the ISL12022 device id array to support the ISL12020 which has
+been tested and verified using this driver.
 
-> On Tue, Oct 18, 2011 at 01:41:35PM -0500, David Smith wrote:
->> Added general purpose exec tracepoint.  The 'bprm' argument gives details of the exec.
-> 
-> Given that you only need the filename from the bprm please just pass
-> it directly.
+Signed-off-by: Patrick Trantham <patrick.trantham@fuel7.com>
+Tested-by: Kyle Manna <kyle.manna@fuel7.com>
+---
+ drivers/rtc/rtc-isl12022.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
-Thanks for looking at the patch.
-
-I'm not totally opposed to this change, but passing bprm allows custom
-tracepoint handlers to look at other fields in bprm besides filename,
-which could be useful (depending on your needs).
-
-But, I don't have a real strong opinion here.
-
+diff --git a/drivers/rtc/rtc-isl12022.c b/drivers/rtc/rtc-isl12022.c
+index ddbc797..e114507 100644
+--- a/drivers/rtc/rtc-isl12022.c
++++ b/drivers/rtc/rtc-isl12022.c
+@@ -295,6 +295,7 @@ static int isl12022_remove(struct i2c_client *client)
+ static const struct i2c_device_id isl12022_id[] = {
+ 	{ "isl12022", 0 },
+ 	{ "rtc8564", 0 },
++	{ "isl12020", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, isl12022_id);
 -- 
-David Smith
-dsmith@redhat.com
-Red Hat
-http://www.redhat.com
-256.217.0141 (direct)
-256.837.0057 (fax)
+1.7.4.1
+
