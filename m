@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab1JRHMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 03:12:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54114 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab1JRHMV convert rfc822-to-8bit (ORCPT
+	id S1756923Ab1JRHOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 03:14:53 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53932 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab1JRHOw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 03:12:21 -0400
+	Tue, 18 Oct 2011 03:14:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E9CA772.4000509@zytor.com>
-References: <1318060551.8395.0.camel@twins>
-	<20111012213555.GC24461@hostway.ca>
-	<20111013232521.GA5654@hostway.ca>
-	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
-	<20111017045806.GA11561@elte.hu>
-	<alpine.LFD.2.02.1110171101250.3240@ionos>
-	<20111017184916.GA5545@elte.hu>
-	<4E9C917B.2050802@zytor.com>
-	<20111017211951.GA8043@elte.hu>
-	<4E9C9CAE.9090207@zytor.com>
-	<20111017213958.GA27126@elte.hu>
-	<4E9CA772.4000509@zytor.com>
-Date: Tue, 18 Oct 2011 09:12:20 +0200
-X-Google-Sender-Auth: KHMhYIzt4e1uIo4jgyLFZyJpYNQ
-Message-ID: <CAMuHMdVRV6jx3Lj27U=xmM8QJWAcrKvLH6o1yTWVM1Ag6XkU-Q@mail.gmail.com>
-Subject: Re: Linux 3.1-rc9
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1318872925.4172.81.camel@twins>
+References: <1318872925.4172.81.camel@twins>
+Date: Tue, 18 Oct 2011 09:14:51 +0200
+Message-ID: <CAKfTPtCKjfPJS_Q65GJG+8xG_O8DnPff6O2MUBRsVVzfv-=_5g@mail.gmail.com>
+Subject: Re: Scheduler BOF @ LinuxCon.EU/ELCE
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        rostedt <rostedt@goodmis.org>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 00:08, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/17/2011 02:39 PM, Ingo Molnar wrote:
->>> We can do much better than that with reciprocal multiplication.
->>
->> Yes, 2^64/1e9 is the reciprocal.
+On 17 October 2011 19:35, Peter Zijlstra <peterz@infradead.org> wrote:
+> Hi,
 >
-> What I mean is that it's pretty easy to work it so it doesn't have the
-> errors. Â We have 32*32 = 64 multiplication on all 32-bit platforms I'm
-> 99.9% sure.
+> several people have expressed interest of talking to me about the
+> scheduler during the RTLWS/KS/LinuxCon.EU time-frame. Since I've just
+> about lost track of who all wanted to talk about what and who can and
+> can not make it out to Prague I need help ;-)
+>
 
-I assume you mean "we have in hardware"?
+I will attend the ELCE and I'm interested by scheduler discussion
 
-Is that muldi3?
+> Also, since I'm too dis-organized (and mostly busy) to really arrange
+> something, can someone volunteer to arrange a BOF or cafe with beer to
+> discuss things?
+>
+> The topics I'm most interested in are:
+>
+>  - power optimized load-balancing;
+>    do packing based on cpu utilization
+>    fix the current interface of sched_{mc,ht}_power_savings
 
-$ git ls-files "*muldi3*"
-arch/arm/lib/muldi3.S
-arch/blackfin/lib/muldi3.S
-arch/frv/lib/__muldi3.S
-arch/m68k/lib/muldi3.c
-arch/microblaze/lib/muldi3.c
-arch/sparc/lib/muldi3.S
-$
+I'm also interested
 
-Gr{oetje,eeting}s,
+>
+>  - integration of the cpufreq/idle governors and the scheduler
+>    use the idle guestimate for NO_HZ
+>    use $foo for $prev-topic to reduce double accounting etc.
 
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+I'm also interested
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+>
+>  - what can we do about the cgroup crap and how can we win some
+>   of the performance back;
+>    start with fixing the cgroup enabled but unused case
+>    continue from there..
+>
+>    pjt was rewriting load tracking, do tell us about it
+>        also tell us what the status of ncrao's hackery is,
+>        or does your hackery replace that?
+>
+> Things I specifically do not want to talk about:
+>
+>  - systemd, its shit, go away.
+>
