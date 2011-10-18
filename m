@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab1JRVoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:44:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49911 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab1JRVoT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754426Ab1JRVoT (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Oct 2011 17:44:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49908 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab1JRVoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 17:44:17 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 7/7] perf top tui: Give color hints just on the percentage, like on --stdio
-Date: Tue, 18 Oct 2011 19:44:07 -0200
-Message-Id: <1318974247-6683-8-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/7] perf/core fixes and improvements
+Date: Tue, 18 Oct 2011 19:44:00 -0200
+Message-Id: <1318974247-6683-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1318974247-6683-1-git-send-email-acme@infradead.org>
-References: <1318974247-6683-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+        Please consider pulling from:
 
-And like it was in the old top.
+git://github.com/acmel/linux.git perf/core
 
-Another change so that the familiarity with the old visual is maintained.
+	The TUI now should be much closer to the old 'perf top' stdio
+visual/experience, more on that vein in the next pull req.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ypmyx9p0ah4byqaygrnb09x8@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/hists.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+- Arnaldo
 
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 0eced19..936e641 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -579,6 +579,9 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 		if (!self->b.navkeypressed)
- 			width += 1;
- 
-+		if (!current_entry || !self->b.navkeypressed)
-+			ui_browser__set_color(&self->b, HE_COLORSET_NORMAL);
-+
- 		slsmg_write_nstring(s, width);
- 		++row;
- 		++printed;
--- 
-1.6.2.5
+Arnaldo Carvalho de Melo (7):
+  perf hists browser: Add missing hotkeys to the help window
+  perf tui: Catch signals to exit gracefully
+  perf ui browser: Allow initial use without navigation UI elements
+  perf hists: Don't format the percentage on hist_entry__snprintf
+  perf tui: Remove unneeded call to newtCls on startup
+  perf ui browser: Make the colors configurable and change the defaults
+  perf top tui: Give color hints just on the percentage, like on --stdio
 
+ tools/perf/Documentation/perfconfig.example |   20 ++++
+ tools/perf/util/hist.c                      |   29 ++++--
+ tools/perf/util/hist.h                      |    4 +-
+ tools/perf/util/ui/browser.c                |  127 ++++++++++++++++++++++-----
+ tools/perf/util/ui/browser.h                |    2 +
+ tools/perf/util/ui/browsers/annotate.c      |    6 ++
+ tools/perf/util/ui/browsers/hists.c         |   51 ++++++-----
+ tools/perf/util/ui/setup.c                  |   25 +++++-
+ 8 files changed, 203 insertions(+), 61 deletions(-)
+ create mode 100644 tools/perf/Documentation/perfconfig.example
