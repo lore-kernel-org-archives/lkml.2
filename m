@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab1JRRzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 13:55:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61172 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab1JRRzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 13:55:14 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: davem@davemloft.net, grant.likely@secretlab.ca, sfr@canb.auug.org.au,
-        u.kleine-koenig@pengutronix.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [RESEND] [PATCH] ll_temac: Add support for ethtool
-Date: Tue, 18 Oct 2011 19:55:01 +0200
-Message-Id: <1318960501-3544-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.7
+	id S1751870Ab1JRR4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 13:56:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751368Ab1JRR4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 13:56:04 -0400
+Date: Tue, 18 Oct 2011 19:55:51 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] jump_label_inc may return before the code is patched
+Message-ID: <20111018175551.GH17571@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the ethtool interface. The implementation is done
-using the libphy helper functions.
+If cpu A calls jump_label_inc() just after atomic_add_return() is
+called by cpu B, atomic_inc_not_zero() will return value greater then
+zero and jump_label_inc() will return to a caller before jump_label_update()
+finishes its job on cpu B.
 
-Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/net/ll_temac_main.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
-index 728fe41..91a9804 100644
---- a/drivers/net/ll_temac_main.c
-+++ b/drivers/net/ll_temac_main.c
-@@ -957,6 +957,32 @@ static const struct attribute_group temac_attr_group = {
- 	.attrs = temac_device_attrs,
- };
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index a8ce450..e6f1f24 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_key *key)
+ 		return;
  
-+/* ethtool support */
-+static int temac_get_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-+{
-+	struct temac_local *lp = netdev_priv(ndev);
-+	return phy_ethtool_gset(lp->phy_dev, cmd);
-+}
-+
-+static int temac_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-+{
-+	struct temac_local *lp = netdev_priv(ndev);
-+	return phy_ethtool_sset(lp->phy_dev, cmd);
-+}
-+
-+static int temac_nway_reset(struct net_device *ndev)
-+{
-+	struct temac_local *lp = netdev_priv(ndev);
-+	return phy_start_aneg(lp->phy_dev);
-+}
-+
-+static const struct ethtool_ops temac_ethtool_ops = {
-+	.get_settings = temac_get_settings,
-+	.set_settings = temac_set_settings,
-+	.nway_reset = temac_nway_reset,
-+	.get_link = ethtool_op_get_link,
-+};
-+
- static int __devinit temac_of_probe(struct platform_device *op)
- {
- 	struct device_node *np;
-@@ -978,6 +1004,7 @@ static int __devinit temac_of_probe(struct platform_device *op)
- 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
- 	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
- 	ndev->netdev_ops = &temac_netdev_ops;
-+	ndev->ethtool_ops= &temac_ethtool_ops;
- #if 0
- 	ndev->features |= NETIF_F_IP_CSUM; /* Can checksum TCP/UDP over IPv4. */
- 	ndev->features |= NETIF_F_HW_CSUM; /* Can checksum all the packets. */
--- 
-1.7.7
-
+ 	jump_label_lock();
+-	if (atomic_add_return(1, &key->enabled) == 1)
++	if (atomic_read(&key->enabled) == 0)
+ 		jump_label_update(key, JUMP_LABEL_ENABLE);
++	atomic_inc(&key->enabled);
+ 	jump_label_unlock();
+ }
+ 
+--
+			Gleb.
