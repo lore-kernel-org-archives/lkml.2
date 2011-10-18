@@ -1,109 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1JRBZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:25:04 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53230 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab1JRBZD convert rfc822-to-8bit (ORCPT
+	id S1757075Ab1JRB3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:29:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54036 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab1JRB3A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:25:03 -0400
+	Mon, 17 Oct 2011 21:29:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E9C92C2.6000505@gmail.com>
-References: <20110828131502.GA2580@redhat.com>
-	<4E5FF216.2020207@suse.cz>
-	<CABqxG0c0wiaSXrLKCYc8Ef+uXEwkp=nuG+7-+pLoEEURkkDt=Q@mail.gmail.com>
-	<4E9C92C2.6000505@gmail.com>
-Date: Tue, 18 Oct 2011 09:25:02 +0800
-Message-ID: <CABqxG0cPHVEG5XU9M+eNrgo7nvnhTxL4wHRFdEtpaUjhwcY2Nw@mail.gmail.com>
-Subject: Re: WARNING: at drivers/tty/tty_ldisc.c:766 tty_ldisc_reinit+0x52/0x90()
- [3.0]
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>
+In-Reply-To: <1318868945.23438.145.camel@vkoul-udesk3>
+References: <1318844199-19303-1-git-send-email-Barry.Song@csr.com>
+ <1318859861.23438.137.camel@vkoul-udesk3> <CAGsJ_4y4ZxqmefxXS+2QEtTcq6Jr9+o92pd4enRYQMkG3kZ=ng@mail.gmail.com>
+ <1318868945.23438.145.camel@vkoul-udesk3>
+From: Barry Song <21cnbao@gmail.com>
+Date: Tue, 18 Oct 2011 09:28:39 +0800
+Message-ID: <CAGsJ_4yH2j5=ryMeXfTk-iD2NSN9SAeKzFSXcy4Sa64QZNR4FQ@mail.gmail.com>
+Subject: Re: [PATCH v3] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
+        linux-arm-kernel@lists.infradead.org, Barry Song <Barry.Song@csr.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 4:40 AM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 10/09/2011 08:59 AM, Dave Young wrote:
->> On Fri, Sep 2, 2011 at 4:59 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>> On 08/28/2011 03:15 PM, Dave Jones wrote:
->>>>
->>>> Just saw this on a box that was recieving an rsync while I ssh'd in.
->>>> The ssh session hung.
->>>
->>> Yes, could you apply the attached debug patch and post a dmesg output?
+2011/10/18 Vinod Koul <vinod.koul@intel.com>:
+> On Mon, 2011-10-17 at 22:18 +0800, Barry Song wrote:
+>> 2011/10/17 Vinod Koul <vinod.koul@intel.com>:
+>> >> +
+>> >> +     /* Start the DMA transfer */
+>> >> +     writel_relaxed(sdesc->width, sdma->base + SIRFSOC_DMA_WIDTH_0 + cid * 4);
+>> >> +     writel_relaxed(cid | (schan->mode << SIRFSOC_DMA_MODE_CTRL_BIT) |
+>> >> +             (sdesc->dir << SIRFSOC_DMA_DIR_CTRL_BIT),
+>> >> +             sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_CTRL);
+>> >> +     writel_relaxed(sdesc->xlen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_XLEN);
+>> >> +     writel_relaxed(sdesc->ylen, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_YLEN);
+>> >> +     writel_relaxed(readl_relaxed(sdma->base + SIRFSOC_DMA_INT_EN) | (1 << cid),
+>> >> +             sdma->base + SIRFSOC_DMA_INT_EN);
+>> >> +     writel(sdesc->addr >> 2, sdma->base + cid * 0x10 + SIRFSOC_DMA_CH_ADDR);
+>> >> +
+>> >> +     if (sdesc->cyclic) {
+>> >> +             writel((1 << cid) | 1 << (cid + 16) |
+>> >> +                     readl_relaxed(sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL),
+>> >> +                     sdma->base + SIRFSOC_DMA_CH_LOOP_CTRL);
+>> >> +             schan->happened_cyclic = schan->completed_cyclic = 0;
+>> >> +     }
+>> > any reason why we have mixed use of writel_relaxes and writel?
+>> > Shouldn't all the DMA register writes be done only using writel?
 >>
->> I see this problem as well, the debug patch reports the refcount is 2
+>> Arnd comment this in v2.
+> Yes he certainly did, but for maintainability, it would really help to
+> explain what you are doing here.
+>
+>> >
+>> >> +}
+>> >> +
+>> >> +
+>> >> +static struct dma_async_tx_descriptor *sirfsoc_dma_prep_interleaved(
+>> >> +     struct dma_chan *chan, struct dma_interleaved_template *xt)
+>> >> +{
+>> >> +     struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+>> >> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+>> >> +     struct sirfsoc_dma_desc *sdesc = NULL;
+>> >> +     unsigned long iflags;
+>> >> +     int ret;
+>> >> +
+>> >> +     if ((xt->dir != MEM_TO_DEV) || (xt->dir != DEV_TO_MEM)) {
+>> >> +             ret = -EINVAL;
+>> >> +             goto err_dir;
+>> >> +     }
+>> >> +
+>> >> +     /* Get free descriptor */
+>> >> +     spin_lock_irqsave(&schan->lock, iflags);
+>> >> +     if (!list_empty(&schan->free)) {
+>> >> +             sdesc = list_first_entry(&schan->free, struct sirfsoc_dma_desc,
+>> >> +                     node);
+>> >> +             list_del(&sdesc->node);
+>> >> +     }
+>> >> +     spin_unlock_irqrestore(&schan->lock, iflags);
+>> >> +
+>> >> +     if (!sdesc) {
+>> >> +             /* try to free completed descriptors */
+>> >> +             sirfsoc_dma_process_completed(sdma);
+>> >> +             ret = 0;
+>> >> +             goto no_desc;
+>> >> +     }
+>> >> +
+>> >> +     /* Place descriptor in prepared list */
+>> >> +     spin_lock_irqsave(&schan->lock, iflags);
+>> >> +     if ((xt->frame_size == 1) && (xt->numf > 0)) {
+>> > what does this mean?
+>> >> +             sdesc->cyclic = 0;
+>> >> +             sdesc->xlen = xt->sgl[0].size / 4;
+>> >> +             sdesc->width = (xt->sgl[0].size + xt->sgl[0].icg) / 4;
+>> > whats so magical about 4?
 >>
->> You can produce the WARN as below:
->> in xterm run:
+>> the xlen and dma_width is in 4 byes boundary. xlen =1 means 4 bytes
+>> will be transferred every line.
+> I meant two things
+>  - why magical number 4, CSRXXX_DMA_WITH would have been much better
+>  - same for frame_size as 1
+>
+>> > the error path handling in this function is totally non existent!!
 >>
->> exec 0<>/dev/console 1<>/dev/console 2<>/dev/console
->
-> Thanks for the info. I suppose your console is something where also some
-> getty runs. Then the warning is perfectly OK. And with the hunk below
-> constifying timing, I guess your system dies after the 5s timeout of
-> tty_ldisc_wait_idle. (You don't need to test the patch, just confirm
-> there is a getty running on the console.)
+>> sorry. i must have maken these idiot mistakens due to copying from the
+>> probe of drivers/dma/mpc512x_dma.c.
+>>
+>> >> +
+>> >> +static int __devexit sirfsoc_dma_remove(struct platform_device *op)
+>> >> +{
+>> >> +     struct device *dev = &op->dev;
+>> >> +     struct sirfsoc_dma *sdma = dev_get_drvdata(dev);
+>> >> +
+>> >> +     dma_async_device_unregister(&sdma->dma);
+>> >> +     devm_free_irq(dev, sdma->irq, sdma);
+>> >> +     irq_dispose_mapping(sdma->irq);
+>> > who will free mem allocated in probe?
+>>
+>> also due to copying from drivers/dma/mpc512x_dma.c. sorry.
+> Thanks, I will put these in my todo
 
-I just startx from tty1
+you will find many drivers haven't error handlers in drivers/dma.....
+we have missed while reviewing before.
+people might copy from a same source, then make same mistakens.
 
-bash-4.1$ ps ax|grep getty
- 1626 tty2     Ss+    0:00 /sbin/agetty 38400 tty2 linux
- 1627 tty3     Ss+    0:00 /sbin/agetty 38400 tty3 linux
- 1628 tty4     Ss+    0:00 /sbin/agetty 38400 tty4 linux
- 1629 tty5     Ss+    0:00 /sbin/agetty 38400 tty5 linux
- 1630 tty6     Ss+    0:00 /sbin/agetty 38400 tty6 linux
- 3586 tty1     Ss+    0:00 /sbin/agetty 38400 tty1 linux
- 5928 pts/1    S+     0:00 grep getty
-
-What do you means of "die"? X11 died indeed as I saw.
-
->
-> So actually I'm not sure what we should do there to not die. Perhaps
-> wait infinitely? Because the user wants to steal a terminal?
->
->
-> --- a/drivers/tty/n_tty.c
-> +++ b/drivers/tty/n_tty.c
-> @@ -49,6 +49,7 @@
->  #include <linux/file.h>
->  #include <linux/uaccess.h>
->  #include <linux/module.h>
-> +#include <linux/delay.h>
->
->  #include <asm/system.h>
->
-> @@ -1575,6 +1576,7 @@ static int n_tty_open(struct tty_struct *tty)
->
->        /* These are ugly. Currently a malloc failure here can panic */
->        if (!tty->read_buf) {
-> +               msleep(100);
->                tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
->                if (!tty->read_buf)
->                        return -ENOMEM;
-> @@ -1815,6 +1817,7 @@ do_it_again:
->                        /* FIXME: does n_tty_set_room need locking ? */
->                        n_tty_set_room(tty);
->                        timeout = schedule_timeout(timeout);
-> +                       msleep(20);
->                        BUG_ON(!tty->read_buf);
->                        continue;
->                }
->
->
-> thanks,
-> --
-> js
->
-
-
-
--- 
-Regards
-Dave
+-barry
