@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab1JRAYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 20:24:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46617 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab1JRAYQ convert rfc822-to-8bit (ORCPT
+	id S1756935Ab1JRA1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 20:27:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50371 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab1JRA1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 20:24:16 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "David Rientjes" <rientjes@google.com>
-Cc: "Felipe Balbi" <balbi@ti.com>, "Alan Stern" <stern@rowland.harvard.edu>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re:
- =?utf-8?B?W1BBVENIdjYgMS8zXSB1c2I6IGdhZGdldDogcmVwbGFjZSDigJxpc19kdWE=?=
- =?utf-8?B?bHNwZWVk4oCdIHdpdGgg4oCcbWF4X3NwZWVk4oCd?=
-References: <cover.1318875728.git.mina86@mina86.com>
- <d4b21b6bf1cf87f49c654be3bd85c38dabaced0a.1318875728.git.mina86@mina86.com>
- <alpine.DEB.2.00.1110171629430.13515@chino.kir.corp.google.com>
-Date: Mon, 17 Oct 2011 17:24:12 -0700
+	Mon, 17 Oct 2011 20:27:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=N7quYhr8OfscGwdH2v3uuP86HVIh/KG3RlQYX8g1D/8/zZeoe95B4wFeBk0+xnV3P
+	ewqOKQsMrwwLRND/EKQug==
+Date: Mon, 17 Oct 2011 17:27:42 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mandeep Singh Baines <msb@chromium.org>
+cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: avoid switching to text console if there is no
+ panic timeout
+In-Reply-To: <1318896400-32498-1-git-send-email-msb@chromium.org>
+Message-ID: <alpine.DEB.2.00.1110171727300.13515@chino.kir.corp.google.com>
+References: <1318896400-32498-1-git-send-email-msb@chromium.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v3it2mdj3l0zgt@mpn-glaptop>
-In-Reply-To: <alpine.DEB.2.00.1110171629430.13515@chino.kir.corp.google.com>
-User-Agent: Opera Mail/11.51 (Linux)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011 16:31:15 -0700, David Rientjes <rientjes@google.com> wrote:
+On Mon, 17 Oct 2011, Mandeep Singh Baines wrote:
 
-> On Mon, 17 Oct 2011, Michal Nazarewicz wrote:
->
->> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
->> index c4a6e14..9e3aeb5 100644
->> --- a/Documentation/feature-removal-schedule.txt
->> +++ b/Documentation/feature-removal-schedule.txt
->> @@ -592,3 +592,10 @@ Why:    In 3.0, we can now autodetect internal 3G device and already have
->>  	interface that was used by acer-wmi driver. It will replaced by
->>  	information log when acer-wmi initial.
->>  Who:    Lee, Chun-Yi <jlee@novell.com>
->> +
->> +---------------------------
->> +
->> +What:	is_dualspeed sysfs entry in udc-core.c and ci13xxx_udc.c
->> +When:	3.8
->> +Why:	is_dualspeed is superseded by maximum_speed/max_speed.
->> +Who:	Michal Nazarewicz <mina86@mina86.com>
->
-> Please specify the exact files that are being removed from sysfs, nobody
-> is going to understand what they're losing unless they look at the code.
+> From: Hugh Dickins <hughd@chromium.org>
+> 
+> Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
+> we're going to reboot immediately, the user will not be able to see the
+> messages anyway, and messing with the video mode may display artifacts,
+> and certainly get into several layers of complexity (including mutexes and
+> memory allocations) which we shall be much safer to avoid.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> [ Edited commit message and modified to short-circuit panic_timeout < 0
+>   instead of testing panic_timeout >= 0.  -Mandeep ]
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: dri-devel@lists.freedesktop.org
 
-OK, I'll figure out proper wording and resubmit tomorrow.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Acked-by: David Rientjes <rientjes@google.com>
