@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab1JRRaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 13:30:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55830 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756076Ab1JRRa3 (ORCPT
+	id S933474Ab1JRRgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 13:36:04 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48461 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab1JRRgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 13:30:29 -0400
-Date: Tue, 18 Oct 2011 13:30:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
- interfaces
-In-Reply-To: <201110172327.18954.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1110181318420.1697-100000@iolanthe.rowland.org>
+	Tue, 18 Oct 2011 13:36:03 -0400
+Date: Tue, 18 Oct 2011 18:35:21 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Message-ID: <20111018173521.GF30644@flint.arm.linux.org.uk>
+References: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com> <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com> <20111018074211.GA13483@flint.arm.linux.org.uk> <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com> <20111018094944.GA30644@flint.arm.linux.org.uk> <0CE8B6BE3C4AD74AB97D9D29BD24E55202367258@CORPEXCH1.na.ads.idt.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202367258@CORPEXCH1.na.ads.idt.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011, Rafael J. Wysocki wrote:
-
-> > This requirement remains somewhat tricky.  Can we guarantee it?  It 
-> > comes down to two things.  When an event occurs that will cause a 
-> > program to want to keep the system awake:
+On Tue, Oct 18, 2011 at 10:26:56AM -0700, Bounine, Alexandre wrote:
+> On Tue, Oct 18, 2011 at 5:50 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> > 3. For architectures where there are only 32-bit DMA addresses,
+> > dma_addr_t
+> >    will be a 32-bit type.  For architectures where there are 64-bit DMA
+> >    addresses, it will be a 64-bit type.
 > > 
-> >      A. The event must be capable of interrupting a poll system
-> > 	call.  I don't think it matters whether this interruption
-> > 	takes the form of a signal or of completing the system call.
-> > 
-> >      B. The program must be able to detect, in a non-blocking way, 
-> > 	whether the event has occurred.
-> > 
-> > Of course, any event that adds data to an input queue will be okay.  
-> > But I don't know what other sorts of things we will have to handle.
+> > 4. If RIO can accept 64-bit DMA addresses but is only connected to 32-
+> > bit
+> >    busses, then the top 32 address bits are not usable (it's truncated
+> > in
+> >    hardware.)  So there's no point passing around a 64-bit DMA address.
 > 
-> Well, wakealarms don't do that, for one exaple.  Similarly for WoL through
-> a magic packet AFAICS.  Similarly for "a cable has been plugged in"
-> type of events.
-
-I think we already know how to handle alarms.  For WoL we'd need 
-something else -- a process would have to be notified about each resume 
-and it would have to prevent further suspends until it knew that no 
-more work needed to be done.
-
-I don't know about the "cable has been plugged in" thing.  Is that 
-generally regarded as a wakeup event?  I suspect it usually isn't.
-
-
-> Well, it's not a bad idea in principle and I think it will work, so long
-> as we can ensure that the PM daemon will be the only process using
-> suspend/hibernate interfaces.
+> Existing RapidIO controllers offer an address translation mechanism for
+> inbound RIO requests which will translate RIO address into an address of
+> mapped endpoint's local buffer. Some less-generic endpoints may also use
+> upper address bits for their own implementation specific mapping and this
+> is absolutely legal from the RIO POV. As an example of similar use may be
+> a PCI bus where upper AD lines are used for device selection during PCI
+> configuration cycles.       
 > 
-> Apart from this, steps 1.-3. represent a loop with quite a bit of socket
-> traffic if wakeup events occur relatively often (think someone typing on
-> a keyboard being a wakeup device or moving a mouse being a wakeup device).
+> So RIO addresses of any size are not blindly truncated and cannot be ignored.
 
-The socket traffic is troubling in that it takes time which could be 
-spent at a lower power level.  On the other hand, this traffic occurs 
-only when the processes involved are otherwise idle.  The only 
-alternative seems to involve informing the PM daemon (or the kernel) 
-at every wakeup event.
+See point 3 and point 6.
 
+However, Jassi's suggestion that we redefine dma_addr_t to be 64-bit
+for just the DMA engine code is utterly insane and unworkable.  We
+can't have typedefs which change depending on which bits of code are
+being built, potentially changing the layout of structures being passed
+around inside the kernel.
 
-> > That's another thing we need to think about more carefully.  How 
-> > extravagant do we want to make the wakeup/hibernation interaction?  My 
-> > own feeling is: as little as possible (whatever that amounts to).
-> 
-> I don't agree with that.  In my opinion all system sleep interfaces should
-> be handled.
+> > 6. 32-bit dma_addr_t with 64-bit DMA address space is a problem and is
+> >    probably a bug in itself - the platform should be using a 64-bit
+> >    dma_addr_t in this case.  (see 3.)
 
-I didn't mean it shouldn't be handled.  Just that hibernation should be
-treated, to the extent we can, simply as a rather slow suspend -- not
-specially.
-
-> > Converting the programs that currently use Android's userspace
-> > wakelocks might be somewhat more difficult.  Simply releasing a
-> > wakelock would no longer be sufficient; a program would need to respond
-> > to polls from the PM daemon whenever it was willing to let the system
-> > go to sleep.
-> 
-> I honestly don't think it will be very practical to expect all of the
-> existing Androig applications to be reworked this way ...
-
-Android would probably use a different PM daemon design -- one that
-could directly interact with their existing wakelock stuff.  Then all
-they would need to do is change the implementation of userspace
-wakelocks to communicate with this daemon instead of with the kernel.
-
-Assuming they want to change their current design at all...
-
-Alan Stern
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
