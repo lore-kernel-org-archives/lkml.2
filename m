@@ -1,73 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1JRVOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:14:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45270 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753980Ab1JRVOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 17:14:48 -0400
-Date: Tue, 18 Oct 2011 23:14:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mark Mielke <mark@mark.mielke.cc>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Appropriate use of sync() from user space?
-Message-ID: <20111018211446.GF4599@quack.suse.cz>
-References: <4E8CEECF.4050008@mark.mielke.cc>
+	id S1754215Ab1JRVQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 17:16:50 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:65196 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab1JRVQs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 17:16:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8CEECF.4050008@mark.mielke.cc>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <8E203115BDCF42ACA065296214E5B7A0@usish.com.cn>
+References: <20110702181146.GM23059@one.firstfloor.org> <Pine.LNX.4.44L0.1107021544550.16190-100000@netrider.rowland.org>
+ <CAA9_cmcPhkA5myxeR5aJWBQ=-C3VuG_M9Appp5WyrLoU5fnw2w@mail.gmail.com> <8E203115BDCF42ACA065296214E5B7A0@usish.com.cn>
+From: Ankit Jain <mail@ankitjain.org>
+Date: Wed, 19 Oct 2011 02:46:26 +0530
+X-Google-Sender-Auth: D567RG7-6lTV4VwaTXMu7MImliQ
+Message-ID: <CAD1RLj1SJBPg0F4Dyu_EL05FVm9c7ZZj7_=oRPAdQU4BDUwu5g@mail.gmail.com>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+To: Jack Wang <jack_wang@usish.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Andi Kleen <andi@firstfloor.org>, axboe@kernel.dk,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Dave Jones <davej@redhat.com>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Wed, Jul 20, 2011 at 3:28 PM, Jack Wang <jack_wang@usish.com> wrote:
+>>
+<snip>
+>> On Sat, Jul 2, 2011 at 12:59 PM, Alan Stern <stern@rowland.harvard.edu>
+> wrote:
+>> > On Sat, 2 Jul 2011, Andi Kleen wrote:
+>> >
+>> >> > The problem is that blk_peek_request() calls scsi_prep_fn(), which
+>> >> > does this:
+>> >> >
+>> >> >     struct scsi_device *sdev = q->queuedata;
+>> >> >     int ret = BLKPREP_KILL;
+>> >> >
+>> >> >     if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+>> >> >             ret = scsi_setup_blk_pc_cmnd(sdev, req);
+>> >> >     return scsi_prep_return(q, req, ret);
+>> >> >
+>> >> > It doesn't check to see if sdev is NULL, nor does
+>> >> > scsi_setup_blk_pc_cmnd().  That accounts for this error:
+>> >>
+>> >> I actually added a NULL check in scsi_setup_blk_pc_cmnd early on,
+>> >> but that just caused RCU CPU stalls afterwards and then eventually
+>> >> a hung system.
+>> >
+>> > The RCU problem is likely to be a separate issue.  It might even be a
+>> > result of the use-after-free problem with the elevator.
+>> >
+>> > At any rate, it's clear that the crash in the refcounting log you
+>> > posted occurred because scsi_setup_blk_pc_cmnd() called
+>> > scsi_prep_state_check(), which tried to dereference the NULL pointer.
+>> >
+>> > Would you like to try this patch to see if it fixes the problem?  As I
+>> > said before, I'm not certain it's the best thing to do, but it worked
+>> > on my system.
+>> >
+>> > Alan Stern
+>> >
+>> >
+>> >
+>> >
+>> > Index: usb-3.0/drivers/scsi/scsi_lib.c
+>> > ===================================================================
+>> > --- usb-3.0.orig/drivers/scsi/scsi_lib.c
+>> > +++ usb-3.0/drivers/scsi/scsi_lib.c
+>> > @@ -1247,6 +1247,8 @@ int scsi_prep_fn(struct request_queue *q
+>> >        struct scsi_device *sdev = q->queuedata;
+>> >        int ret = BLKPREP_KILL;
+>> >
+>> > +       if (!sdev)
+>> > +               return ret;
+>> >        if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+>> >                ret = scsi_setup_blk_pc_cmnd(sdev, req);
+>> >        return scsi_prep_return(q, req, ret);
+>> > Index: usb-3.0/drivers/scsi/scsi_sysfs.c
+>> > ===================================================================
+>> > --- usb-3.0.orig/drivers/scsi/scsi_sysfs.c
+>> > +++ usb-3.0/drivers/scsi/scsi_sysfs.c
+>> > @@ -322,6 +322,8 @@ static void scsi_device_dev_release_user
+>> >                kfree(evt);
+>> >        }
+>> >
+>> > +       /* Freeing the queue signals to block that we're done */
+>> > +       scsi_free_queue(sdev->request_queue);
+>> >        blk_put_queue(sdev->request_queue);
+>> >        /* NULL queue means the device can't be used */
+>> >        sdev->request_queue = NULL;
+>> > @@ -936,8 +938,6 @@ void __scsi_remove_device(struct scsi_de
+>> >        /* cause the request function to reject all I/O requests */
+>> >        sdev->request_queue->queuedata = NULL;
+>> >
+>> > -       /* Freeing the queue signals to block that we're done */
+>> > -       scsi_free_queue(sdev->request_queue);
+>> >        put_device(dev);
+>> >  }
+>>
+>> This patch seems to resolve the block/scsi null-ptr de-references in
+>> our libsas/isci environment, we have yet to try James' alternative
+>> [1].  Do we potentially need both?
+>>
+>> Commit 86cbfb56 moved scsi_free_queue to __scsi_remove_device() but it
+>> seems only the "sdev->request_queue->queuedata = NULL" needed to be
+>> moved?
+>>
+>> The conversation appeared to be awaiting test results...
+>>
+>> [1]: http://marc.info/?l=linux-scsi&m=131007155700831&w=2
+>>
+>> --
+>> Dan
+> [Jack Wang]
+> This patch fix kernel panic issue when hot-plut disk during I/O, I test it
+> using pm8001 with 3.0.0-rc6 with above patch.
 
-On Wed 05-10-11 19:57:03, Mark Mielke wrote:
-> Quick summary: We have a vendor who is claiming that it is required
-> for their userspace program to execute sync(), and I am looking for
-> some sort of authoritative document or person to refer them to that
-> will state that this belief is incorrect and/or that this
-> architecture is not acceptable in a Unix environment.
-> 
-> I checked Google and the archives and didn't find anything
-> appropriate. Unfortunately, the word "sync" is very popular. :-)
-> 
-> We have users who have been experiencing 3 to 5 minutes "freezes"
-> for a particular command which often times out and fails. I traced
-> this down from the commercial userspace program (IBM Rational
-> ClearCase / "cleartool mkview") that they are executing to a backend
-> "view_server" process (also IBM Rational ClearCase) that is running
-> sync() as a means of synchronizing their database to disk before
-> proceeding, and VMware using a "large" memory mapped file to back
-> it's virtual "RAM". The sync() for my computer normally completes in
-> 7 to 8 seconds. The sync() for some of our users is taking 5 minutes
-> or longer. This can be demonstrated simply by typing "time sync"
-> from the command line at intervals. The time itself is relevant
-> because if it finishes before a timeout elapses - the operation
-> works (albeit slowly). If the timeout elapses, the operation fails.
-> 
-> The vendor stated that sync() is integral to their synchronization
-> process to ensure all files reach disk before they are accessed, and
-> that this is not a defect in their product. We have a work around -
-> run "sync" before calling their command, and this generally avoids
-> the failures.
-> 
-> I think the use of sync() in this regard is a hack. According to
-> POSIX.1 and the Linux man pages, it seems clear to me that sync()
-> does not guarantee data integrity (bytes guaranteed to have reached
-> disk) - and it also seems clear that forcing all system data to
-> flush out in response to a minor command is over kill. Like cutting
-> down the forest to harvest fruit from a single tree.
-  Actually the manpage is wrong. Linux waits for all data to be safely on
-disk before sync returns. So calling sync is a correct way (although
-inefficient at times) to achieve data integrity. What kernel version are
-you using? Different kernel versions are differently efficient when doing
-sync(2) and quite some effort went to make sync less prone to livelocks in
-recent kernels...
+I don't see this patch in scsi-misc-2.6 or linus' tree. Is there a
+different patch that fixes the
+issue?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+-Ankit
