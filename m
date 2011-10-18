@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab1JRNsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:48:41 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49643 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755195Ab1JRNsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:48:39 -0400
-Date: Tue, 18 Oct 2011 08:48:35 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-Message-ID: <20111018134835.GA16222@sgi.com>
-References: <20111013135032.7c2c54cd.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1110131602020.26553@router.home>
- <20111013142434.4d05cbdc.akpm@linux-foundation.org>
- <20111014122506.GB26737@sgi.com>
- <20111014135055.GA28592@sgi.com>
- <alpine.DEB.2.00.1110140856420.6411@router.home>
- <20111014141921.GC28592@sgi.com>
- <alpine.DEB.2.00.1110140932530.6411@router.home>
- <alpine.DEB.2.00.1110140958550.6411@router.home>
- <20111014161603.GA30561@sgi.com>
+	id S932288Ab1JRNuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:50:50 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:44820 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab1JRNut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 09:50:49 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9D843A.5020001@cam.ac.uk>
+Date: Tue, 18 Oct 2011 14:50:50 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111014161603.GA30561@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 4/7] input/cma3000_d0x: Add CMA3000 spi support
+References: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com> <1318939596-27330-5-git-send-email-ricardo.ribalda@gmail.com> <4E9D7BD2.8090101@cam.ac.uk> <CAPybu_0kxqfo9Lx9V_oOXfBjOG2dnR0NLCV6=PM6cnUYmVb_iQ@mail.gmail.com>
+In-Reply-To: <CAPybu_0kxqfo9Lx9V_oOXfBjOG2dnR0NLCV6=PM6cnUYmVb_iQ@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 11:16:03AM -0500, Dimitri Sivanich wrote:
-> On Fri, Oct 14, 2011 at 10:18:24AM -0500, Christoph Lameter wrote:
-> > Also the whole thing could be optimized by concentrating updates to the
-> > vm_stat array at one point in time. If any local per cpu differential
-> > overflows then update all the counters in the same cacheline for which we have per cpu
-> > differentials.
-> > 
-> > That will defer another acquisition of the cacheline for the next delta
-> > overflowing. After an update all the per cpu differentials would be zero.
-> > 
-> > This could be added to zone_page_state_add....
-> > 
-> > 
-> > Something like this patch? (Restriction of the updates to the same
-> > cacheline missing. Just does everything and the zone_page_state may need
-> > uninlining now)
+On 10/18/11 14:43, Ricardo Ribalda Delgado wrote:
+> Hello Jonathan
 > 
-> This patch doesn't have much, if any, effect, at least in the 46 writer thread
-> case (NR_VM_EVENT_ITEMS-->NR_VM_ZONE_STAT_ITEMS allowed it to boot :) ).
-> I applied this with the change to align vm_stat.
+>   First of all, thanks for your messages :).
 > 
-> So far cache alignment of vm_data and increasing ZVC delta has the greatest
-> effect.
-
-After further testing, substantial increases in ZVC delta along with cache alignment
-of the vm_stat array bring the tmpfs writeback throughput numbers to about where
-they are with vm.overcommit_memory==OVERCOMMIT_NEVER.  I still need to determine how
-high the ZVC delta needs to be to achieve this performance, but it is greater than 125.
-
-Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
-same default behavior as what we currently have?
-
-If the thresholds get set higher, it could be that some values that don't normally have
-as big a delta may not get updated frequently enough.  Should we maybe update all values
-everytime a threshold is hit, as the patch below was intending?
-
-Note that having each counter in a separate cacheline does not have much, if any,
-effect.
-
+>> To make my point about these functions being more complex than needed
+>> in more detail....
+>>
+>> If this were two functions and you drop the zero and 1 mask
+>> (which I'm not convinced make any sense. I've also killed the message.
+>> We both agree it is the wrong way to go, so post a patch fixing the i2c
+>> interface as well.
 > 
-> > 
-> > ---
-> >  include/linux/vmstat.h |   19 ++++++++++++++++---
-> >  mm/vmstat.c            |   10 ++++------
-> >  2 files changed, 20 insertions(+), 9 deletions(-)
-> > 
-> > Index: linux-2.6/include/linux/vmstat.h
-> > ===================================================================
-> > --- linux-2.6.orig/include/linux/vmstat.h	2011-10-14 09:58:03.000000000 -0500
-> > +++ linux-2.6/include/linux/vmstat.h	2011-10-14 10:08:00.000000000 -0500
-> > @@ -90,10 +90,23 @@ static inline void vm_events_fold_cpu(in
-> >  extern atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
-> > 
-> >  static inline void zone_page_state_add(long x, struct zone *zone,
-> > -				 enum zone_stat_item item)
-> > +				 enum zone_stat_item item, s8 new_value)
-> >  {
-> > -	atomic_long_add(x, &zone->vm_stat[item]);
-> > -	atomic_long_add(x, &vm_stat[item]);
-> > +	enum zone_stat_item i;
-> > +
-> > +	for (i = 0; i < NR_VM_EVENT_ITEMS; i++) {
-> > +		long y;
-> > +
-> > +		if (i == item)
-> > +			y = this_cpu_xchg(zone->pageset->vm_stat_diff[i], new_value) + x;
-> > +		else
-> > +			y = this_cpu_xchg(zone->pageset->vm_stat_diff[i], 0);
-> > +
-> > +		if (y) {
-> > +			atomic_long_add(y, &zone->vm_stat[item]);
-> > +			atomic_long_add(y, &vm_stat[item]);
-> > +		}
-> > +	}
-> >  }
-> > 
-> >  static inline unsigned long global_page_state(enum zone_stat_item item)
-> > Index: linux-2.6/mm/vmstat.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/vmstat.c	2011-10-14 10:04:20.000000000 -0500
-> > +++ linux-2.6/mm/vmstat.c	2011-10-14 10:08:39.000000000 -0500
-> > @@ -221,7 +221,7 @@ void __mod_zone_page_state(struct zone *
-> >  	t = __this_cpu_read(pcp->stat_threshold);
-> > 
-> >  	if (unlikely(x > t || x < -t)) {
-> > -		zone_page_state_add(x, zone, item);
-> > +		zone_page_state_add(x, zone, item, 0);
-> >  		x = 0;
-> >  	}
-> >  	__this_cpu_write(*p, x);
-> > @@ -262,8 +262,7 @@ void __inc_zone_state(struct zone *zone,
-> >  	if (unlikely(v > t)) {
-> >  		s8 overstep = t >> 1;
-> > 
-> > -		zone_page_state_add(v + overstep, zone, item);
-> > -		__this_cpu_write(*p, -overstep);
-> > +		zone_page_state_add(v + overstep, zone, item, -overstep);
-> >  	}
-> >  }
-> > 
-> > @@ -284,8 +283,7 @@ void __dec_zone_state(struct zone *zone,
-> >  	if (unlikely(v < - t)) {
-> >  		s8 overstep = t >> 1;
-> > 
-> > -		zone_page_state_add(v - overstep, zone, item);
-> > -		__this_cpu_write(*p, overstep);
-> > +		zone_page_state_add(v - overstep, zone, item, overstep);
-> >  	}
-> >  }
-> > 
-> > @@ -343,7 +341,7 @@ static inline void mod_state(struct zone
-> >  	} while (this_cpu_cmpxchg(*p, o, n) != o);
-> > 
-> >  	if (z)
-> > -		zone_page_state_add(z, zone, item);
-> > +		zone_page_state_add(z, zone, item, 0);
-> >  }
-> > 
-> >  void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+> Of course your functions are much more simpler and beautiful than the
+> fat one I wrote, no doubt about it :). Just three comments
+> 
+> - Checking the one mask and the zero mask is the only way we have to
+> know if the chip is still there, The absense of that reply should
+> trigger an IO error or at least a retry. As you point out, the
+> zero/one mask is only violated on startup.  I just wanted to make it
+> more risk free, but if you believe it is more clear that way, lets
+> remove it
+It's somewhat unconventional to verify the existence of a chip like this.
+Usually you assume that if it was there once it still is unless there
+is a very good reason to think otherwise.  Worth doing an initial check
+in your spi_probe and indeed verify there against these known bits.
+No need to do it every time though.
+> 
+> - I am not very fun of kmallocing data per write, specially when it is
+> part of the irq handler, and you expect this to be low latency. What
+> about allocating a buffer on init time, and use it with a mutex?
+That's absolutely fine and the right way to do it. You could poke it
+into the cma3000_accl_data then use the cachline aligned magic. Its
+is tiny so I doubt anyone will mind the overhead for the i2c side of
+things.
+> 
+> -I dont like the push error message to the bottom, but that will mean
+> a rewrite of the cma3000 driver, shall I go for it?
+I would. Though probably worth getting Hemanth to say if he minds first
+given it's his driver!
+> 
+> 
+> Thanks again, and  I will post the new version when you reply this :)
+> 
+> 
+
