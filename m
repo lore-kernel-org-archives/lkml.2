@@ -1,163 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1JRVpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:45:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43287 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab1JRVoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 17:44:17 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/7] perf hists: Don't format the percentage on hist_entry__snprintf
-Date: Tue, 18 Oct 2011 19:44:04 -0200
-Message-Id: <1318974247-6683-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1318974247-6683-1-git-send-email-acme@infradead.org>
-References: <1318974247-6683-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754742Ab1JRVyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 17:54:52 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40296 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754362Ab1JRVyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 17:54:49 -0400
+From: Serge Hallyn <serge@hallyn.com>
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
+        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
+        dhowells@redhat.com, eparis@redhat.com,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>, netdev@vger.kernel.org
+Subject: [PATCH 9/9] make net/core/scm.c uid comparisons user namespace aware
+Date: Tue, 18 Oct 2011 21:54:58 +0000
+Message-Id: <1318974898-21431-10-git-send-email-serge@hallyn.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1318974898-21431-1-git-send-email-serge@hallyn.com>
+References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
 
-We can't have color correctly set there because in libslang (and in a future
-GUI) the colors must be set on a separate function call, so move that part to a
-separate function and make the stdio fprintf function call it.
+Currently uids are compared without regard for the user namespace.
+Fix that to prevent tasks in a different user namespace from
+wrongly matching on SCM_CREDENTIALS.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-jpgy42438ce9tgbqppm397lq@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+In the past, either your uids had to match, or you had to have
+CAP_SETXID.  In a namespaced world, you must either (both be in the
+same user namespace and have your uids match), or you must have
+CAP_SETXID targeted at the other user namespace.  The latter can
+happen for instance if uid 500 created a new user namespace and
+now interacts with uid 0 in it.
+
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: netdev@vger.kernel.org
 ---
- tools/perf/util/hist.c              |   29 ++++++++++++++++++++---------
- tools/perf/util/hist.h              |    4 +---
- tools/perf/util/ui/browsers/hists.c |    7 ++++---
- 3 files changed, 25 insertions(+), 15 deletions(-)
+ net/core/scm.c |   41 ++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 34 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 48da373..8d15e9f 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -707,12 +707,11 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
- 	}
- }
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 811b53f..4f376bf 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -43,17 +43,44 @@
+  *	setu(g)id.
+  */
  
--int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
--			 struct hists *hists, struct hists *pair_hists,
--			 bool show_displacement, long displacement,
--			 bool color, u64 session_total)
-+static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
-+				     size_t size, struct hists *pair_hists,
-+				     bool show_displacement, long displacement,
-+				     bool color, u64 session_total)
- {
--	struct sort_entry *se;
- 	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
- 	u64 nr_events;
- 	const char *sep = symbol_conf.field_sep;
-@@ -818,12 +817,22 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
- 		}
- 	}
- 
-+	return ret;
+-static __inline__ int scm_check_creds(struct ucred *creds)
++static __inline__ bool uidequiv(const struct cred *src, struct ucred *tgt,
++			       struct user_namespace *ns)
++{
++	if (src->user_ns != ns)
++		goto check_capable;
++	if (src->uid == tgt->uid || src->euid == tgt->uid ||
++	    src->suid == tgt->uid)
++		return true;
++check_capable:
++	if (ns_capable(ns, CAP_SETUID))
++		return true;
++	return false;
 +}
 +
-+int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
-+			 struct hists *hists)
++static __inline__ bool gidequiv(const struct cred *src, struct ucred *tgt,
++			       struct user_namespace *ns)
 +{
-+	const char *sep = symbol_conf.field_sep;
-+	struct sort_entry *se;
-+	int ret = 0;
++	if (src->user_ns != ns)
++		goto check_capable;
++	if (src->gid == tgt->gid || src->egid == tgt->gid ||
++	    src->sgid == tgt->gid)
++		return true;
++check_capable:
++	if (ns_capable(ns, CAP_SETGID))
++		return true;
++	return false;
++}
 +
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
- 		if (se->elide)
- 			continue;
- 
- 		ret += snprintf(s + ret, size - ret, "%s", sep ?: "  ");
--		ret += se->se_snprintf(self, s + ret, size - ret,
-+		ret += se->se_snprintf(he, s + ret, size - ret,
- 				       hists__col_len(hists, se->se_width_idx));
- 	}
- 
-@@ -835,13 +844,15 @@ int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
- 			long displacement, FILE *fp, u64 session_total)
++static __inline__ int scm_check_creds(struct ucred *creds, struct socket *sock)
  {
- 	char bf[512];
-+	int ret;
+ 	const struct cred *cred = current_cred();
++	struct user_namespace *ns = sock_net(sock->sk)->user_ns;
  
- 	if (size == 0 || size > sizeof(bf))
- 		size = sizeof(bf);
- 
--	hist_entry__snprintf(he, bf, size, hists, pair_hists,
--			     show_displacement, displacement,
--			     true, session_total);
-+	ret = hist_entry__pcnt_snprintf(he, bf, size, pair_hists,
-+					show_displacement, displacement,
-+					true, session_total);
-+	hist_entry__snprintf(he, bf + ret, size - ret, hists);
- 	return fprintf(fp, "%s\n", bf);
+-	if ((creds->pid == task_tgid_vnr(current) || capable(CAP_SYS_ADMIN)) &&
+-	    ((creds->uid == cred->uid   || creds->uid == cred->euid ||
+-	      creds->uid == cred->suid) || capable(CAP_SETUID)) &&
+-	    ((creds->gid == cred->gid   || creds->gid == cred->egid ||
+-	      creds->gid == cred->sgid) || capable(CAP_SETGID))) {
++	if ((creds->pid == task_tgid_vnr(current) || ns_capable(ns, CAP_SYS_ADMIN)) &&
++	     uidequiv(cred, creds, ns) && gidequiv(cred, creds, ns)) {
+ 	       return 0;
+ 	}
++
+ 	return -EPERM;
  }
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index ea96c1c..f338cb0 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -68,9 +68,7 @@ int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
- 			struct hists *pair_hists, bool show_displacement,
- 			long displacement, FILE *fp, u64 session_total);
- int hist_entry__snprintf(struct hist_entry *self, char *bf, size_t size,
--			 struct hists *hists, struct hists *pair_hists,
--			 bool show_displacement, long displacement,
--			 bool color, u64 total);
-+			 struct hists *hists);
- void hist_entry__free(struct hist_entry *);
+@@ -169,7 +196,7 @@ int __scm_send(struct socket *sock, struct msghdr *msg, struct scm_cookie *p)
+ 			if (cmsg->cmsg_len != CMSG_LEN(sizeof(struct ucred)))
+ 				goto error;
+ 			memcpy(&p->creds, CMSG_DATA(cmsg), sizeof(struct ucred));
+-			err = scm_check_creds(&p->creds);
++			err = scm_check_creds(&p->creds, sock);
+ 			if (err)
+ 				goto error;
  
- void hists__output_resort(struct hists *self);
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 2d390b9..0eced19 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -547,7 +547,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 	char s[256];
- 	double percent;
- 	int printed = 0;
--	int width = self->b.width;
-+	int width = self->b.width - 6; /* The percentage */
- 	char folded_sign = ' ';
- 	bool current_entry = ui_browser__is_current_entry(&self->b, row);
- 	off_t row_offset = entry->row_offset;
-@@ -563,8 +563,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 	}
- 
- 	if (row_offset == 0) {
--		hist_entry__snprintf(entry, s, sizeof(s), self->hists, NULL, false,
--				     0, false, self->hists->stats.total_period);
-+		hist_entry__snprintf(entry, s, sizeof(s), self->hists);
- 		percent = (entry->period * 100.0) / self->hists->stats.total_period;
- 
- 		ui_browser__set_percent_color(&self->b, percent, current_entry);
-@@ -574,6 +573,8 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 			width -= 2;
- 		}
- 
-+		slsmg_printf(" %5.2f%%", percent);
-+
- 		/* The scroll bar isn't being used */
- 		if (!self->b.navkeypressed)
- 			width += 1;
 -- 
-1.6.2.5
+1.7.5.4
 
