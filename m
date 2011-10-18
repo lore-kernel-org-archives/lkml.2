@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab1JRIfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:35:18 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:59223 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab1JRIfO (ORCPT
+	id S932081Ab1JRIhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:37:00 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:25035 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab1JRIg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:35:14 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E9D3A45.1040103@cam.ac.uk>
-Date: Tue, 18 Oct 2011 09:35:17 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
-        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
-        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] input/cma3000_d0x: Keep configuration on poweroff
-References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com> <1318926486-10330-4-git-send-email-ricardo.ribalda@gmail.com>
-In-Reply-To: <1318926486-10330-4-git-send-email-ricardo.ribalda@gmail.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Oct 2011 04:36:58 -0400
+X-IronPort-AV: E=Sophos;i="4.69,364,1315180800"; 
+   d="scan'208";a="8437877"
+Subject: Re: [PATCH] Fix guest memory leak and panic
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Krishna Kumar <krkumar2@in.ibm.com>
+CC: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "mst@redhat.com" <mst@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Date: Tue, 18 Oct 2011 09:36:56 +0100
+In-Reply-To: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
+References: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1318927016.16132.49.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/11 09:28, Ricardo Ribalda Delgado wrote:
-> When the device goes to poweroff keep the spi/i2c configuration.
-> Otherwhise the device could not wake up if it was in spi mode.
-> 
-Run checkpatch.pl over these
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
->  drivers/input/misc/cma3000_d0x.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
-> index 9899742..15577b7 100644
-> --- a/drivers/input/misc/cma3000_d0x.c
-> +++ b/drivers/input/misc/cma3000_d0x.c
-> @@ -44,6 +44,7 @@
->  #define CMA3000_RANGE2G    (1 << 7)
->  #define CMA3000_RANGE8G    (0 << 7)
->  #define CMA3000_BUSI2C     (0 << 4)
-> +#define CMA3000_BUSSPI     (1 << 4)
->  #define CMA3000_MODEMASK   (7 << 1)
->  #define CMA3000_GRANGEMASK (1 << 7)
->  
-> @@ -230,8 +231,11 @@ static int cma3000_poweron(struct cma3000_accl_data *data)
->  static int cma3000_poweroff(struct cma3000_accl_data *data)
->  {
->  	int ret;
-> +	u8 ctrl = CMAMODE_POFF;
->  
-> -	ret = CMA3000_SET(data, CMA3000_CTRL, CMAMODE_POFF, "Mode setting");
-> +	ctrl |= data->bus_ops->ctrl_mod;
-> +
-> +	ret = CMA3000_SET(data, CMA3000_CTRL , ctrl, "Mode setting");
-no space before comma.
->  	msleep(CMA3000_SETDELAY);
->  
->  	return ret;
+On Tue, 2011-10-18 at 09:05 +0100, Krishna Kumar wrote:
+> The extra reference to the fragment pages causes those pages to
+> not get freed in skb_release_data(). The following patch fixes
+> the bug. I have not checked if any other converted driver has
+> the same issue.
+
+Damn. You are completely correct and I appear to have made this same
+mistake several times. A quick look suggests that at least cxbg,
+myriage, vmxnet, cassini and bnx2 may potentially have a similar
+issue :-( (I stopped looking at that point, I'll obviously do a full
+audit).
+
+I considered quite carefully whether (__)skb_frag_set_page should take a
+reference or not and decided yes but I'm starting to reconsider whether
+I made the right choice. It seems that is just confusing and violates
+the principal of least surprise to have a function called "set" take a
+new reference. In reality all existing drivers expect that adding a page
+to an SKB frag will just take over the existing reference.
+
+I think the best thing might be to remove the additional ref taking from
+the setter function and audit the previous changes to ensure they
+conform. I'll do that right away and post a fixup patch ASAP.
+
+> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+
+This change is correct as things stand today, so:
+
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
+but perhaps it would be better to hold off and let me fix all of these
+all at once.
+
+Thanks for bringing this to my attention Krishna.
+
+Ian.
+
 
