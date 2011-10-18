@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab1JRMH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:07:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44336 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab1JRMH4 convert rfc822-to-8bit (ORCPT
+	id S932379Ab1JRMIu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:08:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33261 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932290Ab1JRMIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:07:56 -0400
+	Tue, 18 Oct 2011 08:08:48 -0400
+Date: Tue, 18 Oct 2011 13:08:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v4 3/7] ASoC: da7210: Add support for mute
+ and zero cross controls
+Message-ID: <20111018120841.GA28501@opensource.wolfsonmicro.com>
+References: <1318670595.613.42.camel@matrix>
+ <20111017214242.GD5200@opensource.wolfsonmicro.com>
+ <1318938548.13721.23.camel@matrix>
 MIME-Version: 1.0
-In-Reply-To: <4E9D3A45.1040103@cam.ac.uk>
-References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com>
- <1318926486-10330-4-git-send-email-ricardo.ribalda@gmail.com> <4E9D3A45.1040103@cam.ac.uk>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 18 Oct 2011 14:07:15 +0200
-Message-ID: <CAPybu_1JsTTOn5wP53Qd-jm+JhgwUTLhRb4BPjKaMab6174CNQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] input/cma3000_d0x: Keep configuration on poweroff
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
-        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
-        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318938548.13721.23.camel@matrix>
+X-Cookie: Avoid gunfire in the bathroom tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 10:35, Jonathan Cameron <jic23@cam.ac.uk> wrote:
-> On 10/18/11 09:28, Ricardo Ribalda Delgado wrote:
->> When the device goes to poweroff keep the spi/i2c configuration.
->> Otherwhise the device could not wake up if it was in spi mode.
->>
-> Run checkpatch.pl over these
->> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+On Tue, Oct 18, 2011 at 05:19:08PM +0530, Ashish Chavan wrote:
 
-I did :(
+> 	SOC_DOUBLE_R("Mic Capture Switch", ...),
+> 	SOC_SINGLE("Aux2 Capture Switch", ...),
 
-ricardo@newpili:~/hacking/linux$ scripts/checkpatch.pl
-cmr_patches/v1/0003-input-cma3000_d0x-Keep-configuration-on-poweroff.patch
-total: 0 errors, 0 warnings, 19 lines checked
+> Now I have realized that this may cause a naming conflict with my
+> "mic_aux_inpga" patch, which I am going to submit after DAPM issues get
+> sorted. In "mic aux inpga" patch there are controls for Mic and Aux2
+> volume control,
 
-cmr_patches/v1/0003-input-cma3000_d0x-Keep-configuration-on-poweroff.patch
-has no obvious style problems and is ready for submission.
+> 	SOC_DOUBLE_R_TLV("Mic Capture Volume", ...),
+> 	SOC_SINGLE_TLV("Aux2 Capture Volume", ...),
 
-But I fix that right away
+> As per my view, "Mic Capture Volume" is correct name for Mic volume
+> control and we need to change name for Mic mute control. Do you agree?
+> If yes, any suggestion for the name of Mic mute control?
 
-
->> ---
->>  drivers/input/misc/cma3000_d0x.c |    6 +++++-
->>  1 files changed, 5 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
->> index 9899742..15577b7 100644
->> --- a/drivers/input/misc/cma3000_d0x.c
->> +++ b/drivers/input/misc/cma3000_d0x.c
->> @@ -44,6 +44,7 @@
->>  #define CMA3000_RANGE2G    (1 << 7)
->>  #define CMA3000_RANGE8G    (0 << 7)
->>  #define CMA3000_BUSI2C     (0 << 4)
->> +#define CMA3000_BUSSPI     (1 << 4)
->>  #define CMA3000_MODEMASK   (7 << 1)
->>  #define CMA3000_GRANGEMASK (1 << 7)
->>
->> @@ -230,8 +231,11 @@ static int cma3000_poweron(struct cma3000_accl_data *data)
->>  static int cma3000_poweroff(struct cma3000_accl_data *data)
->>  {
->>       int ret;
->> +     u8 ctrl = CMAMODE_POFF;
->>
->> -     ret = CMA3000_SET(data, CMA3000_CTRL, CMAMODE_POFF, "Mode setting");
->> +     ctrl |= data->bus_ops->ctrl_mod;
->> +
->> +     ret = CMA3000_SET(data, CMA3000_CTRL , ctrl, "Mode setting");
-> no space before comma.
->>       msleep(CMA3000_SETDELAY);
->>
->>       return ret;
->
->
-
-
-
--- 
-Ricardo Ribalda
+I don't see any conflict in the above?
