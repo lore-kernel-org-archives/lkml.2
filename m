@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1JRSlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:41:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11053 "EHLO mx1.redhat.com"
+	id S1752608Ab1JRSmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:42:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21737 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509Ab1JRSli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:41:38 -0400
-Message-ID: <4E9DC85F.3080507@redhat.com>
-Date: Tue, 18 Oct 2011 13:41:35 -0500
-From: David Smith <dsmith@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Subject: [RFC PATCH] Tracepoint: add exec tracepoint
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752363Ab1JRSmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 14:42:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="64438275"
+Subject: Re: 3.1.0-rc9+ : wlan stops working w/o any error messages
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: werner <w.landgraf@ru.ru>, David Rientjes <rientjes@google.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <201110181957.49894.toralf.foerster@gmx.de>
+References: <201110152119.58509.toralf.foerster@gmx.de>
+	 <201110181847.02971.toralf.foerster@gmx.de>
+	 <1318958013.25023.16.camel@wwguy-ubuntu>
+	 <201110181957.49894.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 10:51:43 -0700
+Message-ID: <1318960303.31823.34.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added general purpose exec tracepoint.  The 'bprm' argument gives details of the exec.
+On Tue, 2011-10-18 at 10:57 -0700, Toralf Förster wrote:
+> wwguy wrote at 19:13:33
+> > hmm, something broken there, it should be in the .config file, what tree
+> > you are using?
+> > 
+> tfoerste@n22 ~/devel/linux $ git describe
+> v3.1-rc10
+> tfoerste@n22 ~/devel/linux $ grep -B2 url .git/config 
+> [remote "origin"]
+>         fetch = +refs/heads/*:refs/remotes/origin/*
+>         url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> --
+>         merge = refs/heads/master
+> [remote "remote_stable"]
+>         url = git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-
+> stable.git
+> 
+> 
+> 
+you did not enable MAC80211_DEBUGFS
 
-Signed-off-by: David Smith <dsmith@redhat.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
----
- fs/exec.c                    |    6 +++++-
- include/trace/events/sched.h |   22 ++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 1 deletions(-)
+Wey
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 25dcbe5..fdb1686 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -61,6 +61,8 @@
- #include <asm/tlb.h>
- #include "internal.h"
- 
-+#include <trace/events/sched.h>
-+
- int core_uses_pid;
- char core_pattern[CORENAME_MAX_SIZE] = "core";
- unsigned int core_pipe_limit;
-@@ -1401,9 +1403,11 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			 */
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
--				if (depth == 0)
-+				if (depth == 0) {
-+					trace_sched_process_exec(bprm);
- 					ptrace_event(PTRACE_EVENT_EXEC,
- 							old_pid);
-+				}
- 				put_binfmt(fmt);
- 				allow_write_access(bprm->file);
- 				if (bprm->file)
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index f633478..3054a97 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -275,6 +275,28 @@ TRACE_EVENT(sched_process_fork,
- );
- 
- /*
-+ * Tracepoint for exec:
-+ */
-+TRACE_EVENT(sched_process_exec,
-+
-+	TP_PROTO(struct linux_binprm *bprm),
-+
-+	TP_ARGS(bprm),
-+
-+	TP_STRUCT__entry(
-+		__string(	filename,	bprm->filename	)
-+		__field(	pid_t,		pid		)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(filename, bprm->filename);
-+		__entry->pid	= current->pid;
-+	),
-+
-+	TP_printk("filename=%s pid=%d", __get_str(filename), __entry->pid)
-+);
-+
-+/*
-  * XXX the below sched_stat tracepoints only apply to SCHED_OTHER/BATCH/IDLE
-  *     adding sched_stat support to SCHED_FIFO/RR would be welcome.
-  */
