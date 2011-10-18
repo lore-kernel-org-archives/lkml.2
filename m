@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab1JRBd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:33:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24418 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757052Ab1JRBd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:33:27 -0400
-Date: Mon, 17 Oct 2011 21:33:20 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] Update email address for stable patch submission
-Message-ID: <20111018013320.GR1165@zod.bos.redhat.com>
-References: <20111018011638.GQ1165@zod.bos.redhat.com>
- <alpine.DEB.2.00.1110171826450.13515@chino.kir.corp.google.com>
+	id S1757139Ab1JRBea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:34:30 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53348 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab1JRBe3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 21:34:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110171826450.13515@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1318896400-32498-1-git-send-email-msb@chromium.org>
+References: <1318896400-32498-1-git-send-email-msb@chromium.org>
+From: =?ISO-8859-1?Q?St=E9phane_Marchesin?= 
+	<stephane.marchesin@gmail.com>
+Date: Mon, 17 Oct 2011 18:33:47 -0700
+Message-ID: <CACP_E+JCeXpuZe+2UCFiCUCdaS5zvpfT2ChCLf9Arw0av9g=eg@mail.gmail.com>
+Subject: Re: [PATCH] drm: avoid switching to text console if there is no panic timeout
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
+        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 06:28:57PM -0700, David Rientjes wrote:
-> On Mon, 17 Oct 2011, Josh Boyer wrote:
-> 
-> > The stable@kernel.org email address has been replaced with the
-> > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-> > reference the new list instead of the semi-defunct email alias.
-> > 
-> > CC: <stable@kernel.org>
-> > CC: <stable@vger.kernel.org>
-> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> > 
-> 
-> Hmm, is stable@vger.kernel.org a replacement for stable@kernel.org or is 
-> it just temporary until kernel.org is fully back to life?
+On Mon, Oct 17, 2011 at 17:06, Mandeep Singh Baines <msb@chromium.org> wrote:
+> From: Hugh Dickins <hughd@chromium.org>
+>
+> Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
+> we're going to reboot immediately, the user will not be able to see the
+> messages anyway, and messing with the video mode may display artifacts,
+> and certainly get into several layers of complexity (including mutexes and
+> memory allocations) which we shall be much safer to avoid.
+>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> [ Edited commit message and modified to short-circuit panic_timeout < 0
+>  instead of testing panic_timeout >= 0.  -Mandeep ]
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 
-To my understanding, stable@kernel.org is now just a forward to
-stable@vger.kernel.org.  However, John mentioned that due to some
-configuration issues the vger list might be dropping things from
-stable@kernel.org on the floor.  So it's not working in a useful way at
-the moment, and from what I can tell patches that need to be backported
-and submitted to stable are kind of difficult to get in because of this.
+Acked-by: Stéphane Marchesin <marcheu@chromium.org>
 
-Personally, I'd rather see the vger list take over entirely.  However,
-that decision will remain in the more than capable hands of the admins.
-
-josh
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: dri-devel@lists.freedesktop.org
+> ---
+>  drivers/gpu/drm/drm_fb_helper.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+> index f7c6854..0e62c93 100644
+> --- a/drivers/gpu/drm/drm_fb_helper.c
+> +++ b/drivers/gpu/drm/drm_fb_helper.c
+> @@ -254,6 +254,13 @@ bool drm_fb_helper_force_kernel_mode(void)
+>  int drm_fb_helper_panic(struct notifier_block *n, unsigned long ununsed,
+>                        void *panic_str)
+>  {
+> +       /*
+> +        * It's a waste of time and effort to switch back to text console
+> +        * if the kernel should reboot before panic messages can be seen.
+> +        */
+> +       if (panic_timeout < 0)
+> +               return 0;
+> +
+>        printk(KERN_ERR "panic occurred, switching back to text console\n");
+>        return drm_fb_helper_force_kernel_mode();
+>  }
+> --
+> 1.7.3.1
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
