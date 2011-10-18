@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab1JRBMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:12:02 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:54890 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751498Ab1JRBMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:12:00 -0400
-X-Sasl-enc: 6YDehgtuNPxRsaGL8gjk9t8jRH1bYB7jgB671NaVrCTH 1318900319
-Date: Mon, 17 Oct 2011 23:11:56 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@amd64.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for
- microcode update in Xen dom0
-Message-ID: <20111018011156.GA20291@khazad-dum.debian.net>
-References: <4E95E7FE.6050302@goop.org>
- <20111012194543.GD14966@aftab>
- <20111012204048.GA22260@phenom.oracle.com>
- <4E960746.90805@zytor.com>
- <20111012214013.GD28723@aftab>
- <4E96198F.4030906@zytor.com>
- <20111013073352.GB501@aftab>
- <20111013095708.GA1862@aftab>
- <20111017170854.GE19756@phenom.dumpdata.com>
- <4E9C6886.20600@zytor.com>
+	id S1756958Ab1JRBQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:16:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020Ab1JRBQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 21:16:46 -0400
+Date: Mon, 17 Oct 2011 21:16:39 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Greg Kroah-Hartman <greg@kroah.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] Update email address for stable patch submission
+Message-ID: <20111018011638.GQ1165@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E9C6886.20600@zytor.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011, H. Peter Anvin wrote:
-> On 10/17/2011 10:08 AM, Konrad Rzeszutek Wilk wrote:
-> > <scratches his head>
-> > You are still using the microcode API (the existing one) to
-> > program the CPUs right? It is just that you are fetching the images
-> > much much earlier than it currently is done?
-> > 
-> 
-> No, the goal is to ditch the existing API and load the CPUs very early
-> in the start path.
+The stable@kernel.org email address has been replaced with the
+stable@vger.kernel.org mailing list.  Change the stable kernel rules to
+reference the new list instead of the semi-defunct email alias.
 
-And how do we apply new microcode at runtime?  A new API?
+CC: <stable@kernel.org>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+---
+
+diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
+index e213f45..21fd05c 100644
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -24,10 +24,10 @@ Rules on what kind of patches are accepted, and which ones are not, into the
+ Procedure for submitting patches to the -stable tree:
+ 
+  - Send the patch, after verifying that it follows the above rules, to
+-   stable@kernel.org.  You must note the upstream commit ID in the changelog
+-   of your submission.
++   stable@vger.kernel.org.  You must note the upstream commit ID in the
++   changelog of your submission.
+  - To have the patch automatically included in the stable tree, add the tag
+-     Cc: stable@kernel.org
++     Cc: stable@vger.kernel.org
+    in the sign-off area. Once the patch is merged it will be applied to
+    the stable tree without anything else needing to be done by the author
+    or subsystem maintainer.
+@@ -35,10 +35,10 @@ Procedure for submitting patches to the -stable tree:
+    cherry-picked than this can be specified in the following format in
+    the sign-off area:
+ 
+-     Cc: <stable@kernel.org> # .32.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@kernel.org> # .32.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@kernel.org> # .32.x
++     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
++     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
++     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
++     Cc: <stable@vger.kernel.org> # .32.x
+     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ 
+    The tag sequence has the meaning of:
