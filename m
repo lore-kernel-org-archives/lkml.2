@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab1JRBnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:43:35 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60747 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab1JRBnd convert rfc822-to-8bit (ORCPT
+	id S1757193Ab1JRBnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:43:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60366 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757143Ab1JRBnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:43:33 -0400
+	Mon, 17 Oct 2011 21:43:45 -0400
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20111017232547.GB2559@opensource.wolfsonmicro.com>
-References: <1318826212.12989.2.camel@phoenix> <20111017232547.GB2559@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 18 Oct 2011 09:43:12 +0800
-Message-ID: <CAF+7xWkaQbfdOJ8_zWeyzctX4Ses64BtK7nHz4ubkLp1P_bV5g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: wm9081: Use snd_soc_update_bits for read-modify-write
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+In-Reply-To: <alpine.DEB.2.00.1110171832060.13515@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1110171752300.19024@chino.kir.corp.google.com>
+ <CA+55aFxj+heCCoQx0ecVyCE0b5e3fGpAUPSUH8K7E=TyRzNSUg@mail.gmail.com> <alpine.DEB.2.00.1110171832060.13515@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 17 Oct 2011 18:43:24 -0700
+X-Google-Sender-Auth: MB8MMtPFm7kJx1vNhBCt1oyARWU
+Message-ID: <CA+55aFzc5TbNGVAnp42BywWe8_=k8o98-DPnLhzrgN2DMWpbdg@mail.gmail.com>
+Subject: Re: [patch] Avoid using hardcoded values in kernel/sys.c
+To: David Rientjes <rientjes@google.com>
+Cc: Henrik Grindal Bakken <henribak@cisco.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/18 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Mon, Oct 17, 2011 at 12:36:52PM +0800, Axel Lin wrote:
->> Use snd_soc_update_bits for read-modify-write register access instead of
->> open-coding it using snd_soc_read and snd_soc_write
+On Mon, Oct 17, 2011 at 6:33 PM, David Rientjes <rientjes@google.com> wrote:
 >
-> Something in here is breaking audio through the WM9081 on Speyside.  I
-> can't immediately spot anything wrong but the behaviour is quite obvious
-> in the system.
->
-hi Mark,
-Thanks for testing.
-I think the suspect part is here:
+> Right, I meant to pass the struct in and use sizeof(release->name), but I
+> was under the impression that wouldn't count as a variable length array or
+> be compiled as such by ISO99 standards because it's a constant expression
+> (as the standard says is not variable length).
 
-                        /* VMID 2*4k; Soft VMID ramp enable */
--                       reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--                       reg |= WM9081_VMID_RAMP | 0x6;
--                       snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
--
-+                       snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+                                           WM9081_VMID_RAMP | 0x6,
-+                                           WM9081_VMID_RAMP | 0x6);
-                        mdelay(100);
+Yes, if it really were a constant expression of a valid length, that
+would be fine. Passing in the struct itself would work, and then you
+could do a sizeof of the array, instead of of the pointer to the
+character array..
 
-                        /* Normal bias enable & soft start off */
--                       reg |= WM9081_BIAS_ENA;
--                       reg &= ~WM9081_VMID_RAMP;
--                       snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+                       snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+                                           WM9081_VMID_RAMP | WM9081_BIAS_ENA,
-+                                           WM9081_BIAS_ENA);
+Except in this case it won't work. Because sometimes the struct is the
+old one, sometimes it's the new one. So there is no well-defined
+struct pointer to pass in. You can only pass in pointer-to-char and
+the (variable) size.
 
-Original code does not change VMID_SEL[1:0] bits in the second write for
-Normal bias enable & soft start off.
+Which is why it now just hardcodes it to 65, which is the largest
+size. Not exactly "pretty", no. But no worse than using the variable
+length array.
 
-Maybe I should not convert it to snd_soc_update_bits for this case.
+Yeah, there are tricks we could play. For example, we could turn that
+override_release() into a macro that allocates the array in the
+*caller*, where the length is known at compile time, and then pass in
+that temporary pointer too. I considered it, but it seemed to be too
+much work for too trivial a case. It's not like there are all that
+many definitions of utsname, and they are all in <linux/utsname.h>.
+It's unlikely that we'd ever add any bigger cases, but if we do, we'd
+need to update the constant.
 
-Regards,
-Axel
+                        Linus
