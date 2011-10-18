@@ -1,215 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404Ab1JRR0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 13:26:46 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42028 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab1JRR0o convert rfc822-to-8bit (ORCPT
+	id S933449Ab1JRR12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 13:27:28 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:38709 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932570Ab1JRR11 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 13:26:44 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Mel Gorman" <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
- <20111018122109.GB6660@csn.ul.ie>
-Date: Tue, 18 Oct 2011 10:26:37 -0700
+	Tue, 18 Oct 2011 13:27:27 -0400
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v3j5ent03l0zgt@mpn-glaptop>
-In-Reply-To: <20111018122109.GB6660@csn.ul.ie>
-User-Agent: Opera Mail/11.51 (Linux)
+Subject: RE: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Date: Tue, 18 Oct 2011 10:26:56 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202367258@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20111018094944.GA30644@flint.arm.linux.org.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Thread-Index: AcyNe2r7U6sGU4TwQY+4x5hxJZXhcQAMmSdQ
+References: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com> <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com> <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com> <20111018074211.GA13483@flint.arm.linux.org.uk> <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com> <20111018094944.GA30644@flint.arm.linux.org.uk>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Russell King <rmk@arm.linux.org.uk>,
+        Jassi Brar <jaswinder.singh@linaro.org>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011 05:21:09 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
+On Tue, Oct 18, 2011 at 5:50 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> 
+> On Tue, Oct 18, 2011 at 02:00:45PM +0530, Jassi Brar wrote:
+> > On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
+> > > On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
+> > >> On 18 October 2011 02:37, Bounine, Alexandre
+> <Alexandre.Bounine@idt.com> wrote:
+> > >> > With item #1 above being a separate topic, I may have a problem
+> with #2
+> > >> > as well: dma_addr_t is sized for the local platform and not
+> guaranteed
+> > >> > to be a 64-bit value (which may be required by a target).
+> > >> > Agree with #3 (if #1 and #2 work).
+> > >> >
+> > >> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
+> > >
+> > > That's just an idiotic suggestion - there's no other way to put
+> that.
+> > > Let's have some sanity here.
+> > >
+> > Yeah, I am not proud of the workaround, so I only probed the option.
+> > I think I need to explain myself.
+> >
+> > The case here is that even a 32-bit RapidIO host could ask transfer
+> against
+> > 64-bit address space on a remote device. And vice versa 64->32.
+> >
+> > > dma_addr_t is the size of a DMA address for the CPU architecture
+> being
+> > > built. �This has no relationship to what any particular DMA engine
+> uses.
+> > >
+> > Yes, so far the dmaengine ever only needed to transfer within
+> platform's
+> > address-space. So the assumption that src and dst addresses could
+> > be contained within dma_addr_t, worked.
+> > If the damengine is to get rid of that assumption/constraint, the
+> memcpy,
+> > slave_sg etc need to accept addresses specified in bigger of the host
+> and
+> > remote address space, and u64 is the safe option.
+> > Ultimately dma_addr_t is either u32 or u64.
+> 
+> Let me spell it out:
+> 
+> 1. Data structures read by the DMA engine hardware should not be
+> defined
+>    using the 'dma_addr_t' type, but one of the [bl]e{8,16,32,64} types,
+>    or at a push the u{8,16,32,64} types if they're always host-endian.
+> 
+>    This helps to ensure that the layout of the structures read by the
+>    hardware are less dependent of the host architecture and each
+> element
+>    is appropriately sized (and, with sparse and the endian-sized types,
+>    can be endian-checked at compile time.)
+> 
+> 2. dma_addr_t is the size of the DMA address for the host architecture.
+>    This may be 32-bit or 64-bit depending on the host architecture.
+> 
+> The following points are my opinion:
+> 
+> 3. For architectures where there are only 32-bit DMA addresses,
+> dma_addr_t
+>    will be a 32-bit type.  For architectures where there are 64-bit DMA
+>    addresses, it will be a 64-bit type.
+> 
+> 4. If RIO can accept 64-bit DMA addresses but is only connected to 32-
+> bit
+>    busses, then the top 32 address bits are not usable (it's truncated
+> in
+>    hardware.)  So there's no point passing around a 64-bit DMA address.
 
-> At this point, I'm going to apologise for not reviewing this a long long
-> time ago.
->
-> On Thu, Oct 06, 2011 at 03:54:42PM +0200, Marek Szyprowski wrote:
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> This commit introduces alloc_contig_freed_pages() function
->> which allocates (ie. removes from buddy system) free pages
->> in range. Caller has to guarantee that all pages in range
->> are in buddy system.
->>
->
-> Straight away, I'm wondering why you didn't use
->
-> mm/compaction.c#isolate_freepages()
->
-> It knows how to isolate pages within ranges. All its control information
-> is passed via struct compact_control() which I recognise may be awkward
-> for CMA but compaction.c know how to manage all the isolated pages and
-> pass them to migrate.c appropriately.
+Existing RapidIO controllers offer an address translation mechanism for
+inbound RIO requests which will translate RIO address into an address of
+mapped endpoint's local buffer. Some less-generic endpoints may also use
+upper address bits for their own implementation specific mapping and this
+is absolutely legal from the RIO POV. As an example of similar use may be
+a PCI bus where upper AD lines are used for device selection during PCI
+configuration cycles.       
 
-It is something to consider.  At first glance, I see that isolate_freepages
-seem to operate on pageblocks which is not desired for CMA.
-
-> I haven't read all the patches yet but isolate_freepages() does break
-> everything up into order-0 pages. This may not be to your liking but it
-> would not be possible to change.
-
-Splitting everything into order-0 pages is desired behaviour.
-
->> Along with this function, a free_contig_pages() function is
->> provided which frees all (or a subset of) pages allocated
->> with alloc_contig_free_pages().
-
-> mm/compaction.c#release_freepages()
-
-It sort of does the same thing but release_freepages() assumes that pages
-that are being freed are not-continuous and they need to be on the lru list.
-With free_contig_pages(), we can assume all pages are continuous.
-
->> +#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
->> +/*
->> + * Both PFNs must be from the same zone!  If this function returns
->> + * true, pfn_to_page(pfn1) + (pfn2 - pfn1) == pfn_to_page(pfn2).
->> + */
->> +static inline bool zone_pfn_same_memmap(unsigned long pfn1, unsigned long pfn2)
->> +{
->> +	return pfn_to_section_nr(pfn1) == pfn_to_section_nr(pfn2);
->> +}
->> +
->
-> Why do you care what section the page is in? The zone is important all
-> right, but not the section. Also, offhand I'm unsure if being in the
-> same section guarantees the same zone. sections are ordinarily fully
-> populated (except on ARM but hey) but I can't remember anything
-> enforcing that zones be section-aligned.
->
-> Later I think I see that the intention was to reduce the use of
-> pfn_to_page().
-
-That is correct.
-
-> You can do this in a more general fashion by checking the
-> zone boundaries and resolving the pfn->page every MAX_ORDER_NR_PAGES.
-> That will not be SPARSEMEM specific.
-
-I've tried doing stuff that way but it ended up with much more code.
-
-Dave suggested the above function to check if pointer arithmetic is valid.
-
-Please see also <https://lkml.org/lkml/2011/9/21/220>.
-
->
->> +#else
->> +
->> +#define zone_pfn_same_memmap(pfn1, pfn2) (true)
->> +
->> +#endif
->> +
->>  #endif /* !__GENERATING_BOUNDS.H */
->>  #endif /* !__ASSEMBLY__ */
->>  #endif /* _LINUX_MMZONE_H */
-
-
->> @@ -5706,6 +5706,73 @@ out:
->>  	spin_unlock_irqrestore(&zone->lock, flags);
->>  }
->>
->> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
->> +				       gfp_t flag)
->> +{
->> +	unsigned long pfn = start, count;
->> +	struct page *page;
->> +	struct zone *zone;
->> +	int order;
->> +
->> +	VM_BUG_ON(!pfn_valid(start));
->
-> VM_BUG_ON seems very harsh here. WARN_ON_ONCE and returning 0 to the
-> caller sees reasonable.
->
->> +	page = pfn_to_page(start);
->> +	zone = page_zone(page);
->> +
->> +	spin_lock_irq(&zone->lock);
->> +
->> +	for (;;) {
->> +		VM_BUG_ON(page_count(page) || !PageBuddy(page) ||
->> +			  page_zone(page) != zone);
->> +
->
-> Here you will VM_BUG_ON with the zone lock held leading to system
-> halting very shortly.
->
->> +		list_del(&page->lru);
->> +		order = page_order(page);
->> +		count = 1UL << order;
->> +		zone->free_area[order].nr_free--;
->> +		rmv_page_order(page);
->> +		__mod_zone_page_state(zone, NR_FREE_PAGES, -(long)count);
->> +
->
-> The callers need to check in advance if watermarks are sufficient for
-> this. In compaction, it happens in compaction_suitable() because it only
-> needed to be checked once. Your requirements might be different.
->
->> +		pfn += count;
->> +		if (pfn >= end)
->> +			break;
->> +		VM_BUG_ON(!pfn_valid(pfn));
->> +
->
-> On ARM, it's possible to encounter invalid pages. VM_BUG_ON is serious
-> overkill.
->
->> +		if (zone_pfn_same_memmap(pfn - count, pfn))
->> +			page += count;
->> +		else
->> +			page = pfn_to_page(pfn);
->> +	}
->> +
->> +	spin_unlock_irq(&zone->lock);
->> +
->> +	/* After this, pages in the range can be freed one be one */
->> +	count = pfn - start;
->> +	pfn = start;
->> +	for (page = pfn_to_page(pfn); count; --count) {
->> +		prep_new_page(page, 0, flag);
->> +		++pfn;
->> +		if (likely(zone_pfn_same_memmap(pfn - 1, pfn)))
->> +			++page;
->> +		else
->> +			page = pfn_to_page(pfn);
->> +	}
->> +
->
-> Here it looks like you have implemented something like split_free_page().
-
-split_free_page() takes a single page, removes it from buddy system, and finally
-splits it.  alloc_contig_freed_pages() takes a range of pages, removes them from
-buddy system, and finally splits them.  Because it works on a range, it is
-made into a separate function.
-
->> +	return pfn;
->> +}
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+So RIO addresses of any size are not blindly truncated and cannot be ignored.
+  
+> 
+> 5. In the case of a 64-bit dma_addr_t and a 32-bit DMA engine host
+> being
+>    asked to transfer >= 4GB, this needs error handing in the DMA engine
+>    driver (I don't think its checked for - I know amba-pl08x doesn't.)
+> 
+> 6. 32-bit dma_addr_t with 64-bit DMA address space is a problem and is
+>    probably a bug in itself - the platform should be using a 64-bit
+>    dma_addr_t in this case.  (see 3.)
