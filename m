@@ -1,209 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab1JREKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 00:10:06 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32428 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728Ab1JREKE (ORCPT
+	id S1751964Ab1JRET6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 00:19:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53521 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab1JRET4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 00:10:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=LVlTS13raq+AdPbjpRVCOlww8qnIy0oc0yiPEJ8mXlatx1ScnZw4OEf3lchklKYsh
-	FRli1xYkDt565sBLi9gdQ==
-Date: Mon, 17 Oct 2011 21:09:48 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: Pawel Sikora <pluto@agmk.net>, arekm@pld-linux.org,
-        Anders Ossowicki <aowi@novozymes.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: 3.1-rc9: BUG: soft lockup in find_get_pages+0x4e/0x140
-In-Reply-To: <alpine.DEB.2.02.1110152003210.26507@p34.internal.lan>
-Message-ID: <alpine.LSU.2.00.1110172036300.7358@sister.anvils>
-References: <alpine.DEB.2.02.1110152003210.26507@p34.internal.lan>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 18 Oct 2011 00:19:56 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 17 Oct 2011 21:19:35 -0700
+X-Google-Sender-Auth: ct-7MqC0Z2WushOWfUlO8ET1EHo
+Message-ID: <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
+Subject: Linux 3.1-rc10
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Oct 2011, Justin Piszcz wrote:
-> 
-> With 3.1-rc9 during a filesystem dump, this occurred, I thought a previous
-> patch fixed this but it did not, it occurs MUCH less (first time in a couple
-> of weeks) but the problem still occurs.
+Ok, we're a week away from the kernel summit, and here's the last -rc
+I'm planning to make.
 
-Shaohua's nr_skip patch fixed, or at least worked around, the error I
-introduced there in 3.1-rc1.  But now you're finding a similar problem
-still in 3.1-rc9: that confirms what you and others already reported,
-that something like it occurs even in 3.0 without my bug.
+There really hasn't been all that much going on - the smallish MIPS
+updates are still the bulk of this -rc, and the rest is pretty much
+small driver fixes. Oh, and some last-minute fs (btrfs and xfs) fixes
+in there too.
 
-> 
-> Thoughts?
+The shortlog is about as informative as it gets. There's still some
+discussion about a couple of minor things we would like to get
+resolved, but on the whole 3.1 is long over-due and by the KS I think
+everybody will be relieved to have it out, and ready to open the merge
+window.
 
-No more than before: that it seems as if a page with refcount 0 has
-somehow got stuck in the radix_tree.  We do know of a refcounting bug
-in THP, but I don't see how that one would manifest in this way.
+                          Linus
 
-Or maybe the radix_tree is corrupt and it isn't even a struct page *
-there; but you're not the only one to see this, so random corruption
-is not at all likely.
-
-> 
-> [675100.763357] BUG: soft lockup - CPU#0 stuck for 22s! [dump:11066]
-> [675100.763361] CPU 0 [675100.763364] Pid: 11066, comm: dump Not tainted
-> 3.1.0-rc9 #1 Supermicro X8DTH-i/6/iF/6F/X8DTH
-> [675100.763368] RIP: 0010:[<ffffffff81078eee>]  [<ffffffff81078eee>]
-> find_get_pages+0x4e/0x140
-> [675100.763375] RSP: 0018:ffff8806e6603d28  EFLAGS: 00000246
-> [675100.763377] RAX: ffff880019a0a210 RBX: ffffea0028a65820 RCX:
-> 000000000000000e
-> [675100.763379] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
-> ffffea0029e0faf0
-> [675100.763381] RBP: 0000000001200ae9 R08: 0000000000000000 R09:
-> ffff8806e6603ce8
-> [675100.763383] R10: 0000000001200b03 R11: 0000000000000002 R12:
-> ffffffff810805a4
-> [675100.763386] R13: ffff880c3fffae00 R14: ffff880c3fffae00 R15:
-> ffff8806e6603db8
-> [675100.763392] FS:  00007fe9b56cc760(0000) GS:ffff88063fc00000(0000)
-> knlGS:0000000000000000
-> [675100.763395] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [675100.763397] CR2: 00007f2da3718fa8 CR3: 0000000c22da4000 CR4:
-> 00000000000006f0
-> [675100.763400] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [675100.763402] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [675100.763405] Process dump (pid: 11066, threadinfo ffff8806e6602000, task
-> ffff880c21c931a0)
-> [675100.763407] Stack:
-> [675100.763408]  ffff8800398aaa88 0000000000000000 ffff88063fc0d560
-> 0000000000000005
-> [675100.763415]  ffff880c270652d8 ffff8806e6603da8 00000000000067b5
-> ffffffffffffffff
-> [675100.763421]  ffff880c270652d8 ffffea0028a65820 000000000000000d
-> ffffffff81083d15
-> [675100.763427] Call Trace:
-> [675100.763433]  [<ffffffff81083d15>] ? pagevec_lookup+0x15/0x20
-> [675100.763437]  [<ffffffff810843c6>] ? invalidate_mapping_pages+0x66/0x170
-> [675100.763442]  [<ffffffff812bc841>] ? blkdev_ioctl+0x6b1/0x700
-> [675100.763451]  [<ffffffff810e405b>] ? block_ioctl+0x3b/0x50
-> [675100.763455]  [<ffffffff810c692e>] ? do_vfs_ioctl+0x8e/0x4f0
-> [675100.763459]  [<ffffffff810c6dd9>] ? sys_ioctl+0x49/0x80
-> [675100.763464]  [<ffffffff8168b17b>] ? system_call_fastpath+0x16/0x1b
-> [675100.763466] Code: 48 89 de 4c 89 ef e8 72 37 25 00 85 c0 89 c1 0f 84 a8
-> 00 00 00 49 89 df 31 d2 31 f6 45 31 f6 66 0f 1f 44 00 00 49 8b 07 48 8b 38
-> [675100.763484]  85 ff 74 3e 40 f6 c7 03 75 5e 44 8b 47 1c 45 85 c0 74 ec 45
-
-Since I've no idea what's causing this, all we can do is attempt to
-gather more info.  The patch below, which applies to 3.0.N as well as
-3.1-rc9, may help with that; but it makes no attempt to recover the
-situation, since I just don't know what this situation is.
-
-When you next hit the problem, please let us know the messages say,
-from the "find_get_pages(" line to the end of the trace, but the
-Page lines the most interesting - thanks, and good luck.
-
-The memcontrol.c part of it is to cut out the noise of an interfering
-bug and stacktrace, coming from an irrelevant error in some configs.
-
-Signed-off-for-debug-only-by: Hugh Dickins <hughd@google.com>
 ---
+Adrian Bunk (1):
+      x86: Default to vsyscall=native for now
 
- mm/filemap.c    |   38 ++++++++++++++++++++++++++++++++++++++
- mm/memcontrol.c |   17 +----------------
- 2 files changed, 39 insertions(+), 16 deletions(-)
+Alex Deucher (3):
+      drm/radeon/kms: retry aux transactions if there are status flags
+      drm/radeon/kms: fix dp_detect handling for DP bridge chips
+      drm/radeon/kms: use hardcoded dig encoder to transmitter mapping
+for DCE4.1
 
---- 3.1-rc9/mm/filemap.c	2011-09-21 17:44:52.246176260 -0700
-+++ fgpdebug/mm/filemap.c	2011-10-17 20:47:20.777176328 -0700
-@@ -806,6 +806,29 @@ repeat:
- }
- EXPORT_SYMBOL(find_or_create_page);
- 
-+static void safe_dump_page(struct page *page, char *which)
-+{
-+	pg_data_t *pgdat;
-+	bool good = false;
-+	unsigned long pfn = 0;
-+
-+	for_each_online_pgdat(pgdat) {
-+		struct page *start_page;
-+
-+		start_page = pfn_to_page(pgdat->node_start_pfn);
-+		pfn = pgdat->node_start_pfn + (page - start_page);
-+		if (page >= start_page &&
-+		    page <  start_page + pgdat->node_spanned_pages &&
-+		    pfn_valid(pfn) && page == pfn_to_page(pfn)) {
-+			good = true;
-+			break;
-+		}
-+	}
-+	printk(KERN_ALERT "Page %s is %p (pfn %lx)\n", which, page, pfn);
-+	if (good)
-+		dump_page(page);
-+}
-+
- /**
-  * find_get_pages - gang pagecache lookup
-  * @mapping:	The address_space to search
-@@ -825,6 +848,7 @@ EXPORT_SYMBOL(find_or_create_page);
- unsigned find_get_pages(struct address_space *mapping, pgoff_t start,
- 			    unsigned int nr_pages, struct page **pages)
- {
-+	int spinning = 1000;
- 	unsigned int i;
- 	unsigned int ret;
- 	unsigned int nr_found, nr_skip;
-@@ -839,6 +863,20 @@ restart:
- 		struct page *page;
- repeat:
- 		page = radix_tree_deref_slot((void **)pages[i]);
-+		if (spinning > 0 && unlikely(--spinning == 0)) {
-+			printk(KERN_ALERT
-+				"find_get_pages(%p, %lu, %u, %p)",
-+				mapping, start, nr_pages, pages);
-+			print_symbol(KERN_CONT " of %s:\n",
-+				(unsigned long)mapping->a_ops);
-+			if (ret)
-+				safe_dump_page(pages[ret-1], "before");
-+			safe_dump_page(page, "stuck ");
-+			if (i + 1 < nr_found)
-+				safe_dump_page(radix_tree_deref_slot(
-+					(void **)pages[i+1]), "after ");
-+			dump_stack();
-+		}
- 		if (unlikely(!page))
- 			continue;
- 
---- 3.1-rc9/mm/memcontrol.c	2011-09-21 17:44:52.250176292 -0700
-+++ fgpdebug/mm/memcontrol.c	2011-10-17 19:28:47.427572665 -0700
-@@ -3380,23 +3380,8 @@ void mem_cgroup_print_bad_page(struct pa
- 
- 	pc = lookup_page_cgroup_used(page);
- 	if (pc) {
--		int ret = -1;
--		char *path;
--
--		printk(KERN_ALERT "pc:%p pc->flags:%lx pc->mem_cgroup:%p",
-+		printk(KERN_ALERT "pc:%p pc->flags:%lx pc->mem_cgroup:%p\n",
- 		       pc, pc->flags, pc->mem_cgroup);
--
--		path = kmalloc(PATH_MAX, GFP_KERNEL);
--		if (path) {
--			rcu_read_lock();
--			ret = cgroup_path(pc->mem_cgroup->css.cgroup,
--							path, PATH_MAX);
--			rcu_read_unlock();
--		}
--
--		printk(KERN_CONT "(%s)\n",
--				(ret < 0) ? "cannot get the path" : path);
--		kfree(path);
- 	}
- }
- #endif
+Arnaud Lacombe (1):
+      MIPS: Do not use EXTRA_CFLAGS
+
+Axel Lin (1):
+      ARM: OMAP: musb: Remove a redundant omap4430_phy_init call in
+usb_musb_init
+
+Benjamin Poirier (1):
+      net: fix typos in Documentation/networking/scaling.txt
+
+Bryan Buckley (1):
+      ARM: OMAP4: MMC: fix power and audio issue, decouple USBC1 from MMC1
+
+Chris Mason (1):
+      Btrfs: make sure not to defrag extents past i_size
+
+Chris Metcalf (1):
+      tile: revert change from <asm/atomic.h> to <linux/atomic.h> in asm files
+
+Christoph Hellwig (3):
+      xfs: do not update xa_last_pushed_lsn for locked items
+      xfs: force the log if we encounter pinned buffers in .iop_pushbuf
+      xfs: revert to using a kthread for AIL pushing
+
+David Daney (4):
+      MIPS: Octeon: Select CONFIG_HOLES_IN_ZONE
+      MIPS: Don't clobber CP0_STATUS value for CONFIG_MIPS_MT_SMTC
+      MIPS: No branches in delay slots for huge pages in handle_tlbl
+      MIPS: Octeon: Enable C0_UserLocal probing.
+
+David Ward (1):
+      macvlan/macvtap: Fix unicast between macvtap interfaces in bridge mode
+
+Dmitry Kravkov (1):
+      bnx2x: fix cl_id allocation for non-eth clients for NPAR mode
+
+Hartmut Knaack (1):
+      gpio-pca953x: fix gpio_base
+
+Hillf Danton (2):
+      MIPS: VPE: Select correct tc
+      MIPS: i8259: Correct comment for i8259
+
+Janusz Krzysztofik (1):
+      gpio/omap: fix build error with certain OMAP1 configs
+
+Jason Gerecke (1):
+      Input: wacom - revert "Cintiq 21UX2 does not have menu strips"
+
+Jean Delvare (1):
+      hwmon: (w83627ehf) Properly report thermal diode sensors
+
+Jesper Juhl (1):
+      MIPS: Remove unneeded version.h includes from arch/mips/
+
+Johann Felix Soden (1):
+      ide: Fix file references in drivers/ide/
+
+John Crispin (3):
+      MIPS: Lantiq: Fix external interrupt sources
+      MIPS: Lantiq: Fix setting the PCI bus speed on AR9
+      SERIAL: Lantiq: Set timeout in uart_port
+
+Jonthan Brassow (1):
+      dm: raid fix write_mostly arg validation
+
+Kevin Cernekee (1):
+      MIPS: Trivial style cleanups in mmap.c
+
+Li Zefan (1):
+      Btrfs: fix recursive auto-defrag
+
+Liming Wang (1):
+      MIPS: i8259: Mark cascade interrupt non-threaded
+
+Linus Torvalds (2):
+      Avoid using variable-length arrays in kernel/sys.c
+      Linux 3.1-rc10
+
+Linus Walleij (1):
+      ARM: 7113/1: mm: Align bank start to MAX_ORDER_NR_PAGES
+
+Manuel Lauss (3):
+      MIPS: Alchemy: Fix typo in MAC0 registration
+      MIPS: Alchemy: Include Au1100 in PM code.
+      MIPS: Alchemy: DB1200: Disable cascade IRQ in handler
+
+Marc Dietrich (1):
+      ARM: tegra: fix compilation error due to mach/hardware.h removal
+
+Mark Salyzyn (1):
+      [SCSI] libsas: fix panic when single phy is disabled on a wide port
+
+Mika Westerberg (1):
+      x86, mrst: use a temporary variable for SFI irq
+
+Mike Snitzer (2):
+      dm: flakey fix corrupt_bio_byte error path
+      dm table: avoid crash if integrity profile changes
+
+Milan Broz (1):
+      dm crypt: always disable discard_zeroes_data
+
+Nathan Lynch (1):
+      MIPS: Call oops_enter, oops_exit in die
+
+NeilBrown (1):
+      md: Avoid waking up a thread after it has been freed.
+
+Olof Johansson (1):
+      MAINTAINERS: Update tegra maintainer information
+
+Paul Menzel (1):
+      x86/PCI: use host bridge _CRS info on ASUS M2V-MX SE
+
+      MIPS: PM: Use struct syscore_ops instead of sysdevs for PM (v2)
+
+Ralf Baechle (3):
+      MIPS: Handle __put_user() sleeping.
+      MIPS: MSP71xx: Fix build error.
+      MIPS: tlbex: Fix build error in R3000 code.
+
+Roland Dreier (1):
+      [SCSI] qla2xxx: Fix crash in qla2x00_abort_all_cmds() on unload
+
+Roy.Li (1):
+      staging/octeon: Software should check the checksum of no tcp/udp packets
+
+Shawn Guo (1):
+      ARM: 7122/1: localtimer: add header linux/errno.h explicitly
+
+Steve French (1):
+      [CIFS] Fix first time message on mount, ntlmv2 upgrade delayed to 3.2
+
+Thadeu Lima de Souza Cascardo (1):
+      mlx4_en: fix endianness with blue frame support
+
+Thomas Gleixner (3):
+      MIPS: Ftrace: Fix the CONFIG_DYNAMIC_FTRACE=n compile
+      MIPS: Allow forced irq threading
+      netfilter: Use proper rwlock init function
+
+Tony Lindgren (1):
+      ARM: OMAP: Fix i2c init for twl4030
+
+Will Deacon (1):
+      ARM: 7117/1: perf: fix HW_CACHE_* events on Cortex-A9
+
+Wolfgang Grandegger (1):
+      mscan: too much data copied to CAN frame due to 16 bit accesses
+
+Wu Zhangjin (3):
+      MIPS: Make the die_lock be raw
+      MIPS: Mark cascade and low level interrupts IRQF_NO_THREAD
+      MIPS: Loongson: Mark cascade interrupts IRQF_NO_THREAD
+
+Yan, Zheng (3):
+      tcp: properly handle md5sig_pool references
+      tcp: properly update lost_cnt_hint during shifting
+      gro: refetch inet6_protos[] after pulling ext headers
+
+Yoichi Yuasa (1):
+      MIPS: RC32434: Fix PCI build error
+
+Yong Zhang (1):
+      MIPS: Compat: Use 32-bit wrapper for compat_sys_futex.
+
+Zoltan Devai (1):
+      ARM: 7128/1: vic: Don't write to the read-only register VIC_IRQ_STATUS
+
+srinidhi kasagar (1):
+      ARM: mach-ux500: enable fix for ARM errata 754322
+
+stephen hemminger (1):
+      bridge: leave carrier on for empty bridge
