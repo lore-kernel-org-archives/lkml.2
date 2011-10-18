@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab1JRMAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:00:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34924 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab1JRMAC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:00:02 -0400
-Date: Tue, 18 Oct 2011 12:59:24 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-Message-ID: <20111018115924.GB30644@flint.arm.linux.org.uk>
-References: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com> <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com> <20111018074211.GA13483@flint.arm.linux.org.uk> <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com> <20111018094944.GA30644@flint.arm.linux.org.uk> <CAJe_ZhcDJjP3t_XFG04or4WzwzPHEcHo2ThstGCVFrYvYqTaiQ@mail.gmail.com>
+	id S932180Ab1JRMFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:05:24 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48404 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754868Ab1JRMFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 08:05:23 -0400
+Date: Tue, 18 Oct 2011 14:05:06 +0200
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/9] mm: move some functions from memory_hotplug.c to
+ page_isolation.c
+Message-ID: <20111018120506.GA6660@csn.ul.ie>
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <1317909290-29832-2-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJe_ZhcDJjP3t_XFG04or4WzwzPHEcHo2ThstGCVFrYvYqTaiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1317909290-29832-2-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 05:20:30PM +0530, Jassi Brar wrote:
-> On 18 October 2011 15:19, Russell King <rmk@arm.linux.org.uk> wrote:
+On Thu, Oct 06, 2011 at 03:54:41PM +0200, Marek Szyprowski wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> >> >> > With item #1 above being a separate topic, I may have a problem with #2
-> >> >> > as well: dma_addr_t is sized for the local platform and not guaranteed
-> >> >> > to be a 64-bit value (which may be required by a target).
-> >> >> > Agree with #3 (if #1 and #2 work).
-> >> >> >
-> >> >> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
-> >> >
-> >> > That's just an idiotic suggestion - there's no other way to put that.
-> >> > Let's have some sanity here.
-> >> >
-> >> Yeah, I am not proud of the workaround, so I only probed the option.
-> >> I think I need to explain myself.
-> >>
-> >> The case here is that even a 32-bit RapidIO host could ask transfer against
-> >> 64-bit address space on a remote device. And vice versa 64->32.
-> >>
-> >> > dma_addr_t is the size of a DMA address for the CPU architecture being
-> >> > built.  This has no relationship to what any particular DMA engine uses.
-> >> >
-> >> Yes, so far the dmaengine ever only needed to transfer within platform's
-> >> address-space. So the assumption that src and dst addresses could
-> >> be contained within dma_addr_t, worked.
-> >> If the damengine is to get rid of that assumption/constraint, the memcpy,
-> >> slave_sg etc need to accept addresses specified in bigger of the host and
-> >> remote address space, and u64 is the safe option.
-> >> Ultimately dma_addr_t is either u32 or u64.
-> >
-> > Let me spell it out:
-> >
-> > 1. Data structures read by the DMA engine hardware should not be defined
-> >   using the 'dma_addr_t' type, but one of the [bl]e{8,16,32,64} types,
-> >   or at a push the u{8,16,32,64} types if they're always host-endian.
-> >
-> >   This helps to ensure that the layout of the structures read by the
-> >   hardware are less dependent of the host architecture and each element
-> >   is appropriately sized (and, with sparse and the endian-sized types,
-> >   can be endian-checked at compile time.)
-> >
-> > 2. dma_addr_t is the size of the DMA address for the host architecture.
-> >   This may be 32-bit or 64-bit depending on the host architecture.
-> >
-> > The following points are my opinion:
-> >
-> > 3. For architectures where there are only 32-bit DMA addresses, dma_addr_t
-> >   will be a 32-bit type.  For architectures where there are 64-bit DMA
-> >   addresses, it will be a 64-bit type.
-> >
-> > 4. If RIO can accept 64-bit DMA addresses but is only connected to 32-bit
-> >   busses, then the top 32 address bits are not usable (it's truncated in
-> >   hardware.)  So there's no point passing around a 64-bit DMA address.
-> >
-> > 5. In the case of a 64-bit dma_addr_t and a 32-bit DMA engine host being
-> >   asked to transfer >= 4GB, this needs error handing in the DMA engine
-> >   driver (I don't think its checked for - I know amba-pl08x doesn't.)
-> >
-> > 6. 32-bit dma_addr_t with 64-bit DMA address space is a problem and is
-> >   probably a bug in itself - the platform should be using a 64-bit
-> >   dma_addr_t in this case.  (see 3.)
-> >
-> Thanks for the detailed explanation.
+> Memory hotplug is a logic for making pages unused in the specified
+> range of pfn. So, some of core logics can be used for other purpose
+> as allocating a very large contigous memory block.
 > 
-> RapidIO is a packet switched interconnect with parallel or serial interface.
-> Among other things, a packet contains 32, 48 or 64 bit offset into the
-> remote-endpoint's address space. So I don't get how any of the above
-> 6 points apply here.
+> This patch moves some functions from mm/memory_hotplug.c to
+> mm/page_isolation.c. This helps adding a function for large-alloc in
+> page_isolation.c with memory-unplug technique.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> [m.nazarewicz: reworded commit message]
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: rebased and updated to Linux v3.0-rc1]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  include/linux/page-isolation.h |    7 +++
+>  mm/memory_hotplug.c            |  111 --------------------------------------
+>  mm/page_isolation.c            |  114 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 121 insertions(+), 111 deletions(-)
+> 
+> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+> index 051c1b1..58cdbac 100644
+> --- a/include/linux/page-isolation.h
+> +++ b/include/linux/page-isolation.h
+> @@ -33,5 +33,12 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
+>  extern int set_migratetype_isolate(struct page *page);
+>  extern void unset_migratetype_isolate(struct page *page);
+>  
+> +/*
+> + * For migration.
+> + */
+> +
+> +int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn);
 
-So you can't see that redefining dma_addr_t to be 64-bit for the entire
-DMA engine subsystem would be a bad idea...
+bool
+
+> +unsigned long scan_lru_pages(unsigned long start, unsigned long end);
+
+Both function names are misleading.
+
+> +int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
+>  
+
+scan_lru_pages as it is used by memory hotplug is also extremely
+expensive. Unplugging memory is rare so the performance is not a concern
+but it make be for CMA.
+
+I think it would have made more sense to either express this as an iterator
+like for_each_lru_page_in_range() and use cursors or reuse the compaction
+code. As it is, these functions are a bit rough. I'm biased but this code
+seems to have very similar responsibilities to the compaction.c code for
+isolate_migratepages and how it handles migration. It also knows how to avoid
+isolating so much memory as to put the system in the risk of being livelocked,
+isolate pages from the LRU in batch etc.
+
+This is not a show-stopper as such but personally I would prefer that
+the memory hotplug code be sharing code with compaction than CMA adding
+a new dependency on memory hotplug.
 
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Mel Gorman
+SUSE Labs
