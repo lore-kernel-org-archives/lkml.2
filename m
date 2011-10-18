@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab1JRIFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:05:33 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34384 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab1JRIFa (ORCPT
+	id S1752136Ab1JRIHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:07:47 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:1112 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab1JRIHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:05:30 -0400
-From: Krishna Kumar <krkumar2@in.ibm.com>
-To: rusty@rustcorp.com.au, mst@redhat.com
-Cc: Ian.Campbell@citrix.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, davem@davemloft.net,
-        Krishna Kumar <krkumar2@in.ibm.com>
-Date: Tue, 18 Oct 2011 13:35:23 +0530
-Message-Id: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
-Subject: [PATCH] Fix guest memory leak and panic
+	Tue, 18 Oct 2011 04:07:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=lV6qnectN840I4RBhMEZvd4fVjYc29icpIldxiUMPplQFF5mTr+LiB4gZQ/BCMNgJ
+	qMeU0VtKnmxYQuJRFHoDA==
+Date: Tue, 18 Oct 2011 01:07:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Hellwig <hch@infradead.org>
+cc: Josh Boyer <jwboyer@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] Update email address for stable patch submission
+In-Reply-To: <20111018065852.GA6056@infradead.org>
+Message-ID: <alpine.DEB.2.00.1110180105080.8959@chino.kir.corp.google.com>
+References: <20111018011638.GQ1165@zod.bos.redhat.com> <20111018065852.GA6056@infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 86ee8130 ("virtionet: convert to SKB paged frag API")
-introduced a bug in guest. During RX testing, guest runs out
-of memory within seconds, causing oom-killer; which then
-panics the system: "Kernel panic - not syncing: Out of memory
-and no killable processes...". /proc/meminfo just before the
-panic shows MemFree is a few MB's:
+On Tue, 18 Oct 2011, Christoph Hellwig wrote:
 
-	MemFree:         1928544 kB	(starts here)
-	...
-	...
-	MemFree:           27488 kB
-	MemFree:           26248 kB
-	MemFree:           24636 kB
-	MemFree:           22632 kB
-	MemFree:           19580 kB
-	MemFree:           17928 kB
-	MemFree:           15548 kB
-		(Panic)
+> > The stable@kernel.org email address has been replaced with the
+> > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
+> > reference the new list instead of the semi-defunct email alias.
+> 
+> Does this mean it already stopped working?  I recently sent pathces
+> there but neither got an ACK nor a bounce or similar.
+> 
 
-The extra reference to the fragment pages causes those pages to
-not get freed in skb_release_data(). The following patch fixes
-the bug. I have not checked if any other converted driver has
-the same issue.
+It was bouncing (and noticably so) as of a week ago but I believe hpa has 
+since setup an alias to point to stable@vger.kernel.org.  Linus cc'd his 
+own commit to it yesterday, a84a79e4d369, so as long as you didn't get a 
+bounce email it should have gone through.
 
-Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
----
- drivers/net/virtio_net.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
-
-diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
---- org/drivers/net/virtio_net.c	2011-10-18 08:49:46.000000000 +0530
-+++ new/drivers/net/virtio_net.c	2011-10-18 12:55:32.000000000 +0530
-@@ -143,18 +143,15 @@ static void skb_xmit_done(struct virtque
- static void set_skb_frag(struct sk_buff *skb, struct page *page,
- 			 unsigned int offset, unsigned int *len)
- {
-+	int size = min((unsigned)PAGE_SIZE - offset, *len);
- 	int i = skb_shinfo(skb)->nr_frags;
--	skb_frag_t *f;
- 
--	f = &skb_shinfo(skb)->frags[i];
--	f->size = min((unsigned)PAGE_SIZE - offset, *len);
--	f->page_offset = offset;
--	__skb_frag_set_page(f, page);
-+	__skb_fill_page_desc(skb, i, page, offset, size);
- 
--	skb->data_len += f->size;
--	skb->len += f->size;
-+	skb->data_len += size;
-+	skb->len += size;
- 	skb_shinfo(skb)->nr_frags++;
--	*len -= f->size;
-+	*len -= size;
- }
- 
- static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ [ I believe Greg also has gone through everything with a
+   "Cc: stable@kernel.org" in Linus' tree as well, either automatically 
+   or because of the bounces. ]
