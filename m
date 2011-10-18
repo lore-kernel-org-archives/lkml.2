@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab1JRA4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 20:56:09 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:27345 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1JRA4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 20:56:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	message-id:user-agent:mime-version:content-type:x-system-of-record;
-	b=m42ga7zDRciZFrZCl6YBD9LUnXv47Jo3kcPB+D4+81eXqlEdR227F5eu0iZvc5OyQ
-	S98wHWRIetEYDQ7iXe6lw==
-Date: Mon, 17 Oct 2011 17:55:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Henrik Grindal Bakken <henribak@cisco.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Subject: [patch] Avoid using hardcoded values in kernel/sys.c
-Message-ID: <alpine.DEB.2.00.1110171752300.19024@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756996Ab1JRBCB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:02:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756887Ab1JRBCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 21:02:00 -0400
+From: Josh Stone <jistone@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Josh Stone <jistone@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: [PATCH] x86: Make kprobes' twobyte_is_boostable volatile
+Date: Mon, 17 Oct 2011 18:00:45 -0700
+Message-Id: <1318899645-4068-1-git-send-email-jistone@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E8E862A.8020705@hitachi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The release field of struct new_utsname may always change, so avoid
-hardcoded values when setting up a buffer to copy to it.
+When compiling an i386_defconfig kernel with gcc-4.6.1-9.fc15.i686, I
+noticed a warning about the asm operand for test_bit in kprobes'
+can_boost.  I discovered that this caused only the first long of
+twobyte_is_boostable[] to be output.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+Jakub filed and fixed gcc PR50571 to correct the warning and this output
+issue.  But to solve it for less current gcc, we can make kprobes'
+twobyte_is_boostable[] volatile, and it won't be optimized out.
+
+Before:
+
+    CC      arch/x86/kernel/kprobes.o
+  In file included from include/linux/bitops.h:22:0,
+                   from include/linux/kernel.h:17,
+                   from [...]/arch/x86/include/asm/percpu.h:44,
+                   from [...]/arch/x86/include/asm/current.h:5,
+                   from [...]/arch/x86/include/asm/processor.h:15,
+                   from [...]/arch/x86/include/asm/atomic.h:6,
+                   from include/linux/atomic.h:4,
+                   from include/linux/mutex.h:18,
+                   from include/linux/notifier.h:13,
+                   from include/linux/kprobes.h:34,
+                   from arch/x86/kernel/kprobes.c:43:
+  [...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
+  [...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input without lvalue in asm operand 1 is deprecated [enabled by default]
+
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 00 00 00 00 	bt     %eax,0x0
+                          554: R_386_32	.rodata.cst4
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+  Contents of section .rodata.cst4:
+   0000 4c030000                             L...
+
+Only a single long of twobyte_is_boostable[] is in the object file.
+
+After, with volatile:
+
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 20 00 00 00 	bt     %eax,0x20
+                          554: R_386_32	.data
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+   0010 00000000 00000000 00000000 00000000  ................
+   0020 4c030000 0f000200 ffff0000 ffcff0c0  L...............
+   0030 0000ffff 3bbbfff8 03ff2ebb 26bb2e77  ....;.......&..w
+
+Now all 32 bytes are output into .data instead.
+
+Signed-off-by: Josh Stone <jistone@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+
 ---
- kernel/sys.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ arch/x86/kernel/kprobes.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1169,10 +1169,11 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release)
- {
-+	const int len = sizeof(release);
- 	int ret = 0;
--	char buf[65];
-+	char buf[len];
- 
- 	if (current->personality & UNAME26) {
- 		char *rest = UTS_RELEASE;
-@@ -1202,7 +1203,7 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
- 		errno = -EFAULT;
- 	up_read(&uts_sem);
- 
--	if (!errno && override_release(name->release, sizeof(name->release)))
-+	if (!errno && override_release(name->release))
- 		errno = -EFAULT;
- 	if (!errno && override_architecture(name))
- 		errno = -EFAULT;
-@@ -1225,7 +1226,7 @@ SYSCALL_DEFINE1(uname, struct old_utsname __user *, name)
- 		error = -EFAULT;
- 	up_read(&uts_sem);
- 
--	if (!error && override_release(name->release, sizeof(name->release)))
-+	if (!error && override_release(name->release))
- 		error = -EFAULT;
- 	if (!error && override_architecture(name))
- 		error = -EFAULT;
-@@ -1261,7 +1262,7 @@ SYSCALL_DEFINE1(olduname, struct oldold_utsname __user *, name)
- 
- 	if (!error && override_architecture(name))
- 		error = -EFAULT;
--	if (!error && override_release(name->release, sizeof(name->release)))
-+	if (!error && override_release(name->release))
- 		error = -EFAULT;
- 	return error ? -EFAULT : 0;
- }
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index f1a6244..c0ed3d9 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -75,8 +75,10 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
+ 	/*
+ 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
+ 	 * Groups, and some special opcodes can not boost.
++	 * This is volatile to keep gcc from statically optimizing it out, as
++	 * variable_test_bit makes gcc think only *(unsigned long*) is used.
+ 	 */
+-static const u32 twobyte_is_boostable[256 / 32] = {
++static volatile const u32 twobyte_is_boostable[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
+ 	/*      ----------------------------------------------          */
+ 	W(0x00, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0) | /* 00 */
+-- 
+1.7.6.4
+
