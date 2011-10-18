@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab1JRUiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 16:38:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3072 "EHLO
+	id S1753953Ab1JRUje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 16:39:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3401 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab1JRUiu (ORCPT
+	with ESMTP id S1752422Ab1JRUjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 16:38:50 -0400
+	Tue, 18 Oct 2011 16:39:32 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
 	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=OB2LHd6jTT0oBvTjvEr8y7RZEm0ygiQ37M23pH3at7RCwK8ZcWjKSthqxljLkIGi0
-	gdgRhJt+p/1jWm7F1lSKQ==
-Date: Tue, 18 Oct 2011 13:38:43 -0700 (PDT)
+	b=j7GvAI63S0jYH4ZAulrNrHkbKrDBsD4MwTyb6R0/QP6snCE+XS0wDK7+yy91sDqTg
+	VWV8tFF+AEHcTUTVihZow==
+Date: Tue, 18 Oct 2011 13:39:27 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mike Galbraith <efault@gmx.de>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>
-Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
-In-Reply-To: <1318932693.6748.5.camel@marge.simson.net>
-Message-ID: <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net> <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com> <1316770936.6641.11.camel@marge.simson.net>
- <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net> <1318233815.6527.5.camel@marge.simson.net>
- <1318925436.9641.23.camel@marge.simson.net> <1318927355.21167.3.camel@twins> <1318927629.9641.27.camel@marge.simson.net> <1318928763.21167.5.camel@twins> <1318929825.9641.32.camel@marge.simson.net> <1318932693.6748.5.camel@marge.simson.net>
+To: Antonio Ospite <ospite@studenti.unina.it>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+cc: "Tomas M." <tmezzadra@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: kernel OOPS when releasing usb webcam (random)
+In-Reply-To: <20111018104054.07aa2bcf462c0268a23c0139@studenti.unina.it>
+Message-ID: <alpine.DEB.2.00.1110181332320.2639@chino.kir.corp.google.com>
+References: <4E9CB0C2.3030902@gmail.com> <alpine.DEB.2.00.1110171703210.13515@chino.kir.corp.google.com> <20111018104054.07aa2bcf462c0268a23c0139@studenti.unina.it>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -33,67 +32,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Mike Galbraith wrote:
+On Tue, 18 Oct 2011, Antonio Ospite wrote:
 
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > im getting the following null pointer dereference from time to time when
+> > > releasing a usb camera.
+> > > 
+> > > maybe this trace is of assistance...please reply to my mail since im not
+> > > subscribed.
+> > > 
+> > 
+> > I suspect this is happening in v4l2_device_unregister_subdev().  Adding 
+> > Guennadi, Mauro, and linux-media.
+> > 
+> > > BUG: unable to handle kernel NULL pointer dereference at 0000006c
+> > > IP: [<f90be6c2>] v4l2_device_release+0xa2/0xf0 [videodev]
 > 
-> cgroups: disallow attaching kthreadd
+> Hi,
 > 
-> Allowing kthreadd to be moved to a non-root group makes no sense, it being
-> a global resource, and needlessly leads unsuspecting users toward trouble.
+> I sent a fix for a similar trace last week:
+> http://patchwork.linuxtv.org/patch/8124/
 > 
-> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-> allocated is not schedulable.  Simple user error, but harmful to the box.
-> 
-> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-> rendering the cpuset immortal.
-> 
-
-Eek, this seems like complete overkill, there may be cgroups now or in the 
-future that it would be perfectly acceptable to move kthreadd into without 
-any negative effects.  There's no reason to restrict it this broadly, 
-that's why I thought your change to cpusets was fine and acked it.  It's 
-the perfect candidate for what the ->can_attach() pointer for a cgroup can 
-identify is problematic for _that_ cgroup.
-
-> Save the user some unexpected trouble, just say no.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> Tomas, can you test it fixes the problem for you too?
 > 
 
-A patch from Peter that only has your sign-off?
+Tomas reported that the same change from Frederik Deweerdt fixed the 
+issue, so you can add his tested-by from 
+https://lkml.org/lkml/2011/10/18/298.
 
-> ---
->  kernel/cgroup.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> Index: linux-3.0-tip/kernel/cgroup.c
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/cgroup.c
-> +++ linux-3.0-tip/kernel/cgroup.c
-> @@ -60,6 +60,7 @@
->  #include <linux/eventfd.h>
->  #include <linux/poll.h>
->  #include <linux/flex_array.h> /* used in cgroup_attach_proc */
-> +#include <linux/kthread.h>
->  
->  #include <linux/atomic.h>
->  
-> @@ -1824,6 +1825,14 @@ int cgroup_attach_task(struct cgroup *cg
->  	struct cgroup *oldcgrp;
->  	struct cgroupfs_root *root = cgrp->root;
->  
-> +	/*
-> +	 * Workqueue threads may acquire PF_THREAD_BOUND and become
-> +	 * trapped in a cpuset, or RT worker may be born in a cgroup
-> +	 * with no rt_runtime allocated.  Just say no.
-> +	 */
-> +	if (tsk == kthreadd_task)
-> +		return -EINVAL;
-> +
->  	/* Nothing to do if the task is already in that cgroup */
->  	oldcgrp = task_cgroup_from_root(tsk, root);
->  	if (cgrp == oldcgrp)
-> 
-> 
-> 
+Guennadi or Mauro, how is this going to Linus?  It sounds like 3.1 
+material since we've received at least a couple of reports of this in the 
+past week.
