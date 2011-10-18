@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab1JRUNE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 16:13:04 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49524 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab1JRUNC (ORCPT
+	id S1753864Ab1JRU2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 16:28:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35701 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1JRU2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 16:13:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1110182146440.3240@ionos>
-References: <20111013232521.GA5654@hostway.ca> <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
- <1318847658.6594.40.camel@twins> <CA+55aFxaGKEyhXdHXNxvPrPQ-SGSpbXdfoeXrxfjPx3VXsgvtg@mail.gmail.com>
- <1318874090.4172.84.camel@twins> <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>
- <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>
- <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
- <20111018182046.GF1309@hostway.ca> <alpine.LFD.2.02.1110182146440.3240@ionos>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 18 Oct 2011 13:12:41 -0700
-X-Google-Sender-Auth: Ns6-MSH7EtVslKw8vlX07hZGrbw
-Message-ID: <CA+55aFyk50v0hRNbtfF3cskAH7U-yWpHQzA+tRDFZVa6n-F_yw@mail.gmail.com>
-Subject: Re: Linux 3.1-rc9
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Oct 2011 16:28:09 -0400
+X-Authority-Analysis: v=1.1 cv=cRnbtTsVO6wWDdOYuq0VmyuiiLG/FStMSb4CWlTvuS0= c=1 sm=0 a=ZdnEEG40R08A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=r4GQeLiLMVhSe86UmaQA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [RFC PATCH] Tracepoint: add exec tracepoint
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Smith <dsmith@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E9DD418.7030005@redhat.com>
+References: <4E9DC85F.3080507@redhat.com>
+	 <20111018185803.GA32498@infradead.org>  <4E9DD418.7030005@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 16:26:48 -0400
+Message-ID: <1318969608.3712.7.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 12:48 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> It does not look related.
+On Tue, 2011-10-18 at 14:31 -0500, David Smith wrote:
+> On 10/18/2011 01:58 PM, Christoph Hellwig wrote:
+> 
+> > On Tue, Oct 18, 2011 at 01:41:35PM -0500, David Smith wrote:
+> >> Added general purpose exec tracepoint.  The 'bprm' argument gives details of the exec.
+> > 
+> > Given that you only need the filename from the bprm please just pass
+> > it directly.
+> 
+> 
+> Thanks for looking at the patch.
+> 
+> I'm not totally opposed to this change, but passing bprm allows custom
+> tracepoint handlers to look at other fields in bprm besides filename,
+> which could be useful (depending on your needs).
 
-Yeah, the only lock held there seems to be the socket lock, and it
-looks like all CPU's are spinning on it.
+I like flexible tracepoints too.
 
-> Could you try to reproduce that problem with
-> lockdep enabled? lockdep might make it go away, but it's definitely
-> worth a try.
+> 
+> But, I don't have a real strong opinion here.
+> 
 
-And DEBUG_SPINLOCK / DEBUG_SPINLOCK_SLEEP too. Maybe you're triggering
-some odd networking thing.  It sounds unlikely, but maybe some error
-case you get into doesn't release the socket lock.
+I rather pass the pointer. If we pass the string, gcc may not optimize
+when tracing is disabled and still do the work to dereference the
+pointer unnecessarily.
 
-I think PROVE_LOCKING already enables DEBUG_SPINLOCK, but the sleeping
-lock thing is separate, iirc.
+-- Steve
 
-                    Linus
+
+
