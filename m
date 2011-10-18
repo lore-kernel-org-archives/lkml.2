@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab1JRP3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:29:37 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:41202 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab1JRP3f (ORCPT
+	id S932663Ab1JRPeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:34:12 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51255 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932579Ab1JRPeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:29:35 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 2/6] IIO:ADC:max1363 add datasheet_name entries.
-Date: Tue, 18 Oct 2011 16:29:32 +0100
-Message-Id: <1318951776-19393-3-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk>
-References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk>
+	Tue, 18 Oct 2011 11:34:08 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -V7 00/26]  New ACL format for better NFSv4 acl interoperability
+Date: Tue, 18 Oct 2011 21:02:35 +0530
+Message-Id: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kind of obvious for this device but useful
-for testing purposes.
+Hi,
 
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
----
- drivers/iio/adc/max1363_core.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+The following set of patches implements VFS and ext4 changes needed to implement
+a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+extended by file masks to fit into the standard POSIX file permission model.
+They are designed to work seamlessly locally as well as across the NFSv4 and
+CIFS/SMB2 network file system protocols.
 
-diff --git a/drivers/iio/adc/max1363_core.c b/drivers/iio/adc/max1363_core.c
-index ee06d48..e035df9 100644
---- a/drivers/iio/adc/max1363_core.c
-+++ b/drivers/iio/adc/max1363_core.c
-@@ -251,7 +251,8 @@ static const enum max1363_modes max1363_mode_list[] = {
- 		.indexed = 1,						\
- 		.channel = num,						\
- 		.address = addr,					\
--		.info_mask = MAX1363_INFO_MASK				\
-+		.info_mask = MAX1363_INFO_MASK,				\
-+		.datasheet_name = "AIN"#num				\
- 	}								\
- 
- /* bipolar channel */
-@@ -264,6 +265,7 @@ static const enum max1363_modes max1363_mode_list[] = {
- 		.channel2 = num2,					\
- 		.address = addr,					\
- 		.info_mask = MAX1363_INFO_MASK,				\
-+		.datasheet_name = "AIN"#num"-AIN"#num2			\
- 	}
- #define MAX1363_INFO_MASK (1 << IIO_CHAN_INFO_SCALE_SHARED)
- 
--- 
-1.7.7
+A user-space utility for displaying and changing richacls is available at [4]
+(a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+
+[4] git://github.com/kvaneesh/richacl-tools.git master
+
+To test richacl on ext4 use tune2fs -O richacl to enable richacl feature and mount
+the file system using -o acl mount option.
+
+More details regarding richacl can be found at
+http://acl.bestbits.at/richacl/
+
+Changes from v6:
+a) Update patches based on review comments.
+b) Add Acked-by:
+c) rebase to 3.1-rc10
+
+git repository With all the patches can be found at
+git://github.com/kvaneesh/linux.git richacl
+
+IMHO the patches are ready to be merged upstream. How do we push these changes
+to Linus tree ? Andrew, Viro, any comment on how we can get this merged upstream ?
+
+-aneesh
+
 
