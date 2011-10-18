@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab1JRU2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 16:28:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35701 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1JRU2J (ORCPT
+	id S1753889Ab1JRUdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 16:33:49 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:59261 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab1JRUds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 16:28:09 -0400
-X-Authority-Analysis: v=1.1 cv=cRnbtTsVO6wWDdOYuq0VmyuiiLG/FStMSb4CWlTvuS0= c=1 sm=0 a=ZdnEEG40R08A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=r4GQeLiLMVhSe86UmaQA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [RFC PATCH] Tracepoint: add exec tracepoint
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Smith <dsmith@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4E9DD418.7030005@redhat.com>
-References: <4E9DC85F.3080507@redhat.com>
-	 <20111018185803.GA32498@infradead.org>  <4E9DD418.7030005@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 16:26:48 -0400
-Message-ID: <1318969608.3712.7.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Tue, 18 Oct 2011 16:33:48 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9DE2AB.3090208@cam.ac.uk>
+Date: Tue, 18 Oct 2011 21:33:47 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de
+Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
+References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk> <4E9DC496.3010909@metafoo.de>
+In-Reply-To: <4E9DC496.3010909@metafoo.de>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 14:31 -0500, David Smith wrote:
-> On 10/18/2011 01:58 PM, Christoph Hellwig wrote:
+On 10/18/11 19:25, Lars-Peter Clausen wrote:
+> On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
+>> Needed for inkernel interfaces.
+>>
 > 
-> > On Tue, Oct 18, 2011 at 01:41:35PM -0500, David Smith wrote:
-> >> Added general purpose exec tracepoint.  The 'bprm' argument gives details of the exec.
-> > 
-> > Given that you only need the filename from the bprm please just pass
-> > it directly.
+> The bus_type structure keeps a list of all devices registered on that bus, so
+> you should be able to use bus_for_each_dev and bus_find_device for iterating
+> over the iio devices.
+I hadn't realised that but don't think it will work anyway. There are several
+other things than iio_dev based devices that sit on our bus unfortunately.
+None are in these initial merges but they will turn up later.
+The most common are iio_triggers but there are also a few weird ones such
+as the event generator for the dummy driver and the sysfstrig control device.  
+We could play some games to allow these to be identified, but it's going
+to be a mess. Probably easier to just maintain a second list as we are doing
+here.  Interesting suggestion though. Thanks and feel free to point out if there
+is a simple way around the identification issue.
 > 
+>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+>> ---
+>>  drivers/iio/iio.c       |    9 +++++++++
+>>  include/linux/iio/iio.h |    1 +
+>>  2 files changed, 10 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+>> index 9e6acc1..246a093 100644
+>> --- a/drivers/iio/iio.c
+>> +++ b/drivers/iio/iio.c
+>> @@ -15,6 +15,9 @@
+>>  #include <linux/iio/iio.h>
+>>  #include <linux/iio/sysfs.h>
+>>  
+>> +static DEFINE_MUTEX(iio_device_list_lock);
+>> +static LIST_HEAD(iio_device_list);
+>> +
+>>  static DEFINE_IDA(iio_ida);
+>>  
+>>  static struct bus_type iio_bus_type = {
+>> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
+>>  {
+>>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
+>>  	iio_device_unregister_sysfs(indio_dev);
+>> +	mutex_lock(&iio_device_list_lock);
+>> +	list_del(&indio_dev->dev_list_entry);
+>> +	mutex_unlock(&iio_device_list_lock);
+>>  }
+>>  
+>>  static struct device_type iio_dev_type = {
+>> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
+>>  	if (ret)
+>>  		goto error_free_sysfs;
+>>  
+>> +	mutex_lock(&iio_device_list_lock);
+>> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
+>> +	mutex_unlock(&iio_device_list_lock);
+>>  	return 0;
+>>  
+>>  error_free_sysfs:
+>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>> index beedc5c..f14e7dc 100644
+>> --- a/include/linux/iio/iio.h
+>> +++ b/include/linux/iio/iio.h
+>> @@ -192,6 +192,7 @@ struct iio_info {
+>>   * @info:		[DRIVER] callbacks and constant info from driver
+>>   * @groups:		[INTERN] attribute groups
+>>   * @groupcounter:	[INTERN] index of next attribute group
+>> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
+>>   **/
+>>  struct iio_dev {
+>>  	int				id;
 > 
-> Thanks for looking at the patch.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> I'm not totally opposed to this change, but passing bprm allows custom
-> tracepoint handlers to look at other fields in bprm besides filename,
-> which could be useful (depending on your needs).
-
-I like flexible tracepoints too.
-
-> 
-> But, I don't have a real strong opinion here.
-> 
-
-I rather pass the pointer. If we pass the string, gcc may not optimize
-when tracing is disabled and still do the work to dereference the
-pointer unnecessarily.
-
--- Steve
-
-
 
