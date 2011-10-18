@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1JRUdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 16:33:49 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:59261 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1JRUds (ORCPT
+	id S1753915Ab1JRUiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 16:38:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3072 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab1JRUiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 16:33:48 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E9DE2AB.3090208@cam.ac.uk>
-Date: Tue, 18 Oct 2011 21:33:47 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+	Tue, 18 Oct 2011 16:38:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=OB2LHd6jTT0oBvTjvEr8y7RZEm0ygiQ37M23pH3at7RCwK8ZcWjKSthqxljLkIGi0
+	gdgRhJt+p/1jWm7F1lSKQ==
+Date: Tue, 18 Oct 2011 13:38:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mike Galbraith <efault@gmx.de>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+In-Reply-To: <1318932693.6748.5.camel@marge.simson.net>
+Message-ID: <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net> <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com> <1316770936.6641.11.camel@marge.simson.net>
+ <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net> <1318233815.6527.5.camel@marge.simson.net>
+ <1318925436.9641.23.camel@marge.simson.net> <1318927355.21167.3.camel@twins> <1318927629.9641.27.camel@marge.simson.net> <1318928763.21167.5.camel@twins> <1318929825.9641.32.camel@marge.simson.net> <1318932693.6748.5.camel@marge.simson.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de
-Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
-References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk> <4E9DC496.3010909@metafoo.de>
-In-Reply-To: <4E9DC496.3010909@metafoo.de>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/11 19:25, Lars-Peter Clausen wrote:
-> On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
->> Needed for inkernel interfaces.
->>
+On Tue, 18 Oct 2011, Mike Galbraith wrote:
+
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > 
-> The bus_type structure keeps a list of all devices registered on that bus, so
-> you should be able to use bus_for_each_dev and bus_find_device for iterating
-> over the iio devices.
-I hadn't realised that but don't think it will work anyway. There are several
-other things than iio_dev based devices that sit on our bus unfortunately.
-None are in these initial merges but they will turn up later.
-The most common are iio_triggers but there are also a few weird ones such
-as the event generator for the dummy driver and the sysfstrig control device.  
-We could play some games to allow these to be identified, but it's going
-to be a mess. Probably easier to just maintain a second list as we are doing
-here.  Interesting suggestion though. Thanks and feel free to point out if there
-is a simple way around the identification issue.
+> cgroups: disallow attaching kthreadd
 > 
->> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
->> ---
->>  drivers/iio/iio.c       |    9 +++++++++
->>  include/linux/iio/iio.h |    1 +
->>  2 files changed, 10 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
->> index 9e6acc1..246a093 100644
->> --- a/drivers/iio/iio.c
->> +++ b/drivers/iio/iio.c
->> @@ -15,6 +15,9 @@
->>  #include <linux/iio/iio.h>
->>  #include <linux/iio/sysfs.h>
->>  
->> +static DEFINE_MUTEX(iio_device_list_lock);
->> +static LIST_HEAD(iio_device_list);
->> +
->>  static DEFINE_IDA(iio_ida);
->>  
->>  static struct bus_type iio_bus_type = {
->> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
->>  {
->>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
->>  	iio_device_unregister_sysfs(indio_dev);
->> +	mutex_lock(&iio_device_list_lock);
->> +	list_del(&indio_dev->dev_list_entry);
->> +	mutex_unlock(&iio_device_list_lock);
->>  }
->>  
->>  static struct device_type iio_dev_type = {
->> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
->>  	if (ret)
->>  		goto error_free_sysfs;
->>  
->> +	mutex_lock(&iio_device_list_lock);
->> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
->> +	mutex_unlock(&iio_device_list_lock);
->>  	return 0;
->>  
->>  error_free_sysfs:
->> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
->> index beedc5c..f14e7dc 100644
->> --- a/include/linux/iio/iio.h
->> +++ b/include/linux/iio/iio.h
->> @@ -192,6 +192,7 @@ struct iio_info {
->>   * @info:		[DRIVER] callbacks and constant info from driver
->>   * @groups:		[INTERN] attribute groups
->>   * @groupcounter:	[INTERN] index of next attribute group
->> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
->>   **/
->>  struct iio_dev {
->>  	int				id;
+> Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> a global resource, and needlessly leads unsuspecting users toward trouble.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> allocated is not schedulable.  Simple user error, but harmful to the box.
+> 
+> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> rendering the cpuset immortal.
 > 
 
+Eek, this seems like complete overkill, there may be cgroups now or in the 
+future that it would be perfectly acceptable to move kthreadd into without 
+any negative effects.  There's no reason to restrict it this broadly, 
+that's why I thought your change to cpusets was fine and acked it.  It's 
+the perfect candidate for what the ->can_attach() pointer for a cgroup can 
+identify is problematic for _that_ cgroup.
+
+> Save the user some unexpected trouble, just say no.
+> 
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> 
+
+A patch from Peter that only has your sign-off?
+
+> ---
+>  kernel/cgroup.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> Index: linux-3.0-tip/kernel/cgroup.c
+> ===================================================================
+> --- linux-3.0-tip.orig/kernel/cgroup.c
+> +++ linux-3.0-tip/kernel/cgroup.c
+> @@ -60,6 +60,7 @@
+>  #include <linux/eventfd.h>
+>  #include <linux/poll.h>
+>  #include <linux/flex_array.h> /* used in cgroup_attach_proc */
+> +#include <linux/kthread.h>
+>  
+>  #include <linux/atomic.h>
+>  
+> @@ -1824,6 +1825,14 @@ int cgroup_attach_task(struct cgroup *cg
+>  	struct cgroup *oldcgrp;
+>  	struct cgroupfs_root *root = cgrp->root;
+>  
+> +	/*
+> +	 * Workqueue threads may acquire PF_THREAD_BOUND and become
+> +	 * trapped in a cpuset, or RT worker may be born in a cgroup
+> +	 * with no rt_runtime allocated.  Just say no.
+> +	 */
+> +	if (tsk == kthreadd_task)
+> +		return -EINVAL;
+> +
+>  	/* Nothing to do if the task is already in that cgroup */
+>  	oldcgrp = task_cgroup_from_root(tsk, root);
+>  	if (cgrp == oldcgrp)
+> 
+> 
+> 
