@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab1JRNNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:13:10 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47511 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab1JRNNH (ORCPT
+	id S1757859Ab1JRNNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:13:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57163 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757840Ab1JRNNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:13:07 -0400
+	Tue, 18 Oct 2011 09:13:14 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 15/20] Staging: comedi: fix printk issue in contec_pci_dio.c
-Date: Tue, 18 Oct 2011 18:42:10 +0530
-Message-Id: <1318943535-8251-2-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 16/20] Staging: comedi: fix printk issue in amplc_pci230.c
+Date: Tue, 18 Oct 2011 18:42:11 +0530
+Message-Id: <1318943535-8251-3-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1318943535-8251-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1318943535-8251-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,99 +23,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the contec_pci_dio.c file that fixes up a printk
-warning found by the checkpatch.pl tool
-converted printks to dev_printk.
-Removed unnecessary printk statements.
+Converted printks to dev_printk.
+Removed unnecessary printk statement.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/contec_pci_dio.c |   24 ++++++++--------------
- 1 files changed, 9 insertions(+), 15 deletions(-)
+ drivers/staging/comedi/drivers/amplc_pci230.c |   34 +++++++++----------------
+ 1 files changed, 12 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/contec_pci_dio.c b/drivers/staging/comedi/drivers/contec_pci_dio.c
-index 871f109..f2b4cc4 100644
---- a/drivers/staging/comedi/drivers/contec_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/contec_pci_dio.c
-@@ -106,8 +106,6 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	struct pci_dev *pcidev = NULL;
- 	struct comedi_subdevice *s;
+diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
+index 7edeb11..a21653e 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci230.c
++++ b/drivers/staging/comedi/drivers/amplc_pci230.c
+@@ -767,9 +767,6 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	struct pci_dev *pci_dev = NULL;
+ 	int i = 0, irq_hdl, rc;
  
--	printk("comedi%d: contec: ", dev->minor);
+-	printk("comedi%d: amplc_pci230: attach %s %d,%d\n", dev->minor,
+-	       thisboard->name, it->options[0], it->options[1]);
 -
- 	dev->board_name = thisboard->name;
- 
- 	if (alloc_private(dev, sizeof(struct contec_private)) < 0)
-@@ -128,12 +126,11 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 			}
- 			devpriv->pci_dev = pcidev;
- 			if (comedi_pci_enable(pcidev, "contec_pci_dio")) {
--				printk
--				    ("error enabling PCI device and request regions!\n");
-+				dev_err(dev->hw_dev, "error enabling PCI device and request regions!\n");
- 				return -EIO;
- 			}
- 			dev->iobase = pci_resource_start(pcidev, 0);
--			printk(" base addr %lx ", dev->iobase);
-+			dev_dbg(dev->hw_dev, "base addr %lx\n", dev->iobase);
- 
- 			dev->board_ptr = contec_boards + 0;
- 
-@@ -154,20 +151,17 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 			s->range_table = &range_digital;
- 			s->insn_bits = contec_do_insn_bits;
- 
--			printk("attached\n");
--
- 			return 1;
+ 	/* Allocate the private structure area using alloc_private().
+ 	 * Macro defined in comedidev.h - memsets struct fields to 0. */
+ 	if ((alloc_private(dev, sizeof(struct pci230_private))) < 0)
+@@ -842,8 +839,8 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  		}
  	}
+ 	if (!pci_dev) {
+-		printk("comedi%d: No %s card found\n", dev->minor,
+-		       thisboard->name);
++		dev_err(dev->hw_dev, "comedi%d: No %s card found\n", dev->minor,
++			thisboard->name);
+ 		return -EIO;
+ 	}
+ 	devpriv->pci_dev = pci_dev;
+@@ -855,8 +852,8 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
--	printk("card not present!\n");
-+	dev_err(dev->hw_dev, "card not present!\n");
+ 	/* Enable PCI device and reserve I/O spaces. */
+ 	if (comedi_pci_enable(pci_dev, "amplc_pci230") < 0) {
+-		printk("comedi%d: failed to enable PCI device "
+-		       "and request regions\n", dev->minor);
++		dev_err(dev->hw_dev, "comedi%d: failed to enable PCI device and request regions\n",
++			dev->minor);
+ 		return -EIO;
+ 	}
  
- 	return -EIO;
+@@ -865,8 +862,6 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	iobase1 = pci_resource_start(pci_dev, 2);
+ 	iobase2 = pci_resource_start(pci_dev, 3);
+ 
+-	printk("comedi%d: %s I/O region 1 0x%04lx I/O region 2 0x%04lx\n",
+-	       dev->minor, dev->board_name, iobase1, iobase2);
+ 
+ 	devpriv->iobase1 = iobase1;
+ 	dev->iobase = iobase2;
+@@ -881,10 +876,9 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 		devpriv->hwver = inw(dev->iobase + PCI230P_HWVER);
+ 		if (devpriv->hwver < thisboard->min_hwver) {
+-			printk("comedi%d: %s - bad hardware version "
+-			       "- got %u, need %u\n", dev->minor,
+-			       dev->board_name, devpriv->hwver,
+-			       thisboard->min_hwver);
++			dev_err(dev->hw_dev, "comedi%d: %s - bad hardware version - got %u, need %u\n",
++				dev->minor, dev->board_name,
++				devpriv->hwver, thisboard->min_hwver);
+ 			return -EIO;
+ 		}
+ 		if (devpriv->hwver > 0) {
+@@ -932,13 +926,12 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	irq_hdl = request_irq(devpriv->pci_dev->irq, pci230_interrupt,
+ 			      IRQF_SHARED, "amplc_pci230", dev);
+ 	if (irq_hdl < 0) {
+-		printk("comedi%d: unable to register irq, "
+-		       "commands will not be available %d\n", dev->minor,
+-		       devpriv->pci_dev->irq);
++		dev_dbg(dev->hw_dev, "comedi%d: unable to register irq, commands will not be available %d\n",
++			dev->minor, devpriv->pci_dev->irq);
+ 	} else {
+ 		dev->irq = devpriv->pci_dev->irq;
+-		printk("comedi%d: registered irq %u\n", dev->minor,
+-		       devpriv->pci_dev->irq);
++		dev_dbg(dev->hw_dev, "comedi%d: registered irq %u\n",
++			dev->minor, devpriv->pci_dev->irq);
+ 	}
+ 
+ 	/*
+@@ -1001,8 +994,6 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("comedi%d: attached\n", dev->minor);
+-
+ 	return 1;
  }
  
- static int contec_detach(struct comedi_device *dev)
+@@ -1016,7 +1007,6 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+  */
+ static int pci230_detach(struct comedi_device *dev)
  {
--	printk("comedi%d: contec: remove\n", dev->minor);
+-	printk("comedi%d: amplc_pci230: remove\n", dev->minor);
  
- 	if (devpriv && devpriv->pci_dev) {
- 		if (dev->iobase)
-@@ -197,8 +191,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
- {
+ 	if (dev->subdevices && thisboard->have_dio)
+ 		/* Clean up dio subdevice. */
+@@ -1205,7 +1195,7 @@ static int pci230_ai_rinsn(struct comedi_device *dev,
+ 		if (i == TIMEOUT) {
+ 			/* printk() should be used instead of printk()
+ 			 * whenever the code can be called from real-time. */
+-			printk("timeout\n");
++			dev_err(dev->hw_dev, "timeout\n");
+ 			return -ETIMEDOUT;
+ 		}
  
--	printk("contec_do_insn_bits called\n");
--	printk(" data: %d %d\n", data[0], data[1]);
-+	dev_dbg(dev->hw_dev, "contec_do_insn_bits called\n");
-+	dev_dbg(dev->hw_dev, "data: %d %d\n", data[0], data[1]);
- 
- 	if (insn->n != 2)
- 		return -EINVAL;
-@@ -206,8 +200,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
- 	if (data[0]) {
- 		s->state &= ~data[0];
- 		s->state |= data[0] & data[1];
--		printk("  out: %d on %lx\n", s->state,
--		       dev->iobase + thisboard->out_offs);
-+		dev_dbg(dev->hw_dev, "out: %d on %lx\n", s->state,
-+			dev->iobase + thisboard->out_offs);
- 		outw(s->state, dev->iobase + thisboard->out_offs);
- 	}
- 	return 2;
-@@ -218,8 +212,8 @@ static int contec_di_insn_bits(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
- {
- 
--	printk("contec_di_insn_bits called\n");
--	printk(" data: %d %d\n", data[0], data[1]);
-+	dev_dbg(dev->hw_dev, "contec_di_insn_bits called\n");
-+	dev_dbg(dev->hw_dev, "data: %d %d\n", data[0], data[1]);
- 
- 	if (insn->n != 2)
- 		return -EINVAL;
 -- 
 1.7.6.4
 
