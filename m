@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab1JRMGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:06:46 -0400
+	id S932214Ab1JRMGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:06:49 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:53163 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893Ab1JRMGp (ORCPT
+	with ESMTP id S932194Ab1JRMGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:06:45 -0400
+	Tue, 18 Oct 2011 08:06:47 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
         aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
         saaguirre@ti.com, jic23@cam.ac.uk, hemanthv@ti.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCHv2 0/7] Add spi support for CMA3000 driver and new driver CMR3000
-Date: Tue, 18 Oct 2011 14:06:29 +0200
-Message-Id: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCHv2 1/7] input/cma3000_d0x: Support devices without pdata
+Date: Tue, 18 Oct 2011 14:06:30 +0200
+Message-Id: <1318939596-27330-2-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1318939596-27330-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following set of patches add spi and device tree support for the cma3000 driver and also
-add support for the cmr3000 gyroscope.
+Architectures based on device-tree does not have platform data
+associated to the spi/i2c devices.
+This patch allows those architectures to use the cma3000 driver with
+a default configuration.
 
-v2 of the set.
+---
 
-Changelog:
+v2: Fixes suggested by Jonathan Cameron
+    -Spelling
+    -Simplify pdata!=NULL check
 
-   v2: -Changes propossed by Jonathan Cameron
-       -More fixes for the cma3000 driver
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/input/misc/cma3000_d0x.c |   20 +++++++++++++++-----
+ 1 files changed, 15 insertions(+), 5 deletions(-)
 
-
-Ricardo Ribalda Delgado (7):
-  input/cma3000_d0x: Support devices without pdata
-  input/cma3000_d0x: Check silicon version
-  input/cma3000_d0x: Keep configuration on poweroff
-  input/cma3000_d0x: Add CMA3000 spi support
-  Input: add CMR3000 gyrsocope driver
-  input/cma3000_d0x: Unwind reverse order of init
-  input/cma3000_d0x: Match comment to name of struct
-
- drivers/input/misc/Kconfig           |   38 ++++-
- drivers/input/misc/Makefile          |    3 +
- drivers/input/misc/cma3000_d0x.c     |   36 +++-
- drivers/input/misc/cma3000_d0x_spi.c |  178 ++++++++++++++++
- drivers/input/misc/cmr3000_d0x.c     |  382 ++++++++++++++++++++++++++++++++++
- drivers/input/misc/cmr3000_d0x.h     |   45 ++++
- drivers/input/misc/cmr3000_d0x_spi.c |  178 ++++++++++++++++
- include/linux/input/cma3000.h        |    2 +-
- include/linux/input/cmr3000.h        |   54 +++++
- 9 files changed, 905 insertions(+), 11 deletions(-)
- create mode 100644 drivers/input/misc/cma3000_d0x_spi.c
- create mode 100644 drivers/input/misc/cmr3000_d0x.c
- create mode 100644 drivers/input/misc/cmr3000_d0x.h
- create mode 100644 drivers/input/misc/cmr3000_d0x_spi.c
- create mode 100644 include/linux/input/cmr3000.h
-
+diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+index 1633b63..f2e87e3 100644
+--- a/drivers/input/misc/cma3000_d0x.c
++++ b/drivers/input/misc/cma3000_d0x.c
+@@ -62,6 +62,18 @@
+ #define BIT_TO_2G  18
+ #define BIT_TO_8G  71
+ 
++static struct cma3000_platform_data cma3000_default_pdata = {
++	.mdthr = 0x8,
++	.mdfftmr = 0x33,
++	.ffthr = 0x8,
++	.mode = CMAMODE_MEAS400,
++	.g_range = CMARANGE_2G,
++	.fuzz_x = BIT_TO_2G,
++	.fuzz_y = BIT_TO_2G,
++	.fuzz_z = BIT_TO_2G,
++	.irqflags = 0,
++};
++
+ struct cma3000_accl_data {
+ 	const struct cma3000_bus_ops *bus_ops;
+ 	const struct cma3000_platform_data *pdata;
+@@ -289,13 +301,11 @@ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+ 	int rev;
+ 	int error;
+ 
+-	if (!pdata) {
+-		dev_err(dev, "platform data not found\n");
+-		error = -EINVAL;
+-		goto err_out;
++	if (pdata == NULL) {
++		dev_info(dev, "platform data not found, using default\n");
++		pdata = &cma3000_default_pdata;
+ 	}
+ 
+-
+ 	/* if no IRQ return error */
+ 	if (irq == 0) {
+ 		error = -EINVAL;
 -- 
 1.7.7
 
