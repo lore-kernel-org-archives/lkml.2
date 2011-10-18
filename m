@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab1JRPec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:34:32 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37395 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759Ab1JRPea (ORCPT
+	id S932880Ab1JRPev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:34:51 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:45604 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932861Ab1JRPes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:34:30 -0400
+	Tue, 18 Oct 2011 11:34:48 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V7 07/26] vfs: Optimize out IS_RICHACL() if CONFIG_FS_RICHACL is not defined
-Date: Tue, 18 Oct 2011 21:02:42 +0530
-Message-Id: <1318951981-5508-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V7 12/26] vfs: Make acl_permission_check() work for richacls
+Date: Tue, 18 Oct 2011 21:02:47 +0530
+Message-Id: <1318951981-5508-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,48 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-if CONFIG_FS_RICHACL is not defined optimize out
-the ACL check function.
-
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/Kconfig         |    3 +++
- include/linux/fs.h |    5 +++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ fs/namei.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index 9fe0b34..7939190 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -46,6 +46,9 @@ endif # BLOCK
- config FS_POSIX_ACL
- 	def_bool n
+diff --git a/fs/namei.c b/fs/namei.c
+index eb8f918..0c28f95 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -230,6 +230,20 @@ static int acl_permission_check(struct inode *inode, int mask)
+ 	if (current_user_ns() != inode_userns(inode))
+ 		goto other_perms;
  
-+config FS_RICHACL
-+	def_bool n
++	if (IS_RICHACL(inode)) {
++		int error = check_acl(inode, mask);
++		if (error != -EAGAIN)
++			return error;
++		if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
++			    MAY_CHMOD | MAY_SET_TIMES)) {
++			/*
++			 * The file permission bit cannot grant these
++			 * permissions.
++			 */
++			return -EACCES;
++		}
++	}
 +
- config EXPORTFS
- 	tristate
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 7b4bfe6..f3ebf86 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -271,7 +271,12 @@ struct inodes_stat_t {
- #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
- #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
- #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
-+
-+#ifdef CONFIG_FS_RICHACL
- #define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
-+#else
-+#define IS_RICHACL(inode)	0
-+#endif
- 
- #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
+ 	if (likely(current_fsuid() == inode->i_uid))
+ 		mode >>= 6;
+ 	else {
 -- 
 1.7.5.4
 
