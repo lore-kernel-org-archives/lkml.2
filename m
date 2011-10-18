@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab1JRIXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:23:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44453 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab1JRIXR (ORCPT
+	id S1754090Ab1JRI2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:28:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55184 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595Ab1JRI23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:23:17 -0400
-From: Daniel J Blueman <daniel@numascale-asia.com>
-To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>
-Cc: Steffen Persvold <sp@numascale.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Daniel J Blueman <daniel@numascale-asia.com>
-Subject: [PATCH 3/3] Add NumaChip quirk
-Date: Tue, 18 Oct 2011 16:22:36 +0800
-Message-Id: <1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com>
-References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com>
+	Tue, 18 Oct 2011 04:28:29 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, jic23@cam.ac.uk, hemanthv@ti.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 1/5] input/cma3000_d0x: Support devices without pdata
+Date: Tue, 18 Oct 2011 10:28:02 +0200
+Message-Id: <1318926486-10330-2-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add quirk for Numascale's NumaChip to prevent resource conflicts.
+Architechtures based on device-tree does not have platform data
+associated to the spi/i2c devices.
+This patch allows those architechtures to use the cma3000 driver with
+a default configuration.
 
-v2:
- - [Daniel] rediffed and validated against 3.1-rc10
-
-Signed-off-by: Steffen Persvold <sp@numascale.com>
-Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/pci/quirks.c    |   14 ++++++++++++++
- include/linux/pci_ids.h |    4 ++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ drivers/input/misc/cma3000_d0x.c |   21 +++++++++++++++++++--
+ 1 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 1196f61..051b793 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2679,6 +2679,20 @@ static void __devinit quirk_hotplug_bridge(struct pci_dev *dev)
+diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+index 1633b63..2f993d5 100644
+--- a/drivers/input/misc/cma3000_d0x.c
++++ b/drivers/input/misc/cma3000_d0x.c
+@@ -62,6 +62,18 @@
+ #define BIT_TO_2G  18
+ #define BIT_TO_8G  71
  
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_HINT, 0x0020, quirk_hotplug_bridge);
++static struct cma3000_platform_data cma3000_default_pdata = {
++	.mdthr = 0x8,
++	.mdfftmr = 0x33,
++	.ffthr = 0x8,
++	.mode = CMAMODE_MEAS400,
++	.g_range = CMARANGE_2G,
++	.fuzz_x = BIT_TO_2G,
++	.fuzz_y = BIT_TO_2G,
++	.fuzz_z = BIT_TO_2G,
++	.irqflags = 0,
++};
++
+ struct cma3000_accl_data {
+ 	const struct cma3000_bus_ops *bus_ops;
+ 	const struct cma3000_platform_data *pdata;
+@@ -283,19 +295,24 @@ EXPORT_SYMBOL(cma3000_resume);
+ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+ 				       const struct cma3000_bus_ops *bops)
+ {
+-	const struct cma3000_platform_data *pdata = dev->platform_data;
++	const struct cma3000_platform_data *pdata;
+ 	struct cma3000_accl_data *data;
+ 	struct input_dev *input_dev;
+ 	int rev;
+ 	int error;
  
-+/* Clear all resources on NumaChip to avoid conflicts */
-+static void __devinit numachip_resource_fixup(struct pci_dev *pdev)
-+{
-+	int i;
++	if (!dev->platform_data) {
++		dev_info(dev, "platform data not found, using default\n");
++		pdata = &cma3000_default_pdata;
++	} else
++		pdata = dev->platform_data;
 +
-+	for (i = PCI_STD_RESOURCES; i <= PCI_ROM_RESOURCE; i++)
-+		memset(&pdev->resource[i], 0, sizeof(pdev->resource[i]));
-+
-+	dev_notice(&pdev->dev, "Disabled all PCI resources for NumaChip\n");
-+}
-+
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NUMASCALE,
-+	PCI_DEVICE_ID_NUMASCALE_NUMACHIP0, numachip_resource_fixup);
-+
- /*
-  * This is a quirk for the Ricoh MMC controller found as a part of
-  * some mulifunction chips.
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index ae96bbe..02e0959 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2400,6 +2400,10 @@
+ 	if (!pdata) {
+ 		dev_err(dev, "platform data not found\n");
+ 		error = -EINVAL;
+ 		goto err_out;
+ 	}
  
- #define PCI_VENDOR_ID_AZWAVE		0x1a3b
- 
-+#define PCI_VENDOR_ID_NUMASCALE		0x1b47
-+#define PCI_DEVICE_ID_NUMASCALE_NUMACHIP0 0x0601
-+#define PCI_DEVICE_ID_NUMASCALE_NUMACHIP1 0x0602
-+
- #define PCI_VENDOR_ID_TEKRAM		0x1de1
- #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
- 
+-
+ 	/* if no IRQ return error */
+ 	if (irq == 0) {
+ 		error = -EINVAL;
 -- 
-1.7.5.4
+1.7.7
 
