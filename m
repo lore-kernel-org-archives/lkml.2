@@ -1,141 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab1JRIKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:10:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45990 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753742Ab1JRIKm (ORCPT
+	id S1753494Ab1JRIMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:12:34 -0400
+Received: from eastrmfepo202.cox.net ([68.230.241.217]:45226 "EHLO
+	eastrmfepo202.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab1JRIMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:10:42 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+6JIkCqom60Nhn1TI5l91qK6jJGX8fI5gN5erWRJ
-	lADx+eCS2Ak3MV
-Subject: patch] cpusets, cgroups: disallow attaching kthreadd
-From: Mike Galbraith <efault@gmx.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <1318233815.6527.5.camel@marge.simson.net>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-	 <1316770936.6641.11.camel@marge.simson.net>
-	 <1316775204.7562.9.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
-	 <1316788392.6544.33.camel@marge.simson.net>
-	 <1318224892.6161.45.camel@marge.simson.net>
-	 <1318233815.6527.5.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 10:10:36 +0200
-Message-ID: <1318925436.9641.23.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Tue, 18 Oct 2011 04:12:32 -0400
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020208.4E9D1FD5.00A2,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=ASjpOCvEPoSfhuYnpalwTqAN2s78hBywh12H8bbbxwo=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=PLmm6w-6prgA:10 a=pZmP9RTn-EsA:10
+ a=Cfj4BQAnxiAA:10 a=8ECo3Rf5bFOjVcjEo8sP3w==:17 a=Zk3OmFfbAAAA:8
+ a=pnUWbHQooznaguQ6ejwA:9 a=Ft8UYL4EG9YA:10 a=8nGIl2609KkA:10
+ a=x46t9oslO7cA:10 a=lehZvYmbTaXmJDzS:21 a=1r-1WakwmlR75JwL:21
+ a=8ECo3Rf5bFOjVcjEo8sP3w==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN)
+ smtp.auth=infopromo19@cox.net
+Reply-To: <terrywilliams201@aim.com>
+From: "Microsoft Office" <info@yahoo.co.uk>
+Subject: @2011 MICROSOFT AWARD !!
+Date: Tue, 18 Oct 2011 09:11:39 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 111017-1, 10/18/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20111018081231.CSWR3788.eastrmfepo202.cox.net@eastrmimpo03.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 10:03 +0200, Mike Galbraith wrote:
-> On Mon, 2011-10-10 at 07:34 +0200, Mike Galbraith wrote:
-> > Maybe the below (which seems to have been stillborn) should be done to
-> > cgroups as well.  Postmortem: kthreadd is attached to a cgroup with no
-> > rt_runtime allocated, gives birth to severely handicapped kstop threads,
-> > humongous crash dump follows.
-> > 
-> > Fiddling with kthreadd is user error, but since it makes no sense to
-> > move the thing, why not just say no, and save the user's toes some
-> > needless wear and tear.
-> > 
-> > > If cpusets doesn't want to let PF_THREAD_BOUND threads out, how about
-> > > cpusets not letting userland scripts attach kthreadd instead?
-> > > 
-> > > cpusets: disallow moving kthreadd into a cpuset.
-> 
-> So how about this, both dirt simple and effective.
+Message bodyA lump sum of (?1,000,000.00) have been credited to your E-mail Address.Congrats...Batch number YM 09102XN
+Confirm this receipt by contacting Mr. Martin Lahm via
 
-Ahem, the buildable copy..
-
-I've been asked to add this toe saver to the trees I work on at least
-until something better comes along.  ACK/NACK equally understandable
-given the infrequency of the toe shooting, and user's right to do so.
-
-Off you go, fly or die little patchlet.
-
-cpusets, cgroups: disallow attaching kthreadd
-
-Allowing kthreadd to be moved to a non-root group makes no sense, it being
-a global resource, and needlessly leads unsuspecting users toward trouble.
-
-1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-allocated is not schedulable.  Simple user error, but harmful to the box.
-
-2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-rendering the cpuset immortal.
-
-Save the user some unexpected trouble, just say no.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-
----
- kernel/cpuset.c |    6 ++++--
- kernel/sched.c  |   10 ++++++++++
- 2 files changed, 14 insertions(+), 2 deletions(-)
-
-Index: linux-3.0-tip/kernel/cpuset.c
-===================================================================
---- linux-3.0-tip.orig/kernel/cpuset.c
-+++ linux-3.0-tip/kernel/cpuset.c
-@@ -59,6 +59,7 @@
- #include <linux/mutex.h>
- #include <linux/workqueue.h>
- #include <linux/cgroup.h>
-+#include <linux/kthread.h>
- 
- /*
-  * Workqueue for cpuset related tasks.
-@@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
- 	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
- 	 * applicable for such threads.  This prevents checking for success of
- 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
--	 * be changed.
-+	 * be changed.  We also disallow attaching kthreadd, to prevent it's
-+	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
- 	 */
--	if (tsk->flags & PF_THREAD_BOUND)
-+	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
- 		return -EINVAL;
- 
- 	return 0;
-Index: linux-3.0-tip/kernel/sched.c
-===================================================================
---- linux-3.0-tip.orig/kernel/sched.c
-+++ linux-3.0-tip/kernel/sched.c
-@@ -71,6 +71,7 @@
- #include <linux/ctype.h>
- #include <linux/ftrace.h>
- #include <linux/slab.h>
-+#include <linux/kthread.h>
- 
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
-@@ -9141,6 +9142,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
- static int
- cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- {
-+	/*
-+	 * kthreadd can fork workers for an RT workqueue in a cgroup
-+	 * which may or may not have rt_runtime allocated.  Just say no,
-+	 * as attaching a global resource to a non-root group  doesn't
-+	 * make any sense anyway.
-+	 */
-+	if (tsk == kthreadd_task)
-+		return -EINVAL;
-+
- #ifdef CONFIG_RT_GROUP_SCHED
- 	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
- 		return -EINVAL;
-
-
+Email:y.msn021010121@live.com
