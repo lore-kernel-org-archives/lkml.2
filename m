@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1JRRuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 13:50:17 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44825 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755396Ab1JRRuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 13:50:15 -0400
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-In-Reply-To: <op.v3j5ent03l0zgt@mpn-glaptop>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
-	 <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
-	 <20111018122109.GB6660@csn.ul.ie>  <op.v3j5ent03l0zgt@mpn-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 10:48:46 -0700
-Message-ID: <1318960126.4465.249.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751658Ab1JRRxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 13:53:06 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:55756 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1JRRxE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 13:53:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111018173521.GF30644@flint.arm.linux.org.uk>
+References: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
+	<20111018074211.GA13483@flint.arm.linux.org.uk>
+	<CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+	<20111018094944.GA30644@flint.arm.linux.org.uk>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202367258@CORPEXCH1.na.ads.idt.com>
+	<20111018173521.GF30644@flint.arm.linux.org.uk>
+Date: Tue, 18 Oct 2011 23:23:03 +0530
+Message-ID: <CAJe_Zhcrm_oQhU-RO970r1VN7LroNi8sAfRyQQP0M-QCC9V_UQ@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 10:26 -0700, Michal Nazarewicz wrote:
-> > You can do this in a more general fashion by checking the
-> > zone boundaries and resolving the pfn->page every MAX_ORDER_NR_PAGES.
-> > That will not be SPARSEMEM specific.
-> 
-> I've tried doing stuff that way but it ended up with much more code.
-
-I guess instead of:
-
->> +static inline bool zone_pfn_same_memmap(unsigned long pfn1, unsigned long pfn2)
->> +{
->> +    return pfn_to_section_nr(pfn1) == pfn_to_section_nr(pfn2);
->> +}
-
-You could do:
-
-static inline bool zone_pfn_same_maxorder(unsigned long pfn1, unsigned long pfn2)
-{
-	unsigned long mask = MAX_ORDER_NR_PAGES-1;
-	return (pfn1 & mask) == (pfn2 & mask);
-}
-
-I think that works.  Should be the same code you have now, basically.
-
--- Dave
-
+On 18 October 2011 23:05, Russell King <rmk@arm.linux.org.uk> wrote:
+>
+> However, Jassi's suggestion that we redefine dma_addr_t to be 64-bit
+> for just the DMA engine code is utterly insane and unworkable.  We
+> can't have typedefs which change depending on which bits of code are
+> being built, potentially changing the layout of structures being passed
+> around inside the kernel.
+>
+I am not sure you understood what I meant.
+When I said
+     "Perhaps simply change dma_addr_t to u64 in dmaengine.h alone"
+I meant
+      s/dma_addr_t/u64
