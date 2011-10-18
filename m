@@ -1,61 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab1JRHUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 03:20:36 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:33198 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab1JRHUf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 03:20:35 -0400
-Date: Tue, 18 Oct 2011 09:20:30 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111018092030.4d55ccfc@de.ibm.com>
-In-Reply-To: <4E9C94A1.7080209@zytor.com>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-	<20111007070842.GA27555@hostway.ca>
-	<20111007174848.GA11011@hostway.ca>
-	<1318010515.398.8.camel@twins>
-	<20111008005035.GC22843@hostway.ca>
-	<1318060551.8395.0.camel@twins>
-	<20111012213555.GC24461@hostway.ca>
-	<20111013232521.GA5654@hostway.ca>
-	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
-	<20111017095544.6bf76dea@de.ibm.com>
-	<4E9C94A1.7080209@zytor.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	id S1757128Ab1JRHXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 03:23:39 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:47955 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257Ab1JRHXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 03:23:38 -0400
+Subject: Re: [PATCH] rtc: rtc-puv3: Add __devinit and __devexit markers for
+ probe and remove
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Axel Lin <axel.lin@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+In-Reply-To: <1317824987.2674.1.camel@phoenix>
+References: <1317824987.2674.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Tue, 18 Oct 2011 15:22:21 +0800
+Message-ID: <1318922541.1789.36.camel@epip-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011 13:48:33 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+Hi Axel,
+The patch yield following warnings:
 
-> On 10/17/2011 12:55 AM, Martin Schwidefsky wrote:
-> > 
-> > I introduced those macros to find all the places in the kernel operating
-> > on a cputime value. The additional debug patch defined cputime_t as a
-> > struct which contained a single u64. That way I got a compiler error
-> > for every place I missed.
-> > 
+WARNING: drivers/rtc/built-in.o(.data+0x90): Section mismatch in
+reference from the variable puv3_rtcdrv to the
+function .devinit.text:puv3_rtc_probe()
+The variable puv3_rtcdrv references
+the function __devinit puv3_rtc_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the
+variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console
+
+WARNING: drivers/rtc/built-in.o(.data+0x94): Section mismatch in
+reference from the variable puv3_rtcdrv to the
+function .devexit.text:puv3_rtc_remove()
+The variable puv3_rtcdrv references
+the function __devexit puv3_rtc_remove()
+If the reference is valid then annotate the
+variable with __exit* (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console
+
+WARNING: drivers/built-in.o(.data+0x6c04): Section mismatch in reference
+from the variable puv3_rtcdrv to the
+function .devinit.text:puv3_rtc_probe()
+The variable puv3_rtcdrv references
+the function __devinit puv3_rtc_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the
+variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console
+
+WARNING: drivers/built-in.o(.data+0x6c08): Section mismatch in reference
+from the variable puv3_rtcdrv to the
+function .devexit.text:puv3_rtc_remove()
+The variable puv3_rtcdrv references
+the function __devexit puv3_rtc_remove()
+If the reference is valid then annotate the
+variable with __exit* (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console
+
+WARNING: vmlinux.o(.data+0x1126c): Section mismatch in reference from
+the variable puv3_rtcdrv to the function .devinit.text:puv3_rtc_probe()
+The variable puv3_rtcdrv references
+the function __devinit puv3_rtc_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the
+variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console
+
+WARNING: vmlinux.o(.data+0x11270): Section mismatch in reference from
+the variable puv3_rtcdrv to the function .devexit.text:puv3_rtc_remove()
+The variable puv3_rtcdrv references
+the function __devexit puv3_rtc_remove()
+If the reference is valid then annotate the
+variable with __exit* (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one,
+*_console
+
+For puv3_rtc_probe, I think it should be in the white-list, but warnings
+are yielded.
+For puv3_rtc_remove, the warning could be disappeared by modifying
+__devexit to __exit, however is it proper?
+
+Also,
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>
+
+Any advice is appreciated, thanks.
+
+Guan Xuetao
+
+
+On Wed, 2011-10-05 at 22:29 +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/rtc/rtc-puv3.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> And was there a reason that that structure thingy didn't get merged?
+> diff --git a/drivers/rtc/rtc-puv3.c b/drivers/rtc/rtc-puv3.c
+> index b3eba3c..e4b6880 100644
+> --- a/drivers/rtc/rtc-puv3.c
+> +++ b/drivers/rtc/rtc-puv3.c
+> @@ -220,7 +220,7 @@ static void puv3_rtc_enable(struct platform_device *pdev, int en)
+>  	}
+>  }
+>  
+> -static int puv3_rtc_remove(struct platform_device *dev)
+> +static int __devexit puv3_rtc_remove(struct platform_device *dev)
+>  {
+>  	struct rtc_device *rtc = platform_get_drvdata(dev);
+>  
+> @@ -236,7 +236,7 @@ static int puv3_rtc_remove(struct platform_device *dev)
+>  	return 0;
+>  }
+>  
+> -static int puv3_rtc_probe(struct platform_device *pdev)
+> +static int __devinit puv3_rtc_probe(struct platform_device *pdev)
+>  {
+>  	struct rtc_device *rtc;
+>  	struct resource *res;
 
-Oh yes, it is fragile, hackish and ugly as hell.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
 
