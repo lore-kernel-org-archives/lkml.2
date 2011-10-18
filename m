@@ -1,45 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab1JRSwf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:52:35 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:42976 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752365Ab1JRSwe (ORCPT
+	id S1752785Ab1JRS6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:58:06 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34669
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752649Ab1JRS6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:52:34 -0400
-X-Sasl-enc: 3Q2pDzlroDdUksOob/TnMLm4/3SNKScJTPCmKVJFJnpY 1318963953
-Date: Tue, 18 Oct 2011 11:52:18 -0700
-From: Greg KH <greg@kroah.com>
-To: jim.cromie@gmail.com, jbaron@redhat.com
-Cc: joe@perches.com, bart.vanassche@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/26] dynamic_debug: add pending queries, etc (~resend)
-Message-ID: <20111018185218.GA22653@kroah.com>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
- <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
+	Tue, 18 Oct 2011 14:58:05 -0400
+Date: Tue, 18 Oct 2011 14:58:03 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: David Smith <dsmith@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH] Tracepoint: add exec tracepoint
+Message-ID: <20111018185803.GA32498@infradead.org>
+References: <4E9DC85F.3080507@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
+In-Reply-To: <4E9DC85F.3080507@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 02:33:06PM -0600, jim.cromie@gmail.com wrote:
-> This is essentially a rebase, resend, with trivial changes:
-> - drops scx200 - off topic
-> - adds pr_cont_once tweak - remove pr_fmt
-> as before, it has:
-> - Doc tweaks per Randy Dunlap
-> - pr_fmt_$severity, suggested by Joe Perches
-> - does not change pr_fmt() default, per Joe
-> 
-> Rebased onto git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
-> + Jason's 8-12/12 which havent made it into driver-core
-> Ive not resent them here.
+On Tue, Oct 18, 2011 at 01:41:35PM -0500, David Smith wrote:
+> Added general purpose exec tracepoint.  The 'bprm' argument gives details of the exec.
 
-As stated before, I'm not going to be able to accept these until I get
-Jason's ack on them.
-
-Jason?
+Given that you only need the filename from the bprm please just pass
+it directly.
 
