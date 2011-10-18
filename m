@@ -1,183 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab1JRCgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 22:36:39 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46724 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab1JRCgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 22:36:38 -0400
-Message-ID: <1318905385.4228.1.camel@phoenix>
-Subject: [PATCH v2] ASoC: wm9081: Use snd_soc_update_bits for
- read-modify-write
-From: axel <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Date: Tue, 18 Oct 2011 10:36:25 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757262Ab1JRCsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 22:48:54 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60562 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716Ab1JRCsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 22:48:52 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] sound/soc/au1x: keep pointer to resource so it can be freed
+Date: Tue, 18 Oct 2011 05:45:54 +0200
+Message-Id: <1318909555-12933-2-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_update_bits for read-modify-write register access instead of
-open-coding it using snd_soc_read and snd_soc_write
+From: Julia Lawall <julia@diku.dk>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Add a new variable for storing resources accessed subsequent to the one
+accessed using request_mem_region, so the one accessed using
+request_mem_region can be released if needed.
+
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r@
+expression E, E1;
+identifier f;
+statement S1,S2,S3;
+@@
+
+if (E == NULL)
+{
+  ... when != if (E == NULL || ...) S1 else S2
+      when != E = E1
+*E->f
+  ... when any
+  return ...;
+}
+else S3
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
-v2:
-For Initial cold start ( change bias level from SND_SOC_BIAS_OFF to
-SND_SOC_BIAS_STANDBY ), the v1 does not set VMID_SEL[1:0] bits
-correctly for Normal bias enable & soft start off.
-In v2 we also clear VMID_SEL[1:0] bits for Normal bias enable & soft start off.
-We did clear VMID_SEL[1:0] bits in SND_SOC_BIAS_OFF,
-thus we know the VMID_SEL[1:0] bits status is 0b00 in this case.
+ sound/soc/au1x/psc-ac97.c |   14 +++++++-------
+ sound/soc/au1x/psc-i2s.c  |   14 +++++++-------
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
- sound/soc/codecs/wm9081.c |   82 +++++++++++++++++++-------------------------
- 1 files changed, 35 insertions(+), 47 deletions(-)
-
-diff --git a/sound/soc/codecs/wm9081.c b/sound/soc/codecs/wm9081.c
-index 66092ef..9c38ddb 100644
---- a/sound/soc/codecs/wm9081.c
-+++ b/sound/soc/codecs/wm9081.c
-@@ -766,84 +766,73 @@ static const struct snd_soc_dapm_route wm9081_audio_paths[] = {
- static int wm9081_set_bias_level(struct snd_soc_codec *codec,
- 				 enum snd_soc_bias_level level)
+diff --git a/sound/soc/au1x/psc-ac97.c b/sound/soc/au1x/psc-ac97.c
+index 172eefd..62e5640 100644
+--- a/sound/soc/au1x/psc-ac97.c
++++ b/sound/soc/au1x/psc-ac97.c
+@@ -364,7 +364,7 @@ static const struct snd_soc_dai_driver au1xpsc_ac97_dai_template = {
+ static int __devinit au1xpsc_ac97_drvprobe(struct platform_device *pdev)
  {
--	u16 reg;
--
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
- 		break;
+ 	int ret;
+-	struct resource *r;
++	struct resource *r, *r1;
+ 	unsigned long sel;
+ 	struct au1xpsc_audio_data *wd;
  
- 	case SND_SOC_BIAS_PREPARE:
- 		/* VMID=2*40k */
--		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--		reg &= ~WM9081_VMID_SEL_MASK;
--		reg |= 0x2;
--		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+				    WM9081_VMID_SEL_MASK, 0x2);
+@@ -388,15 +388,15 @@ static int __devinit au1xpsc_ac97_drvprobe(struct platform_device *pdev)
+ 	if (!wd->mmio)
+ 		goto out1;
  
- 		/* Normal bias current */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg &= ~WM9081_STBY_BIAS_ENA;
--		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_STBY_BIAS_ENA, 0);
- 		break;
+-	r = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+-	if (!r)
++	r1 = platform_get_resource(pdev, IORESOURCE_DMA, 0);
++	if (!r1)
+ 		goto out2;
+-	wd->dmaids[SNDRV_PCM_STREAM_PLAYBACK] = r->start;
++	wd->dmaids[SNDRV_PCM_STREAM_PLAYBACK] = r1->start;
  
- 	case SND_SOC_BIAS_STANDBY:
- 		/* Initial cold start */
- 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
- 			/* Disable LINEOUT discharge */
--			reg = snd_soc_read(codec, WM9081_ANTI_POP_CONTROL);
--			reg &= ~WM9081_LINEOUT_DISCH;
--			snd_soc_write(codec, WM9081_ANTI_POP_CONTROL, reg);
-+			snd_soc_update_bits(codec, WM9081_ANTI_POP_CONTROL,
-+					    WM9081_LINEOUT_DISCH, 0);
+-	r = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+-	if (!r)
++	r1 = platform_get_resource(pdev, IORESOURCE_DMA, 1);
++	if (!r1)
+ 		goto out2;
+-	wd->dmaids[SNDRV_PCM_STREAM_CAPTURE] = r->start;
++	wd->dmaids[SNDRV_PCM_STREAM_CAPTURE] = r1->start;
  
- 			/* Select startup bias source */
--			reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--			reg |= WM9081_BIAS_SRC | WM9081_BIAS_ENA;
--			snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+			snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+					    WM9081_BIAS_SRC | WM9081_BIAS_ENA,
-+					    WM9081_BIAS_SRC | WM9081_BIAS_ENA);
+ 	/* configuration: max dma trigger threshold, enable ac97 */
+ 	wd->cfg = PSC_AC97CFG_RT_FIFO8 | PSC_AC97CFG_TT_FIFO8 |
+diff --git a/sound/soc/au1x/psc-i2s.c b/sound/soc/au1x/psc-i2s.c
+index 7c5ae92..621e260 100644
+--- a/sound/soc/au1x/psc-i2s.c
++++ b/sound/soc/au1x/psc-i2s.c
+@@ -290,7 +290,7 @@ static const struct snd_soc_dai_driver au1xpsc_i2s_dai_template = {
  
- 			/* VMID 2*4k; Soft VMID ramp enable */
--			reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--			reg |= WM9081_VMID_RAMP | 0x6;
--			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
--
-+			snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+					    WM9081_VMID_RAMP | 0x6,
-+					    WM9081_VMID_RAMP | 0x6);
- 			mdelay(100);
+ static int __devinit au1xpsc_i2s_drvprobe(struct platform_device *pdev)
+ {
+-	struct resource *r;
++	struct resource *r, *r1;
+ 	unsigned long sel;
+ 	int ret;
+ 	struct au1xpsc_audio_data *wd;
+@@ -313,15 +313,15 @@ static int __devinit au1xpsc_i2s_drvprobe(struct platform_device *pdev)
+ 	if (!wd->mmio)
+ 		goto out1;
  
- 			/* Normal bias enable & soft start off */
--			reg |= WM9081_BIAS_ENA;
--			reg &= ~WM9081_VMID_RAMP;
--			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+			snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+					    WM9081_VMID_RAMP | WM9081_BIAS_ENA |
-+					    WM9081_VMID_SEL_MASK,
-+					    WM9081_BIAS_ENA);
+-	r = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+-	if (!r)
++	r1 = platform_get_resource(pdev, IORESOURCE_DMA, 0);
++	if (!r1)
+ 		goto out2;
+-	wd->dmaids[SNDRV_PCM_STREAM_PLAYBACK] = r->start;
++	wd->dmaids[SNDRV_PCM_STREAM_PLAYBACK] = r1->start;
  
- 			/* Standard bias source */
--			reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--			reg &= ~WM9081_BIAS_SRC;
--			snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+			snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+					    WM9081_BIAS_SRC, 0);
- 		}
+-	r = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+-	if (!r)
++	r1 = platform_get_resource(pdev, IORESOURCE_DMA, 1);
++	if (!r1)
+ 		goto out2;
+-	wd->dmaids[SNDRV_PCM_STREAM_CAPTURE] = r->start;
++	wd->dmaids[SNDRV_PCM_STREAM_CAPTURE] = r1->start;
  
- 		/* VMID 2*240k */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg &= ~WM9081_VMID_SEL_MASK;
--		reg |= 0x04;
--		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_VMID_SEL_MASK, 0x04);
- 
- 		/* Standby bias current on */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg |= WM9081_STBY_BIAS_ENA;
--		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_STBY_BIAS_ENA,
-+				    WM9081_STBY_BIAS_ENA);
- 		break;
- 
- 	case SND_SOC_BIAS_OFF:
- 		/* Startup bias source */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg |= WM9081_BIAS_SRC;
--		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_BIAS_SRC, WM9081_BIAS_SRC);
- 
- 		/* Disable VMID and biases with soft ramping */
--		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--		reg &= ~(WM9081_VMID_SEL_MASK | WM9081_BIAS_ENA);
--		reg |= WM9081_VMID_RAMP;
--		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+				    WM9081_VMID_RAMP | WM9081_VMID_SEL_MASK |
-+				    WM9081_BIAS_ENA, WM9081_VMID_RAMP);
- 
- 		/* Actively discharge LINEOUT */
--		reg = snd_soc_read(codec, WM9081_ANTI_POP_CONTROL);
--		reg |= WM9081_LINEOUT_DISCH;
--		snd_soc_write(codec, WM9081_ANTI_POP_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_ANTI_POP_CONTROL,
-+				    WM9081_LINEOUT_DISCH,
-+				    WM9081_LINEOUT_DISCH);
- 		break;
- 	}
- 
-@@ -1242,11 +1231,10 @@ static int wm9081_probe(struct snd_soc_codec *codec)
- 	wm9081_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
- 
- 	/* Enable zero cross by default */
--	reg = snd_soc_read(codec, WM9081_ANALOGUE_LINEOUT);
--	snd_soc_write(codec, WM9081_ANALOGUE_LINEOUT, reg | WM9081_LINEOUTZC);
--	reg = snd_soc_read(codec, WM9081_ANALOGUE_SPEAKER_PGA);
--	snd_soc_write(codec, WM9081_ANALOGUE_SPEAKER_PGA,
--		     reg | WM9081_SPKPGAZC);
-+	snd_soc_update_bits(codec, WM9081_ANALOGUE_LINEOUT,
-+			    WM9081_LINEOUTZC, WM9081_LINEOUTZC);
-+	snd_soc_update_bits(codec, WM9081_ANALOGUE_SPEAKER_PGA,
-+			    WM9081_SPKPGAZC, WM9081_SPKPGAZC);
- 
- 	snd_soc_add_controls(codec, wm9081_snd_controls,
- 			     ARRAY_SIZE(wm9081_snd_controls));
--- 
-1.7.5.4
-
-
+ 	/* preserve PSC clock source set up by platform (dev.platform_data
+ 	 * is already occupied by soc layer)
 
