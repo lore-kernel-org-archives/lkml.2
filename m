@@ -1,124 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab1JRKH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 06:07:56 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:63309 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab1JRKHz (ORCPT
+	id S1757425Ab1JRKLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 06:11:42 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50729 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754379Ab1JRKLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 06:07:55 -0400
-Message-ID: <4E9D4FD5.8080802@atmel.com>
-Date: Tue, 18 Oct 2011 12:07:17 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>, grant.likely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] AT91: dt: at91sam9g45 family and board device tree
- files
-References: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com> <4E8C54DC.6040700@gmail.com> <4E8EF6F4.4030905@atmel.com>
-In-Reply-To: <4E8EF6F4.4030905@atmel.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Oct 2011 06:11:41 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+SWTEHTK2Svb1F9+zcMPpMA22i59Ic+r+Mv1gLEL
+	759PZaE0S/rYOj
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <1318929825.9641.32.camel@marge.simson.net>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <1318927355.21167.3.camel@twins>
+	 <1318927629.9641.27.camel@marge.simson.net>
+	 <1318928763.21167.5.camel@twins>
+	 <1318929825.9641.32.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 12:11:33 +0200
+Message-ID: <1318932693.6748.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2011 02:56 PM, Nicolas Ferre :
-> On 10/05/2011 03:00 PM, Rob Herring :
->> Nicolas,
->>
->> On 10/03/2011 05:00 AM, Nicolas Ferre wrote:
->>> Create a new device tree source file for Atmel at91sam9g45 SoC family.
->>> The Evaluation Kit at91sam9m10g45ek includes it.
->>> This first basic support will be populated as drivers and boards will be
->>> converted to device tree.
->>> Contains serial, dma and interrupt controllers.
->>>
->>> The generic board file still takes advantage of platform data for early serial
->>> init. As we need a storage media and the NAND flash driver is not converted to
->>> DT yet, we keep old initialization for it.
->>>
->>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Tue, 2011-10-18 at 11:23 +0200, Mike Galbraith wrote:
+> On Tue, 2011-10-18 at 11:06 +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-10-18 at 10:47 +0200, Mike Galbraith wrote:
+> > > On Tue, 2011-10-18 at 10:42 +0200, Peter Zijlstra wrote:
+> > > 
+> > > > Why special case these two, why not simply disallow moving kthreadd into
+> > > > _any_ cgroup what so ever and be done with it?
+> > > 
+> > > These were the cases where it hurt, and cpusets don't have to be a
+> > > component of a cgroup.  So we'd still need the cpuset bit.
+> > 
+> > but but but,, cpusetes are a cgroup thingy?!
+> 
+> By golly, mount -t cpuset and the thing does say type cgroup.  How 'bout
+> that, learn something new every day.  Dinkier is better.
 
-[..]
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
->>> diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
->>> new file mode 100644
->>> index 0000000..7bcb9a9
->>> --- /dev/null
->>> +++ b/arch/arm/mach-at91/board-dt.c
->>> @@ -0,0 +1,122 @@
->>> +/*
->>> + *  Setup code for AT91SAM Evaluation Kits with Device Tree support
->>> + *
->>> + *  Covers: * AT91SAM9G45-EKES  board
->>> + *          * AT91SAM9M10-EKES  board
->>> + *          * AT91SAM9M10G45-EK board
->>> + *
->>> + *  Copyright (C) 2011 Atmel,
->>> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
->>> + *
->>> + * Licensed under GPLv2 or later.
->>> + */
->>> +
->>> +#include <linux/types.h>
->>> +#include <linux/init.h>
->>> +#include <linux/module.h>
->>> +#include <linux/irqdomain.h>
->>> +#include <linux/of_irq.h>
->>> +#include <linux/of_platform.h>
->>> +
->>> +#include <mach/hardware.h>
->>> +#include <mach/board.h>
->>> +#include <mach/gpio.h>
->>> +#include <mach/system_rev.h>
->>> +#include <mach/at91sam9_smc.h>
->>> +
->>> +#include <asm/setup.h>
->>> +#include <asm/irq.h>
->>> +#include <asm/mach/arch.h>
->>> +#include <asm/mach/map.h>
->>> +#include <asm/mach/irq.h>
->>> +
->>> +#include "sam9_smc.h"
->>> +#include "generic.h"
+cgroups: disallow attaching kthreadd
 
-As found by Jean-Christophe, it seems that some clock lookup data are missing here. Something like:
+Allowing kthreadd to be moved to a non-root group makes no sense, it being
+a global resource, and needlessly leads unsuspecting users toward trouble.
 
-+/*
-+ * Lookup table for attaching a specific name and platform_data pointer to
-+ * devices as they get created by of_platform_populate(). Ideally this table
-+ * would not exist, but the current clock implementation depends on some devices
-+ * having a specific name.
-+ /
-+static const struct of_dev_auxdata at91_auxdata_lookup[] __initconst = {
-+ / at91sam9260/ at91sam9g20 /
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffff200, "atmel_usart.0", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb0000, "atmel_usart.1", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb4000, "atmel_usart.2", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb8000, "atmel_usart.3", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd0000, "atmel_usart.4", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd4000, "atmel_usart.5", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd8000, "atmel_usart.6", NULL),
-+ / at91sam9g45*/
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xffffee00, "atmel_usart.0", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff8c000, "atmel_usart.1", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff90000, "atmel_usart.2", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff94000, "atmel_usart.3", NULL),
-+ OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff98000, "atmel_usart.4", NULL),
-+ { /* sentinel */ }
-+};
+1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+allocated is not schedulable.  Simple user error, but harmful to the box.
 
-With a change here:
-  of_platform_populate(NULL, of_default_bus_match_table, at91_auxdata_lookup, NULL);
+2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+rendering the cpuset immortal.
 
-I know that it is a temporary usage of auxdata. Does it sound the right thing to do for the moment?
+Save the user some unexpected trouble, just say no.
 
-Best regards,
--- 
-Nicolas Ferre
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+---
+ kernel/cgroup.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+Index: linux-3.0-tip/kernel/cgroup.c
+===================================================================
+--- linux-3.0-tip.orig/kernel/cgroup.c
++++ linux-3.0-tip/kernel/cgroup.c
+@@ -60,6 +60,7 @@
+ #include <linux/eventfd.h>
+ #include <linux/poll.h>
+ #include <linux/flex_array.h> /* used in cgroup_attach_proc */
++#include <linux/kthread.h>
+ 
+ #include <linux/atomic.h>
+ 
+@@ -1824,6 +1825,14 @@ int cgroup_attach_task(struct cgroup *cg
+ 	struct cgroup *oldcgrp;
+ 	struct cgroupfs_root *root = cgrp->root;
+ 
++	/*
++	 * Workqueue threads may acquire PF_THREAD_BOUND and become
++	 * trapped in a cpuset, or RT worker may be born in a cgroup
++	 * with no rt_runtime allocated.  Just say no.
++	 */
++	if (tsk == kthreadd_task)
++		return -EINVAL;
++
+ 	/* Nothing to do if the task is already in that cgroup */
+ 	oldcgrp = task_cgroup_from_root(tsk, root);
+ 	if (cgrp == oldcgrp)
+
+
