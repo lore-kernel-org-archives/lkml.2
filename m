@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab1JRObg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:31:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34809 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755414Ab1JRObg convert rfc822-to-8bit (ORCPT
+	id S1758005Ab1JRObj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:31:39 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65403 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757992Ab1JRObi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:31:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="64123264"
-From: "Xu, Anhua" <anhua.xu@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 18 Oct 2011 22:31:01 +0800
-Subject: perf tools: interface for improved PEBS ABI can accept wrong
- parameter
-Thread-Topic: perf tools: interface for improved PEBS ABI can accept wrong
- parameter
-Thread-Index: AcyNnwjJcllQcT+TSkaHfGlqI+oGrwAAegYAAABY4wA=
-Message-ID: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 18 Oct 2011 10:31:38 -0400
+Subject: re-send: gpio-pca953x interrupt feature unreliable!!
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <D108B135-F9CF-46C5-9E42-9705DB0B040C@gmail.com>
+Date: Tue, 18 Oct 2011 10:34:43 -0400
+Cc: open list <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, haojian.zhuang@marvell.com
+To: maz@misterjones.org, grant.likely@secretlab.ca
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the commit: ab60834 perf, x86: Improve the PEBS ABI
-The precise_ip is restricted to 2 bits. The values larger than 3 are truncated less or equal to 3.
-This can effectively restricted value passing to syscall. But the user space interface can accept other wrong values which are larger than 3 and lowest 2 bits are 0 can meet the requirement.
+Does Anyone care?
+===============Re-Send==================
+Hi all,
 
-# Here is an example, Monitor "All branches" events on Sandybridge platform( Please refer to SDM 3B Table 30-21 to check Sandybridge specific events )
+(Using 3.1.0-rc4)
 
-perf top -e r04c4:p  # precise_ip = 1 , Correct
-perf top -e r04c4:pp  # precise_ip =2, Correct
-perf top -e r04c4:ppp  # not supported, Correct
-perf top -e r04c4:pppppp  # should not be supported, but after truncation , the number of 'p' treated as 2 which is accepted
+I have detected a flaw in the interrupt support of the gpio-pca953x driver. This is how I discovered the issue:
+
+I have a interrupt client device which has it's interrupt signal connected to one of the GPIOs of the pca9555. The client is an ad714x device. It's interrupt routine is falling edge triggered (so says the driver, but according to the AD714x specs, it should be level,low, however this is another topic). The pca9555 is interrupting the CPU through INTA of an ethernet PCI card for which I have only done "echo 1 > /bus/pci/devices/00xyz/enable". It is "(level, low)" which matches the pca953x request_Isr call (IRQF_TRIGGER_LOW | IRQF_ONESHOT). I used two GPOs on some other device to get the !ISR signals. These show the nested nature of the cli ISR called from the pca953x's ISR.
+
+ASCII art of my probing (use a monospace font)
+             ____          _______
+client !INT      |________|       |________(lost)___
+             ___________                   _________
+cli !ISR                |____|____________|
+             ____      ___         _________________
+pca953x !INT     |____|   |_______|
+             ______                             ____
+pca953x !ISR       |___________________________|
+
+(note: the little spike in the cli !ISR marks the end of reading the client's registers, the rest of the ISR is updating driver state machines, etc.)
+
+Summary: The client enters interrupt, which immediately puts the pca953x in interrupt as well. When the pca953x enters it's isr thread, it reads the input status register, this immediately clears the pca953x interrupt. The pca953x ISR then figure's out it should invoke the nested ISR for the client. The client ISR starts by reading the client's status register, which clears the client interrupt. This immediately puts the pca953x back into interrupt since it's a different state that what was last read in the pca953x. This should't be a problem. The real problem is that the client goes back in interrupt before the client ISR even has time to finish. At that moment, the pca953x's input are back to the way they where when the pca953x ISR began and it read the input status register. When all of the ISR routines are done, the client has it's INT line asserted and no more interrupt will come from the pca953x.
+
+The pca953x specs clearly state this: "Resetting the interrupt circuit is achieved when data on the port is changed to the original setting, data is read from the port that generated the interrupt."
+
+So in essence, although the pca953x's design and doc says only edges are detected and supported, the chip design makes it impossible to guarantee that all edges will be caught. In fact, since the chip only has an input state register and no latching interrupt status register, the driver could be slightly modified to support only level based interrupt clients.
+
+I would propose a patch, but I am missing knowledge on the internals of the kernel's irq code, so here's a description, hoping to get some feedback.  In the pca953x_irq_handler (threaded), just after reading the pca953x's input status register (which clears the pca953x INT), just before calling the nested handlers, we could re-enable the IRQ so that the pca953x_irq_handler would be re-scheduled right after if needed. Now this would always happen since the client's clearing of it's INT constitute a change. This is why a hard IRQ handler should be added to re-disable the interrupt to avoid the storm caused by the level,low interrupt. In addition to all this, the driver should be changed to support only LEVEL based clients, since this is what it can reliably detect.
+
+Any thoughts? Hints on the precise APIs to use?
+
+/jfd
 
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c816075..07d3cf9 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -216,6 +216,7 @@ struct perf_event_attr {
- 				 *
- 				 *  See also PERF_RECORD_MISC_EXACT_IP
- 				 */
-+#define SAMPLE_IP_MAX	3 
- 				precise_ip     :  2, /* skid constraint       */
- 				mmap_data      :  1, /* non-exec mmap data    */
- 				sample_id_all  :  1, /* sample_type all events */
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 928918b..a2068cc 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- 	attr->exclude_user   = eu;
- 	attr->exclude_kernel = ek;
- 	attr->exclude_hv     = eh;
--	attr->precise_ip     = precise;
-+	if ( precise < SAMPLE_IP_MAX )
-+		attr->precise_ip = precise;
-+	else
-+		return -1;
- 
- 	return 0;
- }
+
+
+
