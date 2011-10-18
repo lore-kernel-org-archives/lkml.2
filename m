@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab1JRS0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:26:00 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:47962 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751118Ab1JRSZ7 (ORCPT
+	id S1752217Ab1JRS2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:28:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38483 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab1JRS2o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:25:59 -0400
-Message-ID: <4E9DC496.3010909@metafoo.de>
-Date: Tue, 18 Oct 2011 20:25:26 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de
-Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
-References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1318951776-19393-4-git-send-email-jic23@cam.ac.uk>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Oct 2011 14:28:44 -0400
+Subject: Re: perf tools: interface for improved PEBS ABI can accept wrong
+ parameter
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Xu, Anhua" <anhua.xu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 18 Oct 2011 20:28:21 +0200
+In-Reply-To: <20111018181943.GC21666@elte.hu>
+References: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
+	 <20111018181943.GC21666@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318962501.14880.6.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
-> Needed for inkernel interfaces.
-> 
+On Tue, 2011-10-18 at 20:19 +0200, Ingo Molnar wrote:
+> > +#define SAMPLE_IP_MAX        3 
+> >                               precise_ip     :  2, /* skid constraint       */
+> >                               mmap_data      :  1, /* non-exec mmap data    */
+> >                               sample_id_all  :  1, /* sample_type all events */
+> > diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> > index 928918b..a2068cc 100644
+> > --- a/tools/perf/util/parse-events.c
+> > +++ b/tools/perf/util/parse-events.c
+> > @@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+> >       attr->exclude_user   = eu;
+> >       attr->exclude_kernel = ek;
+> >       attr->exclude_hv     = eh;
+> > -     attr->precise_ip     = precise;
+> > +     if ( precise < SAMPLE_IP_MAX )
+> > +             attr->precise_ip = precise;
+> > +     else
+> > +             return -1; 
 
-The bus_type structure keeps a list of all devices registered on that bus, so
-you should be able to use bus_for_each_dev and bus_find_device for iterating
-over the iio devices.
-
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  drivers/iio/iio.c       |    9 +++++++++
->  include/linux/iio/iio.h |    1 +
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
-> index 9e6acc1..246a093 100644
-> --- a/drivers/iio/iio.c
-> +++ b/drivers/iio/iio.c
-> @@ -15,6 +15,9 @@
->  #include <linux/iio/iio.h>
->  #include <linux/iio/sysfs.h>
->  
-> +static DEFINE_MUTEX(iio_device_list_lock);
-> +static LIST_HEAD(iio_device_list);
-> +
->  static DEFINE_IDA(iio_ida);
->  
->  static struct bus_type iio_bus_type = {
-> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
->  {
->  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
->  	iio_device_unregister_sysfs(indio_dev);
-> +	mutex_lock(&iio_device_list_lock);
-> +	list_del(&indio_dev->dev_list_entry);
-> +	mutex_unlock(&iio_device_list_lock);
->  }
->  
->  static struct device_type iio_dev_type = {
-> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
->  	if (ret)
->  		goto error_free_sysfs;
->  
-> +	mutex_lock(&iio_device_list_lock);
-> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
-> +	mutex_unlock(&iio_device_list_lock);
->  	return 0;
->  
->  error_free_sysfs:
-> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-> index beedc5c..f14e7dc 100644
-> --- a/include/linux/iio/iio.h
-> +++ b/include/linux/iio/iio.h
-> @@ -192,6 +192,7 @@ struct iio_info {
->   * @info:		[DRIVER] callbacks and constant info from driver
->   * @groups:		[INTERN] attribute groups
->   * @groupcounter:	[INTERN] index of next attribute group
-> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
->   **/
->  struct iio_dev {
->  	int				id;
-
+That name is horrid, how about PRECISE_IP_MAX? Also, I suspect acme will
+want a better error return than -1, but I'll leave that up to him.
