@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab1JRIhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:37:00 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:25035 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1JRIg6 (ORCPT
+	id S1756804Ab1JRIhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:37:33 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49292 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab1JRIhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:36:58 -0400
-X-IronPort-AV: E=Sophos;i="4.69,364,1315180800"; 
-   d="scan'208";a="8437877"
-Subject: Re: [PATCH] Fix guest memory leak and panic
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Krishna Kumar <krkumar2@in.ibm.com>
-CC: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Date: Tue, 18 Oct 2011 09:36:56 +0100
-In-Reply-To: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
-References: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318927016.16132.49.camel@zakaz.uk.xensource.com>
+	Tue, 18 Oct 2011 04:37:31 -0400
 MIME-Version: 1.0
+In-Reply-To: <1318926384.23438.179.camel@vkoul-udesk3>
+References: <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	<1317966346.1573.2252.camel@vkoul-udesk3>
+	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
+	<20111018074211.GA13483@flint.arm.linux.org.uk>
+	<CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+	<1318926384.23438.179.camel@vkoul-udesk3>
+Date: Tue, 18 Oct 2011 14:07:30 +0530
+Message-ID: <CAJe_Zhe9B2n1ZYqSAY9gEjeJn2rx6WOVZ5Tn463=sb_H-k8xew@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 09:05 +0100, Krishna Kumar wrote:
-> The extra reference to the fragment pages causes those pages to
-> not get freed in skb_release_data(). The following patch fixes
-> the bug. I have not checked if any other converted driver has
-> the same issue.
-
-Damn. You are completely correct and I appear to have made this same
-mistake several times. A quick look suggests that at least cxbg,
-myriage, vmxnet, cassini and bnx2 may potentially have a similar
-issue :-( (I stopped looking at that point, I'll obviously do a full
-audit).
-
-I considered quite carefully whether (__)skb_frag_set_page should take a
-reference or not and decided yes but I'm starting to reconsider whether
-I made the right choice. It seems that is just confusing and violates
-the principal of least surprise to have a function called "set" take a
-new reference. In reality all existing drivers expect that adding a page
-to an SKB frag will just take over the existing reference.
-
-I think the best thing might be to remove the additional ref taking from
-the setter function and audit the previous changes to ensure they
-conform. I'll do that right away and post a fixup patch ASAP.
-
-> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
-
-This change is correct as things stand today, so:
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
-but perhaps it would be better to hold off and let me fix all of these
-all at once.
-
-Thanks for bringing this to my attention Krishna.
-
-Ian.
-
-
+On 18 October 2011 13:56, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Tue, 2011-10-18 at 14:00 +0530, Jassi Brar wrote:
+>> On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
+>> > On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
+>> >> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
+>> >> > With item #1 above being a separate topic, I may have a problem with #2
+>> >> > as well: dma_addr_t is sized for the local platform and not guaranteed
+>> >> > to be a 64-bit value (which may be required by a target).
+>> >> > Agree with #3 (if #1 and #2 work).
+>> >> >
+>> >> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
+>> >
+>> > That's just an idiotic suggestion - there's no other way to put that.
+>> > Let's have some sanity here.
+>> >
+>> Yeah, I am not proud of the workaround, so I only probed the option.
+>> I think I need to explain myself.
+>>
+>> The case here is that even a 32-bit RapidIO host could ask transfer against
+>> 64-bit address space on a remote device. And vice versa 64->32.
+> I thought RIO address were always 64 + 2 bits, irrespective of what the
+> host system is...
+>
+No, not always. RIO address could be 32, 48 or 64... with the role extra 2 bits
+not very clear.
