@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab1JRNiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:38:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36782 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab1JRNiL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:38:11 -0400
-Message-ID: <1318945110.2657.82.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Possible via-velocity bug.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: n00bsys0p <n00b@n00bsys0p.co.uk>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Tue, 18 Oct 2011 15:38:30 +0200
-In-Reply-To: <j7js28$u0m$1@dough.gmane.org>
-References: <j7js28$u0m$1@dough.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1757930Ab1JRNmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 09:42:01 -0400
+Received: from lucidpixels.com ([72.73.18.11]:49501 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755229Ab1JRNmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 09:42:00 -0400
+Date: Tue, 18 Oct 2011 09:42:00 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Hugh Dickins <hughd@google.com>
+cc: Pawel Sikora <pluto@agmk.net>, arekm@pld-linux.org,
+        Anders Ossowicki <aowi@novozymes.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: 3.1-rc9: BUG: soft lockup in find_get_pages+0x4e/0x140
+In-Reply-To: <alpine.LSU.2.00.1110172036300.7358@sister.anvils>
+Message-ID: <alpine.DEB.2.02.1110180806480.7942@p34.internal.lan>
+References: <alpine.DEB.2.02.1110152003210.26507@p34.internal.lan> <alpine.LSU.2.00.1110172036300.7358@sister.anvils>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 18 octobre 2011 à 13:39 +0100, n00bsys0p a écrit :
-> Hi everyone, I have a nice simple question.
-> 
-> I've found what I think is a bug in the 3.0+ kernel's via-velocity LAN 
-> driver, which causes the leaking of data into the video RAM during PXE boot.
-> 
-> How do I go about reporting this to the relevant people?
-> 
-> Thanks in advance!
 
-Here and netdev is fine.
+On Mon, 17 Oct 2011, Hugh Dickins wrote:
 
+> On Sat, 15 Oct 2011, Justin Piszcz wrote:
+>>
+>> With 3.1-rc9 during a filesystem dump, this occurred, I thought a previous
+>> patch fixed this but it did not, it occurs MUCH less (first time in a couple
+>> of weeks) but the problem still occurs.
+>
+> Shaohua's nr_skip patch fixed, or at least worked around, the error I
+> introduced there in 3.1-rc1.  But now you're finding a similar problem
+> still in 3.1-rc9: that confirms what you and others already reported,
+> that something like it occurs even in 3.0 without my bug.
 
+Thanks,
+
+Patch applied:
+
+# patch -p1 < /tmp/memory_patch.patch
+patching file mm/filemap.c
+patching file mm/memcontrol.c
+
+Now running 3.1-rc9 + this patch + re-enabled frame pointers.
+
+Justin.
 
