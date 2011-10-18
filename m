@@ -1,139 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab1JRSaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:30:21 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:21734 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab1JRSaT (ORCPT
+	id S1752532Ab1JRSlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:41:19 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:28451 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab1JRSlR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:30:19 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
-	references:mime-version:content-type:content-disposition:
-	content-transfer-encoding:in-reply-to:x-operating-system:user-agent:x-system-of-record;
-	b=qRaBJUuv/kxLa2GwBEXU3FwVrTtOUzHc9rZpUqFjCwRvzOjYNwK2Vbzyip0rFLZ6D
-	6oLMKfrDpWRxvQ50mxlGA==
-Date: Tue, 18 Oct 2011 11:29:58 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, Hugh Dickins <hughd@chromium.org>,
-        Hugh Dickins <hughd@google.com>, Dave Airlie <airlied@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        dri-devel@lists.freedesktop.org, marcheu@chromium.org,
-        rientjes@google.com
-Subject: Re: [PATCH] drm: avoid switching to text console if there is no
- panic timeout
-Message-ID: <20111018182958.GS20828@google.com>
-References: <1318896400-32498-1-git-send-email-msb@chromium.org>
- <CABqxG0eKhaGUMvdNMOdahnqdYiT8i+3Hhf8vbQyq8TEJUOU0Lg@mail.gmail.com>
- <CABqxG0cP8Vc1FiAoOSB7cWdJyS=c0eFx1Hj6nY9GY=uTL_EgHg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABqxG0cP8Vc1FiAoOSB7cWdJyS=c0eFx1Hj6nY9GY=uTL_EgHg@mail.gmail.com>
-X-Operating-System: Linux/2.6.32-gg508-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+	Tue, 18 Oct 2011 14:41:17 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=KBSlDmMtPy+6dcT8s2HSk+nEQXlV1wil9/JK38/4IYQ= c=1 sm=1
+ a=PRlI2w1zOTMA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=VnNF1IyMAAAA:8 a=aMwjNbt0s1OJYPdNM8kA:9
+ a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH -V7 25/26] ext4: Implement rich acl for ext4
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1318951981-5508-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Date: Tue, 18 Oct 2011 12:41:15 -0600
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BCAE5666-30A1-484A-9808-B52E5B422A3F@dilger.ca>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Young (hidave.darkstar@gmail.com) wrote:
-> On Tue, Oct 18, 2011 at 10:19 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> > On Tue, Oct 18, 2011 at 8:06 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> >> From: Hugh Dickins <hughd@chromium.org>
-> >>
-> >> Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
-> >> we're going to reboot immediately, the user will not be able to see the
-> >> messages anyway, and messing with the video mode may display artifacts,
-> >> and certainly get into several layers of complexity (including mutexes and
-> >> memory allocations) which we shall be much safer to avoid.
-> >
-> > There's one exception is use printk_delay
+On 2011-10-18, at 9:33 AM, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > 
-> OTOH the complexity do exist also when timeout is set, IMHO it is worth
+> Support the richacl permission model in ext4.  The richacls are stored
+> in "system.richacl" xattrs.This need to be enabled by tune2fs or during
+> mkfs.ext4
+
+It isn't clear from your commit comment or the code what needs to be enabled by tune2fs or mkfs.ext4.  Please list the specific ext4 feature
+that needs to be enabled.
+
+> +#ifdef CONFIG_EXT4_FS_RICHACL
+> +#define EXT4_IS_RICHACL(inode) IS_RICHACL(inode)
 > 
 
-Hi Dave,
+> +#else  /* CONFIG_FS_EXT4_RICHACL */
+> +
+> +#define EXT4_IS_RICHACL(inode) (0)
 
-I agree. The complexity is worth it if you want to see the panic trace
-on the VT. But if you have the panic_timeout negative (i.e. reboot
-immediately) than you're just add more risk/complexity to panic for no
-benefit.
+It is a bit confusing that you are using both EXT4_IS_RICHACL() and
+IS_RICHACL() in this code.  Initially I thought EXT4_IS_RICHACL() was
+checking an ext4-specific inode flag, but it seems that it is instead
+conditional upon the configure flags.
+
+It looks like it should be possible to use EXT4_IS_RICHACL() in all
+of the code, since the richacl-specific code will not be compiled
+anyway.
+
+Cheers, Andreas
 
 
-To avoid losing the panic traces, a reliable panic is critical.
 
-In our app, we use panic_timeout=-1 and we use ramoops for capturing panic
-traces. We want the panic path to be as simple as possible to avoid
-wedging machines and to avoid losing panic traces. In our test lab,
-if a machine gets wedged, a human needs to go and power cycle the machine
-to bring it back online.
 
-For user devices, we want to panic quickly and get the device back up
-ASAP. Our reboot time is under 8 seconds so its less than 10 seconds before
-you're back online and surfing the web. We also want to avoid displaying any
-artifacts or traces to the user when panicking.
 
-You bring up a good point about printk_delay. But I'm thinking if you're
-using prink_delay you'd also want to set panic_timeout >= 0. Otherwise,
-you'd reboot immediately after displaying the last line of output.
-
-Regards,
-Mandeep
-
-> >
-> >>
-> >> Signed-off-by: Hugh Dickins <hughd@google.com>
-> >> [ Edited commit message and modified to short-circuit panic_timeout < 0
-> >>  instead of testing panic_timeout >= 0.  -Mandeep ]
-> >> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> >> Cc: Dave Airlie <airlied@redhat.com>
-> >> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >> Cc: dri-devel@lists.freedesktop.org
-> >> ---
-> >>  drivers/gpu/drm/drm_fb_helper.c |    7 +++++++
-> >>  1 files changed, 7 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-> >> index f7c6854..0e62c93 100644
-> >> --- a/drivers/gpu/drm/drm_fb_helper.c
-> >> +++ b/drivers/gpu/drm/drm_fb_helper.c
-> >> @@ -254,6 +254,13 @@ bool drm_fb_helper_force_kernel_mode(void)
-> >>  int drm_fb_helper_panic(struct notifier_block *n, unsigned long ununsed,
-> >>                        void *panic_str)
-> >>  {
-> >> +       /*
-> >> +        * It's a waste of time and effort to switch back to text console
-> >> +        * if the kernel should reboot before panic messages can be seen.
-> >> +        */
-> >> +       if (panic_timeout < 0)
-> >> +               return 0;
-> >> +
-> >>        printk(KERN_ERR "panic occurred, switching back to text console\n");
-> >>        return drm_fb_helper_force_kernel_mode();
-> >>  }
-> >> --
-> >> 1.7.3.1
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >
-> >
-> >
-> > --
-> > Regards
-> > Dave
-> >
-> 
-> 
-> 
-> -- 
-> Regards
-> Dave
