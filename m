@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab1JRBQr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:16:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59798 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab1JRBQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:16:46 -0400
-Date: Mon, 17 Oct 2011 21:16:39 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Greg Kroah-Hartman <greg@kroah.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] Update email address for stable patch submission
-Message-ID: <20111018011638.GQ1165@zod.bos.redhat.com>
+	id S1757020Ab1JRBUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:20:42 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:38988 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab1JRBUl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 21:20:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1110171752300.19024@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1110171752300.19024@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 17 Oct 2011 18:20:20 -0700
+X-Google-Sender-Auth: ncYkyiluPly9KA_xNB_B4wyekV4
+Message-ID: <CA+55aFxj+heCCoQx0ecVyCE0b5e3fGpAUPSUH8K7E=TyRzNSUg@mail.gmail.com>
+Subject: Re: [patch] Avoid using hardcoded values in kernel/sys.c
+To: David Rientjes <rientjes@google.com>
+Cc: Henrik Grindal Bakken <henribak@cisco.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The stable@kernel.org email address has been replaced with the
-stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-reference the new list instead of the semi-defunct email alias.
+On Mon, Oct 17, 2011 at 5:55 PM, David Rientjes <rientjes@google.com> wrote:
+> The release field of struct new_utsname may always change, so avoid
+> hardcoded values when setting up a buffer to copy to it.
 
-CC: <stable@kernel.org>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+This patch is totally bogus.
 
----
+> +static int override_release(char __user *release)
+>  {
+> +       const int len = sizeof(release);
 
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index e213f45..21fd05c 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -24,10 +24,10 @@ Rules on what kind of patches are accepted, and which ones are not, into the
- Procedure for submitting patches to the -stable tree:
- 
-  - Send the patch, after verifying that it follows the above rules, to
--   stable@kernel.org.  You must note the upstream commit ID in the changelog
--   of your submission.
-+   stable@vger.kernel.org.  You must note the upstream commit ID in the
-+   changelog of your submission.
-  - To have the patch automatically included in the stable tree, add the tag
--     Cc: stable@kernel.org
-+     Cc: stable@vger.kernel.org
-    in the sign-off area. Once the patch is merged it will be applied to
-    the stable tree without anything else needing to be done by the author
-    or subsystem maintainer.
-@@ -35,10 +35,10 @@ Procedure for submitting patches to the -stable tree:
-    cherry-picked than this can be specified in the following format in
-    the sign-off area:
- 
--     Cc: <stable@kernel.org> # .32.x: a1f84a3: sched: Check for idle
--     Cc: <stable@kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
--     Cc: <stable@kernel.org> # .32.x: fd21073: sched: Fix affinity logic
--     Cc: <stable@kernel.org> # .32.x
-+     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
-+     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
-+     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
-+     Cc: <stable@vger.kernel.org> # .32.x
-     Signed-off-by: Ingo Molnar <mingo@elte.hu>
- 
-    The tag sequence has the meaning of:
+You just wrote "len = 4" (or 8, for 64-bit architectures) in a very unclear way.
+
+IOW, "len" is now the size of the *pointer*. Which is wrong.
+
+*And* you then re-introduced the variable-length array, which not only
+triggered the gcc bug, but which is a BAD IDEA TO BEGIN WITH.
+
+Variably sized arrays generate worse code, and can have subtle
+security issues that aren't obvious (like cause our tools that check
+for overly big stack usage to quietly fail).
+
+Don't use variable-sized arrays on stack. They are never a good idea
+in kernel space. The fact that we do have other code that does use
+them too is not an excuse.
+
+But using them in this kind of horribly broken manner with the wrong
+length is just *really* bad.
+
+                           Linus
