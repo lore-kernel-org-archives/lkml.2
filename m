@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab1JRHmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 03:42:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46481 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab1JRHmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 03:42:43 -0400
-Date: Tue, 18 Oct 2011 08:42:11 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-Message-ID: <20111018074211.GA13483@flint.arm.linux.org.uk>
-References: <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com> <1317966346.1573.2252.camel@vkoul-udesk3> <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com> <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com> <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
+	id S1757365Ab1JRHsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 03:48:45 -0400
+Received: from mail.danysek.cz ([91.103.163.139]:53713 "EHLO mail.danysek.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753464Ab1JRHso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 03:48:44 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Oct 2011 03:48:44 EDT
+Message-ID: <4E9D2DCA.4010603@danysek.cz>
+Date: Tue, 18 Oct 2011 09:42:02 +0200
+From: Daniel Suchy <danny@danysek.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Icedove/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: tiwai@suse.de, linux-kernel@vger.kernel.org
+Subject: ALSA: HDA: conexant support for Lenovo T520/W520
+OpenPGP: id=A2A35A82
+Content-Type: multipart/mixed;
+ boundary="------------070500070705000301060404"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
-> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
-> > With item #1 above being a separate topic, I may have a problem with #2
-> > as well: dma_addr_t is sized for the local platform and not guaranteed
-> > to be a 64-bit value (which may be required by a target).
-> > Agree with #3 (if #1 and #2 work).
-> >
-> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
+This is a multi-part message in MIME format.
+--------------070500070705000301060404
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-That's just an idiotic suggestion - there's no other way to put that.
-Let's have some sanity here.
+This is patch for Conexant codec of Intel HDA driver, adding new quirk
+for Lenovo Thinkpad T520 and W520. Conexant autodetection works fine for
+T520 (similar subsystem ID is used also in W520 model) and detects more
+mixer features compared to generic (fallback) Lenovo quirk with
+hardcoded options in Conexant codec.
 
-dma_addr_t is the size of a DMA address for the CPU architecture being
-built.  This has no relationship to what any particular DMA engine uses.
+Patch was activelly tested with Linux 3.0.4, 3.0.6 and 3.0.7 without any
+problems.
 
-DMA addresses are likely to be stored in scatter tables in memory, and
-such structures should be defined using u32, u64 (even more bonus points
-if you use le32 and le64), etc and not types which are dependent on the
-CPU architecture.
+Signed-off-by: Daniel Suchy <danny@danysek.cz>
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+
+--------------070500070705000301060404
+Content-Type: text/x-diff;
+ name="lenovo-thinkpad-t520_conexant.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="lenovo-thinkpad-t520_conexant.patch"
+
+--- sound/pci/hda/patch_conexant.c.orig	2011-10-18 09:11:58.000000000 +0200
++++ sound/pci/hda/patch_conexant.c	2011-10-18 09:20:52.072261476 +0200
+@@ -3097,6 +3097,7 @@
+ 	SND_PCI_QUIRK(0x17aa, 0x21c5, "Thinkpad Edge 13", CXT5066_THINKPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x21c6, "Thinkpad Edge 13", CXT5066_ASUS),
+  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
++	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520 & W520", CXT5066_AUTO),
+ 	SND_PCI_QUIRK(0x17aa, 0x21da, "Lenovo X220", CXT5066_THINKPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x21db, "Lenovo X220-tablet", CXT5066_THINKPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo U350", CXT5066_ASUS),
+
+--------------070500070705000301060404--
