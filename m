@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab1JRKAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 06:00:13 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:57109 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754432Ab1JRKAL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 06:00:11 -0400
-From: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-To: "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Date: Tue, 18 Oct 2011 11:59:39 +0200
-Subject: RE: [PATCH] drivers/leds/leds-lp5521.c: check if reset is successful
-Thread-Topic: [PATCH] drivers/leds/leds-lp5521.c: check if reset is
- successful
-Thread-Index: AcyHP/kBGpxjJhfHQhKqGb+squaCuAGPI0jA
-Message-ID: <C832F8F5D375BD43BFA11E82E0FE9FE00DC2C4F6D2@EXDCVYMBSTM005.EQ1STM.local>
-References: <1318246202-2476-1-git-send-email-srinidhi.kasagar@stericsson.com>
-In-Reply-To: <1318246202-2476-1-git-send-email-srinidhi.kasagar@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757428Ab1JRKBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 06:01:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45100 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab1JRKBP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 06:01:15 -0400
+Message-ID: <1318932093.2657.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
+ kernel oops
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Elmar Vonlanthen <evonlanthen@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>,
+        Timo =?ISO-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>
+Date: Tue, 18 Oct 2011 12:01:33 +0200
+In-Reply-To: <20111018093411.GA15165@gondor.apana.org.au>
+References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com>
+	 <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com>
+	 <1318905032.2571.35.camel@edumazet-laptop>
+	 <20111018093411.GA15165@gondor.apana.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard,
-Did you get a chance to look at this patch?
+Le mardi 18 octobre 2011 à 11:34 +0200, Herbert Xu a écrit :
+> On Tue, Oct 18, 2011 at 04:30:32AM +0200, Eric Dumazet wrote:
+> >
+> > If David/Herbert/Timo agree, then patch should find its way into current
+> > kernel, then to stable trees as well.
+> 
+> Actually, I think we should instead fix the users of needed_headroom
+> to not read it twice which is causing problems here.
+> 
+> GRE tunnels by their nature do not have a fixed value for
+> needed_headroom.  As the underlying routes change the necessary
+> headroom may need to be adjusted due to further encapsulation such
+> as IPsec.
+> 
+> Keeping it constant from tunnel creation may result in suboptimal
+> performance due to unnecessary header reallocations.
+> 
+> However, until we audit the stack to see if there are further
+> instances of double-readings such as the one causing the crash
+> here, I'm fine with your patch making it constant.
+> 
+> Once we're sure that all of the double-readings are gone we
+> can revert to a dynamic needed_headroom.
+> 
 
-srinidhi
+Sure, we can work on this path for future kernels.
 
-> -----Original Message-----
-> From: Srinidhi KASAGAR
-> Sent: Monday, October 10, 2011 5:00 PM
-> To: rpurdie@rpsys.net
-> Cc: linux-kernel@vger.kernel.org; linus.walleij@linaro.org; Srinidhi
-> KASAGAR
-> Subject: [PATCH] drivers/leds/leds-lp5521.c: check if reset is
-> successful
-> 
-> make sure that the reset is successful by issuing a dummy
-> read to R channel current register and check its default
-> value. On some platforms, without this dummy read, any
-> further access to {R/G/B}_EXEC will not have any impact.
-> 
-> Signed-off-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
-> Tested-by: Naga Radhesh <naga.radheshy@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/leds/leds-lp5521.c |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-> index 9fc122c..91a2928 100644
-> --- a/drivers/leds/leds-lp5521.c
-> +++ b/drivers/leds/leds-lp5521.c
-> @@ -97,6 +97,9 @@
->  /* Status */
->  #define LP5521_EXT_CLK_USED		0x08
-> 
-> +/* default R channel current register value */
-> +#define LP5521_REG_R_CURR_DEFAULT	0xAF
-> +
->  struct lp5521_engine {
->  	int		id;
->  	u8		mode;
-> @@ -643,6 +646,7 @@ static int __devinit lp5521_probe(struct i2c_client
-> *client,
->  	struct lp5521_chip		*chip;
->  	struct lp5521_platform_data	*pdata;
->  	int ret, i, led;
-> +	u8 buf;
-> 
->  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
->  	if (!chip)
-> @@ -681,6 +685,21 @@ static int __devinit lp5521_probe(struct
-> i2c_client *client,
->  				     * Exact value is not available. 10 - 20ms
->  				     * appears to be enough for reset.
->  				     */
-> +
-> +	/*
-> +	 * Make sure that the chip is reset by reading back
-> +	 * r channel current reg. This is a dummy read, otherwise
-> +	 * in some platforms, access to R G B channel program
-> +	 * execution mode to 'Run' in LP5521_REG_ENABLE register
-> +	 * will not have any affect - strange!
-> +	 */
-> +	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
-> +	if (buf != LP5521_REG_R_CURR_DEFAULT) {
-> +		dev_err(&client->dev, "error in reseting chip\n");
-> +		goto fail2;
-> +	}
-> +	usleep_range(10000, 20000);
-> +
->  	ret = lp5521_detect(client);
-> 
->  	if (ret) {
-> --
-> 1.7.4.3
+Adding an RCU protected structure to hold hard_header_len /
+needed_headroom / needed_tailroom should be possible, but this adds yet
+another pointer dereference...
+
+Thanks !
+
 
