@@ -1,72 +1,705 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab1JRPLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:11:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932066Ab1JRPLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:11:35 -0400
-Date: Tue, 18 Oct 2011 11:10:58 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "hughd@chromium.org" <hughd@chromium.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
- other cpus in panic path
-Message-ID: <20111018151058.GE3452@redhat.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
- <20111017164715.e42591d5.akpm@linux-foundation.org>
- <20111018124929.GA3452@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57565D3A@USINDEVS01.corp.hds.com>
+	id S932515Ab1JRPMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:12:09 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:34644 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066Ab1JRPMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 11:12:07 -0400
+X-SpamScore: 10
+X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bh8275dhz32i2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-FB-SS: 13,
+Subject: [Patch 5/11] Regulator: DA9052/53 regulator support v5
+From: ashishj3 <ashish.jangam@kpitcummins.com>
+Reply-To: <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linaro-dev@lists.linaro.org>, <lrg@slimlogic.co.uk>,
+        <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
+        <paul.liu@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 20:37:35 +0530
+Message-ID: <1318950455.4644.65.camel@L-0761.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57565D3A@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.37]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 10:52:22AM -0400, Seiji Aguchi wrote:
-> Hi,
-> 
-> >> afacit this assumes that (reason == KMSG_DUMP_PANIC) if in_nmi().  Is
-> >> that always the case, and will it always be the case in the future?
-> >
-> 
-> Currently, when kernel is in nmi context and kmsg_dump() are called, its reason is always "KMSG_DUMP_PANIC".
-> 
-> >
-> >Perhaps a 'BUG_ON(in_nmi() && reason != KMSG_DUMP_PANIC)'?
-> 
-> I don't think BUG_ON() is needed.
-> 
-> If someone would like to log messages in the case of "in_nmi() && reason != KMSG_DUMP_PANIC",
-> he/she will add a new trigger as follows.
+The Dialog PMIC has below featured regulators:-
+DA9052-BC - 4 DVS Buck converters 0.5V - 3.6V upto 1Amp.
+DA9053-AA/BX - 4 DVS Buck converters 0.5V - 2.5V upto 3Amp.
+DA9052/53 - 10 Programmable LDO's High PSSR, 1% accuracy.
 
-The point I was trying to make with the BUG_ON is to catch future uses of
-NMI and kmsg_dump that were implemented without understanding the
-restriction we place (you have to be in a panic path for NMI to use
-pstore/kmsg_dump).
+This patch support all the DA9052 and Da9053 regulators. The output voltages are
+fully programmable via I2C or SPI interface. The platform data with regulation
+constraints is passed down from the board to the regulator.
 
-That is part of the wider problem with kmsg_dump that Vivek talks about
-with me, is that it is just a giant hook in the panic path with limited
-auditing.  So we need to explicit set our expectations with BUG_ONs/WARNs
-otherwise we might get bit later by them.
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Tested-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
 
-Cheers,
-Don
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+Changes since v5
+- Modify Kconfig to describe the config symbol
+- Change file permissions - remove execute permission
+- Line 43 - Adjust for 80 characters width
+Changes since v4
+- Add support for DA9053
+- Correct the definition of macros DA9052_BUCK_ILIM_MASK
+- Get current limit to return current limit in microA
+- Correct the voltage selector value for Buck Peri above 3v
+- Set the struct member regualtor->da9052 in probe()
+Changes since v3
+- Corrected verify_range function
+Changes since v2
+- Check for current min_uA < 700000
+- Corrected current conversions from mA to uA
+---
+ drivers/regulator/Kconfig            |    7 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/da9052-regulator.c |  600 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 608 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/da9052-regulator.c
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 9713b1b..4f4774b 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -177,6 +177,13 @@ config REGULATOR_DA903X
+ 	  Say y here to support the BUCKs and LDOs regulators found on
+ 	  Dialog Semiconductor DA9030/DA9034 PMIC.
+ 
++config REGULATOR_DA9052
++	tristate "Dialog DA9052/DA9053 regulators"
++	depends on PMIC_DA9052
++	help
++	  This driver supports the voltage regulators of DA9052-BC and
++	  DA9053-AA/Bx PMIC.
++
+ config REGULATOR_PCF50633
+ 	tristate "PCF50633 regulator driver"
+         depends on MFD_PCF50633
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 93a6318..07b2126 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
+ obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS6586X) += tps6586x-regulator.o
+ obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
++obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
+ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
+ obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+new file mode 100644
+index 0000000..9b75425
+--- /dev/null
++++ b/drivers/regulator/da9052-regulator.c
+@@ -0,0 +1,600 @@
++/*
++* da9052-regulator.c: Regulator driver for DA9052
++*
++* Copyright(c) 2011 Dialog Semiconductor Ltd.
++*
++* Author: David Dajun Chen <dchen@diasemi.com>
++*
++* This program is free software; you can redistribute it and/or modify
++* it under the terms of the GNU General Public License as published by
++* the Free Software Foundation; either version 2 of the License, or
++* (at your option) any later version.
++*
++*/
++
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++
++#include <linux/mfd/da9052/da9052.h>
++#include <linux/mfd/da9052/reg.h>
++#include <linux/mfd/da9052/pdata.h>
++
++/* Buck step size */
++#define DA9052_BUCK_PERI_3uV_STEP		100000
++#define DA9052_BUCK_PERI_REG_MAP_UPTO_3uV	24
++#define DA9052_CONST_3uV			3000000
++
++#define DA9052_MIN_UA		0
++#define DA9052_MAX_UA		3
++#define DA9052_CURRENT_RANGE	4
++
++/* Bit masks */
++#define DA9052_BUCK_ILIM_MASK_EVEN	0x0c
++#define DA9052_BUCK_ILIM_MASK_ODD	0xc0
++
++static const u32 da9052_current_limits[3][4] = {
++	{700000, 800000, 1000000, 1200000},	/* DA9052-BC BUCKs */
++	{1600000, 2000000, 2400000, 3000000},	/* DA9053-AA/Bx BUCK-CORE */
++	{800000, 1000000, 1200000, 1500000},	/* DA9053-AA/Bx BUCK-PRO,
++						 * BUCK-MEM and BUCK-PERI
++						*/
++};
++
++struct da9052_regulator_info {
++	struct regulator_desc reg_desc;
++	int step_uV;
++	int min_uV;
++	int max_uV;
++	unsigned char volt_shift;
++	unsigned char en_bit;
++	unsigned char activate_bit;
++};
++
++struct da9052_regulator {
++	struct da9052 *da9052;
++	struct da9052_regulator_info *info;
++	struct regulator_dev *rdev;
++};
++
++static int verify_range(struct da9052_regulator_info *info,
++			 int min_uV, int max_uV)
++{
++	if (min_uV > info->max_uV || max_uV < info->min_uV)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int da9052_regulator_enable(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 1 << info->en_bit, 1 << info->en_bit);
++}
++
++static int da9052_regulator_disable(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 1 << info->en_bit, 0);
++}
++
++static int da9052_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
++	if (ret < 0)
++		return ret;
++
++	return ret & (1 << info->en_bit);
++}
++
++static int da9052_dcdc_get_current_limit(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	int offset = rdev_get_id(rdev);
++	int ret, row = 2;
++
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKA_REG + offset/2);
++	if (ret < 0)
++		return ret;
++
++	/* Determine the even or odd position of the buck current limit
++	 * register field
++	*/
++	if (offset % 2 == 0)
++		ret = (ret & DA9052_BUCK_ILIM_MASK_EVEN) >> 2;
++	else
++		ret = (ret & DA9052_BUCK_ILIM_MASK_ODD) >> 6;
++
++	/* Select the appropriate current limit range */
++	if (regulator->da9052->chip_id == DA9052)
++		row = 0;
++	else if (offset == 0)
++		row = 1;
++
++	return da9052_current_limits[row][ret];
++}
++
++static int da9052_dcdc_set_current_limit(struct regulator_dev *rdev, int min_uA,
++					  int max_uA)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	int offset = rdev_get_id(rdev);
++	int reg_val = 0;
++	int i, row = 2;
++
++	/* Select the appropriate current limit range */
++	if (regulator->da9052->chip_id == DA9052)
++		row = 0;
++	else if (offset == 0)
++		row = 1;
++
++	if (min_uA > da9052_current_limits[row][DA9052_MAX_UA] ||
++	    max_uA < da9052_current_limits[row][DA9052_MIN_UA])
++		return -EINVAL;
++
++	for (i = 0; i < DA9052_CURRENT_RANGE; i++) {
++		if (min_uA <= da9052_current_limits[row][i]) {
++			reg_val = i;
++			break;
++		}
++	}
++
++	/* Determine the even or odd position of the buck current limit
++	 * register field
++	*/
++	if (offset % 2 == 0)
++		return da9052_reg_update(regulator->da9052,
++					 DA9052_BUCKA_REG + offset/2,
++					 DA9052_BUCK_ILIM_MASK_EVEN,
++					 reg_val << 2);
++	else
++		return da9052_reg_update(regulator->da9052,
++					 DA9052_BUCKA_REG + offset/2,
++					 DA9052_BUCK_ILIM_MASK_ODD,
++					 reg_val << 6);
++}
++
++static int da9052_list_buckperi_voltage(struct regulator_dev *rdev,
++					 unsigned int selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int volt_uV;
++
++	if ((regulator->da9052->chip_id == DA9052) &&
++	    (selector >= DA9052_BUCK_PERI_REG_MAP_UPTO_3uV)) {
++		volt_uV = ((DA9052_BUCK_PERI_REG_MAP_UPTO_3uV * info->step_uV)
++			    + info->min_uV);
++		volt_uV += (selector - DA9052_BUCK_PERI_REG_MAP_UPTO_3uV)
++			    * (DA9052_BUCK_PERI_3uV_STEP);
++	} else
++			volt_uV = (selector * info->step_uV) + info->min_uV;
++
++	if (volt_uV > info->max_uV)
++		return -EINVAL;
++
++	return volt_uV;
++}
++
++static int da9052_list_voltage(struct regulator_dev *rdev,
++				unsigned int selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int volt_uV;
++
++	volt_uV = info->min_uV + info->step_uV * selector;
++
++	if (volt_uV > info->max_uV)
++		return -EINVAL;
++
++	return volt_uV;
++}
++
++static int da9052_regulator_set_voltage_int(struct regulator_dev *rdev,
++					     int min_uV, int max_uV,
++					     unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = verify_range(info, min_uV, max_uV);
++	if (ret < 0)
++		return ret;
++
++	if (min_uV < info->min_uV)
++		min_uV = info->min_uV;
++
++	*selector = (min_uV - info->min_uV) / info->step_uV;
++
++	ret = da9052_list_voltage(rdev, *selector);
++	if (ret < 0)
++		return ret;
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 (1 << info->volt_shift) - 1, *selector);
++}
++
++static int da9052_set_ldo_voltage(struct regulator_dev *rdev,
++				   int min_uV, int max_uV,
++				   unsigned int *selector)
++{
++	return da9052_regulator_set_voltage_int(rdev, min_uV, max_uV, selector);
++}
++
++static int da9052_set_ldo5_6_voltage(struct regulator_dev *rdev,
++				      int min_uV, int max_uV,
++				      unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int ret;
++
++	ret = da9052_regulator_set_voltage_int(rdev, min_uV, max_uV, selector);
++	if (ret < 0)
++		return ret;
++
++	/* Some LD0s are DVC controlled which requires enabling of
++	 * the LDO activate bit to implment the changes on the
++	 * LDO output.
++	*/
++	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
++				 info->activate_bit);
++}
++
++static int da9052_set_dcdc_voltage(struct regulator_dev *rdev,
++				    int min_uV, int max_uV,
++				    unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int ret;
++
++	ret = da9052_regulator_set_voltage_int(rdev, min_uV, max_uV, selector);
++	if (ret < 0)
++		return ret;
++
++	/* Some DCDCs are DVC controlled which requires enabling of
++	 * the DCDC activate bit to implment the changes on the
++	 * DCDC output.
++	*/
++	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
++				 info->activate_bit);
++}
++
++static int da9052_get_regulator_voltage_sel(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
++	if (ret < 0)
++		return ret;
++
++	ret &= ((1 << info->volt_shift) - 1);
++
++	return ret;
++}
++
++static int da9052_set_buckperi_voltage(struct regulator_dev *rdev, int min_uV,
++					int max_uV, unsigned int *selector)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = verify_range(info, min_uV, max_uV);
++	if (ret < 0)
++		return ret;
++
++	if (min_uV < info->min_uV)
++		min_uV = info->min_uV;
++
++	if ((regulator->da9052->chip_id == DA9052) &&
++	    (min_uV >= DA9052_CONST_3uV))
++		*selector = DA9052_BUCK_PERI_REG_MAP_UPTO_3uV +
++			    ((min_uV - DA9052_CONST_3uV) /
++			    (DA9052_BUCK_PERI_3uV_STEP));
++	else
++		*selector = (min_uV - info->min_uV) / info->step_uV;
++
++	ret = da9052_list_buckperi_voltage(rdev, *selector);
++	if (ret < 0)
++		return ret;
++
++	return da9052_reg_update(regulator->da9052,
++				 DA9052_BUCKCORE_REG + offset,
++				 (1 << info->volt_shift) - 1, *selector);
++}
++
++static int da9052_get_buckperi_voltage_sel(struct regulator_dev *rdev)
++{
++	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9052_regulator_info *info = regulator->info;
++	int offset = rdev_get_id(rdev);
++	int ret;
++
++	ret = da9052_reg_read(regulator->da9052, DA9052_BUCKCORE_REG + offset);
++	if (ret < 0)
++		return ret;
++
++	ret &= ((1 << info->volt_shift) - 1);
++
++	return ret;
++}
++
++static struct regulator_ops da9052_buckperi_ops = {
++	.list_voltage = da9052_list_buckperi_voltage,
++	.get_voltage_sel = da9052_get_buckperi_voltage_sel,
++	.set_voltage = da9052_set_buckperi_voltage,
++
++	.get_current_limit = da9052_dcdc_get_current_limit,
++	.set_current_limit = da9052_dcdc_set_current_limit,
++
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++static struct regulator_ops da9052_dcdc_ops = {
++	.set_voltage = da9052_set_dcdc_voltage,
++	.get_current_limit = da9052_dcdc_get_current_limit,
++	.set_current_limit = da9052_dcdc_set_current_limit,
++
++	.list_voltage = da9052_list_voltage,
++	.get_voltage_sel = da9052_get_regulator_voltage_sel,
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++static struct regulator_ops da9052_ldo5_6_ops = {
++	.set_voltage = da9052_set_ldo5_6_voltage,
++
++	.list_voltage = da9052_list_voltage,
++	.get_voltage_sel = da9052_get_regulator_voltage_sel,
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++static struct regulator_ops da9052_ldo_ops = {
++	.set_voltage = da9052_set_ldo_voltage,
++
++	.list_voltage = da9052_list_voltage,
++	.get_voltage_sel = da9052_get_regulator_voltage_sel,
++	.is_enabled = da9052_regulator_is_enabled,
++	.enable = da9052_regulator_enable,
++	.disable = da9052_regulator_disable,
++};
++
++#define DA9052_LDO5_6(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "LDO" #_id,\
++		.ops = &da9052_ldo5_6_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++#define DA9052_LDO(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "LDO" #_id,\
++		.ops = &da9052_ldo_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++#define DA9052_DCDC(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "BUCK" #_id,\
++		.ops = &da9052_dcdc_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++#define DA9052_BUCKPERI(_id, step, min, max, sbits, ebits, abits) \
++{\
++	.reg_desc = {\
++		.name = "BUCK" #_id,\
++		.ops = &da9052_buckperi_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = _id,\
++		.owner = THIS_MODULE,\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++	.volt_shift = (sbits),\
++	.en_bit = (ebits),\
++	.activate_bit = (abits),\
++}
++
++struct da9052_regulator_info da9052_regulator_info[] = {
++	/* Buck1 - 4 */
++	DA9052_DCDC(0, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBCOREGO),
++	DA9052_DCDC(1, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBPROGO),
++	DA9052_DCDC(2, 25, 925, 2500, 6, 6, DA9052_SUPPLY_VBMEMGO),
++	DA9052_BUCKPERI(3, 50, 1800, 3600, 5, 6, 0),
++	/* LD01 - LDO10 */
++	DA9052_LDO(4, 50, 600, 1800, 5, 6, 0),
++	DA9052_LDO5_6(5, 25, 600, 1800, 6, 6, DA9052_SUPPLY_VLDO2GO),
++	DA9052_LDO5_6(6, 25, 1725, 3300, 6, 6, DA9052_SUPPLY_VLDO3GO),
++	DA9052_LDO(7, 25, 1725, 3300, 6, 6, 0),
++	DA9052_LDO(8, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(9, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(10, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(11, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(12, 50, 1250, 3650, 6, 6, 0),
++	DA9052_LDO(13, 50, 1200, 3600, 6, 6, 0),
++};
++
++struct da9052_regulator_info da9053_regulator_info[] = {
++	/* Buck1 - 4 */
++	DA9052_DCDC(0, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBCOREGO),
++	DA9052_DCDC(1, 25, 500, 2075, 6, 6, DA9052_SUPPLY_VBPROGO),
++	DA9052_DCDC(2, 25, 925, 2500, 6, 6, DA9052_SUPPLY_VBMEMGO),
++	DA9052_BUCKPERI(3, 25, 925, 2500, 6, 6, 0),
++	/* LD01 - LDO10 */
++	DA9052_LDO(4, 50, 600, 1800, 5, 6, 0),
++	DA9052_LDO5_6(5, 25, 600, 1800, 6, 6, DA9052_SUPPLY_VLDO2GO),
++	DA9052_LDO5_6(6, 25, 1725, 3300, 6, 6, DA9052_SUPPLY_VLDO3GO),
++	DA9052_LDO(7, 25, 1725, 3300, 6, 6, 0),
++	DA9052_LDO(8, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(9, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(10, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(11, 50, 1200, 3600, 6, 6, 0),
++	DA9052_LDO(12, 50, 1250, 3650, 6, 6, 0),
++	DA9052_LDO(13, 50, 1200, 3600, 6, 6, 0),
++};
++
++static inline struct da9052_regulator_info *find_regulator_info(u8 chip_id,
++								 int id)
++{
++	struct da9052_regulator_info *info;
++	int i;
++
++	if (chip_id == DA9052) {
++		for (i = 0; i < ARRAY_SIZE(da9052_regulator_info); i++) {
++			info = &da9052_regulator_info[i];
++			if (info->reg_desc.id == id)
++				return info;
++		}
++	} else {
++		for (i = 0; i < ARRAY_SIZE(da9053_regulator_info); i++) {
++			info = &da9053_regulator_info[i];
++			if (info->reg_desc.id == id)
++				return info;
++		}
++	}
++
++	return NULL;
++}
++
++static int __devinit da9052_regulator_probe(struct platform_device *pdev)
++{
++	struct da9052_regulator *regulator;
++	struct da9052 *da9052;
++	struct da9052_pdata *pdata;
++	int ret;
++
++	regulator = kzalloc(sizeof(struct da9052_regulator), GFP_KERNEL);
++	if (!regulator)
++		return -ENOMEM;
++
++	da9052 = dev_get_drvdata(pdev->dev.parent);
++	pdata = da9052->dev->platform_data;
++	regulator->da9052 = da9052;
++
++	regulator->info = find_regulator_info(regulator->da9052->chip_id,
++					      pdev->id);
++	if (regulator->info == NULL) {
++		dev_err(&pdev->dev, "invalid regulator ID specified\n");
++		ret = -EINVAL;
++		goto err;
++	}
++	regulator->rdev = regulator_register(&regulator->info->reg_desc,
++					     &pdev->dev,
++					     pdata->regulators[pdev->id],
++					     regulator);
++	if (IS_ERR(regulator->rdev)) {
++		dev_err(&pdev->dev, "failed to register regulator %s\n",
++			regulator->info->reg_desc.name);
++		ret = PTR_ERR(regulator->rdev);
++		goto err;
++	}
++
++	platform_set_drvdata(pdev, regulator);
++
++	return 0;
++err:
++	kfree(regulator);
++	return ret;
++}
++
++static int __devexit da9052_regulator_remove(struct platform_device *pdev)
++{
++	struct da9052_regulator *regulator = platform_get_drvdata(pdev);
++
++	regulator_unregister(regulator->rdev);
++	kfree(regulator);
++
++	return 0;
++}
++
++static struct platform_driver da9052_regulator_driver = {
++	.probe = da9052_regulator_probe,
++	.remove = __devexit_p(da9052_regulator_remove),
++	.driver = {
++		.name = "da9052-regulator",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9052_regulator_init(void)
++{
++	return platform_driver_register(&da9052_regulator_driver);
++}
++subsys_initcall(da9052_regulator_init);
++
++static void __exit da9052_regulator_exit(void)
++{
++	platform_driver_unregister(&da9052_regulator_driver);
++}
++module_exit(da9052_regulator_exit);
++
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9052 PMIC");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:da9052-regulator");
+
+
