@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab1JRUvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 16:51:37 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:57284 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab1JRUvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 16:51:36 -0400
-X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Oct 2011 16:51:36 EDT
-Date: Tue, 18 Oct 2011 22:41:26 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: raviraj joshi <raviraj.j1991@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kenel level packet capturing
-Message-ID: <20111018224126.0d0510f4@neptune.home>
-In-Reply-To: <CAKj1SsP+GE=QqN8nx7aaAxXE8BODKb=vns_=SnbyySQjZp3-pg@mail.gmail.com>
-References: <CAKj1SsP+GE=QqN8nx7aaAxXE8BODKb=vns_=SnbyySQjZp3-pg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754076Ab1JRUyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 16:54:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab1JRUyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 16:54:50 -0400
+Date: Tue, 18 Oct 2011 16:54:41 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] jump_label_inc may return before the code is patched
+Message-ID: <20111018205441.GC2453@redhat.com>
+References: <20111018175551.GH17571@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111018175551.GH17571@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 18, 2011 at 07:55:51PM +0200, Gleb Natapov wrote:
+> If cpu A calls jump_label_inc() just after atomic_add_return() is
+> called by cpu B, atomic_inc_not_zero() will return value greater then
+> zero and jump_label_inc() will return to a caller before jump_label_update()
+> finishes its job on cpu B.
+> 
+> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> index a8ce450..e6f1f24 100644
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_key *key)
+>  		return;
+>  
+>  	jump_label_lock();
+> -	if (atomic_add_return(1, &key->enabled) == 1)
+> +	if (atomic_read(&key->enabled) == 0)
+>  		jump_label_update(key, JUMP_LABEL_ENABLE);
+> +	atomic_inc(&key->enabled);
+>  	jump_label_unlock();
+>  }
+>  
 
-You would probably have more/better replies if you asked netdev <netdev@vger.kernel.org>.
+agreed, we shouldn't return before the update happens...did this cause any
+actual problem in practice? Or just observed from code inspection?
 
-On Tue, 18 October 2011 raviraj joshi <raviraj.j1991@gmail.com> wrote:
-> We are making a kernel level packet capture module as a part of our BE project .
-> We are finding it difficult to understand kenel networking code.
-> We studied structures and functions like sk_buff, netif_rx(),dev_alloc_skb.
-> How ever we were not able to trace the actual path a simple packet follows.
-> Moreover we tried to count the no of times netif_rx function was
-> called it was much much lower than amount of packets actually being
-> received.
+Acked-by: Jason Baron <jbaron@redhat.com>
 
-netif_rx may fetch more than a single packet from the network interface
-controller in order to improve performance.
+Thanks,
 
-> Can anyone please let us know the reason for this and how to approach
-> the problem of writing a kernel level packet capture module.
-
-The better place to capture packets is probably by hooking somewhere into
-netfilter code as all packets traverse it (assuming it is loaded/enabled).
-
-Bruno
-
-
-> regards,
-> Raviraj Joshi
-> PICT,Pune.
+-Jason
