@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab1JRG65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 02:58:57 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59689
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751998Ab1JRG64 (ORCPT
+	id S1754880Ab1JRHAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 03:00:09 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:57828 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab1JRHAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 02:58:56 -0400
-Date: Tue, 18 Oct 2011 02:58:52 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] Update email address for stable patch submission
-Message-ID: <20111018065852.GA6056@infradead.org>
-References: <20111018011638.GQ1165@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111018011638.GQ1165@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 18 Oct 2011 03:00:07 -0400
+Subject: Re: [PATCH 12/21] m68k: drop unused Kconfig symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4E9D05FB.4080607@snapgear.com>
+References: <1318595371.6132.70.camel@x61.thuisdomein>
+	 <4E9B7BE1.1080907@snapgear.com> <1318837964.6414.6.camel@x61.thuisdomein>
+	 <4E9D05FB.4080607@snapgear.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 08:59:55 +0200
+Message-ID: <1318921195.6414.15.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 09:16:39PM -0400, Josh Boyer wrote:
-> The stable@kernel.org email address has been replaced with the
-> stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-> reference the new list instead of the semi-defunct email alias.
+On Tue, 2011-10-18 at 14:52 +1000, Greg Ungerer wrote:
+> If you can do it on top of linux-next real soon I can push it into my
+> m68knommu git tree for-next branch. 
 
-Does this mean it already stopped working?  I recently sent pathces
-there but neither got an ACK nor a bounce or similar.
+So, to be sure, that would be on top of
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+master, wouldn't it?
+
+
+Paul Bolle
 
