@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab1JRDXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 23:23:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63346 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab1JRDXX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 23:23:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318582987.19976.2.camel@phoenix>
-References: <1318582919.19976.1.camel@phoenix> <1318582987.19976.2.camel@phoenix>
-From: Barry Song <21cnbao@gmail.com>
-Date: Tue, 18 Oct 2011 11:23:02 +0800
-Message-ID: <CAGsJ_4xNAwyZcPkD-NQwF7Z=GzNPHAqDsBUteww4khWuuQv0jw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: ad193x: Use snd_soc_update_bits for read-modify-write
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757309Ab1JRDcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 23:32:05 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:54973 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752460Ab1JRDcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 23:32:03 -0400
+Subject: Re: [PATCH 06/21] unicore32: drop unused Kconfig symbols
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1318595291.6132.63.camel@x61.thuisdomein>
+References: <1318595291.6132.63.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Tue, 18 Oct 2011 11:33:34 +0800
+Message-ID: <1318908814.1789.27.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/14 Axel Lin <axel.lin@gmail.com>:
-> Use snd_soc_update_bits for read-modify-write register access instead of
-> open-coding it using snd_soc_read and snd_soc_write
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Thanks Paul.
+I will push the patch into my repo.
 
-Acked-by: Barry Song <21cnbao@gmail.com>
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-and fix the changelog as Mark pointed out.
 
+On Fri, 2011-10-14 at 14:28 +0200, Paul Bolle wrote:
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
->  sound/soc/codecs/ad193x.c |   25 ++++++++++++-------------
->  1 files changed, 12 insertions(+), 13 deletions(-)
->
+>  arch/unicore32/Kconfig.debug |   14 --------------
+>  1 files changed, 0 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/unicore32/Kconfig.debug b/arch/unicore32/Kconfig.debug
+> index ae2ec33..1a36262 100644
+> --- a/arch/unicore32/Kconfig.debug
+> +++ b/arch/unicore32/Kconfig.debug
+> @@ -44,18 +44,4 @@ config DEBUG_OCD
+>  	  Say Y here if you want the debug print routines to direct their
+>  	  output to the UniCore On-Chip-Debugger channel using CP #1.
+>  
+> -config DEBUG_OCD_BREAKPOINT
+> -	bool "Breakpoint support via On-Chip-Debugger"
+> -	depends on DEBUG_OCD
+> -
+> -config DEBUG_UART
+> -	int "Kernel low-level debugging messages via serial port"
+> -	depends on DEBUG_LL
+> -	range 0 1
+> -	default "0"
+> -	help
+> -	  Choice for UART for kernel low-level using PKUnity UARTS,
+> -	  should be between zero and one. The port must have been
+> -	  initialised by the boot-loader before use.
+> -
+>  endmenu
 
--barry
+
