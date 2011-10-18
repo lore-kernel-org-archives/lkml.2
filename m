@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab1JRNxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 09:53:25 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:33050 "EHLO
-	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753502Ab1JRNxY (ORCPT
+	id S1757983Ab1JROAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:00:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54144 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757964Ab1JROAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 09:53:24 -0400
-Date: Tue, 18 Oct 2011 09:53:22 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, anton@samba.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
-Subject: Re: Oprofile Regression Caused by commit
- e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25 on PPC
-Message-ID: <20111018135322.GA11530@mgebm.net>
-References: <20111007204247.GA5444@mgebm.net>
- <20111010233842.GC24583@mgebm.net>
- <1318319095.14400.54.camel@laptop>
- <20111012165154.GB6158@mgebm.net>
- <CABPqkBRHkiOYEW+5Yo9p43c_2Dy+aAdJRXj3tah5J1QsV4AXrw@mail.gmail.com>
+	Tue, 18 Oct 2011 10:00:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH 2/6] drivers/base: add bus for System-on-Chip devices
+Date: Tue, 18 Oct 2011 16:00:03 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        jamie@jamieiles.com, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org> <2152965.Ns7xt0yLIG@wuerfel> <20111017182542.GB14416@suse.de>
+In-Reply-To: <20111017182542.GB14416@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRHkiOYEW+5Yo9p43c_2Dy+aAdJRXj3tah5J1QsV4AXrw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201110181600.03834.arnd@arndb.de>
+X-Provags-ID: V02:K0:CwI0B1ArbhA+wNQuHlQaqPFdAhT/68kEC/uHAnUNwNN
+ 2N0LiS22GwChg7gJCSU+x3d2tEKlgMuB6H6Fql7N16ImEucorb
+ XX6yrboHAbfK92gzWy1n56Af9oBNQ15sKxjGBZ8Ffp6I7sOMJn
+ fv3L/d8MXw3ryLpVsbd9RNqUeaN8sSLSbPkk50v4cpv5xAcZmW
+ oItR/QdU9mzzu9bSwhoz/wu7v1tomwsWXD85lctE45a2p5MBuI
+ KQ7srvGpOBo/CGZF2fQFYCaTi0DtL5EKgaaIKqMVw3hpO1iwQb
+ BwM6ffEW+joE12RvvlKGX7TYsZFa3zwV9blFJM8J/T+JrT6ymf
+ V3oB94XJkLap+nhYkGL8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 17 October 2011, Greg KH wrote:
+> > You also commented that the argument to soc_device_unregister should
+> > be a soc_device (as, consequently, the return type of soc_device_register).
+> > Agree with that comment, but it means that the definition of struct
+> > soc_device needs to remain visible in order to be used as the parent
+> > for other devices.
+> 
+> No it doesn't:
+>         struct device * soc_device_to_device(struct soc device *soc);
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right, that works of course. I believe the more common way is to
+expose the derived type to its users, and it also simplifies the
+interface.
 
-On Wed, 12 Oct 2011, Stephane Eranian wrote:
+> Anyway, what are you using this soc device to be the parent of?
 
-> Could be:
->    a8d757e perf events: Fix slow and broken cgroup context switch code
->=20
+Basically everything. The SoC is probably about 90% of the system in
+modern embedded systems. Typically, there are on-chip buses like
+AMBA or PLB that contain dozens of internal devices (interrupt
+controller, serial, dmaengine, rtc, timer, watchdog, ...) as well
+as buses (i2c, spi, mmc, usb, pci, ...) that have off-chip child
+devices. You can think of an soc device as a kind of über-MFD
+that holds all of these together.
 
-Thanks for the pointer, but the fix was in:
-    facc4307 perf: Optimize event scheduling locking
+If you remember the early discussions about this patch set, I
+specifically asked for making the soc_device be a representation
+of the whole soc with a hierarchical view of its child devices
+under it, as opposed to having an artificial device node that only
+serves to export strings along the lines of /proc/cpuinfo.
 
-This might be a candidate for stable given that oprofile is broken without =
-it.
+See patch 5/6 for the one that moves all platform devices that
+are part of the dbx500 soc below the soc_device.
 
-Eric
-
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOnYTSAAoJEKhG9nGc1bpJ6RsP/0ZykIlSgwrsjVElTFPgoV0J
-SFkIarrDfj6K3tiFKwVgbV9zACfCy9r8F1XKJfezKZDIkTFPwodaX8dKtSQ6v3gS
-hs1blGXX9IjE0SxgNS1LrmRU+5kWbWMwc2B5m9/ldOMYz8Ay6DSb9IMIjo3eHFxf
-sR7ojWElOitBSb6Vonsn9d+LlxjpGM0rijlW5XsPwRxpPnWJB4LoQhNH2kdd45h2
-6SOJtF/MFP1ng6MrqBLhZui7sxZ6Nhxbwq+BMEVSUMY7ki4IOcrkPOyAF1TI5qIU
-z/5gP1tmoKKCHEEbL0ht1IZHT/bF9m/EaVgUVfZa6kWBk0UKJ2D47ZOkfMEkN4a6
-HBEcJnsr/u0ovI7SZJLOFlddye4hw/uT8gkWjuTaHRXZmZspgaxVcbgl2fWlW3B5
-7jOYxH4mAxwsOjMmhO8BJSSuqg4Y3RpTQic5Bz74yK57s5SuIdewVjWFIQ2oaouh
-WffAh9BUBBMPzU8gJ4UoN0+TaesQeqwyBoda2CwBtNdz6aKB27+1EJIjysTPo+IK
-uk0xsBHVRSNcgGEpmt7q/8xhQcalYjoa8LLPwQeTGuaxPeTv4TaoI3YwBLdhd4X0
-0SoFHdeBDCrt5pTSs4BeDZ88IKZUgjCN/N2+PR9viUN9mBWQCAf9R8WYsYOSgOL/
-qAkJrNlYWTmwBV8+7mi2
-=Fpnf
------END PGP SIGNATURE-----
-
---HlL+5n6rz5pIUxbD--
+	Arnd
