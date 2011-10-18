@@ -1,127 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642Ab1JRMiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:38:50 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:45887 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757523Ab1JRMis (ORCPT
+	id S1757644Ab1JRMpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:45:17 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:34745 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757517Ab1JRMpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:38:48 -0400
-Date: Tue, 18 Oct 2011 10:38:38 -0200
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Philipp Herz - Profihost AG <p.herz@profihost.ag>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Vanilla-Kernel 3 - page allocation failure
-Message-ID: <20111018123838.GD3782@oc1711230544.ibm.com>
-References: <4E9D53FF.7090609@profihost.ag>
- <20111018113251.GA3782@oc1711230544.ibm.com>
- <4E9D6C0A.1030801@profihost.ag>
+	Tue, 18 Oct 2011 08:45:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9D74DA.1000208@cam.ac.uk>
+Date: Tue, 18 Oct 2011 13:45:14 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9D6C0A.1030801@profihost.ag>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11101812-8936-0000-0000-000004CAE662
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] input/cma3000_d0x: Keep configuration on poweroff
+References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com> <1318926486-10330-4-git-send-email-ricardo.ribalda@gmail.com> <4E9D3A45.1040103@cam.ac.uk> <CAPybu_1JsTTOn5wP53Qd-jm+JhgwUTLhRb4BPjKaMab6174CNQ@mail.gmail.com>
+In-Reply-To: <CAPybu_1JsTTOn5wP53Qd-jm+JhgwUTLhRb4BPjKaMab6174CNQ@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 02:07:38PM +0200, Philipp Herz - Profihost AG wrote:
-> Hello Cascardo,
+On 10/18/11 13:07, Ricardo Ribalda Delgado wrote:
+> On Tue, Oct 18, 2011 at 10:35, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+>> On 10/18/11 09:28, Ricardo Ribalda Delgado wrote:
+>>> When the device goes to poweroff keep the spi/i2c configuration.
+>>> Otherwhise the device could not wake up if it was in spi mode.
+>>>
+>> Run checkpatch.pl over these
+>>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 > 
-> thanks for your detailed answer!
+> I did :(
 > 
-> I have uploaded two call traces to pastebin for further investigation.
+> ricardo@newpili:~/hacking/linux$ scripts/checkpatch.pl
+> cmr_patches/v1/0003-input-cma3000_d0x-Keep-configuration-on-poweroff.patch
+> total: 0 errors, 0 warnings, 19 lines checked
 > 
-> Maybe this can help you.
+> cmr_patches/v1/0003-input-cma3000_d0x-Keep-configuration-on-poweroff.patch
+> has no obvious style problems and is ready for submission.
 > 
-> * http://pastebin.com/Psg2dGYC (kworker)
-> * http://pastebin.com/pPFjZqxL (php5)
+> But I fix that right away
+Curious.  checkpatch seems to be getting more flexible...  I just assumed
+it would pick those issues up!
 > 
-> Regards,
-> Philipp
 > 
-
-Hello, Philipp.
-
-That only tells us that you have a TCP workload in your system. This is
-the subsystem that is trying to allocate memory. However, we do not know
-why there is failure. Usually, after the stack dump, there is some
-statistics about memory. I have seen that these may be suppressed if you
-have a NUMA system with lots of nodes. Check for NODE_SHIFT in your
-config. If it's greater than 8, that output may have been suppressed.
-But you may have just ignored the statistics because of the stack dump.
-
-Regards,
-Cascardo.
-
+>>> ---
+>>>  drivers/input/misc/cma3000_d0x.c |    6 +++++-
+>>>  1 files changed, 5 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+>>> index 9899742..15577b7 100644
+>>> --- a/drivers/input/misc/cma3000_d0x.c
+>>> +++ b/drivers/input/misc/cma3000_d0x.c
+>>> @@ -44,6 +44,7 @@
+>>>  #define CMA3000_RANGE2G    (1 << 7)
+>>>  #define CMA3000_RANGE8G    (0 << 7)
+>>>  #define CMA3000_BUSI2C     (0 << 4)
+>>> +#define CMA3000_BUSSPI     (1 << 4)
+>>>  #define CMA3000_MODEMASK   (7 << 1)
+>>>  #define CMA3000_GRANGEMASK (1 << 7)
+>>>
+>>> @@ -230,8 +231,11 @@ static int cma3000_poweron(struct cma3000_accl_data *data)
+>>>  static int cma3000_poweroff(struct cma3000_accl_data *data)
+>>>  {
+>>>       int ret;
+>>> +     u8 ctrl = CMAMODE_POFF;
+>>>
+>>> -     ret = CMA3000_SET(data, CMA3000_CTRL, CMAMODE_POFF, "Mode setting");
+>>> +     ctrl |= data->bus_ops->ctrl_mod;
+>>> +
+>>> +     ret = CMA3000_SET(data, CMA3000_CTRL , ctrl, "Mode setting");
+>> no space before comma.
+>>>       msleep(CMA3000_SETDELAY);
+>>>
+>>>       return ret;
+>>
+>>
 > 
-> Am 18.10.2011 13:32, schrieb Thadeu Lima de Souza Cascardo:
-> >On Tue, Oct 18, 2011 at 12:25:03PM +0200, Philipp Herz - Profihost AG wrote:
-> >>After updating kernel (x86_64) to stable version 3 there are a few
-> >>messages appearing in the kernel log such as
-> >>
-> >>kworker/0:1: page allocation failure: order:1, mode:0x20
-> >>mysql: page allocation failure: order:1, mode:0x20
-> >>php5: page allocation failure: order:1, mode:0x20
-> >>
-> >>Searching the net showed that these messages are known to occur since 2004.
-> >>
-> >>Some people were able to get rid of them by setting
-> >>/proc/sys/vm/min_free_kbytes to a high enough value. This does not
-> >>help in our case.
-> >>
-> >>
-> >>Is there a kernel comand line argument to avoid these messages?
-> >>
-> >>As of mm/page_alloc.c these messages are marked to be only warning
-> >>messages and would not appear if 'gpf_mask' was set to __GFP_NOWARN
-> >>in function warn_alloc_failed.
-> >>
-> >>How does this mask get set? Is it set by the "external" process
-> >>knocking at the memory manager?
-> >>
-> >
-> >Hello, Philipp.
-> >
-> >This happens when kernel tries to allocate memory, sometimes in response
-> >to some request by the user space, but also in other contexts. For
-> >example, an interrupt by a network driver may try to allocate memory. In
-> >this context, it will use GFP_ATOMIC as a mask, for example. The most
-> >usual flags in the kernel are GFP_KERNEL and GFP_ATOMIC.
-> >
-> >>What is the magic behind the 'order' and 'mode'?
-> >>
-> >
-> >The order is the binary log of the number of pages requested. So, order 1
-> >allocations are 2 pages, order 4 would be 16 pages, for example.
-> >
-> >The mode is, in fact, gfp_flags. 0x20 is GFP_ATOMIC. This kind of
-> >allocation cannot do IO or access the filesystem. Also, it cannot wait
-> >for reclaim memory from cache.
-> >
-> >This warning is usually followed by some statistics about memory use
-> >in your system. Please post it to give more information about this
-> >situation.
-> >
-> >I have watched some of this happen when lots of cache is used by some
-> >filesystems. Perhaps, some tweaking of the vm sysctl options may help,
-> >but I can point any magic tweaking right now.
-> >
-> >Regards,
-> >Cascardo.
-> >
-> >>I'm not a subscriber, so please CC me a copy of messages related to
-> >>the subject. I'm not sure if I can help much by looking at the
-> >>inside of the kernel, but I will try my best to answer any questions
-> >>concerning this issue.
-> >>
-> >>Best regards, Philipp
-> >>--
-> >>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>the body of a message to majordomo@vger.kernel.org
-> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>Please read the FAQ at  http://www.tux.org/lkml/
-> >
+> 
 > 
 
