@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab1JRMLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:11:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43677 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757491Ab1JRMLF (ORCPT
+	id S1757586Ab1JRMMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:12:32 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18056 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757509Ab1JRMMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:11:05 -0400
-Date: Tue, 18 Oct 2011 13:08:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rob Clark <rob.clark@linaro.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, greg@kroah.com,
+	Tue, 18 Oct 2011 08:12:31 -0400
+Message-ID: <4E9D6D27.8030501@dsn.lapis-semi.com>
+Date: Tue, 18 Oct 2011 21:12:23 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device
- independant
-Message-ID: <20111018130843.170b71b2@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAN_cFWNKeD8sf-nmv9ZtVxKu1XMf3caNRKHtkzdq9zfSMig6-w@mail.gmail.com>
-References: <20110705141038.23872.55303.stgit@localhost.localdomain>
-	<20110705144140.23872.86541.stgit@localhost.localdomain>
-	<alpine.LSU.2.00.1107071742250.10362@sister.anvils>
-	<20110708093859.299958df@lxorguk.ukuu.org.uk>
-	<alpine.LSU.2.00.1107080917430.1781@sister.anvils>
-	<20110711172517.46907e62@lxorguk.ukuu.org.uk>
-	<alpine.LSU.2.00.1107111033440.1752@sister.anvils>
-	<CAMeQTsb7ZMbyt8avYNOiBssERmk6vEbg7RR6TQw7CaD55MK22A@mail.gmail.com>
-	<alpine.LSU.2.00.1110101102330.21957@sister.anvils>
-	<CAN_cFWNkYGSajh7eG1qK+A5tWSHNR2gH4EPiPg9tKd+yw8nRYQ@mail.gmail.com>
-	<alpine.LSU.2.00.1110171031290.2545@sister.anvils>
-	<20111017223928.4d5ed2c6@lxorguk.ukuu.org.uk>
-	<alpine.LSU.2.00.1110171528520.6878@sister.anvils>
-	<CAN_cFWP9jOGTPuoXQaXan_P1AKYrbvfLoB8hzG-YdCddfsu3Vw@mail.gmail.com>
-	<20111018114518.5610a8c2@lxorguk.ukuu.org.uk>
-	<CAN_cFWNKeD8sf-nmv9ZtVxKu1XMf3caNRKHtkzdq9zfSMig6-w@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Subject: Re: gpio-ml-ioh: Support interrupt function
+References: <20111017201058.GA13916@elgon.mountain> <4E9CC93B.4000800@dsn.lapis-semi.com> <alpine.DEB.2.00.1110172251590.4880@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110172251590.4880@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011 06:59:28 -0500
-Rob Clark <rob.clark@linaro.org> wrote:
+(2011/10/18 14:56), David Rientjes wrote:
+> On Tue, 18 Oct 2011, Tomoya MORINAGA wrote:
+>
+>>> The linux-next patch 54be566317b6 "gpio-ml-ioh: Support interrupt
+>>> function" generates a Sparse warning.
+>>>
+>>> +               irq_base = irq_alloc_descs(-1, IOH_IRQ_BASE, num_ports[j],
+>>> +                                          GFP_KERNEL);
+>>>                                              ^^^^^^^^^^
+>>>
+>>> The last argument should be a NUMA node, not a GFP_ flag.  I'm not
+>>> sure what the right fix is.  There are currently 5 callers in my
+>>> cscope for this function in linux-next.
+>>>
+>>> 2 pass GFP_KERNEL which is wrong.
+>
+> Right, all irq_alloc_descs() allocations are already implicitly
+> GFP_KERNEL.
+>
+>>> 2 pass 0 which maybe should be cpu_to_node(0)?
+>>> 1 passes -1 which maybe could be NUMA_NO_NODE?
+>>>
+>> I can understand your saying.
+>> Seeing accepted other drivers, '0' or '-1' is used.
+>
+> There's actually no guarantee in the kernel that node 0 has memory, so
+> unless that is assured in the context then passing 0 would be wrong.
+>
+>> Focusing on GPIO driver, gpio-pca953x.c uses '-1'.
+>>
+>
+> The slab layer guarantees that passing -1 will allocate on the node that
+> is local to the cpu that the code is running on.  Unless there's a
+> compelling reason to allocate on a different node, then this is what you
+> want to use.
+>
+> We try not to pass -1 directly, though, we try to use NUMA_NO_NODE
+> wherever possible.
+> --
 
-> On Tue, Oct 18, 2011 at 5:45 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >> What troubles could you see for swap+uncached (or more likely,
-> >> writecombine) pages?
-> >
-> > That should never occur. I would argue the driver is responsible for
-> > putting the cache state of the page back sensibly before it unpins it.
-> > That's a simple enough rule and one I think all the drivers follow at
-> > this point.
-> 
-> no, what I'm trying to avoid is having two virtual mappings to the
-> same physical page with different cache attributes.  This is not
-> allowed on some architectures (like ARM)
+Using NUMA_NO_NODE, I confirmed our gpio(gpio-pch) works well.
+I will submit the patch both gpio-pch and gpio-ml-ioh soon.
 
-Nor x86... that's a matter for the core architecture code to deal with
-not the drivers.
-
-Alan
+thanks,
+-- 
+tomoya
+ROHM Co., Ltd.
