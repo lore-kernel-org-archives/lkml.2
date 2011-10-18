@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757125Ab1JRBdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:33:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12125 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050Ab1JRBdO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:33:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=ZNvV3aOHFTduPPoMObite3uoPvtmJDKGuEUG5ecjaHixbiEPEDFCtY2PD11okJGaQ
-	HPkrFikBtaRy1rEiamPUQ==
-Date: Mon, 17 Oct 2011 18:33:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Henrik Grindal Bakken <henribak@cisco.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Avoid using hardcoded values in kernel/sys.c
-In-Reply-To: <CA+55aFxj+heCCoQx0ecVyCE0b5e3fGpAUPSUH8K7E=TyRzNSUg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1110171832060.13515@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1110171752300.19024@chino.kir.corp.google.com> <CA+55aFxj+heCCoQx0ecVyCE0b5e3fGpAUPSUH8K7E=TyRzNSUg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757156Ab1JRBd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:33:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757052Ab1JRBd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 21:33:27 -0400
+Date: Mon, 17 Oct 2011 21:33:20 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] Update email address for stable patch submission
+Message-ID: <20111018013320.GR1165@zod.bos.redhat.com>
+References: <20111018011638.GQ1165@zod.bos.redhat.com>
+ <alpine.DEB.2.00.1110171826450.13515@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-464578838-1318901591=:13515"
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110171826450.13515@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---397155492-464578838-1318901591=:13515
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 17 Oct 2011, Linus Torvalds wrote:
-
-> > The release field of struct new_utsname may always change, so avoid
-> > hardcoded values when setting up a buffer to copy to it.
+On Mon, Oct 17, 2011 at 06:28:57PM -0700, David Rientjes wrote:
+> On Mon, 17 Oct 2011, Josh Boyer wrote:
 > 
-> This patch is totally bogus.
+> > The stable@kernel.org email address has been replaced with the
+> > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
+> > reference the new list instead of the semi-defunct email alias.
+> > 
+> > CC: <stable@kernel.org>
+> > CC: <stable@vger.kernel.org>
+> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> > 
 > 
-> > +static int override_release(char __user *release)
-> >  {
-> > +       const int len = sizeof(release);
-> 
+> Hmm, is stable@vger.kernel.org a replacement for stable@kernel.org or is 
+> it just temporary until kernel.org is fully back to life?
 
-Right, I meant to pass the struct in and use sizeof(release->name), but I 
-was under the impression that wouldn't count as a variable length array or 
-be compiled as such by ISO99 standards because it's a constant expression 
-(as the standard says is not variable length).
---397155492-464578838-1318901591=:13515--
+To my understanding, stable@kernel.org is now just a forward to
+stable@vger.kernel.org.  However, John mentioned that due to some
+configuration issues the vger list might be dropping things from
+stable@kernel.org on the floor.  So it's not working in a useful way at
+the moment, and from what I can tell patches that need to be backported
+and submitted to stable are kind of difficult to get in because of this.
+
+Personally, I'd rather see the vger list take over entirely.  However,
+that decision will remain in the more than capable hands of the admins.
+
+josh
