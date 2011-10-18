@@ -1,135 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab1JRPps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:45:48 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:59068 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519Ab1JRPpq (ORCPT
+	id S932673Ab1JRPrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:47:10 -0400
+Received: from smtp-out-070.synserver.de ([212.40.185.70]:1200 "EHLO
+	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932541Ab1JRPrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:45:46 -0400
-Date: Tue, 18 Oct 2011 17:45:42 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
-        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20111018154542.GB3869@osiris.boeblingen.de.ibm.com>
-References: <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
- <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
- <4E832A55.30709@kernel.dk>
- <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
- <4E832BD2.50409@kernel.dk>
- <4E96E2FF.6070601@linux.vnet.ibm.com>
- <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
- <4E9BEB68.1050707@ce.jp.nec.com>
- <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com>
- <4E9D7FA8.9000000@ce.jp.nec.com>
+	Tue, 18 Oct 2011 11:47:08 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 1246
+Message-ID: <4E9D9F88.109@metafoo.de>
+Date: Tue, 18 Oct 2011 17:47:20 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111005 Iceowl/1.0b2 Icedove/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9D7FA8.9000000@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Barry Song <21cnbao@gmail.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: ad193x: Use snd_soc_update_bits
+ for read-modify-write
+References: <1318890308.15935.0.camel@phoenix>
+In-Reply-To: <1318890308.15935.0.camel@phoenix>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 10:31:20PM +0900, Jun'ichi Nomura wrote:
-> On 10/17/11 23:06, James Bottomley wrote:
-> > On Mon, 2011-10-17 at 17:46 +0900, Jun'ichi Nomura wrote:
-> >> On 10/15/11 01:03, James Bottomley wrote:
-> >>> On Thu, 2011-10-13 at 15:09 +0200, Steffen Maier wrote:
-> >>>> Initially, we encountered use-after-free bugs in
-> >>>> scsi_print_command / scsi_dispatch_cmd
-> >>>> http://marc.info/?l=linux-scsi&m=130824013229933&w=2
-> >>
-> >> It is interesting that both this and the older report
-> >> got oopsed in scsi_log_send(), while there are other
-> >> dereferences of 'cmd' around scsi_dispatch_cmd().
-> >> Are there any reason they are special? Just by accident?
-> > 
-> > Right, that's why it looks like the command area got freed rather than
-> > the command pointer was bogus (6b is a poison free pattern).  Perhaps if
-> > the reporter could pin down the failing source line, we'd know better
-> > what was going on?
+On 10/18/2011 12:25 AM, Axel Lin wrote:
+> Use snd_soc_update_bits for read-modify-write register access instead of
+> open-coding it using snd_soc_read and snd_soc_write
 > 
-> Yeah, that might be useful.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-The struct scsi_cmnd that was passed to scsi_log_send() was already freed
-(contents completely 6b6b6b...).
-Since SLUB debugging was turned on we can see that it was freed from
-__scsi_put_command(). Not too much of a surprise.
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-> One remote possibility I imagined is if the submitting process
-> took very long after blk_start_request until scsi_dispatch_cmd
-> and timeout handler kicks in, can cmd be freed?
+Thanks
+
+> ---
+>  sound/soc/codecs/ad193x.c |   31 +++++++++++++++----------------
+>  1 files changed, 15 insertions(+), 16 deletions(-)
 > 
-> Also Tejun's report here could be related to possible data corruption:
->   [PATCH] block: make gendisk hold a reference to its queue
->   https://lkml.org/lkml/2011/10/16/148
-> 
-> Though I haven't hit the reported oops myself,
-> a process closing a removed device may modify freed memory.
-> And his patch will fix it.
-> 
-> So if the problem is easily reproducible, I think it's worth
-> trying his patch to see if the problem disappear.
+> diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
+> index 39056ce..1206021 100644
+> --- a/sound/soc/codecs/ad193x.c
+> +++ b/sound/soc/codecs/ad193x.c
+> @@ -103,12 +103,14 @@ static const struct snd_soc_dapm_route audio_paths[] = {
+>  static int ad193x_mute(struct snd_soc_dai *dai, int mute)
+>  {
+>  	struct snd_soc_codec *codec = dai->codec;
+> -	int reg;
+>  
+> -	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
+> -	reg = (mute > 0) ? reg | AD193X_DAC_MASTER_MUTE : reg &
+> -		(~AD193X_DAC_MASTER_MUTE);
+> -	snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
+> +	if (mute)
+> +		snd_soc_update_bits(codec, AD193X_DAC_CTRL2,
+> +				    AD193X_DAC_MASTER_MUTE,
+> +				    AD193X_DAC_MASTER_MUTE);
+> +	else
+> +		snd_soc_update_bits(codec, AD193X_DAC_CTRL2,
+> +				    AD193X_DAC_MASTER_MUTE, 0);
+>  
+>  	return 0;
+>  }
+> @@ -262,7 +264,7 @@ static int ad193x_hw_params(struct snd_pcm_substream *substream,
+>  		struct snd_pcm_hw_params *params,
+>  		struct snd_soc_dai *dai)
+>  {
+> -	int word_len = 0, reg = 0, master_rate = 0;
+> +	int word_len = 0, master_rate = 0;
+>  
+>  	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+>  	struct snd_soc_codec *codec = rtd->codec;
+> @@ -297,18 +299,15 @@ static int ad193x_hw_params(struct snd_pcm_substream *substream,
+>  		break;
+>  	}
+>  
+> -	reg = snd_soc_read(codec, AD193X_PLL_CLK_CTRL0);
+> -	reg = (reg & (~AD193X_PLL_INPUT_MASK)) | master_rate;
+> -	snd_soc_write(codec, AD193X_PLL_CLK_CTRL0, reg);
+> +	snd_soc_update_bits(codec, AD193X_PLL_CLK_CTRL0,
+> +			    AD193X_PLL_INPUT_MASK, master_rate);
+>  
+> -	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
+> -	reg = (reg & (~AD193X_DAC_WORD_LEN_MASK))
+> -		| (word_len << AD193X_DAC_WORD_LEN_SHFT);
+> -	snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
+> +	snd_soc_update_bits(codec, AD193X_DAC_CTRL2,
+> +			    AD193X_DAC_WORD_LEN_MASK,
+> +			    word_len << AD193X_DAC_WORD_LEN_SHFT);
+>  
+> -	reg = snd_soc_read(codec, AD193X_ADC_CTRL1);
+> -	reg = (reg & (~AD193X_ADC_WORD_LEN_MASK)) | word_len;
+> -	snd_soc_write(codec, AD193X_ADC_CTRL1, reg);
+> +	snd_soc_update_bits(codec, AD193X_ADC_CTRL1,
+> +			    AD193X_ADC_WORD_LEN_MASK, word_len);
+>  
+>  	return 0;
+>  }
 
-In addition it might be worthwhile to apply this small slub patch as well,
-so that we get a full trace of the caller in the object which was freed:
-
----
- mm/slub.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
-
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -27,6 +27,7 @@
- #include <linux/memory.h>
- #include <linux/math64.h>
- #include <linux/fault-inject.h>
-+#include <linux/stacktrace.h>
- 
- #include <trace/events/kmem.h>
- 
-@@ -191,11 +192,14 @@ static LIST_HEAD(slab_caches);
- /*
-  * Tracking user of a slab.
-  */
-+#define SAVE_TRACE_NUM 30
- struct track {
- 	unsigned long addr;	/* Called from address */
- 	int cpu;		/* Was running on cpu */
- 	int pid;		/* Pid context */
- 	unsigned long when;	/* When did the operation occur */
-+	unsigned long trace[SAVE_TRACE_NUM];
-+	unsigned long long stamp;
- };
- 
- enum track_item { TRACK_ALLOC, TRACK_FREE };
-@@ -397,10 +401,17 @@ static void set_track(struct kmem_cache
- 	struct track *p = get_track(s, object, alloc);
- 
- 	if (addr) {
-+		struct stack_trace trace = {
-+			.max_entries = SAVE_TRACE_NUM,
-+			.entries = p->trace,
-+		};
-+
- 		p->addr = addr;
- 		p->cpu = smp_processor_id();
- 		p->pid = current->pid;
- 		p->when = jiffies;
-+		p->stamp = get_clock();
-+		save_stack_trace(&trace);
- 	} else
- 		memset(p, 0, sizeof(struct track));
- }
