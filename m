@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab1JRA1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 20:27:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50371 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab1JRA1q (ORCPT
+	id S1756920Ab1JRAdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 20:33:05 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:34791 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751042Ab1JRAdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 20:27:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=N7quYhr8OfscGwdH2v3uuP86HVIh/KG3RlQYX8g1D/8/zZeoe95B4wFeBk0+xnV3P
-	ewqOKQsMrwwLRND/EKQug==
-Date: Mon, 17 Oct 2011 17:27:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mandeep Singh Baines <msb@chromium.org>
-cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm: avoid switching to text console if there is no
- panic timeout
-In-Reply-To: <1318896400-32498-1-git-send-email-msb@chromium.org>
-Message-ID: <alpine.DEB.2.00.1110171727300.13515@chino.kir.corp.google.com>
-References: <1318896400-32498-1-git-send-email-msb@chromium.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 17 Oct 2011 20:33:04 -0400
+Message-ID: <4E9CC93B.4000800@dsn.lapis-semi.com>
+Date: Tue, 18 Oct 2011 09:32:59 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: gpio-ml-ioh: Support interrupt function
+References: <20111017201058.GA13916@elgon.mountain>
+In-Reply-To: <20111017201058.GA13916@elgon.mountain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011, Mandeep Singh Baines wrote:
+Hi,
 
-> From: Hugh Dickins <hughd@chromium.org>
-> 
-> Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
-> we're going to reboot immediately, the user will not be able to see the
-> messages anyway, and messing with the video mode may display artifacts,
-> and certainly get into several layers of complexity (including mutexes and
-> memory allocations) which we shall be much safer to avoid.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> [ Edited commit message and modified to short-circuit panic_timeout < 0
->   instead of testing panic_timeout >= 0.  -Mandeep ]
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: dri-devel@lists.freedesktop.org
+(2011/10/18 5:10), Dan Carpenter wrote:
+> The linux-next patch 54be566317b6 "gpio-ml-ioh: Support interrupt
+> function" generates a Sparse warning.
+>
+> +               irq_base = irq_alloc_descs(-1, IOH_IRQ_BASE, num_ports[j],
+> +                                          GFP_KERNEL);
+>                                             ^^^^^^^^^^
+>
+> The last argument should be a NUMA node, not a GFP_ flag.  I'm not
+> sure what the right fix is.  There are currently 5 callers in my
+> cscope for this function in linux-next.
+>
+> 2 pass GFP_KERNEL which is wrong.
+> 2 pass 0 which maybe should be cpu_to_node(0)?
+> 1 passes -1 which maybe could be NUMA_NO_NODE?
+>
+I can understand your saying.
+Seeing accepted other drivers, '0' or '-1' is used.
+Focusing on GPIO driver, gpio-pca953x.c uses '-1'.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Though I tried to understand source code of irq_alloc_descs,
+I can't understand which value we should use.
+
+ > Grant,
+Could you help me ?
+
+-- 
+tomoya
+ROHM Co., Ltd.
