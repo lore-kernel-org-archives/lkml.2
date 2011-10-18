@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab1JRIiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:38:14 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:55881 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab1JRIiM (ORCPT
+	id S1756125Ab1JRIjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:39:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57934 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab1JRIjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:38:12 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -21.9
-Message-ID: <4E9D3AEE.6070809@tremplin-utc.net>
-Date: Tue, 18 Oct 2011 10:38:06 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20111006 Thunderbird/7.0.1
+	Tue, 18 Oct 2011 04:39:46 -0400
+Date: Tue, 18 Oct 2011 10:39:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Linux 3.1-rc9
+In-Reply-To: <alpine.LFD.2.02.1110172237030.3240@ionos>
+Message-ID: <alpine.LFD.2.02.1110181037120.3240@ionos>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>  <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca>  <1318010515.398.8.camel@twins> <20111008005035.GC22843@hostway.ca>  <1318060551.8395.0.camel@twins>
+ <20111012213555.GC24461@hostway.ca>  <20111013232521.GA5654@hostway.ca>  <CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>  <1318847658.6594.40.camel@twins>  <CA+55aFxaGKEyhXdHXNxvPrPQ-SGSpbXdfoeXrxfjPx3VXsgvtg@mail.gmail.com> 
+ <1318874090.4172.84.camel@twins>  <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com> <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, alsa-devel@alsa-project.org,
-        david.henningsson@canonical.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION] Sound goes too fast due to 798cb7e897210
-References: <4E9D3466.5000901@tremplin-utc.net> <s5hzkgy1zf1.wl%tiwai@suse.de>
-In-Reply-To: <s5hzkgy1zf1.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 18-10-11 10:23, Takashi Iwai schreef:
-> At Tue, 18 Oct 2011 10:10:14 +0200,
-> Éric Piel wrote:
-:
-> If that commit affects, the best fix would be to give a quirk specific
-> to your device.  Try to pass either position_fix=1 or position_fix=2.
-> Only one of them should work (likely 2).
->
-> After checking it, you can add it to position_fix_list[] in
-> sound/pci/hda/hda_intel.c together with PCI SSID.
+On Mon, 17 Oct 2011, Thomas Gleixner wrote:
+> That said, I really need some sleep before I can make a final
+> judgement on that horror. The call paths are such an intermingled mess
+> that it's not funny anymore. I do that tomorrow morning first thing.
 
-Hello,
-Thanks for the quick response. Indeed forcing position_fix=1 does fix 
-the bug. I'll not try to make a patch for my device.
+The patch is safe and the exit race just existed in my confused tired
+brain. Peter, can you please provide a changelog. That wants a cc
+stable as well, because that deadlock causing commit hit 3.0.7 :(
 
-Cheers,
-Éric
+Thanks,
+
+	tglx
