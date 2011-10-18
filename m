@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab1JRJsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:48:52 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42701 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab1JRJsv (ORCPT
+	id S1757390Ab1JRJuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:50:23 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51316 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab1JRJuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:48:51 -0400
-Date: Tue, 18 Oct 2011 11:48:32 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] x86, microcode: Correct microcode revision format
-Message-ID: <20111018094831.GB17076@aftab>
-References: <1318865115-9904-1-git-send-email-bp@amd64.org>
- <1318865115-9904-2-git-send-email-bp@amd64.org>
- <alpine.DEB.2.00.1110172349590.8959@chino.kir.corp.google.com>
- <20111018075145.GB16100@aftab>
- <alpine.DEB.2.00.1110180108590.8959@chino.kir.corp.google.com>
+	Tue, 18 Oct 2011 05:50:22 -0400
+Date: Tue, 18 Oct 2011 10:49:44 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+Message-ID: <20111018094944.GA30644@flint.arm.linux.org.uk>
+References: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com> <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com> <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com> <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com> <20111018074211.GA13483@flint.arm.linux.org.uk> <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110180108590.8959@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 04:14:05AM -0400, David Rientjes wrote:
-> On Tue, 18 Oct 2011, Borislav Petkov wrote:
+On Tue, Oct 18, 2011 at 02:00:45PM +0530, Jassi Brar wrote:
+> On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
+> > On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
+> >> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
+> >> > With item #1 above being a separate topic, I may have a problem with #2
+> >> > as well: dma_addr_t is sized for the local platform and not guaranteed
+> >> > to be a 64-bit value (which may be required by a target).
+> >> > Agree with #3 (if #1 and #2 work).
+> >> >
+> >> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
+> >
+> > That's just an idiotic suggestion - there's no other way to put that.
+> > Let's have some sanity here.
+> >
+> Yeah, I am not proud of the workaround, so I only probed the option.
+> I think I need to explain myself.
 > 
-> > > > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> > > > index 8af6fa4..ad8d897 100644
-> > > > --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> > > > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> > > > @@ -221,7 +221,7 @@ static void print_mce(struct mce *m)
-> > > >  	 * Note this output is parsed by external tools and old fields
-> > > >  	 * should not be changed.
-> > > >  	 */
-> > > > -	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x microcode %u\n",
-> > > > +	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x microcode %x\n",
-> > > >  		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid,
-> > > >  		cpu_data(m->extcpu).microcode);
-> > > >  
-> > > 
-> > > Any reason why this isn't prefixed with "0x"?
-> > 
-> > Well, no strong reason except that APIC is without '0x' and I leaned
-> > towards the same for 'microcode'. And since this output format is legacy
-> > and MCE stanzas are being parsed by scripts, keeping the format for new
-> > fields sounded like the right thing to do, IMHO.
-> > 
+> The case here is that even a 32-bit RapidIO host could ask transfer against
+> 64-bit address space on a remote device. And vice versa 64->32.
 > 
-> Anytime there's a string that prints decimal, then hex, then decimal, then 
-> decimal, then hex, then hex, I think it's always better to include a 
-> prefix where it's not clear.  It's printed here without the prefix and in 
-> other places with the prefix, so I think it would be better to just be as 
-> explicit as possible.
+> > dma_addr_t is the size of a DMA address for the CPU architecture being
+> > built.  This has no relationship to what any particular DMA engine uses.
+> >
+> Yes, so far the dmaengine ever only needed to transfer within platform's
+> address-space. So the assumption that src and dst addresses could
+> be contained within dma_addr_t, worked.
+> If the damengine is to get rid of that assumption/constraint, the memcpy,
+> slave_sg etc need to accept addresses specified in bigger of the host and
+> remote address space, and u64 is the safe option.
+> Ultimately dma_addr_t is either u32 or u64.
 
-Why do I need to be explicit in the MCE stanza? I'm fine with what
-you're saying but I don't see a compelling reason why, sorry. Especially
-since it was defined crappy to begin with.
+Let me spell it out:
 
-> And, the argument that scripts are parsing this is actually bogus
-> since it would be expecting decimal there and you'd actually be doing
-> them a favor by breaking if they can't handle the "0x" since you've
-> changed it to hex. I know the comment says not to change old fields,
-> but the microcode field hasn't hit Linus' tree yet, either.
+1. Data structures read by the DMA engine hardware should not be defined
+   using the 'dma_addr_t' type, but one of the [bl]e{8,16,32,64} types,
+   or at a push the u{8,16,32,64} types if they're always host-endian.
 
-Right, either way I don't seem to care too much. The only thing I care
-about is having ucode revision in hex in all places, with or without the
-"0x" prefix.
+   This helps to ensure that the layout of the structures read by the
+   hardware are less dependent of the host architecture and each element
+   is appropriately sized (and, with sparse and the endian-sized types,
+   can be endian-checked at compile time.)
 
-So what do the others think, let's take a poll here. :-)
+2. dma_addr_t is the size of the DMA address for the host architecture.
+   This may be 32-bit or 64-bit depending on the host architecture.
+
+The following points are my opinion:
+
+3. For architectures where there are only 32-bit DMA addresses, dma_addr_t
+   will be a 32-bit type.  For architectures where there are 64-bit DMA
+   addresses, it will be a 64-bit type.
+
+4. If RIO can accept 64-bit DMA addresses but is only connected to 32-bit
+   busses, then the top 32 address bits are not usable (it's truncated in
+   hardware.)  So there's no point passing around a 64-bit DMA address.
+
+5. In the case of a 64-bit dma_addr_t and a 32-bit DMA engine host being
+   asked to transfer >= 4GB, this needs error handing in the DMA engine
+   driver (I don't think its checked for - I know amba-pl08x doesn't.)
+
+6. 32-bit dma_addr_t with 64-bit DMA address space is a problem and is
+   probably a bug in itself - the platform should be using a 64-bit
+   dma_addr_t in this case.  (see 3.)
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
