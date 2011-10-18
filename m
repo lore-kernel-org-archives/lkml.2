@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270Ab1JRCzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 22:55:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45341 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab1JRCzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 22:55:20 -0400
-Date: Mon, 17 Oct 2011 19:55:16 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: make gendisk hold a reference to its queue
-Message-ID: <20111018025516.GB1493@google.com>
-References: <20111017024329.GA23507@google.com>
- <4E9C1509.6030103@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9C1509.6030103@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932119Ab1JRC46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 22:56:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37853 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757237Ab1JRC45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 22:56:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,362,1315206000"; 
+   d="scan'208";a="74899018"
+Subject: Re: [PATCH 02/10] dmaengine: move drivers to dma_transfer_direction
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Yong Wang <yong.y.wang@intel.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Boojin Kim <boojin.kim@samsung.com>, Barry Song <Baohua.Song@csr.com>
+In-Reply-To: <Pine.LNX.4.64.1110171023070.18438@axis700.grange>
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
+	 <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
+	 <Pine.LNX.4.64.1110171023070.18438@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 08:18:15 +0530
+Message-ID: <1318906095.23438.175.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 01:44:09PM +0200, Jens Axboe wrote:
-> On 2011-10-17 04:43, Tejun Heo wrote:
-> > The following command sequence triggers an oops.
-> > 
-> > # mount /dev/sdb1 /mnt
-> > # echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
-> > # umount /mnt
-> > 
-> >  general protection fault: 0000 [#1] PREEMPT SMP 
-> >  CPU 2 
-> >  Modules linked in:
-> >  
-> >  Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
-> >  RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
-> > ...
-> >  Call Trace:
-> >   [<ffffffff810d2845>] lock_acquire+0x95/0x140
-> >   [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
-> >   [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
-> >   [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
-> >   [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
-> >   [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
-> >   [<ffffffff811c40df>] blkdev_put+0x5f/0x190
-> >   [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
-> >   [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
-> >   [<ffffffff8119003a>] deactivate_super+0x4a/0x70
-> >   [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
-> >   [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
-> >   [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
-> > 
-> > This is because bdev holds on to disk but disk doesn't pin the
-> > associated queue.  If a SCSI device is removed while the device is
-> > still open, the sdev puts the base reference to the queue on release.
-> > When the bdev is finally released, the associated queue is already
-> > gone along with the bdi and bdev_inode_switch_bdi() ends up
-> > dereferencing already freed bdi.
-> > 
-> > Even if it were not for this bug, disk not holding onto the associated
-> > queue is very unusual and error-prone.
-> > 
-> > Fix it by making add_disk() take an extra reference to its queue and
-> > put it on disk_release() and ensuring that disk and its fops owner are
-> > put in that order after all accesses to the disk and queue are
-> > complete.
+On Mon, 2011-10-17 at 14:52 +0200, Guennadi Liakhovetski wrote:
+> A general note to this rework. I haven't been cc'ed on patch 00/10,
+> so, 
+> replying here. Are we sure it is a good idea to name these new macros
+> like 
+> this:
 > 
-> Thanks, applied.
-
-Ooh, I had the WARN_ON_ONCE() condition wrong in add_disk() as
-blk_get_queue() returns 1 on failure and 0 on success.  Can you please
-flip that?
-
-Thanks.
+> MEM_TO_DEV,
+> DEV_TO_MEM,
+> ...
+> 
+> i.e., without a common namespace? Wouldn't something like
+> DMA_DIRECTION_* 
+> be better? 
+Yes makes sense. I am leaning towards DMA_*
 
 -- 
-tejun
+~Vinod
+
