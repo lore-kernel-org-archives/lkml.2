@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab1JRIhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:37:33 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49292 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab1JRIhb (ORCPT
+	id S1756745Ab1JRIiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:38:14 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:55881 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab1JRIiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:37:31 -0400
+	Tue, 18 Oct 2011 04:38:12 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -21.9
+Message-ID: <4E9D3AEE.6070809@tremplin-utc.net>
+Date: Tue, 18 Oct 2011 10:38:06 +0200
+From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20111006 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1318926384.23438.179.camel@vkoul-udesk3>
-References: <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
-	<20111018074211.GA13483@flint.arm.linux.org.uk>
-	<CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
-	<1318926384.23438.179.camel@vkoul-udesk3>
-Date: Tue, 18 Oct 2011 14:07:30 +0530
-Message-ID: <CAJe_Zhe9B2n1ZYqSAY9gEjeJn2rx6WOVZ5Tn463=sb_H-k8xew@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Takashi Iwai <tiwai@suse.de>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, alsa-devel@alsa-project.org,
+        david.henningsson@canonical.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [REGRESSION] Sound goes too fast due to 798cb7e897210
+References: <4E9D3466.5000901@tremplin-utc.net> <s5hzkgy1zf1.wl%tiwai@suse.de>
+In-Reply-To: <s5hzkgy1zf1.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2011 13:56, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Tue, 2011-10-18 at 14:00 +0530, Jassi Brar wrote:
->> On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
->> > On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
->> >> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
->> >> > With item #1 above being a separate topic, I may have a problem with #2
->> >> > as well: dma_addr_t is sized for the local platform and not guaranteed
->> >> > to be a 64-bit value (which may be required by a target).
->> >> > Agree with #3 (if #1 and #2 work).
->> >> >
->> >> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
->> >
->> > That's just an idiotic suggestion - there's no other way to put that.
->> > Let's have some sanity here.
->> >
->> Yeah, I am not proud of the workaround, so I only probed the option.
->> I think I need to explain myself.
->>
->> The case here is that even a 32-bit RapidIO host could ask transfer against
->> 64-bit address space on a remote device. And vice versa 64->32.
-> I thought RIO address were always 64 + 2 bits, irrespective of what the
-> host system is...
+Op 18-10-11 10:23, Takashi Iwai schreef:
+> At Tue, 18 Oct 2011 10:10:14 +0200,
+> Éric Piel wrote:
+:
+> If that commit affects, the best fix would be to give a quirk specific
+> to your device.  Try to pass either position_fix=1 or position_fix=2.
+> Only one of them should work (likely 2).
 >
-No, not always. RIO address could be 32, 48 or 64... with the role extra 2 bits
-not very clear.
+> After checking it, you can add it to position_fix_list[] in
+> sound/pci/hda/hda_intel.c together with PCI SSID.
+
+Hello,
+Thanks for the quick response. Indeed forcing position_fix=1 does fix 
+the bug. I'll not try to make a patch for my device.
+
+Cheers,
+Éric
