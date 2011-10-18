@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1JRV4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:56:12 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40283 "EHLO
+	id S1754870Ab1JRV4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 17:56:14 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40282 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754164Ab1JRVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754118Ab1JRVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Oct 2011 17:54:48 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org
 Cc: ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
         richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
         dhowells@redhat.com, eparis@redhat.com,
+        "Serge E. Hallyn" <serge@hallyn.com>,
         "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Andrew Morgan <morgan@kernel.org>
-Subject: [PATCH 5/9] user namespace: clamp down users of cap_raised
-Date: Tue, 18 Oct 2011 21:54:54 +0000
-Message-Id: <1318974898-21431-6-git-send-email-serge@hallyn.com>
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH 6/9] Add Documentation/namespaces/user_namespace.txt (v3)
+Date: Tue, 18 Oct 2011 21:54:55 +0000
+Message-Id: <1318974898-21431-7-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1318974898-21431-1-git-send-email-serge@hallyn.com>
 References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
@@ -23,92 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+From: "Serge E. Hallyn" <serge@hallyn.com>
 
-A few modules are using cap_raised(current_cap(), cap) to authorize
-actions.  This means that tasks which are privileged in non-initial
-user namespaces will be deemed privileged.  The privilege should only
-be granted if the task is in the initial user namespace.
+Provide a description of user namespaces
 
-Switching the calls to capable() would change the behavior - it would
-cause the LSM capable hooks to be called, and set PF_SUPERPRIV if
-the capability was used.  So instead, put in an explicit check and
-refuse privilege if the caller is not in init_user_ns.
-
-Vasiliy had suggested introducing a new helper for this.  I'm open
-to suggestions, but for four callers and for a discouraged idiom,
-I'd rather not pollute the capable* function namespace with a bad name.
-(even has_capability goes through the LSM hooks)
+Changelog:
+   jul 26: incorporate feedback from David Howells.
+   jul 29: incorporate feedback from Randy Dunlap.
+   sep 15: remove information which is not yet certain.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Andrew Morgan <morgan@kernel.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/block/drbd/drbd_nl.c           |    5 +++++
- drivers/md/dm-log-userspace-transfer.c |    3 +++
- drivers/staging/pohmelfs/config.c      |    3 +++
- drivers/video/uvesafb.c                |    3 +++
- 4 files changed, 14 insertions(+), 0 deletions(-)
+ Documentation/namespaces/user_namespace.txt |   51 +++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/namespaces/user_namespace.txt
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 0feab26..9a87a14 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -2297,6 +2297,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
- 		return;
- 	}
- 
-+	if (current_user_ns() != &init_user_ns) {
-+		retcode = ERR_PERM;
-+		goto fail;
-+	}
+diff --git a/Documentation/namespaces/user_namespace.txt b/Documentation/namespaces/user_namespace.txt
+new file mode 100644
+index 0000000..0ca6564
+--- /dev/null
++++ b/Documentation/namespaces/user_namespace.txt
+@@ -0,0 +1,51 @@
++Description
++===========
 +
- 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
- 		retcode = ERR_PERM;
- 		goto fail;
-diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
-index 1f23e04..140ca81 100644
---- a/drivers/md/dm-log-userspace-transfer.c
-+++ b/drivers/md/dm-log-userspace-transfer.c
-@@ -134,6 +134,9 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- {
- 	struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
- 
-+	if (current_user_ns() != &init_user_ns)
-+		return;
++Traditionally, each task is owned by a user ID (UID) and belongs to one or more
++groups (GID).  Both are simple numeric IDs, though userspace usually translates
++them to names.  The user namespace allows tasks to have different views of the
++UIDs and GIDs associated with tasks and other resources.  (See 'UID mapping'
++below for more.)
 +
- 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
- 		return;
- 
-diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
-index b6c42cb..cd259d0 100644
---- a/drivers/staging/pohmelfs/config.c
-+++ b/drivers/staging/pohmelfs/config.c
-@@ -525,6 +525,9 @@ static void pohmelfs_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *n
- {
- 	int err;
- 
-+	if (current_user_ns() != &init_user_ns)
-+		return;
++The user namespace is a simple hierarchical one.  The system starts with all
++tasks belonging to the initial user namespace.  A task creates a new user
++namespace by passing the CLONE_NEWUSER flag to clone(2).  This requires the
++creating task to have the CAP_SETUID, CAP_SETGID, and CAP_CHOWN capabilities,
++but it does not need to be running as root.  The clone(2) call will result in a
++new task which to itself appears to be running as UID and GID 0, but to its
++creator seems to have the creator's credentials.
 +
- 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
- 		return;
- 
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index 7f8472c..71dab8e 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -73,6 +73,9 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
- 	struct uvesafb_task *utask;
- 	struct uvesafb_ktask *task;
- 
-+	if (current_user_ns() != &init_user_ns)
-+		return;
++To this new task, any resource belonging to the initial user namespace will
++appear to belong to user and group 'nobody', which are UID and GID -1.
++Permission to open such files will be granted according to world access
++permissions.  UID comparisons and group membership checks will return false,
++and privilege will be denied.
 +
- 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
- 		return;
- 
++When a task belonging to (for example) userid 500 in the initial user namespace
++creates a new user namespace, even though the new task will see itself as
++belonging to UID 0, any task in the initial user namespace will see it as
++belonging to UID 500.  Therefore, UID 500 in the initial user namespace will be
++able to kill the new task.
++
++Userid mapping for the VFS is not yet implemented, though prototypes exist.
++
++Relationship between the User namespace and other namespaces
++============================================================
++
++Other namespaces, such as UTS and network, are owned by a user namespace.  When
++such a namespace is created, it is assigned to the user namespace of the task
++by which it was created.  Therefore, attempts to exercise privilege to
++resources in, for instance, a particular network namespace, can be properly
++validated by checking whether the caller has the needed privilege (i.e.
++CAP_NET_ADMIN) targeted to the user namespace which owns the network namespace.
++This is done using the ns_capable() function.
++
++As an example, if a new task is cloned with a private user namespace but
++no private network namespace, then the task's network namespace is owned
++by the parent user namespace.  The new task has no privilege to the
++parent user namespace, so it will not be able to create or configure
++network devices.  If, instead, the task were cloned with both private
++user and network namespaces, then the private network namespace is owned
++by the private user namespace, and so root in the new user namespace
++will have privilege targeted to the network namespace.  It will be able
++to create and configure network devices.
 -- 
 1.7.5.4
 
