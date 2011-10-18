@@ -1,131 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab1JRKgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 06:36:49 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:33787 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab1JRKgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 06:36:48 -0400
-Subject: Re: [PATCH] rtc: rtc-puv3: Add __devinit and __devexit markers for
- probe and remove
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Reply-To: gxt@mprc.pku.edu.cn
-To: axel.lin@gmail.com
-Cc: Michal Marek <mmarek@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com
-In-Reply-To: <CAF+7xW=nhutZ7GcSr8j6bT5GZFoKmkmbdRCw+enRKRfPb_bThQ@mail.gmail.com>
-References: <1317824987.2674.1.camel@phoenix>
-	 <1318922541.1789.36.camel@epip-laptop>
-	 <CAF+7xW=nhutZ7GcSr8j6bT5GZFoKmkmbdRCw+enRKRfPb_bThQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: MPRC, PKU
-Date: Tue, 18 Oct 2011 18:35:28 +0800
-Message-ID: <1318934128.1789.46.camel@epip-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932157Ab1JRKpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 06:45:10 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:58538 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab1JRKpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 06:45:08 -0400
+Date: Tue, 18 Oct 2011 12:45:04 +0200
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Elmar Vonlanthen <evonlanthen@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>,
+        Timo =?iso-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
+	causes kernel oops
+Message-ID: <20111018104504.GA15913@gondor.apana.org.au>
+References: <CA+0Zf5Be5JUSvssH9CrDQq=jtETZr=veAPC7jriM8B-FZKbbpg@mail.gmail.com> <1318604266.2223.29.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <CA+0Zf5A-8X5MaXC4+BbLKtMb8S8B-Ln_a3JNfz0jR4O-ruefuw@mail.gmail.com> <1318905032.2571.35.camel@edumazet-laptop> <20111018093411.GA15165@gondor.apana.org.au> <1318932093.2657.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111018100527.GA15383@gondor.apana.org.au> <1318933423.2657.44.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318933423.2657.44.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 16:44 +0800, Axel Lin wrote:
-> hi Guan,
+On Tue, Oct 18, 2011 at 12:23:43PM +0200, Eric Dumazet wrote:
 > 
-> > For puv3_rtc_probe, I think it should be in the white-list, but warnings
-> > are yielded.
-> > For puv3_rtc_remove, the warning could be disappeared by modifying
-> > __devexit to __exit, however is it proper?
-> >
-> 
-> I'm not able to reproduce it on linux-next tree (20111014).
-> If I Enable loadable module support, I got below build error:
-> 
->   CC      arch/unicore32/kernel/ksyms.o
-> arch/unicore32/kernel/ksyms.c:39: error: 'csum_partial_copy_nocheck'
-> undeclared here (not in a function)
-> arch/unicore32/kernel/ksyms.c:39: warning: type defaults to 'int' in
-> declaration of 'csum_partial_copy_nocheck'
-> arch/unicore32/kernel/ksyms.c:40: error: '__csum_ipv6_magic'
-> undeclared here (not in a function)
-> arch/unicore32/kernel/ksyms.c:40: warning: type defaults to 'int' in
-> declaration of '__csum_ipv6_magic'
-> arch/unicore32/kernel/ksyms.c:44: error: '__raw_readsb' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:44: warning: type defaults to 'int' in
-> declaration of '__raw_readsb'
-> arch/unicore32/kernel/ksyms.c:47: error: '__raw_readsw' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:47: warning: type defaults to 'int' in
-> declaration of '__raw_readsw'
-> arch/unicore32/kernel/ksyms.c:50: error: '__raw_readsl' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:50: warning: type defaults to 'int' in
-> declaration of '__raw_readsl'
-> arch/unicore32/kernel/ksyms.c:53: error: '__raw_writesb' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:53: warning: type defaults to 'int' in
-> declaration of '__raw_writesb'
-> arch/unicore32/kernel/ksyms.c:56: error: '__raw_writesw' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:56: warning: type defaults to 'int' in
-> declaration of '__raw_writesw'
-> arch/unicore32/kernel/ksyms.c:59: error: '__raw_writesl' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:59: warning: type defaults to 'int' in
-> declaration of '__raw_writesl'
-> arch/unicore32/kernel/ksyms.c:80: error: '__get_user_1' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:80: warning: type defaults to 'int' in
-> declaration of '__get_user_1'
-> arch/unicore32/kernel/ksyms.c:81: error: '__get_user_2' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:81: warning: type defaults to 'int' in
-> declaration of '__get_user_2'
-> arch/unicore32/kernel/ksyms.c:82: error: '__get_user_4' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:82: warning: type defaults to 'int' in
-> declaration of '__get_user_4'
-> arch/unicore32/kernel/ksyms.c:84: error: '__put_user_1' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:84: warning: type defaults to 'int' in
-> declaration of '__put_user_1'
-> arch/unicore32/kernel/ksyms.c:85: error: '__put_user_2' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:85: warning: type defaults to 'int' in
-> declaration of '__put_user_2'
-> arch/unicore32/kernel/ksyms.c:86: error: '__put_user_4' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:86: warning: type defaults to 'int' in
-> declaration of '__put_user_4'
-> arch/unicore32/kernel/ksyms.c:87: error: '__put_user_8' undeclared
-> here (not in a function)
-> arch/unicore32/kernel/ksyms.c:87: warning: type defaults to 'int' in
-> declaration of '__put_user_8'
-> make[1]: *** [arch/unicore32/kernel/ksyms.o] Error 1
-> make: *** [arch/unicore32/kernel] Error 2
-This output seems that there is no cross-compiler in your machine.
-And the cross-compiler could be downloaded from my website:
-http://mprc.pku.edu.cn/~guanxuetao/linux/uc4-1.0.5-hard.tgz
-(about 100MB, including glibc for unicore32)
+> You're right, if reallocations are OK in all paths.
 
-> 
-> I also try to clone unicore tree, but I got connection timed out. :-(
-> 
-> axel@phoenix:~/repos/git$ git clone
-> git://master.kernel.org/pub/scm/linux/kernel/git/epip/linux-unicore.git
-> Cloning into linux-unicore...
-> master.kernel.org[0: 140.211.167.34]: errno=Connection timed out
-> fatal: unable to connect a socket (Connection timed out)
-Sorry, I just notify the email by Peter Anvin.
-And I will re-establish my PGP and repo recently.
+If it wasn't OK then making needed_headroom constant won't work
+anyway.
 
-Thanks,
+> We'll need to change LL_RESERVED_SPACE() / LL_RESERVED_SPACE_EXTRA() /
+> LL_ALLOCATED_SPACE() macros and provide the [read once] values, instead
+> of a [read once] pointer to values.
 
-Guan Xuetao
+I'm not sure what you mean here.  I don't see any need to change
+these macros.  All we need is to save the value in a local variable:
 
-> 
-> Regards,
-> Axel
+	hh_len = LL_RESERVED_SPACE(dev);
 
+	skb = alloc_skb(hh_len + len);
+	skb_reserve(skb, hh_len);
 
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
