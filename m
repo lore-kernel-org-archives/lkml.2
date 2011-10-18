@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab1JRMz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:55:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38954 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab1JRMz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757707Ab1JRMz0 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Oct 2011 08:55:26 -0400
-Date: Tue, 18 Oct 2011 13:55:19 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: alsa-devel <alsa-devel@alsa-project.org>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, David@alsa-project.org,
-        Chen <david.chen@diasemi.com>, lrg <lrg@ti.com>
-Subject: Re: [alsa-devel] [PATCH v4 3/7] ASoC: da7210: Add support for mute
- and zero cross controls
-Message-ID: <20111018125519.GB18713@sirena.org.uk>
-References: <1318670595.613.42.camel@matrix>
- <20111017214242.GD5200@opensource.wolfsonmicro.com>
- <1318938548.13721.23.camel@matrix>
- <20111018120841.GA28501@opensource.wolfsonmicro.com>
- <1318940943.13721.25.camel@matrix>
- <20111018123124.GC28501@opensource.wolfsonmicro.com>
- <1318942828.13721.39.camel@matrix>
+Received: from mx1.redhat.com ([209.132.183.28]:38930 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755051Ab1JRMzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 08:55:25 -0400
+Date: Tue, 18 Oct 2011 08:49:29 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, "Chen, Gong" <gong.chen@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "hughd@chromium.org" <hughd@chromium.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Message-ID: <20111018124929.GA3452@redhat.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
+ <20111017164715.e42591d5.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318942828.13721.39.camel@matrix>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20111017164715.e42591d5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 06:30:28PM +0530, Ashish Chavan wrote:
+On Mon, Oct 17, 2011 at 04:47:15PM -0700, Andrew Morton wrote:
+> On Fri, 14 Oct 2011 16:53:05 -0400
+> > @@ -131,11 +133,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+> >  		total += l1_cpy + l2_cpy;
+> >  		part++;
+> >  	}
+> > -	if (in_nmi()) {
+> > -		if (is_locked)
+> > -			spin_unlock(&psinfo->buf_lock);
+> > -	} else
+> > -		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+> > +	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+> >  }
+> 
+> afacit this assumes that (reason == KMSG_DUMP_PANIC) if in_nmi().  Is
+> that always the case, and will it always be the case in the future?
 
-> > Eh?  One is a Volume, the other is a Switch.  Note that alsamixer does
-> > render the two stacked on top of each other in the UI.
+I see your point.  For now yes.  The common case for which I think pstore
+was designed for was the APEI/GHES case.  Normally when GHES hits an NMI
+it stays at the APEI/GHES layer and either uses an irq_workqueue for
+recoverable errors or panics on non-recoverable errors.
 
-> Yes, I guessed that earlier. Anyways I generally don't rely on alsamixer
-> and use amixer whereever possible. In amixer also, it shows only one
-> control, the one that I add first. If I change "Mic" to some thing else
-> like "MicM" or "Mic Mute", then it shows both controls.
+So currently the only time it reaches the pstore layer is in the panic
+case.  Unfortunately, I can't vouch for all the backends that can hook
+into pstore.
 
-Check again, amixer also merges controls.
+Perhaps a 'BUG_ON(in_nmi() && reason != KMSG_DUMP_PANIC)'?
 
-> BTW does amixer version have any significance here? I know my alsa-utils
-> are quite old (1.0.14)
 
-That's spectacularly old, I guess it's possible it's buggy.
+> 
+> I felt that the spin_trylock() approach was less horrid than this.  I
+> assume that the new approach will cause lockdep to go berzerk?
+
+Heh.  Good point.  That is probably a good test case.  Though finding a
+working GHES implementation in the firmware isn't easy these days, making
+it hard to test. :-/
+
+Cheers,
+Don
