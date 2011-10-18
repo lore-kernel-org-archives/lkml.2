@@ -1,86 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab1JRQuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 12:50:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61612 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932313Ab1JRQuB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 12:50:01 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Lk9dfU3ObFihJFKNc1Rz5mjQCKayFbAPFNydAjJCZpruMfNv64oa/IN/Hjf812oz3
-	Quz10UXbcHOxM5h/PujWg==
+	id S932746Ab1JRQxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 12:53:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932174Ab1JRQxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 12:53:18 -0400
+Date: Tue, 18 Oct 2011 18:53:13 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing/latency: Fix header output for latency tracers
+Message-ID: <20111018165313.GA12695@jolsa.brq.redhat.com>
+References: <1315922614-6390-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4E9CAB21.2020302@oracle.com>
-References: <4E9A3092.4080309@oracle.com> <4E9A3408.9080905@oracle.com>
- <CAErSpo5XdM+1OFmoU+rN_QNWCJ0Wzv1VwKxsTo9hTq=2=7KEHA@mail.gmail.com>
- <4E9C6F0E.40501@oracle.com> <CAErSpo7ofdVixyGR74_mc6ND5C3LROiR9PVzwNZaDe23ptJ2=Q@mail.gmail.com>
- <4E9CAB21.2020302@oracle.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 18 Oct 2011 10:49:39 -0600
-Message-ID: <CAErSpo4PLDfapndXJp-sXS-SJtv0a7PaD=UKX0HV0OV34an3kQ@mail.gmail.com>
-Subject: Re: [PATCH 1/8] pci: Make sriov work with hotplug removal
-To: Yinghai Lu <yinghai.lu@oracle.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315922614-6390-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 4:24 PM, Yinghai Lu <yinghai.lu@oracle.com> wrote:
-> On 10/17/2011 03:12 PM, Bjorn Helgaas wrote:
->>
->> Maybe this is the best we can do, but it still doesn't seem ideal, and
->> it's certainly not obvious when reading the code.  It doesn't seem
->> right for the driver ->remove() method to be calling
->> pci_destroy_dev().   Won't the core data structures be corrupted if a
->> defective driver doesn't call pci_disable_sriov()?  Seems like we
->> could end up with a device that's been physically removed, but still
->> has pci_dev structs hanging around.
->
-> i did add some print out in
->        pci_stop_bus_device
-> when stop PF, that function is called for those VFs.
->
-> also driver have to call pci_disable_sriov() and that is current design.
+hi,
+any feedback on this?
 
-Yep.  But I don't have to like the current design :)  It doesn't seem
-as robust as it could be.
+thanks,
+jirka
 
-It took me a long time to puzzle out what was happening here.  Here's
-some possible changelog text that would have saved me a lot of time:
-
-    The PCI hot-remove path calls pci_stop_bus_devices() via
-    pci_remove_bus_device().
-
-    pci_stop_bus_devices() traverses the bus->devices list (point A below),
-    stopping each device in turn, which calls the driver remove() method.  When
-    the device is an SR-IOV PF, the driver calls pci_disable_sriov(), which
-    also uses pci_remove_bus_device() to remove the VF devices from the
-    bus->devices list (point B).
-
-        pci_remove_bus_device
-          pci_stop_bus_device
-            pci_stop_bus_devices(subordinate)
-              list_for_each(bus->devices)             <-- A
-                pci_stop_bus_device(PF)
-                  ...
-                    driver->remove
-                      pci_disable_sriov
-                        ...
-                          pci_remove_bus_device(VF)
-                              <remove from bus_list>  <-- B
-
-    At B, we're changing the same list we're iterating through at A, so when
-    the driver remove() method returns, the pci_stop_bus_devices() iterator has
-    a pointer to a list entry that has already been freed.
-
-    This patch avoids the problem by building a separate list of all PFs on
-    the bus and traversing that at A instead of the bus->devices list.
+On Tue, Sep 13, 2011 at 04:03:34PM +0200, Jiri Olsa wrote:
+> In case the the graph tracer (CONFIG_FUNCTION_GRAPH_TRACER) or even the
+> function tracer (CONFIG_FUNCTION_TRACER) are not set, the latency tracers
+> do not display proper latency header.
+> 
+> The involved/fixed latency tracers are:
+>         wakeup_rt
+>         wakeup
+>         preemptirqsoff
+>         preemptoff
+>         irqsoff
+> 
+> The patch adds proper handling of tracer configuration options for latency
+> tracers, and displaying correct header info accordingly.
+> 
+> * The current output (for wakeup tracer) with both graph and function
+>   tracers disabled is:
+> 
+>   # tracer: wakeup
+>   #
+>      cat-1163    0d..4    1us :   1163:120:R   + [000]     6:  0:R migration/0
+>      cat-1163    0d..4    2us+: ttwu_do_activate.clone.1 <-try_to_wake_up
+>      cat-1163    0d..3    4us : __schedule <-preempt_schedule
+>      cat-1163    0d..3    4us :   1163:120:R ==> [000]     6:  0:R migration/0
+> 
+> 
+> * The fixed output is:
+> 
+>   # tracer: wakeup
+>   #
+>   # wakeup latency trace v1.1.5 on 3.1.0-rc4-tip+
+>   # --------------------------------------------------------------------
+>   # latency: 91 us, #4/4, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
+>   #    -----------------
+>   #    | task: watchdog/0-7 (uid:0 nice:0 policy:1 rt_prio:99)
+>   #    -----------------
+>   #
+>     <idle>-0       0d.h5    1us :      0:120:R   + [000]     7:  0:R watchdog/0
+>     <idle>-0       0d.h5    2us+: ttwu_do_activate.clone.1 <-try_to_wake_up
+>     <idle>-0       0d..3   17us : __schedule <-schedule
+>     <idle>-0       0d..3   17us :      0:120:R ==> [000]     7:  0:R watchdog/0
+> 
+> 
+> * There's slightly different output (for wakeup_rt tracer) when function
+>   tracer is enabled, currently:
+> 
+>   # tracer: wakeup_rt
+>   #
+>      cat-1168    1d..4    0us :   1168:120:R   + [001]     8:  0:R migration/1
+>      cat-1168    1d..4    1us : ttwu_do_activate.clone.1 <-try_to_wake_up
+>      cat-1168    1d..3    1us : check_preempt_curr <-ttwu_do_wakeup
+>      ...
+> 
+> 
+> * After the fix:
+> 
+>   # tracer: wakeup_rt
+>   #
+>   # wakeup_rt latency trace v1.1.5 on 3.1.0-rc4-tip+
+>   # --------------------------------------------------------------------
+>   # latency: 209 us, #113/113, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
+>   #    -----------------
+>   #    | task: watchdog/0-7 (uid:0 nice:0 policy:1 rt_prio:99)
+>   #    -----------------
+>   #
+>   #                  _------=> CPU#            
+>   #                 / _-----=> irqs-off        
+>   #                | / _----=> need-resched    
+>   #                || / _---=> hardirq/softirq 
+>   #                ||| / _--=> preempt-depth   
+>   #                |||| /     delay             
+>   #  cmd     pid   ||||| time  |   caller      
+>   #     \   /      |||||  \    |   /           
+>      cat-1168    1d..4    0us :   1168:120:R   + [001]     8:  0:R migration/1
+>      cat-1168    1d..4    1us : ttwu_do_activate.clone.1 <-try_to_wake_up
+>      cat-1168    1d..3    1us : check_preempt_curr <-ttwu_do_wakeup
+>      ...
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  kernel/trace/trace.c              |   12 ++++++++++++
+>  kernel/trace/trace.h              |    1 +
+>  kernel/trace/trace_irqsoff.c      |   13 ++++++++++++-
+>  kernel/trace/trace_sched_wakeup.c |   13 ++++++++++++-
+>  4 files changed, 37 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index e5df02c..7086345 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2139,6 +2139,18 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
+>  	return print_trace_fmt(iter);
+>  }
+>  
+> +void trace_latency_header(struct seq_file *m)
+> +{
+> +	struct trace_iterator *iter = m->private;
+> +
+> +	/* print nothing if the buffers are empty */
+> +	if (trace_empty(iter))
+> +		return;
+> +
+> +	if (iter->iter_flags & TRACE_FILE_LAT_FMT)
+> +		print_trace_header(m, iter);
+> +}
+> +
+>  void trace_default_header(struct seq_file *m)
+>  {
+>  	struct trace_iterator *iter = m->private;
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 616846b..db40865 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -370,6 +370,7 @@ void trace_graph_function(struct trace_array *tr,
+>  		    unsigned long ip,
+>  		    unsigned long parent_ip,
+>  		    unsigned long flags, int pc);
+> +void trace_latency_header(struct seq_file *m);
+>  void trace_default_header(struct seq_file *m);
+>  void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
+>  int trace_empty(struct trace_iterator *iter);
+> diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> index 667aa8c..2a0aee6 100644
+> --- a/kernel/trace/trace_irqsoff.c
+> +++ b/kernel/trace/trace_irqsoff.c
+> @@ -280,9 +280,20 @@ static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
+>  }
+>  
+>  static void irqsoff_graph_return(struct ftrace_graph_ret *trace) { }
+> -static void irqsoff_print_header(struct seq_file *s) { }
+>  static void irqsoff_trace_open(struct trace_iterator *iter) { }
+>  static void irqsoff_trace_close(struct trace_iterator *iter) { }
+> +
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +static void irqsoff_print_header(struct seq_file *s)
+> +{
+> +	trace_default_header(s);
+> +}
+> +#else
+> +static void irqsoff_print_header(struct seq_file *s)
+> +{
+> +	trace_latency_header(s);
+> +}
+> +#endif /* CONFIG_FUNCTION_TRACER */
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  
+>  /*
+> diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+> index e4a70c0..ff791ea 100644
+> --- a/kernel/trace/trace_sched_wakeup.c
+> +++ b/kernel/trace/trace_sched_wakeup.c
+> @@ -280,9 +280,20 @@ static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
+>  }
+>  
+>  static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
+> -static void wakeup_print_header(struct seq_file *s) { }
+>  static void wakeup_trace_open(struct trace_iterator *iter) { }
+>  static void wakeup_trace_close(struct trace_iterator *iter) { }
+> +
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +static void wakeup_print_header(struct seq_file *s)
+> +{
+> +	trace_default_header(s);
+> +}
+> +#else
+> +static void wakeup_print_header(struct seq_file *s)
+> +{
+> +	trace_latency_header(s);
+> +}
+> +#endif /* CONFIG_FUNCTION_TRACER */
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  
+>  /*
+> -- 
+> 1.7.1
+> 
