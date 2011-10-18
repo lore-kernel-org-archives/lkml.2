@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab1JRCy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 22:54:56 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36562 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752485Ab1JRCyz (ORCPT
+	id S1757270Ab1JRCzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 22:55:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45341 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab1JRCzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 22:54:55 -0400
-X-Sasl-enc: CWPT7aQAXkVhKgS2U71hntJ2ufyI7ad/KFseRYWkiBuR 1318906494
-Date: Mon, 17 Oct 2011 19:54:02 -0700
-From: Greg KH <greg@kroah.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] Update email address for stable patch submission
-Message-ID: <20111018025402.GA6475@kroah.com>
-References: <20111018011638.GQ1165@zod.bos.redhat.com>
- <alpine.DEB.2.00.1110171826450.13515@chino.kir.corp.google.com>
- <20111018013320.GR1165@zod.bos.redhat.com>
- <alpine.DEB.2.00.1110171833470.13515@chino.kir.corp.google.com>
+	Mon, 17 Oct 2011 22:55:20 -0400
+Date: Mon, 17 Oct 2011 19:55:16 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: make gendisk hold a reference to its queue
+Message-ID: <20111018025516.GB1493@google.com>
+References: <20111017024329.GA23507@google.com>
+ <4E9C1509.6030103@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110171833470.13515@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E9C1509.6030103@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 06:37:48PM -0700, David Rientjes wrote:
-> On Mon, 17 Oct 2011, Josh Boyer wrote:
-> 
-> > > Hmm, is stable@vger.kernel.org a replacement for stable@kernel.org or is 
-> > > it just temporary until kernel.org is fully back to life?
+On Mon, Oct 17, 2011 at 01:44:09PM +0200, Jens Axboe wrote:
+> On 2011-10-17 04:43, Tejun Heo wrote:
+> > The following command sequence triggers an oops.
 > > 
-> > To my understanding, stable@kernel.org is now just a forward to
-> > stable@vger.kernel.org.
-> 
-> Right, but the question is whether that's temporary or permanent.
-
-Permanent.
-
-> > Personally, I'd rather see the vger list take over entirely.  However,
-> > that decision will remain in the more than capable hands of the admins.
+> > # mount /dev/sdb1 /mnt
+> > # echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
+> > # umount /mnt
 > > 
+> >  general protection fault: 0000 [#1] PREEMPT SMP 
+> >  CPU 2 
+> >  Modules linked in:
+> >  
+> >  Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
+> >  RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
+> > ...
+> >  Call Trace:
+> >   [<ffffffff810d2845>] lock_acquire+0x95/0x140
+> >   [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
+> >   [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
+> >   [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
+> >   [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
+> >   [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
+> >   [<ffffffff811c40df>] blkdev_put+0x5f/0x190
+> >   [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
+> >   [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
+> >   [<ffffffff8119003a>] deactivate_super+0x4a/0x70
+> >   [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
+> >   [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
+> >   [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
+> > 
+> > This is because bdev holds on to disk but disk doesn't pin the
+> > associated queue.  If a SCSI device is removed while the device is
+> > still open, the sdev puts the base reference to the queue on release.
+> > When the bdev is finally released, the associated queue is already
+> > gone along with the bdi and bdev_inode_switch_bdi() ends up
+> > dereferencing already freed bdi.
+> > 
+> > Even if it were not for this bug, disk not holding onto the associated
+> > queue is very unusual and error-prone.
+> > 
+> > Fix it by making add_disk() take an extra reference to its queue and
+> > put it on disk_release() and ensuring that disk and its fops owner are
+> > put in that order after all accesses to the disk and queue are
+> > complete.
 > 
-> I'm wondering if we have the same replacement for x86@kernel.org which 
-> I've received multiple bounces from (not sure if it currently is or not, I 
-> haven't tried because of that recently) or things like security@kernel.org 
-> or trivial@kernel.org.
+> Thanks, applied.
 
-security@ will remain as-is, when it gets back up and working.  I don't
-know about trivial@, I wasn't aware of that one.  The mailman stuff for
-kernel.org is pretty far down the list of priority of what is being
-worked on.
+Ooh, I had the WARN_ON_ONCE() condition wrong in add_disk() as
+blk_get_queue() returns 1 on failure and 0 on success.  Can you please
+flip that?
 
-greg k-h
+Thanks.
+
+-- 
+tejun
