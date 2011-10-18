@@ -1,181 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab1JRSWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 14:22:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60022 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab1JRSWO (ORCPT
+	id S1752184Ab1JRS0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 14:26:00 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:47962 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751118Ab1JRSZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 14:22:14 -0400
-From: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
-Subject: [PATCH] Smack: allow to access /smack/access as normal user
-Date: Tue, 18 Oct 2011 21:21:36 +0300
-Message-Id: <1318962096-23724-1-git-send-email-jarkko.j.sakkinen@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 18 Oct 2011 14:25:59 -0400
+Message-ID: <4E9DC496.3010909@metafoo.de>
+Date: Tue, 18 Oct 2011 20:25:26 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de
+Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
+References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk>
+In-Reply-To: <1318951776-19393-4-git-send-email-jic23@cam.ac.uk>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow query access as a normal user removing the need
-for CAP_MAC_ADMIN. Give RW access to /smack/access
-for UGO. Do not import smack labels in access check.
+On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
+> Needed for inkernel interfaces.
+> 
 
-Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
----
- security/smack/smack.h        |    1 +
- security/smack/smack_access.c |   27 +++++++++++++++++-------
- security/smack/smackfs.c      |   45 +++++++++++++++++++++++++++-------------
- 3 files changed, 50 insertions(+), 23 deletions(-)
+The bus_type structure keeps a list of all devices registered on that bus, so
+you should be able to use bus_for_each_dev and bus_find_device for iterating
+over the iio devices.
 
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index 9da2b2d..2ad0065 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -208,6 +208,7 @@ int smk_curacc(char *, u32, struct smk_audit_info *);
- int smack_to_cipso(const char *, struct smack_cipso *);
- char *smack_from_cipso(u32, char *);
- char *smack_from_secid(const u32);
-+void smk_parse_smack(const char *string, int len, char *smack);
- char *smk_import(const char *, int);
- struct smack_known *smk_import_entry(const char *, int);
- struct smack_known *smk_find_entry(const char *);
-diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-index a885f62..cc7cb6e 100644
---- a/security/smack/smack_access.c
-+++ b/security/smack/smack_access.c
-@@ -353,17 +353,13 @@ struct smack_known *smk_find_entry(const char *string)
- }
- 
- /**
-- * smk_import_entry - import a label, return the list entry
-- * @string: a text string that might be a Smack label
-+ * smk_parse_smack - parse smack label from a text string
-+ * @string: a text string that might contain a Smack label
-  * @len: the maximum size, or zero if it is NULL terminated.
-- *
-- * Returns a pointer to the entry in the label list that
-- * matches the passed string, adding it if necessary.
-+ * @smack: parsed smack label, or NULL if parse error
-  */
--struct smack_known *smk_import_entry(const char *string, int len)
-+void smk_parse_smack(const char *string, int len, char *smack)
- {
--	struct smack_known *skp;
--	char smack[SMK_LABELLEN];
- 	int found;
- 	int i;
- 
-@@ -381,7 +377,22 @@ struct smack_known *smk_import_entry(const char *string, int len)
- 		} else
- 			smack[i] = string[i];
- 	}
-+}
-+
-+/**
-+ * smk_import_entry - import a label, return the list entry
-+ * @string: a text string that might be a Smack label
-+ * @len: the maximum size, or zero if it is NULL terminated.
-+ *
-+ * Returns a pointer to the entry in the label list that
-+ * matches the passed string, adding it if necessary.
-+ */
-+struct smack_known *smk_import_entry(const char *string, int len)
-+{
-+	struct smack_known *skp;
-+	char smack[SMK_LABELLEN];
- 
-+	smk_parse_smack(string, len, smack);
- 	if (smack[0] == '\0')
- 		return NULL;
- 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 381eecf..6aceef5 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -191,19 +191,37 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
- }
- 
- /**
-- * smk_parse_rule - parse subject, object and access type
-+ * smk_parse_rule - parse Smack rule from load string
-  * @data: string to be parsed whose size is SMK_LOADLEN
-- * @rule: parsed entities are stored in here
-+ * @rule: Smack rule
-+ * @import: if non-zero, import labels
-  */
--static int smk_parse_rule(const char *data, struct smack_rule *rule)
-+static int smk_parse_rule(const char *data, struct smack_rule *rule, int import)
- {
--	rule->smk_subject = smk_import(data, 0);
--	if (rule->smk_subject == NULL)
--		return -1;
-+	char smack[SMK_LABELLEN];
-+	struct smack_known *skp;
- 
--	rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
--	if (rule->smk_object == NULL)
--		return -1;
-+	if (import) {
-+		rule->smk_subject = smk_import(data, 0);
-+		if (rule->smk_subject == NULL)
-+			return -1;
-+
-+		rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
-+		if (rule->smk_object == NULL)
-+			return -1;
-+	} else {
-+		smk_parse_smack(data, 0, smack);
-+		skp = smk_find_entry(smack);
-+		if (skp == NULL)
-+			return -1;
-+		rule->smk_subject = skp->smk_known;
-+
-+		smk_parse_smack(data + SMK_LABELLEN, 0, smack);
-+		skp = smk_find_entry(smack);
-+		if (skp == NULL)
-+			return -1;
-+		rule->smk_object = skp->smk_known;
-+	}
- 
- 	rule->smk_access = 0;
- 
-@@ -327,7 +345,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
- 		goto out;
- 	}
- 
--	if (smk_parse_rule(data, rule))
-+	if (smk_parse_rule(data, rule, 1))
- 		goto out_free_rule;
- 
- 	if (rule_list == NULL) {
-@@ -1499,14 +1517,11 @@ static ssize_t smk_write_access(struct file *file, const char __user *buf,
- 	char *data;
- 	int res;
- 
--	if (!capable(CAP_MAC_ADMIN))
--		return -EPERM;
--
- 	data = simple_transaction_get(file, buf, count);
- 	if (IS_ERR(data))
- 		return PTR_ERR(data);
- 
--	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule))
-+	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule, 0))
- 		return -EINVAL;
- 
- 	res = smk_access(rule.smk_subject, rule.smk_object, rule.smk_access,
-@@ -1560,7 +1575,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
- 		[SMK_LOAD_SELF] = {
- 			"load-self", &smk_load_self_ops, S_IRUGO|S_IWUGO},
- 		[SMK_ACCESSES] = {
--			"access", &smk_access_ops, S_IRUGO|S_IWUSR},
-+			"access", &smk_access_ops, S_IRUGO|S_IWUGO},
- 		/* last one */
- 			{""}
- 	};
--- 
-1.7.5.4
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/iio/iio.c       |    9 +++++++++
+>  include/linux/iio/iio.h |    1 +
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+> index 9e6acc1..246a093 100644
+> --- a/drivers/iio/iio.c
+> +++ b/drivers/iio/iio.c
+> @@ -15,6 +15,9 @@
+>  #include <linux/iio/iio.h>
+>  #include <linux/iio/sysfs.h>
+>  
+> +static DEFINE_MUTEX(iio_device_list_lock);
+> +static LIST_HEAD(iio_device_list);
+> +
+>  static DEFINE_IDA(iio_ida);
+>  
+>  static struct bus_type iio_bus_type = {
+> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
+>  {
+>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
+>  	iio_device_unregister_sysfs(indio_dev);
+> +	mutex_lock(&iio_device_list_lock);
+> +	list_del(&indio_dev->dev_list_entry);
+> +	mutex_unlock(&iio_device_list_lock);
+>  }
+>  
+>  static struct device_type iio_dev_type = {
+> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
+>  	if (ret)
+>  		goto error_free_sysfs;
+>  
+> +	mutex_lock(&iio_device_list_lock);
+> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
+> +	mutex_unlock(&iio_device_list_lock);
+>  	return 0;
+>  
+>  error_free_sysfs:
+> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+> index beedc5c..f14e7dc 100644
+> --- a/include/linux/iio/iio.h
+> +++ b/include/linux/iio/iio.h
+> @@ -192,6 +192,7 @@ struct iio_info {
+>   * @info:		[DRIVER] callbacks and constant info from driver
+>   * @groups:		[INTERN] attribute groups
+>   * @groupcounter:	[INTERN] index of next attribute group
+> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
+>   **/
+>  struct iio_dev {
+>  	int				id;
 
