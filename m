@@ -1,112 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab1JRBCB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 21:02:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49897 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756887Ab1JRBCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 21:02:00 -0400
-From: Josh Stone <jistone@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Josh Stone <jistone@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: [PATCH] x86: Make kprobes' twobyte_is_boostable volatile
-Date: Mon, 17 Oct 2011 18:00:45 -0700
-Message-Id: <1318899645-4068-1-git-send-email-jistone@redhat.com>
+	id S1752211Ab1JRBMC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 21:12:02 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:54890 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751498Ab1JRBMA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Oct 2011 21:12:00 -0400
+X-Sasl-enc: 6YDehgtuNPxRsaGL8gjk9t8jRH1bYB7jgB671NaVrCTH 1318900319
+Date: Mon, 17 Oct 2011 23:11:56 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@amd64.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for
+ microcode update in Xen dom0
+Message-ID: <20111018011156.GA20291@khazad-dum.debian.net>
+References: <4E95E7FE.6050302@goop.org>
+ <20111012194543.GD14966@aftab>
+ <20111012204048.GA22260@phenom.oracle.com>
+ <4E960746.90805@zytor.com>
+ <20111012214013.GD28723@aftab>
+ <4E96198F.4030906@zytor.com>
+ <20111013073352.GB501@aftab>
+ <20111013095708.GA1862@aftab>
+ <20111017170854.GE19756@phenom.dumpdata.com>
+ <4E9C6886.20600@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E8E862A.8020705@hitachi.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9C6886.20600@zytor.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling an i386_defconfig kernel with gcc-4.6.1-9.fc15.i686, I
-noticed a warning about the asm operand for test_bit in kprobes'
-can_boost.  I discovered that this caused only the first long of
-twobyte_is_boostable[] to be output.
+On Mon, 17 Oct 2011, H. Peter Anvin wrote:
+> On 10/17/2011 10:08 AM, Konrad Rzeszutek Wilk wrote:
+> > <scratches his head>
+> > You are still using the microcode API (the existing one) to
+> > program the CPUs right? It is just that you are fetching the images
+> > much much earlier than it currently is done?
+> > 
+> 
+> No, the goal is to ditch the existing API and load the CPUs very early
+> in the start path.
 
-Jakub filed and fixed gcc PR50571 to correct the warning and this output
-issue.  But to solve it for less current gcc, we can make kprobes'
-twobyte_is_boostable[] volatile, and it won't be optimized out.
+And how do we apply new microcode at runtime?  A new API?
 
-Before:
-
-    CC      arch/x86/kernel/kprobes.o
-  In file included from include/linux/bitops.h:22:0,
-                   from include/linux/kernel.h:17,
-                   from [...]/arch/x86/include/asm/percpu.h:44,
-                   from [...]/arch/x86/include/asm/current.h:5,
-                   from [...]/arch/x86/include/asm/processor.h:15,
-                   from [...]/arch/x86/include/asm/atomic.h:6,
-                   from include/linux/atomic.h:4,
-                   from include/linux/mutex.h:18,
-                   from include/linux/notifier.h:13,
-                   from include/linux/kprobes.h:34,
-                   from arch/x86/kernel/kprobes.c:43:
-  [...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
-  [...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input without lvalue in asm operand 1 is deprecated [enabled by default]
-
-  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
-       551:	0f a3 05 00 00 00 00 	bt     %eax,0x0
-                          554: R_386_32	.rodata.cst4
-
-  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
-
-  arch/x86/kernel/kprobes.o:     file format elf32-i386
-
-  Contents of section .data:
-   0000 48000000 00000000 00000000 00000000  H...............
-  Contents of section .rodata.cst4:
-   0000 4c030000                             L...
-
-Only a single long of twobyte_is_boostable[] is in the object file.
-
-After, with volatile:
-
-  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
-       551:	0f a3 05 20 00 00 00 	bt     %eax,0x20
-                          554: R_386_32	.data
-
-  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
-
-  arch/x86/kernel/kprobes.o:     file format elf32-i386
-
-  Contents of section .data:
-   0000 48000000 00000000 00000000 00000000  H...............
-   0010 00000000 00000000 00000000 00000000  ................
-   0020 4c030000 0f000200 ffff0000 ffcff0c0  L...............
-   0030 0000ffff 3bbbfff8 03ff2ebb 26bb2e77  ....;.......&..w
-
-Now all 32 bytes are output into .data instead.
-
-Signed-off-by: Josh Stone <jistone@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-
----
- arch/x86/kernel/kprobes.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index f1a6244..c0ed3d9 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -75,8 +75,10 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
- 	/*
- 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
- 	 * Groups, and some special opcodes can not boost.
-+	 * This is volatile to keep gcc from statically optimizing it out, as
-+	 * variable_test_bit makes gcc think only *(unsigned long*) is used.
- 	 */
--static const u32 twobyte_is_boostable[256 / 32] = {
-+static volatile const u32 twobyte_is_boostable[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
- 	/*      ----------------------------------------------          */
- 	W(0x00, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0) | /* 00 */
 -- 
-1.7.6.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
