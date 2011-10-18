@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1JRHAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 03:00:09 -0400
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:57828 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab1JRHAH (ORCPT
+	id S1756049Ab1JRHDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 03:03:42 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13972 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751368Ab1JRHDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 03:00:07 -0400
-Subject: Re: [PATCH 12/21] m68k: drop unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+	Tue, 18 Oct 2011 03:03:41 -0400
+Message-ID: <4E9D24C9.3000309@dsn.lapis-semi.com>
+Date: Tue, 18 Oct 2011 16:03:37 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <4E9D05FB.4080607@snapgear.com>
-References: <1318595371.6132.70.camel@x61.thuisdomein>
-	 <4E9B7BE1.1080907@snapgear.com> <1318837964.6414.6.camel@x61.thuisdomein>
-	 <4E9D05FB.4080607@snapgear.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 08:59:55 +0200
-Message-ID: <1318921195.6414.15.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Subject: Re: gpio-ml-ioh: Support interrupt function
+References: <20111017201058.GA13916@elgon.mountain> <4E9CC93B.4000800@dsn.lapis-semi.com> <alpine.DEB.2.00.1110172251590.4880@chino.kir.corp.google.com> <4E9D1ED8.3070106@dsn.lapis-semi.com> <alpine.DEB.2.00.1110172350500.8959@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110172350500.8959@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 14:52 +1000, Greg Ungerer wrote:
-> If you can do it on top of linux-next real soon I can push it into my
-> m68knommu git tree for-next branch. 
+(2011/10/18 15:52), David Rientjes wrote:
+> On Tue, 18 Oct 2011, Tomoya MORINAGA wrote:
+>
+>> Hi, David
+>> Thank you for your information.
+>> I will try to test with '-1'.
+>>
+>> After testing with '-1',
+>> I will post the patch for this.
+>>
+>
+> Please try with NUMA_NO_NODE, that's what the slab allocators use and will
+> be the ones consuming this.  It's available in include/linux/numa.h.
 
-So, to be sure, that would be on top of
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-master, wouldn't it?
+OK, I'll use NUMA_NO_NODE instead '-1'.
 
-
-Paul Bolle
-
+thanks,
+-- 
+tomoya
+ROHM Co., Ltd.
