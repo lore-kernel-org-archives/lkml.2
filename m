@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501Ab1JRRoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 13:44:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:47055 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933444Ab1JRRog (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 13:44:36 -0400
-X-Authority-Analysis: v=1.1 cv=cRnbtTsVO6wWDdOYuq0VmyuiiLG/FStMSb4CWlTvuS0= c=1 sm=0 a=WQzZawFPG9gA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=mwyb0tGk2BWKFD9fQNIA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH] tracing/latency: Fix header output for latency tracers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20111018165313.GA12695@jolsa.brq.redhat.com>
-References: <1315922614-6390-1-git-send-email-jolsa@redhat.com>
-	 <20111018165313.GA12695@jolsa.brq.redhat.com>
+	id S1756516Ab1JRRuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 13:50:17 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44825 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755396Ab1JRRuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 13:50:15 -0400
+Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+In-Reply-To: <op.v3j5ent03l0zgt@mpn-glaptop>
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+	 <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
+	 <20111018122109.GB6660@csn.ul.ie>  <op.v3j5ent03l0zgt@mpn-glaptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 13:44:28 -0400
-Message-ID: <1318959868.3712.3.camel@frodo>
+Date: Tue, 18 Oct 2011 10:48:46 -0700
+Message-ID: <1318960126.4465.249.camel@nimitz>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 18:53 +0200, Jiri Olsa wrote:
-> hi,
-> any feedback on this?
+On Tue, 2011-10-18 at 10:26 -0700, Michal Nazarewicz wrote:
+> > You can do this in a more general fashion by checking the
+> > zone boundaries and resolving the pfn->page every MAX_ORDER_NR_PAGES.
+> > That will not be SPARSEMEM specific.
 > 
+> I've tried doing stuff that way but it ended up with much more code.
 
-Ah, I must have missed this patch. Strange, as I had it highlighted.
+I guess instead of:
 
-Anyway, I'm currently on my way to Prague, I'll see if I get some time
-when I'm there to look at it in more detail and perhaps get it ready for
-3.2.
+>> +static inline bool zone_pfn_same_memmap(unsigned long pfn1, unsigned long pfn2)
+>> +{
+>> +    return pfn_to_section_nr(pfn1) == pfn_to_section_nr(pfn2);
+>> +}
 
-Thanks,
+You could do:
 
--- Steve
+static inline bool zone_pfn_same_maxorder(unsigned long pfn1, unsigned long pfn2)
+{
+	unsigned long mask = MAX_ORDER_NR_PAGES-1;
+	return (pfn1 & mask) == (pfn2 & mask);
+}
 
+I think that works.  Should be the same code you have now, basically.
+
+-- Dave
 
