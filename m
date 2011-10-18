@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933169Ab1JRQJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 12:09:12 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33787 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919Ab1JRQJL (ORCPT
+	id S933197Ab1JRQJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 12:09:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47634 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932919Ab1JRQJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 12:09:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <m2ehyaz42p.fsf@firstfloor.org>
-References: <20111018154828.GA4201@homer.localdomain>
-	<m2ehyaz42p.fsf@firstfloor.org>
-Date: Tue, 18 Oct 2011 12:09:10 -0400
-Message-ID: <CAH3drwY34arDrp=7m-_XaQ9bFwbDgw5RoWYD9_EQS5M6ySNFEw@mail.gmail.com>
-Subject: Re: IOMMU keeping mapping over long period of time
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Oct 2011 12:09:32 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/26] Mostly resending patches
+Date: Tue, 18 Oct 2011 17:07:33 +0100
+Message-Id: <1318954079-16666-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 11:56 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> Jerome Glisse <j.glisse@gmail.com> writes:
->>
->> GPU for which we are interested have dma mask of 40bits at least, thus
->> they can work with high mem page. My main concern is when an iommu is
->> active, such amount of continuously mapped page might exhaust the iommu
->> address space. My understanding is that Intel & AMD iommu are capable of
->> growing their address space but is it somethings we can rely on ?
->
-> I don't think relying on this is very wise. Better add some way to unmap
-> when space is running short.
->
-> -Andi
->
+First 19 patches are resends requested by greg KH, the remaining 7 patches are code tidy ups.
 
-Maybe i should have add that the usecase involve the driver never knowing when
-the GPU will make use of the mapped memory and this can happen anytime.
+Mark Einon (26):
+      staging: et131x: Put all .c files into one big file
+      staging: et131x: Move function declarations from et131x.h to et131x.c
+      staging: et131x: Move non-register defines from et131x.h to et131x.c
+      staging: et131x: move et1310_address_map.h contents into et131x.h
+      staging: et131x: move et1310_phy.h contents into et131x.h
+      staging: et131x: move et131x_adapter.h contents into et131x.c
+      staging: et131x: move et131x_defs.h contents into et131x.c
+      staging: et131x: move et1310_rx.h contents into et131x.c
+      staging: et131x: move et1310_tx.h contents into et131x.c
+      staging: et131x: Update TODO list - remove 'put driver into single file'
+      staging: et131x: Moving two extern inline functions to .c file
+      staging: et131x: Make rx_ring.fbr{0,1} share a common structure
+      staging: et131x: Fix issues when USE_FBR0 is not defined
+      staging: et131x: use dma_alloc... instead of pci_alloc...
+      staging: et131x: Match dma_alloc_ calls with dma_free_ calls
+      staging: et131x: Tidy up PCI device table definition
+      staging: et131x: on transmit, stop the queue if the next packet will fail
+      staging: et131x: Convert rest of pci memory management to dma api
+      staging: et131x: Remove unused defines
+      staging: et131x: Remove unused rx_ring.recv_buffer_pool
+      staging: et131x: Remove redundant et131x_reset_recv() call
+      staging: et131x: Remove call to find pci pm capability
+      staging: et131x: Remove unused rx_ring.recv_packet_pool
+      staging: et131x: Remove some forward declarations
+      staging: et131x: Remove forward declaration of et131x_adapter_setup
+      staging: et131x: Remove more forward declarations
 
-Cheers,
-Jerome
+ drivers/staging/et131x/Makefile             |   11 -
+ drivers/staging/et131x/README               |    5 -
+ drivers/staging/et131x/et1310_address_map.h | 1436 -------
+ drivers/staging/et131x/et1310_eeprom.c      |  408 --
+ drivers/staging/et131x/et1310_mac.c         |  654 ----
+ drivers/staging/et131x/et1310_phy.c         |  375 --
+ drivers/staging/et131x/et1310_phy.h         |  292 --
+ drivers/staging/et131x/et1310_pm.c          |  204 -
+ drivers/staging/et131x/et1310_rx.c          | 1160 ------
+ drivers/staging/et131x/et1310_rx.h          |  245 --
+ drivers/staging/et131x/et1310_tx.c          |  793 ----
+ drivers/staging/et131x/et1310_tx.h          |  150 -
+ drivers/staging/et131x/et131x.c             | 5527 +++++++++++++++++++++++++++
+ drivers/staging/et131x/et131x.h             | 1718 ++++++++-
+ drivers/staging/et131x/et131x_adapter.h     |  218 --
+ drivers/staging/et131x/et131x_defs.h        |  128 -
+ drivers/staging/et131x/et131x_ethtool.c     |  201 -
+ drivers/staging/et131x/et131x_initpci.c     |  950 -----
+ drivers/staging/et131x/et131x_isr.c         |  442 ---
+ drivers/staging/et131x/et131x_netdev.c      |  662 ----
+ 20 files changed, 7142 insertions(+), 8437 deletions(-)
+
+
