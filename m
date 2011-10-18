@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434Ab1JRQML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 12:12:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43058 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933289Ab1JRQKU (ORCPT
+	id S933396Ab1JRQMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 12:12:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41213 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933337Ab1JRQKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 12:10:20 -0400
+	Tue, 18 Oct 2011 12:10:15 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 20/26] staging: et131x: Remove unused rx_ring.recv_buffer_pool
-Date: Tue, 18 Oct 2011 17:07:53 +0100
-Message-Id: <1318954079-16666-21-git-send-email-mark.einon@gmail.com>
+Subject: [RESEND][PATCH 17/26] staging: et131x: on transmit, stop the queue if the next packet will fail
+Date: Tue, 18 Oct 2011 17:07:50 +0100
+Message-Id: <1318954079-16666-18-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1318954079-16666-1-git-send-email-mark.einon@gmail.com>
 References: <1318954079-16666-1-git-send-email-mark.einon@gmail.com>
@@ -21,38 +21,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rx_ring.recv_buffer_pool is unused, even in the original driver code.
-Remove from stuct, and also remove some comments regarding it.
+* Currently the tx queue is only stopped when the current packet fails.
+Check if the next packet will fail, and stop the queue if so.
+
+* Removed associated item from TODO list in the README.
+
+* Also minor fixup as adapter was being declared as null and immediately set
+to a value.
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et131x.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/staging/et131x/README   |    1 -
+ drivers/staging/et131x/et131x.c |   13 ++++++-------
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+index 0928eb5..3458aa7 100644
+--- a/drivers/staging/et131x/README
++++ b/drivers/staging/et131x/README
+@@ -9,7 +9,6 @@ driver as they did not build properly at the time.
+ 
+ TODO:
+ 	- Use of kmem_cache seems a bit unusual
+-	- It's too late stopping the tx queue when there is no room for the current packet. The condition should be detected for the next packet.
+ 
+ Please send patches to:
+ 	Greg Kroah-Hartman <gregkh@suse.de>
 diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 1efa27c..8c557cf 100644
+index cc41111..993f93a 100644
 --- a/drivers/staging/et131x/et131x.c
 +++ b/drivers/staging/et131x/et131x.c
-@@ -329,8 +329,6 @@ struct rx_ring {
- 	struct rx_status_block *rx_status_block;
- 	dma_addr_t rx_status_bus;
+@@ -3448,9 +3448,7 @@ static int send_packet(struct sk_buff *skb, struct et131x_adapter *adapter)
+ int et131x_send_packets(struct sk_buff *skb, struct net_device *netdev)
+ {
+ 	int status = 0;
+-	struct et131x_adapter *adapter = NULL;
+-
+-	adapter = netdev_priv(netdev);
++	struct et131x_adapter *adapter = netdev_priv(netdev);
  
--	struct list_head recv_buff_pool;
--
- 	/* RECV */
- 	struct list_head recv_list;
- 	u32 num_ready_recv;
-@@ -2307,10 +2305,6 @@ void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 		rx_ring->rx_status_block = NULL;
- 	}
+ 	/* Send these packets
+ 	 *
+@@ -5347,6 +5345,11 @@ static void et131x_multicast(struct net_device *netdev)
+ static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+ {
+ 	int status = 0;
++	struct et131x_adapter *adapter = netdev_priv(netdev);
++
++	/* stop the queue if it's getting full */
++	if(adapter->tx_ring.used >= NUM_TCB - 1 && !netif_queue_stopped(netdev))
++		netif_stop_queue(netdev);
  
--	/* Free receive buffer pool */
--
--	/* Free receive packet pool */
--
- 	/* Destroy the lookaside (RFD) pool */
- 	if (adapter->flags & fMP_ADAPTER_RECV_LOOKASIDE) {
- 		kmem_cache_destroy(rx_ring->recv_lookaside);
+ 	/* Save the timestamp for the TX timeout watchdog */
+ 	netdev->trans_start = jiffies;
+@@ -5357,10 +5360,6 @@ static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	/* Check status and manage the netif queue if necessary */
+ 	if (status != 0) {
+ 		if (status == -ENOMEM) {
+-			/* Put the queue to sleep until resources are
+-			 * available
+-			 */
+-			netif_stop_queue(netdev);
+ 			status = NETDEV_TX_BUSY;
+ 		} else {
+ 			status = NETDEV_TX_OK;
 -- 
 1.7.6.4
 
