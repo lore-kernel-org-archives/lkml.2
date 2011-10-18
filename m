@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab1JRMIQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:08:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35420 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291Ab1JRMIM convert rfc822-to-8bit (ORCPT
+	id S932415Ab1JRMH7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:07:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44336 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932386Ab1JRMH4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:08:12 -0400
+	Tue, 18 Oct 2011 08:07:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E9D3EAE.9020003@cam.ac.uk>
+In-Reply-To: <4E9D3A45.1040103@cam.ac.uk>
 References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com>
- <1318926486-10330-6-git-send-email-ricardo.ribalda@gmail.com> <4E9D3EAE.9020003@cam.ac.uk>
+ <1318926486-10330-4-git-send-email-ricardo.ribalda@gmail.com> <4E9D3A45.1040103@cam.ac.uk>
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 18 Oct 2011 14:07:32 +0200
-Message-ID: <CAPybu_1nfTQd1ZbKJOwoxyZuPvKkCh8z2tdrcpwuzQSz5CM4Rg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] Input: add CMR3000 gyrsocope driver
+Date: Tue, 18 Oct 2011 14:07:15 +0200
+Message-ID: <CAPybu_1JsTTOn5wP53Qd-jm+JhgwUTLhRb4BPjKaMab6174CNQ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] input/cma3000_d0x: Keep configuration on poweroff
 To: Jonathan Cameron <jic23@cam.ac.uk>
 Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
         aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
@@ -26,61 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jonathan
-
-On Tue, Oct 18, 2011 at 10:54, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+On Tue, Oct 18, 2011 at 10:35, Jonathan Cameron <jic23@cam.ac.uk> wrote:
 > On 10/18/11 09:28, Ricardo Ribalda Delgado wrote:
+>> When the device goes to poweroff keep the spi/i2c configuration.
+>> Otherwhise the device could not wake up if it was in spi mode.
+>>
+> Run checkpatch.pl over these
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-> Quick review done below.  Quite a bit of overlap with earlier reviews.
-> Sorry I couldn't take a closer look.
+I did :(
 
-I am fixing also previous errors
+ricardo@newpili:~/hacking/linux$ scripts/checkpatch.pl
+cmr_patches/v1/0003-input-cma3000_d0x-Keep-configuration-on-poweroff.patch
+total: 0 errors, 0 warnings, 19 lines checked
 
-> accl?  I thought this was a gyro so this seems odd.
-copy paste :), fixing it
+cmr_patches/v1/0003-input-cma3000_d0x-Keep-configuration-on-poweroff.patch
+has no obvious style problems and is ready for submission.
 
-> I'd much rather see these done explicity in the code.
-> This sort of macro just obscures the works to save a few lines
-> of code.
->> +#define CMR3000_READ(data, reg, msg) \
->> +     (data->bus_ops->read(data->dev, reg, msg))
->> +#define CMR3000_SET(data, reg, val, msg) \
->> +     ((data)->bus_ops->write(data->dev, reg, val, msg))
+But I fix that right away
+
+
+>> ---
+>>  drivers/input/misc/cma3000_d0x.c |    6 +++++-
+>>  1 files changed, 5 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+>> index 9899742..15577b7 100644
+>> --- a/drivers/input/misc/cma3000_d0x.c
+>> +++ b/drivers/input/misc/cma3000_d0x.c
+>> @@ -44,6 +44,7 @@
+>>  #define CMA3000_RANGE2G    (1 << 7)
+>>  #define CMA3000_RANGE8G    (0 << 7)
+>>  #define CMA3000_BUSI2C     (0 << 4)
+>> +#define CMA3000_BUSSPI     (1 << 4)
+>>  #define CMA3000_MODEMASK   (7 << 1)
+>>  #define CMA3000_GRANGEMASK (1 << 7)
+>>
+>> @@ -230,8 +231,11 @@ static int cma3000_poweron(struct cma3000_accl_data *data)
+>>  static int cma3000_poweroff(struct cma3000_accl_data *data)
+>>  {
+>>       int ret;
+>> +     u8 ctrl = CMAMODE_POFF;
+>>
+>> -     ret = CMA3000_SET(data, CMA3000_CTRL, CMAMODE_POFF, "Mode setting");
+>> +     ctrl |= data->bus_ops->ctrl_mod;
 >> +
-
-Fixing it
-
-
->> +void cmr3000_exit(struct cmr3000_accl_data *data)
->> +{
->> +     free_irq(data->irq, data);
->> +     input_unregister_device(data->input_dev);
-> cleaner to unwind in reverse order of setup unless you have
-> a good reason and that should be commented.
-
-Fixing it, and also fixing it on the cma3000
-
-> Match comment to name fo structure.
->> + * struct cmr3000_i2c_platform_data - CMR3000 Platform data
->> + * @fuzz_x: Noise on X Axis
->> + * @fuzz_y: Noise on Y Axis
->> + * @fuzz_z: Noise on Z Axis
->> + * @mode: Operating mode
->> + * @irq_level: Irq level
->> + */
->> +struct cmr3000_platform_data {
->> +     int fuzz_x;
->> +     int fuzz_y;
->> +     int fuzz_z;
->> +     uint8_t irq_level;
->> +     uint8_t mode;
->> +     unsigned long irqflags;
->> +};
-
-Fixing it, and also fixing it on the cma3000
-
-
-Thanks!
+>> +     ret = CMA3000_SET(data, CMA3000_CTRL , ctrl, "Mode setting");
+> no space before comma.
+>>       msleep(CMA3000_SETDELAY);
+>>
+>>       return ret;
+>
+>
 
 
 
