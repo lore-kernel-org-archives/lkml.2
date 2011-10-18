@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab1JROrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:47:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52119 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab1JROrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:47:05 -0400
-Date: Tue, 18 Oct 2011 07:44:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        jamie@jamieiles.com, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/6] drivers/base: add bus for System-on-Chip devices
-Message-ID: <20111018144416.GD19561@suse.de>
-References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
- <2152965.Ns7xt0yLIG@wuerfel>
- <20111017182542.GB14416@suse.de>
- <201110181600.03834.arnd@arndb.de>
+	id S1757761Ab1JROsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:48:04 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:20910 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab1JROsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 10:48:01 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=jAkuNGBKNt6yNsLa7WRudIn2aGLyudxW1qO5C40J0gST3VGZ9ewe1mcELQss4CZQd
+	jxQ+T99eqh6kJ1odpmqEw==
+Subject: [PATCH] x86: mpparse: fix mp_bus_not_pci handling
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org#2.6.26+,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Alexey Starikovskiy <astarikovskiy@suse.de>
+Date: Tue, 18 Oct 2011 08:47:47 -0600
+Message-ID: <20111018144747.17121.82799.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201110181600.03834.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 04:00:03PM +0200, Arnd Bergmann wrote:
-> On Monday 17 October 2011, Greg KH wrote:
-> > > You also commented that the argument to soc_device_unregister should
-> > > be a soc_device (as, consequently, the return type of soc_device_register).
-> > > Agree with that comment, but it means that the definition of struct
-> > > soc_device needs to remain visible in order to be used as the parent
-> > > for other devices.
-> > 
-> > No it doesn't:
-> >         struct device * soc_device_to_device(struct soc device *soc);
-> 
-> Right, that works of course. I believe the more common way is to
-> expose the derived type to its users, and it also simplifies the
-> interface.
-> 
-> > Anyway, what are you using this soc device to be the parent of?
-> 
-> Basically everything. The SoC is probably about 90% of the system in
-> modern embedded systems. Typically, there are on-chip buses like
-> AMBA or PLB that contain dozens of internal devices (interrupt
-> controller, serial, dmaengine, rtc, timer, watchdog, ...) as well
-> as buses (i2c, spi, mmc, usb, pci, ...) that have off-chip child
-> devices. You can think of an soc device as a kind of über-MFD
-> that holds all of these together.
-> 
-> If you remember the early discussions about this patch set, I
-> specifically asked for making the soc_device be a representation
-> of the whole soc with a hierarchical view of its child devices
-> under it, as opposed to having an artificial device node that only
-> serves to export strings along the lines of /proc/cpuinfo.
-> 
-> See patch 5/6 for the one that moves all platform devices that
-> are part of the dbx500 soc below the soc_device.
+Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
+Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
+except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
+not the only non-PCI bus, so it's better to always set mp_bus_not_pci
+and clear it only for PCI.
 
-Ah, ok, that's nicer, and makes sense.
+The workaround was to boot with "noapic".  Dan verified that with this
+patch, his system boots without "noapic".
 
-So yes, you can leave the structure here, or use a helper function, but
-either way, you shouldn't be returning a struct device * from the
-register function, that doesn't make sense.
+Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
+Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
+Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
+Cc: stable@kernel.org # 2.6.26+
+Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/kernel/mpparse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-greg k-h
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 9103b89..0741b062 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 	}
+ #endif
+ 
++	set_bit(m->busid, mp_bus_not_pci);
+ 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
+-		set_bit(m->busid, mp_bus_not_pci);
+ #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
+ 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
+ #endif
+
