@@ -1,68 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab1JRIrP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:47:15 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:58309 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751490Ab1JRIrO (ORCPT
+	id S1756826Ab1JRIse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:48:34 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63509 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1JRIsc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:47:14 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19aTXoieldaBWd+ozPenesN1YIUcKdVUusxi/1FdN
-	7yabURK+v6apDI
-Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <1318927355.21167.3.camel@twins>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-	 <1316770936.6641.11.camel@marge.simson.net>
-	 <1316775204.7562.9.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
-	 <1316788392.6544.33.camel@marge.simson.net>
-	 <1318224892.6161.45.camel@marge.simson.net>
-	 <1318233815.6527.5.camel@marge.simson.net>
-	 <1318925436.9641.23.camel@marge.simson.net>
-	 <1318927355.21167.3.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 10:47:09 +0200
-Message-ID: <1318927629.9641.27.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Tue, 18 Oct 2011 04:48:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAM=Q2cuHY3Xi_3J8y5iDoXnQZORv9WHhmthEX-GH1jXCd++8UA@mail.gmail.com>
+References: <4e99d2db.473ce30a.3c78.7a57@mx.google.com> <CAM=Q2cuHY3Xi_3J8y5iDoXnQZORv9WHhmthEX-GH1jXCd++8UA@mail.gmail.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Tue, 18 Oct 2011 10:48:11 +0200
+Message-ID: <CAAwP0s0GhCXHUrVC2_PKC8pyTiRq_fdCZa3x6mStwuROLJOGQA@mail.gmail.com>
+Subject: Re: [PATCH v6 3/3] Input: cyttsp - add support for Cypress TTSP
+ touchscreen SPI bus interface
+To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mohan Pallaka <mpallaka@codeaurora.org>,
+        Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 10:42 +0200, Peter Zijlstra wrote:
+On Tue, Oct 18, 2011 at 10:27 AM, Shubhrajyoti Datta
+<omaplinuxkernel@gmail.com> wrote:
+>
+>
+> On Sun, Oct 16, 2011 at 12:07 AM, <martinez.javier@gmail.com> wrote:
+>>
+>> From: Javier Martinez Canillas <martinez.javier@gmail.com>
+>>
+>> The driver is composed of a core driver that process the data sent by
+>> the contacts and a set of bus specific interface modules.
+>>
+>> This patch add supports for the Cypress TTSP SPI bus interface.
+>>
+>> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+>> ---
+>>
+>> v2: Fix issues called out by Dmitry Torokhov
+>>     - Extract the IRQ from the spi client data and pass to
+>> cyttsp_core_init()
+>>     - Remove the extra retries and limit the retries to the cyttsp_core.c
+>>       read/write block functions.
+>>     - Cleanup cyttsp_spi_xfer(), check ACK in write operation and fix
+>> special
+>>       EIO case to show its meaning.
+>>
+>> v3: Fix issues called out by Henrik Rydberg and Mohan Pallaka
+>>    - Remove bus type info since it is not used.
+>>
+>>  drivers/input/touchscreen/cyttsp/cyttsp_spi.c |  295
+>> +++++++++++++++++++++++++
+>>  1 files changed, 295 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/input/touchscreen/cyttsp/cyttsp_spi.c
+>>
+>> diff --git a/drivers/input/touchscreen/cyttsp/cyttsp_spi.c
+>> b/drivers/input/touchscreen/cyttsp/cyttsp_spi.c
+>> new file mode 100644
+>> index 0000000..66d6dc3
+>> --- /dev/null
+>> +++ b/drivers/input/touchscreen/cyttsp/cyttsp_spi.c
+>> @@ -0,0 +1,295 @@
+>> +/*
+>> + * Source for:
+>> + * Cypress TrueTouch(TM) Standard Product (TTSP) SPI touchscreen driver.
+>> + * For use with Cypress Txx3xx parts.
+>> + * Supported parts include:
+>> + * CY8CTST341
+>> + * CY8CTMA340
+>> + *
+>> + * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
+>> + * Copyright (C) 2011 Javier Martinez Canillas
+>> <martinez.javier@gmail.com>
+>> + *
+>> + * Multi-touch protocol type B support and cleanups by Javier Martinez
+>> Canillas
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> + * modify it under the terms of the GNU General Public License
+>> + * version 2, and only version 2, as published by the
+>> + * Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> along
+>> + * with this program; if not, write to the Free Software Foundation,
+>> Inc.,
+>> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+>> + *
+>> + * Contact Cypress Semiconductor at www.cypress.com <kev@cypress.com>
+>> + *
+>> + */
+>> +
+>> +#include "cyttsp_core.h"
+>> +
+>> +#include <linux/spi/spi.h>
+>> +#include <linux/delay.h>
+>> +
+>> +#define CY_SPI_WR_OP      0x00 /* r/~w */
+>> +#define CY_SPI_RD_OP      0x01
+>> +#define CY_SPI_CMD_BYTES  4
+>> +#define CY_SPI_SYNC_BYTE  2
+>> +#define CY_SPI_SYNC_ACK1  0x62 /* from protocol v.2 */
+>> +#define CY_SPI_SYNC_ACK2  0x9D /* from protocol v.2 */
+>> +#define CY_SPI_DATA_SIZE  128
+>> +#define CY_SPI_DATA_BUF_SIZE (CY_SPI_CMD_BYTES + CY_SPI_DATA_SIZE)
+>> +#define CY_SPI_BITS_PER_WORD 8
+>> +
+>> +struct cyttsp_spi {
+>> +       struct cyttsp_bus_ops bus_ops;
+>> +       struct spi_device *spi_client;
+>> +       void *ttsp_client;
+>> +       u8 wr_buf[CY_SPI_DATA_BUF_SIZE];
+>> +       u8 rd_buf[CY_SPI_DATA_BUF_SIZE];
+>> +};
+>> +
+>> +static int cyttsp_spi_xfer(u8 op, struct cyttsp_spi *ts,
+>> +                          u8 reg, u8 *buf, int length)
+>> +{
+>> +       struct spi_message msg;
+>> +       struct spi_transfer xfer[2];
+>> +       u8 *wr_buf = ts->wr_buf;
+>> +       u8 *rd_buf = ts->rd_buf;
+>> +       int retval;
+>> +
+>> +       if (length > CY_SPI_DATA_SIZE) {
+>> +               dev_dbg(ts->bus_ops.dev,
+>> +                       "%s: length %d is too big.\n",
+>> +                       __func__, length);
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       memset(wr_buf, 0, CY_SPI_DATA_BUF_SIZE);
+>> +       memset(rd_buf, 0, CY_SPI_DATA_BUF_SIZE);
+>> +
+>> +       wr_buf[0] = 0x00; /* header byte 0 */
+>> +       wr_buf[1] = 0xFF; /* header byte 1 */
+>> +       wr_buf[2] = reg;  /* reg index */
+>> +       wr_buf[3] = op;   /* r/~w */
+>> +       if (op == CY_SPI_WR_OP)
+>> +               memcpy(wr_buf + CY_SPI_CMD_BYTES, buf, length);
+>> +
+>> +       memset((void *)xfer, 0, sizeof(xfer));
+>> +       spi_message_init(&msg);
+>> +
+>> +       /*
+>> +         We set both TX and RX buffers because Cypress TTSP
+>> +         requires full duplex operation.
+>> +       */
+>> +       xfer[0].tx_buf = wr_buf;
+>> +       xfer[0].rx_buf = rd_buf;
+>> +       if (op == CY_SPI_WR_OP) {
+>> +               xfer[0].len = length + CY_SPI_CMD_BYTES;
+>> +               spi_message_add_tail(&xfer[0], &msg);
+>> +       } else if (op == CY_SPI_RD_OP) {
+>> +               xfer[0].len = CY_SPI_CMD_BYTES;
+>> +               spi_message_add_tail(&xfer[0], &msg);
+>> +
+>> +               xfer[1].rx_buf = buf;
+>> +               xfer[1].len = length;
+>> +               spi_message_add_tail(&xfer[1], &msg);
+>> +       }
+>> +
+>> +       retval = spi_sync(ts->spi_client, &msg);
+>> +       if (retval < 0) {
+>> +               dev_dbg(ts->bus_ops.dev,
+>> +                       "%s: spi_sync() error %d, len=%d, op=%d\n",
+>> +                       __func__, retval, xfer[1].len, op);
+>> +
+>> +               /*
+>> +                * do not return here since was a bad ACK sequence
+>> +                * let the following ACK check handle any errors and
+>> +                * allow silent retries
+>> +                */
+>> +       }
+>> +
+>> +       if ((rd_buf[CY_SPI_SYNC_BYTE] == CY_SPI_SYNC_ACK1) &&
+>> +           (rd_buf[CY_SPI_SYNC_BYTE+1] == CY_SPI_SYNC_ACK2))
+>> +               retval = 0;
+>> +       else {
+>> +               int i;
+>> +               for (i = 0; i < (CY_SPI_CMD_BYTES); i++)
+>> +                       dev_dbg(ts->bus_ops.dev,
+>> +                               "%s: test rd_buf[%d]:0x%02x\n",
+>> +                               __func__, i, rd_buf[i]);
+>> +               for (i = 0; i < (length); i++)
+>> +                       dev_dbg(ts->bus_ops.dev,
+>> +                               "%s: test buf[%d]:0x%02x\n",
+>> +                               __func__, i, buf[i]);
+>> +
+>> +               /* signal ACK error so silent retry */
+>> +               retval = 1;
+>> +       }
+>> +
+>> +       return retval;
+>> +}
+>> +
+>> +static s32 ttsp_spi_read_block_data(void *handle, u8 addr,
+>> +                                   u8 length, void *data)
+>> +{
+>> +       struct cyttsp_spi *ts =
+>> +               container_of(handle, struct cyttsp_spi, bus_ops);
+>> +       int retval;
+>> +
+>> +       retval = cyttsp_spi_xfer(CY_SPI_RD_OP, ts, addr, data, length);
+>> +       if (retval < 0)
+>> +               pr_err("%s: ttsp_spi_read_block_data failed\n",
+>> +                      __func__);
+>> +
+>> +       /*
+>> +        * Do not print the above error if the data sync bytes were not
+>> found.
+>> +        * This is a normal condition for the bootloader loader startup
+>> and need
+>> +        * to retry until data sync bytes are found.
+>> +        */
+>> +       if (retval > 0)
+>> +               retval = -EIO;  /* now signal fail; so retry can be done
+>> */
+>> +
+>> +       return retval;
+>> +}
+>> +
+>> +static s32 ttsp_spi_write_block_data(void *handle, u8 addr,
+>> +                                    u8 length, const void *data)
+>> +{
+>> +       struct cyttsp_spi *ts =
+>> +               container_of(handle, struct cyttsp_spi, bus_ops);
+>> +       int retval;
+>> +
+>> +       retval = cyttsp_spi_xfer(CY_SPI_WR_OP, ts, addr, (void *)data,
+>> length);
+>> +       if (retval < 0)
+>> +               pr_err("%s: ttsp_spi_write_block_data failed\n",
+>> +                      __func__);
+>> +
+>> +       /*
+>> +        * Do not print the above error if the data sync bytes were not
+>> found.
+>> +        * This is a normal condition for the bootloader loader startup
+>> and need
+>> +        * to retry until data sync bytes are found.
+>> +        */
+>> +       if (retval > 0)
+>> +               retval = -EIO;  /* now signal fail; so retry can be done
+>> */
+>> +
+>> +       return retval;
+>> +}
+>> +
+>> +static s32 ttsp_spi_tch_ext(void *handle, void *values)
+>> +{
+>> +       struct cyttsp_spi *ts =
+>> +               container_of(handle, struct cyttsp_spi, bus_ops);
+>> +       int retval = 0;
+>> +
+>> +       /*
+>> +        * TODO: Add custom touch extension handling code here
+>> +        * set: retval < 0 for any returned system errors,
+>> +        *      retval = 0 if normal touch handling is required,
+>> +        *      retval > 0 if normal touch handling is *not* required
+>> +        */
+>> +
+>
+> This is an empty function and could be removed?
+>
+>
 
-> Why special case these two, why not simply disallow moving kthreadd into
-> _any_ cgroup what so ever and be done with it?
+Hi Shubhrajyoti,
 
-These were the cases where it hurt, and cpusets don't have to be a
-component of a cgroup.  So we'd still need the cpuset bit.
+Yes, I'll remove it and also fix the other issues called out by you
+and resend the patch-set as v7.
 
-> 
-> ---
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 453100a..18eed58 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1824,6 +1824,9 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
->  	struct cgroup *oldcgrp;
->  	struct cgroupfs_root *root = cgrp->root;
->  
-> +	if (tsk == kthreadd_task)
-> +		return -EINVAL;
-> +
->  	/* Nothing to do if the task is already in that cgroup */
->  	oldcgrp = task_cgroup_from_root(tsk, root);
->  	if (cgrp == oldcgrp)
-> 
+Thanks a lot for the review and best regards,
 
-
+-- 
+Javier Martínez Canillas
+(+34) 682 39 81 69
+Barcelona, Spain
