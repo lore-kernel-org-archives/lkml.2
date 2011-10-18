@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab1JRTaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 15:30:35 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:32844 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab1JRTae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 15:30:34 -0400
-Date: Tue, 18 Oct 2011 15:29:23 -0400 (EDT)
-Message-Id: <20111018.152923.55645219498274462.davem@davemloft.net>
-To: greg@kroah.com
-Cc: hch@infradead.org, jwboyer@redhat.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] Update email address for stable patch submission
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111018141350.GB17101@kroah.com>
-References: <20111018011638.GQ1165@zod.bos.redhat.com>
-	<20111018065852.GA6056@infradead.org>
-	<20111018141350.GB17101@kroah.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753629Ab1JRTbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 15:31:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5666 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249Ab1JRTbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 15:31:46 -0400
+Message-ID: <4E9DD418.7030005@redhat.com>
+Date: Tue, 18 Oct 2011 14:31:36 -0500
+From: David Smith <dsmith@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH] Tracepoint: add exec tracepoint
+References: <4E9DC85F.3080507@redhat.com> <20111018185803.GA32498@infradead.org>
+In-Reply-To: <20111018185803.GA32498@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 18 Oct 2011 12:29:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <greg@kroah.com>
-Date: Tue, 18 Oct 2011 07:13:50 -0700
+On 10/18/2011 01:58 PM, Christoph Hellwig wrote:
 
-> On Tue, Oct 18, 2011 at 02:58:52AM -0400, Christoph Hellwig wrote:
->> On Mon, Oct 17, 2011 at 09:16:39PM -0400, Josh Boyer wrote:
->> > The stable@kernel.org email address has been replaced with the
->> > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
->> > reference the new list instead of the semi-defunct email alias.
->> 
->> Does this mean it already stopped working?  I recently sent pathces
->> there but neither got an ACK nor a bounce or similar.
+> On Tue, Oct 18, 2011 at 01:41:35PM -0500, David Smith wrote:
+>> Added general purpose exec tracepoint.  The 'bprm' argument gives details of the exec.
 > 
-> It should have bounced.
+> Given that you only need the filename from the bprm please just pass
+> it directly.
 
-It doesn't bounce, it's a mailing list looping posting protection at
-vger.kernel.org which triggers because it sees certain email header
-fields in the forwarded emails from kernel.org that make it look like
-a list loop.
 
-We respond to such things silently so we don't exacerbate the loop.
+Thanks for looking at the patch.
+
+I'm not totally opposed to this change, but passing bprm allows custom
+tracepoint handlers to look at other fields in bprm besides filename,
+which could be useful (depending on your needs).
+
+But, I don't have a real strong opinion here.
+
+-- 
+David Smith
+dsmith@redhat.com
+Red Hat
+http://www.redhat.com
+256.217.0141 (direct)
+256.837.0057 (fax)
