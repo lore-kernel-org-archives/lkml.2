@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab1JRAI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Oct 2011 20:08:59 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:14478 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab1JRAI6 (ORCPT
+	id S1756915Ab1JRAJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Oct 2011 20:09:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58291 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab1JRAJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Oct 2011 20:08:58 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-3e-4e9cc3983a8c
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Grant Likely'" <grant@secretlab.ca>
-Cc: linux-arm-kernel@lists.infradead.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-References: <1318887379-5158-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-reply-to: <1318887379-5158-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH v2] gpio/samsung: Complain loudly if we don't know the SoC
-Date: Tue, 18 Oct 2011 09:08:55 +0900
-Message-id: <00b601cc8d2a$20d20780$62761680$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyNFNdsQpV2r2R7RnSdEydP7QCPjwAFPIXw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 17 Oct 2011 20:09:51 -0400
+X-Authority-Analysis: v=1.1 cv=cRnbtTsVO6wWDdOYuq0VmyuiiLG/FStMSb4CWlTvuS0= c=1 sm=0 a=rBmysYqC3NUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=D19gQVrFAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=gu6fZOg2AAAA:8 a=uaqxkOghc3esSXJr9hAA:9 a=PUjeQqilurYA:10 a=OUhvLjL00tsA:10 a=U62fhAwekXMA:10 a=UTB_XpHje0EA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1318896589.4722.17.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/2] [GIT PULL][v3.2] tracing: various fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Date: Mon, 17 Oct 2011 20:09:49 -0400
+In-Reply-To: <alpine.DEB.2.00.1110171424270.18439@chino.kir.corp.google.com>
+References: <20111017174938.842273454@goodmis.org>
+	 <20111017185440.GB5545@elte.hu>
+	 <1318878632.4722.6.camel@gandalf.stny.rr.com>
+	 <20111017194030.GA6502@elte.hu>
+	 <1318881923.4722.11.camel@gandalf.stny.rr.com>
+	 <1318882335.4722.13.camel@gandalf.stny.rr.com>
+	 <alpine.DEB.2.00.1110171424270.18439@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
+On Mon, 2011-10-17 at 14:26 -0700, David Rientjes wrote:
+> On Mon, 17 Oct 2011, Steven Rostedt wrote:
 > 
-> If we don't know the SoC type then we won't add any chips which is rather
-> unfortunate as neither GPIO nor pinmux APIs will work, breaking lots of
-> different subsystems. Logging at least provides a hint to the user as to
-> what's gone wrong.
+> > > I could add it, but we should have an Acked-by from Hirokazu Takata.
+> > 
+> > 
+> > Here's the patch I'm referring to:
+> > 
+> > https://lkml.org/lkml/2011/10/13/259
+> > 
+> > Thanks!
+> > 
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/gpio/gpio-samsung.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+> This patch makes my m32r cross-compiler happy, so for that:
 > 
-> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-> index 479edc3..8662518 100644
-> --- a/drivers/gpio/gpio-samsung.c
-> +++ b/drivers/gpio/gpio-samsung.c
-> @@ -2486,6 +2486,9 @@ static __init int samsung_gpiolib_init(void)
->  		s5p_register_gpioint_bank(IRQ_GPIO_XA, 0,
-> IRQ_GPIO1_NR_GROUPS);
->  		s5p_register_gpioint_bank(IRQ_GPIO_XB,
-> IRQ_GPIO1_NR_GROUPS, IRQ_GPIO2_NR_GROUPS);
->  #endif
-> +	} else {
-> +		WARN(1, "Unknown SoC in gpio-samsung, no GPIOs added\n");
-> +		return -ENODEV;
->  	}
+> Acked-by: David Rientjes <rientjes@google.com>
 > 
->  	return 0;
-> --
-> 1.7.6.3
+> although the "Link:" field in that patch doesn't work for me.
 
-Looks ok to me, applied.
-Thanks.
+OK, I'll add it with your Ack and a Cc to Hirokazu.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+As for the link, it will work again when kernel.org has that operational
+again.
+
+The Link: format is:
+
+Link: http://lkml.kernel.org/r/<message-id>
+
+You can also find this at:
+
+http://marc.info/?i=<message-id>
+
+which would give you:
+
+http://marc.info/?i=20111013085936.GA13046@elte.hu
+
+-- Steve
+
 
