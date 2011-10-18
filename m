@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab1JRGhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 02:37:17 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54547 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601Ab1JRGhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 02:37:16 -0400
-Date: Tue, 18 Oct 2011 08:35:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-Subject: Re: [PATCH] x86: mpparse: fix mp_bus_not_pci handling
-Message-ID: <20111018063533.GJ16304@elte.hu>
-References: <20110925212900.10713.67058.stgit@bhelgaas.mtv.corp.google.com>
- <CAErSpo6UyfP4mHUK7-wpvDUQ75n4z+rtgWQj-4NSvPCBK_KKbQ@mail.gmail.com>
+	id S1753212Ab1JRGiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 02:38:20 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39141 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751601Ab1JRGiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 02:38:19 -0400
+Message-ID: <4E9D1ED8.3070106@dsn.lapis-semi.com>
+Date: Tue, 18 Oct 2011 15:38:16 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo6UyfP4mHUK7-wpvDUQ75n4z+rtgWQj-4NSvPCBK_KKbQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: David Rientjes <rientjes@google.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: gpio-ml-ioh: Support interrupt function
+References: <20111017201058.GA13916@elgon.mountain> <4E9CC93B.4000800@dsn.lapis-semi.com> <alpine.DEB.2.00.1110172251590.4880@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110172251590.4880@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2011/10/18 14:56), David Rientjes wrote:
+> On Tue, 18 Oct 2011, Tomoya MORINAGA wrote:
+>
+>>> The linux-next patch 54be566317b6 "gpio-ml-ioh: Support interrupt
+>>> function" generates a Sparse warning.
+>>>
+>>> +               irq_base = irq_alloc_descs(-1, IOH_IRQ_BASE, num_ports[j],
+>>> +                                          GFP_KERNEL);
+>>>                                              ^^^^^^^^^^
+>>>
+>>> The last argument should be a NUMA node, not a GFP_ flag.  I'm not
+>>> sure what the right fix is.  There are currently 5 callers in my
+>>> cscope for this function in linux-next.
+>>>
+>>> 2 pass GFP_KERNEL which is wrong.
+>
+> Right, all irq_alloc_descs() allocations are already implicitly
+> GFP_KERNEL.
+>
+>>> 2 pass 0 which maybe should be cpu_to_node(0)?
+>>> 1 passes -1 which maybe could be NUMA_NO_NODE?
+>>>
+>> I can understand your saying.
+>> Seeing accepted other drivers, '0' or '-1' is used.
+>
+> There's actually no guarantee in the kernel that node 0 has memory, so
+> unless that is assured in the context then passing 0 would be wrong.
+>
+>> Focusing on GPIO driver, gpio-pca953x.c uses '-1'.
+>>
+>
+> The slab layer guarantees that passing -1 will allocate on the node that
+> is local to the cpu that the code is running on.  Unless there's a
+> compelling reason to allocate on a different node, then this is what you
+> want to use.
+>
+> We try not to pass -1 directly, though, we try to use NUMA_NO_NODE
+> wherever possible.
+ >
 
-* Bjorn Helgaas <bhelgaas@google.com> wrote:
+Hi, David
+Thank you for your information.
+I will try to test with '-1'.
 
-> On Sun, Sep 25, 2011 at 3:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
-> > Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
-> > except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
-> > not the only non-PCI bus, so it's better to always set mp_bus_not_pci
-> > and clear it only for PCI.
-> >
-> > The workaround was to boot with "noapic".  Dan verified that with this
-> > patch, his system boots without "noapic".
-> >
-> > Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
-> > Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
-> > Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
-> > Cc: stable@kernel.org # 2.6.26+
-> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> > ---
-> >  arch/x86/kernel/mpparse.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-> > index 9103b89..0741b062 100644
-> > --- a/arch/x86/kernel/mpparse.c
-> > +++ b/arch/x86/kernel/mpparse.c
-> > @@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
-> >        }
-> >  #endif
-> >
-> > +       set_bit(m->busid, mp_bus_not_pci);
-> >        if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
-> > -               set_bit(m->busid, mp_bus_not_pci);
-> >  #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
-> >                mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
-> >  #endif
-> >
-> >
-> 
-> Ping?  I don't see this in linux-next, so I don't know if it got
-> dropped or if there's something wrong with it.
-
-Please resend - this is one of the mails that got lost in my korg 
-email disconnect.
-
-Patch looks good at first sight.
+After testing with '-1',
+I will post the patch for this.
 
 Thanks,
-
-	Ingo
+-- 
+tomoya
+ROHM Co., Ltd.
