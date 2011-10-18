@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab1JRLBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 07:01:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41651 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab1JRLBs convert rfc822-to-8bit (ORCPT
+	id S1754834Ab1JRLCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 07:02:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40654 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754599Ab1JRLCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 07:01:48 -0400
-Subject: Re: [PATCH] perf: Carve out callchain functionality
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Date: Tue, 18 Oct 2011 13:01:35 +0200
-In-Reply-To: <1318778104-17152-1-git-send-email-fweisbec@gmail.com>
-References: <1318778104-17152-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318935695.21167.14.camel@twins>
-Mime-Version: 1.0
+	Tue, 18 Oct 2011 07:02:46 -0400
+Date: Tue, 18 Oct 2011 12:02:43 +0100
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regmap: Prepare LZO cache for variable block sizes
+Message-ID: <20111018110243.GA2046@opensource.wolfsonmicro.com>
+References: <1318933633-5759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318933633-5759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-10-16 at 17:15 +0200, Frederic Weisbecker wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Tue, Oct 18, 2011 at 11:27:13AM +0100, Mark Brown wrote:
+> Give regcache_lzo_block_count() a copy of the map so that when we decide
+> we want to make the LZO cache more controllable we can more easily do so.
 > 
-> Split the callchain code from the perf events core into
-> a new kernel/events/callchain.c file.
-> 
-> This simplifies a bit the big core.c
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> [keep ctx recursion handling inline and use internal headers]
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Thanks!
+Acked-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+
+Thanks,
+Dimitris
