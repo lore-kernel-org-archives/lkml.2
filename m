@@ -1,250 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1JRV5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:57:10 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40252 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752681Ab1JRVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 17:54:48 -0400
-From: Serge Hallyn <serge@hallyn.com>
-To: linux-kernel@vger.kernel.org
-Cc: ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
-        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        dhowells@redhat.com, eparis@redhat.com,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org
-Subject: [PATCH 2/9] user namespace: usb: make usb urbs user namespace aware (v2)
-Date: Tue, 18 Oct 2011 21:54:51 +0000
-Message-Id: <1318974898-21431-3-git-send-email-serge@hallyn.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1318974898-21431-1-git-send-email-serge@hallyn.com>
-References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
+	id S1754786Ab1JRWNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 18:13:09 -0400
+Received: from mail.danysek.cz ([91.103.163.139]:34059 "EHLO mail.danysek.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab1JRWNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 18:13:07 -0400
+Message-ID: <4E9DF9F1.9040606@danysek.cz>
+Date: Wed, 19 Oct 2011 00:13:05 +0200
+From: Daniel Suchy <danny@danysek.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Icedove/5.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: ALSA: HDA: conexant support for Lenovo T520/W520
+References: <4E9D2DCA.4010603@danysek.cz> <s5h1uua3e9b.wl%tiwai@suse.de> <4E9D4011.3020602@danysek.cz> <s5hr52a1xil.wl%tiwai@suse.de>
+In-Reply-To: <s5hr52a1xil.wl%tiwai@suse.de>
+OpenPGP: id=A2A35A82
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge Hallyn <serge.hallyn@canonical.com>
+Hello,
 
-[ This is in Greg's USB tree, but not yet in Linus' tree;  it's here
-just to give a full context. ]
+On 10/18/2011 11:04 AM, Takashi Iwai wrote:
+>> There's another issue I observed related to audio outputs, but I'm not
+>> sure about the reason. With docking station, audio isn't working over
+>> audio output on the Minidock 3. Internal speakers are cutted off
+>> properly, but there's no sound output on the connector. Audio output on
+>> T520 directly works as expected, only output on minidock has this
+>> problem. If you have any hints, let me know. This happens even with
+>> autodetection enabled (this was my initial motivation for looking into
+>> the driver source, and also CXT5066_THINKPAD quirk, which I tested
+>> previously has this problem).
+> 
+> Might be an EAPD issue?  There is another pending patch.  Attached
+> below.
+> 
 
-Add to the dev_state and alloc_async structures the user namespace
-corresponding to the uid and euid.  Pass these to kill_pid_info_as_uid(),
-which can then implement a proper, user-namespace-aware uid check.
+I tried all patches you provided, but the problem with output persists.
+Tested on 3.1-rc10. I'll look on the recording issue tomorrow.
 
-Changelog:
-Sep 20: Per Oleg's suggestion: Instead of caching and passing user namespace,
-	uid, and euid each separately, pass a struct cred.
-Sep 26: Address Alan Stern's comments: don't define a struct cred at
-	usbdev_open(), and take and put a cred at async_completed() to
-	ensure it lasts for the duration of kill_pid_info_as_cred().
-
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org
----
- drivers/usb/core/devio.c |   30 +++++++++++++-----------------
- include/linux/sched.h    |    3 ++-
- kernel/signal.c          |   24 ++++++++++++++++--------
- 3 files changed, 31 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index eea53eb..000c25d 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -46,6 +46,7 @@
- #include <linux/cdev.h>
- #include <linux/notifier.h>
- #include <linux/security.h>
-+#include <linux/user_namespace.h>
- #include <asm/uaccess.h>
- #include <asm/byteorder.h>
- #include <linux/moduleparam.h>
-@@ -68,7 +69,7 @@ struct dev_state {
- 	wait_queue_head_t wait;     /* wake up if a request completed */
- 	unsigned int discsignr;
- 	struct pid *disc_pid;
--	uid_t disc_uid, disc_euid;
-+	const struct cred *cred;
- 	void __user *disccontext;
- 	unsigned long ifclaimed;
- 	u32 secid;
-@@ -79,7 +80,7 @@ struct async {
- 	struct list_head asynclist;
- 	struct dev_state *ps;
- 	struct pid *pid;
--	uid_t uid, euid;
-+	const struct cred *cred;
- 	unsigned int signr;
- 	unsigned int ifnum;
- 	void __user *userbuffer;
-@@ -248,6 +249,7 @@ static struct async *alloc_async(unsigned int numisoframes)
- static void free_async(struct async *as)
- {
- 	put_pid(as->pid);
-+	put_cred(as->cred);
- 	kfree(as->urb->transfer_buffer);
- 	kfree(as->urb->setup_packet);
- 	usb_free_urb(as->urb);
-@@ -393,9 +395,8 @@ static void async_completed(struct urb *urb)
- 	struct dev_state *ps = as->ps;
- 	struct siginfo sinfo;
- 	struct pid *pid = NULL;
--	uid_t uid = 0;
--	uid_t euid = 0;
- 	u32 secid = 0;
-+	const struct cred *cred = NULL;
- 	int signr;
- 
- 	spin_lock(&ps->lock);
-@@ -408,8 +409,7 @@ static void async_completed(struct urb *urb)
- 		sinfo.si_code = SI_ASYNCIO;
- 		sinfo.si_addr = as->userurb;
- 		pid = get_pid(as->pid);
--		uid = as->uid;
--		euid = as->euid;
-+		cred = get_cred(as->cred);
- 		secid = as->secid;
- 	}
- 	snoop(&urb->dev->dev, "urb complete\n");
-@@ -423,9 +423,9 @@ static void async_completed(struct urb *urb)
- 	spin_unlock(&ps->lock);
- 
- 	if (signr) {
--		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, uid,
--				      euid, secid);
-+		kill_pid_info_as_cred(sinfo.si_signo, &sinfo, pid, cred, secid);
- 		put_pid(pid);
-+		put_cred(cred);
- 	}
- 
- 	wake_up(&ps->wait);
-@@ -658,7 +658,6 @@ static int usbdev_open(struct inode *inode, struct file *file)
- {
- 	struct usb_device *dev = NULL;
- 	struct dev_state *ps;
--	const struct cred *cred = current_cred();
- 	int ret;
- 
- 	ret = -ENOMEM;
-@@ -708,8 +707,7 @@ static int usbdev_open(struct inode *inode, struct file *file)
- 	init_waitqueue_head(&ps->wait);
- 	ps->discsignr = 0;
- 	ps->disc_pid = get_pid(task_pid(current));
--	ps->disc_uid = cred->uid;
--	ps->disc_euid = cred->euid;
-+	ps->cred = get_current_cred();
- 	ps->disccontext = NULL;
- 	ps->ifclaimed = 0;
- 	security_task_getsecid(current, &ps->secid);
-@@ -751,6 +749,7 @@ static int usbdev_release(struct inode *inode, struct file *file)
- 	usb_unlock_device(dev);
- 	usb_put_dev(dev);
- 	put_pid(ps->disc_pid);
-+	put_cred(ps->cred);
- 
- 	as = async_getcompleted(ps);
- 	while (as) {
-@@ -1050,7 +1049,6 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 	struct usb_host_endpoint *ep;
- 	struct async *as;
- 	struct usb_ctrlrequest *dr = NULL;
--	const struct cred *cred = current_cred();
- 	unsigned int u, totlen, isofrmlen;
- 	int ret, ifnum = -1;
- 	int is_in;
-@@ -1264,8 +1262,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 	as->signr = uurb->signr;
- 	as->ifnum = ifnum;
- 	as->pid = get_pid(task_pid(current));
--	as->uid = cred->uid;
--	as->euid = cred->euid;
-+	as->cred = get_current_cred();
- 	security_task_getsecid(current, &as->secid);
- 	if (!is_in && uurb->buffer_length > 0) {
- 		if (copy_from_user(as->urb->transfer_buffer, uurb->buffer,
-@@ -1983,9 +1980,8 @@ static void usbdev_remove(struct usb_device *udev)
- 			sinfo.si_errno = EPIPE;
- 			sinfo.si_code = SI_ASYNCIO;
- 			sinfo.si_addr = ps->disccontext;
--			kill_pid_info_as_uid(ps->discsignr, &sinfo,
--					ps->disc_pid, ps->disc_uid,
--					ps->disc_euid, ps->secid);
-+			kill_pid_info_as_cred(ps->discsignr, &sinfo,
-+					ps->disc_pid, ps->cred, ps->secid);
- 		}
- 	}
- }
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 41d0237..600eb0a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2165,7 +2165,8 @@ extern int force_sigsegv(int, struct task_struct *);
- extern int force_sig_info(int, struct siginfo *, struct task_struct *);
- extern int __kill_pgrp_info(int sig, struct siginfo *info, struct pid *pgrp);
- extern int kill_pid_info(int sig, struct siginfo *info, struct pid *pid);
--extern int kill_pid_info_as_uid(int, struct siginfo *, struct pid *, uid_t, uid_t, u32);
-+extern int kill_pid_info_as_cred(int, struct siginfo *, struct pid *,
-+				const struct cred *, u32);
- extern int kill_pgrp(struct pid *pid, int sig, int priv);
- extern int kill_pid(struct pid *pid, int sig, int priv);
- extern int kill_proc_info(int, struct siginfo *, pid_t);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 291c970..d252be2 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1344,13 +1344,24 @@ int kill_proc_info(int sig, struct siginfo *info, pid_t pid)
- 	return error;
- }
- 
-+static int kill_as_cred_perm(const struct cred *cred,
-+			     struct task_struct *target)
-+{
-+	const struct cred *pcred = __task_cred(target);
-+	if (cred->user_ns != pcred->user_ns)
-+		return 0;
-+	if (cred->euid != pcred->suid && cred->euid != pcred->uid &&
-+	    cred->uid  != pcred->suid && cred->uid  != pcred->uid)
-+		return 0;
-+	return 1;
-+}
-+
- /* like kill_pid_info(), but doesn't use uid/euid of "current" */
--int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
--		      uid_t uid, uid_t euid, u32 secid)
-+int kill_pid_info_as_cred(int sig, struct siginfo *info, struct pid *pid,
-+			 const struct cred *cred, u32 secid)
- {
- 	int ret = -EINVAL;
- 	struct task_struct *p;
--	const struct cred *pcred;
- 	unsigned long flags;
- 
- 	if (!valid_signal(sig))
-@@ -1362,10 +1373,7 @@ int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
- 		ret = -ESRCH;
- 		goto out_unlock;
- 	}
--	pcred = __task_cred(p);
--	if (si_fromuser(info) &&
--	    euid != pcred->suid && euid != pcred->uid &&
--	    uid  != pcred->suid && uid  != pcred->uid) {
-+	if (si_fromuser(info) && !kill_as_cred_perm(cred, p)) {
- 		ret = -EPERM;
- 		goto out_unlock;
- 	}
-@@ -1384,7 +1392,7 @@ out_unlock:
- 	rcu_read_unlock();
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(kill_pid_info_as_uid);
-+EXPORT_SYMBOL_GPL(kill_pid_info_as_cred);
- 
- /*
-  * kill_something_info() interprets pid in interesting ways just like kill(2).
--- 
-1.7.5.4
-
+With regards,
+Daniel
