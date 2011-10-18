@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab1JRPv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:51:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33886 "EHLO mga01.intel.com"
+	id S932816Ab1JRP4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:56:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59254 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932608Ab1JRPvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:51:55 -0400
+	id S1755739Ab1JRP4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 11:56:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,366,1315206000"; 
-   d="scan'208";a="79289002"
+   d="scan'208";a="79290650"
 From: Andi Kleen <andi@firstfloor.org>
-To: p.herz@profihost.ag
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Vanilla-Kernel 3 - page allocation failure
-References: <4E9D53FF.7090609@profihost.ag>
-Date: Tue, 18 Oct 2011 08:51:54 -0700
-In-Reply-To: <4E9D53FF.7090609@profihost.ag> (Philipp Herz's message of "Tue,
-	18 Oct 2011 12:25:03 +0200")
-Message-ID: <m2ipnmz49x.fsf@firstfloor.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: IOMMU keeping mapping over long period of time
+References: <20111018154828.GA4201@homer.localdomain>
+Date: Tue, 18 Oct 2011 08:56:14 -0700
+In-Reply-To: <20111018154828.GA4201@homer.localdomain> (Jerome Glisse's
+	message of "Tue, 18 Oct 2011 11:48:28 -0400")
+Message-ID: <m2ehyaz42p.fsf@firstfloor.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,23 +25,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Philipp Herz - Profihost AG <p.herz@profihost.ag> writes:
-
-> After updating kernel (x86_64) to stable version 3 there are a few
-> messages appearing in the kernel log such as
+Jerome Glisse <j.glisse@gmail.com> writes:
 >
-> kworker/0:1: page allocation failure: order:1, mode:0x20
-> mysql: page allocation failure: order:1, mode:0x20
-> php5: page allocation failure: order:1, mode:0x20
+> GPU for which we are interested have dma mask of 40bits at least, thus
+> they can work with high mem page. My main concern is when an iommu is
+> active, such amount of continuously mapped page might exhaust the iommu
+> address space. My understanding is that Intel & AMD iommu are capable of
+> growing their address space but is it somethings we can rely on ?
 
-You just ran out of memory.
-
-The problem here seems to be that the kernel is unable to communicate
-in a language you can understand. 
-
-How do you think the message should have been phrased to make the 
-issue more clear?
+I don't think relying on this is very wise. Better add some way to unmap
+when space is running short.
 
 -Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
