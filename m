@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab1JROgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:36:18 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:43885 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932140Ab1JROgR (ORCPT
+	id S932365Ab1JROnr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:43:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44708 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199Ab1JROnq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:36:17 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: d8wqhpoVM1kj0N0JvSZFibNzT.lonj1cj9a.rbbilB5XLq7
- H.5HVbL2N4sSVlsMj4v1gQeUWXqaFEypQovyFv.5JhHKRMgnuDOqX1tjwJdh
- _vECexMNmJiVAmkAsa57NDRlRUacClF9br2gdrCN3DbqE48_xXQjc4iGrpbi
- TBwLBdFkqRD35u_X4gMCsZ8hWBI_JAFH2PgPoKSulPE7YepYgIHe9f37JUH2
- .fgP_.ZYug.zek3nUXhWavVWogNrIMmmNxwqFv2.UNKiQjPC_hNYs9Zo6qE7
- X.hmJNzMzQT1njAE1OJSU5ZhUxwWfCuO1j4AD3i0gJgVrdPv4amaMLOVHSCk
- hcqACnl8adV8zZM148rOIhbk79gsdtHQi8Mp3bP9imbF9Ex0cCGTvdUIJDha
- HxToYk2wzO4vLkVxLUAMNXWE-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 18 Oct 2011 09:36:14 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Dimitri Sivanich <sivanich@sgi.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-In-Reply-To: <20111018134835.GA16222@sgi.com>
-Message-ID: <alpine.DEB.2.00.1110180933470.687@router.home>
-References: <20111013135032.7c2c54cd.akpm@linux-foundation.org> <alpine.DEB.2.00.1110131602020.26553@router.home> <20111013142434.4d05cbdc.akpm@linux-foundation.org> <20111014122506.GB26737@sgi.com> <20111014135055.GA28592@sgi.com> <alpine.DEB.2.00.1110140856420.6411@router.home>
- <20111014141921.GC28592@sgi.com> <alpine.DEB.2.00.1110140932530.6411@router.home> <alpine.DEB.2.00.1110140958550.6411@router.home> <20111014161603.GA30561@sgi.com> <20111018134835.GA16222@sgi.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 18 Oct 2011 10:43:46 -0400
+Subject: Re: Oprofile Regression Caused by commit
+ e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25 on PPC
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: Stephane Eranian <eranian@google.com>, mingo@elte.hu, anton@samba.org,
+        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
+Date: Tue, 18 Oct 2011 16:43:22 +0200
+In-Reply-To: <20111018135322.GA11530@mgebm.net>
+References: <20111007204247.GA5444@mgebm.net>
+	 <20111010233842.GC24583@mgebm.net> <1318319095.14400.54.camel@laptop>
+	 <20111012165154.GB6158@mgebm.net>
+	 <CABPqkBRHkiOYEW+5Yo9p43c_2Dy+aAdJRXj3tah5J1QsV4AXrw@mail.gmail.com>
+	 <20111018135322.GA11530@mgebm.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318949002.21167.20.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Dimitri Sivanich wrote:
+On Tue, 2011-10-18 at 09:53 -0400, Eric B Munson wrote:
+> On Wed, 12 Oct 2011, Stephane Eranian wrote:
+> 
+> > Could be:
+> >    a8d757e perf events: Fix slow and broken cgroup context switch code
+> > 
+> 
+> Thanks for the pointer, but the fix was in:
+>     facc4307 perf: Optimize event scheduling locking
+> 
+> This might be a candidate for stable given that oprofile is broken without it.
 
-> After further testing, substantial increases in ZVC delta along with cache alignment
-> of the vm_stat array bring the tmpfs writeback throughput numbers to about where
-> they are with vm.overcommit_memory==OVERCOMMIT_NEVER.  I still need to determine how
-> high the ZVC delta needs to be to achieve this performance, but it is greater than 125.
-
-Sounds like this is the way to go then.
-
-> Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
-> same default behavior as what we currently have?
-
-I think so.
-
-> If the thresholds get set higher, it could be that some values that don't normally have
-> as big a delta may not get updated frequently enough.  Should we maybe update all values
-> everytime a threshold is hit, as the patch below was intending?
-
-Mel can probably chime in on the accuracy needed for reclaim etc. We
-already have an automatic reduction of the delta if the vm gets into
-problems.
-
-> Note that having each counter in a separate cacheline does not have much, if any,
-> effect.
-
-It may have a good effect if you group the counters according to their
-uses into different cachelines. Counters that are typically updates
-together need to be close to each other. Also you could modify my patch to
-only update counters in the same cacheline. I think doing all counters
-caused the problems with that patch because we now touch multiple
-cachelines and increase the cache footprint of critical vm functions.
-
+I might feel much more confident about recommending that if someone
+could explain why that patches fixes what exact problem.
