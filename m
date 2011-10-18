@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab1JRJGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:06:10 -0400
-Received: from mail.de.keymile.com ([195.8.104.1]:49467 "HELO
-	mail.de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757006Ab1JRJGI (ORCPT
+	id S1757323Ab1JRJGS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:06:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40423 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757006Ab1JRJGQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:06:08 -0400
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-To: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Cc: Gerlando Falauto <gerlando.falauto@keymile.com>
-Subject: [PATCH] CIFS: fix automount for DFS shares
-Date: Tue, 18 Oct 2011 10:58:50 +0200
-Message-Id: <1318928330-4498-1-git-send-email-gerlando.falauto@keymile.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1318845543-15085-1-git-send-email-gerlando.falauto@keymile.com>
-References: <1318845543-15085-1-git-send-email-gerlando.falauto@keymile.com>
-X-ESAFE-STATUS: [srvhellgate.de.keymile.net] Mail clean
+	Tue, 18 Oct 2011 05:06:16 -0400
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
+        David Rientjes <rientjes@google.com>
+Date: Tue, 18 Oct 2011 11:06:03 +0200
+In-Reply-To: <1318927629.9641.27.camel@marge.simson.net>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <1318927355.21167.3.camel@twins>
+	 <1318927629.9641.27.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318928763.21167.5.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Automounting directories are now invalidated by .d_revalidate()
-so to be d_instantiate()d again with the right DCACHE_NEED_AUTOMOUNT
-flag
+On Tue, 2011-10-18 at 10:47 +0200, Mike Galbraith wrote:
+> On Tue, 2011-10-18 at 10:42 +0200, Peter Zijlstra wrote:
+> 
+> > Why special case these two, why not simply disallow moving kthreadd into
+> > _any_ cgroup what so ever and be done with it?
+> 
+> These were the cases where it hurt, and cpusets don't have to be a
+> component of a cgroup.  So we'd still need the cpuset bit.
 
-Reviewed-by: Jeff Layton <jlayton@samba.org>
-Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
----
- fs/cifs/dir.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+but but but,, cpusetes are a cgroup thingy?!
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 9ea65cf..ca3b571 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -637,8 +637,16 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
- 	if (direntry->d_inode) {
- 		if (cifs_revalidate_dentry(direntry))
- 			return 0;
--		else
-+		else {
-+			/*
-+			 * Forcibly invalidate automounting directory inodes
-+			 * (remote DFS directories) so to have them
-+			 * instantiated again for automount
-+			 */
-+			if (IS_AUTOMOUNT(direntry->d_inode))
-+				return 0;
- 			return 1;
-+		}
- 	}
- 
- 	/*
--- 
-1.7.1
+> > 
+> > ---
+> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > index 453100a..18eed58 100644
+> > --- a/kernel/cgroup.c
+> > +++ b/kernel/cgroup.c
+> > @@ -1824,6 +1824,9 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+> >  	struct cgroup *oldcgrp;
+> >  	struct cgroupfs_root *root = cgrp->root;
+> >  
+> > +	if (tsk == kthreadd_task)
+> > +		return -EINVAL;
+> > +
+> >  	/* Nothing to do if the task is already in that cgroup */
+> >  	oldcgrp = task_cgroup_from_root(tsk, root);
+> >  	if (cgrp == oldcgrp)
+> > 
+> 
+> 
 
