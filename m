@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab1JRVyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 17:54:49 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40244 "EHLO
+	id S1754813Ab1JRV4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 17:56:12 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40283 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752354Ab1JRVyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 17:54:47 -0400
+	id S1754164Ab1JRVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 17:54:48 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org
 Cc: ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
         richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        dhowells@redhat.com, eparis@redhat.com
-Subject: user namespaces: fix some uid/privilege leaks
-Date: Tue, 18 Oct 2011 21:54:49 +0000
-Message-Id: <1318974898-21431-1-git-send-email-serge@hallyn.com>
+        dhowells@redhat.com, eparis@redhat.com,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Andrew Morgan <morgan@kernel.org>
+Subject: [PATCH 5/9] user namespace: clamp down users of cap_raised
+Date: Tue, 18 Oct 2011 21:54:54 +0000
+Message-Id: <1318974898-21431-6-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1318974898-21431-1-git-send-email-serge@hallyn.com>
+References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The set of patches which I'm currently aiming to get upstream is queued at:
-http://kernel.ubuntu.com/git?p=serge/linux-2.6.git;a=shortlog;h=refs/heads/userns
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
 
-In the below descriptions, it helps to remember that a task can have more
-privilege to his own, child, user namespace, than he does in his parent or
-the initial user namespace.  In fact a task created in a new user namespace
-receives all capabilities (within bounding set) in the new user namespace.
-So checks for privilege in a task's own user ns can not be safely used in place
-of checks against another user ns.
+A few modules are using cap_raised(current_cap(), cap) to authorize
+actions.  This means that tasks which are privileged in non-initial
+user namespaces will be deemed privileged.  The privilege should only
+be granted if the task is in the initial user namespace.
 
-The set includes:
+Switching the calls to capable() would change the behavior - it would
+cause the LSM capable hooks to be called, and set PF_SUPERPRIV if
+the capability was used.  So instead, put in an explicit check and
+refuse privilege if the caller is not in init_user_ns.
 
-0001-pid_ns-ensure-pid-is-not-freed-during-kill_pid_info_.patch
-	Fix a case where a pid could be referenced after being freed.
-	(This is in Greg's usb tree, but not yet in Linus' tree; it's
-	here just to show full context)
+Vasiliy had suggested introducing a new helper for this.  I'm open
+to suggestions, but for four callers and for a discouraged idiom,
+I'd rather not pollute the capable* function namespace with a bad name.
+(even has_capability goes through the LSM hooks)
 
-0002-user-namespace-usb-make-usb-urbs-user-namespace-awar.patch
-	Take the user namespace into account when comparing uids when
-	signals are sent by usb urbs.
-	(This is in Greg's usb tree, but not yet in Linus' tree; it's
-	here just to show full context)
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Andrew Morgan <morgan@kernel.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+---
+ drivers/block/drbd/drbd_nl.c           |    5 +++++
+ drivers/md/dm-log-userspace-transfer.c |    3 +++
+ drivers/staging/pohmelfs/config.c      |    3 +++
+ drivers/video/uvesafb.c                |    3 +++
+ 4 files changed, 14 insertions(+), 0 deletions(-)
 
-0003-user-namespace-make-signal.c-respect-user-namespaces.patch
-	This convers the uid for the task sending a signal to the
-	user namespace of the receiver.  It is somewhat analogous
-	to what is done with the sender's pid.
-	Waiting on feedback from Oleg, but I believe this patch is
-	ready.
-
-0004-User-namespace-don-t-allow-sysctl-in-non-init-user-n.patch
-	This prevents root in a child user namespace from man-handling
-	sysctls.  With this patch, a task in a child user namespace
-	will only get the world access rights to sysctls.
-
-0005-user-namespace-clamp-down-users-of-cap_raised.patch
-	This clamps down on cases where privilege to your own user
-	namespace were checked for access to the initial user namespace.
-
-0006-Add-Documentation-namespaces-user_namespace.txt-v3.patch
-	Documentation.
-
-0007-user-namespace-make-each-net-net_ns-belong-to-a-user.patch
-	This adds a struct user_namespace pointer to the net_ns for use
-	by later patches.
-
-0008-protect-cap_netlink_recv-from-user-namespaces.patch
-	Now that net_ns is owned by a user_ns, cap_netlink_recv() can
-	target privilege checks to the user_ns owning the resource.  The
-	current check against current_cap() is unsafe.
-
-0009-make-net-core-scm.c-uid-comparisons-user-namespace-a.patch
-	In scm_send, uids of sender/receiver are being compared without
-	accounting for different user namespaces.  Fix that.
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 0feab26..9a87a14 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -2297,6 +2297,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
+ 		return;
+ 	}
+ 
++	if (current_user_ns() != &init_user_ns) {
++		retcode = ERR_PERM;
++		goto fail;
++	}
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
+ 		retcode = ERR_PERM;
+ 		goto fail;
+diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
+index 1f23e04..140ca81 100644
+--- a/drivers/md/dm-log-userspace-transfer.c
++++ b/drivers/md/dm-log-userspace-transfer.c
+@@ -134,6 +134,9 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+ {
+ 	struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
+ 
++	if (current_user_ns() != &init_user_ns)
++		return;
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+ 		return;
+ 
+diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
+index b6c42cb..cd259d0 100644
+--- a/drivers/staging/pohmelfs/config.c
++++ b/drivers/staging/pohmelfs/config.c
+@@ -525,6 +525,9 @@ static void pohmelfs_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *n
+ {
+ 	int err;
+ 
++	if (current_user_ns() != &init_user_ns)
++		return;
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+ 		return;
+ 
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index 7f8472c..71dab8e 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -73,6 +73,9 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
+ 	struct uvesafb_task *utask;
+ 	struct uvesafb_ktask *task;
+ 
++	if (current_user_ns() != &init_user_ns)
++		return;
++
+ 	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
+ 		return;
+ 
+-- 
+1.7.5.4
 
