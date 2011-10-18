@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab1JRRxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 13:53:06 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:55756 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab1JRRxE convert rfc822-to-8bit (ORCPT
+	id S1751718Ab1JRRzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 13:55:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab1JRRzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 13:53:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111018173521.GF30644@flint.arm.linux.org.uk>
-References: <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
-	<20111018074211.GA13483@flint.arm.linux.org.uk>
-	<CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
-	<20111018094944.GA30644@flint.arm.linux.org.uk>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202367258@CORPEXCH1.na.ads.idt.com>
-	<20111018173521.GF30644@flint.arm.linux.org.uk>
-Date: Tue, 18 Oct 2011 23:23:03 +0530
-Message-ID: <CAJe_Zhcrm_oQhU-RO970r1VN7LroNi8sAfRyQQP0M-QCC9V_UQ@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Oct 2011 13:55:14 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: davem@davemloft.net, grant.likely@secretlab.ca, sfr@canb.auug.org.au,
+        u.kleine-koenig@pengutronix.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [RESEND] [PATCH] ll_temac: Add support for ethtool
+Date: Tue, 18 Oct 2011 19:55:01 +0200
+Message-Id: <1318960501-3544-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2011 23:05, Russell King <rmk@arm.linux.org.uk> wrote:
->
-> However, Jassi's suggestion that we redefine dma_addr_t to be 64-bit
-> for just the DMA engine code is utterly insane and unworkable.  We
-> can't have typedefs which change depending on which bits of code are
-> being built, potentially changing the layout of structures being passed
-> around inside the kernel.
->
-I am not sure you understood what I meant.
-When I said
-     "Perhaps simply change dma_addr_t to u64 in dmaengine.h alone"
-I meant
-      s/dma_addr_t/u64
+This patch enables the ethtool interface. The implementation is done
+using the libphy helper functions.
+
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/net/ll_temac_main.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
+index 728fe41..91a9804 100644
+--- a/drivers/net/ll_temac_main.c
++++ b/drivers/net/ll_temac_main.c
+@@ -957,6 +957,32 @@ static const struct attribute_group temac_attr_group = {
+ 	.attrs = temac_device_attrs,
+ };
+ 
++/* ethtool support */
++static int temac_get_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	return phy_ethtool_gset(lp->phy_dev, cmd);
++}
++
++static int temac_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	return phy_ethtool_sset(lp->phy_dev, cmd);
++}
++
++static int temac_nway_reset(struct net_device *ndev)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	return phy_start_aneg(lp->phy_dev);
++}
++
++static const struct ethtool_ops temac_ethtool_ops = {
++	.get_settings = temac_get_settings,
++	.set_settings = temac_set_settings,
++	.nway_reset = temac_nway_reset,
++	.get_link = ethtool_op_get_link,
++};
++
+ static int __devinit temac_of_probe(struct platform_device *op)
+ {
+ 	struct device_node *np;
+@@ -978,6 +1004,7 @@ static int __devinit temac_of_probe(struct platform_device *op)
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+ 	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
+ 	ndev->netdev_ops = &temac_netdev_ops;
++	ndev->ethtool_ops= &temac_ethtool_ops;
+ #if 0
+ 	ndev->features |= NETIF_F_IP_CSUM; /* Can checksum TCP/UDP over IPv4. */
+ 	ndev->features |= NETIF_F_HW_CSUM; /* Can checksum all the packets. */
+-- 
+1.7.7
+
