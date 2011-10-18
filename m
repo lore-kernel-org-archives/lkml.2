@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab1JRH6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 03:58:34 -0400
-Received: from eastrmfepo203.cox.net ([68.230.241.218]:56375 "EHLO
-	eastrmfepo203.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab1JRH6d (ORCPT
+	id S1753438Ab1JRIFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:05:33 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34384 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab1JRIFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 03:58:33 -0400
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020208.4E9D1FD5.00A2,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=ASjpOCvEPoSfhuYnpalwTqAN2s78hBywh12H8bbbxwo=
- c=1 sm=1 a=Dyoqhi_TatcA:10 a=PLmm6w-6prgA:10 a=pZmP9RTn-EsA:10
- a=Cfj4BQAnxiAA:10 a=8ECo3Rf5bFOjVcjEo8sP3w==:17 a=Zk3OmFfbAAAA:8
- a=pnUWbHQooznaguQ6ejwA:9 a=Ft8UYL4EG9YA:10 a=8nGIl2609KkA:10
- a=x46t9oslO7cA:10 a=lehZvYmbTaXmJDzS:21 a=1r-1WakwmlR75JwL:21
- a=8ECo3Rf5bFOjVcjEo8sP3w==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN)
- smtp.auth=infopromo16@cox.net
-Reply-To: <terrywilliams201@aim.com>
-From: "Microsoft Office" <info@yahoo.co.uk>
-Subject: @2011 MICROSOFT AWARD !!
-Date: Tue, 18 Oct 2011 08:57:40 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 111017-1, 10/18/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20111018075832.CIQR3769.eastrmfepo203.cox.net@eastrmimpo03.cox.net>
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 18 Oct 2011 04:05:30 -0400
+From: Krishna Kumar <krkumar2@in.ibm.com>
+To: rusty@rustcorp.com.au, mst@redhat.com
+Cc: Ian.Campbell@citrix.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, davem@davemloft.net,
+        Krishna Kumar <krkumar2@in.ibm.com>
+Date: Tue, 18 Oct 2011 13:35:23 +0530
+Message-Id: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
+Subject: [PATCH] Fix guest memory leak and panic
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Message bodyA lump sum of (?1,000,000.00) have been credited to your E-mail Address.Congrats...Batch number YM 09102XN
-Confirm this receipt by contacting Mr. Martin Lahm via
+Commit 86ee8130 ("virtionet: convert to SKB paged frag API")
+introduced a bug in guest. During RX testing, guest runs out
+of memory within seconds, causing oom-killer; which then
+panics the system: "Kernel panic - not syncing: Out of memory
+and no killable processes...". /proc/meminfo just before the
+panic shows MemFree is a few MB's:
 
-Email:y.msn021010121@live.com
+	MemFree:         1928544 kB	(starts here)
+	...
+	...
+	MemFree:           27488 kB
+	MemFree:           26248 kB
+	MemFree:           24636 kB
+	MemFree:           22632 kB
+	MemFree:           19580 kB
+	MemFree:           17928 kB
+	MemFree:           15548 kB
+		(Panic)
+
+The extra reference to the fragment pages causes those pages to
+not get freed in skb_release_data(). The following patch fixes
+the bug. I have not checked if any other converted driver has
+the same issue.
+
+Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+---
+ drivers/net/virtio_net.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
+--- org/drivers/net/virtio_net.c	2011-10-18 08:49:46.000000000 +0530
++++ new/drivers/net/virtio_net.c	2011-10-18 12:55:32.000000000 +0530
+@@ -143,18 +143,15 @@ static void skb_xmit_done(struct virtque
+ static void set_skb_frag(struct sk_buff *skb, struct page *page,
+ 			 unsigned int offset, unsigned int *len)
+ {
++	int size = min((unsigned)PAGE_SIZE - offset, *len);
+ 	int i = skb_shinfo(skb)->nr_frags;
+-	skb_frag_t *f;
+ 
+-	f = &skb_shinfo(skb)->frags[i];
+-	f->size = min((unsigned)PAGE_SIZE - offset, *len);
+-	f->page_offset = offset;
+-	__skb_frag_set_page(f, page);
++	__skb_fill_page_desc(skb, i, page, offset, size);
+ 
+-	skb->data_len += f->size;
+-	skb->len += f->size;
++	skb->data_len += size;
++	skb->len += size;
+ 	skb_shinfo(skb)->nr_frags++;
+-	*len -= f->size;
++	*len -= size;
+ }
+ 
+ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
