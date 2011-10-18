@@ -1,92 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab1JRLdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 07:33:00 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:33612 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab1JRLc7 (ORCPT
+	id S1754721Ab1JRLep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 07:34:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63907 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab1JRLen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 07:32:59 -0400
-Date: Tue, 18 Oct 2011 09:32:51 -0200
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Philipp Herz - Profihost AG <p.herz@profihost.ag>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Vanilla-Kernel 3 - page allocation failure
-Message-ID: <20111018113251.GA3782@oc1711230544.ibm.com>
-References: <4E9D53FF.7090609@profihost.ag>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9D53FF.7090609@profihost.ag>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11101811-2362-0000-0000-00000535FDC8
+	Tue, 18 Oct 2011 07:34:43 -0400
+From: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+Subject: [PATCH] Smack: fix: invalid length set for the result of /smack/access
+Date: Tue, 18 Oct 2011 14:34:28 +0300
+Message-Id: <1318937668-3602-1-git-send-email-jarkko.j.sakkinen@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 12:25:03PM +0200, Philipp Herz - Profihost AG wrote:
-> After updating kernel (x86_64) to stable version 3 there are a few
-> messages appearing in the kernel log such as
-> 
-> kworker/0:1: page allocation failure: order:1, mode:0x20
-> mysql: page allocation failure: order:1, mode:0x20
-> php5: page allocation failure: order:1, mode:0x20
-> 
-> Searching the net showed that these messages are known to occur since 2004.
-> 
-> Some people were able to get rid of them by setting
-> /proc/sys/vm/min_free_kbytes to a high enough value. This does not
-> help in our case.
-> 
-> 
-> Is there a kernel comand line argument to avoid these messages?
-> 
-> As of mm/page_alloc.c these messages are marked to be only warning
-> messages and would not appear if 'gpf_mask' was set to __GFP_NOWARN
-> in function warn_alloc_failed.
-> 
-> How does this mask get set? Is it set by the "external" process
-> knocking at the memory manager?
-> 
+Forgot to update simple_transaction_set() to take terminator
+character into account.
 
-Hello, Philipp.
+Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+---
+ security/smack/smackfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This happens when kernel tries to allocate memory, sometimes in response
-to some request by the user space, but also in other contexts. For
-example, an interrupt by a network driver may try to allocate memory. In
-this context, it will use GFP_ATOMIC as a mask, for example. The most
-usual flags in the kernel are GFP_KERNEL and GFP_ATOMIC.
-
-> What is the magic behind the 'order' and 'mode'?
-> 
-
-The order is the binary log of the number of pages requested. So, order 1
-allocations are 2 pages, order 4 would be 16 pages, for example.
-
-The mode is, in fact, gfp_flags. 0x20 is GFP_ATOMIC. This kind of
-allocation cannot do IO or access the filesystem. Also, it cannot wait
-for reclaim memory from cache.
-
-This warning is usually followed by some statistics about memory use
-in your system. Please post it to give more information about this
-situation.
-
-I have watched some of this happen when lots of cache is used by some
-filesystems. Perhaps, some tweaking of the vm sysctl options may help,
-but I can point any magic tweaking right now.
-
-Regards,
-Cascardo.
-
-> I'm not a subscriber, so please CC me a copy of messages related to
-> the subject. I'm not sure if I can help much by looking at the
-> inside of the kernel, but I will try my best to answer any questions
-> concerning this issue.
-> 
-> Best regards, Philipp
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index 5498c4a..381eecf 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -1514,7 +1514,7 @@ static ssize_t smk_write_access(struct file *file, const char __user *buf,
+ 	data[0] = res == 0 ? '1' : '0';
+ 	data[1] = '\0';
+ 
+-	simple_transaction_set(file, 1);
++	simple_transaction_set(file, 2);
+ 	return SMK_LOADLEN;
+ }
+ 
+-- 
+1.7.5.4
 
