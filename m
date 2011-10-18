@@ -1,132 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab1JRMfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:35:43 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34578 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab1JRMfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:35:41 -0400
-Date: Tue, 18 Oct 2011 20:34:16 +0800
-From: "canquan.shen" <shencanquan@huawei.com>
-Subject: Re: [PATCH v5] acpi: Fix CPU hot removal problem
-In-reply-to: <CAErSpo63mEbhmDCYpYQZ7hmoEz3A03pbS513myt+GrwPG+pK5w@mail.gmail.com>
-X-Originating-IP: [10.166.80.105]
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>, len.brown@intel.com,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
-        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
-        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        khalid.aziz@hp.com
-Message-id: <4E9D7248.7060100@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 8BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:7.0.1) Gecko/20110929
- Thunderbird/7.0.1
-X-CFilter-Loop: Reflected
-References: <4E7D7468.4040506@huawei.com> <4E83E27E.5090608@linux.intel.com>
- <4E83E8EF.30806@huawei.com>
- <CAErSpo63mEbhmDCYpYQZ7hmoEz3A03pbS513myt+GrwPG+pK5w@mail.gmail.com>
+	id S1757609Ab1JRMiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:38:15 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39206 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754599Ab1JRMiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 08:38:13 -0400
+Date: Tue, 18 Oct 2011 14:38:09 +0200
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/9] mm: alloc_contig_range() added
+Message-ID: <20111018123809.GC6660@csn.ul.ie>
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <1317909290-29832-4-git-send-email-m.szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1317909290-29832-4-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len and Chen Gong,
-    What's you opinion on this patch?
+On Thu, Oct 06, 2011 at 03:54:43PM +0200, Marek Szyprowski wrote:
+> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> 
+> This commit adds the alloc_contig_range() function which tries
+> to allocate given range of pages.  It tries to migrate all
+> already allocated pages that fall in the range thus freeing them.
+> Once all pages in the range are freed they are removed from the
+> buddy system thus allocated for the caller to use.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: renamed some variables for easier code reading]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  include/linux/page-isolation.h |    2 +
+>  mm/page_alloc.c                |  148 ++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 150 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+> index b9fc428..774ecec 100644
+> --- a/include/linux/page-isolation.h
+> +++ b/include/linux/page-isolation.h
+> @@ -36,6 +36,8 @@ extern void unset_migratetype_isolate(struct page *page);
+>  /* The below functions must be run on a range from a single zone. */
+>  extern unsigned long alloc_contig_freed_pages(unsigned long start,
+>  					      unsigned long end, gfp_t flag);
+> +extern int alloc_contig_range(unsigned long start, unsigned long end,
+> +			      gfp_t flags);
+>  extern void free_contig_pages(unsigned long pfn, unsigned nr_pages);
+>  
+>  /*
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index fbfb920..8010854 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5773,6 +5773,154 @@ void free_contig_pages(unsigned long pfn, unsigned nr_pages)
+>  	}
+>  }
+>  
+> +static unsigned long pfn_to_maxpage(unsigned long pfn)
+> +{
+> +	return pfn & ~(MAX_ORDER_NR_PAGES - 1);
+> +}
+> +
 
-    Thanks.
+pfn_to_maxpage is a very confusing name here. It would be preferable to
+create a MAX_ORDER_MASK that you apply directly.
 
----
-canquan.shen
-2011-10-18
+Maybe something like SECTION_ALIGN_UP and SECTION_ALIGN_DOWN.
 
-On 2011/9/30 13:20, Bjorn Helgaas wrote:
-> On Wed, Sep 28, 2011 at 9:41 PM, canquan.shen<shencanquan@huawei.com>  wrote:
->>
->> On 2011/9/29 11:14, Chen Gong wrote:
->>>
->>> 于 2011/9/24 14:10, canquan.shen 写道:
->>>>
->>>> We run linux as a guest in Xen environment. When we used the xen tools
->>>> (xm vcpu-set<n>) to hot add and remove vcpu to and from the guest, we
->>>> encountered the failure on vcpu removal. We found the reason is that it
->>>> did't go to really remove cpu in the cpu removal code path.
->>>>
->>>> This patch adds acpi_bus_hot_remove_device in
->>>> acpi_process_hotplug_notify to
->>>> fix this issue. With this patch, it works fine for us.
->>>>
->>>> Signed-off-by: Canquan Shen<shencanquan@huawei.com>
->>>> ---
->>>> drivers/acpi/processor_driver.c | 13 +------------
->>>> drivers/acpi/scan.c | 4 ++--
->>>> include/acpi/acpi_bus.h | 1 +
->>>> 3 files changed, 4 insertions(+), 14 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/processor_driver.c
->>>> b/drivers/acpi/processor_driver.c
->>>> index a4e0f1b..8429688 100644
->>>> --- a/drivers/acpi/processor_driver.c
->>>> +++ b/drivers/acpi/processor_driver.c
->>>> @@ -665,18 +665,7 @@ static void
->>>> acpi_processor_hotplug_notify(acpi_handle handle,
->>>> case ACPI_NOTIFY_EJECT_REQUEST:
->>>> ACPI_DEBUG_PRINT((ACPI_DB_INFO,
->>>> "received ACPI_NOTIFY_EJECT_REQUEST\n"));
->>>> -
->>>> - if (acpi_bus_get_device(handle,&device)) {
->>>> - printk(KERN_ERR PREFIX
->>>> - "Device don't exist, dropping EJECT\n");
->>>> - break;
->>>> - }
->>>> - pr = acpi_driver_data(device);
->>>> - if (!pr) {
->>>> - printk(KERN_ERR PREFIX
->>>> - "Driver data is NULL, dropping EJECT\n");
->>>> - return;
->>>> - }
->>>> + acpi_bus_hot_remove_device(handle);
->>>
->>> As the description in __acpi_os_execute(in acpi_os_hotplug_execute),
->>> /*
->>> * We can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
->>> * because the hotplug code may call driver .remove() functions,
->>> * which invoke flush_scheduled_work/acpi_os_wait_events_complete
->>> * to flush these workqueues.
->>> */
->>> If so, why not using following call:
->>>
->>> acpi_os_hotplug_execute(acpi_bus_hot_remove_device, acpi_device->handle);
->>>
->>>
->>
->> It is ok if using the acpi_os_hotplug_execute. but it is complex and more time for removal cpu because it is add to queue and some time the work will be called.
->> I think that it is clear to call directly acpi_bus_hot_remove_device function in acpi_processor_hotplug_notify.
->
-> Chen, you're right that the CPU hot-remove notifier is running in a
-> workqueue, we are proposing  that the notifier call
-> acpi_bus_hot_remove_device(), which calls the .remove() method, and
-> that can cause a deadlock if .remove() waits for the workqueue to be
-> flushed.
->
-> The usual way this deadlock happens is when the .remove() method uses
-> acpi_remove_notify_handler().  But the processor_driver .remove()
-> method doesn't do anything with notify handler registration; the
-> handler is registered/unregistered by the module init/exit functions.
-> So I don't think we need to use acpi_os_hotplug_execute() in this case
-> because I don't think there's a risk of deadlock.
->
-> However, if new CPU devices appear in the namespace after module-init,
-> I don't think processor_driver will handle them correctly.  This looks
-> like just another artifact of our screwed-up ACPI hotplug handling.
->
-> Bjorn
->
-> .
->
+> +static unsigned long pfn_to_maxpage_up(unsigned long pfn)
+> +{
+> +	return ALIGN(pfn, MAX_ORDER_NR_PAGES);
+> +}
+> +
+> +#define MIGRATION_RETRY	5
+> +static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+> +{
+> +	int migration_failed = 0, ret;
+> +	unsigned long pfn = start;
+> +
+> +	/*
+> +	 * Some code "borrowed" from KAMEZAWA Hiroyuki's
+> +	 * __alloc_contig_pages().
+> +	 */
+> +
 
+There is no need to put a comment like this here. Credit him in the
+changelog.
 
+> +	/* drop all pages in pagevec and pcp list */
+> +	lru_add_drain_all();
+> +	drain_all_pages();
+> +
+
+Very similar to migrate_prep(). drain_all_pages should not be required
+at this point.
+
+> +	for (;;) {
+> +		pfn = scan_lru_pages(pfn, end);
+
+scan_lru_pages() is inefficient, this is going to be costly.
+
+> +		if (!pfn || pfn >= end)
+> +			break;
+> +
+> +		ret = do_migrate_range(pfn, end);
+> +		if (!ret) {
+> +			migration_failed = 0;
+> +		} else if (ret != -EBUSY
+> +			|| ++migration_failed >= MIGRATION_RETRY) {
+> +			return ret;
+> +		} else {
+> +			/* There are unstable pages.on pagevec. */
+> +			lru_add_drain_all();
+> +			/*
+> +			 * there may be pages on pcplist before
+> +			 * we mark the range as ISOLATED.
+> +			 */
+> +			drain_all_pages();
+> +		}
+> +		cond_resched();
+> +	}
+> +
+> +	if (!migration_failed) {
+> +		/* drop all pages in pagevec and pcp list */
+> +		lru_add_drain_all();
+> +		drain_all_pages();
+> +	}
+> +
+> +	/* Make sure all pages are isolated */
+> +	if (WARN_ON(test_pages_isolated(start, end)))
+> +		return -EBUSY;
+> +
+
+In some respects, this is very similar to mm/compaction#compact_zone().
+They could have shared significant code if you reworked compact_zone
+to work on ranges of memory and express compact_zone to operate on
+zone->zone_start_pfn zone->zone_start_pfn+zone->spanned_pages . The
+compaction code is 
+
+> +	return 0;
+> +}
+> +
+> +/**
+> + * alloc_contig_range() -- tries to allocate given range of pages
+> + * @start:	start PFN to allocate
+> + * @end:	one-past-the-last PFN to allocate
+> + * @flags:	flags passed to alloc_contig_freed_pages().
+> + *
+> + * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
+> + * aligned, hovewer it's callers responsibility to guarantee that we
+> + * are the only thread that changes migrate type of pageblocks the
+> + * pages fall in.
+> + *
+> + * Returns zero on success or negative error code.  On success all
+> + * pages which PFN is in (start, end) are allocated for the caller and
+> + * need to be freed with free_contig_pages().
+> + */
+> +int alloc_contig_range(unsigned long start, unsigned long end,
+> +		       gfp_t flags)
+> +{
+> +	unsigned long outer_start, outer_end;
+> +	int ret;
+> +
+> +	/*
+> +	 * What we do here is we mark all pageblocks in range as
+> +	 * MIGRATE_ISOLATE.  Because of the way page allocator work, we
+> +	 * align the range to MAX_ORDER pages so that page allocator
+> +	 * won't try to merge buddies from different pageblocks and
+> +	 * change MIGRATE_ISOLATE to some other migration type.
+> +	 *
+
+This part is new. compaction does not need to do this nor does it need
+to. I can see though why it would be important for CMA though and
+calling start_isolate_page_range() is reasonable.
+
+There are alignment problems because it'll be on a pageblock boundary
+but that is not a significant problem.
+
+> +	 * Once the pageblocks are marked as MIGRATE_ISOLATE, we
+> +	 * migrate the pages from an unaligned range (ie. pages that
+> +	 * we are interested in).  This will put all the pages in
+> +	 * range back to page allocator as MIGRATE_ISOLATE.
+> +	 *
+> +	 * When this is done, we take the pages in range from page
+> +	 * allocator removing them from the buddy system.  This way
+> +	 * page allocator will never consider using them.
+> +	 *
+> +	 * This lets us mark the pageblocks back as
+> +	 * MIGRATE_CMA/MIGRATE_MOVABLE so that free pages in the
+> +	 * MAX_ORDER aligned range but not in the unaligned, original
+> +	 * range are put back to page allocator so that buddy can use
+> +	 * them.
+> +	 */
+> +
+> +	ret = start_isolate_page_range(pfn_to_maxpage(start),
+> +				       pfn_to_maxpage_up(end));
+> +	if (ret)
+> +		goto done;
+> +
+> +	ret = __alloc_contig_migrate_range(start, end);
+> +	if (ret)
+> +		goto done;
+> +
+> +	/*
+> +	 * Pages from [start, end) are within a MAX_ORDER_NR_PAGES
+> +	 * aligned blocks that are marked as MIGRATE_ISOLATE.  What's
+> +	 * more, all pages in [start, end) are free in page allocator.
+> +	 * What we are going to do is to allocate all pages from
+> +	 * [start, end) (that is remove them from page allocater).
+> +	 *
+> +	 * The only problem is that pages at the beginning and at the
+> +	 * end of interesting range may be not aligned with pages that
+> +	 * page allocator holds, ie. they can be part of higher order
+> +	 * pages.  Because of this, we reserve the bigger range and
+> +	 * once this is done free the pages we are not interested in.
+> +	 */
+> +
+> +	ret = 0;
+> +	while (!PageBuddy(pfn_to_page(start & (~0UL << ret))))
+> +		if (WARN_ON(++ret >= MAX_ORDER))
+> +			return -EINVAL;
+> +
+> +	outer_start = start & (~0UL << ret);
+> +	outer_end   = alloc_contig_freed_pages(outer_start, end, flags);
+> +
+> +	/* Free head and tail (if any) */
+> +	if (start != outer_start)
+> +		free_contig_pages(outer_start, start - outer_start);
+> +	if (end != outer_end)
+> +		free_contig_pages(end, outer_end - end);
+> +
+> +	ret = 0;
+> +done:
+> +	undo_isolate_page_range(pfn_to_maxpage(start), pfn_to_maxpage_up(end));
+> +	return ret;
+> +}
+> +
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+>  /*
+>   * All pages in the range must be isolated before calling this.
