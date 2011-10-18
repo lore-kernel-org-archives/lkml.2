@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab1JRGHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 02:07:31 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51670 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751306Ab1JRGHa (ORCPT
+	id S1752976Ab1JRGH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 02:07:56 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53402 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab1JRGHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 02:07:30 -0400
+	Tue, 18 Oct 2011 02:07:55 -0400
+Date: Tue, 18 Oct 2011 14:07:48 +0800
+From: wzt <wzt.wzt@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: serue@us.ibm.com, xemul@openvz.org, ebiederm@xmission.com
+Subject: [PATCH] kernel/nsproxy.c: Fix memory leak of create_new_namespaces().
+Message-ID: <20111018060747.GA462@program>
 MIME-Version: 1.0
-In-Reply-To: <20111013173204.GL28290@legolas.emea.dhcp.ti.com>
-References: <1318319609-20522-1-git-send-email-keshava_mgowda@ti.com>
-	<20111013173204.GL28290@legolas.emea.dhcp.ti.com>
-Date: Tue, 18 Oct 2011 11:37:28 +0530
-Message-ID: <CAP05o4K6RS5YawJ8POy7ZifJ7W8MRA0d77iwjZZ1ojTQnQS=nA@mail.gmail.com>
-Subject: Re: [PATCH v14] mfd: omap: usb: Runtime PM support
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: balbi@ti.com, sameo@linux.intel.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, khilman@ti.com, b-cousson@ti.com,
-        paul@pwsan.com, gadiyar@ti.com, parthab@india.ti.com, tony@atomide.com,
-        johnstul@us.ibm.com, vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 11:02 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Tue, Oct 11, 2011 at 01:23:29PM +0530, Keshava Munegowda wrote:
->> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->>
->> The usbhs core driver does not enable/disable the interface and
->> functional clocks directly, These clocks are handled by runtime pm,
->> hence instead of the clock enable/disable, the runtime pm APIS are
->> used. however,the optional clocks and port clocks are handled by
->> the usbhs core.
->>
->> Dependency:
->> This patch is dependent on this series:
->> [PATCH 0/5 v13 or latest version] omap: usb: host: Runtime PM preparation
->> for EHCI and OHCI drivers.
->>
->> Validation performed:
->> The global suspend/resume of EHCI and OHCI is validated on
->> OMAP3430 sdp board with this patch combined with the series:
->> [PATCH 0/5 v13 or latest version] omap: usb: host: Runtime PM preparation
->> for EHCI and OHCI drivers.
->>
->> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->> Reviewed-by: Kevin Hilman <khilman@ti.com>
->> Reviewed-by: Partha Basak <parthab@india.ti.com>
->
+copy_pid_ns() has allocted some memory via create_pid_namespace(), if copy_net_ns()
+failed via create_new_namespaces(), it will cause memory leak. The copy_utsname()
+have the same problem.
 
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-Hi Sameo
-        The prior series of this patch is acked by balbi , paul ,
-benoit and kevin.
-I request if you think everything is OK in this patch please ack ;
-otherwise if you have any review comment I have to close them ASAP.
+---
+ kernel/nsproxy.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Thanks and Regards
-keshava
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 9aeab4b..fdcec31 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -99,14 +99,18 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 	return new_nsp;
+ 
+ out_net:
+-	if (new_nsp->pid_ns)
++	if (new_nsp->pid_ns) {
+ 		put_pid_ns(new_nsp->pid_ns);
++		free_pid_ns(&new_nsp->pid_ns->kref);
++	}
+ out_pid:
+ 	if (new_nsp->ipc_ns)
+ 		put_ipc_ns(new_nsp->ipc_ns);
+ out_ipc:
+-	if (new_nsp->uts_ns)
++	if (new_nsp->uts_ns) {
+ 		put_uts_ns(new_nsp->uts_ns);
++		free_uts_ns(&new_nsp->pid_ns->kref);
++	}
+ out_uts:
+ 	if (new_nsp->mnt_ns)
+ 		put_mnt_ns(new_nsp->mnt_ns);
+-- 
+1.7.4.1
+
