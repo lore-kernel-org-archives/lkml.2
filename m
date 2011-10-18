@@ -1,172 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab1JRPfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 11:35:19 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55129 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932944Ab1JRPfM (ORCPT
+	id S933130Ab1JRPh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 11:37:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52888 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932992Ab1JRPhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 11:35:12 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com
-Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V7 17/26] richacl: Permission check algorithm
-Date: Tue, 18 Oct 2011 21:02:52 +0530
-Message-Id: <1318951981-5508-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 11101805-5140-0000-0000-0000001445FB
+	Tue, 18 Oct 2011 11:37:53 -0400
+Message-ID: <4E9D9D40.1030800@gmail.com>
+Date: Tue, 18 Oct 2011 12:37:36 -0300
+From: "Tomas M." <tmezzadra@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Frederik Deweerdt <frederik.deweerdt@xprog.eu>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        laurent.pinchart@ideasonboard.com, hverkuil@xs4all.nl,
+        mchehab@redhat.com
+Subject: Re: [patch] Avoid NULL deref in v4l2_device_release (was Re: kernel
+ OOPS when releasing usb webcam (random))
+References: <4E9CB0C2.3030902@gmail.com> <20111018001909.GA29706@gambetta>
+In-Reply-To: <20111018001909.GA29706@gambetta>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@kernel.org>
+Hi Everyone,
 
-As in the standard POSIX file permission model, each process is the
-owner, group, or other file class.  A process is
+Yes, this appears to have fixed the issue.
 
-  - in the owner file class if it owns the file,
-  - in the group file class if it is in the file's owning group or it
-    matches any of the user or group entries, and
-  - in the other file class otherwise.
+thanks!
 
-Each file class is associated with a file mask.
-
-A richacl grants a requested access if the NFSv4 acl in the richacl
-grants the requested permissions (according to the NFSv4 permission
-check algorithm) and the file mask that applies to the process includes
-the requested permissions.
-
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/richacl_base.c       |   99 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl.h |    2 +
- 2 files changed, 101 insertions(+), 0 deletions(-)
-
-diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-index a5f215e..e9c2f30 100644
---- a/fs/richacl_base.c
-+++ b/fs/richacl_base.c
-@@ -392,3 +392,102 @@ richacl_chmod(struct richacl *acl, mode_t mode)
- 	return clone;
- }
- EXPORT_SYMBOL_GPL(richacl_chmod);
-+
-+/**
-+ * richacl_permission  -  richacl permission check algorithm
-+ * @inode:	inode to check
-+ * @acl:	rich acl of the inode
-+ * @mask:	requested access (ACE4_* bitmask)
-+ *
-+ * Checks if the current process is granted @mask flags in @acl.
-+ */
-+int
-+richacl_permission(struct inode *inode, const struct richacl *acl,
-+		   unsigned int mask)
-+{
-+	const struct richace *ace;
-+	unsigned int requested = mask, denied = 0;
-+	int in_owning_group = in_group_p(inode->i_gid);
-+	int in_owner_or_group_class = in_owning_group;
-+
-+	/*
-+	 * We don't need to know which class the process is in when the acl is
-+	 * not masked.
-+	 */
-+	if (!(acl->a_flags & ACL4_MASKED))
-+		in_owner_or_group_class = 1;
-+
-+	/*
-+	 * A process is
-+	 *   - in the owner file class if it owns the file,
-+	 *   - in the group file class if it is in the file's owning group or
-+	 *     it matches any of the user or group entries, and
-+	 *   - in the other file class otherwise.
-+	 */
-+
-+	/*
-+	 * Check if the acl grants the requested access and determine which
-+	 * file class the process is in.
-+	 */
-+	richacl_for_each_entry(ace, acl) {
-+		unsigned int ace_mask = ace->e_mask;
-+
-+		if (richace_is_inherit_only(ace))
-+			continue;
-+		if (richace_is_owner(ace)) {
-+			if (current_fsuid() != inode->i_uid)
-+				continue;
-+			goto is_owner;
-+		} else if (richace_is_group(ace)) {
-+			if (!in_owning_group)
-+				continue;
-+		} else if (richace_is_unix_id(ace)) {
-+			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
-+				if (!in_group_p(ace->u.e_id))
-+					continue;
-+			} else {
-+				if (current_fsuid() != ace->u.e_id)
-+					continue;
-+			}
-+		} else
-+			goto is_everyone;
-+
-+is_owner:
-+		/* The process is in the owner or group file class. */
-+		in_owner_or_group_class = 1;
-+
-+is_everyone:
-+		/* Check which mask flags the ACE allows or denies. */
-+		if (richace_is_deny(ace))
-+			denied |= ace_mask & mask;
-+		mask &= ~ace_mask;
-+
-+		/*
-+		 * Keep going until we know which file class
-+		 * the process is in.
-+		 */
-+		if (!mask && in_owner_or_group_class)
-+			break;
-+	}
-+	denied |= mask;
-+
-+	if (acl->a_flags & ACL4_MASKED) {
-+		unsigned int file_mask;
-+
-+		/*
-+		 * The file class a process is in determines which file mask
-+		 * applies.  Check if that file mask also grants the requested
-+		 * access.
-+		 */
-+		if (current_fsuid() == inode->i_uid)
-+			file_mask = acl->a_owner_mask;
-+		else if (in_owner_or_group_class)
-+			file_mask = acl->a_group_mask;
-+		else
-+			file_mask = acl->a_other_mask;
-+		denied |= requested & ~file_mask;
-+	}
-+
-+	return denied ? -EACCES : 0;
-+}
-+EXPORT_SYMBOL_GPL(richacl_permission);
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index be7db1f..86f7339 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -289,5 +289,7 @@ extern unsigned int richacl_mode_to_mask(mode_t);
- extern unsigned int richacl_want_to_mask(unsigned int);
- extern void richacl_compute_max_masks(struct richacl *);
- extern struct richacl *richacl_chmod(struct richacl *, mode_t);
-+extern int richacl_permission(struct inode *, const struct richacl *,
-+			      unsigned int);
- 
- #endif /* __RICHACL_H */
--- 
-1.7.5.4
-
+On 10/17/2011 09:19 PM, Frederik Deweerdt wrote:
+> [Adding relevant people to CCs]
+>
+> Hi Tomas,
+>
+> On Mon, Oct 17, 2011 at 07:48:34PM -0300, Tomas M. wrote:
+>> im getting the following null pointer dereference from time to time
+>> when releasing a usb camera.
+>>
+> [...]
+>> BUG: unable to handle kernel NULL pointer dereference at 0000006c
+>> IP: [<f90be6c2>] v4l2_device_release+0xa2/0xf0 [videodev]
+>> *pde = 00000000
+>> Oops: 0000 [#1] PREEMPT SMP
+>> Modules linked in: fuse arc4 rt73usb rt2x00usb rt2x00lib mac80211
+>> cfg80211 rfkill gspca_zc3xx gspca_main videodev joydev
+>> snd_hda_codec_si3054 sg 8139too snd_hda_codec_realtek firewire_ohci
+>> firewire_core mmc_core snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
+>> snd_timer snd soundcore mii crc_itu_t snd_page_alloc iTCO_wdt
+>> iTCO_vendor_support i2c_i801 evdev psmouse thermal battery serio_raw
+>> ac cpufreq_ondemand acpi_cpufreq freq_table processor mperf usbhid
+>> hid ext3 jbd mbcache sd_mod sr_mod cdrom pata_acpi uhci_hcd ata_piix
+>> ehci_hcd libata scsi_mod usbcore [last unloaded: sdhci]
+>>
+>> Pid: 171, comm: khubd Not tainted 3.1.0-rc9 #66 Everex Systems, Inc.
+>> Everex StepNote Series/Everex StepNote Series
+>> EIP: 0060:[<f90be6c2>] EFLAGS: 00010292 CPU: 0
+>> EIP is at v4l2_device_release+0xa2/0xf0 [videodev]
+>> EAX: 00000000 EBX: f5636004 ECX: 00000000 EDX: 00000000
+>> ESI: f5636000 EDI: 00000000 EBP: f563600c ESP: f5627e38
+>>   DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+>> Process khubd (pid: 171, ti=f5626000 task=f554dc00 task.ti=f5626000)
+>> Stack:
+>>   ef000480 c1433780 f5474b00 c12343f8 f54e7e1c 00000000 c114737a f563600c
+>>   f5636028 c114605d f5636028 c1146020 f91512d4 00000000 c114737a f54e7e1c
+>>   f54e7e00 f81623f4 f56d4000 f54e7e1c f91512d4 f56d4064 00000001 c12373b7
+>> Call Trace:
+>>   [<c12343f8>] ? device_release+0x18/0x80
+>>   [<c114737a>] ? kref_put+0x2a/0x60
+>>   [<c114605d>] ? kobject_release+0x3d/0xa0
+>>   [<c1146020>] ? kobject_del+0x30/0x30
+>>   [<c114737a>] ? kref_put+0x2a/0x60
+>>   [<f81623f4>] ? usb_unbind_interface+0x34/0x130 [usbcore]
+>>   [<c12373b7>] ? __device_release_driver+0x57/0xb0
+>>   [<c123742d>] ? device_release_driver+0x1d/0x30
+>>   [<c1236fc2>] ? bus_remove_device+0x72/0x90
+>>   [<c12350bf>] ? device_del+0xdf/0x150
+>>   [<f8160591>] ? usb_disable_device+0x81/0x180 [usbcore]
+>>   [<f8159b3b>] ? usb_disconnect+0x8b/0x110 [usbcore]
+>>   [<f815b76c>] ? hub_thread+0x97c/0x1180 [usbcore]
+>>   [<c102d80b>] ? pick_next_task_fair+0x8b/0xe0
+>>   [<c1052600>] ? abort_exclusive_wait+0x90/0x90
+>>   [<f815adf0>] ? usb_remote_wakeup+0x40/0x40 [usbcore]
+>>   [<c1052029>] ? kthread+0x69/0x70
+>>   [<c1051fc0>] ? kthread_worker_fn+0x150/0x150
+>>   [<c130d8be>] ? kernel_thread_helper+0x6/0xd
+>> Code: 83 94 01 00 00 c7 83 60 01 00 00 00 00 00 00 0f b7 93 9c 01 00
+>> 00 c1 e0 05 f0 0f b3 90 c0 e7 0c f9 b8 20 e1 0c f9 e8 4e cf 24 c8
+>> <8b>  57 6c 89 f0 85 d2 74 25 ff 93 c8 01 00 00 85 ff 74 21 89 f8
+>> EIP: [<f90be6c2>] v4l2_device_release+0xa2/0xf0 [videodev] SS:ESP
+>> 0068:f5627e38
+>> CR2: 000000000000006c
+>> ---[ end trace 39522f0f1757c8f8 ]---
+>
+> The trace hints at a v4l2 being NULL in a newly introduced
+> v4l2_dev->release check. Attached patch below.
+>
+> Regards,
+> Frederik
+>
+> [media] v4l: Avoid NULL pointer dereference
+>
+> 8280b662df96f4172c4972b14a4aec0daf272b8f introduced a potential NULL
+> deref in the case v4l2_dev is NULL.
+>
+> Reported-by: Tomas M.<tmezzadra@gmail.com>
+> Signed-off-by: Frederik Deweerdt<frederik.deweerdt@xprog.eu>
+>
+> diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
+> index d721565..5c0fa64 100644
+> --- a/drivers/media/video/v4l2-dev.c
+> +++ b/drivers/media/video/v4l2-dev.c
+> @@ -181,7 +181,7 @@ static void v4l2_device_release(struct device *cd)
+>   	 * TODO: In the long run all drivers that use v4l2_device should use the
+>   	 * v4l2_device release callback. This check will then be unnecessary.
+>   	 */
+> -	if (v4l2_dev->release == NULL)
+> +	if (v4l2_dev != NULL&&  v4l2_dev->release == NULL)
+>   		v4l2_dev = NULL;
+>
+>   	/* Release video_device and perform other
+>
