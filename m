@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab1JRI23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:28:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55184 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab1JRI20 (ORCPT
+	id S1754942Ab1JRIas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:30:48 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63681 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab1JRIaq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:28:26 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
-        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
-        saaguirre@ti.com, jic23@cam.ac.uk, hemanthv@ti.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 0/5] Add spi support for CMA3000 driver and new driver CMR3000
-Date: Tue, 18 Oct 2011 10:28:01 +0200
-Message-Id: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.7
+	Tue, 18 Oct 2011 04:30:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111018074211.GA13483@flint.arm.linux.org.uk>
+References: <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	<1317966346.1573.2252.camel@vkoul-udesk3>
+	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
+	<CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
+	<20111018074211.GA13483@flint.arm.linux.org.uk>
+Date: Tue, 18 Oct 2011 14:00:45 +0530
+Message-ID: <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following set of patches add spi and device tree support for the cma3000 driver and also
-add support for the cmr3000 gyroscope.
+On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
+> On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
+>> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
+>> > With item #1 above being a separate topic, I may have a problem with #2
+>> > as well: dma_addr_t is sized for the local platform and not guaranteed
+>> > to be a 64-bit value (which may be required by a target).
+>> > Agree with #3 (if #1 and #2 work).
+>> >
+>> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
+>
+> That's just an idiotic suggestion - there's no other way to put that.
+> Let's have some sanity here.
+>
+Yeah, I am not proud of the workaround, so I only probed the option.
+I think I need to explain myself.
 
-Ricardo Ribalda Delgado (5):
-  input/cma3000_d0x: Support devices without pdata
-  input/cma3000_d0x: Check silicon version
-  input/cma3000_d0x: Keep configuration on poweroff
-  input/cma3000_d0x: Add CMA3000 spi support
-  Input: add CMR3000 gyrsocope driver
+The case here is that even a 32-bit RapidIO host could ask transfer against
+64-bit address space on a remote device. And vice versa 64->32.
 
- drivers/input/misc/Kconfig           |   38 +++-
- drivers/input/misc/Makefile          |    3 +
- drivers/input/misc/cma3000_d0x.c     |   42 ++++-
- drivers/input/misc/cma3000_d0x_spi.c |  178 +++++++++++++++
- drivers/input/misc/cmr3000_d0x.c     |  400 ++++++++++++++++++++++++++++++++++
- drivers/input/misc/cmr3000_d0x.h     |   45 ++++
- drivers/input/misc/cmr3000_d0x_spi.c |  178 +++++++++++++++
- include/linux/input/cmr3000.h        |   54 +++++
- 8 files changed, 932 insertions(+), 6 deletions(-)
- create mode 100644 drivers/input/misc/cma3000_d0x_spi.c
- create mode 100644 drivers/input/misc/cmr3000_d0x.c
- create mode 100644 drivers/input/misc/cmr3000_d0x.h
- create mode 100644 drivers/input/misc/cmr3000_d0x_spi.c
- create mode 100644 include/linux/input/cmr3000.h
+> dma_addr_t is the size of a DMA address for the CPU architecture being
+> built.  This has no relationship to what any particular DMA engine uses.
+>
+Yes, so far the dmaengine ever only needed to transfer within platform's
+address-space. So the assumption that src and dst addresses could
+be contained within dma_addr_t, worked.
+If the damengine is to get rid of that assumption/constraint, the memcpy,
+slave_sg etc need to accept addresses specified in bigger of the host and
+remote address space, and u64 is the safe option.
+Ultimately dma_addr_t is either u32 or u64.
 
--- 
-1.7.7
-
+If you still think that's unacceptable, please do show us the optimal
+path forward.
