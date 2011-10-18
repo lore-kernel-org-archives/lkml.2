@@ -1,203 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab1JRMNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 08:13:42 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:43146 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab1JRMNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 08:13:41 -0400
-Message-ID: <4E9D6C05.9040106@snapgear.com>
-Date: Tue, 18 Oct 2011 22:07:33 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1757580Ab1JRMVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 08:21:15 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49820 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754132Ab1JRMVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 08:21:13 -0400
+Date: Tue, 18 Oct 2011 14:21:09 +0200
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
+Message-ID: <20111018122109.GB6660@csn.ul.ie>
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/21 v2] m68k: drop unused Kconfig symbols
-References: <1318925407.6414.22.camel@x61.thuisdomein>
-In-Reply-To: <1318925407.6414.22.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+At this point, I'm going to apologise for not reviewing this a long long
+time ago.
 
-On 10/18/2011 06:10 PM, Paul Bolle wrote:
-> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
+On Thu, Oct 06, 2011 at 03:54:42PM +0200, Marek Szyprowski wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> This commit introduces alloc_contig_freed_pages() function
+> which allocates (ie. removes from buddy system) free pages
+> in range. Caller has to guarantee that all pages in range
+> are in buddy system.
+> 
+
+Straight away, I'm wondering why you didn't use
+
+mm/compaction.c#isolate_freepages()
+
+It knows how to isolate pages within ranges. All its control information
+is passed via struct compact_control() which I recognise may be awkward
+for CMA but compaction.c know how to manage all the isolated pages and
+pass them to migrate.c appropriately.
+
+I haven't read all the patches yet but isolate_freepages() does break
+everything up into order-0 pages. This may not be to your liking but it
+would not be possible to change.
+
+> Along with this function, a free_contig_pages() function is
+> provided which frees all (or a subset of) pages allocated
+> with alloc_contig_free_pages().
+> 
+
+mm/compaction.c#release_freepages()
+
+> Michal Nazarewicz has modified the function to make it easier
+> to allocate not MAX_ORDER_NR_PAGES aligned pages by making it
+> return pfn of one-past-the-last allocated page.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> [m.nazarewicz: added checks if all allocated pages comes from the
+> same memory zone]
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: fixed wrong condition in VM_BUG_ON assert]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > ---
-> 0) Still only "git grep" tested.
->
-> 1) New in v2:
-> - redone for linux-next master
-> - dropped a few "select EMAC_INC" and "select HW_FEITH" lines that
->    weren't in current mainline
-> - dropped SOM5282EM too (discovered this while doing this second
->    version, my scripts aren't smart enough too catch it)
+>  include/linux/mmzone.h         |   16 +++++++++
+>  include/linux/page-isolation.h |    5 +++
+>  mm/page_alloc.c                |   67 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 88 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index a2760bb..862a834 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -1168,6 +1168,22 @@ static inline int memmap_valid_within(unsigned long pfn,
+>  }
+>  #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
+>  
+> +#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
+> +/*
+> + * Both PFNs must be from the same zone!  If this function returns
+> + * true, pfn_to_page(pfn1) + (pfn2 - pfn1) == pfn_to_page(pfn2).
+> + */
+> +static inline bool zone_pfn_same_memmap(unsigned long pfn1, unsigned long pfn2)
+> +{
+> +	return pfn_to_section_nr(pfn1) == pfn_to_section_nr(pfn2);
+> +}
+> +
 
-Hmm. I don't want to lose the SOM5282EM config option. Although it
-isn't used inside the code it does let the configurer know that this
-specific board is supported.
+Why do you care what section the page is in? The zone is important all
+right, but not the section. Also, offhand I'm unsure if being in the
+same section guarantees the same zone. sections are ordinarily fully
+populated (except on ARM but hey) but I can't remember anything
+enforcing that zones be section-aligned.
 
-Regards
-Greg
+Later I think I see that the intention was to reduce the use of
+pfn_to_page(). You can do this in a more general fashion by checking the
+zone boundaries and resolving the pfn->page every MAX_ORDER_NR_PAGES.
+That will not be SPARSEMEM specific.
 
+> +#else
+> +
+> +#define zone_pfn_same_memmap(pfn1, pfn2) (true)
+> +
+> +#endif
+> +
+>  #endif /* !__GENERATING_BOUNDS.H */
+>  #endif /* !__ASSEMBLY__ */
+>  #endif /* _LINUX_MMZONE_H */
+> diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+> index 58cdbac..b9fc428 100644
+> --- a/include/linux/page-isolation.h
+> +++ b/include/linux/page-isolation.h
+> @@ -33,6 +33,11 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
+>  extern int set_migratetype_isolate(struct page *page);
+>  extern void unset_migratetype_isolate(struct page *page);
+>  
+> +/* The below functions must be run on a range from a single zone. */
+> +extern unsigned long alloc_contig_freed_pages(unsigned long start,
+> +					      unsigned long end, gfp_t flag);
+> +extern void free_contig_pages(unsigned long pfn, unsigned nr_pages);
+> +
+>  /*
+>   * For migration.
+>   */
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index bf4399a..fbfb920 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5706,6 +5706,73 @@ out:
+>  	spin_unlock_irqrestore(&zone->lock, flags);
+>  }
+>  
+> +unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
+> +				       gfp_t flag)
+> +{
+> +	unsigned long pfn = start, count;
+> +	struct page *page;
+> +	struct zone *zone;
+> +	int order;
+> +
+> +	VM_BUG_ON(!pfn_valid(start));
 
->   arch/m68k/Kconfig.devices |   28 +------------------------
->   arch/m68k/Kconfig.machine |   50 ---------------------------------------------
->   2 files changed, 1 insertions(+), 77 deletions(-)
->
-> diff --git a/arch/m68k/Kconfig.devices b/arch/m68k/Kconfig.devices
-> index d964dc4..dbff941 100644
-> --- a/arch/m68k/Kconfig.devices
-> +++ b/arch/m68k/Kconfig.devices
-> @@ -77,32 +77,6 @@ config MULTIFACE_III_TTY
->
->   	  To compile this driver as a module, choose M here.
->
-> -config GVPIOEXT
-> -	tristate "GVP IO-Extender support"
-> -	depends on PARPORT=n&&  ZORRO
-> -	help
-> -	  If you want to use a GVP IO-Extender serial card in Linux, say Y.
-> -	  Otherwise, say N.
-> -
-> -config GVPIOEXT_LP
-> -	tristate "GVP IO-Extender parallel printer support"
-> -	depends on GVPIOEXT
-> -	help
-> -	  Say Y to enable driving a printer from the parallel port on your
-> -	  GVP IO-Extender card, N otherwise.
-> -
-> -config GVPIOEXT_PLIP
-> -	tristate "GVP IO-Extender PLIP support"
-> -	depends on GVPIOEXT
-> -	help
-> -	  Say Y to enable doing IP over the parallel port on your GVP
-> -	  IO-Extender card, N otherwise.
-> -
-> -config MAC_HID
-> -	bool
-> -	depends on INPUT_ADBHID
-> -	default y
-> -
->   config HPDCA
->   	tristate "HP DCA serial support"
->   	depends on DIO&&  SERIAL_8250
-> @@ -145,7 +119,7 @@ config DN_SERIAL
->
->   config SERIAL_CONSOLE
->   	bool "Support for serial port console"
-> -	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO)&&  (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || GVPIOEXT=y || MULTIFACE_III_TTY=y || SERIAL=y || MVME147_SCC || SERIAL167 || MVME162_SCC || BVME6000_SCC || DN_SERIAL)
-> +	depends on (AMIGA || ATARI || SUN3 || SUN3X || VME || APOLLO)&&  (ATARI_MFPSER=y || ATARI_MIDI=y || AMIGA_BUILTIN_SERIAL=y || MULTIFACE_III_TTY=y || SERIAL=y || MVME147_SCC || SERIAL167 || MVME162_SCC || BVME6000_SCC || DN_SERIAL)
->   	---help---
->   	  If you say Y here, it will be possible to use a serial port as the
->   	  system console (the system console is the device which receives all
-> diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
-> index 7d5c20b..c19b514 100644
-> --- a/arch/m68k/Kconfig.machine
-> +++ b/arch/m68k/Kconfig.machine
-> @@ -303,16 +303,6 @@ config COBRA5282
->   	help
->   	  Support for the senTec COBRA5282 board.
->
-> -config EMAC_INC
-> -	bool
-> -
-> -config SOM5282EM
-> -	bool "EMAC.Inc SOM5282EM board support"
-> -	depends on M528x
-> -	select EMAC_INC
-> -	help
-> -	  Support for the EMAC.Inc SOM5282EM module.
-> -
->   config WILDFIRE
->   	bool "Intec Automation Inc. WildFire board support"
->   	depends on M528x
-> @@ -371,27 +361,21 @@ config FIREBEE
->   	help
->   	  Support for the FireBee ColdFire 5475 based board.
->
-> -config HW_FEITH
-> -	bool
-> -
->   config CLEOPATRA
->   	bool "Feith CLEOPATRA board support"
->   	depends on (M5307 || M5407)
-> -	select HW_FEITH
->   	help
->   	  Support for the Feith Cleopatra boards.
->
->   config CANCam
->   	bool "Feith CANCam board support"
->   	depends on M5272
-> -	select HW_FEITH
->   	help
->   	  Support for the Feith CANCam board.
->
->   config SCALES
->   	bool "Feith SCALES board support"
->   	depends on M5272
-> -	select HW_FEITH
->   	help
->   	  Support for the Feith SCALES board.
->
-> @@ -438,13 +422,6 @@ if !MMU || COLDFIRE
->
->   comment "Machine Options"
->
-> -config ROMFS_FROM_ROM
-> -	bool "ROMFS image not RAM resident"
-> -	depends on (NETtel || SNAPGEAR)
-> -	help
-> -	  The ROMfs filesystem will stay resident in the FLASH/ROM, not be
-> -	  moved into RAM.
-> -
->   config UBOOT
->   	bool "Support for U-Boot command line parameters"
->   	help
-> @@ -524,33 +501,6 @@ config KERNELBASE
->   	  a system with the RAM based at address 0, and leaving enough room
->   	  for the theoretical maximum number of 256 vectors.
->
-> -choice
-> -	prompt "RAM bus width"
-> -	default RAMAUTOBIT
-> -
-> -config RAMAUTOBIT
-> -	bool "AUTO"
-> -	help
-> -	  Select the physical RAM data bus size. Not needed on most platforms,
-> -	  so you can generally choose AUTO.
-> -
-> -config RAM8BIT
-> -	bool "8bit"
-> -	help
-> -	  Configure RAM bus to be 8 bits wide.
-> -
-> -config RAM16BIT
-> -	bool "16bit"
-> -	help
-> -	  Configure RAM bus to be 16 bits wide.
-> -
-> -config RAM32BIT
-> -	bool "32bit"
-> -	help
-> -	  Configure RAM bus to be 32 bits wide.
-> -
-> -endchoice
-> -
->   comment "ROM configuration"
->
->   config ROM
+VM_BUG_ON seems very harsh here. WARN_ON_ONCE and returning 0 to the
+caller sees reasonable.
 
+> +	page = pfn_to_page(start);
+> +	zone = page_zone(page);
+> +
+> +	spin_lock_irq(&zone->lock);
+> +
+> +	for (;;) {
+> +		VM_BUG_ON(page_count(page) || !PageBuddy(page) ||
+> +			  page_zone(page) != zone);
+> +
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close,                            FAX:         +61 7 3891 3630
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Here you will VM_BUG_ON with the zone lock held leading to system
+halting very shortly.
+
+> +		list_del(&page->lru);
+> +		order = page_order(page);
+> +		count = 1UL << order;
+> +		zone->free_area[order].nr_free--;
+> +		rmv_page_order(page);
+> +		__mod_zone_page_state(zone, NR_FREE_PAGES, -(long)count);
+> +
+
+The callers need to check in advance if watermarks are sufficient for
+this. In compaction, it happens in compaction_suitable() because it only
+needed to be checked once. Your requirements might be different.
+
+> +		pfn += count;
+> +		if (pfn >= end)
+> +			break;
+> +		VM_BUG_ON(!pfn_valid(pfn));
+> +
+
+On ARM, it's possible to encounter invalid pages. VM_BUG_ON is serious
+overkill.
+
+> +		if (zone_pfn_same_memmap(pfn - count, pfn))
+> +			page += count;
+> +		else
+> +			page = pfn_to_page(pfn);
+> +	}
+> +
+> +	spin_unlock_irq(&zone->lock);
+> +
+> +	/* After this, pages in the range can be freed one be one */
+> +	count = pfn - start;
+> +	pfn = start;
+> +	for (page = pfn_to_page(pfn); count; --count) {
+> +		prep_new_page(page, 0, flag);
+> +		++pfn;
+> +		if (likely(zone_pfn_same_memmap(pfn - 1, pfn)))
+> +			++page;
+> +		else
+> +			page = pfn_to_page(pfn);
+> +	}
+> +
+
+Here it looks like you have implemented something like split_free_page().
+
+> +	return pfn;
+> +}
+> +
+> +void free_contig_pages(unsigned long pfn, unsigned nr_pages)
+> +{
+> +	struct page *page = pfn_to_page(pfn);
+> +
+> +	while (nr_pages--) {
+> +		__free_page(page);
+> +		++pfn;
+> +		if (likely(zone_pfn_same_memmap(pfn - 1, pfn)))
+> +			++page;
+> +		else
+> +			page = pfn_to_page(pfn);
+> +	}
+> +}
+> +
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+>  /*
+>   * All pages in the range must be isolated before calling this.
