@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1JRIas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 04:30:48 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:63681 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab1JRIaq convert rfc822-to-8bit (ORCPT
+	id S1754698Ab1JRIc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 04:32:28 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:57296 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab1JRIc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 04:30:46 -0400
+	Tue, 18 Oct 2011 04:32:27 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9D3999.1080802@cam.ac.uk>
+Date: Tue, 18 Oct 2011 09:32:25 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20111018074211.GA13483@flint.arm.linux.org.uk>
-References: <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
-	<CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
-	<20111018074211.GA13483@flint.arm.linux.org.uk>
-Date: Tue, 18 Oct 2011 14:00:45 +0530
-Message-ID: <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] input/cma3000_d0x: Support devices without pdata
+References: <1318926486-10330-1-git-send-email-ricardo.ribalda@gmail.com> <1318926486-10330-2-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1318926486-10330-2-git-send-email-ricardo.ribalda@gmail.com>
+X-Enigmail-Version: 1.4a1pre
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2011 13:12, Russell King <rmk@arm.linux.org.uk> wrote:
-> On Tue, Oct 18, 2011 at 11:15:29AM +0530, Jassi Brar wrote:
->> On 18 October 2011 02:37, Bounine, Alexandre <Alexandre.Bounine@idt.com> wrote:
->> > With item #1 above being a separate topic, I may have a problem with #2
->> > as well: dma_addr_t is sized for the local platform and not guaranteed
->> > to be a 64-bit value (which may be required by a target).
->> > Agree with #3 (if #1 and #2 work).
->> >
->> Perhaps simply change dma_addr_t to u64 in dmaengine.h alone ?
->
-> That's just an idiotic suggestion - there's no other way to put that.
-> Let's have some sanity here.
->
-Yeah, I am not proud of the workaround, so I only probed the option.
-I think I need to explain myself.
+On 10/18/11 09:28, Ricardo Ribalda Delgado wrote:
+> Architechtures based on device-tree does not have platform data
+check your spelling.
+> associated to the spi/i2c devices.
+> This patch allows those architechtures to use the cma3000 driver with
+> a default configuration.
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/input/misc/cma3000_d0x.c |   21 +++++++++++++++++++--
+>  1 files changed, 19 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+> index 1633b63..2f993d5 100644
+> --- a/drivers/input/misc/cma3000_d0x.c
+> +++ b/drivers/input/misc/cma3000_d0x.c
+> @@ -62,6 +62,18 @@
+>  #define BIT_TO_2G  18
+>  #define BIT_TO_8G  71
+>  
+> +static struct cma3000_platform_data cma3000_default_pdata = {
+> +	.mdthr = 0x8,
+> +	.mdfftmr = 0x33,
+> +	.ffthr = 0x8,
+> +	.mode = CMAMODE_MEAS400,
+> +	.g_range = CMARANGE_2G,
+> +	.fuzz_x = BIT_TO_2G,
+> +	.fuzz_y = BIT_TO_2G,
+> +	.fuzz_z = BIT_TO_2G,
+> +	.irqflags = 0,
+> +};
+I'm not that familiar with DT yet, but surely there is a means to supplying
+the equivalent data?  I'd prefer to see that provided here as well.
+> +
+>  struct cma3000_accl_data {
+>  	const struct cma3000_bus_ops *bus_ops;
+>  	const struct cma3000_platform_data *pdata;
+> @@ -283,19 +295,24 @@ EXPORT_SYMBOL(cma3000_resume);
+>  struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+>  				       const struct cma3000_bus_ops *bops)
+>  {
+> -	const struct cma3000_platform_data *pdata = dev->platform_data;
+> +	const struct cma3000_platform_data *pdata;
+Leave this line alone....
+>  	struct cma3000_accl_data *data;
+>  	struct input_dev *input_dev;
+>  	int rev;
+>  	int error;
+>  
+> +	if (!dev->platform_data) {
+> +		dev_info(dev, "platform data not found, using default\n");
+> +		pdata = &cma3000_default_pdata;
+> +	} else
+> +		pdata = dev->platform_data;
+> +
+and this becomes
 
-The case here is that even a 32-bit RapidIO host could ask transfer against
-64-bit address space on a remote device. And vice versa 64->32.
+if (pdata == NULL) {
+	dev_info(dev, "platform data not found, using default\n");
+	pdata = &cma3000_default_pdata;
+}
 
-> dma_addr_t is the size of a DMA address for the CPU architecture being
-> built.  This has no relationship to what any particular DMA engine uses.
->
-Yes, so far the dmaengine ever only needed to transfer within platform's
-address-space. So the assumption that src and dst addresses could
-be contained within dma_addr_t, worked.
-If the damengine is to get rid of that assumption/constraint, the memcpy,
-slave_sg etc need to accept addresses specified in bigger of the host and
-remote address space, and u64 is the safe option.
-Ultimately dma_addr_t is either u32 or u64.
+>  	if (!pdata) {
+>  		dev_err(dev, "platform data not found\n");
+>  		error = -EINVAL;
+>  		goto err_out;
+>  	}
+This can't happen now so get rid of the test.
+>  
+> -
+>  	/* if no IRQ return error */
+>  	if (irq == 0) {
+>  		error = -EINVAL;
 
-If you still think that's unacceptable, please do show us the optimal
-path forward.
