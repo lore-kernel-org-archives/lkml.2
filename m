@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab1JROsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 10:48:04 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:20910 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab1JROsB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 10:48:01 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=jAkuNGBKNt6yNsLa7WRudIn2aGLyudxW1qO5C40J0gST3VGZ9ewe1mcELQss4CZQd
-	jxQ+T99eqh6kJ1odpmqEw==
-Subject: [PATCH] x86: mpparse: fix mp_bus_not_pci handling
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org#2.6.26+,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-Date: Tue, 18 Oct 2011 08:47:47 -0600
-Message-ID: <20111018144747.17121.82799.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	id S1757539Ab1JROtQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 10:49:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751118Ab1JROtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 10:49:15 -0400
+Date: Tue, 18 Oct 2011 10:49:02 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] Update email address for stable patch submission
+Message-ID: <20111018144902.GS1165@zod.bos.redhat.com>
+References: <20111018011638.GQ1165@zod.bos.redhat.com>
+ <20111018065852.GA6056@infradead.org>
+ <20111018141350.GB17101@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111018141350.GB17101@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
-Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
-except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
-not the only non-PCI bus, so it's better to always set mp_bus_not_pci
-and clear it only for PCI.
+On Tue, Oct 18, 2011 at 07:13:50AM -0700, Greg KH wrote:
+> On Tue, Oct 18, 2011 at 02:58:52AM -0400, Christoph Hellwig wrote:
+> > On Mon, Oct 17, 2011 at 09:16:39PM -0400, Josh Boyer wrote:
+> > > The stable@kernel.org email address has been replaced with the
+> > > stable@vger.kernel.org mailing list.  Change the stable kernel rules to
+> > > reference the new list instead of the semi-defunct email alias.
+> > 
+> > Does this mean it already stopped working?  I recently sent pathces
+> > there but neither got an ACK nor a bounce or similar.
+> 
+> It should have bounced.
 
-The workaround was to boot with "noapic".  Dan verified that with this
-patch, his system boots without "noapic".
+It doesn't bounce anymore.  The alias exists again, and it forwards to
+the vger list.  However, there are some configuration issues where some
+kind of email loop (I'm very fuzzy on the details) can/does occur
+between the two, and as far as I know anything getting sent to
+stable@kernel.org is getting dropped on the floor.
 
-Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
-Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
-Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
-Cc: stable@kernel.org # 2.6.26+
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/kernel/mpparse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> But, if you put a "Cc: stable@kernel.org" in the patch, I'm still
+> picking that up properly when it goes to Linus's tree.
+> 
+> If I haven't responded to any patches you have sent to stable@ already,
+> please resend them to stable@vger.kernel.org and cc: me to ensure it
+> gets here.
 
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index 9103b89..0741b062 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
- 	}
- #endif
- 
-+	set_bit(m->busid, mp_bus_not_pci);
- 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
--		set_bit(m->busid, mp_bus_not_pci);
- #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
- 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
- #endif
+As Christoph said, that doesn't help patches that need to be
+retro-actively submitted.  I sent a couple last night before I
+remembered the problems, hence this patch.
 
+josh
