@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab1JREUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 00:20:16 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49812 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab1JREUO (ORCPT
+	id S1752359Ab1JREvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 00:51:42 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:55474 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab1JREvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 00:20:14 -0400
-Date: Tue, 18 Oct 2011 12:20:07 +0800
-From: wzt <wzt.wzt@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: serue@us.ibm.com, xemul@openvz.org, ebiederm@xmission.com
-Subject: [PATCH] kernel/nsproxy.c: Fix memory leak of create_new_namespaces().
-Message-ID: <20111018042007.GA7222@program>
+	Tue, 18 Oct 2011 00:51:41 -0400
+Message-ID: <4E9D05FB.4080607@snapgear.com>
+Date: Tue, 18 Oct 2011 14:52:11 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/21] m68k: drop unused Kconfig symbols
+References: <1318595371.6132.70.camel@x61.thuisdomein>	 <4E9B7BE1.1080907@snapgear.com> <1318837964.6414.6.camel@x61.thuisdomein>
+In-Reply-To: <1318837964.6414.6.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_pid_ns() has allocted some memory via create_pid_namespace(), if copy_net_ns()
-failed via create_new_namespaces(), it will cause memory leak. The copy_utsname() 
-have the same problem.
+Hi Paul,
 
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+On 17/10/11 17:52, Paul Bolle wrote:
+> On Mon, 2011-10-17 at 10:50 +1000, Greg Ungerer wrote:
+>> I have no problem with the changes. But it will clash with the
+>> reworking of the Kconfig files currently sitting in linux-next
+>> for merging in the 3.2 merge window.
+>
+> So should I put this on hold and see what's needed after those reworked
+> Kconfig files are merged in mainline? Or would you prefer to have that
+> done beforehand (ie, I'll try to redo this on top of current linux-next
+> and get the redone patch in linux-next before the 3.2 merge)?
 
----
- kernel/nsproxy.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+I won't be too difficult for you to redo your patch. If you can do it
+on top of linux-next real soon I can push it into my m68knommu git
+tree for-next branch. But it would need to be very soon :-)
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 9aeab4b..e2d18c9 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -99,14 +99,18 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	return new_nsp;
- 
- out_net:
--	if (new_nsp->pid_ns)
-+	if (new_nsp->pid_ns) {
- 		put_pid_ns(new_nsp->pid_ns);
-+		free_pid_ns(&new_nsp->pid_ns->kfre);
-+	}
- out_pid:
- 	if (new_nsp->ipc_ns)
- 		put_ipc_ns(new_nsp->ipc_ns);
- out_ipc:
--	if (new_nsp->uts_ns)
-+	if (new_nsp->uts_ns) {
- 		put_uts_ns(new_nsp->uts_ns);
-+		free_uts_ns(&new_nsp->pid_ns->kfref);
-+	}
- out_uts:
- 	if (new_nsp->mnt_ns)
- 		put_mnt_ns(new_nsp->mnt_ns);
--- 
-1.7.4.1
+Regards
+Greg
 
+
+
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
