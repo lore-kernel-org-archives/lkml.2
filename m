@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab1JRQAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 12:00:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59241 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755739Ab1JRQAt (ORCPT
+	id S933046Ab1JRQBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 12:01:22 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:41114 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743Ab1JRQBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 12:00:49 -0400
-Date: Tue, 18 Oct 2011 17:00:46 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111018160046.GD28501@opensource.wolfsonmicro.com>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-4-git-send-email-rnayak@ti.com>
- <20111016145536.GA29885@S2100-06.ap.freescale.net>
- <4E9BAC4D.3010402@ti.com>
- <20111018115836.GC30703@S2100-06.ap.freescale.net>
+	Tue, 18 Oct 2011 12:01:20 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9DA2D2.20800@cam.ac.uk>
+Date: Tue, 18 Oct 2011 17:01:22 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111018115836.GC30703@S2100-06.ap.freescale.net>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+CC: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        aghayal@codeaurora.org, david@hardeman.nu, Shubhrajyoti@ti.com,
+        saaguirre@ti.com, hemanthv@ti.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/7] input/cma3000_d0x: Check silicon version
+References: <1318952886-835-1-git-send-email-ricardo.ribalda@gmail.com> <1318952886-835-3-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1318952886-835-3-git-send-email-ricardo.ribalda@gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 07:58:37PM +0800, Shawn Guo wrote:
+On 10/18/11 16:48, Ricardo Ribalda Delgado wrote:
+> Improve probing of the cma3000 chip, by checking the revision of the
+> device.
+Please carry acks forward with new versions if the patch hasn't changed
+significantly.
+> 
+> ---
+> 
+> v2: Fixes suggested by Jonathan Cameron
+> 	-Remove WhoamI pr_info
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/input/misc/cma3000_d0x.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+> index 604a32f..18ac912 100644
+> --- a/drivers/input/misc/cma3000_d0x.c
+> +++ b/drivers/input/misc/cma3000_d0x.c
+> @@ -27,6 +27,8 @@
+>  
+>  #include "cma3000_d0x.h"
+>  
+> +#define CMA3000_REV         0x10
+> +
+>  #define CMA3000_WHOAMI      0x00
+>  #define CMA3000_REVID       0x01
+>  #define CMA3000_CTRL        0x02
+> @@ -418,7 +420,11 @@ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+>  		error = rev;
+>  		goto err_free_mem;
+>  	}
+> -
+> +	if (rev != CMA3000_REV) {
+> +		error = -EINVAL;
+> +		pr_err("CMA3000 Accelerometer: Unknown Revision %x\n", rev);
+> +		goto err_free_mem;
+> +	}
+>  	pr_info("CMA3000 Accelerometer: Revision %x\n", rev);
+>  
+>  	error = request_threaded_irq(irq, NULL, cma3000_thread_irq,
 
-> I understand that ideally device tree is supposed to describe pure
-> hardware configurations.  But practically, when migrating a driver
-> to device tree probe, we are trying to move the configurations
-> described by platform_data into device tree to save the use of
-> platform_data for device tree probe.  Then some of the configuration
-> may not be so purely hardware related.  But I do not see this is a
-> critical problem.
-
-It's not just Linux-specific stuff, some of this is even specific to
-what current Linux drivers can do - updating the kernel could mean a
-different set of constraints.
