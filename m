@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab1JRGdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 02:33:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53746 "EHLO mx2.mail.elte.hu"
+	id S1751791Ab1JRGf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 02:35:27 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46367 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab1JRGdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 02:33:07 -0400
-Date: Tue, 18 Oct 2011 08:31:31 +0200
+	id S1751064Ab1JRGf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 02:35:26 -0400
+Date: Tue, 18 Oct 2011 08:33:46 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][GIT PULL] m32r: Allow use of atomic64
-Message-ID: <20111018063130.GH16304@elte.hu>
-References: <1318908846.4441.2.camel@gandalf.stny.rr.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
+Subject: Re: [GIT PULL 0/3] perf/core fixes
+Message-ID: <20111018063346.GI16304@elte.hu>
+References: <1318859659-1171-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318908846.4441.2.camel@gandalf.stny.rr.com>
+In-Reply-To: <1318859659-1171-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,22 +35,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
+> Hi Ingo,
 > 
-> Ingo,
+>         Please consider pulling from:
 > 
-> Please pull the latest tip/perf/core tree, which can be found at:
+> git://github.com/acmel/linux.git perf/core
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/core
+> Regards,
 > 
-> Head SHA1: abcefec31e3dc46554ee9c04f70c6012b17e8dc5
+> - Arnaldo
 > 
+> Arnaldo Carvalho de Melo (2):
+>   perf top: Honour --hide_{user,kernel}_symbols and the 'U' hotkey
+>   perf top: Fix the 'E' hotkey, select among multiple events
 > 
-> Steven Rostedt (1):
->       m32r: Allow use of atomic64
+> Mike Galbraith (1):
+>   perf hists browser: Add missing stdarg.h include
+> 
+>  tools/perf/builtin-top.c      |    9 +++++++--
+>  tools/perf/util/hist.c        |   17 +++++++++++------
+>  tools/perf/util/hist.h        |    5 +++--
+>  tools/perf/util/ui/helpline.h |    1 +
+>  4 files changed, 22 insertions(+), 10 deletions(-)
 
-Pulled, thanks Steve!
+Pulled, thanks Arnaldo!
 
 	Ingo
