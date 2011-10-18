@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab1JRJHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 05:07:22 -0400
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:46786 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756938Ab1JRJHV (ORCPT
+	id S1757353Ab1JRJHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 05:07:33 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:58786 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753880Ab1JRJHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 05:07:21 -0400
-Message-ID: <4E9D41C5.70902@Calva.COM>
-Date: Tue, 18 Oct 2011 11:07:17 +0200
-From: John Hughes <john@Calva.COM>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	Tue, 18 Oct 2011 05:07:31 -0400
+Message-ID: <4E9D417E.1020203@st.com>
+Date: Tue, 18 Oct 2011 14:36:06 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: Mattia Dongili <malattia@linux.it>
-CC: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        Stelian Pop <stelian@popies.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Subject: Re: sony-laptop driver: Volume keys on Sony Vaio TX3 don't work
-References: <4E9ABBF6.3000504@calvaedi.com> <4E9ADBD3.4070404@calvaedi.com> <4E9B182A.3020101@calvaedi.com> <74494.1318789218@turing-police.cc.vt.edu> <20111016213800.GA12703@kamineko.org> <81436.1318801813@turing-police.cc.vt.edu> <20111017214543.GB1311@kamineko.org>
-In-Reply-To: <20111017214543.GB1311@kamineko.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>,
+        "21cnbao@gmail.com" <21cnbao@gmail.com>,
+        "rmk@arm.linux.org.uk" <rmk@arm.linux.org.uk>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Yong Wang <yong.y.wang@intel.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Boojin Kim <boojin.kim@samsung.com>, Barry Song <Baohua.Song@csr.com>
+Subject: Re: [PATCH 02/10] dmaengine: move drivers to dma_transfer_direction
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>  <1318570705-17595-3-git-send-email-vinod.koul@intel.com>  <4E9BBCEB.9090204@st.com> <1318857324.23438.96.camel@vkoul-udesk3>
+In-Reply-To: <1318857324.23438.96.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/10/11 23:45, Mattia Dongili wrote:
-> On Sun, Oct 16, 2011 at 05:50:13PM -0400, Valdis.Kletnieks@vt.edu wrote:
->    
->> On Mon, 17 Oct 2011 06:38:01 +0900, Mattia Dongili said:
->>      
->> If that's not an option, perhaps we need a per-model quirk that patches up the
->> tables at boot time?  If we do that, we may want to re-arrange the table so the
->> affected entries are at the front or something to help insure we don't patch
->> the wrong entries if somebody else inserts new lines.
->>      
-> Wouldn't udev do that already?
-> We may actually want to remove those events that never get looked up in
-> the tables instead.
->
->    
-udev does have some per-model stuff for the Vaio's.
+On 10/17/2011 6:45 PM, Vinod Koul wrote:
+>> > Can you please add something in the commit message, to explain why is
+>> > it done.
+> I think 01/10 explains it well
 
-Doesn't work right because the scancodes reported the sony-laptop driver 
-are not the right ones.
+Ok. I wasn't in cc of that patch, so couldn't link it. But still
+i think every patch should have some sort of explanation or link to another patch
+that explains why is it done. Isn't it?
 
-(sony-laptop sends its "event" code as the scancode, but to change the 
-keymap you have to use the index in the sony_laptop_input_keycode_map 
-table.  I have posted one patch for this which makes the scancodes at 
-least consistent but I think I'll do another that makes them be the same 
-as what current udev thinks they should be.  I'll have that ready this 
-evening I thing - have to work now :-( )
-
+-- 
+viresh
