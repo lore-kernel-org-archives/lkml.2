@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab1JRTBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 15:01:46 -0400
-Received: from mail.fuel7.com ([74.222.0.51]:44537 "EHLO mail.fuel7.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab1JRTAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 15:00:12 -0400
-From: Kyle Manna <kyle.manna@fuel7.com>
-To: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: Kyle Manna <kyle.manna@fuel7.com>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH 4/6] mfd: TPS65910: Move linux/gpio.h include to header
-Date: Tue, 18 Oct 2011 13:26:26 -0500
-Message-Id: <1318962388-26151-5-git-send-email-kyle.manna@fuel7.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1318962388-26151-1-git-send-email-kyle.manna@fuel7.com>
-References: <1318962388-26151-1-git-send-email-kyle.manna@fuel7.com>
+	id S1753081Ab1JRTH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 15:07:27 -0400
+Received: from nm6-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.158]:34007
+	"HELO nm6-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752146Ab1JRTHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 15:07:25 -0400
+X-Yahoo-Newman-Id: 662142.41888.bm@smtp104.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: bEdElfoVM1mPfoD8AdO9bl377VD07j_SBd3bpJdbsPFVzxz
+ 9JQAa1Se9cG8SCk5kI52Vx58VW.lEDM_BflQkg_5Dxzt5Av8gPaJZo5G9oal
+ 7vI_mFWiWJclYfrlvgHmxAwmEf85DiFH3NEa3jeIxR6UODyIucWaAx6uJYMl
+ kt0XjvxJnHXlvZW06zGJnsenS0AJPNb7_nz4NNPMikmQjYThFfPBCytEkUTb
+ OhT9xn3krxe87nherNkbejScrEY82NQoMVn46IRF_umJHcwsutBfuNXG59UE
+ CGAokBd9jGd3kxrNN62bjmHr7SFdt2Ycb7FTulpOS3JpFsy_4_f66k52sn6n
+ 7PAzgUeSs4P1hHcPdVx2kTJYMZ_WGYI4zK8jBMLSXS4r996MN9XTXyLugh46
+ IP34HLP09F5MFaTODSAC4Ge37UBzbHFnD7pzzXtNeBoHiNBk66xj31jPlyGk
+ ycChvjnXp7rL4GdZLA24iur46CWFH6JzY5YBQP6U8Zw--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4E9DCE6B.9060006@schaufler-ca.com>
+Date: Tue, 18 Oct 2011 12:07:23 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] Smack: fix: invalid length set for the result of /smack/access
+References: <1318937668-3602-1-git-send-email-jarkko.j.sakkinen@gmail.com>
+In-Reply-To: <1318937668-3602-1-git-send-email-jarkko.j.sakkinen@gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tps65910.h file depends on linux/gpio.h.  Move the include from the
-source file to the tps65910.h header file.
+On 10/18/2011 4:34 AM, Jarkko Sakkinen wrote:
+> Forgot to update simple_transaction_set() to take terminator
+> character into account.
+>
+> Signed-off-by: Jarkko Sakkinen <jarkko.j.sakkinen@gmail.com>
 
-Signed-off-by: Kyle Manna <kyle.manna@fuel7.com>
----
- drivers/mfd/tps65910.c       |    1 -
- include/linux/mfd/tps65910.h |    3 +++
- 2 files changed, 3 insertions(+), 1 deletions(-)
+Applied to git://gitorious.org/smack-next/kernel.git#master
+commit d86b2b61d4dea614d6f319772a90a8f98b55ed67
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index f4654d5..36bc08c 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -18,7 +18,6 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
--#include <linux/gpio.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/tps65910.h>
- 
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 399d80a..503ded3 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -17,6 +17,9 @@
- #ifndef __LINUX_MFD_TPS65910_H
- #define __LINUX_MFD_TPS65910_H
- 
-+#include <linux/gpio.h>
-+#include <linux/regulator/machine.h>
-+
- /* TPS chip id list */
- #define TPS65910			0
- #define TPS65911			1
--- 
-1.7.5.4
+
+> ---
+>  security/smack/smackfs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+> index 5498c4a..381eecf 100644
+> --- a/security/smack/smackfs.c
+> +++ b/security/smack/smackfs.c
+> @@ -1514,7 +1514,7 @@ static ssize_t smk_write_access(struct file *file, const char __user *buf,
+>  	data[0] = res == 0 ? '1' : '0';
+>  	data[1] = '\0';
+>  
+> -	simple_transaction_set(file, 1);
+> +	simple_transaction_set(file, 2);
+>  	return SMK_LOADLEN;
+>  }
+>  
 
