@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1JSHnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:43:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35021 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab1JSHnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:43:42 -0400
-Date: Wed, 19 Oct 2011 09:43:36 +0200
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Message-ID: <20111019074336.GB3410@suse.de>
-References: <201110122012.33767.pluto@agmk.net>
- <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
- <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
- <20111016235442.GB25266@redhat.com>
- <alpine.LSU.2.00.1110171111150.2545@sister.anvils>
+	id S1754982Ab1JSHoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:44:07 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24690 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab1JSHoE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:44:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128843524"
+X-IronPort-AV: E=Sophos;i="4.69,368,1315206000"; 
+   d="scan'208";a="104842796"
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+To: David Miller <davem@davemloft.net>
+CC: "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
+ Ethernet driver
+Thread-Topic: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
+ Ethernet driver
+Thread-Index: AQHMjjDfFppzpiUqeUWg3lcutaYw0pWDu7sA//+MDQA=
+Date: Wed, 19 Oct 2011 07:44:02 +0000
+Message-ID: <6349D7A510622448B1BA0967850A8438011CBA5D@nasanexd02d.na.qualcomm.com>
+References: <1319009213-20627-1-git-send-email-cloud.ren@atheros.com>
+ <20111019.033324.1233460304204609569.davem@davemloft.net>
+In-Reply-To: <20111019.033324.1233460304204609569.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.45.230.6]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1110171111150.2545@sister.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 11:51:00AM -0700, Hugh Dickins wrote:
-> On Mon, 17 Oct 2011, Andrea Arcangeli wrote:
-> > On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
-> > > mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
-> > > and pagetable locks, were good enough before page migration (with its
-> > > requirement that every migration entry be found) came in; and enough
-> > > while migration always held mmap_sem.  But not enough nowadays, when
-> > > there's memory hotremove and compaction: anon_vma lock is also needed,
-> > > to make sure a migration entry is not dodging around behind our back.
-> > 
-> > For things like migrate and split_huge_page, the anon_vma layer must
-> > guarantee the page is reachable by rmap walk at all times regardless
-> > if it's at the old or new address.
-> > 
-> > This shall be guaranteed by the copy_vma called by move_vma well
-> > before move_page_tables/move_ptes can run.
-> > 
-> > copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
-> > into the anon_vma chains structures (vma_link does that). That before
-> > any pte can be moved.
-> > 
-> > Because we keep two vmas mapped on both src and dst range, with
-> > different vma->vm_pgoff that is valid for the page (the page doesn't
-> > change its page->index) the page should always find _all_ its pte at
-> > any given time.
-> > 
-> > There may be other variables at play like the order of insertion in
-> > the anon_vma chain matches our direction of copy and removal of the
-> > old pte. But I think the double locking of the PT lock should make the
-> > order in the anon_vma chain absolutely irrelevant (the rmap_walk
-> > obviously takes the PT lock too), and furthermore likely the
-> > anon_vma_chain insertion is favorable (the dst vma is inserted last
-> > and checked last). But it shouldn't matter.
-> 
-> Thanks a lot for thinking it over.  I _almost_ agree with you, except
-> there's one aspect that I forgot to highlight in the patch comment:
-> remove_migration_pte() behaves as page_check_address() does by default,
-> it peeks to see if what it wants is there _before_ taking ptlock.
-> 
-> And therefore, I think, it is possible that during mremap move, the swap
-> pte is in neither of the locations it tries at the instant it peeks there.
-> 
+Ok. What logging interfaces can I use? Are they dev_err, dev_info and dev_warn ? thanks
 
-I should have read the rest of the thread before responding :/ .
 
-This makes more sense and is a relief in a sense. There is nothing known
-wrong with the VMA locking or ordering. The correct PTE is found but it is
-in the wrong state.
 
-> We could put a stop to that: see plausible alternative patch below.
-> Though I have dithered from one to the other and back, I think on the
-> whole I still prefer the anon_vma locking in move_ptes(): we don't care
-> too deeply about the speed of mremap, but we do care about the speed of
+-----Original Message-----
+From: David Miller [mailto:davem@davemloft.net] 
+Sent: Wednesday, October 19, 2011 3:33 PM
+To: Ren, Cloud
+Cc: Rodriguez, Luis; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161 Ethernet driver
 
-I still think the anon_vma lock serialises mremap and migration. If that
-is correct, it could cause things like huge page collapsing stalling mremap
-operations. That might cause slowdowns in JVMs during GC which is undesirable.
+From: <cloud.ren@Atheros.com>
+Date: Wed, 19 Oct 2011 15:26:53 +0800
 
-> exec, and this does add another lock/unlock there, but it will always
-> be uncontended; whereas the patch at the migration end could be adding
-> a contended and unnecessary lock.
-> 
-> Oh, I don't know which, you vote - if you now agree there is a problem.
-> I'll sign off the migrate.c one if you prefer it.  But no hurry.
-> 
+> +#define HW_PRINT(_klv, _fmt, _args...) \
+> +	if (ALX_HW_MSG_LV_##_klv || ALX_HW_MSG_LV_ALL) {\
+> +		printk(KERN_##_klv ALX_HW_MSG_PFX_NAME "%s: " _fmt, \
+> +			__func__, ## _args); \
+> +	}
 
-My vote is with the migration change. While there are occasionally
-patches to make migration go faster, I don't consider it a hot path.
-mremap may be used intensively by JVMs so I'd loathe to hurt it.
-
-Thanks Hugh.
-
--- 
-Mel Gorman
-SUSE Labs
+Do not create your own network driver debugging facilities and macros for logging messages, we have rich debugging and logging level interfaces that network drivers can use exactly for this purpose.
