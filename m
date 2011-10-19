@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab1JSHfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:35:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36930 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142Ab1JSHf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:35:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,370,1315206000"; 
-   d="scan'208";a="75338393"
-Subject: Re: iwlagn is getting very shaky
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Norbert Preining <preining@logic.at>, David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <CAOJsxLHLmtYAR1c34Kkn+hzGeOSwhU646PP04pvTFx2e5M0NfA@mail.gmail.com>
-References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
-	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
-	 <CAOJsxLFXBQXDtjGkuHV8fpxSy4U0dOdzBm6=4xfy2dMQo7NvOg@mail.gmail.com>
-	 <1319003710.31823.53.camel@wwguy-huron>
-	 <20111019064818.GB14817@gamma.logic.tuwien.ac.at>
-	 <1319004938.31823.59.camel@wwguy-huron>
-	 <CAOJsxLHLmtYAR1c34Kkn+hzGeOSwhU646PP04pvTFx2e5M0NfA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 23:44:59 -0700
-Message-ID: <1319006699.31823.65.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754755Ab1JSHfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:35:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61252 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab1JSHfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:35:34 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: davem@davemloft.net, ian.campbell@citrix.com, jeffrey.t.kirsher@intel.com,
+        grant.likely@secretlab.ca, jpirko@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCHv2] ll_temac: Add support for ethtool
+Date: Wed, 19 Oct 2011 09:35:25 +0200
+Message-Id: <1319009725-7869-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-19 at 00:19 -0700, Pekka Enberg wrote:
-> Hi Wey,
-> 
-> On Wed, Oct 19, 2011 at 9:15 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> wrote:
-> > Sorry, I was thinking ask Pekka to use the officialfirmware. But more
-> > important, I will like to find out is Pekka has the same issue as you
-> > have which is tx queue stopped.
-> 
-> I'm happy to help but I have no idea what you want me to do :-). When
-> my internet connection dies the next time, what do you want me to
-> capture for you? What's official firmware? I'm using Fedora 15 with
-> 3.1-rc9 built from sources here. Do you want to see my lspci, .config,
-> dmesg, something else?
+This patch enables the ethtool interface. The implementation is done
+using the libphy helper functions.
 
-I don't think it is firmware problem, so please ignore :-)
-> 
-> As for the problems, I'm using iPhone 3G internet via WiFi sharing and
-> connection seems to die few times a day or if I take the phone far
-> enough from the laptop. I usually turn off the AP for a while and use
-> NetworkManager on the laptop to disable/enable networking to make it
-> come back up.
-> 
-> I haven't tested anything but 3.1-rcX kernels on this machine but I
-> can do git bisect too if it comes to that.
-> 
-I am just try to understand if you encounter the same problem as
-Norbert. if you can dump the tx_queue
-in /sys/kernel/debug/ieee80211/phX/iwlagn/debug folder and send me the
-log, thsat will be great.
+---
+v2: Fixed propossed by Ben Hutchings
+	- Rebase to net/next
+	- Code Style
 
+v1: Add reviewed by
 
-p.s. you will need to enable CONFIG_IWLWIFI_DEBUGFS option in
-your .config
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/net/ethernet/xilinx/ll_temac_main.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-Thanks
-Wey
->                         Pekka
-
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 66e3c36..2e90c01 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -955,6 +955,32 @@ static const struct attribute_group temac_attr_group = {
+ 	.attrs = temac_device_attrs,
+ };
+ 
++/* ethtool support */
++static int temac_get_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	return phy_ethtool_gset(lp->phy_dev, cmd);
++}
++
++static int temac_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	return phy_ethtool_sset(lp->phy_dev, cmd);
++}
++
++static int temac_nway_reset(struct net_device *ndev)
++{
++	struct temac_local *lp = netdev_priv(ndev);
++	return phy_start_aneg(lp->phy_dev);
++}
++
++static const struct ethtool_ops temac_ethtool_ops = {
++	.get_settings = temac_get_settings,
++	.set_settings = temac_set_settings,
++	.nway_reset = temac_nway_reset,
++	.get_link = ethtool_op_get_link,
++};
++
+ static int __devinit temac_of_probe(struct platform_device *op)
+ {
+ 	struct device_node *np;
+@@ -976,6 +1002,7 @@ static int __devinit temac_of_probe(struct platform_device *op)
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+ 	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
+ 	ndev->netdev_ops = &temac_netdev_ops;
++	ndev->ethtool_ops = &temac_ethtool_ops;
+ #if 0
+ 	ndev->features |= NETIF_F_IP_CSUM; /* Can checksum TCP/UDP over IPv4. */
+ 	ndev->features |= NETIF_F_HW_CSUM; /* Can checksum all the packets. */
+-- 
+1.7.7
 
