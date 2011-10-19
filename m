@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab1JSGvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 02:51:46 -0400
-Received: from lvk-gate.cmc.msu.ru ([212.192.248.233]:40491 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753037Ab1JSGvp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 02:51:45 -0400
-X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Oct 2011 02:51:45 EDT
-X-Spam-ASN: 
-From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Subject: high-order allocation + highmem + streaming DMA - possible?
-Date: Wed, 19 Oct 2011 10:45:40 +0400
-User-Agent: KMail/1.9.9
-Cc: stefan@lvk.cs.msu.su
+	id S1755389Ab1JSHD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:03:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187Ab1JSHD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:03:27 -0400
+Date: Wed, 19 Oct 2011 09:03:02 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] jump_label_inc may return before the code is patched
+Message-ID: <20111019070302.GA6266@redhat.com>
+References: <20111018175551.GH17571@redhat.com>
+ <20111018205441.GC2453@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201110191045.42613@zigzag.lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+In-Reply-To: <20111018205441.GC2453@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Oct 18, 2011 at 04:54:41PM -0400, Jason Baron wrote:
+> On Tue, Oct 18, 2011 at 07:55:51PM +0200, Gleb Natapov wrote:
+> > If cpu A calls jump_label_inc() just after atomic_add_return() is
+> > called by cpu B, atomic_inc_not_zero() will return value greater then
+> > zero and jump_label_inc() will return to a caller before jump_label_update()
+> > finishes its job on cpu B.
+> > 
+> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> > index a8ce450..e6f1f24 100644
+> > --- a/kernel/jump_label.c
+> > +++ b/kernel/jump_label.c
+> > @@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_key *key)
+> >  		return;
+> >  
+> >  	jump_label_lock();
+> > -	if (atomic_add_return(1, &key->enabled) == 1)
+> > +	if (atomic_read(&key->enabled) == 0)
+> >  		jump_label_update(key, JUMP_LABEL_ENABLE);
+> > +	atomic_inc(&key->enabled);
+> >  	jump_label_unlock();
+> >  }
+> >  
+> 
+> agreed, we shouldn't return before the update happens...did this cause any
+> actual problem in practice? Or just observed from code inspection?
+> 
+It did. I am debugging strange oopses in perf code that happen when I
+create and destroy hw events on multiple cpus in parallel. At some point
+I started to suspect that jump labels are not working properly and
+printks confirmed that sometimes static_branch() is not taken when
+->enabled is not zero. I compiled kernel without jump label support and,
+as far as my testing goes, oopses disappeared. Then I found the bug by
+looking at the code. Strangely enough this patch alone didn't fix oopses
+yet, so some other problems are probably lurking somewhere. I am going
+on vocation till next week. Will debug furtherer upon return.
 
-We are writing a driver for a custom PCI device that receives large amount 
-of data.
+> Acked-by: Jason Baron <jbaron@redhat.com>
+> 
+> Thanks,
+> 
+> -Jason
 
-Device is capable of DMAing received data in 64k chunks.
-
-We have been going to:
-- use physically-continuous 64k-sized memory areas using alloc_pages() with 
-order=4,
-- allocate large number of such areas on driver init,
-- implement mmap() to map those all to userspace for zero-copy processing,
-- use streaming DMA to actually receive data
-
-However I can't find a way to use streaming DMA for large highmem areas.
-- pci_map_single() is for linear mapping and can't work with highmem
-- pci_map_page() can work with highmem but is limited to one page
-- pci_map_sg() is for s/g lists, not for single 64k blocks.
-
-Is there a way to use streaming DMA with large memory areas located in 
-highmem?
-Or in this situation buffers in highmem can't be used?
-
-Nikita
+--
+			Gleb.
