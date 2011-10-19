@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab1JSOp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:45:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36958 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab1JSOp4 (ORCPT
+	id S1756453Ab1JSOqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:46:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39655 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab1JSOqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:45:56 -0400
-Date: Wed, 19 Oct 2011 15:45:51 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, gregkh@suse.de,
-        linus.walleij@stericsson.com, arnd@arndb.de
-Subject: Re: [PATCH 6/6] mach-ux500: remove intermediary add_platform_device*
- functions
-Message-ID: <20111019144551.GA4829@totoro>
-References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org>
- <1318852378-14180-7-git-send-email-lee.jones@linaro.org>
- <20111017115908.GE4992@totoro>
- <4E9EE1F8.7060207@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9EE1F8.7060207@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Oct 2011 10:46:31 -0400
+Message-ID: <1319035584.8416.34.camel@edumazet-laptop>
+Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nico Schottelius <nico-linux-20111017@schottelius.org>
+Cc: Arend van Spriel <arend@broadcom.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Wed, 19 Oct 2011 16:46:24 +0200
+In-Reply-To: <20111019142837.GA1414@schottelius.org>
+References: <20111019123602.GA11883@schottelius.org>
+	 <1319028563.8416.1.camel@edumazet-laptop>
+	 <20111019130749.GD11883@schottelius.org>
+	 <20111019142837.GA1414@schottelius.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 03:43:04PM +0100, Lee Jones wrote:
-> On 17/10/11 12:59, Jamie Iles wrote:
-> > Hi Lee,
-> > 
-> > On Mon, Oct 17, 2011 at 12:52:58PM +0100, Lee Jones wrote:
-[...]
-> >> diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
-> >> index f8adff8..089371e 100644
-> >> --- a/arch/arm/mach-ux500/devices-common.h
-> >> +++ b/arch/arm/mach-ux500/devices-common.h
-> > [...]
-> >> -static inline struct platform_device *
-> >> -dbx500_add_msp_i2s(int id, resource_size_t base, int irq,
-> >> -		   struct msp_i2s_platform_data *pdata)
-> >> -{
-> >> -	return dbx500_add_platform_device_4k1irq("MSP_I2S", id, base, irq,
-> >> -						 pdata);
-> >> +	struct resource resources[] = {
-> >> +		DEFINE_RES_MEM(base, SZ_4K),
-> >> +		DEFINE_RES_IRQ(irq),
-> >> +	};
-> >> +
-> >> +	return platform_device_register_resndata(parent, "nmk-i2c",
-> >> +						 id, resources,
-> >> +						 ARRAY_SIZE(resources),
-> >> +						 pdata, sizeof(*pdata));
-> >>  }
-> > 
-> > I think you need platform_device_register_full() rather than 
-> > platform_device_register_resndata() here as dbx500_add_platform_device() 
-> > also set a dma mask which platform_device_register_resndata() doesn't 
-> > do.  Otherwise a nice diffstat!
+Le mercredi 19 octobre 2011 à 16:28 +0200, Nico Schottelius a écrit :
+> Triggered it! 
 > 
-> Good spot.
+> And also got the traceback!
 > 
-> I can't seem to find platform_device_register_full(). Does it exist?
+> Dmesg + log attached, let me know when I can pull the fix from
+> somewhere.
+> 
 
-Yes, but it's in linux-next rather than Linus' tree (new helper to 
-create platform devices with dma mask).
+Sorry, I cant see same messages in your dmesg, no mention of stuck
+processes (blocked for more than 120 seconds.)
 
-Jamie
+By the way, please update to latest 3.1.rc10
+
+
+
