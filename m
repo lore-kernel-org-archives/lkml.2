@@ -1,129 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab1JSPCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:02:25 -0400
-Received: from smtp-out-092.synserver.de ([212.40.185.92]:1160 "HELO
-	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1755520Ab1JSPCY (ORCPT
+	id S1756573Ab1JSPDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:03:42 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:45083 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab1JSPDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:02:24 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10303
-Message-ID: <4E9EE68F.6040506@metafoo.de>
-Date: Wed, 19 Oct 2011 17:02:39 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111005 Iceowl/1.0b2 Icedove/3.1.15
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de
-Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
-References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk> <4E9DC496.3010909@metafoo.de> <4E9DE2AB.3090208@cam.ac.uk> <4E9ED49B.1070005@cam.ac.uk>
-In-Reply-To: <4E9ED49B.1070005@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Oct 2011 11:03:41 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jack@suse.cz
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Ashish Sangwan <ashishsangwan2@gmail.com>
+Subject: [PATCH] udf : skip mirror metadata FE since metadata FE is ok.
+Date: Thu, 20 Oct 2011 00:03:18 +0900
+Message-Id: <1319036598-4367-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2011 03:46 PM, Jonathan Cameron wrote:
-> On 10/18/11 21:33, Jonathan Cameron wrote:
->> On 10/18/11 19:25, Lars-Peter Clausen wrote:
->>> On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
->>>> Needed for inkernel interfaces.
->>>>
->>>
->>> The bus_type structure keeps a list of all devices registered on that bus, so
->>> you should be able to use bus_for_each_dev and bus_find_device for iterating
->>> over the iio devices.
->> I hadn't realised that but don't think it will work anyway. There are several
->> other things than iio_dev based devices that sit on our bus unfortunately.
->> None are in these initial merges but they will turn up later.
->> The most common are iio_triggers but there are also a few weird ones such
->> as the event generator for the dummy driver and the sysfstrig control device.  
->> We could play some games to allow these to be identified, but it's going
->> to be a mess. Probably easier to just maintain a second list as we are doing
->> here.  Interesting suggestion though. Thanks and feel free to point out if there
->> is a simple way around the identification issue.
-> Actually looking into it this morning - this is trivial to do.
-> We can just check that the device_type is set appropriately before doing anything
-> else.
-> 
-> Thanks Lars-Peter your suggestion is should clean things up nicely.
-> 
-> New version coming up.
+By Jan Kara's suggestion, This patch skip mirror metadata FE since metadata FE is ok. And try to read it only the first time udf_get_pblock_meta25() fails to map the block from metadata FE.
 
-Yes, this should work. The device class iter functions already allow
-filtering on the device type, so it might even make sense to add generic
-device bus iterator functions which allow this as well, but this is probably
-something for later.
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Ashish Sangwan <ashishsangwan2@gmail.com>
+---
+ fs/udf/partition.c |   20 ++++++++++++++++++++
+ fs/udf/super.c     |   33 ++++++++++++++++-----------------
+ 2 files changed, 36 insertions(+), 17 deletions(-)
 
->>>
->>>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
->>>> ---
->>>>  drivers/iio/iio.c       |    9 +++++++++
->>>>  include/linux/iio/iio.h |    1 +
->>>>  2 files changed, 10 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
->>>> index 9e6acc1..246a093 100644
->>>> --- a/drivers/iio/iio.c
->>>> +++ b/drivers/iio/iio.c
->>>> @@ -15,6 +15,9 @@
->>>>  #include <linux/iio/iio.h>
->>>>  #include <linux/iio/sysfs.h>
->>>>  
->>>> +static DEFINE_MUTEX(iio_device_list_lock);
->>>> +static LIST_HEAD(iio_device_list);
->>>> +
->>>>  static DEFINE_IDA(iio_ida);
->>>>  
->>>>  static struct bus_type iio_bus_type = {
->>>> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
->>>>  {
->>>>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
->>>>  	iio_device_unregister_sysfs(indio_dev);
->>>> +	mutex_lock(&iio_device_list_lock);
->>>> +	list_del(&indio_dev->dev_list_entry);
->>>> +	mutex_unlock(&iio_device_list_lock);
->>>>  }
->>>>  
->>>>  static struct device_type iio_dev_type = {
->>>> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
->>>>  	if (ret)
->>>>  		goto error_free_sysfs;
->>>>  
->>>> +	mutex_lock(&iio_device_list_lock);
->>>> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
->>>> +	mutex_unlock(&iio_device_list_lock);
->>>>  	return 0;
->>>>  
->>>>  error_free_sysfs:
->>>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
->>>> index beedc5c..f14e7dc 100644
->>>> --- a/include/linux/iio/iio.h
->>>> +++ b/include/linux/iio/iio.h
->>>> @@ -192,6 +192,7 @@ struct iio_info {
->>>>   * @info:		[DRIVER] callbacks and constant info from driver
->>>>   * @groups:		[INTERN] attribute groups
->>>>   * @groupcounter:	[INTERN] index of next attribute group
->>>> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
->>>>   **/
->>>>  struct iio_dev {
->>>>  	int				id;
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
+diff --git a/fs/udf/partition.c b/fs/udf/partition.c
+index f3e472c..8bfc25b 100644
+--- a/fs/udf/partition.c
++++ b/fs/udf/partition.c
+@@ -311,6 +311,7 @@ uint32_t udf_get_pblock_meta25(struct super_block *sb, uint32_t block,
+ 	struct udf_meta_data *mdata;
+ 	uint32_t retblk;
+ 	struct inode *inode;
++	struct kernel_lb_addr addr;
+ 
+ 	udf_debug("READING from METADATA\n");
+ 
+@@ -323,6 +324,25 @@ uint32_t udf_get_pblock_meta25(struct super_block *sb, uint32_t block,
+ 	retblk = udf_try_read_meta(inode, block, partition, offset);
+ 	if (retblk == 0xFFFFFFFF) {
+ 		udf_warn(sb, "error reading from METADATA, trying to read from MIRROR\n");
++		if (mdata->s_mirror_fe == NULL) {
++			/* mirror file entry */
++			addr.logicalBlockNum = mdata->s_mirror_file_loc;
++			addr.partitionReferenceNum = map->s_partition_num;
++			udf_debug("Mirror metadata file location: block = %d part = %d\n",
++				addr.logicalBlockNum,
++				addr.partitionReferenceNum);
++			mdata->s_mirror_fe = udf_iget(sb, &addr);
++
++			if (mdata->s_mirror_fe == NULL)
++				udf_err(sb, "mirror inode efe not found");
++			else if (UDF_I(mdata->s_mirror_fe)->i_alloc_type !=
++					ICBTAG_FLAG_AD_SHORT) {
++				udf_warn(sb, "mirror inode efe does not have short allocation descriptors!\n");
++				iput(mdata->s_mirror_fe);
++				mdata->s_mirror_fe = NULL;
++			}
++		}
++
+ 		inode = mdata->s_mirror_fe;
+ 		if (!inode)
+ 			return 0xFFFFFFFF;
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index e58123a..659d088 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -857,29 +857,28 @@ static int udf_load_metadata_files(struct super_block *sb, int partition)
+ 		mdata->s_metadata_fe = NULL;
+ 	}
+ 
+-	/* mirror file entry */
+-	addr.logicalBlockNum = mdata->s_mirror_file_loc;
+-	addr.partitionReferenceNum = map->s_partition_num;
++	if (fe_error) {
++		/* mirror file entry */
++		addr.logicalBlockNum = mdata->s_mirror_file_loc;
++		addr.partitionReferenceNum = map->s_partition_num;
+ 
+-	udf_debug("Mirror metadata file location: block = %d part = %d\n",
+-		  addr.logicalBlockNum, addr.partitionReferenceNum);
++		udf_debug("Mirror metadata file location: block = %d part = %d\n",
++			  addr.logicalBlockNum, addr.partitionReferenceNum);
+ 
+-	mdata->s_mirror_fe = udf_iget(sb, &addr);
++		mdata->s_mirror_fe = udf_iget(sb, &addr);
+ 
+-	if (mdata->s_mirror_fe == NULL) {
+-		if (fe_error) {
++		if (mdata->s_mirror_fe == NULL) {
+ 			udf_err(sb, "mirror inode efe not found and metadata inode is missing too, exiting...\n");
+ 			goto error_exit;
+-		} else
+-			udf_warn(sb, "mirror inode efe not found, but metadata inode is OK\n");
+-	} else if (UDF_I(mdata->s_mirror_fe)->i_alloc_type !=
+-		 ICBTAG_FLAG_AD_SHORT) {
+-		udf_warn(sb, "mirror inode efe does not have short allocation descriptors!\n");
+-		iput(mdata->s_mirror_fe);
+-		mdata->s_mirror_fe = NULL;
+-		if (fe_error)
++		} else if (UDF_I(mdata->s_mirror_fe)->i_alloc_type !=
++				ICBTAG_FLAG_AD_SHORT) {
++			udf_warn(sb, "mirror inode efe does not have short allocation descriptors!\n");
++			iput(mdata->s_mirror_fe);
++			mdata->s_mirror_fe = NULL;
+ 			goto error_exit;
+-	}
++		}
++	} else
++		mdata->s_mirror_fe = NULL;
+ 
+ 	/*
+ 	 * bitmap file entry
+-- 
+1.7.4.4
 
