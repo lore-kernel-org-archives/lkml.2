@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab1JSRTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:19:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31342 "EHLO mx1.redhat.com"
+	id S1757070Ab1JSRWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:22:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40878 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755851Ab1JSRTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:19:23 -0400
-Date: Wed, 19 Oct 2011 13:19:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
-Subject: Re: [PATCH 07/10] block: reorganize throtl_get_tg() and
- blk_throtl_bio()
-Message-ID: <20111019171917.GA4026@redhat.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-8-git-send-email-tj@kernel.org>
- <20111019145622.GE1140@redhat.com>
- <20111019170625.GD25124@google.com>
+	id S1751667Ab1JSRWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 13:22:53 -0400
+Message-ID: <4E9F0753.1010206@redhat.com>
+Date: Wed, 19 Oct 2011 15:22:27 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019170625.GD25124@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, EDAC devel <linux-edac@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 2/9] x86, RAS: Start reorganizing RAS features support
+References: <1319035866-29570-1-git-send-email-bp@amd64.org> <1319035866-29570-3-git-send-email-bp@amd64.org> <987664A83D2D224EAE907B061CE93D5301F19DBDB5@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301F19DBDB5@orsmsx505.amr.corp.intel.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 10:06:25AM -0700, Tejun Heo wrote:
-> Hello,
+Em 19-10-2011 15:13, Luck, Tony escreveu:
+>> Start relocating RAS features into a centralized location under
+>> arch/x86/kernel/cpu/ras/. Readjust Kconfig items and makefiles
+>> accordingly.
 > 
-> On Wed, Oct 19, 2011 at 10:56:22AM -0400, Vivek Goyal wrote:
-> > A driver could call blk_cleanup_queue(), mark the queue DEAD and then
-> > free the driver provided spin lock. So once queue is DEAD one could
-> > not rely on queue lock still being there. That's the reason I did
-> > not try to take queue lock again if queue is marked DEAD.
-> >
-> > Now I see the change that blk_cleanup_queue will start poiting to
-> > internal queue lock (Thought it is racy). This will atleast make
-> > sure that some spinlock is around. So now this change should be
-> > fine.
-> 
-> The problem with the current code is that all those are not properly
-> synchronized.  Drivers shouldn't destroy lock or any other stuff until
-> blk_cleanup_queue() is complete and once queue cleanup is done block
-> layer shouldn't call out to driver.
+> Not all ras features are "cpu" orientated ... should we really be
+> moving to "arch/x86/kernel/ras"?
 
-If queue lock is provided by driver then block layer has no choice but
-to call into driver even after cleanup(). (As after shutdown(), till
-release() is called, you will need spin lock to check whether queue is
-dead or not).
- 
-> 
-> Currently, the code has different opportunistic checks which can catch
-> most of those cases but unfortunatly I think it just makes the bugs
-> more obscure.
-> 
-> That said, we probably should be switching to internal lock once
-> clenaup is complete.
+I think that it makes sense to move MCA bits into arch/x86, but I agree
+with Tony: generally speaking, RAS is not even x86 specific.
 
-So even switching to internal lock is racy. Christoph suggeted to break down
-this sharing of queue lock and driver lock and suggested always use
-internal queue lock and modify drivers to use their own lock and manage it.
-It makes sense though it might be lot of work to fix drivers.
+It seems to make more sense to rename drivers/edac to drivers/ras and put
+the RAS menu there, even if the actual support for the AMD and Intel MCA
+RAS stuff is kept inside arch/x86/...
 
-Thanks
-Vivek
+Mauro
+
+> 
+> -Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
