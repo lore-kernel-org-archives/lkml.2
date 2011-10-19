@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab1JSXVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 19:21:49 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50496 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753511Ab1JSXVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 19:21:48 -0400
-X-Sasl-enc: 0gZ/d7JhIbJ64lcnh7eL6lNVnFlsBxrsYwcHgiwRzJyy 1319066507
-Date: Wed, 19 Oct 2011 16:17:16 -0700
-From: Greg KH <greg@kroah.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/19] Resend previous incorrecly formatted patches
-Message-ID: <20111019231716.GA10113@kroah.com>
-References: <1319065048-2767-1-git-send-email-mark.einon@gmail.com>
+	id S1755265Ab1JSX3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 19:29:33 -0400
+Received: from mail.uwasa.fi ([193.166.120.33]:36286 "EHLO pat.uwasa.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171Ab1JSX3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 19:29:32 -0400
+X-Greylist: delayed 5691 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Oct 2011 19:29:32 EDT
+Date: Wed, 19 Oct 2011 23:55:23 +0300
+Message-ID: <20111019235523.Horde.23fZWkv4Cn9Onzk7Ix0WcbA@webmail.uwasa.fi>
+From: Johanna Vironen <jvi@student.uwasa.fi>
+Subject: GET BACK TO ME ASAP
+Reply-to: barrmusakumar@gmail.com
+User-Agent: Internet Messaging Program (IMP) H4 (5.0.13)
+Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319065048-2767-1-git-send-email-mark.einon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 11:57:09PM +0100, Mark Einon wrote:
-> Resending patches, these have now been formatted with:
-> 
-> git format-patch -k -M
-> 
-> Tested with git am sucessfully on a local tree
 
-But when you sent them, they did not have any [xx/yy] markings on them
-so I have no idea what order to apply them in.
 
-Did you use git send-email to send these?  If not, why not?
+My Dearest,
 
-We'll get this right one of these tries :)
+I am highly compelled upon strict recommendation, to write you this  
+very urgent and confidential letter. I do hope my letter will not  
+embarrass you since I had no previous correspondence with you. Please  
+all replies should be through my private email box musa.h@mail.mn
 
-greg k-h
+Hello,
+
+How are you today?
+I contacted you to assist in distributing the money left behind
+by my late client,whom you share the same last name with.
+Get back to me for more details.
+
+Regards,
+Barr Musa Hassan.
+Attorney At Law.
