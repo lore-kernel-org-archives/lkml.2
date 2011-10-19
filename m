@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab1JSSs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:48:57 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:5638 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab1JSSs4 (ORCPT
+	id S1752650Ab1JSStE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:49:04 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:42469
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752413Ab1JSSs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:48:56 -0400
+	Wed, 19 Oct 2011 14:48:58 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LTBTLD-01-K0L-02
+X-WSS-ID: 0LTBTLE-01-K0N-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Ingo Molnar <mingo@elte.hu>
@@ -19,9 +19,9 @@ CC: LKML <linux-kernel@vger.kernel.org>,
         oprofile-list <oprofile-list@lists.sourceforge.net>,
         Robert Richter <robert.richter@amd.com>, <stable@kernel.org>,
         <#@erda.amd.com>, <2.6.37+@erda.amd.com>
-Subject: [V2][PATCH 2/5] oprofile: Fix crash when unloading module (hr timer mode)
-Date: Wed, 19 Oct 2011 20:47:52 +0200
-Message-ID: <1319050075-23901-3-git-send-email-robert.richter@amd.com>
+Subject: [V2][PATCH 3/5] oprofile, x86: Fix crash when unloading module (nmi timer mode)
+Date: Wed, 19 Oct 2011 20:47:53 +0200
+Message-ID: <1319050075-23901-4-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
 References: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
@@ -32,126 +32,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oprofile may crash in a KVM guest while unlaoding modules. This
-happens if oprofile_arch_init() fails and oprofile switches to the hr
-timer mode as a fallback. In this case oprofile_arch_exit() is called,
-but it never was initialized properly which causes the crash. This
-patch fixes this.
+If oprofile uses the nmi timer interrupt there is a crash while
+unloading the module. The bug can be triggered with oprofile build as
+module and kernel parameter nolapic set. This patch fixes this.
 
-oprofile: using timer interrupt.
+oprofile: using NMI timer interrupt.
 BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
 IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
-PGD 41da3f067 PUD 41d80e067 PMD 0
+PGD 42dbca067 PUD 41da6a067 PMD 0
 Oops: 0002 [#1] PREEMPT SMP
 CPU 5
-Modules linked in: oprofile(-)
+Modules linked in: oprofile(-) [last unloaded: oprofile]
 
-Pid: 2382, comm: modprobe Not tainted 3.1.0-rc7-00018-g709a39d #18 Advanced Micro Device Anaheim/Anaheim
+Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
 RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
-RSP: 0018:ffff88041de1de98  EFLAGS: 00010296
-RAX: 0000000000000000 RBX: ffffffffa00060e0 RCX: dead000000200200
+RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
 RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
-RBP: ffff88041de1dea8 R08: 0000000000000001 R09: 0000000000000082
-R10: 0000000000000000 R11: ffff88041de1dde8 R12: 0000000000000080
+RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
 R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
-FS:  00007f9ae5bef700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
 CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 000000041ca44000 CR4: 00000000000006e0
+CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
 DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
 DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process modprobe (pid: 2382, threadinfo ffff88041de1c000, task ffff88042db6d040)
+Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
 Stack:
- ffff88041de1deb8 ffffffffa0006770 ffff88041de1deb8 ffffffffa000251e
- ffff88041de1dec8 ffffffffa00022c2 ffff88041de1ded8 ffffffffa0004993
- ffff88041de1df78 ffffffff81073115 656c69666f72706f 0000000000610200
+ ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
+ ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
+ ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
 Call Trace:
- [<ffffffffa000251e>] op_nmi_exit+0x15/0x17 [oprofile]
- [<ffffffffa00022c2>] oprofile_arch_exit+0xe/0x10 [oprofile]
- [<ffffffffa0004993>] oprofile_exit+0x13/0x15 [oprofile]
+ [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
  [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
  [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
  [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
 Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
  89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
 RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
- RSP <ffff88041de1de98>
+ RSP <ffff88041ef71e98>
 CR2: 0000000000000008
----[ end trace 06d4e95b6aa3b437 ]---
+---[ end trace 43a541a52956b7b0 ]---
 
 CC: stable@kernel.org # 2.6.37+
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- drivers/oprofile/oprof.c     |   29 ++++++++++++++++++++++++-----
- drivers/oprofile/timer_int.c |    1 +
- 2 files changed, 25 insertions(+), 5 deletions(-)
+ arch/x86/oprofile/init.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-index dccd863..f8c752e 100644
---- a/drivers/oprofile/oprof.c
-+++ b/drivers/oprofile/oprof.c
-@@ -239,26 +239,45 @@ int oprofile_set_ulong(unsigned long *addr, unsigned long val)
- 	return err;
- }
+diff --git a/arch/x86/oprofile/init.c b/arch/x86/oprofile/init.c
+index cdfe4c5..f148cf6 100644
+--- a/arch/x86/oprofile/init.c
++++ b/arch/x86/oprofile/init.c
+@@ -21,6 +21,7 @@ extern int op_nmi_timer_init(struct oprofile_operations *ops);
+ extern void op_nmi_exit(void);
+ extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
  
-+static int timer_mode;
-+
- static int __init oprofile_init(void)
++static int nmi_timer;
+ 
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
  {
- 	int err;
- 
-+	/* always init architecture to setup backtrace support */
- 	err = oprofile_arch_init(&oprofile_ops);
--	if (err < 0 || timer) {
--		printk(KERN_INFO "oprofile: using timer interrupt.\n");
-+
-+	timer_mode = err || timer;	/* fall back to timer mode on errors */
-+	if (timer_mode) {
-+		if (!err)
-+			oprofile_arch_exit();
- 		err = oprofile_timer_init(&oprofile_ops);
- 		if (err)
- 			return err;
- 	}
--	return oprofilefs_register();
-+
-+	err = oprofilefs_register();
-+	if (!err)
-+		return 0;
-+
-+	/* failed */
-+	if (timer_mode)
-+		oprofile_timer_exit();
-+	else
-+		oprofile_arch_exit();
-+
-+	return err;
- }
- 
- 
- static void __exit oprofile_exit(void)
+@@ -31,8 +32,9 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	ret = op_nmi_init(ops);
+ #endif
++	nmi_timer = (ret != 0);
+ #ifdef CONFIG_X86_IO_APIC
+-	if (ret < 0)
++	if (nmi_timer)
+ 		ret = op_nmi_timer_init(ops);
+ #endif
+ 	ops->backtrace = x86_backtrace;
+@@ -44,6 +46,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ void oprofile_arch_exit(void)
  {
--	oprofile_timer_exit();
- 	oprofilefs_unregister();
--	oprofile_arch_exit();
-+	if (timer_mode)
-+		oprofile_timer_exit();
-+	else
-+		oprofile_arch_exit();
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	op_nmi_exit();
++	if (!nmi_timer)
++		op_nmi_exit();
+ #endif
  }
- 
- 
-diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
-index 3ef4462..878fba1 100644
---- a/drivers/oprofile/timer_int.c
-+++ b/drivers/oprofile/timer_int.c
-@@ -110,6 +110,7 @@ int oprofile_timer_init(struct oprofile_operations *ops)
- 	ops->start = oprofile_hrtimer_start;
- 	ops->stop = oprofile_hrtimer_stop;
- 	ops->cpu_type = "timer";
-+	printk(KERN_INFO "oprofile: using timer interrupt.\n");
- 	return 0;
- }
- 
 -- 
 1.7.7
 
