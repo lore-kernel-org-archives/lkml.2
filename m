@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260Ab1JSWVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:21:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27919 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932179Ab1JSWUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:20:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        thellstrom@vmware.com, thomas@shipmail.org, airlied@redhat.com
-Cc: xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 03/11] ttm/radeon/nouveau: Check the DMA address from TTM against known value.
-Date: Wed, 19 Oct 2011 18:19:24 -0400
-Message-Id: <1319062772-2793-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
-References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4E9F4D09.00D0,ss=1,re=0.000,fgs=0
+	id S932289Ab1JSWWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:22:01 -0400
+Received: from fieldses.org ([174.143.236.118]:35542 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932072Ab1JSWV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:21:59 -0400
+Date: Wed, 19 Oct 2011 18:21:51 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 00/26]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20111019222151.GC1874@fieldses.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. instead of checking against the DMA_ERROR_CODE value which is
-per-platform specific. The zero value is a known invalid value
-that the TTM layer sets on the dma_address array if it is not
-used (ttm_tt_alloc_page_directory calls drm_calloc_large which
-creates a page with GFP_ZERO).
+On Tue, Oct 18, 2011 at 09:02:35PM +0530, Aneesh Kumar K.V wrote:
+> Hi,
+> 
+> The following set of patches implements VFS and ext4 changes needed to implement
+> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> extended by file masks to fit into the standard POSIX file permission model.
+> They are designed to work seamlessly locally as well as across the NFSv4 and
+> CIFS/SMB2 network file system protocols.
 
-We can't use pci_dma_mapping_error as that is IOMMU
-specific (some check for a specific physical address, some
-for ranges, some just do a check against zero).
+Except for two questions in replies to individual patches, these look
+good to me.
 
-Also update the comments in the header about the true state
-of that parameter.
+--b.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 +--
- drivers/gpu/drm/radeon/radeon_gart.c    |    4 +---
- include/drm/ttm/ttm_page_alloc.h        |    4 ++--
- 3 files changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-index 82fad91..9b570c3 100644
---- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-@@ -42,8 +42,7 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
- 
- 	nvbe->nr_pages = 0;
- 	while (num_pages--) {
--		/* this code path isn't called and is incorrect anyways */
--		if (0) { /*dma_addrs[nvbe->nr_pages] != DMA_ERROR_CODE)*/
-+		if (dma_addrs[nvbe->nr_pages] != 0) {
- 			nvbe->pages[nvbe->nr_pages] =
- 					dma_addrs[nvbe->nr_pages];
- 		 	nvbe->ttm_alloced[nvbe->nr_pages] = true;
-diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
-index a533f52..068ba09 100644
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -181,9 +181,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
- 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
- 
- 	for (i = 0; i < pages; i++, p++) {
--		/* we reverted the patch using dma_addr in TTM for now but this
--		 * code stops building on alpha so just comment it out for now */
--		if (0) { /*dma_addr[i] != DMA_ERROR_CODE) */
-+		if (dma_addr[i] != 0) {
- 			rdev->gart.ttm_alloced[p] = true;
- 			rdev->gart.pages_addr[p] = dma_addr[i];
- 		} else {
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 8062890..0017b17 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -36,7 +36,7 @@
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages - (by default zero).
-  */
- int ttm_get_pages(struct list_head *pages,
- 		  int flags,
-@@ -51,7 +51,7 @@ int ttm_get_pages(struct list_head *pages,
-  * count.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages (by default zero).
-  */
- void ttm_put_pages(struct list_head *pages,
- 		   unsigned page_count,
--- 
-1.7.6.4
-
+> 
+> A user-space utility for displaying and changing richacls is available at [4]
+> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+> 
+> [4] git://github.com/kvaneesh/richacl-tools.git master
+> 
+> To test richacl on ext4 use tune2fs -O richacl to enable richacl feature and mount
+> the file system using -o acl mount option.
+> 
+> More details regarding richacl can be found at
+> http://acl.bestbits.at/richacl/
+> 
+> Changes from v6:
+> a) Update patches based on review comments.
+> b) Add Acked-by:
+> c) rebase to 3.1-rc10
+> 
+> git repository With all the patches can be found at
+> git://github.com/kvaneesh/linux.git richacl
+> 
+> IMHO the patches are ready to be merged upstream. How do we push these changes
+> to Linus tree ? Andrew, Viro, any comment on how we can get this merged upstream ?
+> 
+> -aneesh
+> 
+> 
