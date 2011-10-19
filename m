@@ -1,118 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1JSSo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:44:58 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48695 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab1JSSo4 (ORCPT
+	id S1752250Ab1JSSsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:48:36 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:41975
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751710Ab1JSSsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:44:56 -0400
-Message-ID: <4E9F1AA0.4010706@gmail.com>
-Date: Wed, 19 Oct 2011 12:44:48 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 19 Oct 2011 14:48:35 -0400
+X-SpamScore: -3
+X-BigFish: VPS-3(zz4015Lzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LTBTKS-01-JZK-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [V2][PATCH 0/5] oprofile: Updates and fixes for timer modes
+Date: Wed, 19 Oct 2011 20:47:50 +0200
+Message-ID: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com
-Subject: Re: [PATCH] perf top: fix crash on annotate request
-References: <1319048598-15030-1-git-send-email-dsahern@gmail.com> <20111019183848.GE2229@ghostprotocols.net>
-In-Reply-To: <20111019183848.GE2229@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series fixes and updates hr and nmi timer modes of
+oprofile. I got bug reports of crashes while unloading the oprofile
+module. There are two fixes that address this. The fixes are also for
+linux-stable. Another patch reworks the nmi timer mode. This was
+neccessary due to the removal of the x86 watchdog. Now nmi timer mode
+uses perf event to setup the nmi tick source. The other patches
+improve testability and ease exit code.
+
+After review I will apply the patches to the oprofile tree.
+
+Thanks,
+
+-Robert
 
 
-On 10/19/2011 12:38 PM, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Oct 19, 2011 at 12:23:18PM -0600, David Ahern escreveu:
->> Hitting an annotate case where src is not set and
->> perf-top crashes.
-> 
-> How did you got there? 
+V2:
 
-One stack trace:
-#0  0x0000000000434ba8 in list_add_tail (new=0x7fffec000c30, head=0x0)
-    at util/include/../../../../include/linux/list.h:76
-#1  0x00000000004351a5 in objdump__add_line (head=0x0,
-line=0x7fffec000c30) at util/annotate.c:101
-#2  0x000000000043584f in symbol__parse_objdump_line (sym=0xf505f0,
-map=0x98de00, file=0x7fffec000aa0,
-    privsize=40) at util/annotate.c:256
-#3  0x0000000000435d45 in symbol__annotate (sym=0xf505f0, map=0x98de00,
-privsize=40) at util/annotate.c:346
-#4  0x00000000004829a0 in symbol__tui_annotate (sym=0xf505f0,
-map=0x98de00, evidx=0, nr_events=1,
-    timer=0x426f9e <perf_top__sort_new_samples>, arg=0x77a300,
-delay_secs=2) at util/ui/browsers/annotate.c:405
-#5  0x0000000000482867 in hist_entry__tui_annotate (he=0x991ca0,
-evidx=0, nr_events=1,
-    timer=0x426f9e <perf_top__sort_new_samples>, arg=0x77a300,
-delay_secs=2) at util/ui/browsers/annotate.c:373
-#6  0x0000000000485684 in perf_evsel__hists_browse (evsel=0x910710,
-nr_events=1,
-    helpline=0x5201e8 "For a higher level overview, try: perf top --sort
-comm,dso", ev_name=0x910990 "cycles",
-    left_exits=false, timer=0x426f9e <perf_top__sort_new_samples>,
-arg=0x77a300, delay_secs=2)
-    at util/ui/browsers/hists.c:991
-...
+Only changes in patch #5:
+* removing pr_info()
+* fix undefined reference to `__udivdi3' for 32 bit build
+* fix section mismatch of .cpuinit.data:nmi_timer_cpu_nb
+* removed nmi timer setup in arch/x86
+* implemented function stubs for op_nmi_init/exit()
+* made code more readable in oprofile_init()
 
+Robert Richter (5):
+  oprofile, x86: Add kernel parameter oprofile.cpu_type=timer
+  oprofile: Fix crash when unloading module (hr timer mode)
+  oprofile, x86: Fix crash when unloading module (nmi timer mode)
+  oprofile: Remove exit function for timer mode
+  oprofile, x86: Reimplement nmi timer mode using perf event
 
-I was starting perf top, selecting a symbol and pressing 'a'. In the
-crash case it was the perf command itself.
+ Documentation/kernel-parameters.txt |    3 +
+ arch/Kconfig                        |    4 +
+ arch/x86/oprofile/Makefile          |    3 +-
+ arch/x86/oprofile/init.c            |   25 ++----
+ arch/x86/oprofile/nmi_int.c         |   27 ++++-
+ arch/x86/oprofile/nmi_timer_int.c   |   66 -------------
+ drivers/oprofile/nmi_timer_int.c    |  173 +++++++++++++++++++++++++++++++++++
+ drivers/oprofile/oprof.c            |   21 ++++-
+ drivers/oprofile/oprof.h            |    9 ++
+ drivers/oprofile/timer_int.c        |   29 +++---
+ kernel/events/core.c                |    2 +
+ 11 files changed, 252 insertions(+), 110 deletions(-)
+ delete mode 100644 arch/x86/oprofile/nmi_timer_int.c
+ create mode 100644 drivers/oprofile/nmi_timer_int.c
 
-David
+-- 
+1.7.7
 
 
-> Navigating thru callq? I  wonder if in this case
-> we'd instead shouldn't call
-> 
-> symbol__alloc_hist(sym, evlist->nr_entries)
-> 
-> And proceed, only complaining on ENOMEM, like we do in parse_source in
-> builtin-top.c.
-> 
-> I.e. if the user asked to go to a function without hits, no problem,
-> allocate the data structures needed for doing the annotation and show 0
-> hits on all lines.
-> 
-> - Arnaldo
->  
->> Signed-off-by: David Ahern <dsahern@gmail.com>
->> ---
->>  tools/perf/util/annotate.c             |    3 +++
->>  tools/perf/util/ui/browsers/annotate.c |    2 ++
->>  2 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
->> index bc8f477..26652b1 100644
->> --- a/tools/perf/util/annotate.c
->> +++ b/tools/perf/util/annotate.c
->> @@ -205,6 +205,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
->>  	size_t line_len;
->>  	s64 line_ip, offset = -1;
->>  
->> +	if (!notes->src)
->> +		return -1;
->> +
->>  	if (getline(&line, &line_len, file) < 0)
->>  		return -1;
->>  
->> diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
->> index a2c351c..5a67ead 100644
->> --- a/tools/perf/util/ui/browsers/annotate.c
->> +++ b/tools/perf/util/ui/browsers/annotate.c
->> @@ -410,6 +410,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
->>  	ui_helpline__push("Press <- or ESC to exit");
->>  
->>  	notes = symbol__annotation(sym);
->> +	if (!notes->src)
->> +		return -1;
->>  
->>  	list_for_each_entry(pos, &notes->src->source, node) {
->>  		struct objdump_line_rb_node *rbpos;
->> -- 
->> 1.7.6.4
