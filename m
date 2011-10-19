@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab1JSBMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 21:12:41 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39957 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1JSBMk (ORCPT
+	id S1752198Ab1JSBQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 21:16:29 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:26828 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab1JSBQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 21:12:40 -0400
-Date: Tue, 18 Oct 2011 23:12:33 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/7] perf ui browser: Make the colors configurable and
- change the defaults
-Message-ID: <20111019011233.GB3494@ghostprotocols.net>
-References: <1318974247-6683-1-git-send-email-acme@infradead.org>
- <1318974247-6683-7-git-send-email-acme@infradead.org>
- <4E9E082D.8040403@gmail.com>
- <20111018235133.GA3494@ghostprotocols.net>
+	Tue, 18 Oct 2011 21:16:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=PtjNmtHR21oPXsweh97Jl2pSJfW9bFq2+D2WLh3fReMptUYwdI5CxE6E9ERxjCONJ
+	qM/r6Owc7kG6XLH9tei9g==
+Date: Tue, 18 Oct 2011 18:16:21 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andi Kleen <andi@firstfloor.org>
+cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+In-Reply-To: <m2mxcyz4f7.fsf@firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
+References: <20111013135032.7c2c54cd.akpm@linux-foundation.org> <alpine.DEB.2.00.1110131602020.26553@router.home> <20111013142434.4d05cbdc.akpm@linux-foundation.org> <20111014122506.GB26737@sgi.com> <20111014135055.GA28592@sgi.com> <alpine.DEB.2.00.1110140856420.6411@router.home>
+ <20111014141921.GC28592@sgi.com> <alpine.DEB.2.00.1110140932530.6411@router.home> <alpine.DEB.2.00.1110140958550.6411@router.home> <20111014161603.GA30561@sgi.com> <20111018134835.GA16222@sgi.com> <m2mxcyz4f7.fsf@firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111018235133.GA3494@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 18, 2011 at 09:51:33PM -0200, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Oct 18, 2011 at 05:13:49PM -0600, David Ahern escreveu:
-> > Using gnome3 with Fedora 15 these last 2 color sets don't look so good.
-> > The 'black' background is not really black - more of a gray'ish look and
-> > the green font does not show up well. Yes, I get that they are
-> > configurable, but the defaults should be readable too.
- 
-> Yeah, I also noticed that libslang's "black" is kinda like a
-> bright black, really strange, I need to figure this out and also how to
-> get the colors currently set in the terminal to get this finally like
-> --stdio.
+On Tue, 18 Oct 2011, Andi Kleen wrote:
 
-Gack, its this problem:
+> > Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
+> > same default behavior as what we currently have?
+> 
+> Tunable is bad. We don't really want a "hundreds of lines magic shell script to
+> make large systems perform". Please find a way to auto tune.
+> 
 
-https://bugzilla.redhat.com/show_bug.cgi?id=426948
+Agreed, and I think even if we had a tunable that it would result in 
+potentially erradic VM performance because some areas depend on "fairly 
+accurate" ZVCs and it wouldn't be clear that you're trading other unknown 
+VM issues that will affect your workload because you've increased the 
+deltas.  Let's try to avoid having to ask "what is your ZVC delta tunable 
+set at?" when someone reports a bug about reclaim stopping preemptively.
 
-I know need to continue reading to figure out how to overcome this, as
-it seems to only affect libslang based apps, grrr.
-
-Out to bed now tho :-)
-
-- Arnaldo
+That said, perhaps we need higher deltas by default and then hints in key 
+areas in the form of sync_stats_if_delta_above(x) calls that would do 
+zone_page_state_add() only when that kind of precision is actually needed.  
+For public interfaces, that would be very easy to audit to see what the 
+level of precision is when parsing the data.
