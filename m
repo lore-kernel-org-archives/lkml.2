@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab1JSXqc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 19:46:32 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:1314 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1JSXqa convert rfc822-to-8bit (ORCPT
+	id S1755562Ab1JSXvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 19:51:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42566 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab1JSXvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 19:46:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=NDwbd2HzvqfcuzqjNjvhUq6d8fCevA5MgNHAi5IP+tg80XAdgky0gIt7eKwKmXqYt
-	x+1ma+FoUO2nawX0uwTQA==
+	Wed, 19 Oct 2011 19:51:52 -0400
+Date: Wed, 19 Oct 2011 16:51:46 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com,
+        rni@google.com, containers@lists.linux-foundation.org,
+        kay.sievers@vrfy.org
+Subject: Re: [PATCH 02/10] block: fix genhd refcounting in
+ blkio_policy_parse_and_set()
+Message-ID: <20111019235146.GS25124@google.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-3-git-send-email-tj@kernel.org>
+ <20111019132657.GA1140@redhat.com>
+ <20111019162902.GA25124@google.com>
+ <20111019165932.GH1140@redhat.com>
+ <20111019220553.GQ25124@google.com>
+ <20111019220717.GR25124@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20111014203138.5d3460d5@lxorguk.ukuu.org.uk>
-References: <201110132203.45394.bzolnier@gmail.com>
-	<4E9762DE.1060009@pobox.com>
-	<201110141158.33983.bzolnier@gmail.com>
-	<CANEJEGtzwQkDG1KmqVizmW8=SWuhYgjH02TgLaQzU-76TYUZZg@mail.gmail.com>
-	<20111014203138.5d3460d5@lxorguk.ukuu.org.uk>
-Date: Wed, 19 Oct 2011 16:46:27 -0700
-Message-ID: <CAMHSBOXBd4u9Vgtgh0D0SfGVwjgE-iNz5_v5P51WJ+x=biOdzg@mail.gmail.com>
-Subject: Re: [PATCH] libata: fix for transport xfer attributes
-From: Gwendal Grignou <gwendal@google.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Grant Grundler <grundler@google.com>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111019220717.GR25124@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes looks good. I will post another one related to sata speed
-soon. Also, I have to support slave ATA devices.
+Hello, again.
 
-Gwendal.
+(cc'ing containers list and Kay)
 
-On Fri, Oct 14, 2011 at 12:31 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>     "xfer_mode   Current transfer mode."
->>
->> I agree with Bartomiej that current behavior is incorrect.
->
-> Well we should probably fix the document and add the current transfer
-> mode as its own sysfs entry - much less risky.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+The original thread is at
+
+  http://thread.gmane.org/gmane.linux.kernel/1205150/focus=1205160
+
+and it's about retaining blkiocg rules across device destruction.
+
+On Wed, Oct 19, 2011 at 03:07:17PM -0700, Tejun Heo wrote:
+> On Wed, Oct 19, 2011 at 03:05:53PM -0700, Tejun Heo wrote:
+> > Hmmm.... I don't know.  If we're gonna bind rule existence to that of
+> 
+> Heh, I meant to say, "if those two are unbound,"
+> 
+> > device, wouldn't it be better to simply not check whether the device
+> > exists?  The current behavior seems pretty confusing to me.
+
+I've been thinking about it and the more I think about it, the current
+behavior seems just wrong.  Device node # doesn't mean anything before
+a device actually appears there.  There is no way userland can know
+deterministically how the device node allocation would end up.
+
+For example, sd allocates minors according to internal ida allocation
+which is freed on scsi_disk_release() - ie. when all *kernel*
+references go away which the userland has no way to find out until
+after new device comes up with a different devt.
+
+For EXT_DEVT devices, this becomes even less meaingful.  There is
+absolutely no guarantee what devno would mean what.  devno which is
+currently assigned to the whole disk now can be reassigned to a
+partition.  There absolutely is no rule regarding who gets what
+numbers.  ie. This can end up with rules pointing to partitions.
+
+Moreover, it doesn't even make the implementation simpler.  blkiocg
+currently keeps a separate list of policies so that they don't
+disappear along with blkg's.
+
+The only way applying rules to dynamic devices can work is doing the
+proper dynamic configuration off udev and friends.
+
+Can we *please* get rid of this misfeature?
+
+Thank you.
+
+-- 
+tejun
