@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab1JSVgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:36:10 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:41331 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab1JSVgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:36:07 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: <linux-kernel@vger.kernel.org>
-Date: Mon, 17 Oct 2011 14:19:18 -0700
-Message-ID: <m1lisj48q1.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754512Ab1JSVhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:37:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48987 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755Ab1JSVhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 17:37:34 -0400
+Date: Wed, 19 Oct 2011 23:37:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mark Langsdorf <mark.langsdorf@amd.com>
+Cc: venki@google.com, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86: force HPET to immediately enable RTC wake
+Message-ID: <20111019213727.GA29433@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Mark Langsdorf <mark.langsdorf@amd.com>, venki@google.com,
+	linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+References: <201110191226.49627.mark.langsdorf@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/p5pBdCl+EUqvKTNY25K+JfVmBdaee6Gk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar
-	<mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-X-Spam-Relay-Country: **
-Subject: [PATCH 1/2] x86 swiotlb: Verify we can perform the remapping requested.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <201110191226.49627.mark.langsdorf@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CCing x86 people.
 
-Recently I had a driver try with a peculiar 2G dma memory limit.
-It failed in weird and strange ways because my bounce buffers were
-being allocated above 2G where the driver could not reach, and
-no error was reported when the mappings were setup.
+On Wed, Oct 19, 2011 at 12:26:48PM -0500, Mark Langsdorf wrote:
+> When HPET is operating in RTC mode, the TN_ENABLE bit
+> on timer1 controls whether the HPET or the RTC delivers
+> interrupts to irq8. When the system goes into suspend,
+> the RTC driver sends a signal to the HPET driver so
+> that the HPET releases control of irq8, allowing the
+> RTC to wake the system from suspend. The switchover
+> is accomplished by a write to the HPET configuration
+> registers which currently only occurs while servicing
+> the HPET interrupt.
+> 
+> On some systems, I have seen the system suspend before
+> an HPET interrupt occurs, preventing the write to the
+> HPET configuration register and leaving the HPET in
+> control of the irq8. As the HPET is not active during
+> suspend, it does not generate a wake signal and RTC
+> alarms do not work.
+> 
+> This patch forces the HPET driver to immediately transfer
+> control of the irq8 channel to the RTC instead of waiting
+> until the next interrupt event.
+> 
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
+> Tested-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> ---
+>  arch/x86/kernel/hpet.c |   21 ++++++++++++++-------
+>  1 files changed, 14 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+> index 4aecc54..10b09d7 100644
+> --- a/arch/x86/kernel/hpet.c
+> +++ b/arch/x86/kernel/hpet.c
+> @@ -1048,6 +1048,14 @@ int hpet_rtc_timer_init(void)
+>  }
+>  EXPORT_SYMBOL_GPL(hpet_rtc_timer_init);
+>  
+> +static void hpet_disable_rtc_channel(void)
+> +{
+> +	unsigned long cfg;
+> +	cfg = hpet_readl(HPET_T1_CFG);
+> +	cfg &= ~HPET_TN_ENABLE;
+> +	hpet_writel(cfg, HPET_T1_CFG);
+> +}
+> +
+>  /*
+>   * The functions below are called from rtc driver.
+>   * Return 0 if HPET is not being used.
+> @@ -1059,6 +1067,9 @@ int hpet_mask_rtc_irq_bit(unsigned long bit_mask)
+>  		return 0;
+>  
+>  	hpet_rtc_flags &= ~bit_mask;
+> +	if (unlikely(!hpet_rtc_flags))
+> +		hpet_disable_rtc_channel();
+> +
+>  	return 1;
+>  }
+>  EXPORT_SYMBOL_GPL(hpet_mask_rtc_irq_bit);
+> @@ -1124,15 +1135,11 @@ EXPORT_SYMBOL_GPL(hpet_rtc_dropped_irq);
+>  
+>  static void hpet_rtc_timer_reinit(void)
+>  {
+> -	unsigned int cfg, delta;
+> +	unsigned int delta;
+>  	int lost_ints = -1;
+>  
+> -	if (unlikely(!hpet_rtc_flags)) {
+> -		cfg = hpet_readl(HPET_T1_CFG);
+> -		cfg &= ~HPET_TN_ENABLE;
+> -		hpet_writel(cfg, HPET_T1_CFG);
+> -		return;
+> -	}
+> +	if (unlikely(!hpet_rtc_flags))
+> +		hpet_disable_rtc_channel();
+>  
+>  	if (!(hpet_rtc_flags & RTC_PIE) || hpet_pie_limit)
+>  		delta = hpet_default_delta;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Use the swiotlb_dma_supported to avoid silent problems like this
-in the future.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- arch/x86/kernel/pci-swiotlb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-index 8f972cb..6a802fa 100644
---- a/arch/x86/kernel/pci-swiotlb.c
-+++ b/arch/x86/kernel/pci-swiotlb.c
-@@ -38,7 +38,7 @@ static struct dma_map_ops swiotlb_dma_ops = {
- 	.unmap_sg = swiotlb_unmap_sg_attrs,
- 	.map_page = swiotlb_map_page,
- 	.unmap_page = swiotlb_unmap_page,
--	.dma_supported = NULL,
-+	.dma_supported = swiotlb_dma_supported,
- };
- 
- /*
 -- 
-1.7.2.5
-
+Regards/Gruss,
+    Boris.
