@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1JSGHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 02:07:43 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50428 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1JSGHm (ORCPT
+	id S1755266Ab1JSGJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 02:09:21 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5029 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab1JSGJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 02:07:42 -0400
-Message-ID: <1319004451.16275.1.camel@phoenix>
-Subject: [PATCH] ASoC: ssm2602: Use snd_soc_update_bits for read-modify-write
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Date: Wed, 19 Oct 2011 14:07:31 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 19 Oct 2011 02:09:19 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=VrcZy5XPY3lpl88z5d/8QbSRK1z8ttFv7toTveVFTbwG7u8LRY3oibfnlJXl49n8x
+	5oaH4NCAk53Ko4OTAHv5Q==
+Date: Tue, 18 Oct 2011 23:09:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Norbert Preining <preining@logic.at>
+cc: linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>, ilw@linux.intel.com,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn is getting very shaky
+In-Reply-To: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
+Message-ID: <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
+References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_update_bits for read-modify-write register access instead of
-open-coding it using snd_soc_read and snd_soc_write
+On Wed, 19 Oct 2011, Norbert Preining wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/ssm2602.c |   30 ++++++++++++++++--------------
- 1 files changed, 16 insertions(+), 14 deletions(-)
+> Hi everyone
+> 
+> (please Cc),
+> 
+> I am currently running 3.1.0-rc10, and I am having a hard time with
+> the wlan network here at the university.
+> 
+> For quite some time, like 10min, it is fine, then suddently the
+> iwlagn driver gives up on me and connection is dropped.
+> 
+> In the log file I see:
+> [  172.137011] iwlagn 0000:06:00.0: Tx aggregation enabled on ra = 00:24:c4:ab:bd:ef tid = 0
+> [  821.841016] iwlagn 0000:06:00.0: Tx aggregation enabled on ra = 00:24:c4:ab:bd:ef tid = 6
+> [ 1095.580735] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
+> [ 1095.780076] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
+> [ 1095.980101] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
+> [ 1096.180117] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
+> [ 1105.255464] wlan0: deauthenticating from 00:24:c4:ab:bd:ef by local choice (reason=2)
+> [ 1105.255519] iwlagn 0000:06:00.0: Stopping AGG while state not ON or starting
+> [ 1105.265581] cfg80211: Calling CRDA for country: JP
+> [ 1105.271476] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 1)
+> [ 1105.468105] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 2)
+> [ 1105.668110] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 3)
+> [ 1105.868090] wlan0: authentication with 00:24:c4:ab:bd:e0 timed out
+> [ 1113.667890] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
+> [ 1113.864116] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
+> [ 1114.064095] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
+> [ 1114.264109] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
+> 
+> Somewhere around 1100 the connection is gone and never comes back again.
+> 
+> I tried removing the driver module from the kernel and reinserting it,
+> tried to turn on and off the hardware swithc (rfkill), all without
+> no success, the wlan connection remains dead until I reboot.
+> 
+> I am not sure exactely when it started, I guess somewhere in the
+> 3.1 cycle, before I was permanently working wiht wlan, now I always
+> plug in the cable.
+> 
+> If there is any way to track down this, or any suggestions how I can
+> debug it, please let me know.
+> 
+> Hardware: Sony VGN-Z11, Intel(R) WiFi Link 5100 AGN, REV=0x54
+> L1 Enabled; Disabling L0S
+> device EEPROM VER=0x11e, CALIB=0x4
+> Device SKU: 0Xf0
+> Tunable channels: 13 802.11bg, 24 802.11a channels
+> loaded firmware version 8.83.5.1 build 33692 (EXP)
+> 
+> 
+> On the other hand, the same laptop with the very same configuration 
+> works very nicely in my flat's wlan, which is some dirt cheap Japanese
+> only wlan router.
+> 
 
-diff --git a/sound/soc/codecs/ssm2602.c b/sound/soc/codecs/ssm2602.c
-index e149ec6..3cb3271 100644
---- a/sound/soc/codecs/ssm2602.c
-+++ b/sound/soc/codecs/ssm2602.c
-@@ -343,12 +343,14 @@ static void ssm2602_shutdown(struct snd_pcm_substream *substream,
- static int ssm2602_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	u16 mute_reg = snd_soc_read(codec, SSM2602_APDIGI) & ~APDIGI_ENABLE_DAC_MUTE;
-+
- 	if (mute)
--		snd_soc_write(codec, SSM2602_APDIGI,
--				mute_reg | APDIGI_ENABLE_DAC_MUTE);
-+		snd_soc_update_bits(codec, SSM2602_APDIGI,
-+				    APDIGI_ENABLE_DAC_MUTE,
-+				    APDIGI_ENABLE_DAC_MUTE);
- 	else
--		snd_soc_write(codec, SSM2602_APDIGI, mute_reg);
-+		snd_soc_update_bits(codec, SSM2602_APDIGI,
-+				    APDIGI_ENABLE_DAC_MUTE, 0);
- 	return 0;
- }
- 
-@@ -540,12 +542,12 @@ static int ssm2602_resume(struct snd_soc_codec *codec)
- static int ssm2602_probe(struct snd_soc_codec *codec)
- {
- 	struct snd_soc_dapm_context *dapm = &codec->dapm;
--	int ret, reg;
-+	int ret;
- 
--	reg = snd_soc_read(codec, SSM2602_LOUT1V);
--	snd_soc_write(codec, SSM2602_LOUT1V, reg | LOUT1V_LRHP_BOTH);
--	reg = snd_soc_read(codec, SSM2602_ROUT1V);
--	snd_soc_write(codec, SSM2602_ROUT1V, reg | ROUT1V_RLHP_BOTH);
-+	snd_soc_update_bits(codec, SSM2602_LOUT1V,
-+			    LOUT1V_LRHP_BOTH, LOUT1V_LRHP_BOTH);
-+	snd_soc_update_bits(codec, SSM2602_ROUT1V,
-+			    ROUT1V_RLHP_BOTH, ROUT1V_RLHP_BOTH);
- 
- 	ret = snd_soc_add_controls(codec, ssm2602_snd_controls,
- 			ARRAY_SIZE(ssm2602_snd_controls));
-@@ -578,7 +580,7 @@ static int ssm2604_probe(struct snd_soc_codec *codec)
- static int ssm260x_probe(struct snd_soc_codec *codec)
- {
- 	struct ssm2602_priv *ssm2602 = snd_soc_codec_get_drvdata(codec);
--	int ret, reg;
-+	int ret;
- 
- 	pr_info("ssm2602 Audio Codec %s", SSM2602_VERSION);
- 
-@@ -595,10 +597,10 @@ static int ssm260x_probe(struct snd_soc_codec *codec)
- 	}
- 
- 	/* set the update bits */
--	reg = snd_soc_read(codec, SSM2602_LINVOL);
--	snd_soc_write(codec, SSM2602_LINVOL, reg | LINVOL_LRIN_BOTH);
--	reg = snd_soc_read(codec, SSM2602_RINVOL);
--	snd_soc_write(codec, SSM2602_RINVOL, reg | RINVOL_RLIN_BOTH);
-+	snd_soc_update_bits(codec, SSM2602_LINVOL,
-+			    LINVOL_LRIN_BOTH, LINVOL_LRIN_BOTH);
-+	snd_soc_update_bits(codec, SSM2602_RINVOL,
-+			    RINVOL_RLIN_BOTH, RINVOL_RLIN_BOTH);
- 	/*select Line in as default input*/
- 	snd_soc_write(codec, SSM2602_APANA, APANA_SELECT_DAC |
- 			APANA_ENABLE_MIC_BOOST);
--- 
-1.7.5.4
-
-
-
+There have been recent issues in 3.1-rc9 reported with iwlagn, see the 
+thread at https://lkml.org/lkml/2011/10/15/107 even though you have 
+different hardware.  Adding Wey-Yi Guy from Intel and the linux-wireless 
+mailing list to the cc.
