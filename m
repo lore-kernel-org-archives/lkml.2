@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab1JSEeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:34:05 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:44976 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754277Ab1JSEeE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:34:04 -0400
-From: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Date: Wed, 19 Oct 2011 06:33:18 +0200
-Subject: RE: [PATCH] drivers/leds/leds-lp5521.c: check if reset is successful
-Thread-Topic: [PATCH] drivers/leds/leds-lp5521.c: check if reset is
- successful
-Thread-Index: AcyN2m0wYRUN1iBKSKyJ0/jC1BSwXAAPaBBg
-Message-ID: <C832F8F5D375BD43BFA11E82E0FE9FE00DC2FE2615@EXDCVYMBSTM005.EQ1STM.local>
-References: <1318246202-2476-1-git-send-email-srinidhi.kasagar@stericsson.com>
- <20111018141048.1f38b211.akpm@linux-foundation.org>
-In-Reply-To: <20111018141048.1f38b211.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755146Ab1JSExY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:53:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40541 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab1JSExX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 00:53:23 -0400
 MIME-Version: 1.0
+In-Reply-To: <1318996839.6222.20.camel@marge.simson.net>
+References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com>
+ <1316762345.8168.4.camel@marge.simson.net> <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+ <1316770936.6641.11.camel@marge.simson.net> <1316775204.7562.9.camel@marge.simson.net>
+ <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+ <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net>
+ <1318233815.6527.5.camel@marge.simson.net> <1318925436.9641.23.camel@marge.simson.net>
+ <1318927355.21167.3.camel@twins> <1318927629.9641.27.camel@marge.simson.net>
+ <1318928763.21167.5.camel@twins> <1318929825.9641.32.camel@marge.simson.net>
+ <1318932693.6748.5.camel@marge.simson.net> <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+ <1318996839.6222.20.camel@marge.simson.net>
+From: Paul Menage <paul@paulmenage.org>
+Date: Tue, 18 Oct 2011 21:53:03 -0700
+X-Google-Sender-Auth: 1ZGfEqJiP2KIZc64ExvyrtdQ-34
+Message-ID: <CALdu-PA7+bygEP-44XB8evaTrsZiDopc-24SmUV+0NbiA=sHNw@mail.gmail.com>
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+To: Mike Galbraith <efault@gmx.de>
+Cc: David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 18, 2011 at 9:00 PM, Mike Galbraith <efault@gmx.de> wrote:
+>
+> Oh my, I can't win.
+>
+> Either of the two patchlets will do the trick, so maintainer's choice.
+>
 
-> -----Original Message-----
-> From: Andrew Morton [mailto:akpm00@gmail.com] On Behalf Of Andrew
-> Morton
-> Sent: Wednesday, October 19, 2011 2:41 AM
-> To: Srinidhi KASAGAR
-> Cc: rpurdie@rpsys.net; linux-kernel@vger.kernel.org;
-> linus.walleij@linaro.org
-> Subject: Re: [PATCH] drivers/leds/leds-lp5521.c: check if reset is
-> successful
-> 
-> On Mon, 10 Oct 2011 17:00:02 +0530
-> Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com> wrote:
-> 
-> > make sure that the reset is successful by issuing a dummy
-> > read to R channel current register and check its default
-> > value. On some platforms, without this dummy read, any
-> > further access to {R/G/B}_EXEC will not have any impact.
-> >
-> > ...
-> >
-> > @@ -681,6 +685,21 @@ static int __devinit lp5521_probe(struct
-> i2c_client *client,
-> >  				     * Exact value is not available. 10 - 20ms
-> >  				     * appears to be enough for reset.
-> >  				     */
-> > +
-> > +	/*
-> > +	 * Make sure that the chip is reset by reading back
-> > +	 * r channel current reg. This is a dummy read, otherwise
-> > +	 * in some platforms, access to R G B channel program
-> > +	 * execution mode to 'Run' in LP5521_REG_ENABLE register
-> > +	 * will not have any affect - strange!
-> > +	 */
-> > +	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
-> > +	if (buf != LP5521_REG_R_CURR_DEFAULT) {
-> > +		dev_err(&client->dev, "error in reseting chip\n");
-> > +		goto fail2;
-> > +	}
-> > +	usleep_range(10000, 20000);
-> 
-> Sorry, but I found that comment very hard to follow.
-> 
-> Is this version accurate and complete?
-> 
-> 	/*
-> 	 * Make sure that the chip is reset by reading back the r channel
-> 	 * current reg. This dummy read is required on some platforms -
-> 	 * otherwise further access to the R G B channels in the
-> 	 * LP5521_REG_ENABLE register will not have any effect - strange!
-> 	 */
+I agree with your original idea - if it's just some cgroup subsystems
+that are unsafe to have kthreadd in, then they can make that choice.
 
-That should be ok.
+Otherwise you restrict things unnecessarily. E.g. a systemd-alike
+might have a tracking hierarchy (without any subsystems attached,
+potentially) and want to keep the top-level empty and have all kernel
+threads their own cgroup. There's absolutely no problem with that.
 
-Thanks Andrew.
+I can see the argument that the number of use-cases for this is fairly
+small, but in line with the principle of keeping the ABI as stable as
+possible in the absence of bugs that force a change, having the
+restriction in the necessary subsystems seems cleaner.
 
-Srinidhi
+Paul
