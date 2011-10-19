@@ -1,138 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab1JSEd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:33:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44222 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755014Ab1JSEd1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:33:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318974898-21431-6-git-send-email-serge@hallyn.com>
-References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
-	<1318974898-21431-6-git-send-email-serge@hallyn.com>
-Date: Tue, 18 Oct 2011 21:33:25 -0700
-X-Google-Sender-Auth: 1xRjNs5bvhL_Vpp8zR2joDvyAFw
-Message-ID: <CALQRfL51U=cuLdVUpFXTog++3WwMjJB+9S6T8gVibC5gdGa5JQ@mail.gmail.com>
-Subject: Re: [PATCH 5/9] user namespace: clamp down users of cap_raised
-From: "Andrew G. Morgan" <morgan@kernel.org>
-To: Serge Hallyn <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        akpm@linux-foundation.org, oleg@redhat.com, richard@nod.at,
-        mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        dhowells@redhat.com, eparis@redhat.com,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755168Ab1JSEeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:34:05 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:44976 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754277Ab1JSEeE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 00:34:04 -0400
+From: Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Date: Wed, 19 Oct 2011 06:33:18 +0200
+Subject: RE: [PATCH] drivers/leds/leds-lp5521.c: check if reset is successful
+Thread-Topic: [PATCH] drivers/leds/leds-lp5521.c: check if reset is
+ successful
+Thread-Index: AcyN2m0wYRUN1iBKSKyJ0/jC1BSwXAAPaBBg
+Message-ID: <C832F8F5D375BD43BFA11E82E0FE9FE00DC2FE2615@EXDCVYMBSTM005.EQ1STM.local>
+References: <1318246202-2476-1-git-send-email-srinidhi.kasagar@stericsson.com>
+ <20111018141048.1f38b211.akpm@linux-foundation.org>
+In-Reply-To: <20111018141048.1f38b211.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 2:54 PM, Serge Hallyn <serge@hallyn.com> wrote:
-> From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
->
-> A few modules are using cap_raised(current_cap(), cap) to authorize
-> actions.  This means that tasks which are privileged in non-initial
-> user namespaces will be deemed privileged.  The privilege should only
-> be granted if the task is in the initial user namespace.
->
-> Switching the calls to capable() would change the behavior - it would
-> cause the LSM capable hooks to be called, and set PF_SUPERPRIV if
-> the capability was used.  So instead, put in an explicit check and
-> refuse privilege if the caller is not in init_user_ns.
->
-> Vasiliy had suggested introducing a new helper for this.  I'm open
-> to suggestions, but for four callers and for a discouraged idiom,
-> I'd rather not pollute the capable* function namespace with a bad name.
-> (even has_capability goes through the LSM hooks)
->
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Andrew Morgan <morgan@kernel.org>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  drivers/block/drbd/drbd_nl.c           |    5 +++++
->  drivers/md/dm-log-userspace-transfer.c |    3 +++
->  drivers/staging/pohmelfs/config.c      |    3 +++
->  drivers/video/uvesafb.c                |    3 +++
->  4 files changed, 14 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-> index 0feab26..9a87a14 100644
-> --- a/drivers/block/drbd/drbd_nl.c
-> +++ b/drivers/block/drbd/drbd_nl.c
-> @@ -2297,6 +2297,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
->                return;
->        }
->
-> +       if (current_user_ns() != &init_user_ns) {
 
-I'd feel much happier with this if it did use some inline or macro here.
+> -----Original Message-----
+> From: Andrew Morton [mailto:akpm00@gmail.com] On Behalf Of Andrew
+> Morton
+> Sent: Wednesday, October 19, 2011 2:41 AM
+> To: Srinidhi KASAGAR
+> Cc: rpurdie@rpsys.net; linux-kernel@vger.kernel.org;
+> linus.walleij@linaro.org
+> Subject: Re: [PATCH] drivers/leds/leds-lp5521.c: check if reset is
+> successful
+> 
+> On Mon, 10 Oct 2011 17:00:02 +0530
+> Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com> wrote:
+> 
+> > make sure that the reset is successful by issuing a dummy
+> > read to R channel current register and check its default
+> > value. On some platforms, without this dummy read, any
+> > further access to {R/G/B}_EXEC will not have any impact.
+> >
+> > ...
+> >
+> > @@ -681,6 +685,21 @@ static int __devinit lp5521_probe(struct
+> i2c_client *client,
+> >  				     * Exact value is not available. 10 - 20ms
+> >  				     * appears to be enough for reset.
+> >  				     */
+> > +
+> > +	/*
+> > +	 * Make sure that the chip is reset by reading back
+> > +	 * r channel current reg. This is a dummy read, otherwise
+> > +	 * in some platforms, access to R G B channel program
+> > +	 * execution mode to 'Run' in LP5521_REG_ENABLE register
+> > +	 * will not have any affect - strange!
+> > +	 */
+> > +	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
+> > +	if (buf != LP5521_REG_R_CURR_DEFAULT) {
+> > +		dev_err(&client->dev, "error in reseting chip\n");
+> > +		goto fail2;
+> > +	}
+> > +	usleep_range(10000, 20000);
+> 
+> Sorry, but I found that comment very hard to follow.
+> 
+> Is this version accurate and complete?
+> 
+> 	/*
+> 	 * Make sure that the chip is reset by reading back the r channel
+> 	 * current reg. This dummy read is required on some platforms -
+> 	 * otherwise further access to the R G B channels in the
+> 	 * LP5521_REG_ENABLE register will not have any effect - strange!
+> 	 */
 
-#define NS_IS_NON_DEFAULT (current_user_ns() != &init_user_ns)
+That should be ok.
 
-if (NS_IS_NON_DEFAULT || !cap_raised(current_cap(), CAP_SYS_ADMIN)) {
-        retcode = ERR_PERM;
-        goto fail;
-}
+Thanks Andrew.
 
-Is it important to support the situation that NS support is not configured?
-
-Cheers
-
-Andrew
-
-
-> +               retcode = ERR_PERM;
-> +               goto fail;
-> +       }
-> +
->        if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
->                retcode = ERR_PERM;
->                goto fail;
-> diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
-> index 1f23e04..140ca81 100644
-> --- a/drivers/md/dm-log-userspace-transfer.c
-> +++ b/drivers/md/dm-log-userspace-transfer.c
-> @@ -134,6 +134,9 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
->  {
->        struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
->
-> +       if (current_user_ns() != &init_user_ns)
-> +               return;
-> +
->        if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
->                return;
->
-> diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
-> index b6c42cb..cd259d0 100644
-> --- a/drivers/staging/pohmelfs/config.c
-> +++ b/drivers/staging/pohmelfs/config.c
-> @@ -525,6 +525,9 @@ static void pohmelfs_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *n
->  {
->        int err;
->
-> +       if (current_user_ns() != &init_user_ns)
-> +               return;
-> +
->        if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
->                return;
->
-> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-> index 7f8472c..71dab8e 100644
-> --- a/drivers/video/uvesafb.c
-> +++ b/drivers/video/uvesafb.c
-> @@ -73,6 +73,9 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
->        struct uvesafb_task *utask;
->        struct uvesafb_ktask *task;
->
-> +       if (current_user_ns() != &init_user_ns)
-> +               return;
-> +
->        if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
->                return;
->
-> --
-> 1.7.5.4
->
->
+Srinidhi
