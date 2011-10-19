@@ -1,69 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1JSStg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:49:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62839 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab1JSStd (ORCPT
+	id S1753049Ab1JSStw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:49:52 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:6632 "EHLO
+	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1JSStp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:49:33 -0400
-Date: Wed, 19 Oct 2011 22:49:26 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrey Vagin <avagin@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
-Message-ID: <20111019184926.GY14464@moon>
-References: <20111014110416.552685686@openvz.org>
- <20111014110511.670174429@openvz.org>
- <20111014171033.GC4294@google.com>
- <20111014173304.GD4294@google.com>
- <4E9E9255.7090601@parallels.com>
- <20111019182228.GJ25124@google.com>
+	Wed, 19 Oct 2011 14:49:45 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LTBTLD-01-K0M-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [V2][PATCH 4/5] oprofile: Remove exit function for timer mode
+Date: Wed, 19 Oct 2011 20:47:54 +0200
+Message-ID: <1319050075-23901-5-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
+References: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019182228.GJ25124@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 11:22:28AM -0700, Tejun Heo wrote:
-> Hello, Pavel.
-> 
-> On Wed, Oct 19, 2011 at 01:03:17PM +0400, Pavel Emelyanov wrote:
-> > > I don't think this is a good idea.  We already have most of interface
-> > > necessary for restoring task state and there's no need to put it into
-> > > the kernel as one piece.  If there's something which can't be done
-> > > from userland using existing interfaces, let's please discuss what
-> > > they are and whether they can be resolved differently first.
-> > 
-> > The rest API we will require will look too special-purpose (like Cyrill
-> > mentioned the ability to set the mm's fields such as start_code, etc).
-> 
-> I find that quite difficult to agree with.  We're talking about some
-> minor additions to prctl against updating exec path to do something it
-> was never designed to do + new binary format.
-> 
+Remove exit functions by moving init/exit code to oprofile's setup/
+shutdown functions. Doing so the oprofile module exit code will be
+easier and less error-prone.
 
-Hi Tejun,
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ drivers/oprofile/oprof.c     |    8 ++------
+ drivers/oprofile/timer_int.c |   30 +++++++++++++++---------------
+ 2 files changed, 17 insertions(+), 21 deletions(-)
 
-apart from controversy on elf'ish restore, I would like to know if there
-a way to poke alien process memory with something faster than sizeof(long)
-at once as ptrace proposes. At moment on my test tasks it's not that long
-but the problem is there are servers with GBs of memory and snapshotting
-memory data becomes a bottleneck. The same applies to restore procedure,
-especially on big-data-chunks. Hm? Am I missing something obvious?
+diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+index f8c752e..f7cd069 100644
+--- a/drivers/oprofile/oprof.c
++++ b/drivers/oprofile/oprof.c
+@@ -262,9 +262,7 @@ static int __init oprofile_init(void)
+ 		return 0;
+ 
+ 	/* failed */
+-	if (timer_mode)
+-		oprofile_timer_exit();
+-	else
++	if (!timer_mode)
+ 		oprofile_arch_exit();
+ 
+ 	return err;
+@@ -274,9 +272,7 @@ static int __init oprofile_init(void)
+ static void __exit oprofile_exit(void)
+ {
+ 	oprofilefs_unregister();
+-	if (timer_mode)
+-		oprofile_timer_exit();
+-	else
++	if (!timer_mode)
+ 		oprofile_arch_exit();
+ }
+ 
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index 878fba1..93404f7 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -97,24 +97,24 @@ static struct notifier_block __refdata oprofile_cpu_notifier = {
+ 	.notifier_call = oprofile_cpu_notify,
+ };
+ 
+-int oprofile_timer_init(struct oprofile_operations *ops)
++static int oprofile_hrtimer_setup(void)
+ {
+-	int rc;
+-
+-	rc = register_hotcpu_notifier(&oprofile_cpu_notifier);
+-	if (rc)
+-		return rc;
+-	ops->create_files = NULL;
+-	ops->setup = NULL;
+-	ops->shutdown = NULL;
+-	ops->start = oprofile_hrtimer_start;
+-	ops->stop = oprofile_hrtimer_stop;
+-	ops->cpu_type = "timer";
+-	printk(KERN_INFO "oprofile: using timer interrupt.\n");
+-	return 0;
++	return register_hotcpu_notifier(&oprofile_cpu_notifier);
+ }
+ 
+-void oprofile_timer_exit(void)
++static void oprofile_hrtimer_shutdown(void)
+ {
+ 	unregister_hotcpu_notifier(&oprofile_cpu_notifier);
+ }
++
++int oprofile_timer_init(struct oprofile_operations *ops)
++{
++	ops->create_files	= NULL;
++	ops->setup		= oprofile_hrtimer_setup;
++	ops->shutdown		= oprofile_hrtimer_shutdown;
++	ops->start		= oprofile_hrtimer_start;
++	ops->stop		= oprofile_hrtimer_stop;
++	ops->cpu_type		= "timer";
++	printk(KERN_INFO "oprofile: using timer interrupt.\n");
++	return 0;
++}
+-- 
+1.7.7
 
-	Cyrill
+
