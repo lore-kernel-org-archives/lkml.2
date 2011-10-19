@@ -1,132 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1JSE0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:26:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40977 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab1JSE0a (ORCPT
+	id S1754925Ab1JSE0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:26:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44380 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab1JSE0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:26:30 -0400
+	Wed, 19 Oct 2011 00:26:32 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com
-Cc: ctalbott@google.com, ni@google.com
-Subject: [PATCHSET block/for-next] fix request_queue life-cycle management
-Date: Tue, 18 Oct 2011 21:26:14 -0700
-Message-Id: <1318998384-22525-1-git-send-email-tj@kernel.org>
+Cc: ctalbott@google.com, ni@google.com, Tejun Heo <tj@kernel.org>,
+        stable@kernel.org
+Subject: [PATCH 01/10] block: make gendisk hold a reference to its queue
+Date: Tue, 18 Oct 2011 21:26:15 -0700
+Message-Id: <1318998384-22525-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1318998384-22525-1-git-send-email-tj@kernel.org>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_queue life-cycle management is broken in that while it's
-lifetime is determined by reference count, it relies on the q owner to
-guarantee that no request will traverse it once it's shut down using
-blk_cleanup_queue().
+The following command sequence triggers an oops.
 
-As there are other holders of a queue (e.g. bsg), the owner
-(e.g. SCSI) doesn't have any way to know whether requests from other
-users are in flight or prevent others from issuing further requests.
+# mount /dev/sdb1 /mnt
+# echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
+# umount /mnt
 
-In most cases, one of the unsynchronized QUEUE_FLAG_DEAD tests
-somewhere catches those stray requests; however, with bad enough luck,
-or mdelay()'s at the right spot, this broken shutdown/release
-implementation leads to all sorts of fun during device removal.
+ general protection fault: 0000 [#1] PREEMPT SMP
+ CPU 2
+ Modules linked in:
 
-* elv_merge() calling into elevator to investigate merging
-   possibilities after blk_cleanup_queue() destroyed elevator.
-
- Pid: 648, comm: test_rawio Not tainted 3.1.0-rc3-work+ #56 Bochs Bochs
- RIP: 0010:[<ffffffff8137d651>]  [<ffffffff8137d651>] elv_rqhash_find+0x61/0x100
- ...
+ Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
+ RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
+...
  Call Trace:
-  [<ffffffff8137d774>] elv_merge+0x84/0xe0
-  [<ffffffff81385b54>] blk_queue_bio+0xf4/0x400
-  [<ffffffff813838ea>] generic_make_request+0xca/0x100
-  [<ffffffff81383994>] submit_bio+0x74/0x100
-  [<ffffffff811c53ec>] dio_bio_submit+0xbc/0xc0
-  [<ffffffff811c610e>] __blockdev_direct_IO+0x92e/0xb40
-  [<ffffffff811c39f7>] blkdev_direct_IO+0x57/0x60
-  [<ffffffff8113b1c5>] generic_file_aio_read+0x6d5/0x760
-  [<ffffffff8118c1ca>] do_sync_read+0xda/0x120
-  [<ffffffff8118ce55>] vfs_read+0xc5/0x180
-  [<ffffffff8118cfaa>] sys_pread64+0x9a/0xb0
-  [<ffffffff81afaf6b>] system_call_fastpath+0x16/0x1b
+  [<ffffffff810d2845>] lock_acquire+0x95/0x140
+  [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
+  [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
+  [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
+  [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
+  [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
+  [<ffffffff811c40df>] blkdev_put+0x5f/0x190
+  [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
+  [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
+  [<ffffffff8119003a>] deactivate_super+0x4a/0x70
+  [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
+  [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
+  [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
 
-* get_request() calling into destroyed elevator.
+This is because bdev holds on to disk but disk doesn't pin the
+associated queue.  If a SCSI device is removed while the device is
+still open, the sdev puts the base reference to the queue on release.
+When the bdev is finally released, the associated queue is already
+gone along with the bdi and bdev_inode_switch_bdi() ends up
+dereferencing already freed bdi.
 
- Pid: 649, comm: test_rawio Not tainted 3.1.0-rc3-work+ #57 Bochs Bochs
- RIP: 0010:[<ffffffff8137d300>]  [<ffffffff8137d300>] elv_may_queue+0x10/0x20
- ...
- Call Trace:
-  [<ffffffff81383f18>] get_request+0x58/0x440
-  [<ffffffff81384329>] get_request_wait+0x29/0x1e0
-  [<ffffffff81385aaa>] blk_queue_bio+0x12a/0x3e0
-  [<ffffffff813838ea>] generic_make_request+0xca/0x100
-  [<ffffffff81383994>] submit_bio+0x74/0x100
-  [<ffffffff811c53ec>] dio_bio_submit+0xbc/0xc0
-  [<ffffffff811c610e>] __blockdev_direct_IO+0x92e/0xb40
-  [<ffffffff811c39f7>] blkdev_direct_IO+0x57/0x60
-  [<ffffffff8113b1c5>] generic_file_aio_read+0x6d5/0x760
-  [<ffffffff8118c1ca>] do_sync_read+0xda/0x120
-  [<ffffffff8118ce55>] vfs_read+0xc5/0x180
-  [<ffffffff8118cfaa>] sys_pread64+0x9a/0xb0
-  [<ffffffff81afae6b>] system_call_fastpath+0x16/0x1b
+Even if it were not for this bug, disk not holding onto the associated
+queue is very unusual and error-prone.
 
-* If blk-throtl had any bio's throttled on blk_cleanup_queue(), those
-  bio's get lost leaving their issuers in eternal D state.
+Fix it by making add_disk() take an extra reference to its queue and
+put it on disk_release() and ensuring that disk and its fops owner are
+put in that order after all accesses to the disk and queue are
+complete.
 
-This can be solved by implementing proper shutdown/release model,
-where shutdown marks the queue dead under proper synchronization,
-drains whatever's in-flight and all issuers checking dead state under
-proper synchronization before proceeding.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: stable@kernel.org
+---
+ block/genhd.c  |    8 ++++++++
+ fs/block_dev.c |   13 ++++++++-----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
-This patchset implements the above with the following ten patches.
+diff --git a/block/genhd.c b/block/genhd.c
+index 3a3bccb..02e9fca 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -611,6 +611,12 @@ void add_disk(struct gendisk *disk)
+ 	register_disk(disk);
+ 	blk_register_queue(disk);
+ 
++	/*
++	 * Take an extra ref on queue which will be put on disk_release()
++	 * so that it sticks around as long as @disk is there.
++	 */
++	WARN_ON_ONCE(blk_get_queue(disk->queue));
++
+ 	retval = sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
+ 				   "bdi");
+ 	WARN_ON(retval);
+@@ -1095,6 +1101,8 @@ static void disk_release(struct device *dev)
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
+ 	free_part_info(&disk->part0);
++	if (disk->queue)
++		blk_put_queue(disk->queue);
+ 	kfree(disk);
+ }
+ struct class block_class = {
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 0bed0d4..53bb05e 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1085,6 +1085,7 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part);
+ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ {
+ 	struct gendisk *disk;
++	struct module *owner;
+ 	int ret;
+ 	int partno;
+ 	int perm = 0;
+@@ -1110,6 +1111,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 	disk = get_gendisk(bdev->bd_dev, &partno);
+ 	if (!disk)
+ 		goto out;
++	owner = disk->fops->owner;
+ 
+ 	disk_block_events(disk);
+ 	mutex_lock_nested(&bdev->bd_mutex, for_part);
+@@ -1137,8 +1139,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 					bdev->bd_disk = NULL;
+ 					mutex_unlock(&bdev->bd_mutex);
+ 					disk_unblock_events(disk);
+-					module_put(disk->fops->owner);
+ 					put_disk(disk);
++					module_put(owner);
+ 					goto restart;
+ 				}
+ 			}
+@@ -1194,8 +1196,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 				goto out_unlock_bdev;
+ 		}
+ 		/* only one opener holds refs to the module and disk */
+-		module_put(disk->fops->owner);
+ 		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	bdev->bd_openers++;
+ 	if (for_part)
+@@ -1215,8 +1217,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+  out_unlock_bdev:
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	disk_unblock_events(disk);
+-	module_put(disk->fops->owner);
+ 	put_disk(disk);
++	module_put(owner);
+  out:
+ 	bdput(bdev);
+ 
+@@ -1437,8 +1439,6 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 	if (!bdev->bd_openers) {
+ 		struct module *owner = disk->fops->owner;
+ 
+-		put_disk(disk);
+-		module_put(owner);
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+@@ -1447,6 +1447,9 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
++
++		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
+-- 
+1.7.3.1
 
- 0001-block-make-gendisk-hold-a-reference-to-its-queue.patch
- 0002-block-fix-genhd-refcounting-in-blkio_policy_parse_an.patch
- 0003-block-move-blk_throtl-prototypes-to-block-blk.h.patch
- 0004-block-pass-around-REQ_-flags-instead-of-broken-down-.patch
- 0005-block-drop-unnecessary-blk_get-put_queue-in-scsi_cmd.patch
- 0006-block-reorganize-queue-draining.patch
- 0007-block-reorganize-throtl_get_tg-and-blk_throtl_bio.patch
- 0008-block-make-get_request-_wait-fail-if-queue-is-dead.patch
- 0009-block-drop-tsk-from-attempt_plug_merge-and-explain-s.patch
- 0010-block-fix-request_queue-lifetime-handling-by-making-.patch
-
-* 0001 is re-post of [1] "block: make gendisk hold a reference to its
-  queue" with WARN_ON_ONCE() bug fixed.  Included here as
-  block/for-next doesn't have this commit yet.
-
-* 0002 fixes genhd refcnt leak from blkcg.
-
-* 0003-0007 are prep patches cleaning up stuff.
-
-* 0008-0010 implement proper shutdown/release.
-
-This patchset is on top of the block/for-next cef1e172c7 "Merge branch
-'for-3.2/mtip32xx' into for-next" and available in the following git
-branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-ref
-
-diffstat follows.
-
- block/blk-cgroup.c       |   56 +++++--------
- block/blk-core.c         |  200 +++++++++++++++++++++++++++++++----------------
- block/blk-sysfs.c        |    1 
- block/blk-throttle.c     |  106 ++++++++++++++----------
- block/blk.h              |   20 ++++
- block/elevator.c         |   37 ++------
- block/genhd.c            |    8 +
- block/scsi_ioctl.c       |    3 
- fs/block_dev.c           |   13 +--
- include/linux/blkdev.h   |   14 ---
- include/linux/elevator.h |    6 +
- 11 files changed, 274 insertions(+), 190 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1204025
