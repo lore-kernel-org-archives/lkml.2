@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab1JSROB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:14:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50977 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab1JSRN6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:13:58 -0400
-Date: Wed, 19 Oct 2011 10:13:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, vgoyal@redhat.com, ctalbott@google.com,
-        rni@google.com
-Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by
- making blk_queue_cleanup() proper shutdown
-Message-ID: <20111019171354.GF25124@google.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-11-git-send-email-tj@kernel.org>
- <4E9EC602.5010207@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9EC602.5010207@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756937Ab1JSRQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:16:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755669Ab1JSRQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 13:16:56 -0400
+Date: Wed, 19 Oct 2011 15:16:00 -0200
+From: Flavio Leitner <fbl@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: dpmcgee@gmail.com, netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Disable TCP_DEBUG and FASTRETRANS_DEBUG by default
+Message-ID: <20111019151600.67cd99e6@asterix.rh>
+In-Reply-To: <20111017.175238.18474279385644215.davem@davemloft.net>
+References: <1318883125-29500-1-git-send-email-dpmcgee@gmail.com>
+	<20111017.175238.18474279385644215.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 02:43:46PM +0200, Jens Axboe wrote:
-> This patch clashes a bit with the previous "fix" for getting rid of
-> privately assigned queue locks. I've kept that single bit.
+On Mon, 17 Oct 2011 17:52:38 -0400 (EDT)
+David Miller <davem@davemloft.net> wrote:
 
-Ah, okay, that's the private queue_lock thing Vivek mentioned in the
-earlier reply.  Nice that it's already fixed.
+> From: Dan McGee <dpmcgee@gmail.com>
+> Date: Mon, 17 Oct 2011 15:25:24 -0500
+> 
+> > If these are truly debug options, they should be turned off by default
+> > and can be tweaked if necessary. Fix one usage of the flag to use #if
+> > instead of #ifdef so defining to zero is acceptable.
+> > 
+> > Signed-off-by: Dan McGee <dpmcgee@gmail.com>
+> 
+> Illegal window shrinks are a serious issue, and the fact that everyone
+> will see those messages by default and sometimes report them has been
+> tremendously useful.
+>
 
-Thanks.
+Agreed. I recently got bug report because of that message.  It is useful
+and doesn't disturbe when network is fine, so please don't remove it.
 
--- 
-tejun
+fbl
