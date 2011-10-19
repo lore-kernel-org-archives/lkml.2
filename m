@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab1JSR3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:29:52 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:27678
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751217Ab1JSR3v (ORCPT
+	id S1757156Ab1JSRaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:30:16 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34600 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab1JSRaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:29:51 -0400
-X-SpamScore: 8
-X-BigFish: VPS8(z5c5ozzz1202hzz8275bhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LTBPWK-01-DLU-02
-X-M-MSG: 
-From: Mark Langsdorf <mark.langsdorf@amd.com>
-To: <venki@google.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: force HPET to immediately enable RTC wake
-Date: Wed, 19 Oct 2011 12:26:48 -0500
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop; KDE/4.6.0; x86_64; ; )
+	Wed, 19 Oct 2011 13:30:14 -0400
+Message-ID: <4E9F0917.1040604@linux.vnet.ibm.com>
+Date: Wed, 19 Oct 2011 22:59:59 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Borislav Petkov <bp@amd64.org>
+CC: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "ashok.raj@intel.com" <ashok.raj@intel.com>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
+References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <201110122131.08811.rjw@sisk.pl> <4E9605C7.5070203@linux.vnet.ibm.com> <201110130009.26552.rjw@sisk.pl> <4E9706D8.5040105@linux.vnet.ibm.com> <20111013160602.GJ6281@google.com> <20111013170153.GB3064@aftab> <4E972001.3080204@linux.vnet.ibm.com>
+In-Reply-To: <4E972001.3080204@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <201110191226.49627.mark.langsdorf@amd.com>
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When HPET is operating in RTC mode, the TN_ENABLE bit
-on timer1 controls whether the HPET or the RTC delivers
-interrupts to irq8. When the system goes into suspend,
-the RTC driver sends a signal to the HPET driver so
-that the HPET releases control of irq8, allowing the
-RTC to wake the system from suspend. The switchover
-is accomplished by a write to the HPET configuration
-registers which currently only occurs while servicing
-the HPET interrupt.
+On 10/13/2011 10:59 PM, Srivatsa S. Bhat wrote:
+> On 10/13/2011 10:31 PM, Borislav Petkov wrote:
+>> On Thu, Oct 13, 2011 at 12:06:02PM -0400, Tejun Heo wrote:
+>>> I hate to sound like a broken recorder but the above patch isn't
+>>> strictly correct for hot-swap cases, right?
+>>
+>> hpa is working on a ucode loading solution which will take care of your
+>> hotswap case too.
+>>
+> 
+> Tejun, I have written a patch below (untested) that does what you said.
+> So Boris, hpa's work would make such a patch unnecessary is it?
+> 
 
-On some systems, I have seen the system suspend before
-an HPET interrupt occurs, preventing the write to the
-HPET configuration register and leaving the HPET in
-control of the irq8. As the HPET is not active during
-suspend, it does not generate a wake signal and RTC
-alarms do not work.
+I have posted this patch (tested/corrected and with changelog), in case
+it is useful/necessary. Link: https://lkml.org/lkml/2011/10/19/295
 
-This patch forces the HPET driver to immediately transfer
-control of the irq8 channel to the RTC instead of waiting
-until the next interrupt event.
-
-Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
-Tested-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/hpet.c |   21 ++++++++++++++-------
- 1 files changed, 14 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 4aecc54..10b09d7 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -1048,6 +1048,14 @@ int hpet_rtc_timer_init(void)
- }
- EXPORT_SYMBOL_GPL(hpet_rtc_timer_init);
- 
-+static void hpet_disable_rtc_channel(void)
-+{
-+	unsigned long cfg;
-+	cfg = hpet_readl(HPET_T1_CFG);
-+	cfg &= ~HPET_TN_ENABLE;
-+	hpet_writel(cfg, HPET_T1_CFG);
-+}
-+
- /*
-  * The functions below are called from rtc driver.
-  * Return 0 if HPET is not being used.
-@@ -1059,6 +1067,9 @@ int hpet_mask_rtc_irq_bit(unsigned long bit_mask)
- 		return 0;
- 
- 	hpet_rtc_flags &= ~bit_mask;
-+	if (unlikely(!hpet_rtc_flags))
-+		hpet_disable_rtc_channel();
-+
- 	return 1;
- }
- EXPORT_SYMBOL_GPL(hpet_mask_rtc_irq_bit);
-@@ -1124,15 +1135,11 @@ EXPORT_SYMBOL_GPL(hpet_rtc_dropped_irq);
- 
- static void hpet_rtc_timer_reinit(void)
- {
--	unsigned int cfg, delta;
-+	unsigned int delta;
- 	int lost_ints = -1;
- 
--	if (unlikely(!hpet_rtc_flags)) {
--		cfg = hpet_readl(HPET_T1_CFG);
--		cfg &= ~HPET_TN_ENABLE;
--		hpet_writel(cfg, HPET_T1_CFG);
--		return;
--	}
-+	if (unlikely(!hpet_rtc_flags))
-+		hpet_disable_rtc_channel();
- 
- 	if (!(hpet_rtc_flags & RTC_PIE) || hpet_pie_limit)
- 		delta = hpet_default_delta;
-
+> ---
+> 
+>  arch/x86/kernel/microcode_core.c |   33 +++++++++++++++++++++++++++++++++
+>  1 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+> index f924280..849ae2d 100644
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -155,6 +155,27 @@ static int collect_cpu_info(int cpu)
+>  	return ret;
+>  }
+>  
+> +/*
+> + * Compare the microcode revision that the kernel has in memory
+> + * for this cpu and the microcode revision that we need to apply
+> + * on this cpu. If they match, return 0, else return -1.
+> + */
+> +static int compare_cpu_with_microcode(int cpu)
+> +{
+> +	struct ucode_cpu_info *uci_mem = ucode_cpu_info + cpu;
+> +	struct ucode_cpu_info uci_cpu;
+> +	int ret;
+> +
+> +	ret = collect_cpu_info_on_target(cpu, &uci_cpu->cpu_sig);
+> +	if(!ret) {
+> +		if (!(uci_mem->cpu_sig->sig == uci_cpu->cpu_sig->sig &&
+> +		      uci_mem->cpu_sig->pf == uci_cpu->cpu_sig->pf &&
+> +		      uci_mem->cpu_sig->rev == uci_cpu->cpu_sig->rev))
+> +			ret = -1;
+> +	}
+> +	return ret;
+> +}
+> +
+>  struct apply_microcode_ctx {
+>  	int err;
+>  };
+> @@ -397,6 +418,18 @@ static enum ucode_state microcode_update_cpu(int cpu)
+>  	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+>  	enum ucode_state ustate;
+>  
+> +	/*
+> +	 * If the CPU on which we are going to update the
+> +	 * microcode and the microcode which we currently
+> +	 * have in kernel memory are incompatible, then
+> +	 * invalidate the microcode that we have (and also
+> +	 * free its memory), so that we can get the required
+> +	 * microcode afresh.
+> +	 */
+> +	if (compare_cpu_with_microcode(cpu)) {
+> +		microcode_fini_cpu(cpu);
+> +	}
+> +
+>  	if (uci->valid)
+>  		ustate = microcode_resume_cpu(cpu);
+>  	else
+> 
