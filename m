@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab1JSRdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:33:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57563 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab1JSRdo (ORCPT
+	id S1757191Ab1JSReS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:34:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44640 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751789Ab1JSReQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:33:44 -0400
-Date: Wed, 19 Oct 2011 10:33:37 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
-Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by
- making blk_queue_cleanup() proper shutdown
-Message-ID: <20111019173337.GH25124@google.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-11-git-send-email-tj@kernel.org>
- <20111019161840.GG1140@redhat.com>
- <20111019171259.GE25124@google.com>
- <20111019172914.GI1140@redhat.com>
+	Wed, 19 Oct 2011 13:34:16 -0400
+Date: Wed, 19 Oct 2011 18:34:14 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: "Girdwood, Liam" <lrg@ti.com>, Manuel Lauss <manuel.lauss@googlemail.com>,
+        kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Axel Lin <axel.lin@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] sound/soc/au1x: keep pointer to resource so it can
+ be freed
+Message-ID: <20111019173413.GF4275@opensource.wolfsonmicro.com>
+References: <1318909555-12933-3-git-send-email-julia@diku.dk>
+ <CAOLZvyFoiuHEfpnozWpAM5h92rjay-asqXX0tY1P1ZzO8eTGOQ@mail.gmail.com>
+ <CABS+qY2pBkNjHUKrtD3QttQOQD-LpStHopSGxzeG-iyc7RtVgw@mail.gmail.com>
+ <20111019164836.GC4275@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1110191930450.31584@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111019172914.GI1140@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1110191930450.31584@ask.diku.dk>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Oct 19, 2011 at 07:32:10PM +0200, Julia Lawall wrote:
+> I'm not sure how to proceed, since I originally sent 3 patches, all with 
+> the same problem.  I send another single patch that fixed the problems 
+> with nicer names than r and r1.  Should I send another single patch with 
+> Manuel's solution?  Or does Manuel want to do that?
 
-On Wed, Oct 19, 2011 at 01:29:14PM -0400, Vivek Goyal wrote:
-> > Hmmm... the thing is you need to check DEAD again once after releasing
-> > and re-grabbing the queuelock, os if we move the test into the caller,
-> > we end up having one in the caller and one in the callee, so I thought
-> > it would be better to keep them in the same function.
-> 
-> Sorry I did not get that why do we need to check again for DEAD after
-> realeasing the queue lock. From throttling perspective, we grab lock
-> once, if queue is DEAD, release lock and just return.
-> 
-> blk_throtl_bio() {
-> 
->   bunch_of_checks_without_queue_lock;
-> 
->   spin_lock()
->   if (queue_dead) {
-> 	spin_unlock()
-> 	return;
->   }
-> 
->   throtl_get_tg();
-> }	
-
-Because DEAD state is protected by queue_lock and get_tg may release
-and re-grab queue_lock across allocation?  It needs to re-test after
-re-grabbing.
-
-Thanks.
-
--- 
-tejun
+I dunno, I guess sending Manuel's patch along with your other changes
+might be the way forward?
