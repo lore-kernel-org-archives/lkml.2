@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab1JSL4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 07:56:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61840 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab1JSL4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 07:56:11 -0400
-Message-ID: <4E9EBAD8.1050303@redhat.com>
-Date: Wed, 19 Oct 2011 09:56:08 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.1-rc10] media fix
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755867Ab1JSMF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 08:05:56 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43299 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab1JSMFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 08:05:55 -0400
+From: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 21/24] Staging: comedi: fix warning issue in cb_das16_cs.c
+Date: Wed, 19 Oct 2011 17:34:55 +0530
+Message-Id: <1319025898-10864-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
+converted printks to dev_printk.
+Removed unnecessary printk statements.
+Fixed line over 80 character and NULL initilization issue.
 
-Hi Linus,
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/cb_das16_cs.c |   26 ++++++++++++--------------
+ 1 files changed, 12 insertions(+), 14 deletions(-)
 
-Please pull from:
-  git://linuxtv.org/mchehab/for_linus.git v4l_for_linus
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 8a1b8a7..71676d8 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -31,6 +31,8 @@ Status: experimental
+ 
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
+ #include "../comedidev.h"
+@@ -99,7 +101,7 @@ static struct comedi_driver driver_das16cs = {
+ 	.detach = das16cs_detach,
+ };
+ 
+-static struct pcmcia_device *cur_dev = NULL;
++static struct pcmcia_device *cur_dev;
+ 
+ static const struct comedi_lrange das16cs_ai_range = { 4, {
+ 							   RANGE(-10, 10),
+@@ -150,7 +152,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
+ 			return das16cs_boards + i;
+ 	}
+ 
+-	printk("unknown board!\n");
++	dev_dbg(dev->hw_dev, "unknown board!\n");
+ 
+ 	return NULL;
+ }
+@@ -163,20 +165,17 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	int ret;
+ 	int i;
+ 
+-	printk("comedi%d: cb_das16_cs: ", dev->minor);
+ 
+ 	link = cur_dev;		/* XXX hack */
+ 	if (!link)
+ 		return -EIO;
+ 
+ 	dev->iobase = link->resource[0]->start;
+-	printk("I/O base=0x%04lx ", dev->iobase);
++	dev_dbg(dev->hw_dev, "I/O base=0x%04lx\n", dev->iobase);
+ 
+-	printk("fingerprint:\n");
++	dev_dbg(dev->hw_dev, "fingerprint:\n");
+ 	for (i = 0; i < 48; i += 2)
+-		printk("%04x ", inw(dev->iobase + i));
+-
+-	printk("\n");
++		dev_dbg(dev->hw_dev, "%04x\n", inw(dev->iobase + i));
+ 
+ 	ret = request_irq(link->irq, das16cs_interrupt,
+ 			  IRQF_SHARED, "cb_das16_cs", dev);
+@@ -185,7 +184,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 
+ 	dev->irq = link->irq;
+ 
+-	printk("irq=%u ", dev->irq);
++	dev_dbg(dev->hw_dev, "irq=%u\n", dev->irq);
+ 
+ 	dev->board_ptr = das16cs_probe(dev, link);
+ 	if (!dev->board_ptr)
+@@ -252,14 +251,11 @@ static int das16cs_attach(struct comedi_device *dev,
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("attached\n");
+-
+ 	return 1;
+ }
+ 
+ static int das16cs_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: das16cs: remove\n", dev->minor);
+ 
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+@@ -312,7 +308,7 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
+ 				break;
+ 		}
+ 		if (to == TIMEOUT) {
+-			printk("cb_das16_cs: ai timeout\n");
++			dev_err(dev->hw_dev, "ai timeout\n");
+ 			return -ETIME;
+ 		}
+ 		data[i] = (unsigned short)inw(dev->iobase + 0);
+@@ -370,7 +366,9 @@ static int das16cs_ai_cmdtest(struct comedi_device *dev,
+ 	if (err)
+ 		return 1;
+ 
+-	/* step 2: make sure trigger sources are unique and mutually compatible */
++	/*
++	 * step 2: make sure trigger sources are unique and mutually compatible
++	 */
+ 
+ 	/* note that mutual compatibility is not an issue here */
+ 	if (cmd->scan_begin_src != TRIG_TIMER &&
+-- 
+1.7.6.4
 
-
-For a one line fix at the V4L2 core, causing OOPSes at device release under
-certain circumstances.
-
-Thanks!
-Mauro.
-
-Latest commit at the branch: e58fced201ad6e6cb673f07499919c3b20792d94 [media] videodev: fix a NULL pointer dereference in v4l2_device_release()
-The following changes since commit 899e3ee404961a90b828ad527573aaaac39f0ab1:
-
-  Linux 3.1-rc10 (2011-10-17 21:06:23 -0700)
-
-are available in the git repository at:
-  git://linuxtv.org/mchehab/for_linus.git v4l_for_linus
-
-Antonio Ospite (1):
-      [media] videodev: fix a NULL pointer dereference in v4l2_device_release()
-
- drivers/media/video/v4l2-dev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJOnrrNAAoJEGO08Bl/PELnIU4P/iiuqUGQnYr5NH/keGd562Cn
-INrqAJ5SO9nNjgE2Eg9fuxVGriQazEJ8s+qs1wwZrpcRkrZVq2xzy7LtC/TuBdu1
-c8lStlSLN2Cmo6kfkNBuNc++6X1SWh+Rdz4l5r3N8IKNQsu6XfW1idgKql3Pwavr
-Afzb18vDL8rRQC9etbxzBgtOXHj6zJw+ehdKwqx9SglF1DH72afxAv7z3UhygZYp
-UVJzgjVKgAyOVQfxHKzFrpNiLQpYWJtJaTpTw+t7hOp8kNZ4rXlinmy9UYsZ8Lrr
-mlcWld1F2dmDuhxj0xU+QDDOhmfXnPWbLi/VWWramBq9ksNXQzxsQriI4ZKmHg5J
-nnmvkrbKB+nL/51ITfXBTxYdC5zcDfEwD1m6mge3c8r4SJaRXOuHoMtVOpKAENFj
-hqBRRDnb6LjnMJhdWrgFPHGs1k/T/BoduCphwZIAU2Ii7Tz0AqCnyKL4aaWHqcwp
-0ECduB1Iyr1AUVnf5S7wH3m/gukasIEIGhEH2Yqr7mG1odguM5eSdHRYTLejZw+7
-I2Nk71DI099Hrnt3GAer0hEzN8Pm96xMCh5kCqD2pz6H9zoijK7K7MFD0Nf2RhZV
-JKy/UNwDTGAx3989G0nUu5KWmfYvvqgzZUYNgN1IZhde/YEHldIUOxY6yf3gZy9J
-twUAlsCBnY/6povAvdMH
-=RCnh
------END PGP SIGNATURE-----
