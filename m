@@ -1,187 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab1JSDGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 23:06:35 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52805 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab1JSDGe (ORCPT
+	id S1753368Ab1JSDHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 23:07:09 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:24884
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753148Ab1JSDHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 23:06:34 -0400
-Message-ID: <1318993587.7128.7.camel@phoenix>
-Subject: [PATCH v2 RESEND] ASoC: wm9081: Use snd_soc_update_bits for
- read-modify-write
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Date: Wed, 19 Oct 2011 11:06:27 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 18 Oct 2011 23:07:07 -0400
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371K1432N98dKzz1202hzzz2dh2a8h668h839h944h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 19 Oct 2011 11:14:47 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stijn Devriendt <highguy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>
+Subject: Re: pinctrl_config APIs, and other pinmux questions
+Message-ID: <20111019031446.GA31162@S2100-06.ap.freescale.net>
+References: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A166@HQMAIL01.nvidia.com>
+ <20111014145900.GA28728@S2100-06.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF173BE1A275@HQMAIL01.nvidia.com>
+ <20111015031215.GA29039@S2100-06.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF173BE1A4B1@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173BE1A4B1@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_update_bits for read-modify-write register access instead of
-open-coding it using snd_soc_read and snd_soc_write
+On Mon, Oct 17, 2011 at 08:51:11AM -0700, Stephen Warren wrote:
+> Shawn Guo wrote at Friday, October 14, 2011 9:12 PM:
+> > On Fri, Oct 14, 2011 at 08:53:33AM -0700, Stephen Warren wrote:
+> ...
+> > > Having the driver expose a list of all possible combinations of pin
+> > > configurations seems impractical, for the same reason as I objected to
+> > > the original proposal for how the driver listed functions; there are
+> > > simply far too many pin config parameters and legal value to list the
+> > > entire set of combinations.
+> > >
+> > I did not mean to list the entire set of combinations.  For given
+> > function, the applicable number of config should be very limited.
+> > For most cases, it could be just one.  For imx6q usdhc example, it's
+> > 3, for 50M, 100M and 200M SD bus clock cases.
+> 
+> Shawn,
+> 
+> Are you talking about entries in the (board-specific) mapping table, which
+> I agree would contain the useful subset of combinations of options, or a
+> list of possible settings exposed by the SoC driver, which would have to
+> expose all possibilities, or they wouldn't be available for the mapping
+> table to select from?
+> 
+> In the case of "a list of possible settings exposed by the SoC driver",
+> 
+> * If such a list (of combinations) were to exist, I think it'd need to
+> include all combinations (the cross-product of all individual config
+> params) in general.
+> 
+> * I can certainly imagine that for some SoCs, or for a particular device
+> on a SoC, or for a particular board, only a subset of those would be useful,
+> and hence a limited set would be useful. However, that selection is up to
+> the board mapping table not the SoC driver in general.
+> 
+> * In Tegra's case at least, I think a number of the numeric values (e.g.
+> pull strength with range 0..31) may be for board calibration, and besides
+> that, most combinations of param values would be useful in some case, and
+> hence we'd always have to expose everything, in order to allow the board
+> mapping table to be able to pick anything the designer needed.
+> 
+> * As such, I think the SoC driver should at most list the legal range for
+> each param individually, and let the board-specific mapping table choose
+> the combination(s) required.
+> 
+Yes, I meant the list of settings exposed by pinctrl driver.  But it
+seems that in your case you need to list all the possible combinations
+of pin configurations.  Then I agree it's impractical to have pinctrl
+driver to maintain this list.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-RESEND:
-I just found I doesn't set my mail client properly to show correct sender,
-so here is a resend.
-
-v2:
-For Initial cold start ( change bias level from SND_SOC_BIAS_OFF to
-SND_SOC_BIAS_STANDBY ), the v1 does not set VMID_SEL[1:0] bits
-correctly for Normal bias enable & soft start off.
-In v2 we also clear VMID_SEL[1:0] bits for Normal bias enable & soft start off.
-We did clear VMID_SEL[1:0] bits in SND_SOC_BIAS_OFF,
-thus we know the VMID_SEL[1:0] bits status is 0b00 in this case.
-
- sound/soc/codecs/wm9081.c |   82 +++++++++++++++++++-------------------------
- 1 files changed, 35 insertions(+), 47 deletions(-)
-
-diff --git a/sound/soc/codecs/wm9081.c b/sound/soc/codecs/wm9081.c
-index 66092ef..9c38ddb 100644
---- a/sound/soc/codecs/wm9081.c
-+++ b/sound/soc/codecs/wm9081.c
-@@ -766,84 +766,73 @@ static const struct snd_soc_dapm_route wm9081_audio_paths[] = {
- static int wm9081_set_bias_level(struct snd_soc_codec *codec,
- 				 enum snd_soc_bias_level level)
- {
--	u16 reg;
--
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
- 		break;
- 
- 	case SND_SOC_BIAS_PREPARE:
- 		/* VMID=2*40k */
--		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--		reg &= ~WM9081_VMID_SEL_MASK;
--		reg |= 0x2;
--		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+				    WM9081_VMID_SEL_MASK, 0x2);
- 
- 		/* Normal bias current */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg &= ~WM9081_STBY_BIAS_ENA;
--		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_STBY_BIAS_ENA, 0);
- 		break;
- 
- 	case SND_SOC_BIAS_STANDBY:
- 		/* Initial cold start */
- 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
- 			/* Disable LINEOUT discharge */
--			reg = snd_soc_read(codec, WM9081_ANTI_POP_CONTROL);
--			reg &= ~WM9081_LINEOUT_DISCH;
--			snd_soc_write(codec, WM9081_ANTI_POP_CONTROL, reg);
-+			snd_soc_update_bits(codec, WM9081_ANTI_POP_CONTROL,
-+					    WM9081_LINEOUT_DISCH, 0);
- 
- 			/* Select startup bias source */
--			reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--			reg |= WM9081_BIAS_SRC | WM9081_BIAS_ENA;
--			snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+			snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+					    WM9081_BIAS_SRC | WM9081_BIAS_ENA,
-+					    WM9081_BIAS_SRC | WM9081_BIAS_ENA);
- 
- 			/* VMID 2*4k; Soft VMID ramp enable */
--			reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--			reg |= WM9081_VMID_RAMP | 0x6;
--			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
--
-+			snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+					    WM9081_VMID_RAMP | 0x6,
-+					    WM9081_VMID_RAMP | 0x6);
- 			mdelay(100);
- 
- 			/* Normal bias enable & soft start off */
--			reg |= WM9081_BIAS_ENA;
--			reg &= ~WM9081_VMID_RAMP;
--			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+			snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+					    WM9081_VMID_RAMP | WM9081_BIAS_ENA |
-+					    WM9081_VMID_SEL_MASK,
-+					    WM9081_BIAS_ENA);
- 
- 			/* Standard bias source */
--			reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--			reg &= ~WM9081_BIAS_SRC;
--			snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+			snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+					    WM9081_BIAS_SRC, 0);
- 		}
- 
- 		/* VMID 2*240k */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg &= ~WM9081_VMID_SEL_MASK;
--		reg |= 0x04;
--		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_VMID_SEL_MASK, 0x04);
- 
- 		/* Standby bias current on */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg |= WM9081_STBY_BIAS_ENA;
--		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_STBY_BIAS_ENA,
-+				    WM9081_STBY_BIAS_ENA);
- 		break;
- 
- 	case SND_SOC_BIAS_OFF:
- 		/* Startup bias source */
--		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
--		reg |= WM9081_BIAS_SRC;
--		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
-+		snd_soc_update_bits(codec, WM9081_BIAS_CONTROL_1,
-+				    WM9081_BIAS_SRC, WM9081_BIAS_SRC);
- 
- 		/* Disable VMID and biases with soft ramping */
--		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
--		reg &= ~(WM9081_VMID_SEL_MASK | WM9081_BIAS_ENA);
--		reg |= WM9081_VMID_RAMP;
--		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-+				    WM9081_VMID_RAMP | WM9081_VMID_SEL_MASK |
-+				    WM9081_BIAS_ENA, WM9081_VMID_RAMP);
- 
- 		/* Actively discharge LINEOUT */
--		reg = snd_soc_read(codec, WM9081_ANTI_POP_CONTROL);
--		reg |= WM9081_LINEOUT_DISCH;
--		snd_soc_write(codec, WM9081_ANTI_POP_CONTROL, reg);
-+		snd_soc_update_bits(codec, WM9081_ANTI_POP_CONTROL,
-+				    WM9081_LINEOUT_DISCH,
-+				    WM9081_LINEOUT_DISCH);
- 		break;
- 	}
- 
-@@ -1242,11 +1231,10 @@ static int wm9081_probe(struct snd_soc_codec *codec)
- 	wm9081_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
- 
- 	/* Enable zero cross by default */
--	reg = snd_soc_read(codec, WM9081_ANALOGUE_LINEOUT);
--	snd_soc_write(codec, WM9081_ANALOGUE_LINEOUT, reg | WM9081_LINEOUTZC);
--	reg = snd_soc_read(codec, WM9081_ANALOGUE_SPEAKER_PGA);
--	snd_soc_write(codec, WM9081_ANALOGUE_SPEAKER_PGA,
--		     reg | WM9081_SPKPGAZC);
-+	snd_soc_update_bits(codec, WM9081_ANALOGUE_LINEOUT,
-+			    WM9081_LINEOUTZC, WM9081_LINEOUTZC);
-+	snd_soc_update_bits(codec, WM9081_ANALOGUE_SPEAKER_PGA,
-+			    WM9081_SPKPGAZC, WM9081_SPKPGAZC);
- 
- 	snd_soc_add_controls(codec, wm9081_snd_controls,
- 			     ARRAY_SIZE(wm9081_snd_controls));
 -- 
-1.7.5.4
-
-
+Regards,
+Shawn
 
