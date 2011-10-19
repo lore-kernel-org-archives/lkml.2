@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab1JSHD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:03:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14796 "EHLO mx1.redhat.com"
+	id S1755421Ab1JSHE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:04:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16070 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab1JSHD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:03:27 -0400
-Date: Wed, 19 Oct 2011 09:03:02 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] jump_label_inc may return before the code is patched
-Message-ID: <20111019070302.GA6266@redhat.com>
-References: <20111018175551.GH17571@redhat.com>
- <20111018205441.GC2453@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111018205441.GC2453@redhat.com>
+	id S1752513Ab1JSHEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:04:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="64635250"
+Subject: Re: iwlagn is getting very shaky
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Norbert Preining <preining@logic.at>
+Cc: David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+In-Reply-To: <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
+References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
+	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
+	 <20111019062517.GC11588@gamma.logic.tuwien.ac.at>
+	 <1319003304.31823.46.camel@wwguy-huron>
+	 <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 23:13:56 -0700
+Message-ID: <1319004836.31823.57.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 04:54:41PM -0400, Jason Baron wrote:
-> On Tue, Oct 18, 2011 at 07:55:51PM +0200, Gleb Natapov wrote:
-> > If cpu A calls jump_label_inc() just after atomic_add_return() is
-> > called by cpu B, atomic_inc_not_zero() will return value greater then
-> > zero and jump_label_inc() will return to a caller before jump_label_update()
-> > finishes its job on cpu B.
-> > 
-> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> > index a8ce450..e6f1f24 100644
-> > --- a/kernel/jump_label.c
-> > +++ b/kernel/jump_label.c
-> > @@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_key *key)
-> >  		return;
-> >  
-> >  	jump_label_lock();
-> > -	if (atomic_add_return(1, &key->enabled) == 1)
-> > +	if (atomic_read(&key->enabled) == 0)
-> >  		jump_label_update(key, JUMP_LABEL_ENABLE);
-> > +	atomic_inc(&key->enabled);
-> >  	jump_label_unlock();
-> >  }
-> >  
+On Tue, 2011-10-18 at 23:46 -0700, Norbert Preining wrote:
+> On Di, 18 Okt 2011, Guy, Wey-Yi wrote:
+> > it is very interesting, for sure there is a bug here which cause NIC
+> > stop working, if you look at the tx queue, hwq 0 is stop, which mean
+> > nothing go out. I am not sure how we get into this? yes, most likely
 > 
-> agreed, we shouldn't return before the update happens...did this cause any
-> actual problem in practice? Or just observed from code inspection?
+> Yes, that is my obervation, too. Nothing goes out, so reassociation
+> does not succeed.
 > 
-It did. I am debugging strange oopses in perf code that happen when I
-create and destroy hw events on multiple cpus in parallel. At some point
-I started to suspect that jump labels are not working properly and
-printks confirmed that sometimes static_branch() is not taken when
-->enabled is not zero. I compiled kernel without jump label support and,
-as far as my testing goes, oopses disappeared. Then I found the bug by
-looking at the code. Strangely enough this patch alone didn't fix oopses
-yet, so some other problems are probably lurking somewhere. I am going
-on vocation till next week. Will debug furtherer upon return.
+> > Could you help me how to repro this problem?
+> 
+> Not really, besides you come here to my university ;-)
+> I have this problem currently only with the routers here at
+> the university, not with other routers.
+> 
+> Any other way I can provide you help?
 
-> Acked-by: Jason Baron <jbaron@redhat.com>
-> 
-> Thanks,
-> 
-> -Jason
+Could you please let me know the brand/model of the AP which having
+problem. Also the configuration of your NIC also help.
 
---
-			Gleb.
+also, when you say you don't have problem with other router, could you
+please be more clear, are those APs having the similar functions as the
+one you have in university, or different? 
+
+Thanks
+Wey
+
+> 
+> Best wishes
+> 
+> Norbert
+> ------------------------------------------------------------------------
+> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+> JAIST, Japan                                 TeX Live & Debian Developer
+> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+> ------------------------------------------------------------------------
+> SKENFRITH (n.)
+> The flakes of athlete's foot found inside socks.
+> 			--- Douglas Adams, The Meaning of Liff
+
+
