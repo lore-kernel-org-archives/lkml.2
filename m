@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1JSENO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:13:14 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31960 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab1JSEFC (ORCPT
+	id S1753720Ab1JSEE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:04:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56344 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab1JSEEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:05:02 -0400
-Message-Id: <093448$3qutkv@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939679"
+	Wed, 19 Oct 2011 00:04:55 -0400
+Message-Id: <e97c6e$3qqv3f@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128810095"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 18 Oct 2011 22:12:25 -0500
-Subject: [PATCH v5 09/36] Hexagon: Add checksum functions
+Date: Tue, 18 Oct 2011 21:31:17 -0500
+Subject: [PATCH v5 05/36] Hexagon: Add syscalls
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,21 +22,25 @@ Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/checksum.h   |   50 ++++++++
- arch/hexagon/include/asm/intrinsics.h |   26 ++++
- arch/hexagon/lib/checksum.c           |  203 +++++++++++++++++++++++++++++++++
- 3 files changed, 279 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/checksum.h
- create mode 100644 arch/hexagon/include/asm/intrinsics.h
- create mode 100644 arch/hexagon/lib/checksum.c
+ arch/hexagon/include/asm/syscall.h |   54 +++++++++++++++++++++
+ arch/hexagon/include/asm/unistd.h  |   36 ++++++++++++++
+ arch/hexagon/kernel/syscall.c      |   90 ++++++++++++++++++++++++++++++++++++
+ arch/hexagon/kernel/syscalltab.c   |   32 +++++++++++++
+ 4 files changed, 212 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/syscall.h
+ create mode 100644 arch/hexagon/include/asm/unistd.h
+ create mode 100644 arch/hexagon/kernel/syscall.c
+ create mode 100644 arch/hexagon/kernel/syscalltab.c
 
-diff --git a/arch/hexagon/include/asm/checksum.h b/arch/hexagon/include/asm/checksum.h
+diff --git a/arch/hexagon/include/asm/syscall.h b/arch/hexagon/include/asm/syscall.h
 new file mode 100644
-index 0000000..3ce4ecd
+index 0000000..3e7d61d
 --- /dev/null
-+++ b/arch/hexagon/include/asm/checksum.h
-@@ -0,0 +1,50 @@
++++ b/arch/hexagon/include/asm/syscall.h
+@@ -0,0 +1,54 @@
 +/*
++ * Syscall support for the Hexagon architecture
++ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -54,78 +58,90 @@ index 0000000..3ce4ecd
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_CHECKSUM_H
-+#define _ASM_CHECKSUM_H
++#ifndef _ASM_HEXAGON_SYSCALL_H
++#define _ASM_HEXAGON_SYSCALL_H
 +
-+#define do_csum	do_csum
-+unsigned int do_csum(const void *voidptr, int len);
++typedef long (*syscall_fn)(unsigned long, unsigned long,
++	unsigned long, unsigned long,
++	unsigned long, unsigned long);
 +
++asmlinkage int sys_execve(char __user *ufilename, char __user * __user *argv,
++			  char __user * __user *envp);
++asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
++			 unsigned long parent_tidp, unsigned long child_tidp);
++
++#define sys_execve	sys_execve
++#define sys_clone	sys_clone
++
++#include <asm-generic/syscalls.h>
++
++extern void *sys_call_table[];
++
++static inline long syscall_get_nr(struct task_struct *task,
++				  struct pt_regs *regs)
++{
++	return regs->r06;
++}
++
++static inline void syscall_get_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 unsigned long *args)
++{
++	BUG_ON(i + n > 6);
++	memcpy(args, &(&regs->r00)[i], n * sizeof(args[0]));
++}
++#endif
+diff --git a/arch/hexagon/include/asm/unistd.h b/arch/hexagon/include/asm/unistd.h
+new file mode 100644
+index 0000000..4d0ecde
+--- /dev/null
++++ b/arch/hexagon/include/asm/unistd.h
+@@ -0,0 +1,36 @@
 +/*
-+ * the same as csum_partial, but copies from src while it
-+ * checksums
++ * Syscall support for Hexagon
 + *
-+ * here even more important to align src and dst on a 32-bit (or even
-+ * better 64-bit) boundary
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+#define csum_partial_copy_nocheck csum_partial_copy_nocheck
-+__wsum csum_partial_copy_nocheck(const void *src, void *dst,
-+					int len, __wsum sum);
++
++#if !defined(_ASM_HEXAGON_UNISTD_H) || defined(__SYSCALL)
++#define _ASM_HEXAGON_UNISTD_H
 +
 +/*
-+ * computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented
++ *  The kernel pulls this unistd.h in three different ways:
++ *  1.  the "normal" way which gets all the __NR defines
++ *  2.  with __SYSCALL defined to produce function declarations
++ *  3.  with __SYSCALL defined to produce syscall table initialization
++ *  See also:  syscalltab.c
 + */
-+#define csum_tcpudp_nofold csum_tcpudp_nofold
-+__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
-+	unsigned short len, unsigned short proto, __wsum sum);
 +
-+#define csum_tcpudp_magic csum_tcpudp_magic
-+__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
-+	unsigned short len, unsigned short proto, __wsum sum);
++#define sys_mmap2 sys_mmap_pgoff
 +
-+#include <asm-generic/checksum.h>
++#include <asm-generic/unistd.h>
 +
 +#endif
-diff --git a/arch/hexagon/include/asm/intrinsics.h b/arch/hexagon/include/asm/intrinsics.h
+diff --git a/arch/hexagon/kernel/syscall.c b/arch/hexagon/kernel/syscall.c
 new file mode 100644
-index 0000000..1c02186
+index 0000000..620dd18
 --- /dev/null
-+++ b/arch/hexagon/include/asm/intrinsics.h
-@@ -0,0 +1,26 @@
++++ b/arch/hexagon/kernel/syscall.c
+@@ -0,0 +1,90 @@
 +/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_HEXAGON_INTRINSICS_H
-+#define _ASM_HEXAGON_INTRINSICS_H
-+
-+#define HEXAGON_P_vrmpyhacc_PP	__builtin_HEXAGON_M2_vrmac_s0
-+#define HEXAGON_P_vrmpyh_PP	__builtin_HEXAGON_M2_vrmpy_s0
-+#define HEXAGON_R_cl0_R		__builtin_HEXAGON_S2_cl0
-+
-+#endif
-diff --git a/arch/hexagon/lib/checksum.c b/arch/hexagon/lib/checksum.c
-new file mode 100644
-index 0000000..9300552
---- /dev/null
-+++ b/arch/hexagon/lib/checksum.c
-@@ -0,0 +1,203 @@
-+/*
-+ * Checksum functions for Hexagon
++ * Hexagon system calls
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -144,189 +160,114 @@ index 0000000..9300552
 + * 02110-1301, USA.
 + */
 +
-+/*  This was derived from arch/alpha/lib/checksum.c  */
-+
-+
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/linkage.h>
++#include <linux/mm.h>
 +#include <linux/module.h>
-+#include <linux/string.h>
-+
-+#include <asm/byteorder.h>
-+#include <net/checksum.h>
-+#include <linux/uaccess.h>
-+#include <asm/intrinsics.h>
-+
-+
-+/*  Vector value operations  */
-+#define SIGN(x, y)	((0x8000ULL*x)<<y)
-+#define CARRY(x, y)	((0x0002ULL*x)<<y)
-+#define SELECT(x, y)	((0x0001ULL*x)<<y)
-+
-+#define VR_NEGATE(a, b, c, d)	(SIGN(a, 48) + SIGN(b, 32) + SIGN(c, 16) \
-+	+ SIGN(d, 0))
-+#define VR_CARRY(a, b, c, d)	(CARRY(a, 48) + CARRY(b, 32) + CARRY(c, 16) \
-+	+ CARRY(d, 0))
-+#define VR_SELECT(a, b, c, d)	(SELECT(a, 48) + SELECT(b, 32) + SELECT(c, 16) \
-+	+ SELECT(d, 0))
-+
-+
-+/* optimized HEXAGON V3 intrinsic version */
-+static inline unsigned short from64to16(u64 x)
-+{
-+	u64 sum;
-+
-+	sum = HEXAGON_P_vrmpyh_PP(x^VR_NEGATE(1, 1, 1, 1),
-+			     VR_SELECT(1, 1, 1, 1));
-+	sum += VR_CARRY(0, 0, 1, 0);
-+	sum = HEXAGON_P_vrmpyh_PP(sum, VR_SELECT(0, 0, 1, 1));
-+
-+	return 0xFFFF & sum;
-+}
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
++#include <linux/unistd.h>
++#include <asm/mman.h>
++#include <asm/registers.h>
 +
 +/*
-+ * computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented.
++ * System calls with architecture-specific wrappers.
++ * See signal.c for signal-related system call wrappers.
 + */
-+__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
-+			  unsigned short len, unsigned short proto,
-+			  __wsum sum)
++
++asmlinkage int sys_execve(char __user *ufilename,
++			  const char __user *const __user *argv,
++			  const char __user *const __user *envp)
 +{
-+	return (__force __sum16)~from64to16(
-+		(__force u64)saddr + (__force u64)daddr +
-+		(__force u64)sum + ((len + proto) << 8));
++	struct pt_regs *pregs = current_thread_info()->regs;
++	char *filename;
++	int retval;
++
++	filename = getname(ufilename);
++	retval = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		return retval;
++
++	retval = do_execve(filename, argv, envp, pregs);
++	putname(filename);
++
++	return retval;
 +}
 +
-+__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
-+			  unsigned short len, unsigned short proto,
-+			  __wsum sum)
++asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
++			 unsigned long parent_tidp, unsigned long child_tidp)
 +{
-+	u64 result;
++	struct pt_regs *pregs = current_thread_info()->regs;
 +
-+	result = (__force u64)saddr + (__force u64)daddr +
-+		 (__force u64)sum + ((len + proto) << 8);
-+
-+	/* Fold down to 32-bits so we don't lose in the typedef-less
-+	   network stack.  */
-+	/* 64 to 33 */
-+	result = (result & 0xffffffffUL) + (result >> 32);
-+	/* 33 to 32 */
-+	result = (result & 0xffffffffUL) + (result >> 32);
-+	return (__force __wsum)result;
++	if (!newsp)
++		newsp = pregs->SP;
++	return do_fork(clone_flags, newsp, pregs, 0, (int __user *)parent_tidp,
++		       (int __user *)child_tidp);
 +}
-+EXPORT_SYMBOL(csum_tcpudp_nofold);
 +
 +/*
-+ * Do a 64-bit checksum on an arbitrary memory area..
++ * Do a system call from the kernel, so as to have a proper pt_regs
++ * and recycle the sys_execvpe infrustructure.
++ */
++int kernel_execve(const char *filename,
++		  const char *const argv[], const char *const envp[])
++{
++	register unsigned long __a0 asm("r0") = (unsigned long) filename;
++	register unsigned long __a1 asm("r1") = (unsigned long) argv;
++	register unsigned long __a2 asm("r2") = (unsigned long) envp;
++	int retval;
++
++	__asm__ volatile(
++		"	R6 = #%4;\n"
++		"	trap0(#1);\n"
++		"	%0 = R0;\n"
++		: "=r" (retval)
++		: "r" (__a0), "r" (__a1), "r" (__a2), "i" (__NR_execve)
++	);
++
++	return retval;
++}
++EXPORT_SYMBOL(kernel_execve);
+diff --git a/arch/hexagon/kernel/syscalltab.c b/arch/hexagon/kernel/syscalltab.c
+new file mode 100644
+index 0000000..c550f41
+--- /dev/null
++++ b/arch/hexagon/kernel/syscalltab.c
+@@ -0,0 +1,32 @@
++/*
++ * System call table for Hexagon
 + *
-+ * This isn't a great routine, but it's not _horrible_ either. The
-+ * inner loop could be unrolled a bit further, and there are better
-+ * ways to do the carry, but this is reasonable.
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+/* optimized HEXAGON intrinsic version, with over read fixed */
-+unsigned int do_csum(const void *voidptr, int len)
-+{
-+	u64 sum0, sum1, x0, x1, *ptr8_o, *ptr8_e, *ptr8;
-+	int i, start, mid, end, mask;
-+	const char *ptr = voidptr;
-+	unsigned short *ptr2;
-+	unsigned int *ptr4;
++#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/unistd.h>
 +
-+	if (len <= 0)
-+		return 0;
++#include <asm/syscall.h>
 +
-+	start = 0xF & (16-(((int) ptr) & 0xF)) ;
-+	mask  = 0x7fffffffUL >> HEXAGON_R_cl0_R(len);
-+	start = start & mask ;
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (call),
 +
-+	mid = len - start;
-+	end = mid & 0xF;
-+	mid = mid>>4;
-+	sum0 = mid << 18;
-+	sum1 = 0;
-+
-+	if (start & 1)
-+		sum0 += (u64) (ptr[0] << 8);
-+	ptr2 = (unsigned short *) &ptr[start & 1];
-+	if (start & 2)
-+		sum1 += (u64) ptr2[0];
-+	ptr4 = (unsigned int *) &ptr[start & 3];
-+	if (start & 4) {
-+		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
-+			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
-+			VR_SELECT(0, 0, 1, 1));
-+		sum0 += VR_SELECT(0, 0, 1, 0);
-+	}
-+	ptr8 = (u64 *) &ptr[start & 7];
-+	if (start & 8) {
-+		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
-+			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
-+			VR_SELECT(1, 1, 1, 1));
-+		sum1 += VR_CARRY(0, 0, 1, 0);
-+	}
-+	ptr8_o = (u64 *) (ptr + start);
-+	ptr8_e = (u64 *) (ptr + start + 8);
-+
-+	if (mid) {
-+		x0 = *ptr8_e; ptr8_e += 2;
-+		x1 = *ptr8_o; ptr8_o += 2;
-+		if (mid > 1)
-+			for (i = 0; i < mid-1; i++) {
-+				sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
-+					x0^VR_NEGATE(1, 1, 1, 1),
-+					VR_SELECT(1, 1, 1, 1));
-+				sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
-+					x1^VR_NEGATE(1, 1, 1, 1),
-+					VR_SELECT(1, 1, 1, 1));
-+				x0 = *ptr8_e; ptr8_e += 2;
-+				x1 = *ptr8_o; ptr8_o += 2;
-+			}
-+		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0, x0^VR_NEGATE(1, 1, 1, 1),
-+			VR_SELECT(1, 1, 1, 1));
-+		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1, x1^VR_NEGATE(1, 1, 1, 1),
-+			VR_SELECT(1, 1, 1, 1));
-+	}
-+
-+	ptr4 = (unsigned int *) &ptr[start + (mid * 16) + (end & 8)];
-+	if (end & 4) {
-+		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
-+			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
-+			VR_SELECT(0, 0, 1, 1));
-+		sum1 += VR_SELECT(0, 0, 1, 0);
-+	}
-+	ptr2 = (unsigned short *) &ptr[start + (mid * 16) + (end & 12)];
-+	if (end & 2)
-+		sum0 += (u64) ptr2[0];
-+
-+	if (end & 1)
-+		sum1 += (u64) ptr[start + (mid * 16) + (end & 14)];
-+
-+	ptr8 = (u64 *) &ptr[start + (mid * 16)];
-+	if (end & 8) {
-+		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
-+			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
-+			VR_SELECT(1, 1, 1, 1));
-+		sum0 += VR_CARRY(0, 0, 1, 0);
-+	}
-+	sum0 = HEXAGON_P_vrmpyh_PP((sum0+sum1)^VR_NEGATE(0, 0, 0, 1),
-+		VR_SELECT(0, 0, 1, 1));
-+	sum0 += VR_NEGATE(0, 0, 0, 1);
-+	sum0 = HEXAGON_P_vrmpyh_PP(sum0, VR_SELECT(0, 0, 1, 1));
-+
-+	if (start & 1)
-+		sum0 = (sum0 << 8) | (0xFF & (sum0 >> 8));
-+
-+	return 0xFFFF & sum0;
-+}
-+
-+/*
-+ * copy from ds while checksumming, otherwise like csum_partial
-+ */
-+__wsum
-+csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
-+{
-+	memcpy(dst, src, len);
-+	return csum_partial(dst, len, sum);
-+}
++void *sys_call_table[__NR_syscalls] = {
++#include <asm/unistd.h>
++};
 -- 
 1.7.1
 
