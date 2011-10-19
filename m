@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab1JSRN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:13:57 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57248 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756962Ab1JSRNx (ORCPT
+	id S1757038Ab1JSROB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:14:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50977 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757008Ab1JSRN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:13:53 -0400
-Date: Wed, 19 Oct 2011 19:13:51 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: EDAC devel <linux-edac@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -v2] x86 RAS: Reorganize functionality
-Message-ID: <20111019171351.GA29064@gere.osrc.amd.com>
-References: <1319035866-29570-1-git-send-email-bp@amd64.org>
- <987664A83D2D224EAE907B061CE93D5301F19DBD9F@orsmsx505.amr.corp.intel.com>
+	Wed, 19 Oct 2011 13:13:58 -0400
+Date: Wed, 19 Oct 2011 10:13:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, vgoyal@redhat.com, ctalbott@google.com,
+        rni@google.com
+Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by
+ making blk_queue_cleanup() proper shutdown
+Message-ID: <20111019171354.GF25124@google.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-11-git-send-email-tj@kernel.org>
+ <4E9EC602.5010207@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301F19DBD9F@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E9EC602.5010207@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 10:08:25AM -0700, Luck, Tony wrote:
-> > and what I actually would like to see is something like
-> 
-> [ ] Reliability, Availability, Serviceability
-> [ ]  Machine Check Architecture
-> [ ]	Intel-specific features
-> 	[ ] CMCI / overheating reporting
-> 	[ ] MCE decoding
-> 	[ ] MCE injection
-> [ ]	AMD-specific features
-> 	[ ] Error thresholding
-> 	[ ] MCE decoding
-> 	[ ] MCE injection
-> [ ] ...
-> 
-> Where does EINJ and other APEI bits fit into this ... it isn't Intel
-> specific (Is it? Do AMD BIOS writers include it??).
+On Wed, Oct 19, 2011 at 02:43:46PM +0200, Jens Axboe wrote:
+> This patch clashes a bit with the previous "fix" for getting rid of
+> privately assigned queue locks. I've kept that single bit.
 
-I'll have to check on that but...
-
-> It would be nice for it to eventually move in with the other "RAS"
-> bit, rather than being hidden under a couple of levels of ACPI menus.
-
-... absolutely, that's what the "[ ] ..." was supposed to mean - other
-RAS features which should go there eventually.
+Ah, okay, that's the private queue_lock thing Vivek mentioned in the
+earlier reply.  Nice that it's already fixed.
 
 Thanks.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+tejun
