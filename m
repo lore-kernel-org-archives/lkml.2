@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab1JUQwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 12:52:20 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:50753 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753408Ab1JUQwT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 12:52:19 -0400
+	id S1753992Ab1JUQw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 12:52:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57810 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab1JUQwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 12:52:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tim Bird <tim.bird@am.sony.com>, Russell King <rmk@arm.linux.org.uk>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: Add static kernel function stack size analyzer, for ARM
+Date: Wed, 19 Oct 2011 12:45:50 +0200
+Message-ID: <1861853.vLiqXrnQg4@wuerfel>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <4E9E0C66.3020405@am.sony.com>
+References: <4E9E0B71.9020708@am.sony.com> <4E9E0C66.3020405@am.sony.com>
 MIME-Version: 1.0
-In-Reply-To: <65EE16ACC360FA4D99C96DC085B3F7722AE773@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <1319162083.4352.2.camel@phoenix>
-	<65EE16ACC360FA4D99C96DC085B3F7722AE773@039-SN1MPN1-003.039d.mgd.msft.net>
-Date: Fri, 21 Oct 2011 17:52:17 +0100
-Message-ID: <CABS+qY0hOywM5D04crw9W_gPPHx8dZSSR1rSPiVU4WiagqoB3w@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: sgtl5000: Fix wrong mask in some
- snd_soc_update_bits calls
-From: "Girdwood, Liam" <lrg@ti.com>
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dFpCgYHOmGT6lO4XpcILvMGMBSi9oMSIKENp3SKWmeR
+ V1i/mLgaN/SqcAVbQM1tvCXee16J6dc6IYv6+WgZybWB4UcVWd
+ P6aXzcD3csDdXNgYp7VMF4E6eAQ/hP/DKb1tWTjsEMsoHAxdDa
+ KWZeXaoD8iohvqfrB8Nb5eI/cTLJOVBqS/zlEsqIx2lWOfz3XL
+ 1SCWmoh7h5b2s9yEugJMpMG/LbpcSFzigEPr6PwaOv63Huyl30
+ 6w5icqaPH0UHv/JhKXd0/f25rWepATFDY2rQ93a7jIccNf9IAq
+ KUULiZSwMqlgWer/umHpmyab7hoPkuebyysfyLKXQB4CxWsFxi
+ g2vo3lrOd5mULzsDV948=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 October 2011 08:36, Dong Aisheng-B29396 <B29396@freescale.com> wrote:
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> owner@vger.kernel.org] On Behalf Of Axel Lin
->> Sent: Friday, October 21, 2011 9:55 AM
->> To: linux-kernel@vger.kernel.org
->> Cc: Dong Aisheng-B29396; Wolfram Sang; Liam Girdwood; Mark Brown; alsa-
->> devel@alsa-project.org
->> Subject: [PATCH] ASoC: sgtl5000: Fix wrong mask in some
->> snd_soc_update_bits calls
->>
->> Ensure all mask bits are clear before setting new value.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> ---
->> I don't have this hardware, I'd appreciate if someone can test this patch.
->>
->> Thanks,
->> Axel
->>  sound/soc/codecs/sgtl5000.c |   12 ++++++------
->>  1 files changed, 6 insertions(+), 6 deletions(-)
->
-> It runs ok at my side.
-> Acked-by: Dong Aisheng <b29396@freescale.com>
->
+On Tuesday 18 October 2011 16:31:50 Tim Bird wrote:
+> 
+> This tool can be used to analyze the function stack size for ARM kernels,
+> statically, based on a disassembly of vmlinux (or an individual .o file
+> 
+> Signed-off-by: Tim Bird <tim.bird@am.sony.com>
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+Hi Tim,
+
+I thought we now had a gcc option for this. gcc documentation points to -Wstack-usage=XXX.
+This was first introduced on s390 in architecture specific gcc code, but should now work
+everywhere.
+
+	Arnd
