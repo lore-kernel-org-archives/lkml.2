@@ -1,260 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1JSSZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:25:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42619 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab1JSSXs (ORCPT
+	id S1752029Ab1JSS3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:29:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48326 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab1JSS27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:23:48 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/7] perf hists: Move the dso and thread filters from hist_browser
-Date: Wed, 19 Oct 2011 16:23:32 -0200
-Message-Id: <1319048618-9790-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1319048618-9790-1-git-send-email-acme@infradead.org>
-References: <1319048618-9790-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 19 Oct 2011 14:28:59 -0400
+Date: Wed, 19 Oct 2011 19:28:55 +0100
+From: Andrew Benton <b3nton@gmail.com>
+To: Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: [drm:radeon_dp_i2c_aux_ch] *ERROR* aux i2c too many retries, giving
+ up
+Message-Id: <20111019192855.73e45b54.b3nton@gmail.com>
+X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.4; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hello,
 
-Since with dynamic addition of new hist entries we need to apply those
-filters as we merge new batches of hist_entry instances, for instance in
-perf top.
+Please cc me in any replies as I'm not subscribed.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-zjhhf8kh9w1buty9p10od6rz@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/hist.c              |   10 ++++---
- tools/perf/util/hist.h              |    9 +++++-
- tools/perf/util/ui/browsers/hists.c |   48 ++++++++++++++++-------------------
- 3 files changed, 35 insertions(+), 32 deletions(-)
+When booting a 3.1.0-rc10 kernel, right at the start I get an error
+message printed to the screen:
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 8d15e9f..fdff2a8 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1087,7 +1087,7 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
- 	hists__calc_col_len(hists, h);
- }
- 
--void hists__filter_by_dso(struct hists *hists, const struct dso *dso)
-+void hists__filter_by_dso(struct hists *hists)
- {
- 	struct rb_node *nd;
- 
-@@ -1101,7 +1101,8 @@ void hists__filter_by_dso(struct hists *hists, const struct dso *dso)
- 		if (symbol_conf.exclude_other && !h->parent)
- 			continue;
- 
--		if (dso != NULL && (h->ms.map == NULL || h->ms.map->dso != dso)) {
-+		if (hists->dso_filter != NULL &&
-+		    (h->ms.map == NULL || h->ms.map->dso != hists->dso_filter)) {
- 			h->filtered |= (1 << HIST_FILTER__DSO);
- 			continue;
- 		}
-@@ -1110,7 +1111,7 @@ void hists__filter_by_dso(struct hists *hists, const struct dso *dso)
- 	}
- }
- 
--void hists__filter_by_thread(struct hists *hists, const struct thread *thread)
-+void hists__filter_by_thread(struct hists *hists)
- {
- 	struct rb_node *nd;
- 
-@@ -1121,7 +1122,8 @@ void hists__filter_by_thread(struct hists *hists, const struct thread *thread)
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 
--		if (thread != NULL && h->thread != thread) {
-+		if (hists->thread_filter != NULL &&
-+		    h->thread != hists->thread_filter) {
- 			h->filtered |= (1 << HIST_FILTER__THREAD);
- 			continue;
- 		}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index f338cb0..575bcbc 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -43,12 +43,17 @@ enum hist_column {
- 	HISTC_NR_COLS, /* Last entry */
- };
- 
-+struct thread;
-+struct dso;
-+
- struct hists {
- 	struct rb_root		entries_in_array[2];
- 	struct rb_root		*entries_in;
- 	struct rb_root		entries;
- 	struct rb_root		entries_collapsed;
- 	u64			nr_entries;
-+	const struct thread	*thread_filter;
-+	const struct dso	*dso_filter;
- 	pthread_mutex_t		lock;
- 	struct events_stats	stats;
- 	u64			event_stream;
-@@ -91,8 +96,8 @@ size_t hists__fprintf(struct hists *self, struct hists *pair,
- int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
- int hist_entry__annotate(struct hist_entry *self, size_t privsize);
- 
--void hists__filter_by_dso(struct hists *self, const struct dso *dso);
--void hists__filter_by_thread(struct hists *self, const struct thread *thread);
-+void hists__filter_by_dso(struct hists *hists);
-+void hists__filter_by_thread(struct hists *hists);
- 
- u16 hists__col_len(struct hists *self, enum hist_column col);
- void hists__set_col_len(struct hists *self, enum hist_column col, u16 len);
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 936e641..94e1ab0 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -24,14 +24,11 @@ struct hist_browser {
- 	struct hists	    *hists;
- 	struct hist_entry   *he_selection;
- 	struct map_symbol   *selection;
--	const struct thread *thread_filter;
--	const struct dso    *dso_filter;
- 	bool		     has_symbols;
- };
- 
- static int hists__browser_title(struct hists *self, char *bf, size_t size,
--				const char *ev_name, const struct dso *dso,
--				const struct thread *thread);
-+				const char *ev_name);
- 
- static void hist_browser__refresh_dimensions(struct hist_browser *self)
- {
-@@ -307,8 +304,7 @@ static int hist_browser__run(struct hist_browser *self, const char *ev_name,
- 	self->b.nr_entries = self->hists->nr_entries;
- 
- 	hist_browser__refresh_dimensions(self);
--	hists__browser_title(self->hists, title, sizeof(title), ev_name,
--			     self->dso_filter, self->thread_filter);
-+	hists__browser_title(self->hists, title, sizeof(title), ev_name);
- 
- 	if (ui_browser__show(&self->b, title,
- 			     "Press '?' for help on key bindings") < 0)
-@@ -323,8 +319,7 @@ static int hist_browser__run(struct hist_browser *self, const char *ev_name,
- 			timer(arg);
- 			ui_browser__update_nr_entries(&self->b, self->hists->nr_entries);
- 			hists__browser_title(self->hists, title, sizeof(title),
--					     ev_name, self->dso_filter,
--					     self->thread_filter);
-+					     ev_name);
- 			ui_browser__show_title(&self->b, title);
- 			continue;
- 		case 'D': { /* Debug */
-@@ -809,11 +804,12 @@ static struct thread *hist_browser__selected_thread(struct hist_browser *self)
- }
- 
- static int hists__browser_title(struct hists *self, char *bf, size_t size,
--				const char *ev_name, const struct dso *dso,
--				const struct thread *thread)
-+				const char *ev_name)
- {
- 	char unit;
- 	int printed;
-+	const struct dso *dso = self->dso_filter;
-+	const struct thread *thread = self->thread_filter;
- 	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 	nr_events = convert_unit(nr_events, &unit);
-@@ -917,9 +913,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 				continue;
- 			}
- 			top = pstack__pop(fstack);
--			if (top == &browser->dso_filter)
-+			if (top == &browser->hists->dso_filter)
- 				goto zoom_out_dso;
--			if (top == &browser->thread_filter)
-+			if (top == &browser->hists->thread_filter)
- 				goto zoom_out_thread;
- 			continue;
- 		}
-@@ -947,14 +943,14 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 
- 		if (thread != NULL &&
- 		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
--			     (browser->thread_filter ? "out of" : "into"),
-+			     (browser->hists->thread_filter ? "out of" : "into"),
- 			     (thread->comm_set ? thread->comm : ""),
- 			     thread->pid) > 0)
- 			zoom_thread = nr_options++;
- 
- 		if (dso != NULL &&
- 		    asprintf(&options[nr_options], "Zoom %s %s DSO",
--			     (browser->dso_filter ? "out of" : "into"),
-+			     (browser->hists->dso_filter ? "out of" : "into"),
- 			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
- 			zoom_dso = nr_options++;
- 
-@@ -994,36 +990,36 @@ do_annotate:
- 			map__browse(browser->selection->map);
- 		else if (choice == zoom_dso) {
- zoom_dso:
--			if (browser->dso_filter) {
--				pstack__remove(fstack, &browser->dso_filter);
-+			if (browser->hists->dso_filter) {
-+				pstack__remove(fstack, &browser->hists->dso_filter);
- zoom_out_dso:
- 				ui_helpline__pop();
--				browser->dso_filter = NULL;
-+				browser->hists->dso_filter = NULL;
- 			} else {
- 				if (dso == NULL)
- 					continue;
- 				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
- 						   dso->kernel ? "the Kernel" : dso->short_name);
--				browser->dso_filter = dso;
--				pstack__push(fstack, &browser->dso_filter);
-+				browser->hists->dso_filter = dso;
-+				pstack__push(fstack, &browser->hists->dso_filter);
- 			}
--			hists__filter_by_dso(self, browser->dso_filter);
-+			hists__filter_by_dso(self);
- 			hist_browser__reset(browser);
- 		} else if (choice == zoom_thread) {
- zoom_thread:
--			if (browser->thread_filter) {
--				pstack__remove(fstack, &browser->thread_filter);
-+			if (browser->hists->thread_filter) {
-+				pstack__remove(fstack, &browser->hists->thread_filter);
- zoom_out_thread:
- 				ui_helpline__pop();
--				browser->thread_filter = NULL;
-+				browser->hists->thread_filter = NULL;
- 			} else {
- 				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
- 						   thread->comm_set ? thread->comm : "",
- 						   thread->pid);
--				browser->thread_filter = thread;
--				pstack__push(fstack, &browser->thread_filter);
-+				browser->hists->thread_filter = thread;
-+				pstack__push(fstack, &browser->hists->thread_filter);
- 			}
--			hists__filter_by_thread(self, browser->thread_filter);
-+			hists__filter_by_thread(self);
- 			hist_browser__reset(browser);
- 		}
- 	}
--- 
-1.6.2.5
+[drm:radeon_dp_i2c_aux_ch] *ERROR* aux i2c too many retries, giving up
 
+It's a quad core computer and it prints it 4 times. On another computer
+which is a dual core it prints the message twice. Both computers have
+Radeon graphics cards which need firmware compiled into the kernel to
+work. This computer uses BARTS_mc.bin, BARTS_me.bin, BARTS_pfp.bin and
+BTC_rlc.bin. The kitchen computer uses REDWOOD_rlc.bin, REDWOOD_pfp.bin
+and REDWOOD_me.bin. Both computers seem to be working fine as far as I
+can see. Is this error message something to be concerned about? I
+thought the radeon driver uses i2c to enable sensors to report the
+temperature of the card, but that seems to be working fine. I boot with
+the quite command line argument and it gets rid of most kernel output,
+but not these error messages. Is there some way I can get rid of these
+alarming messages? Some kernel option that will make them just complain
+to the kernel log? Or is there some option I should enable to keep the
+radeon i2c whatever it is happy?
+
+Andy
