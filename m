@@ -1,38 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab1JSO6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:58:06 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:60415 "EHLO
+	id S1756610Ab1JSPB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:01:28 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:55085 "EHLO
 	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab1JSO6F (ORCPT
+	with ESMTP id S1756467Ab1JSPB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:58:05 -0400
-Date: Wed, 19 Oct 2011 16:58:00 +0200
+	Wed, 19 Oct 2011 11:01:27 -0400
+Date: Wed, 19 Oct 2011 17:01:22 +0200
 From: Nico Schottelius <nico-linux-20111017@schottelius.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-        Arend van Spriel <arend@broadcom.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
-Message-ID: <20111019145800.GC1414@schottelius.org>
+To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
+Message-ID: <20111019150122.GA6157@schottelius.org>
 Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Arend van Spriel <arend@broadcom.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-	netdev <netdev@vger.kernel.org>
-References: <20111019123602.GA11883@schottelius.org>
- <1319028563.8416.1.camel@edumazet-laptop>
- <20111019130749.GD11883@schottelius.org>
- <20111019142837.GA1414@schottelius.org>
- <1319035584.8416.34.camel@edumazet-laptop>
+	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+References: <20111017175906.GA3461@schottelius.org>
+ <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
+ <20111017214050.GA1408@schottelius.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1319035584.8416.34.camel@edumazet-laptop>
+In-Reply-To: <20111017214050.GA1408@schottelius.org>
 User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
 X-Netzseite: http://www.nico.schottelius.org/
 X-System-Info: brief (Linux 3.1.0-rc6-gbee709a x86_64)
@@ -40,26 +29,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet [Wed, Oct 19, 2011 at 04:46:24PM +0200]:
-> Le mercredi 19 octobre 2011 à 16:28 +0200, Nico Schottelius a écrit :
-> > Triggered it! 
-> > 
-> > And also got the traceback!
-> > 
-> > Dmesg + log attached, let me know when I can pull the fix from
-> > somewhere.
-> > 
-> 
-> Sorry, I cant see same messages in your dmesg, no mention of stuck
-> processes (blocked for more than 120 seconds.)
-> 
-> By the way, please update to latest 3.1.rc10
- 
-I can rebuild Linus' tree if you want, but only use it temporarily due
-to the other errors mentioned in the previous message.
+Hey Jiri,
 
-If you've a tree somewhere that merges on top of Keith+Jiri,
-I'd try to merge that one as well, to make the mba more usable.
+regarding the misplaced keys:
+
+Nico Schottelius [Mon, Oct 17, 2011 at 11:40:50PM +0200]:
+> [...] 
+> I've attached the xev output of fn+{F1-F12}.
+> 
+> F1-F4 are correct, though
+>   F3 = Expose on MacOS X (**)
+>   F4 = Dashboard (**)
+> F5: not mapped at all: Is KeyboardLightDecrease on MacOSX (*)
+> F6 is XF86AudioPrev incorrect: Should be  KeyboardLightIncrease (*)
+> F7 is XF86AudioPlay incorrect: Should be XF86AudioPrev
+> F8 is XF86AudioNext incorrect: Should be XF86AudioPlay
+> F9 is XF86AudioMute incorrect: Should be XF86AudioNext
+> F10 is XF86AudioLowerVolume incorrect: Should be XF86AudioMute
+> F11 is XF86AudioRaiseVolume incorrect: Should be XF86AudioLowerVolume 
+> F12 is XF86Eject incorrect: Should be  XF86AudioRaiseVolume 
+> 
+> Thus F7-12 are shifted by one to left in reality and as the MacBook Air
+
+if I want to correct these bugs, which tree should I use as the base?
+And when I corrected those, to whom to submit?
+
+I guess the general approach would be to branch out, if it's a mba4,2,
+then apply the following mapping, correct?
 
 Cheers,
 
