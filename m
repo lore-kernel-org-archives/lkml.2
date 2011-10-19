@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab1JSOzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:55:12 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:43033 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab1JSOzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:55:05 -0400
-Date: Wed, 19 Oct 2011 16:55:01 +0200
-From: Nico Schottelius <nico-linux-20111017@schottelius.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, wey-yi.w.guy@intel.com
-Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
-Message-ID: <20111019145501.GB1414@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-	Arend van Spriel <arend@broadcom.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-	netdev <netdev@vger.kernel.org>, wey-yi.w.guy@intel.com
-References: <20111019123602.GA11883@schottelius.org>
- <1319028563.8416.1.camel@edumazet-laptop>
- <20111019130749.GD11883@schottelius.org>
- <20111019142837.GA1414@schottelius.org>
- <4E9EE20F.1030403@broadcom.com>
+	id S932223Ab1JSOzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:55:10 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:51011 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932186Ab1JSOzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 10:55:04 -0400
+Date: Wed, 19 Oct 2011 09:54:58 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111019145458.GA9266@sgi.com>
+References: <20111014122506.GB26737@sgi.com>
+ <20111014135055.GA28592@sgi.com>
+ <alpine.DEB.2.00.1110140856420.6411@router.home>
+ <20111014141921.GC28592@sgi.com>
+ <alpine.DEB.2.00.1110140932530.6411@router.home>
+ <alpine.DEB.2.00.1110140958550.6411@router.home>
+ <20111014161603.GA30561@sgi.com>
+ <20111018134835.GA16222@sgi.com>
+ <m2mxcyz4f7.fsf@firstfloor.org>
+ <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aVD9QWMuhilNxW9f"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E9EE20F.1030403@broadcom.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.1.0-rc6-gbee709a x86_64)
+In-Reply-To: <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 18, 2011 at 06:16:21PM -0700, David Rientjes wrote:
+> On Tue, 18 Oct 2011, Andi Kleen wrote:
+> 
+> > > Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
+> > > same default behavior as what we currently have?
+> > 
+> > Tunable is bad. We don't really want a "hundreds of lines magic shell script to
+> > make large systems perform". Please find a way to auto tune.
+> > 
+> 
+> Agreed, and I think even if we had a tunable that it would result in 
+> potentially erradic VM performance because some areas depend on "fairly 
+> accurate" ZVCs and it wouldn't be clear that you're trading other unknown 
+> VM issues that will affect your workload because you've increased the 
+> deltas.  Let's try to avoid having to ask "what is your ZVC delta tunable 
+> set at?" when someone reports a bug about reclaim stopping preemptively.
 
---aVD9QWMuhilNxW9f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I'm inclined to agree.
 
-Hey Arend,
+> 
+> That said, perhaps we need higher deltas by default and then hints in key 
+> areas in the form of sync_stats_if_delta_above(x) calls that would do 
+> zone_page_state_add() only when that kind of precision is actually needed.  
+> For public interfaces, that would be very easy to audit to see what the 
+> level of precision is when parsing the data.
 
+I did some manual tuning to see what deltas would be needed to achieve the
+greatest tmpfs writeback performance on a system with 640 cpus and 64 nodes:
 
-Arend van Spriel [Wed, Oct 19, 2011 at 04:43:27PM +0200]:
-> I actually don't see the rtnl_lock or mutex_lock that was listed in your
-> original dmesg. There are a lot of warning traces from mac80211.c.
+For 120 threads writing in parallel (each to it's own mountpoint), the
+threshold needs to be on the order of 1000.  At a threshold of 750, I
+start to see a slowdown of 50-60 MB/sec.
 
-Oh, sorry, ip r was stuck already and I didn't wait 120 seconds!
+For 400 threads writing in parallel, the threshold needs to be on the order
+of 2000 (although we're off by about 40 MB/sec at that point).
 
+The necessary deltas in these cases are quite a bit higher than the current
+125 maximum (see calculate*threshold in mm/vmstat.c).
 
-> The other interesting thing is the following:
->=20
-> [  367.389096] wlan0: deauthenticating from 00:03:52:e3:0e:10 by local
-> choice (reason=3D3)
-> [  367.416312] cfg80211: Calling CRDA to update world regulatory domain
-> [  369.367667] wlan0: direct probe to 00:03:52:2c:01:00 (try 1/3)
-> [  369.565008] wlan0: direct probe to 00:03:52:2c:01:00 (try 2/3)
-> [  369.764891] wlan0: direct probe to 00:03:52:2c:01:00 (try 3/3)
-> [  369.964768] wlan0: direct probe to 00:03:52:2c:01:00 timed out
-> [  381.310339] wlan0: direct probe to 00:0f:61:1a:0c:50 (try 1/3)
-> [  381.508071] wlan0: direct probe to 00:0f:61:1a:0c:50 (try 2/3)
-> [  381.707955] wlan0: direct probe to 00:0f:61:1a:0c:50 (try 3/3)
-> [  381.907788] wlan0: direct probe to 00:0f:61:1a:0c:50 timed out
-> [  393.250073] wlan0: direct probe to 00:03:52:2c:01:00 (try 1/3)
-> [  393.447810] wlan0: direct probe to 00:03:52:2c:01:00 (try 2/3)
-> [  393.647700] wlan0: direct probe to 00:03:52:2c:01:00 (try 3/3)
-> [  393.847576] wlan0: direct probe to 00:03:52:2c:01:00 timed out
-> [  405.183177] wlan0: direct probe to 00:0f:61:1a:1d:30 (try 1/3)
-> [  405.380906] wlan0: direct probe to 00:0f:61:1a:1d:30 (try 2/3)
-> [  405.580773] wlan0: direct probe to 00:0f:61:1a:1d:30 (try 3/3)
-> [  405.780658] wlan0: direct probe to 00:0f:61:1a:1d:30 timed out
->=20
-> There is another thread title "iwlagn is getting very shaky". It makes
-> me wonder.
->=20
-> Where did you get your kernel from. From you dmesg I see:
-
-It's a mix of Keith's and Jiri's branches:
-
-http://www.nico.schottelius.org/blog/macbook-air-42-touchpad-keyboard-corre=
-ct-screen-resolution/
-
-Those two are needed to get screen/keyboard/mouse working on the MacBook Ai=
-r.
-
-You can pull the merged result directly from
-
-  git://git.schottelius.org/foreign/linux-keith-jiri-mba
-
-Cheers,
-
-Nico
-
---=20
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-
---aVD9QWMuhilNxW9f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6e5MUACgkQ19zI5DGHffBr0wCeM96ozFmOYLKh1B+U0EaeIy3p
-JXkAnim2zo3iXin25eIHBdvHPGLpQ1Jc
-=9rDo
------END PGP SIGNATURE-----
-
---aVD9QWMuhilNxW9f--
+I like the idea of having certain areas triggering vm_stat sync, as long
+as we know what those key areas are and how often they might be called.
