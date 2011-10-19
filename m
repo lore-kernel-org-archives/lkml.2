@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab1JSFXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 01:23:14 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:42922
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752007Ab1JSFXM (ORCPT
+	id S1755184Ab1JSFY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 01:24:27 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:59655 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752179Ab1JSFYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 01:23:12 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 19 Oct 2011 13:33:55 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <patches@linaro.org>, <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, Rajendra Nayak <rnayak@ti.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111019053354.GB31162@S2100-06.ap.freescale.net>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-4-git-send-email-rnayak@ti.com>
- <20111016145536.GA29885@S2100-06.ap.freescale.net>
- <4E9BAC4D.3010402@ti.com>
- <20111018115836.GC30703@S2100-06.ap.freescale.net>
- <20111018160046.GD28501@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111018160046.GD28501@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Wed, 19 Oct 2011 01:24:25 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18xpcEM0nsxcfeqBEZHye2sutJ+piWrC0iXUTdMmX
+	7QyRKwNB8lDRfx
+Subject: [patch-final] Re: patch] cpusets, cgroups: disallow attaching
+ kthreadd
+From: Mike Galbraith <efault@gmx.de>
+To: Paul Menage <paul@paulmenage.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Oct 2011 07:24:20 +0200
+Message-ID: <1319001860.6222.34.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 05:00:46PM +0100, Mark Brown wrote:
-> On Tue, Oct 18, 2011 at 07:58:37PM +0800, Shawn Guo wrote:
+On Tue, 2011-10-18 at 21:57 -0700, Paul Menage wrote:
+> On Tue, Oct 18, 2011 at 1:10 AM, Mike Galbraith <efault@gmx.de> wrote:
+> >
+> > Save the user some unexpected trouble, just say no.
+> >
+> > Signed-off-by: Mike Galbraith <efault@gmx.de>
 > 
-> > I understand that ideally device tree is supposed to describe pure
-> > hardware configurations.  But practically, when migrating a driver
-> > to device tree probe, we are trying to move the configurations
-> > described by platform_data into device tree to save the use of
-> > platform_data for device tree probe.  Then some of the configuration
-> > may not be so purely hardware related.  But I do not see this is a
-> > critical problem.
-> 
-> It's not just Linux-specific stuff, some of this is even specific to
-> what current Linux drivers can do - updating the kernel could mean a
-> different set of constraints.
-> 
-Well, from what I see, the 'struct regulation_constraints' is defined
-in machine.h and meant to be the regulator machine/board interface.
-With the example I'm looking at, mc13892, the regulation_constraints
-configuration is fully passed from machine/board file.  If there is
-something specific to what drivers can do, it probably should be encoded
-in regulator driver rather than staying in regulation_constraints.
+> Acked-by: Paul Menage <paul@paulmenage.org>
 
-So how do you think we should proceed here?
+Thanks.  Ok, seems it is decided that this is the best way to deal with
+annoying corner-case.  For convenience, patch with acquired acks below.
 
--- 
-Regards,
-Shawn
+
+cpusets, cgroups: disallow attaching kthreadd
+
+Allowing kthreadd to be moved to a non-root group makes no sense, it being
+a global resource, and needlessly leads unsuspecting users toward trouble.
+
+1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+allocated is not schedulable.  Simple user error, but harmful to the box.
+
+2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+rendering the cpuset immortal.
+
+Save the user some unexpected trouble, just say no.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Paul Menage <paul@paulmenage.org>
+
+---
+ kernel/cpuset.c |    6 ++++--
+ kernel/sched.c  |   10 ++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+Index: linux-3.0-tip/kernel/cpuset.c
+===================================================================
+--- linux-3.0-tip.orig/kernel/cpuset.c
++++ linux-3.0-tip/kernel/cpuset.c
+@@ -59,6 +59,7 @@
+ #include <linux/mutex.h>
+ #include <linux/workqueue.h>
+ #include <linux/cgroup.h>
++#include <linux/kthread.h>
+ 
+ /*
+  * Workqueue for cpuset related tasks.
+@@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
+ 	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+ 	 * applicable for such threads.  This prevents checking for success of
+ 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+-	 * be changed.
++	 * be changed.  We also disallow attaching kthreadd, to prevent it's
++	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
+ 	 */
+-	if (tsk->flags & PF_THREAD_BOUND)
++	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+ 		return -EINVAL;
+ 
+ 	return 0;
+Index: linux-3.0-tip/kernel/sched.c
+===================================================================
+--- linux-3.0-tip.orig/kernel/sched.c
++++ linux-3.0-tip/kernel/sched.c
+@@ -71,6 +71,7 @@
+ #include <linux/ctype.h>
+ #include <linux/ftrace.h>
+ #include <linux/slab.h>
++#include <linux/kthread.h>
+ 
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
+@@ -9141,6 +9142,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
+ static int
+ cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ {
++	/*
++	 * kthreadd can fork workers for an RT workqueue in a cgroup
++	 * which may or may not have rt_runtime allocated.  Just say no,
++	 * as attaching a global resource to a non-root group  doesn't
++	 * make any sense anyway.
++	 */
++	if (tsk == kthreadd_task)
++		return -EINVAL;
++
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
+ 		return -EINVAL;
+
+
+
+
 
