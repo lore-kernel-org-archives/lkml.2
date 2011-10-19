@@ -1,109 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab1JSOnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:43:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46274 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab1JSOnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:43:11 -0400
-Message-ID: <4E9EE1F8.7060207@linaro.org>
-Date: Wed, 19 Oct 2011 15:43:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1756427Ab1JSOns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:43:48 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2701 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238Ab1JSOnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 10:43:46 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4E9EE20F.1030403@broadcom.com>
+Date: Wed, 19 Oct 2011 16:43:27 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
+ Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Jamie Iles <jamie@jamieiles.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, linus.walleij@stericsson.com, arnd@arndb.de
-Subject: Re: [PATCH 6/6] mach-ux500: remove intermediary add_platform_device*
- functions
-References: <1318852378-14180-1-git-send-email-lee.jones@linaro.org> <1318852378-14180-7-git-send-email-lee.jones@linaro.org> <20111017115908.GE4992@totoro>
-In-Reply-To: <20111017115908.GE4992@totoro>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Nico Schottelius" <nico-linux-20111017@schottelius.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+cc: wey-yi.w.guy@intel.com
+Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
+References: <20111019123602.GA11883@schottelius.org>
+ <1319028563.8416.1.camel@edumazet-laptop>
+ <20111019130749.GD11883@schottelius.org>
+ <20111019142837.GA1414@schottelius.org>
+In-Reply-To: <20111019142837.GA1414@schottelius.org>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=B5E1A116
+X-WSS-ID: 62803C3B5IS20438927-01-01
+Content-Type: multipart/signed;
+ boundary=------------enig96DA4F0351AA0862B9EF1ACB;
+ micalg=pgp-sha1;
+ protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/10/11 12:59, Jamie Iles wrote:
-> Hi Lee,
-> 
-> On Mon, Oct 17, 2011 at 12:52:58PM +0100, Lee Jones wrote:
->> These are no longer required since a 'parent' pointer is now
->> passed to each registering device.
->>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->> ---
->>  arch/arm/mach-ux500/devices-common.c |   53 ----------------------------------
->>  arch/arm/mach-ux500/devices-common.h |   34 +++++++++------------
->>  arch/arm/mach-ux500/devices-db8500.h |   10 ++++--
->>  3 files changed, 22 insertions(+), 75 deletions(-)
->>
->> diff --git a/arch/arm/mach-ux500/devices-common.c b/arch/arm/mach-ux500/devices-common.c
->> index b8d9a99..170975f 100644
->> --- a/arch/arm/mach-ux500/devices-common.c
->> +++ b/arch/arm/mach-ux500/devices-common.c
->> @@ -59,59 +59,6 @@ dbx500_add_amba_device(struct device *parent, const char *name,
->>  }
->>  
->>  static struct platform_device *
->> -dbx500_add_platform_device(const char *name, int id, void *pdata,
->> -			   struct resource *res, int resnum)
->> -{
->> -	struct platform_device *dev;
->> -	int ret;
->> -
->> -	dev = platform_device_alloc(name, id);
->> -	if (!dev)
->> -		return ERR_PTR(-ENOMEM);
->> -
->> -	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->> -	dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
->> -
->> -	ret = platform_device_add_resources(dev, res, resnum);
->> -	if (ret)
->> -		goto out_free;
->> -
->> -	dev->dev.platform_data = pdata;
->> -
->> -	ret = platform_device_add(dev);
->> -	if (ret)
->> -		goto out_free;
->> -
->> -	return dev;
->> -
->> -out_free:
->> -	platform_device_put(dev);
->> -	return ERR_PTR(ret);
->> -}
-> [...]
->> diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
->> index f8adff8..089371e 100644
->> --- a/arch/arm/mach-ux500/devices-common.h
->> +++ b/arch/arm/mach-ux500/devices-common.h
-> [...]
->> -static inline struct platform_device *
->> -dbx500_add_msp_i2s(int id, resource_size_t base, int irq,
->> -		   struct msp_i2s_platform_data *pdata)
->> -{
->> -	return dbx500_add_platform_device_4k1irq("MSP_I2S", id, base, irq,
->> -						 pdata);
->> +	struct resource resources[] = {
->> +		DEFINE_RES_MEM(base, SZ_4K),
->> +		DEFINE_RES_IRQ(irq),
->> +	};
->> +
->> +	return platform_device_register_resndata(parent, "nmk-i2c",
->> +						 id, resources,
->> +						 ARRAY_SIZE(resources),
->> +						 pdata, sizeof(*pdata));
->>  }
-> 
-> I think you need platform_device_register_full() rather than 
-> platform_device_register_resndata() here as dbx500_add_platform_device() 
-> also set a dma mask which platform_device_register_resndata() doesn't 
-> do.  Otherwise a nice diffstat!
 
-Good spot.
+--------------enig96DA4F0351AA0862B9EF1ACB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I can't seem to find platform_device_register_full(). Does it exist?
+On 10/19/2011 04:28 PM, Nico Schottelius wrote:
+> Triggered it!=20
+>=20
+> And also got the traceback!
+>=20
+> Dmesg + log attached, let me know when I can pull the fix from
+> somewhere.
+>=20
+> Cheers,
+>
+> Nico
+>=20
+
+I actually don't see the rtnl_lock or mutex_lock that was listed in your
+original dmesg. There are a lot of warning traces from mac80211.c.
+
+The other interesting thing is the following:
+
+[  367.389096] wlan0: deauthenticating from 00:03:52:e3:0e:10 by local
+choice (reason=3D3)
+[  367.416312] cfg80211: Calling CRDA to update world regulatory domain
+[  369.367667] wlan0: direct probe to 00:03:52:2c:01:00 (try 1/3)
+[  369.565008] wlan0: direct probe to 00:03:52:2c:01:00 (try 2/3)
+[  369.764891] wlan0: direct probe to 00:03:52:2c:01:00 (try 3/3)
+[  369.964768] wlan0: direct probe to 00:03:52:2c:01:00 timed out
+[  381.310339] wlan0: direct probe to 00:0f:61:1a:0c:50 (try 1/3)
+[  381.508071] wlan0: direct probe to 00:0f:61:1a:0c:50 (try 2/3)
+[  381.707955] wlan0: direct probe to 00:0f:61:1a:0c:50 (try 3/3)
+[  381.907788] wlan0: direct probe to 00:0f:61:1a:0c:50 timed out
+[  393.250073] wlan0: direct probe to 00:03:52:2c:01:00 (try 1/3)
+[  393.447810] wlan0: direct probe to 00:03:52:2c:01:00 (try 2/3)
+[  393.647700] wlan0: direct probe to 00:03:52:2c:01:00 (try 3/3)
+[  393.847576] wlan0: direct probe to 00:03:52:2c:01:00 timed out
+[  405.183177] wlan0: direct probe to 00:0f:61:1a:1d:30 (try 1/3)
+[  405.380906] wlan0: direct probe to 00:0f:61:1a:1d:30 (try 2/3)
+[  405.580773] wlan0: direct probe to 00:0f:61:1a:1d:30 (try 3/3)
+[  405.780658] wlan0: direct probe to 00:0f:61:1a:1d:30 timed out
+
+There is another thread title "iwlagn is getting very shaky". It makes
+me wonder.
+
+Where did you get your kernel from. From you dmesg I see:
+
+Linux version 3.1.0-rc6-gbee709a (nico@brief)
+
+I tried to locate the SHA1 bee709a but it is not in my repository. I
+want to look what the warnings from mac80211 mean.
+
+Gr. AvS
+
+
+--------------enig96DA4F0351AA0862B9EF1ACB
+Content-Type: application/pgp-signature;
+ name=signature.asc
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment;
+ filename=signature.asc
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJOnuIUAAoJELcEx/G14aEWXyAP/j+jSfK8mRMo48zG+308Ob9d
+gjuLfF31H9P/mdiuABuwilOlenfRnLrw76yxx2/fISry/KhGNevDR2rdIAFdEBqC
+j/4ffKg3kvm7LEjgt4BvSJ95aFZfbQBvklEd5NdTmgndj/R3quzYkyq+/NGtHddG
+A6pITxR/TjF6xK9QR0ooqF3L2pBRu97mSLTQ2V7Dg3ZXX+jrsHhk4JLu4awON7lL
+HQG1fz7v1oC7bemYXpdQo9s8Xg0/w/kAirtyHXdMNLeqgqxZwK3G5Gn87rrAG4zJ
+hP9twle9RKo+/6HH4xFwc+VOchGbHf6wFyRflPlOBCvD2wpeCz8nFi1iaINT8MSU
+XCv7PU5vpZoBabFpqIQ3sfwDDiNbv5SXvIE/as0HY2Jvpih+yQrLyGGH9Jo3dv8k
+0iS+PLrTjKbpcrSBkePzEcS0WMgVx2t7HPfA1uXTo97ZGGAWiQbubSsW/4iRbmZ7
+KOffrL6bbnRCIfphJkB3xyObJZbiG9FYStjXuoaKc5Edpq1+uCwH+u0JY3ceM3S3
+hKjTOrIsRd5jkPHGV8SIXqLwvARfbO2iQvQOxhmCaZP2OKD16sb1MaaaNL1F7TSj
+F+93yf19/Cf08jk24VDqECiR38oTWJttOxTlJbbAKDesTjk7WIgbSOfqoEoKVoE1
+Mf5tRURbSL3M1Fh3GlB/
+=2tib
+-----END PGP SIGNATURE-----
+
+--------------enig96DA4F0351AA0862B9EF1ACB--
+
