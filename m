@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab1JSVT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:19:59 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60550 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab1JSVT6 (ORCPT
+	id S1754389Ab1JSVYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:24:11 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39866 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab1JSVYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:19:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111014153844.GP14968@somewhere>
-References: <1317943022.1095.25.camel@mop> <20111011161600.6145aa6b.akpm@linux-foundation.org>
- <20111012005935.GD14968@somewhere> <20111012174014.GE6281@google.com>
- <20111012181641.GZ15413@moon> <20111014153844.GP14968@somewhere>
-From: Paul Menage <paul@paulmenage.org>
-Date: Wed, 19 Oct 2011 14:19:37 -0700
-X-Google-Sender-Auth: FRlcouRAGjCTAPsAFwP4DmHCGR0
-Message-ID: <CALdu-PAMNK5dBAf9kB8_uQf8uQhrzSfRm+4sOqTG40KjsG5U+A@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_A_Plumber=92s_Wish_List_for_Linux?=
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Oleg Nesterov <oleg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Oct 2011 17:24:09 -0400
+Date: Wed, 19 Oct 2011 23:24:03 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: Please include const-sections into linux-next
+Message-ID: <20111019212403.GL15908@one.firstfloor.org>
+References: <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com> <20111019161537.GH15908@one.firstfloor.org> <1319041281.3034.25.camel@dabdike.int.hansenpartnership.com> <20111019163351.GJ15908@one.firstfloor.org> <1319050557.3034.46.camel@dabdike.int.hansenpartnership.com> <20111019190517.GK15908@one.firstfloor.org> <1319054693.3034.49.camel@dabdike.int.hansenpartnership.com> <1319054816.3034.50.camel@dabdike.int.hansenpartnership.com> <3ede57fd7fb0eff1aebed4ed9cb08301.squirrel@www.firstfloor.org> <1319055260.3034.51.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319055260.3034.51.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 8:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->
-> Well, wouldn't it be better to pull that complexity to userspace?
-> After all, moving tasks from a cgroup to another is not a performance
-> critical operation so that probably doesn't need to be all handled by
-> the kernel.
+> Actually, no, sorry ... its a false positive -fno-writeable-strings
 
-I'd always assumed that too, but apparently on very many (possibly the
-majority of?) Linux systems, it actually is performance-critical.
+Ok the fealnx object wasn't actually a string.
 
-Specifically, Android bounces tasks in and out of a "foreground
-low-latency" cpu cgroup at a fairly high rate, and has found the
-performance hit from the locking to be a problem on multi-core phones.
-Hence Colin Cross' patches for avoid calls to synchronize_rcu() in the
-attach path.
+> actually produces an error which was lost in all the debug output (it's
+> at the top) so it wasn't working; I only thought it was.
 
-Paul
+What's the error?
+
+-Andi
