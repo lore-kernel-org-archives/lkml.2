@@ -1,161 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab1JSHQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:16:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58520 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab1JSHQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:16:30 -0400
-Date: Wed, 19 Oct 2011 09:14:57 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/7] perf/core fixes and improvements
-Message-ID: <20111019071457.GB2075@elte.hu>
-References: <1318974247-6683-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S1752900Ab1JSHSl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:18:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38599 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab1JSHSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:18:39 -0400
+Message-ID: <1319008713.17914.8.camel@edumazet-laptop>
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga) causes
+ kernel oops
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.hengli.com.au, evonlanthen@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        timo.teras@iki.fi
+Date: Wed, 19 Oct 2011 09:18:33 +0200
+In-Reply-To: <20111019.030914.218521668377472155.davem@davemloft.net>
+References: <20111018114945.GA16359@gondor.apana.org.au>
+	 <1318942560.2657.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20111018134537.GA17055@gondor.apana.org.au>
+	 <20111019.030914.218521668377472155.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1318974247-6683-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-
->         Please consider pulling from:
+Le mercredi 19 octobre 2011 à 03:09 -0400, David Miller a écrit :
+> From: Herbert Xu <herbert@gondor.hengli.com.au>
+> Date: Tue, 18 Oct 2011 15:45:37 +0200
 > 
-> git://github.com/acmel/linux.git perf/core
+> > On Tue, Oct 18, 2011 at 02:56:00PM +0200, Eric Dumazet wrote:
+> >>
+> >> I am ok by this way, but we might hit another similar problem elsewhere.
+> >> 
+> >> (igmp.c ip6_output, ...)
+> >> 
+> >> We effectively want to remove LL_ALLOCATED_SPACE() usage and obfuscate
+> >> code...
+> > 
+> > Here's another idea, provide a helper to do the skb allocation
+> > and the skb_reserve in one go.  That way this ugliness would only
+> > need to be done once.
 > 
-> 	The TUI now should be much closer to the old 'perf top' stdio
-> visual/experience, more on that vein in the next pull req.
+> Someone please test this:
 > 
-> - Arnaldo
+> --------------------
+> net: Fix crashes on devices which dynamically change needed headroom.
 > 
-> Arnaldo Carvalho de Melo (7):
->   perf hists browser: Add missing hotkeys to the help window
->   perf tui: Catch signals to exit gracefully
->   perf ui browser: Allow initial use without navigation UI elements
->   perf hists: Don't format the percentage on hist_entry__snprintf
->   perf tui: Remove unneeded call to newtCls on startup
->   perf ui browser: Make the colors configurable and change the defaults
->   perf top tui: Give color hints just on the percentage, like on --stdio
+> One such device is IP_GRE.
 > 
->  tools/perf/Documentation/perfconfig.example |   20 ++++
->  tools/perf/util/hist.c                      |   29 ++++--
->  tools/perf/util/hist.h                      |    4 +-
->  tools/perf/util/ui/browser.c                |  127 ++++++++++++++++++++++-----
->  tools/perf/util/ui/browser.h                |    2 +
->  tools/perf/util/ui/browsers/annotate.c      |    6 ++
->  tools/perf/util/ui/browsers/hists.c         |   51 ++++++-----
->  tools/perf/util/ui/setup.c                  |   25 +++++-
->  8 files changed, 203 insertions(+), 61 deletions(-)
->  create mode 100644 tools/perf/Documentation/perfconfig.example
-
-Pulled, thanks Arnaldo.
-
-The way the TUI now follows terminal colors is really nice. There's a 
-few regressions that sneaked in, and there's also still a few rough 
-edges as well:
-
- - in callq following if i exit a secondary annotation screen via 'q' 
-   or left-arrow, it does not jump back to the callq line as it did 
-   earlier.
-
- - it's still hard to find all the callq's in the stream of assembly,
-   i think it should be highlighted in a minimal fashion.
-
- - the mixed assembly and source code output for annotation now 
-   became *harder* to follow, that the instruction opcodes are not 
-   embedded. The reason is that there's now fewer visual patterns 
-   that set apart the two types of lines.
-
-   Not sure what to do about it, but it's not really usable this way, 
-   to me at least. Color differentiation would certainly help, if 
-   it's not too intrusive - could assembly be drawn grey? That would 
-   put it into the 'visual background' on most terminal color 
-   schemes.
-
-   I tried a few mockup screens of splitting the screen 
-   intelligently, and found one variant that works pretty well for 
-   me. The main UI design complication is that the assembly opcodes 
-   look so C source code-ish when put next to each other.
-
-   So this is the original output:
-
-         :        static u8 kallsyms2elf_type(char type)                                            ▒
-         :        {                                                                                 ▒
-         :                if (type == 'W')                                                          ▒
-    0.00 :          43fd18:       mov    %rdx,%rdi                                                  ▒
-         :                struct rb_node **p = &symbols->rb_node;                                   ▒
-         :                struct rb_node *parent = NULL;                                            ▒
-         :                const u64 ip = sym->start;                                                ▒
-         :                struct symbol *s;                                                         ▒
-         :                                                                                          ▒
-         :                while (*p != NULL) {                                                      ▒
-    0.00 :          43fd1b:       mov    (%rcx),%rdx                                                ▒
-    0.00 :          43fd1e:       test   %rdx,%rdx                                                  ▒
-    0.00 :          43fd21:       jne    43fd08 <map__process_kallsym_symbol+0xc8>                  ▒
+> The problem is that we evaluate the device characteristics twice, once
+> to determine the allocation size, and once to do the skb_reserve().
+> 
+> Combine these into one operation using a helper function.
+> 
+> With help from Eric Dumazet and Herbert Xu.
+> 
+> Reported-by: Reported-by: Elmar Vonlanthen <evonlanthen@gmail.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
 
 
-   and here's the mockup:
 
-        .                              | static u8 kallsyms2elf_type(char type)                     ▒
-        .                              | {                                                          ▒
-        .                              |         if (type == 'W')                                   ▒
-   0.00 #  43fd18: mov    %rdx,%rdi                                                                 ▒
-        .                              |         struct rb_node **p = &symbols->rb_node;            ▒
-        .                              |         struct rb_node *parent = NULL;                     ▒
-        .                              |         const u64 ip = sym->start;                         ▒
-        .                              |         struct symbol *s;                                  ▒
-        .                              |                                                            ▒
-        .                              |         while (*p != NULL) {                               ▒
-   0.00 #  43fd1b: mov    (%rcx),%rdx                                                               ▒
-   0.00 #  43fd1e: test   %rdx,%rdx                                                                 ▒
-   0.00 #  43fd21: jne    43fd08 <map__process_kallsym_symbol+0xc8>                                 ▒
+Seems fine (Maybe do the +15 in caller site ?), but we also have other
+problematic cases, using alloc_skb() only...
 
-There's several UI tricks:
 
- - typical short opcodes (80% of assembly) will fit on the left side 
-   of the screen.
 
- - lines can still be arbitrarily long and overlap, so it's not a 
-   true split screen - but the vertical helper line prefixing source 
-   code lines keeps the eye focused on whichever side one intends to 
-   concentrate on.
-
- - the first column separator uses two types of characters, '.' and 
-   '#', to help the eye find the blocks of assembly.
-
- - we could, in addition, print assembly in grey.
-
- - i cut one character from the percentage column - the maximum value 
-   is 100.00 so we don't need the original 7.2 format, 6.2 is enough.
-
-We could eventually further compress the assembly display later on, 
-but auto-labeling function-local labels (which are 99% of the jump 
-targets). This would compress such jumps:
-
-   0.00 #  43fd21: jne    43fd08 <map__process_kallsym_symbol+0xc8>
-
-into:
-
-   0.00 #  43fd21: jne    43fd08 <L3>
-
-Thanks,
-
-	Ingo
