@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab1JSRXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:23:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54446 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757126Ab1JSRXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:23:10 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Subject: Re: [PATCH] Input: atmel_mxt_ts - Use snprintf for sysfs attribute show method
-Date: Wed, 19 Oct 2011 10:23:01 -0700
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9+; KDE/4.6.5; x86_64; ; )
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1316115647-1244-1-git-send-email-djkurtz@chromium.org> <CAGS+omDJM700h22zsAQZRn_9qCcUk1gJsKN0GzQxG7FkK-PRsQ@mail.gmail.com>
-In-Reply-To: <CAGS+omDJM700h22zsAQZRn_9qCcUk1gJsKN0GzQxG7FkK-PRsQ@mail.gmail.com>
+	id S1757054Ab1JSR3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:29:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755403Ab1JSR3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 13:29:19 -0400
+Date: Wed, 19 Oct 2011 13:29:14 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
+Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by
+ making blk_queue_cleanup() proper shutdown
+Message-ID: <20111019172914.GI1140@redhat.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-11-git-send-email-tj@kernel.org>
+ <20111019161840.GG1140@redhat.com>
+ <20111019171259.GE25124@google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110191023.02277.dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111019171259.GE25124@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On Wednesday, October 19, 2011 12:40:16 AM Daniel Kurtz wrote:
-> Hi Dmitry,
+On Wed, Oct 19, 2011 at 10:12:59AM -0700, Tejun Heo wrote:
+> Hello,
 > 
-> I fear the following patch, and its 'Acked-by' from Nick Dyer, may
-> have gotten lost:
+> On Wed, Oct 19, 2011 at 12:18:40PM -0400, Vivek Goyal wrote:
+> > > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> > > index 900a0c9..8edb949 100644
+> > > --- a/block/blk-throttle.c
+> > > +++ b/block/blk-throttle.c
+> > > @@ -309,6 +309,10 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+> > >  	struct blkio_cgroup *blkcg;
+> > >  	struct request_queue *q = td->queue;
+> > >  
+> > > +	/* no throttling for dead queue */
+> > > +	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+> > > +		return NULL;
+> > > +
+> > 
+> > May be blk_throtl_bio() is probably a better place to do this check, just
+> > before callig throtl_get_tg().
+> 
+> Hmmm... the thing is you need to check DEAD again once after releasing
+> and re-grabbing the queuelock, os if we move the test into the caller,
+> we end up having one in the caller and one in the callee, so I thought
+> it would be better to keep them in the same function.
 
+Sorry I did not get that why do we need to check again for DEAD after
+realeasing the queue lock. From throttling perspective, we grab lock
+once, if queue is DEAD, release lock and just return.
 
-No, it is not lost. It is commit 626af8611211c55595cd316103abd2419cd4d861 
-in my 'next' branch, waiting for 3.2 merge window to open.
+blk_throtl_bio() {
 
-Thanks.
+  bunch_of_checks_without_queue_lock;
 
--- 
-Dmitry
+  spin_lock()
+  if (queue_dead) {
+	spin_unlock()
+	return;
+  }
+
+  throtl_get_tg();
+}	
+
+> My opinion on
+> it isn't too strong tho.  If you feel strong about it, please feel
+> free to move it.
+
+No, this is a minor nit. Probably will change it sometime in future as part
+of some other work in blk-throttle.
+
+Thanks
+Vivek
