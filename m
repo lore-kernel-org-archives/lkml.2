@@ -1,114 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab1JSWNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:13:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51294 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab1JSWNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:13:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 1/3] PM / Sleep: Mark devices involved in wakeup signaling during suspend
-Date: Thu, 20 Oct 2011 00:13:56 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-References: <201110200012.43840.rjw@sisk.pl>
-In-Reply-To: <201110200012.43840.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110200013.56428.rjw@sisk.pl>
+	id S932108Ab1JSWTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:19:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47554 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab1JSWTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:19:36 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rongjun Ying <Rongjun.Ying@csr.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 1/4] pinctrl: get_group_pins() const fixes
+Date: Wed, 19 Oct 2011 16:19:25 -0600
+Message-Id: <1319062768-26391-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+get_group_pins() "returns" a pointer to an array of const objects, through
+a pointer parameter. Fix the prototype so what's pointed at by the returned
+pointer is const, rather than the function parameter being const.
 
-The generic PM domains code in drivers/base/power/domain.c has
-to avoid powering off domains that provide power to wakeup devices
-during system suspend.  Currently, however, this only works for
-wakeup devices directly belonging to the given domain and not for
-their children (or the children of their children and so on).
-Thus, if there's a wakeup device whose parent belongs to a power
-domain handled by the generic PM domains code, the domain will be
-powered off during system suspend preventing the device from
-signaling wakeup.
+This also allows the removal of a cast in each of the two current pinmux
+drivers.
 
-To address this problem introduce a device flag, power.wakeup_path,
-that will be set during system suspend for all wakeup devices,
-their parents, the parents of their parents and so on.  This way,
-all wakeup paths in the device hierarchy will be marked and the
-generic PM domains code will only need to avoid powering off
-domains containing devices whose power.wakeup_path is set.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/base/power/domain.c |    4 ++--
- drivers/base/power/main.c   |    8 +++++++-
- include/linux/pm.h          |    1 +
- 3 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/pinctrl/core.c          |    2 +-
+ drivers/pinctrl/pinmux-sirf.c   |    6 +++---
+ drivers/pinctrl/pinmux-u300.c   |    6 +++---
+ drivers/pinctrl/pinmux.c        |    4 ++--
+ include/linux/pinctrl/pinctrl.h |    4 ++--
+ 5 files changed, 11 insertions(+), 11 deletions(-)
 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -714,7 +714,7 @@ static int pm_genpd_suspend_noirq(struct
- 	if (ret)
- 		return ret;
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 623afbd..97a4eeb 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -332,7 +332,7 @@ static int pinctrl_groups_show(struct seq_file *s, void *what)
  
--	if (device_may_wakeup(dev)
-+	if (dev->power.wakeup_path
- 	    && genpd->active_wakeup && genpd->active_wakeup(dev))
- 		return 0;
+ 	seq_puts(s, "registered pin groups:\n");
+ 	while (ops->list_groups(pctldev, selector) >= 0) {
+-		unsigned *pins;
++		const unsigned *pins;
+ 		unsigned num_pins;
+ 		const char *gname = ops->get_group_name(pctldev, selector);
+ 		int ret;
+diff --git a/drivers/pinctrl/pinmux-sirf.c b/drivers/pinctrl/pinmux-sirf.c
+index de5c78a..cad4f5d 100644
+--- a/drivers/pinctrl/pinmux-sirf.c
++++ b/drivers/pinctrl/pinmux-sirf.c
+@@ -869,12 +869,12 @@ static const char *sirfsoc_get_group_name(struct pinctrl_dev *pctldev,
+ }
  
-@@ -938,7 +938,7 @@ static int pm_genpd_dev_poweroff_noirq(s
- 	if (ret)
- 		return ret;
+ static int sirfsoc_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
+-			       unsigned ** const pins,
+-			       unsigned * const num_pins)
++			       const unsigned **pins,
++			       const unsigned *num_pins)
+ {
+ 	if (selector >= ARRAY_SIZE(sirfsoc_pin_groups))
+ 		return -EINVAL;
+-	*pins = (unsigned *) sirfsoc_pin_groups[selector].pins;
++	*pins = sirfsoc_pin_groups[selector].pins;
+ 	*num_pins = sirfsoc_pin_groups[selector].num_pins;
+ 	return 0;
+ }
+diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
+index 23f082f..be6e04d 100644
+--- a/drivers/pinctrl/pinmux-u300.c
++++ b/drivers/pinctrl/pinmux-u300.c
+@@ -849,12 +849,12 @@ static const char *u300_get_group_name(struct pinctrl_dev *pctldev,
+ }
  
--	if (device_may_wakeup(dev)
-+	if (dev->power.wakeup_path
- 	    && genpd->active_wakeup && genpd->active_wakeup(dev))
- 		return 0;
- 
-Index: linux/drivers/base/power/main.c
-===================================================================
---- linux.orig/drivers/base/power/main.c
-+++ linux/drivers/base/power/main.c
-@@ -917,7 +917,11 @@ static int __device_suspend(struct devic
- 	}
- 
-  End:
--	dev->power.is_suspended = !error;
-+	if (!error) {
-+		dev->power.is_suspended = true;
-+		if (dev->power.wakeup_path && dev->parent)
-+			dev->parent->power.wakeup_path = true;
-+	}
- 
- 	device_unlock(dev);
- 	complete_all(&dev->power.completion);
-@@ -1020,6 +1024,8 @@ static int device_prepare(struct device
- 
- 	device_lock(dev);
- 
-+	dev->power.wakeup_path = device_may_wakeup(dev);
-+
- 	if (dev->pm_domain) {
- 		pm_dev_dbg(dev, state, "preparing power domain ");
- 		if (dev->pm_domain->ops.prepare)
-Index: linux/include/linux/pm.h
-===================================================================
---- linux.orig/include/linux/pm.h
-+++ linux/include/linux/pm.h
-@@ -452,6 +452,7 @@ struct dev_pm_info {
- 	struct list_head	entry;
- 	struct completion	completion;
- 	struct wakeup_source	*wakeup;
-+	bool			wakeup_path:1;
- #else
- 	unsigned int		should_wakeup:1;
- #endif
+ static int u300_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
+-			       unsigned ** const pins,
+-			       unsigned * const num_pins)
++			       const unsigned **pins,
++			       unsigned *num_pins)
+ {
+ 	if (selector >= ARRAY_SIZE(u300_pin_groups))
+ 		return -EINVAL;
+-	*pins = (unsigned *) u300_pin_groups[selector].pins;
++	*pins = u300_pin_groups[selector].pins;
+ 	*num_pins = u300_pin_groups[selector].num_pins;
+ 	return 0;
+ }
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 08e7b0f..4679ae6 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -326,7 +326,7 @@ static int acquire_pins(struct pinctrl_dev *pctldev,
+ 	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
+ 	const char *func = pmxops->get_function_name(pctldev,
+ 						     func_selector);
+-	unsigned *pins;
++	const unsigned *pins;
+ 	unsigned num_pins;
+ 	int ret;
+ 	int i;
+@@ -367,7 +367,7 @@ static void release_pins(struct pinctrl_dev *pctldev,
+ 			 unsigned group_selector)
+ {
+ 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+-	unsigned *pins;
++	const unsigned *pins;
+ 	unsigned num_pins;
+ 	int ret;
+ 	int i;
+diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+index 1e6f67e..be9f537 100644
+--- a/include/linux/pinctrl/pinctrl.h
++++ b/include/linux/pinctrl/pinctrl.h
+@@ -75,8 +75,8 @@ struct pinctrl_ops {
+ 				       unsigned selector);
+ 	int (*get_group_pins) (struct pinctrl_dev *pctldev,
+ 			       unsigned selector,
+-			       unsigned ** const pins,
+-			       unsigned * const num_pins);
++			       const unsigned **pins,
++			       unsigned *num_pins);
+ 	void (*pin_dbg_show) (struct pinctrl_dev *pctldev, struct seq_file *s,
+ 			  unsigned offset);
+ };
+-- 
+1.7.0.4
 
