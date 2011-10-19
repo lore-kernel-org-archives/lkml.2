@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1JSHTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:19:07 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35146 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab1JSHTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:19:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319004938.31823.59.camel@wwguy-huron>
-References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
-	<alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
-	<CAOJsxLFXBQXDtjGkuHV8fpxSy4U0dOdzBm6=4xfy2dMQo7NvOg@mail.gmail.com>
-	<1319003710.31823.53.camel@wwguy-huron>
-	<20111019064818.GB14817@gamma.logic.tuwien.ac.at>
-	<1319004938.31823.59.camel@wwguy-huron>
-Date: Wed, 19 Oct 2011 10:19:03 +0300
-X-Google-Sender-Auth: nP272YWHcvv2xxP-mt2m-BZmtpw
-Message-ID: <CAOJsxLHLmtYAR1c34Kkn+hzGeOSwhU646PP04pvTFx2e5M0NfA@mail.gmail.com>
+	id S1753047Ab1JSHaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:30:02 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45101 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142Ab1JSHaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:30:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="64477079"
 Subject: Re: iwlagn is getting very shaky
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-Cc: Norbert Preining <preining@logic.at>, David Rientjes <rientjes@google.com>,
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Norbert Preining <preining@logic.at>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "ipw3945-devel@lists.sourceforge.net" 
 	<ipw3945-devel@lists.sourceforge.net>,
         "ilw@linux.intel.com" <ilw@linux.intel.com>,
         "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20111019064818.GB14817@gamma.logic.tuwien.ac.at>
+References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
+	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
+	 <CAOJsxLFXBQXDtjGkuHV8fpxSy4U0dOdzBm6=4xfy2dMQo7NvOg@mail.gmail.com>
+	 <1319003710.31823.53.camel@wwguy-huron>
+	 <20111019064818.GB14817@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Oct 2011 23:39:32 -0700
+Message-ID: <1319006372.31823.61.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wey,
+On Tue, 2011-10-18 at 23:48 -0700, Norbert Preining wrote:
+> On Di, 18 Okt 2011, Guy, Wey-Yi wrote:
+> > > >> loaded firmware version 8.83.5.1 build 33692 (EXP)
+> > > >>
+> > 
+> > looks like you are using experimental version of uCode, but by saying
+> > that, I don't think i will make much differences
+> > 
+> > so could you dump the tx queue to see if it is the similar problem what
+> > Norbert point out
+> 
+> Not sure what you mean Wey, should *I* Norbert use the default firmware
+> and try to reproduce it? Ir should Pekka try to reproduce it with
+> normal firmware? Or with both?
+> 
+just got a idea, could you try to revert
+commit#68b993118f715cc631b62b6a50574e4701fe9ace
 
-On Wed, Oct 19, 2011 at 9:15 AM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> wrote:
-> Sorry, I was thinking ask Pekka to use the officialfirmware. But more
-> important, I will like to find out is Pekka has the same issue as you
-> have which is tx queue stopped.
+not sure you can cleanly revert it, please let me know if you got
+problem
 
-I'm happy to help but I have no idea what you want me to do :-). When
-my internet connection dies the next time, what do you want me to
-capture for you? What's official firmware? I'm using Fedora 15 with
-3.1-rc9 built from sources here. Do you want to see my lspci, .config,
-dmesg, something else?
 
-As for the problems, I'm using iPhone 3G internet via WiFi sharing and
-connection seems to die few times a day or if I take the phone far
-enough from the laptop. I usually turn off the AP for a while and use
-NetworkManager on the laptop to disable/enable networking to make it
-come back up.
+Thanks
+Wey
+> 
+> Norbert
+> ------------------------------------------------------------------------
+> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+> JAIST, Japan                                 TeX Liot sure yu ve & Debian Developer
+> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+> ------------------------------------------------------------------------
+> WROOT (n.)
+> A short little berk who thinks that by pulling on his pipe and gazing
+> shrewdly at you he will give the impression that he is infinitely wise
+> and 5 ft 11 in.
+> 			--- Douglas Adams, The Meaning of Liff
 
-I haven't tested anything but 3.1-rcX kernels on this machine but I
-can do git bisect too if it comes to that.
 
-                        Pekka
