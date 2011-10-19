@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab1JSNob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 09:44:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42574 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890Ab1JSNoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 09:44:30 -0400
-Date: Wed, 19 Oct 2011 09:44:24 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com,
-        ni@google.com
-Subject: Re: [PATCH 04/10] block: pass around REQ_* flags instead of broken
- down booleans during request alloc/free
-Message-ID: <20111019134424.GC1140@redhat.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-5-git-send-email-tj@kernel.org>
+	id S1756319Ab1JSNqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 09:46:05 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:60605 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023Ab1JSNqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 09:46:02 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E9ED49B.1070005@cam.ac.uk>
+Date: Wed, 19 Oct 2011 14:46:03 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318998384-22525-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, linus.ml.walleij@gmail.com,
+        zdevai@gmail.com, linux@arm.linux.org.uk, arnd@arndb.de,
+        broonie@opensource.wolfsonmicro.com, gregkh@suse.de
+Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
+References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk> <4E9DC496.3010909@metafoo.de> <4E9DE2AB.3090208@cam.ac.uk>
+In-Reply-To: <4E9DE2AB.3090208@cam.ac.uk>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 09:26:18PM -0700, Tejun Heo wrote:
-> blk_alloc_request() and freed_request() take different combinations of
-> REQ_* @flags, @priv and @is_sync when @flags is superset of the latter
-> two.  Make them take @flags only.  This cleans up the code a bit and
-> will ease updating allocation related REQ_* flags.
-> 
-> This patch doesn't introduce any functional difference.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> ---
->  block/blk-core.c |   36 +++++++++++++++++-------------------
->  1 files changed, 17 insertions(+), 19 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index a995141..fafa669 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -575,7 +575,7 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
->  }
->  
->  static struct request *
-> -blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
-> +blk_alloc_request(struct request_queue *q, unsigned int flags, gfp_t gfp_mask)
->  {
->  	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
->  
-> @@ -586,12 +586,10 @@ blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
->  
->  	rq->cmd_flags = flags | REQ_ALLOCED;
->  
-> -	if (priv) {
-> -		if (unlikely(elv_set_request(q, rq, gfp_mask))) {
-> -			mempool_free(rq, q->rq.rq_pool);
-> -			return NULL;
-> -		}
-> -		rq->cmd_flags |= REQ_ELVPRIV;
+On 10/18/11 21:33, Jonathan Cameron wrote:
+> On 10/18/11 19:25, Lars-Peter Clausen wrote:
+>> On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
+>>> Needed for inkernel interfaces.
+>>>
+>>
+>> The bus_type structure keeps a list of all devices registered on that bus, so
+>> you should be able to use bus_for_each_dev and bus_find_device for iterating
+>> over the iio devices.
+> I hadn't realised that but don't think it will work anyway. There are several
+> other things than iio_dev based devices that sit on our bus unfortunately.
+> None are in these initial merges but they will turn up later.
+> The most common are iio_triggers but there are also a few weird ones such
+> as the event generator for the dummy driver and the sysfstrig control device.  
+> We could play some games to allow these to be identified, but it's going
+> to be a mess. Probably easier to just maintain a second list as we are doing
+> here.  Interesting suggestion though. Thanks and feel free to point out if there
+> is a simple way around the identification issue.
+Actually looking into it this morning - this is trivial to do.
+We can just check that the device_type is set appropriately before doing anything
+else.
 
-Don't we need to set REQ_ELVPRIV in rq->cmd_flags in this new code?
+Thanks Lars-Peter your suggestion is should clean things up nicely.
 
-> +	if ((flags & REQ_ELVPRIV) &&
-> +	    unlikely(elv_set_request(q, rq, gfp_mask))) {
-> +		mempool_free(rq, q->rq.rq_pool);
-> +		return NULL;
->  	}
+New version coming up.
+>>
+>>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+>>> ---
+>>>  drivers/iio/iio.c       |    9 +++++++++
+>>>  include/linux/iio/iio.h |    1 +
+>>>  2 files changed, 10 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+>>> index 9e6acc1..246a093 100644
+>>> --- a/drivers/iio/iio.c
+>>> +++ b/drivers/iio/iio.c
+>>> @@ -15,6 +15,9 @@
+>>>  #include <linux/iio/iio.h>
+>>>  #include <linux/iio/sysfs.h>
+>>>  
+>>> +static DEFINE_MUTEX(iio_device_list_lock);
+>>> +static LIST_HEAD(iio_device_list);
+>>> +
+>>>  static DEFINE_IDA(iio_ida);
+>>>  
+>>>  static struct bus_type iio_bus_type = {
+>>> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
+>>>  {
+>>>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
+>>>  	iio_device_unregister_sysfs(indio_dev);
+>>> +	mutex_lock(&iio_device_list_lock);
+>>> +	list_del(&indio_dev->dev_list_entry);
+>>> +	mutex_unlock(&iio_device_list_lock);
+>>>  }
+>>>  
+>>>  static struct device_type iio_dev_type = {
+>>> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
+>>>  	if (ret)
+>>>  		goto error_free_sysfs;
+>>>  
+>>> +	mutex_lock(&iio_device_list_lock);
+>>> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
+>>> +	mutex_unlock(&iio_device_list_lock);
+>>>  	return 0;
+>>>  
+>>>  error_free_sysfs:
+>>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>>> index beedc5c..f14e7dc 100644
+>>> --- a/include/linux/iio/iio.h
+>>> +++ b/include/linux/iio/iio.h
+>>> @@ -192,6 +192,7 @@ struct iio_info {
+>>>   * @info:		[DRIVER] callbacks and constant info from driver
+>>>   * @groups:		[INTERN] attribute groups
+>>>   * @groupcounter:	[INTERN] index of next attribute group
+>>> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
+>>>   **/
+>>>  struct iio_dev {
+>>>  	int				id;
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Thanks
-Vivek
