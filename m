@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab1JSQr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 12:47:29 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:42561 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755213Ab1JSQr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 12:47:27 -0400
+	id S1756741Ab1JSQs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 12:48:29 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:46405 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751363Ab1JSQs2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 12:48:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOLZvyFoiuHEfpnozWpAM5h92rjay-asqXX0tY1P1ZzO8eTGOQ@mail.gmail.com>
-References: <1318909555-12933-3-git-send-email-julia@diku.dk>
-	<CAOLZvyFoiuHEfpnozWpAM5h92rjay-asqXX0tY1P1ZzO8eTGOQ@mail.gmail.com>
-Date: Wed, 19 Oct 2011 17:47:25 +0100
-Message-ID: <CABS+qY2pBkNjHUKrtD3QttQOQD-LpStHopSGxzeG-iyc7RtVgw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] sound/soc/au1x: keep pointer to resource so it can be freed
+In-Reply-To: <1319037894.7741.5.camel@phoenix>
+References: <1319037894.7741.5.camel@phoenix>
+Date: Wed, 19 Oct 2011 17:48:27 +0100
+Message-ID: <CABS+qY1o93bsBVtyU+1fZu1xp0HAWZ7i81X_AOvZk2hZUdReVg@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: ak4641: Use SND_SOC_DAPM_DAC for Voice Playback
+ stream widget
 From: "Girdwood, Liam" <lrg@ti.com>
-To: Manuel Lauss <manuel.lauss@googlemail.com>
-Cc: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Axel Lin <axel.lin@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
+        Harald Welte <laforge@gnumonks.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Dmitry Artamonow <mad_soft@inbox.ru>, alsa-devel@alsa-project.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 October 2011 15:50, Manuel Lauss <manuel.lauss@googlemail.com> wrote:
-> On Tue, Oct 18, 2011 at 5:45 AM, Julia Lawall <julia@diku.dk> wrote:
->> From: Julia Lawall <julia@diku.dk>
->>
->> Add a new variable for storing resources accessed subsequent to the one
->> accessed using request_mem_region, so the one accessed using
->> request_mem_region can be released if needed.
->>
->> This code is also missing some calls to iounmap.
+On 19 October 2011 16:24, Axel Lin <axel.lin@gmail.com> wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/codecs/ak4641.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> How about something much simpler, like this:
+> diff --git a/sound/soc/codecs/ak4641.c b/sound/soc/codecs/ak4641.c
+> index f5125ae..7783858 100644
+> --- a/sound/soc/codecs/ak4641.c
+> +++ b/sound/soc/codecs/ak4641.c
+> @@ -225,7 +225,7 @@ static const struct snd_soc_dapm_widget ak4641_dapm_widgets[] = {
+>        SND_SOC_DAPM_PGA("Mono Out 2", AK4641_PM2, 3, 0, NULL, 0),
 >
-> From 940e38b3f0beff6fcd8f62f627dce622e9ca0e54 Mon Sep 17 00:00:00 2001
-> From: Manuel Lauss <manuel.lauss@googlemail.com>
-> Date: Wed, 19 Oct 2011 16:45:12 +0200
-> Subject: [PATCH] ASoC: au1x: fix error paths in ac97c/i2cs probe callbacks.
+>        SND_SOC_DAPM_ADC("Voice ADC", "Voice Capture", AK4641_BTIF, 0, 0),
+> -       SND_SOC_DAPM_ADC("Voice DAC", "Voice Playback", AK4641_BTIF, 1, 0),
+> +       SND_SOC_DAPM_DAC("Voice DAC", "Voice Playback", AK4641_BTIF, 1, 0),
 >
-> add iounmap() and release the correct mem resource.
+>        SND_SOC_DAPM_MICBIAS("Mic Int Bias", AK4641_MIC, 3, 0),
+>        SND_SOC_DAPM_MICBIAS("Mic Ext Bias", AK4641_MIC, 4, 0),
+> --
+> 1.7.5.4
 >
-> Signed-off-by: Manuel Lauss <manuel.lauss@googlemail.com>
+
+Ah, good catch. Surprised the author did not notice that :)
 
 Acked-by: Liam Girdwood <lrg@ti.com>
+
+
+>
+>
