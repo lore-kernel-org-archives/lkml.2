@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab1JSDug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 23:50:36 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:34544 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab1JSDuf (ORCPT
+	id S1751099Ab1JSEAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:00:47 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44996 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750870Ab1JSEAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 23:50:35 -0400
-Date: Wed, 19 Oct 2011 11:50:19 +0800
-From: "canquan.shen" <shencanquan@huawei.com>
-Subject: Re: [PATCH 1/1] ACPI: Call ACPI remove handler when handling ACPI
- eject event
-In-reply-to: <1318992821-10552-2-git-send-email-pingfank@linux.vnet.ibm.com>
-X-Originating-IP: [10.166.80.105]
-To: pingfank@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, seabios@seabios.org, lenb@kernel.org,
-        shaohua.li@intel.com, qemu-devel@nongnu.org, aliguori@us.ibm.com,
-        dave@linux.vnet.ibm.com
-Message-id: <4E9E48FB.4010807@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:7.0.1) Gecko/20110929
- Thunderbird/7.0.1
-X-CFilter-Loop: Reflected
-References: <1318992821-10552-1-git-send-email-pingfank@linux.vnet.ibm.com>
- <1318992821-10552-2-git-send-email-pingfank@linux.vnet.ibm.com>
+	Wed, 19 Oct 2011 00:00:46 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18O/JleO8sOUDQg7u8HXz8000VBDBas8hziGPaHbf
+	xYc4TrNEb2SyXd
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+From: Mike Galbraith <efault@gmx.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>
+In-Reply-To: <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <1318927355.21167.3.camel@twins>
+	 <1318927629.9641.27.camel@marge.simson.net>
+	 <1318928763.21167.5.camel@twins>
+	 <1318929825.9641.32.camel@marge.simson.net>
+	 <1318932693.6748.5.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Oct 2011 06:00:39 +0200
+Message-ID: <1318996839.6222.20.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ping fan,
-    Your patch is similar with my patch, my patch name is "acpi: Fix CPU 
-hot removal problem".
+On Tue, 2011-10-18 at 13:38 -0700, David Rientjes wrote:
+> On Tue, 18 Oct 2011, Mike Galbraith wrote:
+> 
+> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > 
+> > cgroups: disallow attaching kthreadd
+> > 
+> > Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> > a global resource, and needlessly leads unsuspecting users toward trouble.
+> > 
+> > 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> > allocated is not schedulable.  Simple user error, but harmful to the box.
+> > 
+> > 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> > rendering the cpuset immortal.
+> > 
+> 
+> Eek, this seems like complete overkill, there may be cgroups now or in the 
+> future that it would be perfectly acceptable to move kthreadd into without 
+> any negative effects.  There's no reason to restrict it this broadly, 
+> that's why I thought your change to cpusets was fine and acked it.  It's 
+> the perfect candidate for what the ->can_attach() pointer for a cgroup can 
+> identify is problematic for _that_ cgroup.
 
-Thanks.
-Canquan.Shen
-2011-10-19
+Oh my, I can't win.
 
-On 2011/10/19 10:53, pingfank@linux.vnet.ibm.com wrote:
-> From: Liu Ping Fan<pingfank@linux.vnet.ibm.com>
->
-> Call the remove handler for ACPI_NOTIFY_EJECT_REQUEST
->
-> Signed-off-by: Liu Ping Fan<pingfank@linux.vnet.ibm.com>
-> ---
->   drivers/acpi/bus.c      |    2 +-
->   drivers/acpi/scan.c     |    2 +-
->   include/acpi/acpi_bus.h |    2 ++
->   3 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> index 437ddbf..d06ec6d 100644
-> --- a/drivers/acpi/bus.c
-> +++ b/drivers/acpi/bus.c
-> @@ -764,7 +764,7 @@ static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
->   		break;
->
->   	case ACPI_NOTIFY_EJECT_REQUEST:
-> -		/* TBD */
-> +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device, handle);
->   		break;
->
->   	case ACPI_NOTIFY_DEVICE_CHECK_LIGHT:
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 449c556..3b97b61 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -83,7 +83,7 @@ acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, cha
->   }
->   static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
->
-> -static void acpi_bus_hot_remove_device(void *context)
-> +void acpi_bus_hot_remove_device(void *context)
->   {
->   	struct acpi_device *device;
->   	acpi_handle handle = context;
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 6cd5b64..b19c09d 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -310,6 +310,8 @@ extern int unregister_acpi_notifier(struct notifier_block *);
->
->   extern int register_acpi_bus_notifier(struct notifier_block *nb);
->   extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
-> +extern void acpi_bus_hot_remove_device(void *context);
-> +
->   /*
->    * External Functions
->    */
+Either of the two patchlets will do the trick, so maintainer's choice.
 
+> > Save the user some unexpected trouble, just say no.
+> > 
+> > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > 
+> 
+> A patch from Peter that only has your sign-off?
+
+The only thing in it from me was a comment, figured I should post a from
+line as a matter of propriety.  Guess not.  If this variant is the one
+that flies, the from line can be dropped.  I doubt Peter counts his
+credits, and even if he did, he wouldn't notice _this one_ missing :)
+
+	-Mike
 
