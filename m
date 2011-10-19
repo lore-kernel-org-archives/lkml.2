@@ -1,113 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab1JSPO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:14:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3883 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301Ab1JSPO0 convert rfc822-to-8bit (ORCPT
+	id S1756651Ab1JSPSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:18:35 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62863 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab1JSPSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:14:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=kLQPAMbkAzHfEN5QXyH+T18SK+wJ0GV9QJ87WF8vpgbye9nJPKf4wjyeXXLaMbVOE
-	ITQ0y4QaZnYuqb1dHsweg==
-MIME-Version: 1.0
-In-Reply-To: <4E9EA2EC.2090900@n00bsys0p.co.uk>
-References: <j7k7sf$vbf$1@dough.gmane.org> <CAErSpo7mhAsft5L4ifeWGhB+s2JQc8rbFEjJCfWEq7hW_8kR6A@mail.gmail.com>
- <4E9EA2EC.2090900@n00bsys0p.co.uk>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 19 Oct 2011 09:14:04 -0600
-Message-ID: <CAErSpo4pkpi77KkH=oQAaMmXRaAxCxqc6eTONhpgMZWhMOJG-Q@mail.gmail.com>
-Subject: Re: Possible bug in via-velocity on 3.0+
-To: n00b <n00b@n00bsys0p.co.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 19 Oct 2011 11:18:33 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: trond.myklebust@netapp.com, smfrench@gmail.com, pavel@ucw.cz, rjw@sisk.pl
+Cc: linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, john@Calva.COM,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] nfs: make TASK_KILLABLE sleeps attempt to freeze (try #2)
+Date: Wed, 19 Oct 2011 11:18:26 -0400
+Message-Id: <1319037506-6221-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1317210761-11518-5-git-send-email-jlayton@redhat.com>
+References: <1317210761-11518-5-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 4:14 AM, n00b <n00b@n00bsys0p.co.uk> wrote:
-> On 18/10/11 17:15, Bjorn Helgaas wrote:
->>
->> On Tue, Oct 18, 2011 at 10:01 AM, n00bsys0p<n00b@n00bsys0p.co.uk>  wrote:
->>>
->>> Hi,
->>>
->>> I've been trying to get a custom 3.0 kernel to boot via PXE on a VIA EPIA
->>> EN15000G, and have run into a problem where once the thin client starts
->>> to
->>> load the kernel, the entire screen turns into a mosaic of random colours
->>> and
->>> characters.
->>>
->>> I've tested this serving a 2.6.35.8 kernel (configured identically to the
->>> 3.0) to the thin client where the master and client are both fitted with
->>> EPIA EN1500G, and it works perfectly. Also, I tried swapping the master's
->>> motherboard to a Gigabyte GA-D525TUD (Realtek LAN chip), and it succeeded
->>> in
->>> serving the 3.0 kernel to an EN15000G without a fault.
->>>
->>> In all test cases, the master was using a 3.0 kernel.
->>>
->>> Through this testing, I surmise that it is something to do with the LAN
->>> driver which is used, as this is the only thing I can see to have changed
->>> between the two running systems. Could it be accidentally overwriting the
->>> video RAM or something along those lines?
->>>
->>> Here's a link to a photo of what the screen looks like when it goes
->>> wrong:
->>>
->>> https://lh3.googleusercontent.com/-sXFP41oaF9U/TpyMFg89CqI/AAAAAAAAA-I/PBrltIm0cB4/s720/PXEFail.jpg
->>
->> Let me see if I understand this correctly:
->>
->>   - The problem is on the EN15000G client.
->>   - It occurs when the client boots 3.0 from a EN1500G server, but not
->> when booting the same 3.0 kernel image from a GA-D525TUD server.
->>   - It doesn't occur when booting 2.6.35.8 from a EN1500G server.
->>   - The client boots successfully and is usable, i.e., the only
->> problem is the temporary garbage on the screen during boot.
->>
->> It would be useful to see the complete dmesg log from 2.6.35.8 on the
->> client.  If 3.0 actually does boot on the client, a dmesg log from 3.0
->> would also be useful.  There might be a clue if we can compare them.
->>
->> Bjorn
->
-> In answer:
->  - Yes, the problem is a client machine with an EN15000G board
->  - Correct, the 3.0 kernel image booted the client using a GA-D525TUD
-> server, but not when using an EN15000G
->  - Correct again, the 2.6.35.8 image booted correctly from an EN15000G
-> server
->  - Not correct. The problem is permanent when it occurs. The client machine
-> has been left for hours, and all that is visible is the garbage on screen.
+Somehow I ended up sending out an earlier version of this patch instead
+of the one actually tested. Here's the correct one.
 
-Good.  That's what I suspected, just wanted to make sure.
+Allow the TASK_KILLABLE sleeps in NFS layer to respect the freezer. This
+should allow suspend and hibernate events to occur, even when there are
+RPC's pending on the wire.
 
-> I'm not sure if it was a one-off, but I can't appear to get it to serve the
-> 3.0 kernel from the Gigabyte motherboard now. Exactly the same thing is
-> happening as with the EN15000G (garbage mosaic).
+Tested-by: John Hughes <john@Calva.COM>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/nfs/inode.c    |    4 +++-
+ fs/nfs/nfs3proc.c |    4 +++-
+ fs/nfs/nfs4proc.c |   13 +++++++++----
+ fs/nfs/proc.c     |    4 +++-
+ 4 files changed, 18 insertions(+), 7 deletions(-)
 
-Also good, that's what I would expect.  It would be very strange if
-the same bits worked differently, depending on what server they came
-from.
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index fe12037..b7c4301 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -38,6 +38,7 @@
+ #include <linux/nfs_xdr.h>
+ #include <linux/slab.h>
+ #include <linux/compat.h>
++#include <linux/freezer.h>
+ 
+ #include <asm/system.h>
+ #include <asm/uaccess.h>
+@@ -77,7 +78,8 @@ int nfs_wait_bit_killable(void *word)
+ {
+ 	if (fatal_signal_pending(current))
+ 		return -ERESTARTSYS;
+-	schedule();
++	if (!try_to_freeze())
++		schedule();
+ 	return 0;
+ }
+ 
+diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
+index 85f1690..5354219 100644
+--- a/fs/nfs/nfs3proc.c
++++ b/fs/nfs/nfs3proc.c
+@@ -17,6 +17,7 @@
+ #include <linux/nfs_page.h>
+ #include <linux/lockd/bind.h>
+ #include <linux/nfs_mount.h>
++#include <linux/freezer.h>
+ 
+ #include "iostat.h"
+ #include "internal.h"
+@@ -32,7 +33,8 @@ nfs3_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+ 		res = rpc_call_sync(clnt, msg, flags);
+ 		if (res != -EJUKEBOX && res != -EKEYEXPIRED)
+ 			break;
+-		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
++		if (!try_to_freeze())
++			schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+ 		res = -ERESTARTSYS;
+ 	} while (!fatal_signal_pending(current));
+ 	return res;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 4700fae..86427d8 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -53,6 +53,7 @@
+ #include <linux/sunrpc/bc_xprt.h>
+ #include <linux/xattr.h>
+ #include <linux/utsname.h>
++#include <linux/freezer.h>
+ 
+ #include "nfs4_fs.h"
+ #include "delegation.h"
+@@ -244,10 +245,12 @@ static int nfs4_delay(struct rpc_clnt *clnt, long *timeout)
+ 		*timeout = NFS4_POLL_RETRY_MIN;
+ 	if (*timeout > NFS4_POLL_RETRY_MAX)
+ 		*timeout = NFS4_POLL_RETRY_MAX;
+-	schedule_timeout_killable(*timeout);
++	if (!try_to_freeze()) {
++		schedule_timeout_killable(*timeout);
++		*timeout <<= 1;
++	}
+ 	if (fatal_signal_pending(current))
+ 		res = -ERESTARTSYS;
+-	*timeout <<= 1;
+ 	return res;
+ }
+ 
+@@ -3970,8 +3973,10 @@ int nfs4_proc_delegreturn(struct inode *inode, struct rpc_cred *cred, const nfs4
+ static unsigned long
+ nfs4_set_lock_task_retry(unsigned long timeout)
+ {
+-	schedule_timeout_killable(timeout);
+-	timeout <<= 1;
++	if (!try_to_freeze()) {
++		schedule_timeout_killable(timeout);
++		timeout <<= 1;
++	}
+ 	if (timeout > NFS4_LOCK_MAXTIMEOUT)
+ 		return NFS4_LOCK_MAXTIMEOUT;
+ 	return timeout;
+diff --git a/fs/nfs/proc.c b/fs/nfs/proc.c
+index ac40b85..0b70e85 100644
+--- a/fs/nfs/proc.c
++++ b/fs/nfs/proc.c
+@@ -41,6 +41,7 @@
+ #include <linux/nfs_fs.h>
+ #include <linux/nfs_page.h>
+ #include <linux/lockd/bind.h>
++#include <linux/freezer.h>
+ #include "internal.h"
+ 
+ #define NFSDBG_FACILITY		NFSDBG_PROC
+@@ -59,7 +60,8 @@ nfs_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+ 		res = rpc_call_sync(clnt, msg, flags);
+ 		if (res != -EKEYEXPIRED)
+ 			break;
+-		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
++		if (!try_to_freeze())
++			schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+ 		res = -ERESTARTSYS;
+ 	} while (!fatal_signal_pending(current));
+ 	return res;
+-- 
+1.7.6.4
 
-> I've attached the dmesg log from the client for the 2.6.35.8 kernel. If I
-> manage to get the 3.0 kernel to boot again, I'll send over the dmesg log for
-> that.
-
-That makes this a regression between 2.6.35.8 and 3.0.  The easiest
-(though tedious) way to find the problem is to bisect between those
-versions (http://www.landley.net/writing/git-bisect-howto.html).
-
-I don't see many interesting via-velocity changes since 2.6.35.  I'd
-suspect some sort of video mode problem, given the screen issue.
-Maybe you could learn something by turning off vesafb and the
-bootsplash stuff.
-
-Bjorn
