@@ -1,91 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1JSIMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 04:12:43 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:34451 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab1JSIMi (ORCPT
+	id S1755583Ab1JSISH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 04:18:07 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:57915 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750989Ab1JSISF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 04:12:38 -0400
-X-AuditID: b753bd60-9fe84ba000000655-12-4e9e867374a4
-X-AuditID: b753bd60-9fe84ba000000655-12-4e9e867374a4
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [PATCH net -v2] [BUGFIX] bonding: use flush_delayed_work_sync in
- bond_close
-To: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        WANG Cong <xiyou.wangcong@gmail.com>
-Date: Wed, 19 Oct 2011 17:17:57 +0900
-Message-ID: <20111019081757.12455.24788.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Wed, 19 Oct 2011 04:18:05 -0400
+Message-ID: <1319012280.4133.0.camel@odin>
+Subject: Re: [PATCH] ASoC: ssm2602: Use snd_soc_update_bits for
+ read-modify-write
+From: Liam Girdwood <lrg@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Date: Wed, 19 Oct 2011 09:18:00 +0100
+In-Reply-To: <1319004451.16275.1.camel@phoenix>
+References: <1319004451.16275.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bond_close() calls cancel_delayed_work() to cancel delayed works.
-It, however, cannot cancel works that were already queued in workqueue.
-The bond_open() initializes work->data, and proccess_one_work() refers
-get_work_cwq(work)->wq->flags. The get_work_cwq() returns NULL when
-work->data has been initialized. Thus, a panic occurs.
+On Wed, 2011-10-19 at 14:07 +0800, Axel Lin wrote:
+> Use snd_soc_update_bits for read-modify-write register access instead of
+> open-coding it using snd_soc_read and snd_soc_write
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-This patch uses flush_delayed_work_sync() instead of cancel_delayed_work()
-in bond_close(). It cancels delayed timer and waits for work to finish
-execution. So, it can avoid the null pointer dereference due to the
-parallel executions of proccess_one_work() and initializing proccess
-of bond_open().
+Acked-by: Liam Girdwood <lrg@ti.com>
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>
-Cc: WANG Cong <xiyou.wangcong@gmail.com>
----
-
- drivers/net/bonding/bond_main.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index de3d351..a4353f9 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3504,27 +3504,27 @@ static int bond_close(struct net_device *bond_dev)
- 	write_unlock_bh(&bond->lock);
- 
- 	if (bond->params.miimon) {  /* link check interval, in milliseconds. */
--		cancel_delayed_work(&bond->mii_work);
-+		flush_delayed_work_sync(&bond->mii_work);
- 	}
- 
- 	if (bond->params.arp_interval) {  /* arp interval, in milliseconds. */
--		cancel_delayed_work(&bond->arp_work);
-+		flush_delayed_work_sync(&bond->arp_work);
- 	}
- 
- 	switch (bond->params.mode) {
- 	case BOND_MODE_8023AD:
--		cancel_delayed_work(&bond->ad_work);
-+		flush_delayed_work_sync(&bond->ad_work);
- 		break;
- 	case BOND_MODE_TLB:
- 	case BOND_MODE_ALB:
--		cancel_delayed_work(&bond->alb_work);
-+		flush_delayed_work_sync(&bond->alb_work);
- 		break;
- 	default:
- 		break;
- 	}
- 
- 	if (delayed_work_pending(&bond->mcast_work))
--		cancel_delayed_work(&bond->mcast_work);
-+		flush_delayed_work_sync(&bond->mcast_work);
- 
- 	if (bond_is_lb(bond)) {
- 		/* Must be called only after all
 
