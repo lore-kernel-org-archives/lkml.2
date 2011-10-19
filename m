@@ -1,123 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab1JSNqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 09:46:05 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:60605 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab1JSNqC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 09:46:02 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E9ED49B.1070005@cam.ac.uk>
-Date: Wed, 19 Oct 2011 14:46:03 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+	id S1756003Ab1JSNw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 09:52:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753548Ab1JSNw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 09:52:58 -0400
+Date: Wed, 19 Oct 2011 09:52:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com,
+        ni@google.com
+Subject: Re: [PATCH 05/10] block: drop unnecessary blk_get/put_queue() in
+ scsi_cmd_ioctl() and blk_get_tg()
+Message-ID: <20111019135254.GD1140@redhat.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, linus.ml.walleij@gmail.com,
-        zdevai@gmail.com, linux@arm.linux.org.uk, arnd@arndb.de,
-        broonie@opensource.wolfsonmicro.com, gregkh@suse.de
-Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
-References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk> <4E9DC496.3010909@metafoo.de> <4E9DE2AB.3090208@cam.ac.uk>
-In-Reply-To: <4E9DE2AB.3090208@cam.ac.uk>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318998384-22525-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/11 21:33, Jonathan Cameron wrote:
-> On 10/18/11 19:25, Lars-Peter Clausen wrote:
->> On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
->>> Needed for inkernel interfaces.
->>>
->>
->> The bus_type structure keeps a list of all devices registered on that bus, so
->> you should be able to use bus_for_each_dev and bus_find_device for iterating
->> over the iio devices.
-> I hadn't realised that but don't think it will work anyway. There are several
-> other things than iio_dev based devices that sit on our bus unfortunately.
-> None are in these initial merges but they will turn up later.
-> The most common are iio_triggers but there are also a few weird ones such
-> as the event generator for the dummy driver and the sysfstrig control device.  
-> We could play some games to allow these to be identified, but it's going
-> to be a mess. Probably easier to just maintain a second list as we are doing
-> here.  Interesting suggestion though. Thanks and feel free to point out if there
-> is a simple way around the identification issue.
-Actually looking into it this morning - this is trivial to do.
-We can just check that the device_type is set appropriately before doing anything
-else.
+On Tue, Oct 18, 2011 at 09:26:19PM -0700, Tejun Heo wrote:
+> blk_get/put_queue() in scsi_cmd_ioctl() and throtl_get_tg() are
+> completely bogus.  The caller must have a reference to the queue on
+> entry and taking an extra reference doesn't change anything.
 
-Thanks Lars-Peter your suggestion is should clean things up nicely.
+Tejun,
 
-New version coming up.
->>
->>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
->>> ---
->>>  drivers/iio/iio.c       |    9 +++++++++
->>>  include/linux/iio/iio.h |    1 +
->>>  2 files changed, 10 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
->>> index 9e6acc1..246a093 100644
->>> --- a/drivers/iio/iio.c
->>> +++ b/drivers/iio/iio.c
->>> @@ -15,6 +15,9 @@
->>>  #include <linux/iio/iio.h>
->>>  #include <linux/iio/sysfs.h>
->>>  
->>> +static DEFINE_MUTEX(iio_device_list_lock);
->>> +static LIST_HEAD(iio_device_list);
->>> +
->>>  static DEFINE_IDA(iio_ida);
->>>  
->>>  static struct bus_type iio_bus_type = {
->>> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
->>>  {
->>>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
->>>  	iio_device_unregister_sysfs(indio_dev);
->>> +	mutex_lock(&iio_device_list_lock);
->>> +	list_del(&indio_dev->dev_list_entry);
->>> +	mutex_unlock(&iio_device_list_lock);
->>>  }
->>>  
->>>  static struct device_type iio_dev_type = {
->>> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
->>>  	if (ret)
->>>  		goto error_free_sysfs;
->>>  
->>> +	mutex_lock(&iio_device_list_lock);
->>> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
->>> +	mutex_unlock(&iio_device_list_lock);
->>>  	return 0;
->>>  
->>>  error_free_sysfs:
->>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
->>> index beedc5c..f14e7dc 100644
->>> --- a/include/linux/iio/iio.h
->>> +++ b/include/linux/iio/iio.h
->>> @@ -192,6 +192,7 @@ struct iio_info {
->>>   * @info:		[DRIVER] callbacks and constant info from driver
->>>   * @groups:		[INTERN] attribute groups
->>>   * @groupcounter:	[INTERN] index of next attribute group
->>> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
->>>   **/
->>>  struct iio_dev {
->>>  	int				id;
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+What makes sure that caller has the reference to the queue upon entry. If
+that's the case, that's good. Just that I had not figured it out so
+resorted to defensive programming as taking extra reference does not harm.
+
+Is it due to the fact that now you are stashing a pointer to queue in
+gendisk and that will make sure any opener of device has request queue
+reference or something else?
+
+Thanks
+Vivek
+
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> For scsi_cmd_ioctl(), the only effect is that it ends up checking
+> QUEUE_FLAG_DEAD on entry; however, this is bogus as queue can die
+> right after blk_get_queue().  Dead queue should be and is handled in
+> request issue path (it's somewhat broken now but that's a separate
+> problem and doesn't affect this one much).
 > 
-
+> throtl_get_tg() incorrectly assumes that q is rcu freed.  Also, it
+> doesn't check return value of blk_get_queue().  If the queue is
+> already dead, it ends up doing an extra put.
+> 
+> Drop them.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/blk-throttle.c |    8 +-------
+>  block/scsi_ioctl.c   |    3 +--
+>  2 files changed, 2 insertions(+), 9 deletions(-)
+> 
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index f3f495e..ecba5fc 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -324,12 +324,8 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+>  	/*
+>  	 * Need to allocate a group. Allocation of group also needs allocation
+>  	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
+> -	 * we need to drop rcu lock and queue_lock before we call alloc
+> -	 *
+> -	 * Take the request queue reference to make sure queue does not
+> -	 * go away once we return from allocation.
+> +	 * we need to drop rcu lock and queue_lock before we call alloc.
+>  	 */
+> -	blk_get_queue(q);
+>  	rcu_read_unlock();
+>  	spin_unlock_irq(q->queue_lock);
+>  
+> @@ -339,13 +335,11 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
+>  	 * dead
+>  	 */
+>  	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
+> -		blk_put_queue(q);
+>  		if (tg)
+>  			kfree(tg);
+>  
+>  		return ERR_PTR(-ENODEV);
+>  	}
+> -	blk_put_queue(q);
+>  
+>  	/* Group allocated and queue is still alive. take the lock */
+>  	spin_lock_irq(q->queue_lock);
+> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> index 4f4230b..fbdf0d8 100644
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -565,7 +565,7 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
+>  {
+>  	int err;
+>  
+> -	if (!q || blk_get_queue(q))
+> +	if (!q)
+>  		return -ENXIO;
+>  
+>  	switch (cmd) {
+> @@ -686,7 +686,6 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
+>  			err = -ENOTTY;
+>  	}
+>  
+> -	blk_put_queue(q);
+>  	return err;
+>  }
+>  EXPORT_SYMBOL(scsi_cmd_ioctl);
+> -- 
+> 1.7.3.1
