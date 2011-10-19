@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1JSLuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 07:50:52 -0400
-Received: from mga12.intel.com ([143.182.124.36]:49635 "EHLO
+	id S1756034Ab1JSLu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 07:50:56 -0400
+Received: from mga12.intel.com ([143.182.124.36]:30868 "EHLO
 	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755905Ab1JSLtV (ORCPT
+	with ESMTP id S1755906Ab1JSLtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 07:49:21 -0400
+	Wed, 19 Oct 2011 07:49:18 -0400
 From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         zohar@linux.vnet.ibm.com, dhowells@redhat.com,
         herbert@gondor.hengli.com.au
-Subject: [PATCH v2.2 4/7] crypto: GnuPG based MPI lib - additional sources (part 4)
-Date: Wed, 19 Oct 2011 14:51:33 +0300
-Message-Id: <16fc967bfab593ee6a582a5cee9dfb4dc563be43.1319025009.git.dmitry.kasatkin@intel.com>
+Subject: [PATCH v2.2 1/7] crypto: GnuPG based MPI lib - source files (part 1)
+Date: Wed, 19 Oct 2011 14:51:30 +0300
+Message-Id: <fad5214d102c09d2a2bf971483efb6e0dbee3937.1319025009.git.dmitry.kasatkin@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1319025009.git.dmitry.kasatkin@intel.com>
 References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
@@ -34,95 +34,113 @@ used in IMA/EVM integrity protection subsystem.
 
 Due to patch size limitation, the patch is divided into 4 parts.
 
-This code is unnecessary for RSA digital signature verification,
-but for completeness it is included here and can be compiled,
-if CONFIG_MPILIB_EXTRA is enabled.
-
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-
 Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 ---
- lib/Kconfig                    |   10 ++
- lib/mpi/Makefile               |   11 ++
- lib/mpi/generic_mpi-asm-defs.h |    4 +
- lib/mpi/mpi-add.c              |  234 ++++++++++++++++++++++++++++
- lib/mpi/mpi-cmp.c              |   68 ++++++++
- lib/mpi/mpi-div.c              |  333 ++++++++++++++++++++++++++++++++++++++++
- lib/mpi/mpi-gcd.c              |   59 +++++++
- lib/mpi/mpi-inline.c           |   31 ++++
- lib/mpi/mpi-inv.c              |  187 ++++++++++++++++++++++
- lib/mpi/mpi-mpow.c             |  133 ++++++++++++++++
- lib/mpi/mpi-mul.c              |  194 +++++++++++++++++++++++
- lib/mpi/mpi-scan.c             |  136 ++++++++++++++++
- 12 files changed, 1400 insertions(+), 0 deletions(-)
- create mode 100644 lib/mpi/generic_mpi-asm-defs.h
- create mode 100644 lib/mpi/mpi-add.c
- create mode 100644 lib/mpi/mpi-cmp.c
- create mode 100644 lib/mpi/mpi-div.c
- create mode 100644 lib/mpi/mpi-gcd.c
- create mode 100644 lib/mpi/mpi-inline.c
- create mode 100644 lib/mpi/mpi-inv.c
- create mode 100644 lib/mpi/mpi-mpow.c
- create mode 100644 lib/mpi/mpi-mul.c
- create mode 100644 lib/mpi/mpi-scan.c
+ lib/mpi/generic_mpih-add1.c   |   61 +++++
+ lib/mpi/generic_mpih-lshift.c |   63 +++++
+ lib/mpi/generic_mpih-mul1.c   |   57 +++++
+ lib/mpi/generic_mpih-mul2.c   |   60 +++++
+ lib/mpi/generic_mpih-mul3.c   |   61 +++++
+ lib/mpi/generic_mpih-rshift.c |   63 +++++
+ lib/mpi/generic_mpih-sub1.c   |   60 +++++
+ lib/mpi/mpi-bit.c             |  236 ++++++++++++++++++
+ lib/mpi/mpi-pow.c             |  323 ++++++++++++++++++++++++
+ lib/mpi/mpicoder.c            |  365 +++++++++++++++++++++++++++
+ lib/mpi/mpih-cmp.c            |   56 +++++
+ lib/mpi/mpih-div.c            |  541 +++++++++++++++++++++++++++++++++++++++++
+ lib/mpi/mpih-mul.c            |  527 +++++++++++++++++++++++++++++++++++++++
+ lib/mpi/mpiutil.c             |  208 ++++++++++++++++
+ 14 files changed, 2681 insertions(+), 0 deletions(-)
+ create mode 100644 lib/mpi/generic_mpih-add1.c
+ create mode 100644 lib/mpi/generic_mpih-lshift.c
+ create mode 100644 lib/mpi/generic_mpih-mul1.c
+ create mode 100644 lib/mpi/generic_mpih-mul2.c
+ create mode 100644 lib/mpi/generic_mpih-mul3.c
+ create mode 100644 lib/mpi/generic_mpih-rshift.c
+ create mode 100644 lib/mpi/generic_mpih-sub1.c
+ create mode 100644 lib/mpi/mpi-bit.c
+ create mode 100644 lib/mpi/mpi-pow.c
+ create mode 100644 lib/mpi/mpicoder.c
+ create mode 100644 lib/mpi/mpih-cmp.c
+ create mode 100644 lib/mpi/mpih-div.c
+ create mode 100644 lib/mpi/mpih-mul.c
+ create mode 100644 lib/mpi/mpiutil.c
 
-diff --git a/lib/Kconfig b/lib/Kconfig
-index f69ce08..b5dd7ef 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -286,4 +286,14 @@ config MPILIB
- 	  It is used to implement RSA digital signature verification,
- 	  which is used by IMA/EVM digital signature extension.
- 
-+config MPILIB_EXTRA
-+	bool "Multiprecision maths library - additional sources"
-+	depends on MPILIB
-+	help
-+	  Multiprecision maths library from GnuPG.
-+	  It is used to implement RSA digital signature verification,
-+	  which is used by IMA/EVM digital signature extension.
-+	  This code in unnecessary for RSA digital signature verification,
-+	  and can be compiled if needed.	  
-+
- endmenu
-diff --git a/lib/mpi/Makefile b/lib/mpi/Makefile
-index 0c1c6c3..5756716 100644
---- a/lib/mpi/Makefile
-+++ b/lib/mpi/Makefile
-@@ -20,3 +20,14 @@ mpi-y = \
- 	mpi-pow.o			\
- 	mpiutil.o
- 
-+mpi-$(CONFIG_MPILIB_EXTRA) += \
-+	mpi-add.o			\
-+	mpi-div.o			\
-+	mpi-cmp.o			\
-+	mpi-gcd.o			\
-+	mpi-inline.o			\
-+	mpi-inv.o			\
-+	mpi-mpow.o			\
-+	mpi-mul.o			\
-+	mpi-scan.o			\
-+
-diff --git a/lib/mpi/generic_mpi-asm-defs.h b/lib/mpi/generic_mpi-asm-defs.h
+diff --git a/lib/mpi/generic_mpih-add1.c b/lib/mpi/generic_mpih-add1.c
 new file mode 100644
-index 0000000..047d1f5
+index 0000000..c94c7dd
 --- /dev/null
-+++ b/lib/mpi/generic_mpi-asm-defs.h
-@@ -0,0 +1,4 @@
-+/* This file defines some basic constants for the MPI machinery.  We
-+ * need to define the types on a per-CPU basis, so it is done with
-+ * this file here.  */
-+#define BYTES_PER_MPI_LIMB  (SIZEOF_UNSIGNED_LONG)
-diff --git a/lib/mpi/mpi-add.c b/lib/mpi/mpi-add.c
++++ b/lib/mpi/generic_mpih-add1.c
+@@ -0,0 +1,61 @@
++/* mpihelp-add_1.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1997, 1998,
++ *               2000 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++#include "longlong.h"
++
++mpi_limb_t
++mpihelp_add_n(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++	      mpi_ptr_t s2_ptr, mpi_size_t size)
++{
++	mpi_limb_t x, y, cy;
++	mpi_size_t j;
++
++	/* The loop counter and index J goes from -SIZE to -1.  This way
++	   the loop becomes faster.  */
++	j = -size;
++
++	/* Offset the base pointers to compensate for the negative indices. */
++	s1_ptr -= j;
++	s2_ptr -= j;
++	res_ptr -= j;
++
++	cy = 0;
++	do {
++		y = s2_ptr[j];
++		x = s1_ptr[j];
++		y += cy;	/* add previous carry to one addend */
++		cy = y < cy;	/* get out carry from that addition */
++		y += x;		/* add other addend */
++		cy += y < x;	/* get out carry from that add, combine */
++		res_ptr[j] = y;
++	} while (++j);
++
++	return cy;
++}
+diff --git a/lib/mpi/generic_mpih-lshift.c b/lib/mpi/generic_mpih-lshift.c
 new file mode 100644
-index 0000000..f56b9ba
+index 0000000..8631892
 --- /dev/null
-+++ b/lib/mpi/mpi-add.c
-@@ -0,0 +1,234 @@
-+/* mpi-add.c  -  MPI functions
-+ *	Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
++++ b/lib/mpi/generic_mpih-lshift.c
+@@ -0,0 +1,63 @@
++/* mpihelp-lshift.c  -	MPI helper functions
++ * Copyright (C) 1994, 1996, 1998, 2001 Free Software Foundation, Inc.
 + *
 + * This file is part of GnuPG.
 + *
@@ -151,216 +169,377 @@ index 0000000..f56b9ba
 +
 +#include "mpi-internal.h"
 +
-+/****************
-+ * Add the unsigned integer V to the mpi-integer U and store the
-+ * result in W. U and V may be the same.
++/* Shift U (pointed to by UP and USIZE digits long) CNT bits to the left
++ * and store the USIZE least significant digits of the result at WP.
++ * Return the bits shifted out from the most significant digit.
++ *
++ * Argument constraints:
++ * 1. 0 < CNT < BITS_PER_MP_LIMB
++ * 2. If the result is to be written over the input, WP must be >= UP.
 + */
-+int mpi_add_ui(MPI w, const MPI u, unsigned long v)
++
++mpi_limb_t
++mpihelp_lshift(mpi_ptr_t wp, mpi_ptr_t up, mpi_size_t usize, unsigned int cnt)
 +{
-+	mpi_ptr_t wp, up;
-+	mpi_size_t usize, wsize;
-+	int usign, wsign;
++	mpi_limb_t high_limb, low_limb;
++	unsigned sh_1, sh_2;
++	mpi_size_t i;
++	mpi_limb_t retval;
 +
-+	usize = u->nlimbs;
-+	usign = u->sign;
-+	wsign = 0;
-+
-+	/* If not space for W (and possible carry), increase space.  */
-+	wsize = usize + 1;
-+	if (w->alloced < wsize)
-+		if (mpi_resize(w, wsize) < 0)
-+			return -ENOMEM;
-+
-+	/* These must be after realloc (U may be the same as W).  */
-+	up = u->d;
-+	wp = w->d;
-+
-+	if (!usize) {		/* simple */
-+		wp[0] = v;
-+		wsize = v ? 1 : 0;
-+	} else if (!usign) {	/* mpi is not negative */
-+		mpi_limb_t cy;
-+		cy = mpihelp_add_1(wp, up, usize, v);
-+		wp[usize] = cy;
-+		wsize = usize + cy;
-+	} else {		/* The signs are different.  Need exact comparison to determine
-+				 * which operand to subtract from which.  */
-+		if (usize == 1 && up[0] < v) {
-+			wp[0] = v - up[0];
-+			wsize = 1;
-+		} else {
-+			mpihelp_sub_1(wp, up, usize, v);
-+			/* Size can decrease with at most one limb. */
-+			wsize = usize - (wp[usize - 1] == 0);
-+			wsign = 1;
-+		}
++	sh_1 = cnt;
++	wp += 1;
++	sh_2 = BITS_PER_MPI_LIMB - sh_1;
++	i = usize - 1;
++	low_limb = up[i];
++	retval = low_limb >> sh_2;
++	high_limb = low_limb;
++	while (--i >= 0) {
++		low_limb = up[i];
++		wp[i] = (high_limb << sh_1) | (low_limb >> sh_2);
++		high_limb = low_limb;
 +	}
++	wp[i] = high_limb << sh_1;
 +
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
++	return retval;
 +}
-+
-+int mpi_add(MPI w, MPI u, MPI v)
-+{
-+	mpi_ptr_t wp, up, vp;
-+	mpi_size_t usize, vsize, wsize;
-+	int usign, vsign, wsign;
-+
-+	if (u->nlimbs < v->nlimbs) {	/* Swap U and V. */
-+		usize = v->nlimbs;
-+		usign = v->sign;
-+		vsize = u->nlimbs;
-+		vsign = u->sign;
-+		wsize = usize + 1;
-+		if (RESIZE_IF_NEEDED(w, wsize) < 0)
-+			return -ENOMEM;
-+		/* These must be after realloc (u or v may be the same as w).  */
-+		up = v->d;
-+		vp = u->d;
-+	} else {
-+		usize = u->nlimbs;
-+		usign = u->sign;
-+		vsize = v->nlimbs;
-+		vsign = v->sign;
-+		wsize = usize + 1;
-+		if (RESIZE_IF_NEEDED(w, wsize) < 0)
-+			return -ENOMEM;
-+		/* These must be after realloc (u or v may be the same as w).  */
-+		up = u->d;
-+		vp = v->d;
-+	}
-+	wp = w->d;
-+	wsign = 0;
-+
-+	if (!vsize) {		/* simple */
-+		MPN_COPY(wp, up, usize);
-+		wsize = usize;
-+		wsign = usign;
-+	} else if (usign != vsign) {	/* different sign */
-+		/* This test is right since USIZE >= VSIZE */
-+		if (usize != vsize) {
-+			mpihelp_sub(wp, up, usize, vp, vsize);
-+			wsize = usize;
-+			MPN_NORMALIZE(wp, wsize);
-+			wsign = usign;
-+		} else if (mpihelp_cmp(up, vp, usize) < 0) {
-+			mpihelp_sub_n(wp, vp, up, usize);
-+			wsize = usize;
-+			MPN_NORMALIZE(wp, wsize);
-+			if (!usign)
-+				wsign = 1;
-+		} else {
-+			mpihelp_sub_n(wp, up, vp, usize);
-+			wsize = usize;
-+			MPN_NORMALIZE(wp, wsize);
-+			if (usign)
-+				wsign = 1;
-+		}
-+	} else {		/* U and V have same sign. Add them. */
-+		mpi_limb_t cy = mpihelp_add(wp, up, usize, vp, vsize);
-+		wp[usize] = cy;
-+		wsize = usize + cy;
-+		if (usign)
-+			wsign = 1;
-+	}
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+/****************
-+ * Subtract the unsigned integer V from the mpi-integer U and store the
-+ * result in W.
-+ */
-+int mpi_sub_ui(MPI w, MPI u, unsigned long v)
-+{
-+	mpi_ptr_t wp, up;
-+	mpi_size_t usize, wsize;
-+	int usign, wsign;
-+
-+	usize = u->nlimbs;
-+	usign = u->sign;
-+	wsign = 0;
-+
-+	/* If not space for W (and possible carry), increase space.  */
-+	wsize = usize + 1;
-+	if (w->alloced < wsize)
-+		if (mpi_resize(w, wsize) < 0)
-+			return -ENOMEM;
-+
-+	/* These must be after realloc (U may be the same as W).  */
-+	up = u->d;
-+	wp = w->d;
-+
-+	if (!usize) {		/* simple */
-+		wp[0] = v;
-+		wsize = v ? 1 : 0;
-+		wsign = 1;
-+	} else if (usign) {	/* mpi and v are negative */
-+		mpi_limb_t cy;
-+		cy = mpihelp_add_1(wp, up, usize, v);
-+		wp[usize] = cy;
-+		wsize = usize + cy;
-+	} else {		/* The signs are different.  Need exact comparison to determine
-+				 * which operand to subtract from which.  */
-+		if (usize == 1 && up[0] < v) {
-+			wp[0] = v - up[0];
-+			wsize = 1;
-+			wsign = 1;
-+		} else {
-+			mpihelp_sub_1(wp, up, usize, v);
-+			/* Size can decrease with at most one limb. */
-+			wsize = usize - (wp[usize - 1] == 0);
-+		}
-+	}
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+int mpi_sub(MPI w, MPI u, MPI v)
-+{
-+	int rc;
-+
-+	if (w == v) {
-+		MPI vv;
-+		if (mpi_copy(&vv, v) < 0)
-+			return -ENOMEM;
-+		vv->sign = !vv->sign;
-+		rc = mpi_add(w, u, vv);
-+		mpi_free(vv);
-+	} else {
-+		/* fixme: this is not thread-save (we temp. modify v) */
-+		v->sign = !v->sign;
-+		rc = mpi_add(w, u, v);
-+		v->sign = !v->sign;
-+	}
-+	return rc;
-+}
-+
-+int mpi_addm(MPI w, MPI u, MPI v, MPI m)
-+{
-+	if (mpi_add(w, u, v) < 0 || mpi_fdiv_r(w, w, m) < 0)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
-+int mpi_subm(MPI w, MPI u, MPI v, MPI m)
-+{
-+	if (mpi_sub(w, u, v) < 0 || mpi_fdiv_r(w, w, m) < 0)
-+		return -ENOMEM;
-+	return 0;
-+}
-diff --git a/lib/mpi/mpi-cmp.c b/lib/mpi/mpi-cmp.c
+diff --git a/lib/mpi/generic_mpih-mul1.c b/lib/mpi/generic_mpih-mul1.c
 new file mode 100644
-index 0000000..914bc42
+index 0000000..1668dfd
 --- /dev/null
-+++ b/lib/mpi/mpi-cmp.c
-@@ -0,0 +1,68 @@
-+/* mpi-cmp.c  -  MPI functions
++++ b/lib/mpi/generic_mpih-mul1.c
+@@ -0,0 +1,57 @@
++/* mpihelp-mul_1.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1997, 1998, 2001 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++#include "longlong.h"
++
++mpi_limb_t
++mpihelp_mul_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr, mpi_size_t s1_size,
++	      mpi_limb_t s2_limb)
++{
++	mpi_limb_t cy_limb;
++	mpi_size_t j;
++	mpi_limb_t prod_high, prod_low;
++
++	/* The loop counter and index J goes from -S1_SIZE to -1.  This way
++	 * the loop becomes faster.  */
++	j = -s1_size;
++
++	/* Offset the base pointers to compensate for the negative indices.  */
++	s1_ptr -= j;
++	res_ptr -= j;
++
++	cy_limb = 0;
++	do {
++		umul_ppmm(prod_high, prod_low, s1_ptr[j], s2_limb);
++		prod_low += cy_limb;
++		cy_limb = (prod_low < cy_limb ? 1 : 0) + prod_high;
++		res_ptr[j] = prod_low;
++	} while (++j);
++
++	return cy_limb;
++}
+diff --git a/lib/mpi/generic_mpih-mul2.c b/lib/mpi/generic_mpih-mul2.c
+new file mode 100644
+index 0000000..8a7b29e
+--- /dev/null
++++ b/lib/mpi/generic_mpih-mul2.c
+@@ -0,0 +1,60 @@
++/* mpihelp-mul_2.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1997, 1998, 2001 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++#include "longlong.h"
++
++mpi_limb_t
++mpihelp_addmul_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++		 mpi_size_t s1_size, mpi_limb_t s2_limb)
++{
++	mpi_limb_t cy_limb;
++	mpi_size_t j;
++	mpi_limb_t prod_high, prod_low;
++	mpi_limb_t x;
++
++	/* The loop counter and index J goes from -SIZE to -1.  This way
++	 * the loop becomes faster.  */
++	j = -s1_size;
++	res_ptr -= j;
++	s1_ptr -= j;
++
++	cy_limb = 0;
++	do {
++		umul_ppmm(prod_high, prod_low, s1_ptr[j], s2_limb);
++
++		prod_low += cy_limb;
++		cy_limb = (prod_low < cy_limb ? 1 : 0) + prod_high;
++
++		x = res_ptr[j];
++		prod_low = x + prod_low;
++		cy_limb += prod_low < x ? 1 : 0;
++		res_ptr[j] = prod_low;
++	} while (++j);
++	return cy_limb;
++}
+diff --git a/lib/mpi/generic_mpih-mul3.c b/lib/mpi/generic_mpih-mul3.c
+new file mode 100644
+index 0000000..f96df32
+--- /dev/null
++++ b/lib/mpi/generic_mpih-mul3.c
+@@ -0,0 +1,61 @@
++/* mpihelp-mul_3.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1997, 1998, 2001 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++#include "longlong.h"
++
++mpi_limb_t
++mpihelp_submul_1(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++		 mpi_size_t s1_size, mpi_limb_t s2_limb)
++{
++	mpi_limb_t cy_limb;
++	mpi_size_t j;
++	mpi_limb_t prod_high, prod_low;
++	mpi_limb_t x;
++
++	/* The loop counter and index J goes from -SIZE to -1.  This way
++	 * the loop becomes faster.  */
++	j = -s1_size;
++	res_ptr -= j;
++	s1_ptr -= j;
++
++	cy_limb = 0;
++	do {
++		umul_ppmm(prod_high, prod_low, s1_ptr[j], s2_limb);
++
++		prod_low += cy_limb;
++		cy_limb = (prod_low < cy_limb ? 1 : 0) + prod_high;
++
++		x = res_ptr[j];
++		prod_low = x - prod_low;
++		cy_limb += prod_low > x ? 1 : 0;
++		res_ptr[j] = prod_low;
++	} while (++j);
++
++	return cy_limb;
++}
+diff --git a/lib/mpi/generic_mpih-rshift.c b/lib/mpi/generic_mpih-rshift.c
+new file mode 100644
+index 0000000..ffa3288
+--- /dev/null
++++ b/lib/mpi/generic_mpih-rshift.c
+@@ -0,0 +1,63 @@
++/* mpih-rshift.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1998, 1999,
++ *               2000, 2001 Free Software Foundation, Inc.
++ *
++ * This file is part of GNUPG
++ *
++ * GNUPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GNUPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++
++/* Shift U (pointed to by UP and USIZE limbs long) CNT bits to the right
++ * and store the USIZE least significant limbs of the result at WP.
++ * The bits shifted out to the right are returned.
++ *
++ * Argument constraints:
++ * 1. 0 < CNT < BITS_PER_MP_LIMB
++ * 2. If the result is to be written over the input, WP must be <= UP.
++ */
++
++mpi_limb_t
++mpihelp_rshift(mpi_ptr_t wp, mpi_ptr_t up, mpi_size_t usize, unsigned cnt)
++{
++	mpi_limb_t high_limb, low_limb;
++	unsigned sh_1, sh_2;
++	mpi_size_t i;
++	mpi_limb_t retval;
++
++	sh_1 = cnt;
++	wp -= 1;
++	sh_2 = BITS_PER_MPI_LIMB - sh_1;
++	high_limb = up[0];
++	retval = high_limb << sh_2;
++	low_limb = high_limb;
++	for (i = 1; i < usize; i++) {
++		high_limb = up[i];
++		wp[i] = (low_limb >> sh_1) | (high_limb << sh_2);
++		low_limb = high_limb;
++	}
++	wp[i] = low_limb >> sh_1;
++
++	return retval;
++}
+diff --git a/lib/mpi/generic_mpih-sub1.c b/lib/mpi/generic_mpih-sub1.c
+new file mode 100644
+index 0000000..5d98ab7
+--- /dev/null
++++ b/lib/mpi/generic_mpih-sub1.c
+@@ -0,0 +1,60 @@
++/* mpihelp-add_2.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1997, 1998, 2001 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++#include "longlong.h"
++
++mpi_limb_t
++mpihelp_sub_n(mpi_ptr_t res_ptr, mpi_ptr_t s1_ptr,
++	      mpi_ptr_t s2_ptr, mpi_size_t size)
++{
++	mpi_limb_t x, y, cy;
++	mpi_size_t j;
++
++	/* The loop counter and index J goes from -SIZE to -1.  This way
++	   the loop becomes faster.  */
++	j = -size;
++
++	/* Offset the base pointers to compensate for the negative indices.  */
++	s1_ptr -= j;
++	s2_ptr -= j;
++	res_ptr -= j;
++
++	cy = 0;
++	do {
++		y = s2_ptr[j];
++		x = s1_ptr[j];
++		y += cy;	/* add previous carry to subtrahend */
++		cy = y < cy;	/* get out carry from that addition */
++		y = x - y;	/* main subtract */
++		cy += y > x;	/* get out carry from the subtract, combine */
++		res_ptr[j] = y;
++	} while (++j);
++
++	return cy;
++}
+diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
+new file mode 100644
+index 0000000..854c9c6
+--- /dev/null
++++ b/lib/mpi/mpi-bit.c
+@@ -0,0 +1,236 @@
++/* mpi-bit.c  -  MPI bit level fucntions
 + * Copyright (C) 1998, 1999 Free Software Foundation, Inc.
 + *
 + * This file is part of GnuPG.
@@ -381,62 +560,229 @@ index 0000000..914bc42
 + */
 +
 +#include "mpi-internal.h"
++#include "longlong.h"
 +
-+int mpi_cmp_ui(MPI u, unsigned long v)
++const unsigned char __clz_tab[] = {
++	0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5,
++	    5, 5, 5, 5, 5, 5, 5, 5,
++	6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
++	    6, 6, 6, 6, 6, 6, 6, 6,
++	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
++	    7, 7, 7, 7, 7, 7, 7, 7,
++	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
++	    7, 7, 7, 7, 7, 7, 7, 7,
++	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
++	    8, 8, 8, 8, 8, 8, 8, 8,
++	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
++	    8, 8, 8, 8, 8, 8, 8, 8,
++	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
++	    8, 8, 8, 8, 8, 8, 8, 8,
++	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
++	    8, 8, 8, 8, 8, 8, 8, 8,
++};
++
++#define A_LIMB_1 ((mpi_limb_t) 1)
++
++/****************
++ * Sometimes we have MSL (most significant limbs) which are 0;
++ * this is for some reasons not good, so this function removes them.
++ */
++void mpi_normalize(MPI a)
 +{
-+	mpi_limb_t limb = v;
-+
-+	mpi_normalize(u);
-+	if (!u->nlimbs && !limb)
-+		return 0;
-+	if (u->sign)
-+		return -1;
-+	if (u->nlimbs > 1)
-+		return 1;
-+
-+	if (u->d[0] == limb)
-+		return 0;
-+	else if (u->d[0] > limb)
-+		return 1;
-+	else
-+		return -1;
++	for (; a->nlimbs && !a->d[a->nlimbs - 1]; a->nlimbs--)
++		;
 +}
 +
-+int mpi_cmp(MPI u, MPI v)
++/****************
++ * Return the number of bits in A.
++ */
++unsigned mpi_get_nbits(MPI a)
 +{
-+	mpi_size_t usize, vsize;
-+	int cmp;
++	unsigned n;
 +
-+	mpi_normalize(u);
-+	mpi_normalize(v);
-+	usize = u->nlimbs;
-+	vsize = v->nlimbs;
-+	if (!u->sign && v->sign)
-+		return 1;
-+	if (u->sign && !v->sign)
-+		return -1;
-+	if (usize != vsize && !u->sign && !v->sign)
-+		return usize - vsize;
-+	if (usize != vsize && u->sign && v->sign)
-+		return vsize + usize;
-+	if (!usize)
-+		return 0;
-+	cmp = mpihelp_cmp(u->d, v->d, usize);
-+	if (!cmp)
-+		return 0;
-+	if ((cmp < 0 ? 1 : 0) == (u->sign ? 1 : 0))
-+		return 1;
-+	return -1;
++	mpi_normalize(a);
++
++	if (a->nlimbs) {
++		mpi_limb_t alimb = a->d[a->nlimbs - 1];
++		if (alimb)
++			count_leading_zeros(n, alimb);
++		else
++			n = BITS_PER_MPI_LIMB;
++		n = BITS_PER_MPI_LIMB - n + (a->nlimbs - 1) * BITS_PER_MPI_LIMB;
++	} else
++		n = 0;
++	return n;
 +}
-diff --git a/lib/mpi/mpi-div.c b/lib/mpi/mpi-div.c
++EXPORT_SYMBOL_GPL(mpi_get_nbits);
++
++/****************
++ * Test whether bit N is set.
++ */
++int mpi_test_bit(MPI a, unsigned n)
++{
++	unsigned limbno, bitno;
++	mpi_limb_t limb;
++
++	limbno = n / BITS_PER_MPI_LIMB;
++	bitno = n % BITS_PER_MPI_LIMB;
++
++	if (limbno >= a->nlimbs)
++		return 0;	/* too far left: this is a 0 */
++	limb = a->d[limbno];
++	return (limb & (A_LIMB_1 << bitno)) ? 1 : 0;
++}
++
++/****************
++ * Set bit N of A.
++ */
++int mpi_set_bit(MPI a, unsigned n)
++{
++	unsigned limbno, bitno;
++
++	limbno = n / BITS_PER_MPI_LIMB;
++	bitno = n % BITS_PER_MPI_LIMB;
++
++	if (limbno >= a->nlimbs) {	/* resize */
++		if (a->alloced >= limbno)
++			if (mpi_resize(a, limbno + 1) < 0)
++				return -ENOMEM;
++		a->nlimbs = limbno + 1;
++	}
++	a->d[limbno] |= (A_LIMB_1 << bitno);
++	return 0;
++}
++
++/****************
++ * Set bit N of A. and clear all bits above
++ */
++int mpi_set_highbit(MPI a, unsigned n)
++{
++	unsigned limbno, bitno;
++
++	limbno = n / BITS_PER_MPI_LIMB;
++	bitno = n % BITS_PER_MPI_LIMB;
++
++	if (limbno >= a->nlimbs) {	/* resize */
++		if (a->alloced >= limbno)
++			if (mpi_resize(a, limbno + 1) < 0)
++				return -ENOMEM;
++		a->nlimbs = limbno + 1;
++	}
++	a->d[limbno] |= (A_LIMB_1 << bitno);
++	for (bitno++; bitno < BITS_PER_MPI_LIMB; bitno++)
++		a->d[limbno] &= ~(A_LIMB_1 << bitno);
++	a->nlimbs = limbno + 1;
++	return 0;
++}
++
++/****************
++ * clear bit N of A and all bits above
++ */
++void mpi_clear_highbit(MPI a, unsigned n)
++{
++	unsigned limbno, bitno;
++
++	limbno = n / BITS_PER_MPI_LIMB;
++	bitno = n % BITS_PER_MPI_LIMB;
++
++	if (limbno >= a->nlimbs)
++		return;		/* not allocated, so need to clear bits :-) */
++
++	for (; bitno < BITS_PER_MPI_LIMB; bitno++)
++		a->d[limbno] &= ~(A_LIMB_1 << bitno);
++	a->nlimbs = limbno + 1;
++}
++
++/****************
++ * Clear bit N of A.
++ */
++void mpi_clear_bit(MPI a, unsigned n)
++{
++	unsigned limbno, bitno;
++
++	limbno = n / BITS_PER_MPI_LIMB;
++	bitno = n % BITS_PER_MPI_LIMB;
++
++	if (limbno >= a->nlimbs)
++		return;		/* don't need to clear this bit, it's to far to left */
++	a->d[limbno] &= ~(A_LIMB_1 << bitno);
++}
++
++/****************
++ * Shift A by N bits to the right
++ * FIXME: should use alloc_limb if X and A are same.
++ */
++int mpi_rshift(MPI x, MPI a, unsigned n)
++{
++	mpi_ptr_t xp;
++	mpi_size_t xsize;
++
++	xsize = a->nlimbs;
++	x->sign = a->sign;
++	if (RESIZE_IF_NEEDED(x, (size_t) xsize) < 0)
++		return -ENOMEM;
++	xp = x->d;
++
++	if (xsize) {
++		mpihelp_rshift(xp, a->d, xsize, n);
++		MPN_NORMALIZE(xp, xsize);
++	}
++	x->nlimbs = xsize;
++	return 0;
++}
++
++/****************
++ * Shift A by COUNT limbs to the left
++ * This is used only within the MPI library
++ */
++int mpi_lshift_limbs(MPI a, unsigned int count)
++{
++	mpi_ptr_t ap = a->d;
++	int n = a->nlimbs;
++	int i;
++
++	if (!count || !n)
++		return 0;
++
++	if (RESIZE_IF_NEEDED(a, n + count) < 0)
++		return -ENOMEM;
++
++	for (i = n - 1; i >= 0; i--)
++		ap[i + count] = ap[i];
++	for (i = 0; i < count; i++)
++		ap[i] = 0;
++	a->nlimbs += count;
++	return 0;
++}
++
++/****************
++ * Shift A by COUNT limbs to the right
++ * This is used only within the MPI library
++ */
++void mpi_rshift_limbs(MPI a, unsigned int count)
++{
++	mpi_ptr_t ap = a->d;
++	mpi_size_t n = a->nlimbs;
++	unsigned int i;
++
++	if (count >= n) {
++		a->nlimbs = 0;
++		return;
++	}
++
++	for (i = 0; i < n - count; i++)
++		ap[i] = ap[i + count];
++	ap[i] = 0;
++	a->nlimbs -= count;
++}
+diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
 new file mode 100644
-index 0000000..c3087d1
+index 0000000..b04a3cf
 --- /dev/null
-+++ b/lib/mpi/mpi-div.c
-@@ -0,0 +1,333 @@
-+/* mpi-div.c  -  MPI functions
-+ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
-+ *	Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
++++ b/lib/mpi/mpi-pow.c
+@@ -0,0 +1,323 @@
++/* mpi-pow.c  -  MPI functions
++ *	Copyright (C) 1994, 1996, 1998, 2000 Free Software Foundation, Inc.
 + *
 + * This file is part of GnuPG.
 + *
@@ -467,749 +813,677 @@ index 0000000..c3087d1
 +#include "mpi-internal.h"
 +#include "longlong.h"
 +
-+int mpi_fdiv_r(MPI rem, MPI dividend, MPI divisor)
-+{
-+	int rc = -ENOMEM;
-+	int divisor_sign = divisor->sign;
-+	MPI temp_divisor = NULL;
-+
-+	/* We need the original value of the divisor after the remainder has been
-+	 * preliminary calculated.      We have to copy it to temporary space if it's
-+	 * the same variable as REM.  */
-+	if (rem == divisor) {
-+		if (mpi_copy(&temp_divisor, divisor) < 0)
-+			goto nomem;
-+		divisor = temp_divisor;
-+	}
-+
-+	if (mpi_tdiv_qr(NULL, rem, dividend, divisor) < 0)
-+		goto nomem;
-+	if (((divisor_sign ? 1 : 0) ^ (dividend->sign ? 1 : 0)) && rem->nlimbs)
-+		if (mpi_add(rem, rem, divisor) < 0)
-+			goto nomem;
-+
-+	rc = 0;
-+
-+nomem:
-+	if (temp_divisor)
-+		mpi_free(temp_divisor);
-+	return rc;
-+}
-+
 +/****************
-+ * Division rounding the quotient towards -infinity.
-+ * The remainder gets the same sign as the denominator.
-+ * rem is optional
++ * RES = BASE ^ EXP mod MOD
 + */
-+
-+ulong mpi_fdiv_r_ui(MPI rem, MPI dividend, ulong divisor)
++int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
 +{
-+	mpi_limb_t rlimb;
-+
-+	rlimb = mpihelp_mod_1(dividend->d, dividend->nlimbs, divisor);
-+	if (rlimb && dividend->sign)
-+		rlimb = divisor - rlimb;
-+
-+	if (rem) {
-+		rem->d[0] = rlimb;
-+		rem->nlimbs = rlimb ? 1 : 0;
-+	}
-+	return rlimb;
-+}
-+
-+int mpi_fdiv_q(MPI quot, MPI dividend, MPI divisor)
-+{
-+	MPI tmp = mpi_alloc(mpi_get_nlimbs(quot));
-+	if (!tmp)
-+		return -ENOMEM;
-+	mpi_fdiv_qr(quot, tmp, dividend, divisor);
-+	mpi_free(tmp);
-+	return 0;
-+}
-+
-+int mpi_fdiv_qr(MPI quot, MPI rem, MPI dividend, MPI divisor)
-+{
-+	int divisor_sign = divisor->sign;
-+	MPI temp_divisor = NULL;
-+
-+	if (quot == divisor || rem == divisor) {
-+		if (mpi_copy(&temp_divisor, divisor) < 0)
-+			return -ENOMEM;
-+		divisor = temp_divisor;
-+	}
-+
-+	if (mpi_tdiv_qr(quot, rem, dividend, divisor) < 0)
-+		goto nomem;
-+
-+	if ((divisor_sign ^ dividend->sign) && rem->nlimbs) {
-+		if (mpi_sub_ui(quot, quot, 1) < 0)
-+			goto nomem;
-+		if (mpi_add(rem, rem, divisor) < 0)
-+			goto nomem;
-+	}
-+
-+	if (temp_divisor)
-+		mpi_free(temp_divisor);
-+
-+	return 0;
-+
-+nomem:
-+	mpi_free(temp_divisor);
-+	return -ENOMEM;
-+}
-+
-+/* If den == quot, den needs temporary storage.
-+ * If den == rem, den needs temporary storage.
-+ * If num == quot, num needs temporary storage.
-+ * If den has temporary storage, it can be normalized while being copied,
-+ *   i.e no extra storage should be allocated.
-+ */
-+
-+int mpi_tdiv_r(MPI rem, MPI num, MPI den)
-+{
-+	return mpi_tdiv_qr(NULL, rem, num, den);
-+}
-+
-+int mpi_tdiv_qr(MPI quot, MPI rem, MPI num, MPI den)
-+{
++	mpi_ptr_t mp_marker = NULL, bp_marker = NULL, ep_marker = NULL;
++	mpi_ptr_t xp_marker = NULL;
++	mpi_ptr_t tspace = NULL;
++	mpi_ptr_t rp, ep, mp, bp;
++	mpi_size_t esize, msize, bsize, rsize;
++	int esign, msign, bsign, rsign;
++	mpi_size_t size;
++	int mod_shift_cnt;
++	int negative_result;
++	int assign_rp = 0;
++	mpi_size_t tsize = 0;	/* to avoid compiler warning */
++	/* fixme: we should check that the warning is void */
 +	int rc = -ENOMEM;
-+	mpi_ptr_t np, dp;
-+	mpi_ptr_t qp, rp;
-+	mpi_size_t nsize = num->nlimbs;
-+	mpi_size_t dsize = den->nlimbs;
-+	mpi_size_t qsize, rsize;
-+	mpi_size_t sign_remainder = num->sign;
-+	mpi_size_t sign_quotient = num->sign ^ den->sign;
-+	unsigned normalization_steps;
-+	mpi_limb_t q_limb;
-+	mpi_ptr_t marker[5];
-+	int markidx = 0;
 +
-+	memset(marker, 0, sizeof(marker));
++	esize = exp->nlimbs;
++	msize = mod->nlimbs;
++	size = 2 * msize;
++	esign = exp->sign;
++	msign = mod->sign;
 +
-+	/* Ensure space is enough for quotient and remainder.
-+	 * We need space for an extra limb in the remainder, because it's
-+	 * up-shifted (normalized) below.  */
-+	rsize = nsize + 1;
-+	if (mpi_resize(rem, rsize) < 0)
-+		goto nomem;
++	rp = res->d;
++	ep = exp->d;
 +
-+	qsize = rsize - dsize;	/* qsize cannot be bigger than this.  */
-+	if (qsize <= 0) {
-+		if (num != rem) {
-+			rem->nlimbs = num->nlimbs;
-+			rem->sign = num->sign;
-+			MPN_COPY(rem->d, num->d, nsize);
-+		}
-+		if (quot) {
-+			/* This needs to follow the assignment to rem, in case the
-+			 * numerator and quotient are the same.  */
-+			quot->nlimbs = 0;
-+			quot->sign = 0;
-+		}
-+		return 0;
++	if (!msize)
++		msize = 1 / msize;	/* provoke a signal */
++
++	if (!esize) {
++		/* Exponent is zero, result is 1 mod MOD, i.e., 1 or 0
++		 * depending on if MOD equals 1.  */
++		rp[0] = 1;
++		res->nlimbs = (msize == 1 && mod->d[0] == 1) ? 0 : 1;
++		res->sign = 0;
++		goto leave;
 +	}
 +
-+	if (quot)
-+		if (mpi_resize(quot, qsize) < 0)
-+			goto nomem;
++	/* Normalize MOD (i.e. make its most significant bit set) as required by
++	 * mpn_divrem.  This will make the intermediate values in the calculation
++	 * slightly larger, but the correct result is obtained after a final
++	 * reduction using the original MOD value.  */
++	mp = mp_marker = mpi_alloc_limb_space(msize);
++	if (!mp)
++		goto enomem;
++	count_leading_zeros(mod_shift_cnt, mod->d[msize - 1]);
++	if (mod_shift_cnt)
++		mpihelp_lshift(mp, mod->d, msize, mod_shift_cnt);
++	else
++		MPN_COPY(mp, mod->d, msize);
 +
-+	/* Read pointers here, when reallocation is finished.  */
-+	np = num->d;
-+	dp = den->d;
-+	rp = rem->d;
++	bsize = base->nlimbs;
++	bsign = base->sign;
++	if (bsize > msize) {	/* The base is larger than the module. Reduce it. */
++		/* Allocate (BSIZE + 1) with space for remainder and quotient.
++		 * (The quotient is (bsize - msize + 1) limbs.)  */
++		bp = bp_marker = mpi_alloc_limb_space(bsize + 1);
++		if (!bp)
++			goto enomem;
++		MPN_COPY(bp, base->d, bsize);
++		/* We don't care about the quotient, store it above the remainder,
++		 * at BP + MSIZE.  */
++		mpihelp_divrem(bp + msize, 0, bp, bsize, mp, msize);
++		bsize = msize;
++		/* Canonicalize the base, since we are going to multiply with it
++		 * quite a few times.  */
++		MPN_NORMALIZE(bp, bsize);
++	} else
++		bp = base->d;
 +
-+	/* Optimize division by a single-limb divisor.  */
-+	if (dsize == 1) {
-+		mpi_limb_t rlimb;
-+		if (quot) {
-+			qp = quot->d;
-+			rlimb = mpihelp_divmod_1(qp, np, nsize, dp[0]);
-+			qsize -= qp[qsize - 1] == 0;
-+			quot->nlimbs = qsize;
-+			quot->sign = sign_quotient;
-+		} else
-+			rlimb = mpihelp_mod_1(np, nsize, dp[0]);
-+		rp[0] = rlimb;
-+		rsize = rlimb != 0 ? 1 : 0;
-+		rem->nlimbs = rsize;
-+		rem->sign = sign_remainder;
-+		return 0;
++	if (!bsize) {
++		res->nlimbs = 0;
++		res->sign = 0;
++		goto leave;
 +	}
 +
-+	if (quot) {
-+		qp = quot->d;
-+		/* Make sure QP and NP point to different objects.  Otherwise the
-+		 * numerator would be gradually overwritten by the quotient limbs.  */
-+		if (qp == np) {	/* Copy NP object to temporary space.  */
-+			np = marker[markidx++] = mpi_alloc_limb_space(nsize);
-+			MPN_COPY(np, qp, nsize);
-+		}
-+	} else			/* Put quotient at top of remainder. */
-+		qp = rp + dsize;
-+
-+	count_leading_zeros(normalization_steps, dp[dsize - 1]);
-+
-+	/* Normalize the denominator, i.e. make its most significant bit set by
-+	 * shifting it NORMALIZATION_STEPS bits to the left.  Also shift the
-+	 * numerator the same number of steps (to keep the quotient the same!).
-+	 */
-+	if (normalization_steps) {
-+		mpi_ptr_t tp;
-+		mpi_limb_t nlimb;
-+
-+		/* Shift up the denominator setting the most significant bit of
-+		 * the most significant word.  Use temporary storage not to clobber
-+		 * the original contents of the denominator.  */
-+		tp = marker[markidx++] = mpi_alloc_limb_space(dsize);
-+		if (!tp)
-+			goto nomem;
-+		mpihelp_lshift(tp, dp, dsize, normalization_steps);
-+		dp = tp;
-+
-+		/* Shift up the numerator, possibly introducing a new most
-+		 * significant word.  Move the shifted numerator in the remainder
-+		 * meanwhile.  */
-+		nlimb = mpihelp_lshift(rp, np, nsize, normalization_steps);
-+		if (nlimb) {
-+			rp[nsize] = nlimb;
-+			rsize = nsize + 1;
-+		} else
-+			rsize = nsize;
-+	} else {
-+		/* The denominator is already normalized, as required.  Copy it to
-+		 * temporary space if it overlaps with the quotient or remainder.  */
-+		if (dp == rp || (quot && (dp == qp))) {
-+			mpi_ptr_t tp;
-+
-+			tp = marker[markidx++] = mpi_alloc_limb_space(dsize);
-+			if (!tp)
-+				goto nomem;
-+			MPN_COPY(tp, dp, dsize);
-+			dp = tp;
-+		}
-+
-+		/* Move the numerator to the remainder.  */
-+		if (rp != np)
-+			MPN_COPY(rp, np, nsize);
-+
-+		rsize = nsize;
-+	}
-+
-+	q_limb = mpihelp_divrem(qp, 0, rp, rsize, dp, dsize);
-+
-+	if (quot) {
-+		qsize = rsize - dsize;
-+		if (q_limb) {
-+			qp[qsize] = q_limb;
-+			qsize += 1;
-+		}
-+
-+		quot->nlimbs = qsize;
-+		quot->sign = sign_quotient;
-+	}
-+
-+	rsize = dsize;
-+	MPN_NORMALIZE(rp, rsize);
-+
-+	if (normalization_steps && rsize) {
-+		mpihelp_rshift(rp, rp, rsize, normalization_steps);
-+		rsize -= rp[rsize - 1] == 0 ? 1 : 0;
-+	}
-+
-+	rem->nlimbs = rsize;
-+	rem->sign = sign_remainder;
-+
-+	rc = 0;
-+nomem:
-+	while (markidx)
-+		mpi_free_limb_space(marker[--markidx]);
-+	return rc;
-+}
-+
-+int mpi_tdiv_q_2exp(MPI w, MPI u, unsigned count)
-+{
-+	mpi_size_t usize, wsize;
-+	mpi_size_t limb_cnt;
-+
-+	usize = u->nlimbs;
-+	limb_cnt = count / BITS_PER_MPI_LIMB;
-+	wsize = usize - limb_cnt;
-+	if (limb_cnt >= usize)
-+		w->nlimbs = 0;
-+	else {
-+		mpi_ptr_t wp;
-+		mpi_ptr_t up;
-+
-+		if (RESIZE_IF_NEEDED(w, wsize) < 0)
-+			return -ENOMEM;
-+		wp = w->d;
-+		up = u->d;
-+
-+		count %= BITS_PER_MPI_LIMB;
-+		if (count) {
-+			mpihelp_rshift(wp, up + limb_cnt, wsize, count);
-+			wsize -= !wp[wsize - 1];
++	if (res->alloced < size) {
++		/* We have to allocate more space for RES.  If any of the input
++		 * parameters are identical to RES, defer deallocation of the old
++		 * space.  */
++		if (rp == ep || rp == mp || rp == bp) {
++			rp = mpi_alloc_limb_space(size);
++			if (!rp)
++				goto enomem;
++			assign_rp = 1;
 +		} else {
-+			MPN_COPY_INCR(wp, up + limb_cnt, wsize);
++			if (mpi_resize(res, size) < 0)
++				goto enomem;
++			rp = res->d;
 +		}
-+
-+		w->nlimbs = wsize;
-+	}
-+	return 0;
-+}
-+
-+/****************
-+ * Check whether dividend is divisible by divisor
-+ * (note: divisor must fit into a limb)
-+ */
-+int mpi_divisible_ui(MPI dividend, ulong divisor)
-+{
-+	return !mpihelp_mod_1(dividend->d, dividend->nlimbs, divisor);
-+}
-diff --git a/lib/mpi/mpi-gcd.c b/lib/mpi/mpi-gcd.c
-new file mode 100644
-index 0000000..13c48ae
---- /dev/null
-+++ b/lib/mpi/mpi-gcd.c
-@@ -0,0 +1,59 @@
-+/* mpi-gcd.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+
-+/****************
-+ * Find the greatest common divisor G of A and B.
-+ * Return: true if this 1, false in all other cases
-+ */
-+int mpi_gcd(MPI g, const MPI xa, const MPI xb)
-+{
-+	MPI a = NULL, b = NULL;
-+
-+	if (mpi_copy(&a, xa) < 0)
-+		goto nomem;
-+
-+	if (mpi_copy(&b, xb) < 0)
-+		goto nomem;
-+
-+	/* TAOCP Vol II, 4.5.2, Algorithm A */
-+	a->sign = 0;
-+	b->sign = 0;
-+	while (mpi_cmp_ui(b, 0)) {
-+		if (mpi_fdiv_r(g, a, b) < 0)	/* g used as temorary variable */
-+			goto nomem;
-+		if (mpi_set(a, b) < 0)
-+			goto nomem;
-+		if (mpi_set(b, g) < 0)
-+			goto nomem;
-+	}
-+	if (mpi_set(g, a) < 0)
-+		goto nomem;
-+
-+	mpi_free(a);
-+	mpi_free(b);
-+	return !mpi_cmp_ui(g, 1);
-+
-+nomem:
-+	mpi_free(a);
-+	mpi_free(b);
-+	return -ENOMEM;
-+}
-diff --git a/lib/mpi/mpi-inline.c b/lib/mpi/mpi-inline.c
-new file mode 100644
-index 0000000..654f68a
---- /dev/null
-+++ b/lib/mpi/mpi-inline.c
-@@ -0,0 +1,31 @@
-+/* mpi-inline.c
-+ * Copyright (C) 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+/* put the inline functions as real functions into the lib */
-+#define G10_MPI_INLINE_DECL
-+
-+#include "mpi-internal.h"
-+
-+/* always include the header becuase it is only
-+ * included by mpi-internal if __GCC__ is defined but we
-+ * need it here in all cases and the above definition of
-+ * of the macro allows us to do so
-+ */
-+#include "mpi-inline.h"
-diff --git a/lib/mpi/mpi-inv.c b/lib/mpi/mpi-inv.c
-new file mode 100644
-index 0000000..0951f98
---- /dev/null
-+++ b/lib/mpi/mpi-inv.c
-@@ -0,0 +1,187 @@
-+/* mpi-inv.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+
-+/****************
-+ * Calculate the multiplicative inverse X of A mod N
-+ * That is: Find the solution x for
-+ *		1 = (a*x) mod n
-+ */
-+int mpi_invm(MPI x, const MPI a, const MPI n)
-+{
-+	/* Extended Euclid's algorithm (See TAOPC Vol II, 4.5.2, Alg X)
-+	 * modified according to Michael Penk's solution for Exercice 35
-+	 * with further enhancement */
-+	MPI u = NULL, v = NULL;
-+	MPI u1 = NULL, u2 = NULL, u3 = NULL;
-+	MPI v1 = NULL, v2 = NULL, v3 = NULL;
-+	MPI t1 = NULL, t2 = NULL, t3 = NULL;
-+	unsigned k;
-+	int sign;
-+	int odd = 0;
-+	int rc = -ENOMEM;
-+
-+	if (mpi_copy(&u, a) < 0)
-+		goto cleanup;
-+	if (mpi_copy(&v, n) < 0)
-+		goto cleanup;
-+
-+	for (k = 0; !mpi_test_bit(u, 0) && !mpi_test_bit(v, 0); k++) {
-+		if (mpi_rshift(u, u, 1) < 0)
-+			goto cleanup;
-+		if (mpi_rshift(v, v, 1) < 0)
-+			goto cleanup;
-+	}
-+	odd = mpi_test_bit(v, 0);
-+
-+	u1 = mpi_alloc_set_ui(1);
-+	if (!u1)
-+		goto cleanup;
-+	if (!odd) {
-+		u2 = mpi_alloc_set_ui(0);
-+		if (!u2)
-+			goto cleanup;
-+	}
-+	if (mpi_copy(&u3, u) < 0)
-+		goto cleanup;
-+	if (mpi_copy(&v1, v) < 0)
-+		goto cleanup;
-+	if (!odd) {
-+		v2 = mpi_alloc(mpi_get_nlimbs(u));
-+		if (!v2)
-+			goto cleanup;
-+		if (mpi_sub(v2, u1, u) < 0)
-+			goto cleanup;	/* U is used as const 1 */
-+	}
-+	if (mpi_copy(&v3, v) < 0)
-+		goto cleanup;
-+	if (mpi_test_bit(u, 0)) {	/* u is odd */
-+		t1 = mpi_alloc_set_ui(0);
-+		if (!t1)
-+			goto cleanup;
-+		if (!odd) {
-+			t2 = mpi_alloc_set_ui(1);
-+			if (!t2)
-+				goto cleanup;
-+			t2->sign = 1;
++	} else {		/* Make BASE, EXP and MOD not overlap with RES.  */
++		if (rp == bp) {
++			/* RES and BASE are identical.  Allocate temp. space for BASE.  */
++			BUG_ON(bp_marker);
++			bp = bp_marker = mpi_alloc_limb_space(bsize);
++			if (!bp)
++				goto enomem;
++			MPN_COPY(bp, rp, bsize);
 +		}
-+		if (mpi_copy(&t3, v) < 0)
-+			goto cleanup;
-+		t3->sign = !t3->sign;
-+		goto Y4;
-+	} else {
-+		t1 = mpi_alloc_set_ui(1);
-+		if (!t1)
-+			goto cleanup;
-+		if (!odd) {
-+			t2 = mpi_alloc_set_ui(0);
-+			if (!t2)
-+				goto cleanup;
++		if (rp == ep) {
++			/* RES and EXP are identical.  Allocate temp. space for EXP.  */
++			ep = ep_marker = mpi_alloc_limb_space(esize);
++			if (!ep)
++				goto enomem;
++			MPN_COPY(ep, rp, esize);
 +		}
-+		if (mpi_copy(&t3, u) < 0)
-+			goto cleanup;
-+	}
-+	do {
-+		do {
-+			if (!odd) {
-+				if (mpi_test_bit(t1, 0) || mpi_test_bit(t2, 0)) {	/* one is odd */
-+					if (mpi_add(t1, t1, v) < 0)
-+						goto cleanup;
-+					if (mpi_sub(t2, t2, u) < 0)
-+						goto cleanup;
-+				}
-+				if (mpi_rshift(t1, t1, 1) < 0)
-+					goto cleanup;
-+				if (mpi_rshift(t2, t2, 1) < 0)
-+					goto cleanup;
-+				if (mpi_rshift(t3, t3, 1) < 0)
-+					goto cleanup;
-+			} else {
-+				if (mpi_test_bit(t1, 0))
-+					if (mpi_add(t1, t1, v) < 0)
-+						goto cleanup;
-+				if (mpi_rshift(t1, t1, 1) < 0)
-+					goto cleanup;
-+				if (mpi_rshift(t3, t3, 1) < 0)
-+					goto cleanup;
-+			}
-+Y4:
-+			;
-+		} while (!mpi_test_bit(t3, 0));	/* while t3 is even */
-+
-+		if (!t3->sign) {
-+			if (mpi_set(u1, t1) < 0)
-+				goto cleanup;
-+			if (!odd)
-+				if (mpi_set(u2, t2) < 0)
-+					goto cleanup;
-+			if (mpi_set(u3, t3) < 0)
-+				goto cleanup;
-+		} else {
-+			if (mpi_sub(v1, v, t1) < 0)
-+				goto cleanup;
-+			sign = u->sign;
-+			u->sign = !u->sign;
-+			if (!odd)
-+				if (mpi_sub(v2, u, t2) < 0)
-+					goto cleanup;
-+			u->sign = sign;
-+			sign = t3->sign;
-+			t3->sign = !t3->sign;
-+			if (mpi_set(v3, t3) < 0)
-+				goto cleanup;
-+			t3->sign = sign;
++		if (rp == mp) {
++			/* RES and MOD are identical.  Allocate temporary space for MOD. */
++			BUG_ON(mp_marker);
++			mp = mp_marker = mpi_alloc_limb_space(msize);
++			if (!mp)
++				goto enomem;
++			MPN_COPY(mp, rp, msize);
 +		}
-+		if (mpi_sub(t1, u1, v1) < 0)
-+			goto cleanup;
-+		if (!odd)
-+			if (mpi_sub(t2, u2, v2) < 0)
-+				goto cleanup;
-+		if (mpi_sub(t3, u3, v3) < 0)
-+			goto cleanup;
-+		if (t1->sign) {
-+			if (mpi_add(t1, t1, v) < 0)
-+				goto cleanup;
-+			if (!odd)
-+				if (mpi_sub(t2, t2, u) < 0)
-+					goto cleanup;
-+		}
-+	} while (mpi_cmp_ui(t3, 0));	/* while t3 != 0 */
-+	/* mpi_lshift( u3, k ); */
-+	rc = mpi_set(x, u1);
-+
-+cleanup:
-+	mpi_free(u1);
-+	mpi_free(v1);
-+	mpi_free(t1);
-+	if (!odd) {
-+		mpi_free(u2);
-+		mpi_free(v2);
-+		mpi_free(t2);
-+	}
-+	mpi_free(u3);
-+	mpi_free(v3);
-+	mpi_free(t3);
-+
-+	mpi_free(u);
-+	mpi_free(v);
-+	return rc;
-+}
-diff --git a/lib/mpi/mpi-mpow.c b/lib/mpi/mpi-mpow.c
-new file mode 100644
-index 0000000..4cc7593
---- /dev/null
-+++ b/lib/mpi/mpi-mpow.c
-@@ -0,0 +1,133 @@
-+/* mpi-mpow.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000 Free Software Foundation, Inc.
-+ *
-+ * This file is part of GnuPG.
-+ *
-+ * GnuPG is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * GnuPG is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
-+
-+#include "mpi-internal.h"
-+#include "longlong.h"
-+
-+static int build_index(const MPI *exparray, int k, int i, int t)
-+{
-+	int j, bitno;
-+	int index = 0;
-+
-+	bitno = t - i;
-+	for (j = k - 1; j >= 0; j--) {
-+		index <<= 1;
-+		if (mpi_test_bit(exparray[j], bitno))
-+			index |= 1;
-+	}
-+	return index;
-+}
-+
-+/****************
-+ * RES = (BASE[0] ^ EXP[0]) *  (BASE[1] ^ EXP[1]) * ... * mod M
-+ */
-+int mpi_mulpowm(MPI res, MPI *basearray, MPI *exparray, MPI m)
-+{
-+	int rc = -ENOMEM;
-+	int k;			/* number of elements */
-+	int t;			/* bit size of largest exponent */
-+	int i, j, idx;
-+	MPI *G = NULL;		/* table with precomputed values of size 2^k */
-+	MPI tmp = NULL;
-+
-+	for (k = 0; basearray[k]; k++)
-+		;
-+	if (!k) {
-+		pr_emerg("mpi_mulpowm: assert(k) failed\n");
-+		BUG();
-+	}
-+	for (t = 0, i = 0; (tmp = exparray[i]); i++) {
-+		j = mpi_get_nbits(tmp);
-+		if (j > t)
-+			t = j;
-+	}
-+	if (i != k) {
-+		pr_emerg("mpi_mulpowm: assert(i==k) failed\n");
-+		BUG();
-+	}
-+	if (!t) {
-+		pr_emerg("mpi_mulpowm: assert(t) failed\n");
-+		BUG();
-+	}
-+	if (k >= 10) {
-+		pr_emerg("mpi_mulpowm: assert(k<10) failed\n");
-+		BUG();
 +	}
 +
-+	G = kzalloc((1 << k) * sizeof *G, GFP_KERNEL);
-+	if (!G)
-+		goto nomem;
++	MPN_COPY(rp, bp, bsize);
++	rsize = bsize;
++	rsign = bsign;
 +
-+	/* and calculate */
-+	tmp = mpi_alloc(mpi_get_nlimbs(m) + 1);
-+	if (!tmp)
-+		goto nomem;
-+	if (mpi_set_ui(res, 1) < 0)
-+		goto nomem;
-+	for (i = 1; i <= t; i++) {
-+		if (mpi_mulm(tmp, res, res, m) < 0)
-+			goto nomem;
-+		idx = build_index(exparray, k, i, t);
-+		if (!(idx >= 0 && idx < (1 << k))) {
-+			pr_emerg("mpi_mulpowm: assert(idx >= 0 && idx < (1<<k)) failed\n");
-+			BUG();
-+		}
-+		if (!G[idx]) {
-+			if (!idx) {
-+				G[0] = mpi_alloc_set_ui(1);
-+				if (!G[0])
-+					goto nomem;
-+			} else {
-+				for (j = 0; j < k; j++) {
-+					if ((idx & (1 << j))) {
-+						if (!G[idx]) {
-+							if (mpi_copy
-+							    (&G[idx],
-+							     basearray[j]) < 0)
-+								goto nomem;
-+						} else {
-+							if (mpi_mulm
-+							    (G[idx], G[idx],
-+							     basearray[j],
-+							     m) < 0)
-+								goto nomem;
-+						}
++	{
++		mpi_size_t i;
++		mpi_ptr_t xp;
++		int c;
++		mpi_limb_t e;
++		mpi_limb_t carry_limb;
++		struct karatsuba_ctx karactx;
++
++		xp = xp_marker = mpi_alloc_limb_space(2 * (msize + 1));
++		if (!xp)
++			goto enomem;
++
++		memset(&karactx, 0, sizeof karactx);
++		negative_result = (ep[0] & 1) && base->sign;
++
++		i = esize - 1;
++		e = ep[i];
++		count_leading_zeros(c, e);
++		e = (e << c) << 1;	/* shift the exp bits to the left, lose msb */
++		c = BITS_PER_MPI_LIMB - 1 - c;
++
++		/* Main loop.
++		 *
++		 * Make the result be pointed to alternately by XP and RP.  This
++		 * helps us avoid block copying, which would otherwise be necessary
++		 * with the overlap restrictions of mpihelp_divmod. With 50% probability
++		 * the result after this loop will be in the area originally pointed
++		 * by RP (==RES->d), and with 50% probability in the area originally
++		 * pointed to by XP.
++		 */
++
++		for (;;) {
++			while (c) {
++				mpi_ptr_t tp;
++				mpi_size_t xsize;
++
++				/*if (mpihelp_mul_n(xp, rp, rp, rsize) < 0) goto enomem */
++				if (rsize < KARATSUBA_THRESHOLD)
++					mpih_sqr_n_basecase(xp, rp, rsize);
++				else {
++					if (!tspace) {
++						tsize = 2 * rsize;
++						tspace =
++						    mpi_alloc_limb_space(tsize);
++						if (!tspace)
++							goto enomem;
++					} else if (tsize < (2 * rsize)) {
++						mpi_free_limb_space(tspace);
++						tsize = 2 * rsize;
++						tspace =
++						    mpi_alloc_limb_space(tsize);
++						if (!tspace)
++							goto enomem;
 +					}
++					mpih_sqr_n(xp, rp, rsize, tspace);
 +				}
-+				if (!G[idx]) {
-+					G[idx] = mpi_alloc(0);
-+					if (!G[idx])
-+						goto nomem;
++
++				xsize = 2 * rsize;
++				if (xsize > msize) {
++					mpihelp_divrem(xp + msize, 0, xp, xsize,
++						       mp, msize);
++					xsize = msize;
 +				}
++
++				tp = rp;
++				rp = xp;
++				xp = tp;
++				rsize = xsize;
++
++				if ((mpi_limb_signed_t) e < 0) {
++					/*mpihelp_mul( xp, rp, rsize, bp, bsize ); */
++					if (bsize < KARATSUBA_THRESHOLD) {
++						mpi_limb_t tmp;
++						if (mpihelp_mul
++						    (xp, rp, rsize, bp, bsize,
++						     &tmp) < 0)
++							goto enomem;
++					} else {
++						if (mpihelp_mul_karatsuba_case
++						    (xp, rp, rsize, bp, bsize,
++						     &karactx) < 0)
++							goto enomem;
++					}
++
++					xsize = rsize + bsize;
++					if (xsize > msize) {
++						mpihelp_divrem(xp + msize, 0,
++							       xp, xsize, mp,
++							       msize);
++						xsize = msize;
++					}
++
++					tp = rp;
++					rp = xp;
++					xp = tp;
++					rsize = xsize;
++				}
++				e <<= 1;
++				c--;
 +			}
++
++			i--;
++			if (i < 0)
++				break;
++			e = ep[i];
++			c = BITS_PER_MPI_LIMB;
 +		}
-+		if (mpi_mulm(res, tmp, G[idx], m) < 0)
-+			goto nomem;
++
++		/* We shifted MOD, the modulo reduction argument, left MOD_SHIFT_CNT
++		 * steps.  Adjust the result by reducing it with the original MOD.
++		 *
++		 * Also make sure the result is put in RES->d (where it already
++		 * might be, see above).
++		 */
++		if (mod_shift_cnt) {
++			carry_limb =
++			    mpihelp_lshift(res->d, rp, rsize, mod_shift_cnt);
++			rp = res->d;
++			if (carry_limb) {
++				rp[rsize] = carry_limb;
++				rsize++;
++			}
++		} else {
++			MPN_COPY(res->d, rp, rsize);
++			rp = res->d;
++		}
++
++		if (rsize >= msize) {
++			mpihelp_divrem(rp + msize, 0, rp, rsize, mp, msize);
++			rsize = msize;
++		}
++
++		/* Remove any leading zero words from the result.  */
++		if (mod_shift_cnt)
++			mpihelp_rshift(rp, rp, rsize, mod_shift_cnt);
++		MPN_NORMALIZE(rp, rsize);
++
++		mpihelp_release_karatsuba_ctx(&karactx);
 +	}
 +
++	if (negative_result && rsize) {
++		if (mod_shift_cnt)
++			mpihelp_rshift(mp, mp, msize, mod_shift_cnt);
++		mpihelp_sub(rp, mp, msize, rp, rsize);
++		rsize = msize;
++		rsign = msign;
++		MPN_NORMALIZE(rp, rsize);
++	}
++	res->nlimbs = rsize;
++	res->sign = rsign;
++
++leave:
 +	rc = 0;
-+nomem:
-+	/* cleanup */
-+	mpi_free(tmp);
-+	for (i = 0; i < (1 << k); i++)
-+		mpi_free(G[i]);
-+	kfree(G);
++enomem:
++	if (assign_rp)
++		mpi_assign_limb_space(res, rp, size);
++	if (mp_marker)
++		mpi_free_limb_space(mp_marker);
++	if (bp_marker)
++		mpi_free_limb_space(bp_marker);
++	if (ep_marker)
++		mpi_free_limb_space(ep_marker);
++	if (xp_marker)
++		mpi_free_limb_space(xp_marker);
++	if (tspace)
++		mpi_free_limb_space(tspace);
 +	return rc;
 +}
-diff --git a/lib/mpi/mpi-mul.c b/lib/mpi/mpi-mul.c
++EXPORT_SYMBOL_GPL(mpi_powm);
+diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
 new file mode 100644
-index 0000000..1f3219e
+index 0000000..fe84bb9
 --- /dev/null
-+++ b/lib/mpi/mpi-mul.c
-@@ -0,0 +1,194 @@
-+/* mpi-mul.c  -  MPI functions
++++ b/lib/mpi/mpicoder.c
+@@ -0,0 +1,365 @@
++/* mpicoder.c  -  Coder for the external representation of MPIs
++ * Copyright (C) 1998, 1999 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ */
++
++#include "mpi-internal.h"
++
++#define DIM(v) (sizeof(v)/sizeof((v)[0]))
++#define MAX_EXTERN_MPI_BITS 16384
++
++static uint8_t asn[15] =	/* Object ID is 1.3.14.3.2.26 */
++{ 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03,
++	0x02, 0x1a, 0x05, 0x00, 0x04, 0x14
++};
++
++MPI do_encode_md(const void *sha_buffer, unsigned nbits)
++{
++	int nframe = (nbits + 7) / 8;
++	uint8_t *frame, *fr_pt;
++	int i = 0, n;
++	size_t asnlen = DIM(asn);
++	MPI a = MPI_NULL;
++
++	if (SHA1_DIGEST_LENGTH + asnlen + 4 > nframe)
++		pr_info("MPI: can't encode a %d bit MD into a %d bits frame\n",
++		       (int)(SHA1_DIGEST_LENGTH * 8), (int)nbits);
++
++	/* We encode the MD in this way:
++	 *
++	 *       0  A PAD(n bytes)   0  ASN(asnlen bytes)  MD(len bytes)
++	 *
++	 * PAD consists of FF bytes.
++	 */
++	frame = kmalloc(nframe, GFP_KERNEL);
++	if (!frame)
++		return MPI_NULL;
++	n = 0;
++	frame[n++] = 0;
++	frame[n++] = 1;		/* block type */
++	i = nframe - SHA1_DIGEST_LENGTH - asnlen - 3;
++
++	if (i <= 1) {
++		pr_info("MPI: message digest encoding failed\n");
++		kfree(frame);
++		return a;
++	}
++
++	memset(frame + n, 0xff, i);
++	n += i;
++	frame[n++] = 0;
++	memcpy(frame + n, &asn, asnlen);
++	n += asnlen;
++	memcpy(frame + n, sha_buffer, SHA1_DIGEST_LENGTH);
++	n += SHA1_DIGEST_LENGTH;
++
++	i = nframe;
++	fr_pt = frame;
++
++	if (n != nframe) {
++		printk
++		    ("MPI: message digest encoding failed, frame length is wrong\n");
++		kfree(frame);
++		return a;
++	}
++
++	a = mpi_alloc((nframe + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB);
++	mpi_set_buffer(a, frame, nframe, 0);
++	kfree(frame);
++
++	return a;
++}
++
++MPI mpi_read_from_buffer(const void *xbuffer, unsigned *ret_nread)
++{
++	const uint8_t *buffer = xbuffer;
++	int i, j;
++	unsigned nbits, nbytes, nlimbs, nread = 0;
++	mpi_limb_t a;
++	MPI val = MPI_NULL;
++
++	if (*ret_nread < 2)
++		goto leave;
++	nbits = buffer[0] << 8 | buffer[1];
++
++	if (nbits > MAX_EXTERN_MPI_BITS) {
++		pr_info("MPI: mpi too large (%u bits)\n", nbits);
++		goto leave;
++	}
++	buffer += 2;
++	nread = 2;
++
++	nbytes = (nbits + 7) / 8;
++	nlimbs = (nbytes + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB;
++	val = mpi_alloc(nlimbs);
++	if (!val)
++		return MPI_NULL;
++	i = BYTES_PER_MPI_LIMB - nbytes % BYTES_PER_MPI_LIMB;
++	i %= BYTES_PER_MPI_LIMB;
++	val->nbits = nbits;
++	j = val->nlimbs = nlimbs;
++	val->sign = 0;
++	for (; j > 0; j--) {
++		a = 0;
++		for (; i < BYTES_PER_MPI_LIMB; i++) {
++			if (++nread > *ret_nread) {
++				printk
++				    ("MPI: mpi larger than buffer nread=%d ret_nread=%d\n",
++				     nread, *ret_nread);
++				goto leave;
++			}
++			a <<= 8;
++			a |= *buffer++;
++		}
++		i = 0;
++		val->d[j - 1] = a;
++	}
++
++leave:
++	*ret_nread = nread;
++	return val;
++}
++EXPORT_SYMBOL_GPL(mpi_read_from_buffer);
++
++/****************
++ * Make an mpi from a character string.
++ */
++int mpi_fromstr(MPI val, const char *str)
++{
++	int hexmode = 0, sign = 0, prepend_zero = 0, i, j, c, c1, c2;
++	unsigned nbits, nbytes, nlimbs;
++	mpi_limb_t a;
++
++	if (*str == '-') {
++		sign = 1;
++		str++;
++	}
++	if (*str == '0' && str[1] == 'x')
++		hexmode = 1;
++	else
++		return -EINVAL;	/* other bases are not yet supported */
++	str += 2;
++
++	nbits = strlen(str) * 4;
++	if (nbits % 8)
++		prepend_zero = 1;
++	nbytes = (nbits + 7) / 8;
++	nlimbs = (nbytes + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB;
++	if (val->alloced < nlimbs)
++		if (!mpi_resize(val, nlimbs))
++			return -ENOMEM;
++	i = BYTES_PER_MPI_LIMB - nbytes % BYTES_PER_MPI_LIMB;
++	i %= BYTES_PER_MPI_LIMB;
++	j = val->nlimbs = nlimbs;
++	val->sign = sign;
++	for (; j > 0; j--) {
++		a = 0;
++		for (; i < BYTES_PER_MPI_LIMB; i++) {
++			if (prepend_zero) {
++				c1 = '0';
++				prepend_zero = 0;
++			} else
++				c1 = *str++;
++			assert(c1);
++			c2 = *str++;
++			assert(c2);
++			if (c1 >= '0' && c1 <= '9')
++				c = c1 - '0';
++			else if (c1 >= 'a' && c1 <= 'f')
++				c = c1 - 'a' + 10;
++			else if (c1 >= 'A' && c1 <= 'F')
++				c = c1 - 'A' + 10;
++			else {
++				mpi_clear(val);
++				return 1;
++			}
++			c <<= 4;
++			if (c2 >= '0' && c2 <= '9')
++				c |= c2 - '0';
++			else if (c2 >= 'a' && c2 <= 'f')
++				c |= c2 - 'a' + 10;
++			else if (c2 >= 'A' && c2 <= 'F')
++				c |= c2 - 'A' + 10;
++			else {
++				mpi_clear(val);
++				return 1;
++			}
++			a <<= 8;
++			a |= c;
++		}
++		i = 0;
++
++		val->d[j - 1] = a;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(mpi_fromstr);
++
++/****************
++ * Special function to get the low 8 bytes from an mpi.
++ * This can be used as a keyid; KEYID is an 2 element array.
++ * Return the low 4 bytes.
++ */
++u32 mpi_get_keyid(const MPI a, u32 *keyid)
++{
++#if BYTES_PER_MPI_LIMB == 4
++	if (keyid) {
++		keyid[0] = a->nlimbs >= 2 ? a->d[1] : 0;
++		keyid[1] = a->nlimbs >= 1 ? a->d[0] : 0;
++	}
++	return a->nlimbs >= 1 ? a->d[0] : 0;
++#elif BYTES_PER_MPI_LIMB == 8
++	if (keyid) {
++		keyid[0] = a->nlimbs ? (u32) (a->d[0] >> 32) : 0;
++		keyid[1] = a->nlimbs ? (u32) (a->d[0] & 0xffffffff) : 0;
++	}
++	return a->nlimbs ? (u32) (a->d[0] & 0xffffffff) : 0;
++#else
++#error Make this function work with other LIMB sizes
++#endif
++}
++
++/****************
++ * Return an allocated buffer with the MPI (msb first).
++ * NBYTES receives the length of this buffer. Caller must free the
++ * return string (This function does return a 0 byte buffer with NBYTES
++ * set to zero if the value of A is zero. If sign is not NULL, it will
++ * be set to the sign of the A.
++ */
++void *mpi_get_buffer(MPI a, unsigned *nbytes, int *sign)
++{
++	uint8_t *p, *buffer;
++	mpi_limb_t alimb;
++	int i;
++	unsigned int n;
++
++	if (sign)
++		*sign = a->sign;
++	*nbytes = n = a->nlimbs * BYTES_PER_MPI_LIMB;
++	if (!n)
++		n++;		/* avoid zero length allocation */
++	p = buffer = kmalloc(n, GFP_KERNEL);
++
++	for (i = a->nlimbs - 1; i >= 0; i--) {
++		alimb = a->d[i];
++#if BYTES_PER_MPI_LIMB == 4
++		*p++ = alimb >> 24;
++		*p++ = alimb >> 16;
++		*p++ = alimb >> 8;
++		*p++ = alimb;
++#elif BYTES_PER_MPI_LIMB == 8
++		*p++ = alimb >> 56;
++		*p++ = alimb >> 48;
++		*p++ = alimb >> 40;
++		*p++ = alimb >> 32;
++		*p++ = alimb >> 24;
++		*p++ = alimb >> 16;
++		*p++ = alimb >> 8;
++		*p++ = alimb;
++#else
++#error please implement for this limb size.
++#endif
++	}
++
++	/* this is sub-optimal but we need to do the shift operation
++	 * because the caller has to free the returned buffer */
++	for (p = buffer; !*p && *nbytes; p++, --*nbytes)
++		;
++	if (p != buffer)
++		memmove(buffer, p, *nbytes);
++
++	return buffer;
++}
++EXPORT_SYMBOL_GPL(mpi_get_buffer);
++
++/****************
++ * Use BUFFER to update MPI.
++ */
++int mpi_set_buffer(MPI a, const void *xbuffer, unsigned nbytes, int sign)
++{
++	const uint8_t *buffer = xbuffer, *p;
++	mpi_limb_t alimb;
++	int nlimbs;
++	int i;
++
++	nlimbs = (nbytes + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB;
++	if (RESIZE_IF_NEEDED(a, nlimbs) < 0)
++		return -ENOMEM;
++	a->sign = sign;
++
++	for (i = 0, p = buffer + nbytes - 1; p >= buffer + BYTES_PER_MPI_LIMB;) {
++#if BYTES_PER_MPI_LIMB == 4
++		alimb = (mpi_limb_t) *p--;
++		alimb |= (mpi_limb_t) *p-- << 8;
++		alimb |= (mpi_limb_t) *p-- << 16;
++		alimb |= (mpi_limb_t) *p-- << 24;
++#elif BYTES_PER_MPI_LIMB == 8
++		alimb = (mpi_limb_t) *p--;
++		alimb |= (mpi_limb_t) *p-- << 8;
++		alimb |= (mpi_limb_t) *p-- << 16;
++		alimb |= (mpi_limb_t) *p-- << 24;
++		alimb |= (mpi_limb_t) *p-- << 32;
++		alimb |= (mpi_limb_t) *p-- << 40;
++		alimb |= (mpi_limb_t) *p-- << 48;
++		alimb |= (mpi_limb_t) *p-- << 56;
++#else
++#error please implement for this limb size.
++#endif
++		a->d[i++] = alimb;
++	}
++	if (p >= buffer) {
++#if BYTES_PER_MPI_LIMB == 4
++		alimb = *p--;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 8;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 16;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 24;
++#elif BYTES_PER_MPI_LIMB == 8
++		alimb = (mpi_limb_t) *p--;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 8;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 16;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 24;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 32;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 40;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 48;
++		if (p >= buffer)
++			alimb |= (mpi_limb_t) *p-- << 56;
++#else
++#error please implement for this limb size.
++#endif
++		a->d[i++] = alimb;
++	}
++	a->nlimbs = i;
++
++	if (i != nlimbs) {
++		pr_emerg("MPI: mpi_set_buffer: Assertion failed (%d != %d)", i,
++		       nlimbs);
++		BUG();
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(mpi_set_buffer);
+diff --git a/lib/mpi/mpih-cmp.c b/lib/mpi/mpih-cmp.c
+new file mode 100644
+index 0000000..b2fd396
+--- /dev/null
++++ b/lib/mpi/mpih-cmp.c
+@@ -0,0 +1,56 @@
++/* mpihelp-sub.c  -  MPI helper functions
 + *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
-+ *	Copyright (C) 1998, 2001 Free Software Foundation, Inc.
++ *	Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
 + *
 + * This file is part of GnuPG.
 + *
@@ -1238,177 +1512,1119 @@ index 0000000..1f3219e
 +
 +#include "mpi-internal.h"
 +
-+int mpi_mul_ui(MPI prod, MPI mult, unsigned long small_mult)
++/****************
++ * Compare OP1_PTR/OP1_SIZE with OP2_PTR/OP2_SIZE.
++ * There are no restrictions on the relative sizes of
++ * the two arguments.
++ * Return 1 if OP1 > OP2, 0 if they are equal, and -1 if OP1 < OP2.
++ */
++int mpihelp_cmp(mpi_ptr_t op1_ptr, mpi_ptr_t op2_ptr, mpi_size_t size)
 +{
-+	mpi_size_t size, prod_size;
-+	mpi_ptr_t prod_ptr;
-+	mpi_limb_t cy;
-+	int sign;
++	mpi_size_t i;
++	mpi_limb_t op1_word, op2_word;
 +
-+	size = mult->nlimbs;
-+	sign = mult->sign;
-+
-+	if (!size || !small_mult) {
-+		prod->nlimbs = 0;
-+		prod->sign = 0;
-+		return 0;
++	for (i = size - 1; i >= 0; i--) {
++		op1_word = op1_ptr[i];
++		op2_word = op2_ptr[i];
++		if (op1_word != op2_word)
++			goto diff;
 +	}
-+
-+	prod_size = size + 1;
-+	if (prod->alloced < prod_size)
-+		if (mpi_resize(prod, prod_size) < 0)
-+			return -ENOMEM;
-+	prod_ptr = prod->d;
-+
-+	cy = mpihelp_mul_1(prod_ptr, mult->d, size, (mpi_limb_t) small_mult);
-+	if (cy)
-+		prod_ptr[size++] = cy;
-+	prod->nlimbs = size;
-+	prod->sign = sign;
 +	return 0;
++
++diff:
++	/* This can *not* be simplified to
++	 *   op2_word - op2_word
++	 * since that expression might give signed overflow.  */
++	return (op1_word > op2_word) ? 1 : -1;
 +}
-+
-+int mpi_mul_2exp(MPI w, MPI u, unsigned long cnt)
-+{
-+	mpi_size_t usize, wsize, limb_cnt;
-+	mpi_ptr_t wp;
-+	mpi_limb_t wlimb;
-+	int usign, wsign;
-+
-+	usize = u->nlimbs;
-+	usign = u->sign;
-+
-+	if (!usize) {
-+		w->nlimbs = 0;
-+		w->sign = 0;
-+		return 0;
-+	}
-+
-+	limb_cnt = cnt / BITS_PER_MPI_LIMB;
-+	wsize = usize + limb_cnt + 1;
-+	if (w->alloced < wsize)
-+		if (mpi_resize(w, wsize) < 0)
-+			return -ENOMEM;
-+	wp = w->d;
-+	wsize = usize + limb_cnt;
-+	wsign = usign;
-+
-+	cnt %= BITS_PER_MPI_LIMB;
-+	if (cnt) {
-+		wlimb = mpihelp_lshift(wp + limb_cnt, u->d, usize, cnt);
-+		if (wlimb) {
-+			wp[wsize] = wlimb;
-+			wsize++;
-+		}
-+	} else {
-+		MPN_COPY_DECR(wp + limb_cnt, u->d, usize);
-+	}
-+
-+	/* Zero all whole limbs at low end.  Do it here and not before calling
-+	 * mpn_lshift, not to lose for U == W.  */
-+	MPN_ZERO(wp, limb_cnt);
-+
-+	w->nlimbs = wsize;
-+	w->sign = wsign;
-+	return 0;
-+}
-+
-+int mpi_mul(MPI w, MPI u, MPI v)
-+{
-+	int rc = -ENOMEM;
-+	mpi_size_t usize, vsize, wsize;
-+	mpi_ptr_t up, vp, wp;
-+	mpi_limb_t cy;
-+	int usign, vsign, sign_product;
-+	int assign_wp = 0;
-+	mpi_ptr_t tmp_limb = NULL;
-+
-+	if (u->nlimbs < v->nlimbs) {	/* Swap U and V. */
-+		usize = v->nlimbs;
-+		usign = v->sign;
-+		up = v->d;
-+		vsize = u->nlimbs;
-+		vsign = u->sign;
-+		vp = u->d;
-+	} else {
-+		usize = u->nlimbs;
-+		usign = u->sign;
-+		up = u->d;
-+		vsize = v->nlimbs;
-+		vsign = v->sign;
-+		vp = v->d;
-+	}
-+	sign_product = usign ^ vsign;
-+	wp = w->d;
-+
-+	/* Ensure W has space enough to store the result.  */
-+	wsize = usize + vsize;
-+	if (w->alloced < (size_t) wsize) {
-+		if (wp == up || wp == vp) {
-+			wp = mpi_alloc_limb_space(wsize);
-+			if (!wp)
-+				goto nomem;
-+			assign_wp = 1;
-+		} else {
-+			if (mpi_resize(w, wsize) < 0)
-+				goto nomem;
-+			wp = w->d;
-+		}
-+	} else {		/* Make U and V not overlap with W.      */
-+		if (wp == up) {
-+			/* W and U are identical.  Allocate temporary space for U.      */
-+			up = tmp_limb = mpi_alloc_limb_space(usize);
-+			if (!up)
-+				goto nomem;
-+			/* Is V identical too?  Keep it identical with U.  */
-+			if (wp == vp)
-+				vp = up;
-+			/* Copy to the temporary space.  */
-+			MPN_COPY(up, wp, usize);
-+		} else if (wp == vp) {
-+			/* W and V are identical.  Allocate temporary space for V.      */
-+			vp = tmp_limb = mpi_alloc_limb_space(vsize);
-+			if (!vp)
-+				goto nomem;
-+			/* Copy to the temporary space.  */
-+			MPN_COPY(vp, wp, vsize);
-+		}
-+	}
-+
-+	if (!vsize)
-+		wsize = 0;
-+	else {
-+		if (mpihelp_mul(wp, up, usize, vp, vsize, &cy) < 0)
-+			goto nomem;
-+		wsize -= cy ? 0 : 1;
-+	}
-+
-+	if (assign_wp)
-+		mpi_assign_limb_space(w, wp, wsize);
-+
-+	w->nlimbs = wsize;
-+	w->sign = sign_product;
-+	rc = 0;
-+nomem:
-+	if (tmp_limb)
-+		mpi_free_limb_space(tmp_limb);
-+	return rc;
-+}
-+
-+int mpi_mulm(MPI w, MPI u, MPI v, MPI m)
-+{
-+	if (mpi_mul(w, u, v) < 0)
-+		return -ENOMEM;
-+	return mpi_fdiv_r(w, w, m);
-+}
-diff --git a/lib/mpi/mpi-scan.c b/lib/mpi/mpi-scan.c
+diff --git a/lib/mpi/mpih-div.c b/lib/mpi/mpih-div.c
 new file mode 100644
-index 0000000..b2da5ad
+index 0000000..87ede16
 --- /dev/null
-+++ b/lib/mpi/mpi-scan.c
-@@ -0,0 +1,136 @@
-+/* mpi-scan.c  -  MPI functions
-+ * Copyright (C) 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
++++ b/lib/mpi/mpih-div.c
+@@ -0,0 +1,541 @@
++/* mpihelp-div.c  -  MPI helper functions
++ *	Copyright (C) 1994, 1996 Free Software Foundation, Inc.
++ *	Copyright (C) 1998, 1999 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include "mpi-internal.h"
++#include "longlong.h"
++
++#ifndef UMUL_TIME
++#define UMUL_TIME 1
++#endif
++#ifndef UDIV_TIME
++#define UDIV_TIME UMUL_TIME
++#endif
++
++/* FIXME: We should be using invert_limb (or invert_normalized_limb)
++ * here (not udiv_qrnnd).
++ */
++
++mpi_limb_t
++mpihelp_mod_1(mpi_ptr_t dividend_ptr, mpi_size_t dividend_size,
++	      mpi_limb_t divisor_limb)
++{
++	mpi_size_t i;
++	mpi_limb_t n1, n0, r;
++	int dummy;
++
++	/* Botch: Should this be handled at all?  Rely on callers?  */
++	if (!dividend_size)
++		return 0;
++
++	/* If multiplication is much faster than division, and the
++	 * dividend is large, pre-invert the divisor, and use
++	 * only multiplications in the inner loop.
++	 *
++	 * This test should be read:
++	 *   Does it ever help to use udiv_qrnnd_preinv?
++	 *     && Does what we save compensate for the inversion overhead?
++	 */
++	if (UDIV_TIME > (2 * UMUL_TIME + 6)
++	    && (UDIV_TIME - (2 * UMUL_TIME + 6)) * dividend_size > UDIV_TIME) {
++		int normalization_steps;
++
++		count_leading_zeros(normalization_steps, divisor_limb);
++		if (normalization_steps) {
++			mpi_limb_t divisor_limb_inverted;
++
++			divisor_limb <<= normalization_steps;
++
++			/* Compute (2**2N - 2**N * DIVISOR_LIMB) / DIVISOR_LIMB.  The
++			 * result is a (N+1)-bit approximation to 1/DIVISOR_LIMB, with the
++			 * most significant bit (with weight 2**N) implicit.
++			 *
++			 * Special case for DIVISOR_LIMB == 100...000.
++			 */
++			if (!(divisor_limb << 1))
++				divisor_limb_inverted = ~(mpi_limb_t) 0;
++			else
++				udiv_qrnnd(divisor_limb_inverted, dummy,
++					   -divisor_limb, 0, divisor_limb);
++
++			n1 = dividend_ptr[dividend_size - 1];
++			r = n1 >> (BITS_PER_MPI_LIMB - normalization_steps);
++
++			/* Possible optimization:
++			 * if (r == 0
++			 * && divisor_limb > ((n1 << normalization_steps)
++			 *                 | (dividend_ptr[dividend_size - 2] >> ...)))
++			 * ...one division less...
++			 */
++			for (i = dividend_size - 2; i >= 0; i--) {
++				n0 = dividend_ptr[i];
++				UDIV_QRNND_PREINV(dummy, r, r,
++						  ((n1 << normalization_steps)
++						   | (n0 >>
++						      (BITS_PER_MPI_LIMB -
++						       normalization_steps))),
++						  divisor_limb,
++						  divisor_limb_inverted);
++				n1 = n0;
++			}
++			UDIV_QRNND_PREINV(dummy, r, r,
++					  n1 << normalization_steps,
++					  divisor_limb, divisor_limb_inverted);
++			return r >> normalization_steps;
++		} else {
++			mpi_limb_t divisor_limb_inverted;
++
++			/* Compute (2**2N - 2**N * DIVISOR_LIMB) / DIVISOR_LIMB.  The
++			 * result is a (N+1)-bit approximation to 1/DIVISOR_LIMB, with the
++			 * most significant bit (with weight 2**N) implicit.
++			 *
++			 * Special case for DIVISOR_LIMB == 100...000.
++			 */
++			if (!(divisor_limb << 1))
++				divisor_limb_inverted = ~(mpi_limb_t) 0;
++			else
++				udiv_qrnnd(divisor_limb_inverted, dummy,
++					   -divisor_limb, 0, divisor_limb);
++
++			i = dividend_size - 1;
++			r = dividend_ptr[i];
++
++			if (r >= divisor_limb)
++				r = 0;
++			else
++				i--;
++
++			for (; i >= 0; i--) {
++				n0 = dividend_ptr[i];
++				UDIV_QRNND_PREINV(dummy, r, r,
++						  n0, divisor_limb,
++						  divisor_limb_inverted);
++			}
++			return r;
++		}
++	} else {
++		if (UDIV_NEEDS_NORMALIZATION) {
++			int normalization_steps;
++
++			count_leading_zeros(normalization_steps, divisor_limb);
++			if (normalization_steps) {
++				divisor_limb <<= normalization_steps;
++
++				n1 = dividend_ptr[dividend_size - 1];
++				r = n1 >> (BITS_PER_MPI_LIMB -
++					   normalization_steps);
++
++				/* Possible optimization:
++				 * if (r == 0
++				 * && divisor_limb > ((n1 << normalization_steps)
++				 *                 | (dividend_ptr[dividend_size - 2] >> ...)))
++				 * ...one division less...
++				 */
++				for (i = dividend_size - 2; i >= 0; i--) {
++					n0 = dividend_ptr[i];
++					udiv_qrnnd(dummy, r, r,
++						   ((n1 << normalization_steps)
++						    | (n0 >>
++						       (BITS_PER_MPI_LIMB -
++							normalization_steps))),
++						   divisor_limb);
++					n1 = n0;
++				}
++				udiv_qrnnd(dummy, r, r,
++					   n1 << normalization_steps,
++					   divisor_limb);
++				return r >> normalization_steps;
++			}
++		}
++		/* No normalization needed, either because udiv_qrnnd doesn't require
++		 * it, or because DIVISOR_LIMB is already normalized.  */
++		i = dividend_size - 1;
++		r = dividend_ptr[i];
++
++		if (r >= divisor_limb)
++			r = 0;
++		else
++			i--;
++
++		for (; i >= 0; i--) {
++			n0 = dividend_ptr[i];
++			udiv_qrnnd(dummy, r, r, n0, divisor_limb);
++		}
++		return r;
++	}
++}
++
++/* Divide num (NP/NSIZE) by den (DP/DSIZE) and write
++ * the NSIZE-DSIZE least significant quotient limbs at QP
++ * and the DSIZE long remainder at NP.	If QEXTRA_LIMBS is
++ * non-zero, generate that many fraction bits and append them after the
++ * other quotient limbs.
++ * Return the most significant limb of the quotient, this is always 0 or 1.
++ *
++ * Preconditions:
++ * 0. NSIZE >= DSIZE.
++ * 1. The most significant bit of the divisor must be set.
++ * 2. QP must either not overlap with the input operands at all, or
++ *    QP + DSIZE >= NP must hold true.	(This means that it's
++ *    possible to put the quotient in the high part of NUM, right after the
++ *    remainder in NUM.
++ * 3. NSIZE >= DSIZE, even if QEXTRA_LIMBS is non-zero.
++ */
++
++mpi_limb_t
++mpihelp_divrem(mpi_ptr_t qp, mpi_size_t qextra_limbs,
++	       mpi_ptr_t np, mpi_size_t nsize, mpi_ptr_t dp, mpi_size_t dsize)
++{
++	mpi_limb_t most_significant_q_limb = 0;
++
++	switch (dsize) {
++	case 0:
++		/* We are asked to divide by zero, so go ahead and do it!  (To make
++		   the compiler not remove this statement, return the value.)  */
++		return 1 / dsize;
++
++	case 1:
++		{
++			mpi_size_t i;
++			mpi_limb_t n1;
++			mpi_limb_t d;
++
++			d = dp[0];
++			n1 = np[nsize - 1];
++
++			if (n1 >= d) {
++				n1 -= d;
++				most_significant_q_limb = 1;
++			}
++
++			qp += qextra_limbs;
++			for (i = nsize - 2; i >= 0; i--)
++				udiv_qrnnd(qp[i], n1, n1, np[i], d);
++			qp -= qextra_limbs;
++
++			for (i = qextra_limbs - 1; i >= 0; i--)
++				udiv_qrnnd(qp[i], n1, n1, 0, d);
++
++			np[0] = n1;
++		}
++		break;
++
++	case 2:
++		{
++			mpi_size_t i;
++			mpi_limb_t n1, n0, n2;
++			mpi_limb_t d1, d0;
++
++			np += nsize - 2;
++			d1 = dp[1];
++			d0 = dp[0];
++			n1 = np[1];
++			n0 = np[0];
++
++			if (n1 >= d1 && (n1 > d1 || n0 >= d0)) {
++				sub_ddmmss(n1, n0, n1, n0, d1, d0);
++				most_significant_q_limb = 1;
++			}
++
++			for (i = qextra_limbs + nsize - 2 - 1; i >= 0; i--) {
++				mpi_limb_t q;
++				mpi_limb_t r;
++
++				if (i >= qextra_limbs)
++					np--;
++				else
++					np[0] = 0;
++
++				if (n1 == d1) {
++					/* Q should be either 111..111 or 111..110.  Need special
++					 * treatment of this rare case as normal division would
++					 * give overflow.  */
++					q = ~(mpi_limb_t) 0;
++
++					r = n0 + d1;
++					if (r < d1) {	/* Carry in the addition? */
++						add_ssaaaa(n1, n0, r - d0,
++							   np[0], 0, d0);
++						qp[i] = q;
++						continue;
++					}
++					n1 = d0 - (d0 != 0 ? 1 : 0);
++					n0 = -d0;
++				} else {
++					udiv_qrnnd(q, r, n1, n0, d1);
++					umul_ppmm(n1, n0, d0, q);
++				}
++
++				n2 = np[0];
++q_test:
++				if (n1 > r || (n1 == r && n0 > n2)) {
++					/* The estimated Q was too large.  */
++					q--;
++					sub_ddmmss(n1, n0, n1, n0, 0, d0);
++					r += d1;
++					if (r >= d1)	/* If not carry, test Q again.  */
++						goto q_test;
++				}
++
++				qp[i] = q;
++				sub_ddmmss(n1, n0, r, n2, n1, n0);
++			}
++			np[1] = n1;
++			np[0] = n0;
++		}
++		break;
++
++	default:
++		{
++			mpi_size_t i;
++			mpi_limb_t dX, d1, n0;
++
++			np += nsize - dsize;
++			dX = dp[dsize - 1];
++			d1 = dp[dsize - 2];
++			n0 = np[dsize - 1];
++
++			if (n0 >= dX) {
++				if (n0 > dX
++				    || mpihelp_cmp(np, dp, dsize - 1) >= 0) {
++					mpihelp_sub_n(np, np, dp, dsize);
++					n0 = np[dsize - 1];
++					most_significant_q_limb = 1;
++				}
++			}
++
++			for (i = qextra_limbs + nsize - dsize - 1; i >= 0; i--) {
++				mpi_limb_t q;
++				mpi_limb_t n1, n2;
++				mpi_limb_t cy_limb;
++
++				if (i >= qextra_limbs) {
++					np--;
++					n2 = np[dsize];
++				} else {
++					n2 = np[dsize - 1];
++					MPN_COPY_DECR(np + 1, np, dsize - 1);
++					np[0] = 0;
++				}
++
++				if (n0 == dX) {
++					/* This might over-estimate q, but it's probably not worth
++					 * the extra code here to find out.  */
++					q = ~(mpi_limb_t) 0;
++				} else {
++					mpi_limb_t r;
++
++					udiv_qrnnd(q, r, n0, np[dsize - 1], dX);
++					umul_ppmm(n1, n0, d1, q);
++
++					while (n1 > r
++					       || (n1 == r
++						   && n0 > np[dsize - 2])) {
++						q--;
++						r += dX;
++						if (r < dX)	/* I.e. "carry in previous addition?" */
++							break;
++						n1 -= n0 < d1;
++						n0 -= d1;
++					}
++				}
++
++				/* Possible optimization: We already have (q * n0) and (1 * n1)
++				 * after the calculation of q.  Taking advantage of that, we
++				 * could make this loop make two iterations less.  */
++				cy_limb = mpihelp_submul_1(np, dp, dsize, q);
++
++				if (n2 != cy_limb) {
++					mpihelp_add_n(np, np, dp, dsize);
++					q--;
++				}
++
++				qp[i] = q;
++				n0 = np[dsize - 1];
++			}
++		}
++	}
++
++	return most_significant_q_limb;
++}
++
++/****************
++ * Divide (DIVIDEND_PTR,,DIVIDEND_SIZE) by DIVISOR_LIMB.
++ * Write DIVIDEND_SIZE limbs of quotient at QUOT_PTR.
++ * Return the single-limb remainder.
++ * There are no constraints on the value of the divisor.
++ *
++ * QUOT_PTR and DIVIDEND_PTR might point to the same limb.
++ */
++
++mpi_limb_t
++mpihelp_divmod_1(mpi_ptr_t quot_ptr,
++		 mpi_ptr_t dividend_ptr, mpi_size_t dividend_size,
++		 mpi_limb_t divisor_limb)
++{
++	mpi_size_t i;
++	mpi_limb_t n1, n0, r;
++	int dummy;
++
++	if (!dividend_size)
++		return 0;
++
++	/* If multiplication is much faster than division, and the
++	 * dividend is large, pre-invert the divisor, and use
++	 * only multiplications in the inner loop.
++	 *
++	 * This test should be read:
++	 * Does it ever help to use udiv_qrnnd_preinv?
++	 * && Does what we save compensate for the inversion overhead?
++	 */
++	if (UDIV_TIME > (2 * UMUL_TIME + 6)
++	    && (UDIV_TIME - (2 * UMUL_TIME + 6)) * dividend_size > UDIV_TIME) {
++		int normalization_steps;
++
++		count_leading_zeros(normalization_steps, divisor_limb);
++		if (normalization_steps) {
++			mpi_limb_t divisor_limb_inverted;
++
++			divisor_limb <<= normalization_steps;
++
++			/* Compute (2**2N - 2**N * DIVISOR_LIMB) / DIVISOR_LIMB.  The
++			 * result is a (N+1)-bit approximation to 1/DIVISOR_LIMB, with the
++			 * most significant bit (with weight 2**N) implicit.
++			 */
++			/* Special case for DIVISOR_LIMB == 100...000.  */
++			if (!(divisor_limb << 1))
++				divisor_limb_inverted = ~(mpi_limb_t) 0;
++			else
++				udiv_qrnnd(divisor_limb_inverted, dummy,
++					   -divisor_limb, 0, divisor_limb);
++
++			n1 = dividend_ptr[dividend_size - 1];
++			r = n1 >> (BITS_PER_MPI_LIMB - normalization_steps);
++
++			/* Possible optimization:
++			 * if (r == 0
++			 * && divisor_limb > ((n1 << normalization_steps)
++			 *                 | (dividend_ptr[dividend_size - 2] >> ...)))
++			 * ...one division less...
++			 */
++			for (i = dividend_size - 2; i >= 0; i--) {
++				n0 = dividend_ptr[i];
++				UDIV_QRNND_PREINV(quot_ptr[i + 1], r, r,
++						  ((n1 << normalization_steps)
++						   | (n0 >>
++						      (BITS_PER_MPI_LIMB -
++						       normalization_steps))),
++						  divisor_limb,
++						  divisor_limb_inverted);
++				n1 = n0;
++			}
++			UDIV_QRNND_PREINV(quot_ptr[0], r, r,
++					  n1 << normalization_steps,
++					  divisor_limb, divisor_limb_inverted);
++			return r >> normalization_steps;
++		} else {
++			mpi_limb_t divisor_limb_inverted;
++
++			/* Compute (2**2N - 2**N * DIVISOR_LIMB) / DIVISOR_LIMB.  The
++			 * result is a (N+1)-bit approximation to 1/DIVISOR_LIMB, with the
++			 * most significant bit (with weight 2**N) implicit.
++			 */
++			/* Special case for DIVISOR_LIMB == 100...000.  */
++			if (!(divisor_limb << 1))
++				divisor_limb_inverted = ~(mpi_limb_t) 0;
++			else
++				udiv_qrnnd(divisor_limb_inverted, dummy,
++					   -divisor_limb, 0, divisor_limb);
++
++			i = dividend_size - 1;
++			r = dividend_ptr[i];
++
++			if (r >= divisor_limb)
++				r = 0;
++			else
++				quot_ptr[i--] = 0;
++
++			for (; i >= 0; i--) {
++				n0 = dividend_ptr[i];
++				UDIV_QRNND_PREINV(quot_ptr[i], r, r,
++						  n0, divisor_limb,
++						  divisor_limb_inverted);
++			}
++			return r;
++		}
++	} else {
++		if (UDIV_NEEDS_NORMALIZATION) {
++			int normalization_steps;
++
++			count_leading_zeros(normalization_steps, divisor_limb);
++			if (normalization_steps) {
++				divisor_limb <<= normalization_steps;
++
++				n1 = dividend_ptr[dividend_size - 1];
++				r = n1 >> (BITS_PER_MPI_LIMB -
++					   normalization_steps);
++
++				/* Possible optimization:
++				 * if (r == 0
++				 * && divisor_limb > ((n1 << normalization_steps)
++				 *                 | (dividend_ptr[dividend_size - 2] >> ...)))
++				 * ...one division less...
++				 */
++				for (i = dividend_size - 2; i >= 0; i--) {
++					n0 = dividend_ptr[i];
++					udiv_qrnnd(quot_ptr[i + 1], r, r,
++						   ((n1 << normalization_steps)
++						    | (n0 >>
++						       (BITS_PER_MPI_LIMB -
++							normalization_steps))),
++						   divisor_limb);
++					n1 = n0;
++				}
++				udiv_qrnnd(quot_ptr[0], r, r,
++					   n1 << normalization_steps,
++					   divisor_limb);
++				return r >> normalization_steps;
++			}
++		}
++		/* No normalization needed, either because udiv_qrnnd doesn't require
++		 * it, or because DIVISOR_LIMB is already normalized.  */
++		i = dividend_size - 1;
++		r = dividend_ptr[i];
++
++		if (r >= divisor_limb)
++			r = 0;
++		else
++			quot_ptr[i--] = 0;
++
++		for (; i >= 0; i--) {
++			n0 = dividend_ptr[i];
++			udiv_qrnnd(quot_ptr[i], r, r, n0, divisor_limb);
++		}
++		return r;
++	}
++}
+diff --git a/lib/mpi/mpih-mul.c b/lib/mpi/mpih-mul.c
+new file mode 100644
+index 0000000..c69c5ee
+--- /dev/null
++++ b/lib/mpi/mpih-mul.c
+@@ -0,0 +1,527 @@
++/* mpihelp-mul.c  -  MPI helper functions
++ * Copyright (C) 1994, 1996, 1998, 1999,
++ *               2000 Free Software Foundation, Inc.
++ *
++ * This file is part of GnuPG.
++ *
++ * GnuPG is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * GnuPG is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note: This code is heavily based on the GNU MP Library.
++ *	 Actually it's the same code with only minor changes in the
++ *	 way the data is stored; this is to support the abstraction
++ *	 of an optional secure memory allocation which may be used
++ *	 to avoid revealing of sensitive data due to paging etc.
++ *	 The GNU MP Library itself is published under the LGPL;
++ *	 however I decided to publish this code under the plain GPL.
++ */
++
++#include <linux/string.h>
++#include "mpi-internal.h"
++#include "longlong.h"
++
++#define MPN_MUL_N_RECURSE(prodp, up, vp, size, tspace)		\
++	do {							\
++		if ((size) < KARATSUBA_THRESHOLD)		\
++			mul_n_basecase(prodp, up, vp, size);	\
++		else						\
++			mul_n(prodp, up, vp, size, tspace);	\
++	} while (0);
++
++#define MPN_SQR_N_RECURSE(prodp, up, size, tspace)		\
++	do {							\
++		if ((size) < KARATSUBA_THRESHOLD)		\
++			mpih_sqr_n_basecase(prodp, up, size);	\
++		else						\
++			mpih_sqr_n(prodp, up, size, tspace);	\
++	} while (0);
++
++/* Multiply the natural numbers u (pointed to by UP) and v (pointed to by VP),
++ * both with SIZE limbs, and store the result at PRODP.  2 * SIZE limbs are
++ * always stored.  Return the most significant limb.
++ *
++ * Argument constraints:
++ * 1. PRODP != UP and PRODP != VP, i.e. the destination
++ *    must be distinct from the multiplier and the multiplicand.
++ *
++ *
++ * Handle simple cases with traditional multiplication.
++ *
++ * This is the most critical code of multiplication.  All multiplies rely
++ * on this, both small and huge.  Small ones arrive here immediately.  Huge
++ * ones arrive here as this is the base case for Karatsuba's recursive
++ * algorithm below.
++ */
++
++static mpi_limb_t
++mul_n_basecase(mpi_ptr_t prodp, mpi_ptr_t up, mpi_ptr_t vp, mpi_size_t size)
++{
++	mpi_size_t i;
++	mpi_limb_t cy;
++	mpi_limb_t v_limb;
++
++	/* Multiply by the first limb in V separately, as the result can be
++	 * stored (not added) to PROD.  We also avoid a loop for zeroing.  */
++	v_limb = vp[0];
++	if (v_limb <= 1) {
++		if (v_limb == 1)
++			MPN_COPY(prodp, up, size);
++		else
++			MPN_ZERO(prodp, size);
++		cy = 0;
++	} else
++		cy = mpihelp_mul_1(prodp, up, size, v_limb);
++
++	prodp[size] = cy;
++	prodp++;
++
++	/* For each iteration in the outer loop, multiply one limb from
++	 * U with one limb from V, and add it to PROD.  */
++	for (i = 1; i < size; i++) {
++		v_limb = vp[i];
++		if (v_limb <= 1) {
++			cy = 0;
++			if (v_limb == 1)
++				cy = mpihelp_add_n(prodp, prodp, up, size);
++		} else
++			cy = mpihelp_addmul_1(prodp, up, size, v_limb);
++
++		prodp[size] = cy;
++		prodp++;
++	}
++
++	return cy;
++}
++
++static void
++mul_n(mpi_ptr_t prodp, mpi_ptr_t up, mpi_ptr_t vp,
++		mpi_size_t size, mpi_ptr_t tspace)
++{
++	if (size & 1) {
++		/* The size is odd, and the code below doesn't handle that.
++		 * Multiply the least significant (size - 1) limbs with a recursive
++		 * call, and handle the most significant limb of S1 and S2
++		 * separately.
++		 * A slightly faster way to do this would be to make the Karatsuba
++		 * code below behave as if the size were even, and let it check for
++		 * odd size in the end.  I.e., in essence move this code to the end.
++		 * Doing so would save us a recursive call, and potentially make the
++		 * stack grow a lot less.
++		 */
++		mpi_size_t esize = size - 1;	/* even size */
++		mpi_limb_t cy_limb;
++
++		MPN_MUL_N_RECURSE(prodp, up, vp, esize, tspace);
++		cy_limb = mpihelp_addmul_1(prodp + esize, up, esize, vp[esize]);
++		prodp[esize + esize] = cy_limb;
++		cy_limb = mpihelp_addmul_1(prodp + esize, vp, size, up[esize]);
++		prodp[esize + size] = cy_limb;
++	} else {
++		/* Anatolij Alekseevich Karatsuba's divide-and-conquer algorithm.
++		 *
++		 * Split U in two pieces, U1 and U0, such that
++		 * U = U0 + U1*(B**n),
++		 * and V in V1 and V0, such that
++		 * V = V0 + V1*(B**n).
++		 *
++		 * UV is then computed recursively using the identity
++		 *
++		 *        2n   n          n                     n
++		 * UV = (B  + B )U V  +  B (U -U )(V -V )  +  (B + 1)U V
++		 *                1 1        1  0   0  1              0 0
++		 *
++		 * Where B = 2**BITS_PER_MP_LIMB.
++		 */
++		mpi_size_t hsize = size >> 1;
++		mpi_limb_t cy;
++		int negflg;
++
++		/* Product H.      ________________  ________________
++		 *                |_____U1 x V1____||____U0 x V0_____|
++		 * Put result in upper part of PROD and pass low part of TSPACE
++		 * as new TSPACE.
++		 */
++		MPN_MUL_N_RECURSE(prodp + size, up + hsize, vp + hsize, hsize,
++				  tspace);
++
++		/* Product M.      ________________
++		 *                |_(U1-U0)(V0-V1)_|
++		 */
++		if (mpihelp_cmp(up + hsize, up, hsize) >= 0) {
++			mpihelp_sub_n(prodp, up + hsize, up, hsize);
++			negflg = 0;
++		} else {
++			mpihelp_sub_n(prodp, up, up + hsize, hsize);
++			negflg = 1;
++		}
++		if (mpihelp_cmp(vp + hsize, vp, hsize) >= 0) {
++			mpihelp_sub_n(prodp + hsize, vp + hsize, vp, hsize);
++			negflg ^= 1;
++		} else {
++			mpihelp_sub_n(prodp + hsize, vp, vp + hsize, hsize);
++			/* No change of NEGFLG.  */
++		}
++		/* Read temporary operands from low part of PROD.
++		 * Put result in low part of TSPACE using upper part of TSPACE
++		 * as new TSPACE.
++		 */
++		MPN_MUL_N_RECURSE(tspace, prodp, prodp + hsize, hsize,
++				  tspace + size);
++
++		/* Add/copy product H. */
++		MPN_COPY(prodp + hsize, prodp + size, hsize);
++		cy = mpihelp_add_n(prodp + size, prodp + size,
++				   prodp + size + hsize, hsize);
++
++		/* Add product M (if NEGFLG M is a negative number) */
++		if (negflg)
++			cy -=
++			    mpihelp_sub_n(prodp + hsize, prodp + hsize, tspace,
++					  size);
++		else
++			cy +=
++			    mpihelp_add_n(prodp + hsize, prodp + hsize, tspace,
++					  size);
++
++		/* Product L.      ________________  ________________
++		 *                |________________||____U0 x V0_____|
++		 * Read temporary operands from low part of PROD.
++		 * Put result in low part of TSPACE using upper part of TSPACE
++		 * as new TSPACE.
++		 */
++		MPN_MUL_N_RECURSE(tspace, up, vp, hsize, tspace + size);
++
++		/* Add/copy Product L (twice) */
++
++		cy += mpihelp_add_n(prodp + hsize, prodp + hsize, tspace, size);
++		if (cy)
++			mpihelp_add_1(prodp + hsize + size,
++				      prodp + hsize + size, hsize, cy);
++
++		MPN_COPY(prodp, tspace, hsize);
++		cy = mpihelp_add_n(prodp + hsize, prodp + hsize, tspace + hsize,
++				   hsize);
++		if (cy)
++			mpihelp_add_1(prodp + size, prodp + size, size, 1);
++	}
++}
++
++void mpih_sqr_n_basecase(mpi_ptr_t prodp, mpi_ptr_t up, mpi_size_t size)
++{
++	mpi_size_t i;
++	mpi_limb_t cy_limb;
++	mpi_limb_t v_limb;
++
++	/* Multiply by the first limb in V separately, as the result can be
++	 * stored (not added) to PROD.  We also avoid a loop for zeroing.  */
++	v_limb = up[0];
++	if (v_limb <= 1) {
++		if (v_limb == 1)
++			MPN_COPY(prodp, up, size);
++		else
++			MPN_ZERO(prodp, size);
++		cy_limb = 0;
++	} else
++		cy_limb = mpihelp_mul_1(prodp, up, size, v_limb);
++
++	prodp[size] = cy_limb;
++	prodp++;
++
++	/* For each iteration in the outer loop, multiply one limb from
++	 * U with one limb from V, and add it to PROD.  */
++	for (i = 1; i < size; i++) {
++		v_limb = up[i];
++		if (v_limb <= 1) {
++			cy_limb = 0;
++			if (v_limb == 1)
++				cy_limb = mpihelp_add_n(prodp, prodp, up, size);
++		} else
++			cy_limb = mpihelp_addmul_1(prodp, up, size, v_limb);
++
++		prodp[size] = cy_limb;
++		prodp++;
++	}
++}
++
++void
++mpih_sqr_n(mpi_ptr_t prodp, mpi_ptr_t up, mpi_size_t size, mpi_ptr_t tspace)
++{
++	if (size & 1) {
++		/* The size is odd, and the code below doesn't handle that.
++		 * Multiply the least significant (size - 1) limbs with a recursive
++		 * call, and handle the most significant limb of S1 and S2
++		 * separately.
++		 * A slightly faster way to do this would be to make the Karatsuba
++		 * code below behave as if the size were even, and let it check for
++		 * odd size in the end.  I.e., in essence move this code to the end.
++		 * Doing so would save us a recursive call, and potentially make the
++		 * stack grow a lot less.
++		 */
++		mpi_size_t esize = size - 1;	/* even size */
++		mpi_limb_t cy_limb;
++
++		MPN_SQR_N_RECURSE(prodp, up, esize, tspace);
++		cy_limb = mpihelp_addmul_1(prodp + esize, up, esize, up[esize]);
++		prodp[esize + esize] = cy_limb;
++		cy_limb = mpihelp_addmul_1(prodp + esize, up, size, up[esize]);
++
++		prodp[esize + size] = cy_limb;
++	} else {
++		mpi_size_t hsize = size >> 1;
++		mpi_limb_t cy;
++
++		/* Product H.      ________________  ________________
++		 *                |_____U1 x U1____||____U0 x U0_____|
++		 * Put result in upper part of PROD and pass low part of TSPACE
++		 * as new TSPACE.
++		 */
++		MPN_SQR_N_RECURSE(prodp + size, up + hsize, hsize, tspace);
++
++		/* Product M.      ________________
++		 *                |_(U1-U0)(U0-U1)_|
++		 */
++		if (mpihelp_cmp(up + hsize, up, hsize) >= 0)
++			mpihelp_sub_n(prodp, up + hsize, up, hsize);
++		else
++			mpihelp_sub_n(prodp, up, up + hsize, hsize);
++
++		/* Read temporary operands from low part of PROD.
++		 * Put result in low part of TSPACE using upper part of TSPACE
++		 * as new TSPACE.  */
++		MPN_SQR_N_RECURSE(tspace, prodp, hsize, tspace + size);
++
++		/* Add/copy product H  */
++		MPN_COPY(prodp + hsize, prodp + size, hsize);
++		cy = mpihelp_add_n(prodp + size, prodp + size,
++				   prodp + size + hsize, hsize);
++
++		/* Add product M (if NEGFLG M is a negative number).  */
++		cy -= mpihelp_sub_n(prodp + hsize, prodp + hsize, tspace, size);
++
++		/* Product L.      ________________  ________________
++		 *                |________________||____U0 x U0_____|
++		 * Read temporary operands from low part of PROD.
++		 * Put result in low part of TSPACE using upper part of TSPACE
++		 * as new TSPACE.  */
++		MPN_SQR_N_RECURSE(tspace, up, hsize, tspace + size);
++
++		/* Add/copy Product L (twice).  */
++		cy += mpihelp_add_n(prodp + hsize, prodp + hsize, tspace, size);
++		if (cy)
++			mpihelp_add_1(prodp + hsize + size,
++				      prodp + hsize + size, hsize, cy);
++
++		MPN_COPY(prodp, tspace, hsize);
++		cy = mpihelp_add_n(prodp + hsize, prodp + hsize, tspace + hsize,
++				   hsize);
++		if (cy)
++			mpihelp_add_1(prodp + size, prodp + size, size, 1);
++	}
++}
++
++/* This should be made into an inline function in gmp.h.  */
++int mpihelp_mul_n(mpi_ptr_t prodp, mpi_ptr_t up, mpi_ptr_t vp, mpi_size_t size)
++{
++	if (up == vp) {
++		if (size < KARATSUBA_THRESHOLD)
++			mpih_sqr_n_basecase(prodp, up, size);
++		else {
++			mpi_ptr_t tspace;
++			tspace = mpi_alloc_limb_space(2 * size);
++			if (!tspace)
++				return -ENOMEM;
++			mpih_sqr_n(prodp, up, size, tspace);
++			mpi_free_limb_space(tspace);
++		}
++	} else {
++		if (size < KARATSUBA_THRESHOLD)
++			mul_n_basecase(prodp, up, vp, size);
++		else {
++			mpi_ptr_t tspace;
++			tspace = mpi_alloc_limb_space(2 * size);
++			if (!tspace)
++				return -ENOMEM;
++			mul_n(prodp, up, vp, size, tspace);
++			mpi_free_limb_space(tspace);
++		}
++	}
++
++	return 0;
++}
++
++int
++mpihelp_mul_karatsuba_case(mpi_ptr_t prodp,
++			   mpi_ptr_t up, mpi_size_t usize,
++			   mpi_ptr_t vp, mpi_size_t vsize,
++			   struct karatsuba_ctx *ctx)
++{
++	mpi_limb_t cy;
++
++	if (!ctx->tspace || ctx->tspace_size < vsize) {
++		if (ctx->tspace)
++			mpi_free_limb_space(ctx->tspace);
++		ctx->tspace = mpi_alloc_limb_space(2 * vsize);
++		if (!ctx->tspace)
++			return -ENOMEM;
++		ctx->tspace_size = vsize;
++	}
++
++	MPN_MUL_N_RECURSE(prodp, up, vp, vsize, ctx->tspace);
++
++	prodp += vsize;
++	up += vsize;
++	usize -= vsize;
++	if (usize >= vsize) {
++		if (!ctx->tp || ctx->tp_size < vsize) {
++			if (ctx->tp)
++				mpi_free_limb_space(ctx->tp);
++			ctx->tp = mpi_alloc_limb_space(2 * vsize);
++			if (!ctx->tp) {
++				if (ctx->tspace)
++					mpi_free_limb_space(ctx->tspace);
++				ctx->tspace = NULL;
++				return -ENOMEM;
++			}
++			ctx->tp_size = vsize;
++		}
++
++		do {
++			MPN_MUL_N_RECURSE(ctx->tp, up, vp, vsize, ctx->tspace);
++			cy = mpihelp_add_n(prodp, prodp, ctx->tp, vsize);
++			mpihelp_add_1(prodp + vsize, ctx->tp + vsize, vsize,
++				      cy);
++			prodp += vsize;
++			up += vsize;
++			usize -= vsize;
++		} while (usize >= vsize);
++	}
++
++	if (usize) {
++		if (usize < KARATSUBA_THRESHOLD) {
++			mpi_limb_t tmp;
++			if (mpihelp_mul(ctx->tspace, vp, vsize, up, usize, &tmp)
++			    < 0)
++				return -ENOMEM;
++		} else {
++			if (!ctx->next) {
++				ctx->next = kzalloc(sizeof *ctx, GFP_KERNEL);
++				if (!ctx->next)
++					return -ENOMEM;
++			}
++			if (mpihelp_mul_karatsuba_case(ctx->tspace,
++						       vp, vsize,
++						       up, usize,
++						       ctx->next) < 0)
++				return -ENOMEM;
++		}
++
++		cy = mpihelp_add_n(prodp, prodp, ctx->tspace, vsize);
++		mpihelp_add_1(prodp + vsize, ctx->tspace + vsize, usize, cy);
++	}
++
++	return 0;
++}
++
++void mpihelp_release_karatsuba_ctx(struct karatsuba_ctx *ctx)
++{
++	struct karatsuba_ctx *ctx2;
++
++	if (ctx->tp)
++		mpi_free_limb_space(ctx->tp);
++	if (ctx->tspace)
++		mpi_free_limb_space(ctx->tspace);
++	for (ctx = ctx->next; ctx; ctx = ctx2) {
++		ctx2 = ctx->next;
++		if (ctx->tp)
++			mpi_free_limb_space(ctx->tp);
++		if (ctx->tspace)
++			mpi_free_limb_space(ctx->tspace);
++		kfree(ctx);
++	}
++}
++
++/* Multiply the natural numbers u (pointed to by UP, with USIZE limbs)
++ * and v (pointed to by VP, with VSIZE limbs), and store the result at
++ * PRODP.  USIZE + VSIZE limbs are always stored, but if the input
++ * operands are normalized.  Return the most significant limb of the
++ * result.
++ *
++ * NOTE: The space pointed to by PRODP is overwritten before finished
++ * with U and V, so overlap is an error.
++ *
++ * Argument constraints:
++ * 1. USIZE >= VSIZE.
++ * 2. PRODP != UP and PRODP != VP, i.e. the destination
++ *    must be distinct from the multiplier and the multiplicand.
++ */
++
++int
++mpihelp_mul(mpi_ptr_t prodp, mpi_ptr_t up, mpi_size_t usize,
++	    mpi_ptr_t vp, mpi_size_t vsize, mpi_limb_t *_result)
++{
++	mpi_ptr_t prod_endp = prodp + usize + vsize - 1;
++	mpi_limb_t cy;
++	struct karatsuba_ctx ctx;
++
++	if (vsize < KARATSUBA_THRESHOLD) {
++		mpi_size_t i;
++		mpi_limb_t v_limb;
++
++		if (!vsize) {
++			*_result = 0;
++			return 0;
++		}
++
++		/* Multiply by the first limb in V separately, as the result can be
++		 * stored (not added) to PROD.  We also avoid a loop for zeroing.  */
++		v_limb = vp[0];
++		if (v_limb <= 1) {
++			if (v_limb == 1)
++				MPN_COPY(prodp, up, usize);
++			else
++				MPN_ZERO(prodp, usize);
++			cy = 0;
++		} else
++			cy = mpihelp_mul_1(prodp, up, usize, v_limb);
++
++		prodp[usize] = cy;
++		prodp++;
++
++		/* For each iteration in the outer loop, multiply one limb from
++		 * U with one limb from V, and add it to PROD.  */
++		for (i = 1; i < vsize; i++) {
++			v_limb = vp[i];
++			if (v_limb <= 1) {
++				cy = 0;
++				if (v_limb == 1)
++					cy = mpihelp_add_n(prodp, prodp, up,
++							   usize);
++			} else
++				cy = mpihelp_addmul_1(prodp, up, usize, v_limb);
++
++			prodp[usize] = cy;
++			prodp++;
++		}
++
++		*_result = cy;
++		return 0;
++	}
++
++	memset(&ctx, 0, sizeof ctx);
++	if (mpihelp_mul_karatsuba_case(prodp, up, usize, vp, vsize, &ctx) < 0)
++		return -ENOMEM;
++	mpihelp_release_karatsuba_ctx(&ctx);
++	*_result = *prod_endp;
++	return 0;
++}
+diff --git a/lib/mpi/mpiutil.c b/lib/mpi/mpiutil.c
+new file mode 100644
+index 0000000..eefc55d
+--- /dev/null
++++ b/lib/mpi/mpiutil.c
+@@ -0,0 +1,208 @@
++/* mpiutil.ac  -  Utility functions for MPI
++ * Copyright (C) 1998, 1999 Free Software Foundation, Inc.
 + *
 + * This file is part of GnuPG.
 + *
@@ -1428,120 +2644,192 @@ index 0000000..b2da5ad
 + */
 +
 +#include "mpi-internal.h"
-+#include "longlong.h"
 +
 +/****************
-+ * Scan through an mpi and return byte for byte. a -1 is returned to indicate
-+ * the end of the mpi. Scanning is done from the lsb to the msb, returned
-+ * values are in the range of 0 .. 255.
++ * Note:  It was a bad idea to use the number of limbs to allocate
++ *	  because on a alpha the limbs are large but we normally need
++ *	  integers of n bits - So we should chnage this to bits (or bytes).
 + *
-+ * FIXME: This code is VERY ugly!
++ *	  But mpi_alloc is used in a lot of places :-)
 + */
-+int mpi_getbyte(const MPI a, unsigned idx)
++MPI mpi_alloc(unsigned nlimbs)
 +{
-+	int i, j;
-+	unsigned n;
-+	mpi_ptr_t ap;
-+	mpi_limb_t limb;
++	MPI a;
 +
-+	ap = a->d;
-+	for (n = 0, i = 0; i < a->nlimbs; i++) {
-+		limb = ap[i];
-+		for (j = 0; j < BYTES_PER_MPI_LIMB; j++, n++)
-+			if (n == idx)
-+				return (limb >> j * 8) & 0xff;
-+	}
-+	return -1;
-+}
++	a = kmalloc(sizeof *a, GFP_KERNEL);
++	if (!a)
++		return a;
 +
-+/****************
-+ * Put a value at position IDX into A. idx counts from lsb to msb
-+ */
-+void mpi_putbyte(MPI a, unsigned idx, int xc)
-+{
-+	int i, j;
-+	unsigned n;
-+	mpi_ptr_t ap;
-+	mpi_limb_t limb, c;
-+
-+	c = xc & 0xff;
-+	ap = a->d;
-+	for (n = 0, i = 0; i < a->alloced; i++) {
-+		limb = ap[i];
-+		for (j = 0; j < BYTES_PER_MPI_LIMB; j++, n++)
-+			if (n == idx) {
-+#if BYTES_PER_MPI_LIMB == 4
-+				if (j == 0)
-+					limb = (limb & 0xffffff00) | c;
-+				else if (j == 1)
-+					limb = (limb & 0xffff00ff) | (c << 8);
-+				else if (j == 2)
-+					limb = (limb & 0xff00ffff) | (c << 16);
-+				else
-+					limb = (limb & 0x00ffffff) | (c << 24);
-+#elif BYTES_PER_MPI_LIMB == 8
-+				if (j == 0)
-+					limb = (limb & 0xffffffffffffff00) | c;
-+				else if (j == 1)
-+					limb =
-+					    (limb & 0xffffffffffff00ff) | (c <<
-+									   8);
-+				else if (j == 2)
-+					limb =
-+					    (limb & 0xffffffffff00ffff) | (c <<
-+									   16);
-+				else if (j == 3)
-+					limb =
-+					    (limb & 0xffffffff00ffffff) | (c <<
-+									   24);
-+				else if (j == 4)
-+					limb =
-+					    (limb & 0xffffff00ffffffff) | (c <<
-+									   32);
-+				else if (j == 5)
-+					limb =
-+					    (limb & 0xffff00ffffffffff) | (c <<
-+									   40);
-+				else if (j == 6)
-+					limb =
-+					    (limb & 0xff00ffffffffffff) | (c <<
-+									   48);
-+				else
-+					limb =
-+					    (limb & 0x00ffffffffffffff) | (c <<
-+									   56);
-+#else
-+#error please enhance this function, its ugly - i know.
-+#endif
-+				if (a->nlimbs <= i)
-+					a->nlimbs = i + 1;
-+				ap[i] = limb;
-+				return;
-+			}
-+	}
-+	log_bug("index out of range\n");
-+}
-+
-+/****************
-+ * Count the number of zerobits at the low end of A
-+ */
-+unsigned mpi_trailing_zeros(const MPI a)
-+{
-+	unsigned n, count = 0;
-+
-+	for (n = 0; n < a->nlimbs; n++) {
-+		if (a->d[n]) {
-+			unsigned nn;
-+			mpi_limb_t alimb = a->d[n];
-+
-+			count_trailing_zeros(nn, alimb);
-+			count += nn;
-+			break;
++	if (nlimbs) {
++		a->d = mpi_alloc_limb_space(nlimbs);
++		if (!a->d) {
++			kfree(a);
++			return NULL;
 +		}
-+		count += BITS_PER_MPI_LIMB;
++	} else {
++		a->d = NULL;
 +	}
-+	return count;
 +
++	a->alloced = nlimbs;
++	a->nlimbs = 0;
++	a->sign = 0;
++	a->flags = 0;
++	a->nbits = 0;
++	return a;
++}
++EXPORT_SYMBOL_GPL(mpi_alloc);
++
++mpi_ptr_t mpi_alloc_limb_space(unsigned nlimbs)
++{
++	size_t len = nlimbs * sizeof(mpi_limb_t);
++
++	return kmalloc(len, GFP_KERNEL);
++}
++
++void mpi_free_limb_space(mpi_ptr_t a)
++{
++	if (!a)
++		return;
++
++	kfree(a);
++}
++
++void mpi_assign_limb_space(MPI a, mpi_ptr_t ap, unsigned nlimbs)
++{
++	mpi_free_limb_space(a->d);
++	a->d = ap;
++	a->alloced = nlimbs;
++}
++
++/****************
++ * Resize the array of A to NLIMBS. the additional space is cleared
++ * (set to 0) [done by m_realloc()]
++ */
++int mpi_resize(MPI a, unsigned nlimbs)
++{
++	void *p;
++
++	if (nlimbs <= a->alloced)
++		return 0;	/* no need to do it */
++
++	if (a->d) {
++		p = kmalloc(nlimbs * sizeof(mpi_limb_t), GFP_KERNEL);
++		if (!p)
++			return -ENOMEM;
++		memcpy(p, a->d, a->alloced * sizeof(mpi_limb_t));
++		kfree(a->d);
++		a->d = p;
++	} else {
++		a->d = kzalloc(nlimbs * sizeof(mpi_limb_t), GFP_KERNEL);
++		if (!a->d)
++			return -ENOMEM;
++	}
++	a->alloced = nlimbs;
++	return 0;
++}
++
++void mpi_clear(MPI a)
++{
++	a->nlimbs = 0;
++	a->nbits = 0;
++	a->flags = 0;
++}
++
++void mpi_free(MPI a)
++{
++	if (!a)
++		return;
++
++	if (a->flags & 4)
++		kfree(a->d);
++	else
++		mpi_free_limb_space(a->d);
++
++	if (a->flags & ~7)
++		pr_info("invalid flag value in mpi\n");
++	kfree(a);
++}
++EXPORT_SYMBOL_GPL(mpi_free);
++
++/****************
++ * Note: This copy function should not interpret the MPI
++ *	 but copy it transparently.
++ */
++int mpi_copy(MPI *copied, const MPI a)
++{
++	size_t i;
++	MPI b;
++
++	*copied = MPI_NULL;
++
++	if (a) {
++		b = mpi_alloc(a->nlimbs);
++		if (!b)
++			return -ENOMEM;
++
++		b->nlimbs = a->nlimbs;
++		b->sign = a->sign;
++		b->flags = a->flags;
++		b->nbits = a->nbits;
++
++		for (i = 0; i < b->nlimbs; i++)
++			b->d[i] = a->d[i];
++
++		*copied = b;
++	}
++
++	return 0;
++}
++
++int mpi_set(MPI w, const MPI u)
++{
++	mpi_ptr_t wp, up;
++	mpi_size_t usize = u->nlimbs;
++	int usign = u->sign;
++
++	if (RESIZE_IF_NEEDED(w, (size_t) usize) < 0)
++		return -ENOMEM;
++
++	wp = w->d;
++	up = u->d;
++	MPN_COPY(wp, up, usize);
++	w->nlimbs = usize;
++	w->nbits = u->nbits;
++	w->flags = u->flags;
++	w->sign = usign;
++	return 0;
++}
++
++int mpi_set_ui(MPI w, unsigned long u)
++{
++	if (RESIZE_IF_NEEDED(w, 1) < 0)
++		return -ENOMEM;
++	w->d[0] = u;
++	w->nlimbs = u ? 1 : 0;
++	w->sign = 0;
++	w->nbits = 0;
++	w->flags = 0;
++	return 0;
++}
++
++MPI mpi_alloc_set_ui(unsigned long u)
++{
++	MPI w = mpi_alloc(1);
++	if (!w)
++		return w;
++	w->d[0] = u;
++	w->nlimbs = u ? 1 : 0;
++	w->sign = 0;
++	return w;
++}
++
++void mpi_swap(MPI a, MPI b)
++{
++	struct gcry_mpi tmp;
++
++	tmp = *a;
++	*a = *b;
++	*b = tmp;
 +}
 -- 
 1.7.4.1
