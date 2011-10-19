@@ -1,61 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab1JSBAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 21:00:00 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:19606 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab1JSA76 (ORCPT
+	id S1752086Ab1JSBHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 21:07:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44648 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab1JSBHN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 20:59:58 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=sKolLDQWWG7VHhYxuL5eZVQgmKwD/I8M3FVRqvyj4gNqLUY9xnZNI+kRkv3He0Yrx
-	ylcnkHj36f/kQbrlVNouA==
-Date: Tue, 18 Oct 2011 17:59:47 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andi Kleen <andi@firstfloor.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: munlock use mapcount to avoid terrible overhead
-In-Reply-To: <m262jlzv1v.fsf@firstfloor.org>
-Message-ID: <alpine.LSU.2.00.1110181757080.4283@sister.anvils>
-References: <alpine.LSU.2.00.1110181700400.3361@sister.anvils> <m262jlzv1v.fsf@firstfloor.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 18 Oct 2011 21:07:13 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <20111018182958.GS20828@google.com>
+References: <1318896400-32498-1-git-send-email-msb@chromium.org>
+	<CABqxG0eKhaGUMvdNMOdahnqdYiT8i+3Hhf8vbQyq8TEJUOU0Lg@mail.gmail.com>
+	<CABqxG0cP8Vc1FiAoOSB7cWdJyS=c0eFx1Hj6nY9GY=uTL_EgHg@mail.gmail.com>
+	<20111018182958.GS20828@google.com>
+Date: Wed, 19 Oct 2011 09:07:12 +0800
+Message-ID: <CABqxG0ekuqGDiFRsE9p1J2FubWo3J+SufwuUC=56JCSF3dVoTA@mail.gmail.com>
+Subject: Re: [PATCH] drm: avoid switching to text console if there is no panic timeout
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org, marcheu@chromium.org,
+        rientjes@google.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Andi Kleen wrote:
-> Hugh Dickins <hughd@google.com> writes:
-> 
-> > A process spent 30 minutes exiting, just munlocking the pages of a large
-> > anonymous area that had been alternately mprotected into page-sized vmas:
-> > for every single page there's an anon_vma walk through all the other
-> > little vmas to find the right one.
-> 
-> We had the same problem recently after a mmap+touch workload: in this
-> case it was hugepaged walking all these anon_vmas and the list was over
-> 100k long. 
-> 
-> Had some data on this at plumbers:
-> http://halobates.de/plumbers-fork-locks_v2.pdf
-> 
-> > A general fix to that would be a lot more complicated (use prio_tree on
-> > anon_vma?), but there's one very simple thing we can do to speed up the
-> > common case: if a page to be munlocked is mapped only once, then it is
-> > our vma that it is mapped into, and there's no need whatever to walk
-> > through all the others.
-> 
-> I think we need a generic fix, this problem does not only happen
-> in munmap. 
+On Wed, Oct 19, 2011 at 2:29 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> Dave Young (hidave.darkstar@gmail.com) wrote:
+>> On Tue, Oct 18, 2011 at 10:19 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>> > On Tue, Oct 18, 2011 at 8:06 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
+>> >> From: Hugh Dickins <hughd@chromium.org>
+>> >>
+>> >> Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
+>> >> we're going to reboot immediately, the user will not be able to see the
+>> >> messages anyway, and messing with the video mode may display artifacts,
+>> >> and certainly get into several layers of complexity (including mutexes and
+>> >> memory allocations) which we shall be much safer to avoid.
+>> >
+>> > There's one exception is use printk_delay
+>>
+>> OTOH the complexity do exist also when timeout is set, IMHO it is worth
+>>
+>
+> Hi Dave,
+>
+> I agree. The complexity is worth it if you want to see the panic trace
+> on the VT. But if you have the panic_timeout negative (i.e. reboot
+> immediately) than you're just add more risk/complexity to panic for no
+> benefit.
+>
+>
+> To avoid losing the panic traces, a reliable panic is critical.
+>
+> In our app, we use panic_timeout=-1 and we use ramoops for capturing panic
+> traces. We want the panic path to be as simple as possible to avoid
+> wedging machines and to avoid losing panic traces. In our test lab,
+> if a machine gets wedged, a human needs to go and power cycle the machine
+> to bring it back online.
+>
+> For user devices, we want to panic quickly and get the device back up
+> ASAP. Our reboot time is under 8 seconds so its less than 10 seconds before
+> you're back online and surfing the web. We also want to avoid displaying any
+> artifacts or traces to the user when panicking.
+>
+> You bring up a good point about printk_delay. But I'm thinking if you're
+> using prink_delay you'd also want to set panic_timeout >= 0. Otherwise,
+> you'd reboot immediately after displaying the last line of output.
 
-Thanks for the pointer, Andi, I'll have to look into it when I've a
-moment; but I don't look forward to making this area more complicated.
+fair enough, thanks.
 
-Hugh
+>
+> Regards,
+> Mandeep
+>
+>> >
+>> >>
+>> >> Signed-off-by: Hugh Dickins <hughd@google.com>
+>> >> [ Edited commit message and modified to short-circuit panic_timeout < 0
+>> >>  instead of testing panic_timeout >= 0.  -Mandeep ]
+>> >> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+>> >> Cc: Dave Airlie <airlied@redhat.com>
+>> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> >> Cc: dri-devel@lists.freedesktop.org
+>> >> ---
+>> >>  drivers/gpu/drm/drm_fb_helper.c |    7 +++++++
+>> >>  1 files changed, 7 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+>> >> index f7c6854..0e62c93 100644
+>> >> --- a/drivers/gpu/drm/drm_fb_helper.c
+>> >> +++ b/drivers/gpu/drm/drm_fb_helper.c
+>> >> @@ -254,6 +254,13 @@ bool drm_fb_helper_force_kernel_mode(void)
+>> >>  int drm_fb_helper_panic(struct notifier_block *n, unsigned long ununsed,
+>> >>                        void *panic_str)
+>> >>  {
+>> >> +       /*
+>> >> +        * It's a waste of time and effort to switch back to text console
+>> >> +        * if the kernel should reboot before panic messages can be seen.
+>> >> +        */
+>> >> +       if (panic_timeout < 0)
+>> >> +               return 0;
+>> >> +
+>> >>        printk(KERN_ERR "panic occurred, switching back to text console\n");
+>> >>        return drm_fb_helper_force_kernel_mode();
+>> >>  }
+>> >> --
+>> >> 1.7.3.1
+>> >>
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >> the body of a message to majordomo@vger.kernel.org
+>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >> Please read the FAQ at  http://www.tux.org/lkml/
+>> >>
+>> >
+>> >
+>> >
+>> > --
+>> > Regards
+>> > Dave
+>> >
+>>
+>>
+>>
+>> --
+>> Regards
+>> Dave
+>
+
+
+
+-- 
+Regards
+Dave
