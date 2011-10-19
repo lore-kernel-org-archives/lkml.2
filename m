@@ -1,137 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab1JSHkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:40:40 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19330 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1JSHkj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:40:39 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=J7OXZGld78h/wy1MtDrKDYKXTuQYLbpInlyGeIKZup58fFW8+HM06D8piYP1wcRyy
-	EYCt6XgIkThVrB6ww+GTg==
+	id S1754773Ab1JSHnn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:43:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35021 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753233Ab1JSHnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:43:42 -0400
+Date: Wed, 19 Oct 2011 09:43:36 +0200
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Message-ID: <20111019074336.GB3410@suse.de>
+References: <201110122012.33767.pluto@agmk.net>
+ <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+ <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+ <20111016235442.GB25266@redhat.com>
+ <alpine.LSU.2.00.1110171111150.2545@sister.anvils>
 MIME-Version: 1.0
-In-Reply-To: <1316115647-1244-1-git-send-email-djkurtz@chromium.org>
-References: <1316115647-1244-1-git-send-email-djkurtz@chromium.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 19 Oct 2011 15:40:16 +0800
-X-Google-Sender-Auth: u035HbfnpQBrGvB-fL2KzVMVfZw
-Message-ID: <CAGS+omDJM700h22zsAQZRn_9qCcUk1gJsKN0GzQxG7FkK-PRsQ@mail.gmail.com>
-Subject: Re: [PATCH] Input: atmel_mxt_ts - Use snprintf for sysfs attribute
- show method
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1110171111150.2545@sister.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Mon, Oct 17, 2011 at 11:51:00AM -0700, Hugh Dickins wrote:
+> On Mon, 17 Oct 2011, Andrea Arcangeli wrote:
+> > On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
+> > > mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+> > > and pagetable locks, were good enough before page migration (with its
+> > > requirement that every migration entry be found) came in; and enough
+> > > while migration always held mmap_sem.  But not enough nowadays, when
+> > > there's memory hotremove and compaction: anon_vma lock is also needed,
+> > > to make sure a migration entry is not dodging around behind our back.
+> > 
+> > For things like migrate and split_huge_page, the anon_vma layer must
+> > guarantee the page is reachable by rmap walk at all times regardless
+> > if it's at the old or new address.
+> > 
+> > This shall be guaranteed by the copy_vma called by move_vma well
+> > before move_page_tables/move_ptes can run.
+> > 
+> > copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
+> > into the anon_vma chains structures (vma_link does that). That before
+> > any pte can be moved.
+> > 
+> > Because we keep two vmas mapped on both src and dst range, with
+> > different vma->vm_pgoff that is valid for the page (the page doesn't
+> > change its page->index) the page should always find _all_ its pte at
+> > any given time.
+> > 
+> > There may be other variables at play like the order of insertion in
+> > the anon_vma chain matches our direction of copy and removal of the
+> > old pte. But I think the double locking of the PT lock should make the
+> > order in the anon_vma chain absolutely irrelevant (the rmap_walk
+> > obviously takes the PT lock too), and furthermore likely the
+> > anon_vma_chain insertion is favorable (the dst vma is inserted last
+> > and checked last). But it shouldn't matter.
+> 
+> Thanks a lot for thinking it over.  I _almost_ agree with you, except
+> there's one aspect that I forgot to highlight in the patch comment:
+> remove_migration_pte() behaves as page_check_address() does by default,
+> it peeks to see if what it wants is there _before_ taking ptlock.
+> 
+> And therefore, I think, it is possible that during mremap move, the swap
+> pte is in neither of the locations it tries at the instant it peeks there.
+> 
 
-I fear the following patch, and its 'Acked-by' from Nick Dyer, may
-have gotten lost:
+I should have read the rest of the thread before responding :/ .
 
-On Fri, Sep 16, 2011 at 3:40 AM, Daniel Kurtz <djkurtz@chromium.org> wrote:
->
-> Sysfs attribute show methods are always passed a buffer of length
-> PAGE_SIZE.  To keep from overwriting this buffer and causing havoc, use
-> snprintf() to guarantee we never write more than the buffer can hold.
->
-> In addition, at least for my touchscreen, the number and size of objects
-> was far too big to fit in a single 4K page.  Therefore, this patch also
-> trims some redundant framing text to leave more room for actual data.
->
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |   21 +++++++++++++++------
->  1 files changed, 15 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index f5d6685..a596c27 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -910,12 +910,17 @@ static ssize_t mxt_object_show(struct device *dev,
->        for (i = 0; i < data->info.object_num; i++) {
->                object = data->object_table + i;
->
-> -               count += sprintf(buf + count,
-> -                               "Object Table Element %d(Type %d)\n",
-> +               count += snprintf(buf + count, PAGE_SIZE - count,
-> +                               "Object[%d] (Type %d)\n",
->                                i + 1, object->type);
-> +               if (count >= PAGE_SIZE)
-> +                       return PAGE_SIZE - 1;
->
->                if (!mxt_object_readable(object->type)) {
-> -                       count += sprintf(buf + count, "\n");
-> +                       count += snprintf(buf + count, PAGE_SIZE - count,
-> +                                       "\n");
-> +                       if (count >= PAGE_SIZE)
-> +                               return PAGE_SIZE - 1;
->                        continue;
->                }
->
-> @@ -925,11 +930,15 @@ static ssize_t mxt_object_show(struct device *dev,
->                        if (error)
->                                return error;
->
-> -                       count += sprintf(buf + count,
-> -                                       "  Byte %d: 0x%x (%d)\n", j, val, val);
-> +                       count += snprintf(buf + count, PAGE_SIZE - count,
-> +                                       "\t[%2d]: %02x (%d)\n", j, val, val);
-> +                       if (count >= PAGE_SIZE)
-> +                               return PAGE_SIZE - 1;
->                }
->
-> -               count += sprintf(buf + count, "\n");
-> +               count += snprintf(buf + count, PAGE_SIZE - count, "\n");
-> +               if (count >= PAGE_SIZE)
-> +                       return PAGE_SIZE - 1;
->        }
->
->        return count;
-> --
-> 1.7.3.1
->
+This makes more sense and is a relief in a sense. There is nothing known
+wrong with the VMA locking or ordering. The correct PTE is found but it is
+in the wrong state.
 
-On Thu, Oct 6, 2011 at 5:59 PM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
-> Hi Daniel-
->
-> Just to introduce myself, I'm working for Atmel in UK on the atmel_mxt_ts
-> driver.
->
-> Daniel Kurtz wrote:
->> Sysfs attribute show methods are always passed a buffer of length
->> PAGE_SIZE.  To keep from overwriting this buffer and causing havoc,
->> use snprintf() to guarantee we never write more than the buffer can
->> hold.
->>
->> In addition, at least for my touchscreen, the number and size of
->> objects was far too big to fit in a single 4K page.  Therefore, this
->> patch also trims some redundant framing text to leave more room for
->> actual data.
->
-> Yes, I'd noticed this problem as well. I was planning to address it by
-> splitting up the file, but your patch looks like a good solution for now.
->
-> I've tested it successfully on several chips.
->
-> Acked-by: Nick Dyer <nick.dyer@itdev.co.uk>
->
-> --
-> Nick Dyer
-> Software Engineer, ITDev  Ltd
->
-> Hardware and Software Development Consultancy
->
-> Email:   nick.dyer@itdev.co.uk
-> Website: http://www.itdev.co.uk
+> We could put a stop to that: see plausible alternative patch below.
+> Though I have dithered from one to the other and back, I think on the
+> whole I still prefer the anon_vma locking in move_ptes(): we don't care
+> too deeply about the speed of mremap, but we do care about the speed of
+
+I still think the anon_vma lock serialises mremap and migration. If that
+is correct, it could cause things like huge page collapsing stalling mremap
+operations. That might cause slowdowns in JVMs during GC which is undesirable.
+
+> exec, and this does add another lock/unlock there, but it will always
+> be uncontended; whereas the patch at the migration end could be adding
+> a contended and unnecessary lock.
+> 
+> Oh, I don't know which, you vote - if you now agree there is a problem.
+> I'll sign off the migrate.c one if you prefer it.  But no hurry.
+> 
+
+My vote is with the migration change. While there are occasionally
+patches to make migration go faster, I don't consider it a hot path.
+mremap may be used intensively by JVMs so I'd loathe to hurt it.
+
+Thanks Hugh.
+
+-- 
+Mel Gorman
+SUSE Labs
