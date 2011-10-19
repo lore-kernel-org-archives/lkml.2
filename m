@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab1JSOrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:47:17 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:35327 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab1JSOrK (ORCPT
+	id S1756604Ab1JSOrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:47:43 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57399 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab1JSOrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:47:10 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        lm-sensors@lm-sensors.org, guenter.roeck@ericsson.com,
-        khali@linux-fr.org, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [RFC V2 PATCH 0/6] IIO in kernel interfaces
-Date: Wed, 19 Oct 2011 15:47:02 +0100
-Message-Id: <1319035628-32580-1-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.7
+	Wed, 19 Oct 2011 10:47:41 -0400
+Date: Wed, 19 Oct 2011 15:47:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: patches@linaro.org, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        Rajendra Nayak <rnayak@ti.com>, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111019144734.GI18713@sirena.org.uk>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <20111016145536.GA29885@S2100-06.ap.freescale.net>
+ <4E9BAC4D.3010402@ti.com>
+ <20111018115836.GC30703@S2100-06.ap.freescale.net>
+ <20111018160046.GD28501@opensource.wolfsonmicro.com>
+ <20111019053354.GB31162@S2100-06.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111019053354.GB31162@S2100-06.ap.freescale.net>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
+On Wed, Oct 19, 2011 at 01:33:55PM +0800, Shawn Guo wrote:
+> On Tue, Oct 18, 2011 at 05:00:46PM +0100, Mark Brown wrote:
 
-Since V1:
-Uses the bus's list of devices instead of having a local one.
-     (thanks to Lars-Peter).
+> > It's not just Linux-specific stuff, some of this is even specific to
+> > what current Linux drivers can do - updating the kernel could mean a
+> > different set of constraints.
 
-Added are interfaces for getting all channels mapped to a particular
-device.
+> Well, from what I see, the 'struct regulation_constraints' is defined
+> in machine.h and meant to be the regulator machine/board interface.
 
-Hwmon driver is now vaguely complete - hence cc'd hwmon. If people
-are happy I'd expect this to ultimately end up in drivers/hmwon.
-Right now it is acting as a test driver for these interfaces.
+...which will depend on the system integrator's understanding of what
+their system is capable of right now.
 
-Thanks and all comments welcome. I've added hwmon to the cc list 
-this time round.
+> With the example I'm looking at, mc13892, the regulation_constraints
+> configuration is fully passed from machine/board file.  If there is
+> something specific to what drivers can do, it probably should be encoded
+> in regulator driver rather than staying in regulation_constraints.
 
-V1 message:
-There are obviously some rough corners in here that will need cleaning up.
-For now I've just put this out there to see if anyone radically disagrees
-on the direction.  It sits on top the recent rfc to move first bit of IIO
-out of staging with a few buglets fixed.  Best bet if anyone wants to
-test is to pull from:
-
-https://github.com/jic23/linux-iio/tree/outofstaging
-
-which now also includes these patches.
-
-Intereresting patches are 3 and 4.  5 gives a trivial example of
-a driver using this (hwmon driver that only takes first matching channel
-and sticks it out as in1_input - breaks all sorts elements of the hwmon
-interface spec.)
-
-For now I've gone with Mark Brown's suggestion of a datasheet_name for
-finding the channels on the device.  Patch 2 hacks this name into the
-max1363 driver.  I'll probably put a version matching on channel number and
-type in at a later date.
-
-Here we just have a pull interface.  Push is considerably harder to do
-and needs quite a lot more of the IIO infrastructure to be in place
-(triggers / buffers etc). Events obviously require IIO event handling
-to be there. Hence all of that will have to wait until those elements
-have in of themselves been posted for review.
-
-It is pretty clear to me that hwmon interface for starters needs the
-ability to say - 'give me all mappings that correspond to me'.
-
-This is what I intend to add next followed by some utility functions
-to make it easy to match the hwmon interface.
-
-At that point I'll propose the hwmon driver goes into drivers/hwmon
-(subject to the underlying iio stuff merging).
-
-Fun fun fun.  Thanks to Linus an Mark for their input on this.
-Hope this is roughly what you guys were looking for.
-
-Also on my list to do is to check this very thoroughly for any
-possible race conditions around the removal of the underlying
-device.
-
-Jonathan
-
-Jonathan Cameron (6):
-  IIO: core: add datasheet_name to chan_spec
-  IIO:ADC:max1363 add datasheet_name entries.
-  IIO:CORE: put defs needed by inkern and userspace interfaces into
-    chan_spec.h
-  IIO:CORE add in kernel interface mapping and getting IIO channels.
-  IIO:hwmon interface client driver.
-  stargate2: example of map configuration for iio to hwmon example.
-
- arch/arm/mach-pxa/stargate2.c  |   23 ++++
- drivers/Makefile               |    2 +-
- drivers/iio/Kconfig            |    8 +
- drivers/iio/Makefile           |    2 +
- drivers/iio/adc/max1363_core.c |    4 +-
- drivers/iio/iio.c              |  279 +++++++++++++++++++++++++++++++++++++++-
- drivers/iio/iio_hwmon.c        |  214 ++++++++++++++++++++++++++++++
- drivers/iio/inkern.c           |   21 +++
- include/linux/iio/chan_spec.h  |   46 +++++++
- include/linux/iio/iio.h        |   41 +-----
- include/linux/iio/inkern.h     |   87 +++++++++++++
- 11 files changed, 687 insertions(+), 40 deletions(-)
- create mode 100644 drivers/iio/iio_hwmon.c
- create mode 100644 drivers/iio/inkern.c
- create mode 100644 include/linux/iio/chan_spec.h
- create mode 100644 include/linux/iio/inkern.h
-
--- 
-1.7.7
-
+I don't think you're quite understanding the issue - it's an integration
+problem with three different variables.  It's a combination of what the
+chips can do, what the drivers can do and if the board design affects
+any of this stuff.  Only the board can come to a final decision.
