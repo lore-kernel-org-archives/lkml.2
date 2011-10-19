@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab1JSWbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:31:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39907 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab1JSWbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:31:13 -0400
-Date: Wed, 19 Oct 2011 15:28:21 -0700
-From: Greg KH <gregkh@suse.de>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+	id S1755279Ab1JSWbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:31:24 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:46041 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755246Ab1JSWbO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:31:14 -0400
+X-Sasl-enc: Y94GErIhM6aaQK6/cNbuc8mHZdmnBq6X3NxTqsF9PxQA 1319063473
+Date: Wed, 19 Oct 2011 15:29:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: jim.cromie@gmail.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/26] staging: et131x: Put all .c files into one big file
-Message-ID: <20111019222821.GB31179@suse.de>
-References: <1318954079-16666-1-git-send-email-mark.einon@gmail.com>
- <1318954079-16666-2-git-send-email-mark.einon@gmail.com>
- <20111019204128.GA6152@kroah.com>
- <CANK3SE2AEKhw8zSXn3jtGggYh8+SS1mX7Kaue6+vU+B5VjAxWg@mail.gmail.com>
+Subject: Re: [PATCH 00/26] dynamic_debug: add pending queries, etc (~resend)
+Message-ID: <20111019222957.GA31311@kroah.com>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+ <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
+ <20111018185218.GA22653@kroah.com>
+ <20111019205703.GC7391@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANK3SE2AEKhw8zSXn3jtGggYh8+SS1mX7Kaue6+vU+B5VjAxWg@mail.gmail.com>
+In-Reply-To: <20111019205703.GC7391@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 10:28:24PM +0100, Mark Einon wrote:
-> On 19 October 2011 21:41, Greg KH <greg@kroah.com> wrote:
-> > On Tue, Oct 18, 2011 at 05:07:34PM +0100, Mark Einon wrote:
-> >> Created one big .c file for the driver, moving the contents of all
-> >> driver .c files into it.
-> >>
-> >> Signed-off-by: Mark Einon <mark.einon@gmail.com>
-> >
-> > Something is wrong here, when I try to apply this patch with git, I get
-> > the following errors:
-> [...]
-> >
-> > Care to resend it with the file actually deleted?  How are you
-> > generating this patch?
-> >
-> > And, when you resend the series, don't put the [RESEND] in the subject,
-> > I had to edit that out in order to apply them properly (which turned out
-> > to be a waste of time due to this patch not applying...)
+On Wed, Oct 19, 2011 at 04:57:03PM -0400, Jason Baron wrote:
+> On Tue, Oct 18, 2011 at 11:52:18AM -0700, Greg KH wrote:
+> > Date: Tue, 18 Oct 2011 11:52:18 -0700
+> > From: Greg KH <greg@kroah.com>
+> > To: jim.cromie@gmail.com, jbaron@redhat.com
+> > Cc: joe@perches.com, bart.vanassche@gmail.com, linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH 00/26] dynamic_debug: add pending queries, etc (~resend)
+> > User-Agent: Mutt/1.5.21 (2010-09-15)
+> > 
+> > On Fri, Oct 07, 2011 at 02:33:06PM -0600, jim.cromie@gmail.com wrote:
+> > > This is essentially a rebase, resend, with trivial changes:
+> > > - drops scx200 - off topic
+> > > - adds pr_cont_once tweak - remove pr_fmt
+> > > as before, it has:
+> > > - Doc tweaks per Randy Dunlap
+> > > - pr_fmt_$severity, suggested by Joe Perches
+> > > - does not change pr_fmt() default, per Joe
+> > > 
+> > > Rebased onto git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
+> > > + Jason's 8-12/12 which havent made it into driver-core
+> > > Ive not resent them here.
+> > 
+> > As stated before, I'm not going to be able to accept these until I get
+> > Jason's ack on them.
+> > 
+> > Jason?
+> > 
 > 
-> Apologies Greg, I didn't mean to waste your time.
+> Hi Greg,
 > 
-> I've used this command to generate the patch, in order not to include
-> the entire file contents that have been deleted:
-> 
-> git format-patch -D <to-list> <patches>
+> Yes, I just replied, in a separate thread on which patches in the series
+> I'd like to include, and which I'd like to drop for now. I expect we'll
+> need another re-post of the series once we've reached a consensus.
 
-I use:
-	git format-patch -k -M
+Ok, I need a resend of what should be applied then, as I'm not going to
+be able to dig through that list and properly match up what should, and
+should not, be applied.  That's for the maintainer of the subsystem to
+do :)
 
-If you read the man page for git format-patch, you will see why "-D"
-does not work at all for this, and this is why I can't apply these
-patches, you are giving me something that is _known_ to not apply:
-
-      -D, --irreversible-delete
-	   Omit the preimage for deletes, i.e. print only the header but
-	   not the diff between the preimage and /dev/null. The
-	   resulting patch is not meant to be applied with patch nor git
-	   apply; this is solely for people who want to just concentrate
-	   on reviewing the text after the change. In addition, the
-	   output obviously lack enough information to apply such a
-	   patch in reverse, even manually, hence the name of the
-	   option.
-
-> I also assumed RESEND was commonly used for the purpose of resending
-> patches. Is this not the case?
-
-Yes, but you did it this way:
-	[RESEND][PATCH 02/XX]
-and git will just strip off the first [] chunk when applying it.  So
-unless I wanted the [PATCH...] portion in the changelog, I had to delete
-it by hand.
-
-You can do:
-	[RESEND PATCH 03/XX]
-and all would be almost ok, but when I sort the emails, it would break
-order.
-
-So best is:
-	[PATCH 03/XX RESEND]
-if you really need the RESEND comment.  Personally, I would only do that
-in the [00/XX] patch as that's what counts here.  You aren't resending
-because I ignored them, but because there was a problem with them, so
-you know I didn't apply those original ones.
-
-hope this helps,
+thanks,
 
 greg k-h
