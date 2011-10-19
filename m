@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1JSEF4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:05:56 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:52511 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab1JSEFu (ORCPT
+	id S1754718Ab1JSEFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:05:55 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48838 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754616Ab1JSEFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:05:50 -0400
-Message-Id: <e97c6e$3qqv6i@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128810194"
+	Wed, 19 Oct 2011 00:05:48 -0400
+Message-Id: <093448$3qutot@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939805"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 18 Oct 2011 22:48:27 -0500
-Subject: [PATCH v5 36/36] Add extra arch overrides to asm-generic/checksum.h
+Date: Tue, 18 Oct 2011 22:48:06 -0500
+Subject: [PATCH v5 35/36] Hexagon: Add self to MAINTAINERS
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are plausible reasons for architectures to provide their own
-versions of csum_partial_copy_nocheck and csum_tcpudp_magic.
-By protecting these, the architecture can still re-use the
-asm-generic checksum.h, instead of copying it.
-
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- include/asm-generic/checksum.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/checksum.h b/include/asm-generic/checksum.h
-index 4647c76..c084767 100644
---- a/include/asm-generic/checksum.h
-+++ b/include/asm-generic/checksum.h
-@@ -33,8 +33,10 @@ extern __wsum csum_partial_copy(const void *src, void *dst, int len, __wsum sum)
- extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
- 					int len, __wsum sum, int *csum_err);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ace8f9c..94a73fc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5288,6 +5288,12 @@ F:	fs/qnx4/
+ F:	include/linux/qnx4_fs.h
+ F:	include/linux/qnxtypes.h
  
-+#ifndef csum_partial_copy_nocheck
- #define csum_partial_copy_nocheck(src, dst, len, sum)	\
- 	csum_partial_copy((src), (dst), (len), (sum))
-+#endif
- 
- /*
-  * This is a version of ip_compute_csum() optimized for IP headers,
-@@ -63,12 +65,14 @@ csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
- 		unsigned short proto, __wsum sum);
- #endif
- 
-+#ifndef csum_tcpudp_magic
- static inline __sum16
- csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
- 		  unsigned short proto, __wsum sum)
- {
- 	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
- }
-+#endif
- 
- /*
-  * this routine is used for miscellaneous IP-like checksums, mainly
++QUALCOMM HEXAGON ARCHITECTURE
++M:	Richard Kuo <rkuo@codeaurora.org>
++L:	linux-hexagon@vger.kernel.org
++S:	Supported
++F:	arch/hexagon/
++
+ RADOS BLOCK DEVICE (RBD)
+ F:	include/linux/qnxtypes.h
+ M:	Yehuda Sadeh <yehuda@hq.newdream.net>
 -- 
 1.7.1
 
