@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab1JSRt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:49:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49588 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755845Ab1JSRt5 (ORCPT
+	id S1751483Ab1JSSE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:04:27 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:35462
+	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab1JSSE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:49:57 -0400
-Date: Wed, 19 Oct 2011 10:49:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
-Subject: Re: [PATCH 07/10] block: reorganize throtl_get_tg() and
- blk_throtl_bio()
-Message-ID: <20111019174952.GI25124@google.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-8-git-send-email-tj@kernel.org>
- <20111019145622.GE1140@redhat.com>
- <20111019170625.GD25124@google.com>
- <20111019171917.GA4026@redhat.com>
- <20111019173053.GG25124@google.com>
- <20111019174556.GJ1140@redhat.com>
+	Wed, 19 Oct 2011 14:04:26 -0400
+Message-ID: <4E9F1128.8080207@kernel.dk>
+Date: Wed, 19 Oct 2011 20:04:24 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019174556.GJ1140@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, vgoyal@redhat.com, ctalbott@google.com,
+        rni@google.com
+Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by making
+ blk_queue_cleanup() proper shutdown
+References: <1318998384-22525-1-git-send-email-tj@kernel.org> <1318998384-22525-11-git-send-email-tj@kernel.org> <4E9EC602.5010207@kernel.dk> <20111019171354.GF25124@google.com>
+In-Reply-To: <20111019171354.GF25124@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Oct 19, 2011 at 01:45:56PM -0400, Vivek Goyal wrote:
-> > Hmmmm, yeah, right, switching itself would be racy.  Maybe not sharing
-> > is the solution, I don't know.  There's a way to make the switching
-> > safe tho.  Sth like the following.
-> > 
-> > 	lock_queue(q, flags)
-> > 	{
-> > 		spinlock_t *lock;
-> > 
-> > 		local_irq_save(flags);
-> > 		lock = rcu_dereference_sched(q->queue_lock);
-> > 		spin_lock(lock);
-> > 	}
-> > 
-> > and on cleanup, do synchronize_sched() after lock switching.  But yeah
-> > it still stinks.
+On 2011-10-19 19:13, Tejun Heo wrote:
+> On Wed, Oct 19, 2011 at 02:43:46PM +0200, Jens Axboe wrote:
+>> This patch clashes a bit with the previous "fix" for getting rid of
+>> privately assigned queue locks. I've kept that single bit.
 > 
-> rcu protected spinlocks. Interesting. :-)
+> Ah, okay, that's the private queue_lock thing Vivek mentioned in the
+> earlier reply.  Nice that it's already fixed.
 
-:)
-
-> IIUC, it still leaves the window open that two callers think they have
-> the spinlock. One is holding the driver provided lock and other is holding
-> the queue private lock.
-
-On blk_cleanup_queue() completion, the two are disjoint, so that
-shouldn't be a problem.  Block layer won't call into low level drivers
-and low level drivers aren't supposed to call into block layer either.
-
-Thanks.
+Yep, exactly. I ended up pulling 3.1-rc10 into for-3.2/core to easier
+resolve this now.
 
 -- 
-tejun
+Jens Axboe
+
