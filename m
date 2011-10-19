@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab1JSStt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:49:49 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:14223
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751844Ab1JSStq (ORCPT
+	id S1752352Ab1JSSwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:52:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65346 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1JSSwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:49:46 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LTBTLC-02-3CK-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [V2][PATCH 1/5] oprofile, x86: Add kernel parameter oprofile.cpu_type=timer
-Date: Wed, 19 Oct 2011 20:47:51 +0200
-Message-ID: <1319050075-23901-2-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
-References: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
+	Wed, 19 Oct 2011 14:52:19 -0400
+Date: Wed, 19 Oct 2011 22:52:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrey Vagin <avagin@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
+Message-ID: <20111019185210.GZ14464@moon>
+References: <20111014110416.552685686@openvz.org>
+ <20111014110511.670174429@openvz.org>
+ <20111014171033.GC4294@google.com>
+ <20111014173304.GD4294@google.com>
+ <4E9E9255.7090601@parallels.com>
+ <20111019182228.GJ25124@google.com>
+ <20111019184926.GY14464@moon>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111019184926.GY14464@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need this to better test x86 NMI timer mode. Otherwise it is very
-hard to setup systems with NMI timer enabled, but we have this e.g. in
-virtual machine environments.
+On Wed, Oct 19, 2011 at 10:49:26PM +0400, Cyrill Gorcunov wrote:
+..
+> 
+> Hi Tejun,
+> 
+> apart from controversy on elf'ish restore, I would like to know if there
+> a way to poke alien process memory with something faster than sizeof(long)
+> at once as ptrace proposes. At moment on my test tasks it's not that long
+> but the problem is there are servers with GBs of memory and snapshotting
+> memory data becomes a bottleneck. The same applies to restore procedure,
+> especially on big-data-chunks. Hm? Am I missing something obvious?
+> 
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- Documentation/kernel-parameters.txt |    3 +++
- arch/x86/oprofile/nmi_int.c         |   27 +++++++++++++++++++++------
- 2 files changed, 24 insertions(+), 6 deletions(-)
+Drop it, I had something different in mind, sorry for noise.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 854ed5ca..f7735a1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1848,6 +1848,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			arch_perfmon: [X86] Force use of architectural
- 				perfmon on Intel CPUs instead of the
- 				CPU specific event set.
-+			timer: [X86] Force use of architectural NMI
-+				timer mode (see also oprofile.timer
-+				for generic hr timer mode)
- 
- 	oops=panic	Always panic on oopses. Default is to just kill the
- 			process, but there is a small probability of
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 68894fd..7ca4d43 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -613,24 +613,36 @@ static int __init p4_init(char **cpu_type)
- 	return 0;
- }
- 
--static int force_arch_perfmon;
--static int force_cpu_type(const char *str, struct kernel_param *kp)
-+enum __force_cpu_type {
-+	reserved = 0,		/* do not force */
-+	timer,
-+	arch_perfmon,
-+};
-+
-+static int force_cpu_type;
-+
-+static int set_cpu_type(const char *str, struct kernel_param *kp)
- {
--	if (!strcmp(str, "arch_perfmon")) {
--		force_arch_perfmon = 1;
-+	if (!strcmp(str, "timer")) {
-+		force_cpu_type = timer;
-+		printk(KERN_INFO "oprofile: forcing NMI timer mode\n");
-+	} else if (!strcmp(str, "arch_perfmon")) {
-+		force_cpu_type = arch_perfmon;
- 		printk(KERN_INFO "oprofile: forcing architectural perfmon\n");
-+	} else {
-+		force_cpu_type = 0;
- 	}
- 
- 	return 0;
- }
--module_param_call(cpu_type, force_cpu_type, NULL, NULL, 0);
-+module_param_call(cpu_type, set_cpu_type, NULL, NULL, 0);
- 
- static int __init ppro_init(char **cpu_type)
- {
- 	__u8 cpu_model = boot_cpu_data.x86_model;
- 	struct op_x86_model_spec *spec = &op_ppro_spec;	/* default */
- 
--	if (force_arch_perfmon && cpu_has_arch_perfmon)
-+	if (force_cpu_type == arch_perfmon && cpu_has_arch_perfmon)
- 		return 0;
- 
- 	/*
-@@ -697,6 +709,9 @@ int __init op_nmi_init(struct oprofile_operations *ops)
- 	if (!cpu_has_apic)
- 		return -ENODEV;
- 
-+	if (force_cpu_type == timer)
-+		return -ENODEV;
-+
- 	switch (vendor) {
- 	case X86_VENDOR_AMD:
- 		/* Needs to be at least an Athlon (or hammer in 32bit mode) */
--- 
-1.7.7
-
-
+	Cyrill
