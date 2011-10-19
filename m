@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1JSIHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 04:07:03 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:57444 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751425Ab1JSIG7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 04:06:59 -0400
+	id S1755547Ab1JSIIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 04:08:17 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:35629 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab1JSIIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 04:08:15 -0400
+Date: Wed, 19 Oct 2011 10:08:07 +0200
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, evonlanthen@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        timo.teras@iki.fi
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
+	causes kernel oops
+Message-ID: <20111019080807.GA25099@gondor.apana.org.au>
+References: <20111018134537.GA17055@gondor.apana.org.au> <20111019.030914.218521668377472155.davem@davemloft.net> <1319008713.17914.8.camel@edumazet-laptop> <20111019.033052.851679720607111734.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1318992896.7128.1.camel@phoenix>
-References: <1318992896.7128.1.camel@phoenix>
-Date: Wed, 19 Oct 2011 09:06:57 +0100
-Message-ID: <CABS+qY2n2xXVvK=CqOPXfH2YOYijPwSAc7tH=CYL1AJXGPxBNQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ASoC: sgtl5000: Fix define for SGTL5000_BIAS_R_MASK
-From: "Girdwood, Liam" <lrg@ti.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Zeng Zhaoming <zhaoming.zeng@freescale.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111019.033052.851679720607111734.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 October 2011 03:54, Axel Lin <axel.lin@gmail.com> wrote:
-> According to the datasheet:
-> CHIP_MIC_CTRL 0x002A
->
-> BITS[9:8] BIAS_RESISTOR
->        0x0 = Powerd off
->        0x1 = 2.0 kohm
->        0x2 = 4.0 kohm
->        0x3 = 8.0 kohm
->
-> Thus SGTL5000_BIAS_R_MASK should be defined as 0x0300 instead of 0x0200.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/sgtl5000.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
-> index eec3ab3..8a9f435 100644
-> --- a/sound/soc/codecs/sgtl5000.h
-> +++ b/sound/soc/codecs/sgtl5000.h
-> @@ -280,7 +280,7 @@
->  /*
->  * SGTL5000_CHIP_MIC_CTRL
->  */
-> -#define SGTL5000_BIAS_R_MASK                   0x0200
-> +#define SGTL5000_BIAS_R_MASK                   0x0300
->  #define SGTL5000_BIAS_R_SHIFT                  8
->  #define SGTL5000_BIAS_R_WIDTH                  2
->  #define SGTL5000_BIAS_R_off                    0x0
-> --
-> 1.7.5.4
->
->
->
->
+On Wed, Oct 19, 2011 at 03:30:52AM -0400, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Wed, 19 Oct 2011 09:18:33 +0200
+> 
+> > Seems fine (Maybe do the +15 in caller site ?), but we also have other
+> > problematic cases, using alloc_skb() only...
+> 
+> Ok, which ones operate over these problematic GRE tunnels?
 
-Both
+Potentially all of them since we now support Ethernet-over-GRE.
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+I think Eric's initial patch is probably the safest bet for rc10.
+We can then work on the proper fix for the next release.
+
+As to the latter, I've just done a grep over net and it seems that
+all users of LL_ALLOCATED_SPACE fall into two cases, alloc_skb users
+or sock_alloc_send_skb (including pskb) users.
+
+For alloc_skb we could add a new helper.  While for the other
+case we could either create a new helper or just add an extra
+dev argument that may be NULL for those that don't care about
+LL_ALLOCATED_SPACE.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
