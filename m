@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab1JSHuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:50:04 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52308 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370Ab1JSHuC (ORCPT
+	id S1755230Ab1JSHvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:51:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54616 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab1JSHvU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:50:02 -0400
-Date: Wed, 19 Oct 2011 03:50:00 -0400 (EDT)
-Message-Id: <20111019.035000.931404890148181821.davem@davemloft.net>
-To: cjren@qca.qualcomm.com
-Cc: rodrigue@qca.qualcomm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
- Ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <6349D7A510622448B1BA0967850A8438011CBA5D@nasanexd02d.na.qualcomm.com>
-References: <1319009213-20627-1-git-send-email-cloud.ren@atheros.com>
-	<20111019.033324.1233460304204609569.davem@davemloft.net>
-	<6349D7A510622448B1BA0967850A8438011CBA5D@nasanexd02d.na.qualcomm.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 19 Oct 2011 03:51:20 -0400
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: David Rientjes <rientjes@google.com>
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>
+Date: Wed, 19 Oct 2011 09:50:59 +0200
+In-Reply-To: <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <1318927355.21167.3.camel@twins>
+	 <1318927629.9641.27.camel@marge.simson.net>
+	 <1318928763.21167.5.camel@twins>
+	 <1318929825.9641.32.camel@marge.simson.net>
+	 <1318932693.6748.5.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1319010659.29774.3.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 19 Oct 2011 00:50:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ren, Cloud" <cjren@qca.qualcomm.com>
-Date: Wed, 19 Oct 2011 07:44:02 +0000
+On Tue, 2011-10-18 at 13:38 -0700, David Rientjes wrote:
+> 
+> Eek, this seems like complete overkill, there may be cgroups now or in the 
+> future that it would be perfectly acceptable to move kthreadd into without 
+> any negative effects.  There's no reason to restrict it this broadly, 
+> that's why I thought your change to cpusets was fine and acked it.  It's 
+> the perfect candidate for what the ->can_attach() pointer for a cgroup can 
+> identify is problematic for _that_ cgroup. 
 
-> Ok. What logging interfaces can I use? Are they dev_err, dev_info and dev_warn ? thanks
+My thinking is that kthreadd is the mother of all kernel threads and the
+kernel assumes it can spawn kthreads without constraints, a valid
+assumption IMO.
 
-netif_*(), they check netif_msg_*() to see if the particular kind
-of logging message is enabled or not, and this can be set dynamically
-if you code your driver to properly set netdev->msg_enable.
+Therefore the kthreadd thread should live in the root cgroup at all
+times, irrespective of whatever controllers are or aren't actually safe.
 
-Use other drivers as examples.
 
