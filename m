@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab1JSQxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 12:53:48 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:53042
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751349Ab1JSQxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 12:53:47 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz936eK1432N98dK4015Lzz1202hzzz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LTBO96-01-AUC-02
-X-M-MSG: 
-Date: Wed, 19 Oct 2011 18:52:52 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>
-Subject: Re: [PATCH 5/5] oprofile, x86: Reimplement nmi timer mode using perf
-Message-ID: <20111019165252.GH24346@erda.amd.com>
-References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
- <1318861624-715-6-git-send-email-robert.richter@amd.com>
- <1318935581.21167.13.camel@twins>
+	id S1756741Ab1JSQ7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 12:59:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab1JSQ7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 12:59:38 -0400
+Date: Wed, 19 Oct 2011 12:59:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com,
+        rni@google.com
+Subject: Re: [PATCH 02/10] block: fix genhd refcounting in
+ blkio_policy_parse_and_set()
+Message-ID: <20111019165932.GH1140@redhat.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-3-git-send-email-tj@kernel.org>
+ <20111019132657.GA1140@redhat.com>
+ <20111019162902.GA25124@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318935581.21167.13.camel@twins>
+In-Reply-To: <20111019162902.GA25124@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.10.11 06:59:41, Peter Zijlstra wrote:
-> On Mon, 2011-10-17 at 16:27 +0200, Robert Richter wrote:
-> > The legacy x86 nmi watchdog code was removed with the implementation
-> > of the perf based nmi watchdog. This broke Oprofile's nmi timer
-> > mode. To run nmi timer mode we relied on a continuous ticking nmi
-> > source which the nmi watchdog provided. The nmi tick was no longer
-> > available and current watchdog can not be used anymore since it runs
-> > with very long periods in the range of seconds. This patch
-> > reimplements the nmi timer mode using a perf counter nmi source.
+On Wed, Oct 19, 2011 at 09:29:02AM -0700, Tejun Heo wrote:
+> Hello,
 > 
-> fair enough,
+> On Wed, Oct 19, 2011 at 09:26:57AM -0400, Vivek Goyal wrote:
+> > What's the advantage of collapsing blkio_check_dev_num(). Why not put the
+> > reference to gendisk in this function before returning either success or
+> > failure.
 > 
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Heh, at first, I just thought there would be something which depends
+> on disk still being around in the code path as unsynchronized one time
+> check upfront doesn't really guarantee anything; then, I realized
+> there was nothing, but I still left it like that because I personally
+> think blkio_check_dev_num() w/o surrounding exclusion is a bad
+> interface.  It's at best opportunistic and likely to mislead people
+> into believing that there's some magical implied synchronization.
 > 
-> I take it you'll take this through your oprofile tree?
+> Also, I'm planning on cleaning up synchronization around iocg and for
+> it to work properly, it'll be necessary to do proper ref counting and
+> removal on release anyway.
 
-Yes, will send it through my tree.
+Are you trying to tie the rules with actual presence of device. Current
+model is that we just check for a valid device while somebody is
+specifying the rule. After that device can go away and rule can still
+be there.  We are just trying to make sure that when you are putting
+the rule, atleast at that time device is present.
 
-Thanks,
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Thanks
+Vivek
