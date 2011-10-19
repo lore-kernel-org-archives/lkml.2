@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1JSVjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:39:36 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61606 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab1JSVjf (ORCPT
+	id S1754592Ab1JSVmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:42:55 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:55419 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754416Ab1JSVmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:39:35 -0400
-Message-ID: <4E9F4392.406@gmail.com>
-Date: Wed, 19 Oct 2011 15:39:30 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 19 Oct 2011 17:42:53 -0400
+Date: Wed, 19 Oct 2011 23:42:50 +0200
+From: Nico Schottelius <nico-linux-20111017@schottelius.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
+Message-ID: <20111019214250.GC2432@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+	Arend van Spriel <arend@broadcom.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	netdev <netdev@vger.kernel.org>
+References: <20111019123602.GA11883@schottelius.org>
+ <1319028563.8416.1.camel@edumazet-laptop>
+ <20111019130749.GD11883@schottelius.org>
+ <20111019142837.GA1414@schottelius.org>
+ <4E9EE20F.1030403@broadcom.com>
+ <20111019145501.GB1414@schottelius.org>
+ <4E9EFF51.6000104@broadcom.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com
-Subject: Re: [PATCH] perf top: fix crash on annotate request
-References: <1319048598-15030-1-git-send-email-dsahern@gmail.com> <20111019183848.GE2229@ghostprotocols.net> <4E9F1AA0.4010706@gmail.com> <20111019192011.GG2229@ghostprotocols.net>
-In-Reply-To: <20111019192011.GG2229@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zx4FCpZtqtKETZ7O"
+Content-Disposition: inline
+In-Reply-To: <4E9EFF51.6000104@broadcom.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.1.0-rc6-g4c437d5 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--zx4FCpZtqtKETZ7O
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 10/19/2011 01:20 PM, Arnaldo Carvalho de Melo wrote:
-> Can you check if that is the problem? I.e. take notes->lock, check if
-> ->src is NULL, if so call symbol__alloc_hist, etc?
-> 
+Arend van Spriel [Wed, Oct 19, 2011 at 06:48:17PM +0200]:
+> On 10/19/2011 04:55 PM, Nico Schottelius wrote:
+> commit bee709ab1d390afe69e4407bc86bb706c6fb2965
+> Merge: ad1c761 1f2c7e9
+> Author: Nico Schottelius <nico@kr.ethz.ch>
+> Date:   Tue Oct 18 00:04:05 2011 +0200
+>=20
+>     Merge branch 'fix-edp-vdd-power' of ../keithp/linux
+>=20
+> As it drops receive packets it may be your problem. Is your AP on 5GHz?
 
-Reproduced it on a lab box. This fixes the segfault:
+I've to confess I've no clue, but I guess the answer is "some of them":
+Here in ETH Zurich (www.ethz.ch) I'm in an environment with a lot of
+surrounding APs (probably 7 or more seen with the same ssid).
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index bc8f477..6bd501a 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -253,6 +253,17 @@ static int symbol__parse_objdump_line(struct symbol
-*sym, struct map *map,
-        free(line);
-        return -1;
-    }
-+
-+   pthread_mutex_lock(&notes->lock);
-+   if (notes->src == NULL &&
-+       symbol__alloc_hist(sym, 1) < 0) {
-+       pthread_mutex_unlock(&notes->lock);
-+       ui__warning("Not enough memory for annotating '%s' symbol!\n",
-+               sym->name);
-+       return -1;
-+   }
-+   pthread_mutex_unlock(&notes->lock);
-+
-    objdump__add_line(&notes->src->source, objdump_line);
+> From 7d14bd6cbfbf26369c5958e56a468fd8429841d7 Mon Sep 17 00:00:00 2001
+> From: Arend van Spriel <arend@broadcom.com>
+> Date: Wed, 19 Oct 2011 18:42:45 +0200
+> Subject: [PATCH] staging: brcm80211: fix for rate index in receive status
 
-    return 0;
+Applied, recompiling, will test tomorrow.
 
-Should I plumb nr_events down versus assuming its 1?
+I'll soon (Friday) leave the environment permanently,
+thus testing will not be easily possible anymore.
+
+If this issue is 5Ghz related only, can I somehow trigger it without an AP
+running in that band / i.e. make the card try to use the 5 Ghz band although
+there is no ap nearby?
+
+Cheers,
+
+Nico
+
+--=20
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+
+--zx4FCpZtqtKETZ7O
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk6fRFoACgkQ19zI5DGHffCPQACg15iCJw4KEF66Mxa6BlIxnMQv
+uN4An1HgNT32hDs9fuNn2QgXxYnP8HIT
+=NE8g
+-----END PGP SIGNATURE-----
+
+--zx4FCpZtqtKETZ7O--
