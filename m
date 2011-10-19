@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab1JSWUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:20:31 -0400
-Received: from fieldses.org ([174.143.236.118]:35536 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752875Ab1JSWU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:20:26 -0400
-Date: Wed, 19 Oct 2011 18:20:21 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
-Message-ID: <20111019222021.GB1874@fieldses.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932287Ab1JSWVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:21:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27914 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab1JSWUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:20:30 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        thellstrom@vmware.com, thomas@shipmail.org, airlied@redhat.com
+Cc: xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alex Deucher <alexdeucher@gmail.com>
+Subject: [PATCH 11/11] radeon/ttm/dma: Enable the TTM DMA pool if the device can only do 32-bit.
+Date: Wed, 19 Oct 2011 18:19:32 -0400
+Message-Id: <1319062772-2793-12-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
+References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4E9F4D09.00E0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 09:02:56PM +0530, Aneesh Kumar K.V wrote:
-> +#define RICHACL_XATTR "system.richacl"
-> +
-> +struct richace_xattr {
-> +	__le16		e_type;
-> +	__le16		e_flags;
-> +	__le32		e_mask;
-> +	__le32		e_id;
-> +	char		e_who[0];
-> +};
+. with the exception that we do not handle the AGP case. We only
+deal with PCIe cards such as ATI ES1000 or HD3200 that have been
+detected to only do DMA up to 32-bits.
 
-Does it really make sense to use a string here just to pick between the
-three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
-integer?  Is the goal to expand this somehow eventually?
+Note: If the ttm.no_dma is set, this operation will not override
+the TTM page pool to use the DMA one.
 
---b.
+CC: Dave Airlie <airlied@redhat.com>
+CC: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/radeon/radeon_ttm.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 60125dd..2e7419f 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -761,6 +761,10 @@ struct ttm_backend *radeon_ttm_backend_create(struct radeon_device *rdev)
+ 	gtt->backend.bdev = &rdev->mman.bdev;
+ 	gtt->backend.flags = 0;
+ 	gtt->backend.func = &radeon_backend_func;
++	if (rdev->need_dma32) {
++		if (ttm_dma_override(gtt->backend.func))
++			gtt->backend.dev = rdev->dev;
++	}
+ 	gtt->rdev = rdev;
+ 	gtt->pages = NULL;
+ 	gtt->num_pages = 0;
+@@ -792,8 +796,8 @@ static int radeon_mm_dump_table(struct seq_file *m, void *data)
+ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
+ {
+ #if defined(CONFIG_DEBUG_FS)
+-	static struct drm_info_list radeon_mem_types_list[RADEON_DEBUGFS_MEM_TYPES+1];
+-	static char radeon_mem_types_names[RADEON_DEBUGFS_MEM_TYPES+1][32];
++	static struct drm_info_list radeon_mem_types_list[RADEON_DEBUGFS_MEM_TYPES+2];
++	static char radeon_mem_types_names[RADEON_DEBUGFS_MEM_TYPES+2][32];
+ 	unsigned i;
+ 
+ 	for (i = 0; i < RADEON_DEBUGFS_MEM_TYPES; i++) {
+@@ -815,8 +819,15 @@ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
+ 	radeon_mem_types_list[i].name = radeon_mem_types_names[i];
+ 	radeon_mem_types_list[i].show = &ttm_page_alloc_debugfs;
+ 	radeon_mem_types_list[i].driver_features = 0;
+-	radeon_mem_types_list[i].data = NULL;
+-	return radeon_debugfs_add_files(rdev, radeon_mem_types_list, RADEON_DEBUGFS_MEM_TYPES+1);
++	radeon_mem_types_list[i++].data = NULL;
++	if (rdev->need_dma32) {
++		sprintf(radeon_mem_types_names[i], "ttm_dma_page_pool");
++		radeon_mem_types_list[i].name = radeon_mem_types_names[i];
++		radeon_mem_types_list[i].show = &ttm_dma_page_alloc_debugfs;
++		radeon_mem_types_list[i].driver_features = 0;
++		radeon_mem_types_list[i++].data = NULL;
++	}
++	return radeon_debugfs_add_files(rdev, radeon_mem_types_list, i);
+ 
+ #endif
+ 	return 0;
+-- 
+1.7.6.4
+
