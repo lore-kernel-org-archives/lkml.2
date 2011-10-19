@@ -1,198 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab1JSJ7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 05:59:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35739 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab1JSJ7L (ORCPT
+	id S1755583Ab1JSKGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 06:06:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45415 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab1JSKGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 05:59:11 -0400
-Date: Wed, 19 Oct 2011 11:59:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.0.7-rt20
-Message-ID: <alpine.LFD.2.02.1110191150280.3240@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 19 Oct 2011 06:06:04 -0400
+Date: Wed, 19 Oct 2011 12:05:59 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: "Girdwood, Liam" <lrg@ti.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Zeng Zhaoming <zhaoming.zeng@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/2] ASoC: sgtl5000: Fix define for SGTL5000_BIAS_R_MASK
+Message-ID: <20111019100559.GC3217@pengutronix.de>
+References: <1318992896.7128.1.camel@phoenix>
+ <CABS+qY2n2xXVvK=CqOPXfH2YOYijPwSAc7tH=CYL1AJXGPxBNQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="f+W+jCU1fRNres8c"
+Content-Disposition: inline
+In-Reply-To: <CABS+qY2n2xXVvK=CqOPXfH2YOYijPwSAc7tH=CYL1AJXGPxBNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
 
-I'm pleased to announce the 3.0.7-rt20 release.
+--f+W+jCU1fRNres8c
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-3.0.7-rt19 is an not announced intermediate release, which only
-updates to 3.0.7. No rt changes except dropping patches which made it
-into 3.0.7.
+On Wed, Oct 19, 2011 at 09:06:57AM +0100, Girdwood, Liam wrote:
+> On 19 October 2011 03:54, Axel Lin <axel.lin@gmail.com> wrote:
+> > According to the datasheet:
+> > CHIP_MIC_CTRL 0x002A
+> >
+> > BITS[9:8] BIAS_RESISTOR
+> > =A0 =A0 =A0 =A00x0 =3D Powerd off
+> > =A0 =A0 =A0 =A00x1 =3D 2.0 kohm
+> > =A0 =A0 =A0 =A00x2 =3D 4.0 kohm
+> > =A0 =A0 =A0 =A00x3 =3D 8.0 kohm
+> >
+> > Thus SGTL5000_BIAS_R_MASK should be defined as 0x0300 instead of 0x0200.
+> >
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > ---
+> > =A0sound/soc/codecs/sgtl5000.h | =A0 =A02 +-
+> > =A01 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
+> > index eec3ab3..8a9f435 100644
+> > --- a/sound/soc/codecs/sgtl5000.h
+> > +++ b/sound/soc/codecs/sgtl5000.h
+> > @@ -280,7 +280,7 @@
+> > =A0/*
+> > =A0* SGTL5000_CHIP_MIC_CTRL
+> > =A0*/
+> > -#define SGTL5000_BIAS_R_MASK =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 0x0200
+> > +#define SGTL5000_BIAS_R_MASK =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 0x0300
+> > =A0#define SGTL5000_BIAS_R_SHIFT =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A08
+> > =A0#define SGTL5000_BIAS_R_WIDTH =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A02
+> > =A0#define SGTL5000_BIAS_R_off =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A00=
+x0
+> > --
+> > 1.7.5.4
+> >
+> >
+> >
+> >
+>=20
+> Both
+>=20
+> Acked-by: Liam Girdwood <lrg@ti.com>
 
-Changes from 3.0.7-rt19 to 3.0.7-rt20
+And
 
-  * Fix a long standing RT throttling problem with cgroups and
-    RT_GROUP_SCHED (Peter Zijlstra, Thanks to Carsten Emde for
-    providing the debug information!)
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-  * Minor fixes (Yong Zhang)
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Delta patch against 3.0.7-rt19
+--f+W+jCU1fRNres8c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-  https://tglx.de/~tglx/rt/patch-3.0.7-rt19-rt20.patch.gz
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-also appended below.
+iEYEARECAAYFAk6eoQcACgkQD27XaX1/VRuz2ACgwdQUatLKMYfyWMIR1ZD5x+vE
+yNIAn3nqZ/DrzDfI9fWv6an4UGlnTitW
+=zmke
+-----END PGP SIGNATURE-----
 
-
-Patch against 3.0.7 can be found here:
-
-  https://tglx.de/~tglx/rt/patch-3.0.7-rt20.patch.gz
-
-
-The split quilt queue is available at:
-
-  https://tglx.de/~tglx/rt/patches-3.0.7-rt20.tar.gz
-
-Known issues:
-
-  Yong discovered a non critical cpuhotplug problem, which needs some
-  more thought. Will try to address that in the next days as traveling
-  allows (about to head to Prague for a long RTLWS/KS/LinuxCon/ELCE
-  week).
-
-Enjoy,
-
-	tglx
-
---------------->
-Index: linux-2.6/kernel/cpu.c
-===================================================================
---- linux-2.6.orig/kernel/cpu.c
-+++ linux-2.6/kernel/cpu.c
-@@ -139,7 +139,7 @@ static int cpu_unplug_begin(unsigned int
- 	struct task_struct *tsk;
- 
- 	init_completion(&hp->synced);
--	tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d\n", cpu);
-+	tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
- 	if (IS_ERR(tsk))
- 		return (PTR_ERR(tsk));
- 	kthread_bind(tsk, cpu);
-Index: linux-2.6/kernel/printk.c
-===================================================================
---- linux-2.6.orig/kernel/printk.c
-+++ linux-2.6/kernel/printk.c
-@@ -1282,8 +1282,8 @@ void printk_tick(void)
- 
- int printk_needs_cpu(int cpu)
- {
--	if (cpu_is_offline(cpu))
--		printk_tick();
-+	if (unlikely(cpu_is_offline(cpu)))
-+		__this_cpu_write(printk_pending, 0);
- 	return __this_cpu_read(printk_pending);
- }
- 
-Index: linux-2.6/kernel/sched_rt.c
-===================================================================
---- linux-2.6.orig/kernel/sched_rt.c
-+++ linux-2.6/kernel/sched_rt.c
-@@ -556,12 +556,9 @@ static inline int balance_runtime(struct
- 
- static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
- {
--	int i, idle = 1;
-+	int i, idle = 1, throttled = 0;
- 	const struct cpumask *span;
- 
--	if (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF)
--		return 1;
--
- 	span = sched_rt_period_mask();
- 	for_each_cpu(i, span) {
- 		int enqueue = 0;
-@@ -596,12 +593,17 @@ static int do_sched_rt_period_timer(stru
- 			if (!rt_rq_throttled(rt_rq))
- 				enqueue = 1;
- 		}
-+		if (rt_rq->rt_throttled)
-+			throttled = 1;
- 
- 		if (enqueue)
- 			sched_rt_rq_enqueue(rt_rq);
- 		raw_spin_unlock(&rq->lock);
- 	}
- 
-+	if (!throttled && (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF))
-+		return 1;
-+
- 	return idle;
- }
- 
-@@ -633,8 +635,24 @@ static int sched_rt_runtime_exceeded(str
- 		return 0;
- 
- 	if (rt_rq->rt_time > runtime) {
--		rt_rq->rt_throttled = 1;
--		printk_once(KERN_WARNING "sched: RT throttling activated\n");
-+		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
-+
-+		/*
-+		 * Don't actually throttle groups that have no runtime assigned
-+		 * but accrue some time due to boosting.
-+		 */
-+		if (likely(rt_b->rt_runtime)) {
-+			rt_rq->rt_throttled = 1;
-+			printk_once(KERN_WARNING "sched: RT throttling activated\n");
-+		} else {
-+			/*
-+			 * In case we did anyway, make it go away,
-+			 * replenishment is a joke, since it will replenish us
-+			 * with exactly 0 ns.
-+			 */
-+			rt_rq->rt_time = 0;
-+		}
-+
- 		if (rt_rq_throttled(rt_rq)) {
- 			sched_rt_rq_dequeue(rt_rq);
- 			return 1;
-@@ -662,7 +680,8 @@ static void update_curr_rt(struct rq *rq
- 	if (unlikely((s64)delta_exec < 0))
- 		delta_exec = 0;
- 
--	schedstat_set(curr->se.statistics.exec_max, max(curr->se.statistics.exec_max, delta_exec));
-+	schedstat_set(curr->se.statistics.exec_max,
-+		      max(curr->se.statistics.exec_max, delta_exec));
- 
- 	curr->se.sum_exec_runtime += delta_exec;
- 	account_group_exec_runtime(curr, delta_exec);
-Index: linux-2.6/kernel/workqueue.c
-===================================================================
---- linux-2.6.orig/kernel/workqueue.c
-+++ linux-2.6/kernel/workqueue.c
-@@ -3274,14 +3274,14 @@ static void flush_gcwq(struct global_cwq
- 
- 	spin_unlock_irq(&gcwq->lock);
- 
--	gcwq = get_gcwq(get_cpu());
-+	gcwq = get_gcwq(get_cpu_light());
- 	spin_lock_irq(&gcwq->lock);
- 	list_for_each_entry_safe(work, nw, &non_affine_works, entry) {
- 		list_del_init(&work->entry);
- 		___queue_work(get_work_cwq(work)->wq, gcwq, work);
- 	}
- 	spin_unlock_irq(&gcwq->lock);
--	put_cpu();
-+	put_cpu_light();
- }
- 
- static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
-Index: linux-2.6/localversion-rt
-===================================================================
---- linux-2.6.orig/localversion-rt
-+++ linux-2.6/localversion-rt
-@@ -1 +1 @@
---rt19
-+-rt20
+--f+W+jCU1fRNres8c--
