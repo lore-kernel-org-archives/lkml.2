@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1JSPEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:04:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41493 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755542Ab1JSPEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:04:34 -0400
-Date: Wed, 19 Oct 2011 17:04:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Nico Schottelius <nico-linux-20111017@schottelius.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
-In-Reply-To: <20111019150122.GA6157@schottelius.org>
-Message-ID: <alpine.LNX.2.00.1110191702470.3541@pobox.suse.cz>
-References: <20111017175906.GA3461@schottelius.org> <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz> <20111017214050.GA1408@schottelius.org> <20111019150122.GA6157@schottelius.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756520Ab1JSPGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:06:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58152 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab1JSPGJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 11:06:09 -0400
+Message-ID: <1319036756.7741.1.camel@phoenix>
+Subject: [PATCH] SoC: ak4641: Remove unused codec field from struct
+ ak4641_priv
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Harald Welte <laforge@gnumonks.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Dmitry Artamonow <mad_soft@inbox.ru>, alsa-devel@alsa-project.org
+Date: Wed, 19 Oct 2011 23:05:56 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Oct 2011, Nico Schottelius wrote:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/ak4641.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> > [...] 
-> > I've attached the xev output of fn+{F1-F12}.
-> > 
-> > F1-F4 are correct, though
-> >   F3 = Expose on MacOS X (**)
-> >   F4 = Dashboard (**)
-> > F5: not mapped at all: Is KeyboardLightDecrease on MacOSX (*)
-> > F6 is XF86AudioPrev incorrect: Should be  KeyboardLightIncrease (*)
-> > F7 is XF86AudioPlay incorrect: Should be XF86AudioPrev
-> > F8 is XF86AudioNext incorrect: Should be XF86AudioPlay
-> > F9 is XF86AudioMute incorrect: Should be XF86AudioNext
-> > F10 is XF86AudioLowerVolume incorrect: Should be XF86AudioMute
-> > F11 is XF86AudioRaiseVolume incorrect: Should be XF86AudioLowerVolume 
-> > F12 is XF86Eject incorrect: Should be  XF86AudioRaiseVolume 
-> > 
-> > Thus F7-12 are shifted by one to left in reality and as the MacBook Air
-> 
-> if I want to correct these bugs, which tree should I use as the base?
-> And when I corrected those, to whom to submit?
-
-Hi,
-
-please use hid tree, for-next branch. The tree is located on kernel.org.
-
-> I guess the general approach would be to branch out, if it's a mba4,2,
-> then apply the following mapping, correct?
-
-Yes, there are mapping tables in hid-apple.c already, so just introduce a 
-new one.
-
-I am a bit surprised that they are needed though, the original report 
-stated that the the table is identical to the one that is already there 
-(apple_fn_keys[]).
-
+diff --git a/sound/soc/codecs/ak4641.c b/sound/soc/codecs/ak4641.c
+index 7a64e58..f5125ae 100644
+--- a/sound/soc/codecs/ak4641.c
++++ b/sound/soc/codecs/ak4641.c
+@@ -31,7 +31,6 @@
+ 
+ /* codec private data */
+ struct ak4641_priv {
+-	struct snd_soc_codec *codec;
+ 	unsigned int sysclk;
+ 	int deemph;
+ 	int playback_fs;
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.5.4
+
+
+
