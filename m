@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1JSQSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 12:18:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab1JSQSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 12:18:44 -0400
-Date: Wed, 19 Oct 2011 12:18:40 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
-Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by
- making blk_queue_cleanup() proper shutdown
-Message-ID: <20111019161840.GG1140@redhat.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-11-git-send-email-tj@kernel.org>
+	id S1756560Ab1JSQTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 12:19:23 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33884 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753200Ab1JSQTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 12:19:22 -0400
+Date: Wed, 19 Oct 2011 12:19:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
+ interfaces
+In-Reply-To: <20111019095540.1011993d@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1110191208570.2067-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318998384-22525-11-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 09:26:24PM -0700, Tejun Heo wrote:
+On Wed, 19 Oct 2011, NeilBrown wrote:
 
-[..]
->  void blk_cleanup_queue(struct request_queue *q)
->  {
-> -	/*
-> -	 * We know we have process context here, so we can be a little
-> -	 * cautious and ensure that pending block actions on this device
-> -	 * are done before moving on. Going into this function, we should
-> -	 * not have processes doing IO to this device.
-> -	 */
-> -	blk_sync_queue(q);
-> -
-> -	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
-> +	/* mark @q DEAD, no new request or merges will be allowed afterwards */
->  	mutex_lock(&q->sysfs_lock);
-> -	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
-> +	spin_lock_irq(q->queue_lock);
-> +	queue_flag_set(QUEUE_FLAG_NOMERGES, q);
-> +	queue_flag_set(QUEUE_FLAG_NOXMERGES, q);
-> +	queue_flag_set(QUEUE_FLAG_DEAD, q);
-> +	spin_unlock_irq(q->queue_lock);
->  	mutex_unlock(&q->sysfs_lock);
->  
-> +	/* drain all requests queued before DEAD marking */
-> +	blk_drain_queue(q, true);
-> +
-> +	/* @q won't process any more request, flush async actions */
-> +	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
-> +	blk_sync_queue(q);
-> +
-> +	/* @q is and will stay empty, shutdown and put */
->  	if (q->elevator)
->  		elevator_exit(q->elevator);
-> -
->  	blk_throtl_exit(q);
+> > There's another way to implement "inhibit suspend" -- via the notify 
+> > mechanism.  If the client doesn't respond to a callback, the server 
+> > won't suspend.  Hence if people use the fd-timer approach, 
+> > be-awake-after isn't needed.
+> 
+> I don't like that approach though.  It leaves the daemon thinking "we are on
+> the way towards suspend" and that is what it tells other clients.  But really
+> we are in state "someone doesn't want us to suspend now".
+> So some clients are assuming suspend is imminent and are waiting expectantly
+> for it to be over, but in reality the system is staying awake and only one
+> client knows about it.
 
-This is based on for-next tree? I am cloning it now. In Linus tree, 
-I see that blk_throtl_exit() has been moved to blk_release_queue() again.
-So now we probably need to bring it back in blk_cleanup_queue(). That
+Clients should not make assumptions of that sort.  They have no need to
+know exactly what the daemon is doing, and there's no reason for the
+daemon to tell them.
 
+All a client needs to know is whether or not _it_ is busy, so that it
+can provide correct information to the daemon.  (Some clients may also
+need to be notified each time the system resumes -- that's a separate
+matter.)  As for the rest, a client may as well assume that the system
+is perpetually on the verge of suspending, except when it has
+personally told the daemon to stay awake.
 
-[..]
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 900a0c9..8edb949 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -309,6 +309,10 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
->  	struct blkio_cgroup *blkcg;
->  	struct request_queue *q = td->queue;
->  
-> +	/* no throttling for dead queue */
-> +	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-> +		return NULL;
-> +
+On the daemon's side, I don't think there is a significant difference
+between "we are on the way toward suspend and waiting for this client's
+response" and "this client doesn't want us to suspend now".  Either
+way, the daemon can't make any forward progress until it hears from
+the client -- and the client might send an update at any time.
 
-May be blk_throtl_bio() is probably a better place to do this check, just
-before callig throtl_get_tg().
+Alan Stern
 
-Thanks
-Vivek
