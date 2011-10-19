@@ -1,88 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1JSWVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:21:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27914 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab1JSWUa (ORCPT
+	id S932147Ab1JSWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:21:26 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:57227 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932145Ab1JSWUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Oct 2011 18:20:30 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         thellstrom@vmware.com, thomas@shipmail.org, airlied@redhat.com
 Cc: xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Subject: [PATCH 11/11] radeon/ttm/dma: Enable the TTM DMA pool if the device can only do 32-bit.
-Date: Wed, 19 Oct 2011 18:19:32 -0400
-Message-Id: <1319062772-2793-12-git-send-email-konrad.wilk@oracle.com>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 09/11] ttm: Add 'no_dma' parameter to turn the TTM DMA pool off during runtime.
+Date: Wed, 19 Oct 2011 18:19:30 -0400
+Message-Id: <1319062772-2793-10-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
 References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4E9F4D09.00E0,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020209.4E9F4D09.0108:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. with the exception that we do not handle the AGP case. We only
-deal with PCIe cards such as ATI ES1000 or HD3200 that have been
-detected to only do DMA up to 32-bits.
+The TTM DMA only gets turned on when the SWIOTLB is enabled - but
+we might also want to turn it off when SWIOTLB is on to
+use the non-DMA TTM pool code.
 
-Note: If the ttm.no_dma is set, this operation will not override
-the TTM page pool to use the DMA one.
+In the future this parameter can be removed.
 
-CC: Dave Airlie <airlied@redhat.com>
-CC: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/radeon/radeon_ttm.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/ttm/ttm_memory.c         |    7 +++++--
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 +++++-
+ include/drm/ttm/ttm_page_alloc.h         |    2 ++
+ 3 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-index 60125dd..2e7419f 100644
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -761,6 +761,10 @@ struct ttm_backend *radeon_ttm_backend_create(struct radeon_device *rdev)
- 	gtt->backend.bdev = &rdev->mman.bdev;
- 	gtt->backend.flags = 0;
- 	gtt->backend.func = &radeon_backend_func;
-+	if (rdev->need_dma32) {
-+		if (ttm_dma_override(gtt->backend.func))
-+			gtt->backend.dev = rdev->dev;
-+	}
- 	gtt->rdev = rdev;
- 	gtt->pages = NULL;
- 	gtt->num_pages = 0;
-@@ -792,8 +796,8 @@ static int radeon_mm_dump_table(struct seq_file *m, void *data)
- static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
- {
- #if defined(CONFIG_DEBUG_FS)
--	static struct drm_info_list radeon_mem_types_list[RADEON_DEBUGFS_MEM_TYPES+1];
--	static char radeon_mem_types_names[RADEON_DEBUGFS_MEM_TYPES+1][32];
-+	static struct drm_info_list radeon_mem_types_list[RADEON_DEBUGFS_MEM_TYPES+2];
-+	static char radeon_mem_types_names[RADEON_DEBUGFS_MEM_TYPES+2][32];
- 	unsigned i;
- 
- 	for (i = 0; i < RADEON_DEBUGFS_MEM_TYPES; i++) {
-@@ -815,8 +819,15 @@ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
- 	radeon_mem_types_list[i].name = radeon_mem_types_names[i];
- 	radeon_mem_types_list[i].show = &ttm_page_alloc_debugfs;
- 	radeon_mem_types_list[i].driver_features = 0;
--	radeon_mem_types_list[i].data = NULL;
--	return radeon_debugfs_add_files(rdev, radeon_mem_types_list, RADEON_DEBUGFS_MEM_TYPES+1);
-+	radeon_mem_types_list[i++].data = NULL;
-+	if (rdev->need_dma32) {
-+		sprintf(radeon_mem_types_names[i], "ttm_dma_page_pool");
-+		radeon_mem_types_list[i].name = radeon_mem_types_names[i];
-+		radeon_mem_types_list[i].show = &ttm_dma_page_alloc_debugfs;
-+		radeon_mem_types_list[i].driver_features = 0;
-+		radeon_mem_types_list[i++].data = NULL;
-+	}
-+	return radeon_debugfs_add_files(rdev, radeon_mem_types_list, i);
- 
- #endif
+diff --git a/drivers/gpu/drm/ttm/ttm_memory.c b/drivers/gpu/drm/ttm/ttm_memory.c
+index 6d24fe2..f883a28 100644
+--- a/drivers/gpu/drm/ttm/ttm_memory.c
++++ b/drivers/gpu/drm/ttm/ttm_memory.c
+@@ -395,7 +395,9 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
+ 		       zone->name, (unsigned long long) zone->max_mem >> 10);
+ 	}
+ 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
+-	ttm_dma_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
++	if (!ttm_dma_disable)
++		ttm_dma_page_alloc_init(glob, glob->zone_kernel->max_mem /
++					(2*PAGE_SIZE));
  	return 0;
+ out_no_zone:
+ 	ttm_mem_global_release(glob);
+@@ -411,7 +413,8 @@ void ttm_mem_global_release(struct ttm_mem_global *glob)
+ 	/* let the page allocator first stop the shrink work. */
+ 	ttm_page_alloc_fini();
+ 
+-	ttm_dma_page_alloc_fini();
++	if (!ttm_dma_disable)
++		ttm_dma_page_alloc_fini();
+ 	flush_workqueue(glob->swap_queue);
+ 	destroy_workqueue(glob->swap_queue);
+ 	glob->swap_queue = NULL;
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index d6d8240..a5be62e 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -51,6 +51,10 @@
+ #include <asm/agp.h>
+ #endif
+ 
++int __read_mostly ttm_dma_disable;
++MODULE_PARM_DESC(no_dma, "Disable TTM DMA pool");
++module_param_named(no_dma, ttm_dma_disable, bool, S_IRUGO);
++
+ #define NUM_PAGES_TO_ALLOC		(PAGE_SIZE/sizeof(struct page *))
+ #define SMALL_ALLOCATION		16
+ #define FREE_ALL_PAGES			(~0U)
+@@ -1384,7 +1388,7 @@ int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data)
+ EXPORT_SYMBOL_GPL(ttm_dma_page_alloc_debugfs);
+ bool ttm_dma_override(struct ttm_backend_func *be)
+ {
+-	if (swiotlb_nr_tbl() && be) {
++	if (swiotlb_nr_tbl() && be && !ttm_dma_disable) {
+ 		be->get_pages = &ttm_dma_get_pages;
+ 		be->put_pages = &ttm_dma_put_pages;
+ 		return true;
+diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
+index 9c52fb7..daf5db6 100644
+--- a/include/drm/ttm/ttm_page_alloc.h
++++ b/include/drm/ttm/ttm_page_alloc.h
+@@ -32,6 +32,7 @@
+ #ifdef CONFIG_SWIOTLB
+ extern bool ttm_dma_override(struct ttm_backend_func *be);
+ 
++extern int ttm_dma_disable;
+ /**
+  * Initialize pool allocator.
+  */
+@@ -45,6 +46,7 @@ void ttm_dma_page_alloc_fini(void);
+  */
+ extern int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data);
+ #else
++#define ttm_dma_disable (1)
+ static inline bool ttm_dma_override(struct ttm_backend_func *be)
+ {
+ 	return false;
 -- 
 1.7.6.4
 
