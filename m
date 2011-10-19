@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab1JSXGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 19:06:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37630 "EHLO
+	id S1755364Ab1JSXHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 19:07:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63334 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab1JSXCm (ORCPT
+	with ESMTP id S1754031Ab1JSXCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 19:02:42 -0400
+	Wed, 19 Oct 2011 19:02:40 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Mark Einon <mark.einon@gmail.com>
-Subject: =?UTF-8?q?staging=3A=20et131x=3A=20move=20et131x=5Fadapter=2Eh=20contents=20into=20et131x=2Ec?=
-Date: Thu, 20 Oct 2011 00:00:55 +0100
-Message-Id: <1319065268-2863-5-git-send-email-mark.einon@gmail.com>
+Subject: =?UTF-8?q?staging=3A=20et131x=3A=20move=20et1310=5Fphy=2Eh=20contents=20into=20et131x=2Eh?=
+Date: Thu, 20 Oct 2011 00:00:54 +0100
+Message-Id: <1319065268-2863-4-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319065268-2863-1-git-send-email-mark.einon@gmail.com>
 References: <1319065268-2863-1-git-send-email-mark.einon@gmail.com>
@@ -24,191 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move et131x_adapter.h contents into et131x.c and delete et131x_adapter.h
+Move et1310_phy.h register defines into et131x.h and delete
+et1310_phy.h
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et131x.c         |  152 +++++++++++++++++++++-
- drivers/staging/et131x/et131x_adapter.h |  217 -------------------------------
- 2 files changed, 151 insertions(+), 218 deletions(-)
- delete mode 100644 drivers/staging/et131x/et131x_adapter.h
+ drivers/staging/et131x/et1310_phy.h |  290 -----------------------------------
+ drivers/staging/et131x/et131x.c     |    1 -
+ drivers/staging/et131x/et131x.h     |  227 +++++++++++++++++++++++++++
+ 3 files changed, 227 insertions(+), 291 deletions(-)
+ delete mode 100644 drivers/staging/et131x/et1310_phy.h
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 271ae31..e88c277 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -83,7 +83,6 @@
- #include <linux/random.h>
- #include <linux/phy.h>
- 
--#include "et131x_adapter.h"
- #include "et1310_tx.h"
- #include "et1310_rx.h"
- #include "et131x.h"
-@@ -125,6 +124,157 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
- #define INT_MASK_ENABLE             0xfffebf17
- #define INT_MASK_ENABLE_NO_FLOW     0xfffebfd7
- 
-+/* ADAPTER defines */
-+/*
-+ * Do not change these values: if changed, then change also in respective
-+ * TXdma and Rxdma engines
-+ */
-+#define NUM_DESC_PER_RING_TX         512    /* TX Do not change these values */
-+#define NUM_TCB                      64
-+
-+/*
-+ * These values are all superseded by registry entries to facilitate tuning.
-+ * Once the desired performance has been achieved, the optimal registry values
-+ * should be re-populated to these #defines:
-+ */
-+#define NUM_TRAFFIC_CLASSES          1
-+
-+#define TX_ERROR_PERIOD             1000
-+
-+#define LO_MARK_PERCENT_FOR_PSR     15
-+#define LO_MARK_PERCENT_FOR_RX      15
-+
-+/* RFD (Receive Frame Descriptor) */
-+struct rfd {
-+	struct list_head list_node;
-+	struct sk_buff *skb;
-+	u32 len;	/* total size of receive frame */
-+	u16 bufferindex;
-+	u8 ringindex;
-+};
-+
-+/* Flow Control */
-+#define FLOW_BOTH	0
-+#define FLOW_TXONLY	1
-+#define FLOW_RXONLY	2
-+#define FLOW_NONE	3
-+
-+/* Struct to define some device statistics */
-+struct ce_stats {
-+	/* MIB II variables
-+	 *
-+	 * NOTE: atomic_t types are only guaranteed to store 24-bits; if we
-+	 * MUST have 32, then we'll need another way to perform atomic
-+	 * operations
-+	 */
-+	u32		unicast_pkts_rcvd;
-+	atomic_t	unicast_pkts_xmtd;
-+	u32		multicast_pkts_rcvd;
-+	atomic_t	multicast_pkts_xmtd;
-+	u32		broadcast_pkts_rcvd;
-+	atomic_t	broadcast_pkts_xmtd;
-+	u32		rcvd_pkts_dropped;
-+
-+	/* Tx Statistics. */
-+	u32		tx_underflows;
-+
-+	u32		tx_collisions;
-+	u32		tx_excessive_collisions;
-+	u32		tx_first_collisions;
-+	u32		tx_late_collisions;
-+	u32		tx_max_pkt_errs;
-+	u32		tx_deferred;
-+
-+	/* Rx Statistics. */
-+	u32		rx_overflows;
-+
-+	u32		rx_length_errs;
-+	u32		rx_align_errs;
-+	u32		rx_crc_errs;
-+	u32		rx_code_violations;
-+	u32		rx_other_errs;
-+
-+	u32		synchronous_iterations;
-+	u32		interrupt_status;
-+};
-+
-+/* The private adapter structure */
-+struct et131x_adapter {
-+	struct net_device *netdev;
-+	struct pci_dev *pdev;
-+	struct mii_bus *mii_bus;
-+	struct phy_device *phydev;
-+	struct work_struct task;
-+
-+	/* Flags that indicate current state of the adapter */
-+	u32 flags;
-+
-+	/* local link state, to determine if a state change has occurred */
-+	int link;
-+
-+	/* Configuration  */
-+	u8 rom_addr[ETH_ALEN];
-+	u8 addr[ETH_ALEN];
-+	bool has_eeprom;
-+	u8 eeprom_data[2];
-+
-+	/* Spinlocks */
-+	spinlock_t lock;
-+
-+	spinlock_t tcb_send_qlock;
-+	spinlock_t tcb_ready_qlock;
-+	spinlock_t send_hw_lock;
-+
-+	spinlock_t rcv_lock;
-+	spinlock_t rcv_pend_lock;
-+	spinlock_t fbr_lock;
-+
-+	spinlock_t phy_lock;
-+
-+	/* Packet Filter and look ahead size */
-+	u32 packet_filter;
-+
-+	/* multicast list */
-+	u32 multicast_addr_count;
-+	u8 multicast_list[NIC_MAX_MCAST_LIST][ETH_ALEN];
-+
-+	/* Pointer to the device's PCI register space */
-+	struct address_map __iomem *regs;
-+
-+	/* Registry parameters */
-+	u8 wanted_flow;		/* Flow we want for 802.3x flow control */
-+	u32 registry_jumbo_packet;	/* Max supported ethernet packet size */
-+
-+	/* Derived from the registry: */
-+	u8 flowcontrol;		/* flow control validated by the far-end */
-+
-+	/* Minimize init-time */
-+	struct timer_list error_timer;
-+
-+	/* variable putting the phy into coma mode when boot up with no cable
-+	 * plugged in after 5 seconds
-+	 */
-+	u8 boot_coma;
-+
-+	/* Next two used to save power information at power down. This
-+	 * information will be used during power up to set up parts of Power
-+	 * Management in JAGCore
-+	 */
-+	u16 pdown_speed;
-+	u8 pdown_duplex;
-+
-+	/* Tx Memory Variables */
-+	struct tx_ring tx_ring;
-+
-+	/* Rx Memory Variables */
-+	struct rx_ring rx_ring;
-+
-+	/* Stats */
-+	struct ce_stats stats;
-+
-+	struct net_device_stats net_stats;
-+};
-+
- void et131x_error_timer_handler(unsigned long data);
- void et131x_enable_interrupts(struct et131x_adapter *adapter);
- void et131x_disable_interrupts(struct et131x_adapter *adapter);
-diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
+diff --git a/drivers/staging/et131x/et1310_phy.h b/drivers/staging/et131x/et1310_phy.h
 deleted file mode 100644
-index 74efdb0..0000000
---- a/drivers/staging/et131x/et131x_adapter.h
+index feb5761..0000000
+--- a/drivers/staging/et131x/et1310_phy.h
 +++ /dev/null
-@@ -1,217 +0,0 @@
+@@ -1,290 +0,0 @@
 -/*
 - * Agere Systems Inc.
 - * 10/100/1000 Base-T Ethernet Driver for the ET1301 and ET131x series MACs
@@ -221,8 +53,8 @@ index 74efdb0..0000000
 - *
 - *------------------------------------------------------------------------------
 - *
-- * et131x_adapter.h - Header which includes the private adapter structure, along
-- *                    with related support structures, macros, definitions, etc.
+- * et1310_phy.h - Defines, structs, enums, prototypes, etc. pertaining to the
+- *                PHY.
 - *
 - *------------------------------------------------------------------------------
 - *
@@ -269,163 +101,483 @@ index 74efdb0..0000000
 - *
 - */
 -
--#ifndef __ET131X_ADAPTER_H__
--#define __ET131X_ADAPTER_H__
--
--#include "et1310_tx.h"
--#include "et1310_rx.h"
+-#ifndef _ET1310_PHY_H_
+-#define _ET1310_PHY_H_
 -
 -/*
-- * Do not change these values: if changed, then change also in respective
-- * TXdma and Rxdma engines
+- * Defines for generic MII registers 0x00 -> 0x0F can be found in
+- * include/linux/mii.h
 - */
--#define NUM_DESC_PER_RING_TX         512    /* TX Do not change these values */
--#define NUM_TCB                      64
 -
--/*
-- * These values are all superseded by registry entries to facilitate tuning.
-- * Once the desired performance has been achieved, the optimal registry values
-- * should be re-populated to these #defines:
+-/* some defines for modem registers that seem to be 'reserved' */
+-#define PHY_INDEX_REG              0x10
+-#define PHY_DATA_REG               0x11
+-#define PHY_MPHY_CONTROL_REG       0x12
+-
+-/* defines for specified registers */
+-#define PHY_LOOPBACK_CONTROL       0x13	/* TRU_VMI_LOOPBACK_CONTROL_1_REG 19 */
+-					/* TRU_VMI_LOOPBACK_CONTROL_2_REG 20 */
+-#define PHY_REGISTER_MGMT_CONTROL  0x15	/* TRU_VMI_MI_SEQ_CONTROL_REG     21 */
+-#define PHY_CONFIG                 0x16	/* TRU_VMI_CONFIGURATION_REG      22 */
+-#define PHY_PHY_CONTROL            0x17	/* TRU_VMI_PHY_CONTROL_REG        23 */
+-#define PHY_INTERRUPT_MASK         0x18	/* TRU_VMI_INTERRUPT_MASK_REG     24 */
+-#define PHY_INTERRUPT_STATUS       0x19	/* TRU_VMI_INTERRUPT_STATUS_REG   25 */
+-#define PHY_PHY_STATUS             0x1A	/* TRU_VMI_PHY_STATUS_REG         26 */
+-#define PHY_LED_1                  0x1B	/* TRU_VMI_LED_CONTROL_1_REG      27 */
+-#define PHY_LED_2                  0x1C	/* TRU_VMI_LED_CONTROL_2_REG      28 */
+-					/* TRU_VMI_LINK_CONTROL_REG       29 */
+-					/* TRU_VMI_TIMING_CONTROL_REG        */
+-
+-/* MI Register 10: Gigabit basic mode status reg(Reg 0x0A) */
+-#define ET_1000BT_MSTR_SLV 0x4000
+-
+-/* MI Register 16 - 18: Reserved Reg(0x10-0x12) */
+-
+-/* MI Register 19: Loopback Control Reg(0x13)
+- *	15:	mii_en
+- *	14:	pcs_en
+- *	13:	pmd_en
+- *	12:	all_digital_en
+- *	11:	replica_en
+- *	10:	line_driver_en
+- *	9-0:	reserved
 - */
--#define NUM_TRAFFIC_CLASSES          1
 -
--#define TX_ERROR_PERIOD             1000
+-/* MI Register 20: Reserved Reg(0x14) */
 -
--#define LO_MARK_PERCENT_FOR_PSR     15
--#define LO_MARK_PERCENT_FOR_RX      15
+-/* MI Register 21: Management Interface Control Reg(0x15)
+- *	15-11:	reserved
+- *	10-4:	mi_error_count
+- *	3:	reserved
+- *	2:	ignore_10g_fr
+- *	1:	reserved
+- *	0:	preamble_supress_en
+- */
 -
--/* RFD (Receive Frame Descriptor) */
--struct rfd {
--	struct list_head list_node;
--	struct sk_buff *skb;
--	u32 len;	/* total size of receive frame */
--	u16 bufferindex;
--	u8 ringindex;
--};
+-/* MI Register 22: PHY Configuration Reg(0x16)
+- *	15:	crs_tx_en
+- *	14:	reserved
+- *	13-12:	tx_fifo_depth
+- *	11-10:	speed_downshift
+- *	9:	pbi_detect
+- *	8:	tbi_rate
+- *	7:	alternate_np
+- *	6:	group_mdio_en
+- *	5:	tx_clock_en
+- *	4:	sys_clock_en
+- *	3:	reserved
+- *	2-0:	mac_if_mode
+- */
 -
--/* Flow Control */
--#define FLOW_BOTH	0
--#define FLOW_TXONLY	1
--#define FLOW_RXONLY	2
--#define FLOW_NONE	3
+-#define ET_PHY_CONFIG_TX_FIFO_DEPTH	0x3000
 -
--/* Struct to define some device statistics */
--struct ce_stats {
--	/* MIB II variables
--	 *
--	 * NOTE: atomic_t types are only guaranteed to store 24-bits; if we
--	 * MUST have 32, then we'll need another way to perform atomic
--	 * operations
--	 */
--	u32		unicast_pkts_rcvd;
--	atomic_t	unicast_pkts_xmtd;
--	u32		multicast_pkts_rcvd;
--	atomic_t	multicast_pkts_xmtd;
--	u32		broadcast_pkts_rcvd;
--	atomic_t	broadcast_pkts_xmtd;
--	u32		rcvd_pkts_dropped;
+-#define ET_PHY_CONFIG_FIFO_DEPTH_8	0x0000
+-#define ET_PHY_CONFIG_FIFO_DEPTH_16	0x1000
+-#define ET_PHY_CONFIG_FIFO_DEPTH_32	0x2000
+-#define ET_PHY_CONFIG_FIFO_DEPTH_64	0x3000
 -
--	/* Tx Statistics. */
--	u32		tx_underflows;
+-/* MI Register 23: PHY CONTROL Reg(0x17)
+- *	15:	reserved
+- *	14:	tdr_en
+- *	13:	reserved
+- *	12-11:	downshift_attempts
+- *	10-6:	reserved
+- *	5:	jabber_10baseT
+- *	4:	sqe_10baseT
+- *	3:	tp_loopback_10baseT
+- *	2:	preamble_gen_en
+- *	1:	reserved
+- *	0:	force_int
+- */
 -
--	u32		tx_collisions;
--	u32		tx_excessive_collisions;
--	u32		tx_first_collisions;
--	u32		tx_late_collisions;
--	u32		tx_max_pkt_errs;
--	u32		tx_deferred;
+-/* MI Register 24: Interrupt Mask Reg(0x18)
+- *	15-10:	reserved
+- *	9:	mdio_sync_lost
+- *	8:	autoneg_status
+- *	7:	hi_bit_err
+- *	6:	np_rx
+- *	5:	err_counter_full
+- *	4:	fifo_over_underflow
+- *	3:	rx_status
+- *	2:	link_status
+- *	1:	automatic_speed
+- *	0:	int_en
+- */
 -
--	/* Rx Statistics. */
--	u32		rx_overflows;
+-#define ET_PHY_INT_MASK_AUTONEGSTAT	0x0100
+-#define ET_PHY_INT_MASK_LINKSTAT	0x0004
+-#define ET_PHY_INT_MASK_ENABLE		0x0001
 -
--	u32		rx_length_errs;
--	u32		rx_align_errs;
--	u32		rx_crc_errs;
--	u32		rx_code_violations;
--	u32		rx_other_errs;
+-/* MI Register 25: Interrupt Status Reg(0x19)
+- *	15-10:	reserved
+- *	9:	mdio_sync_lost
+- *	8:	autoneg_status
+- *	7:	hi_bit_err
+- *	6:	np_rx
+- *	5:	err_counter_full
+- *	4:	fifo_over_underflow
+- *	3:	rx_status
+- *	2:	link_status
+- *	1:	automatic_speed
+- *	0:	int_en
+- */
 -
--	u32		synchronous_iterations;
--	u32		interrupt_status;
--};
+-/* MI Register 26: PHY Status Reg(0x1A)
+- *	15:	reserved
+- *	14-13:	autoneg_fault
+- *	12:	autoneg_status
+- *	11:	mdi_x_status
+- *	10:	polarity_status
+- *	9-8:	speed_status
+- *	7:	duplex_status
+- *	6:	link_status
+- *	5:	tx_status
+- *	4:	rx_status
+- *	3:	collision_status
+- *	2:	autoneg_en
+- *	1:	pause_en
+- *	0:	asymmetric_dir
+- */
+-#define ET_PHY_AUTONEG_STATUS	0x1000
+-#define ET_PHY_POLARITY_STATUS	0x0400
+-#define ET_PHY_SPEED_STATUS	0x0300
+-#define ET_PHY_DUPLEX_STATUS	0x0080
+-#define ET_PHY_LSTATUS		0x0040
+-#define ET_PHY_AUTONEG_ENABLE	0x0020
 -
--/* The private adapter structure */
--struct et131x_adapter {
--	struct net_device *netdev;
--	struct pci_dev *pdev;
--	struct mii_bus *mii_bus;
--	struct phy_device *phydev;
--	struct work_struct task;
+-/* MI Register 27: LED Control Reg 1(0x1B)
+- *	15-14:	reserved
+- *	13-12:	led_dup_indicate
+- *	11-10:	led_10baseT
+- *	9-8:	led_collision
+- *	7-4:	reserved
+- *	3-2:	pulse_dur
+- *	1:	pulse_stretch1
+- *	0:	pulse_stretch0
+- */
 -
--	/* Flags that indicate current state of the adapter */
--	u32 flags;
+-/* MI Register 28: LED Control Reg 2(0x1C)
+- *	15-12:	led_link
+- *	11-8:	led_tx_rx
+- *	7-4:	led_100BaseTX
+- *	3-0:	led_1000BaseT
+- */
+-#define ET_LED2_LED_LINK	0xF000
+-#define ET_LED2_LED_TXRX	0x0F00
+-#define ET_LED2_LED_100TX	0x00F0
+-#define ET_LED2_LED_1000T	0x000F
 -
--	/* local link state, to determine if a state change has occurred */
--	int link;
+-/* defines for LED control reg 2 values */
+-#define LED_VAL_1000BT			0x0
+-#define LED_VAL_100BTX			0x1
+-#define LED_VAL_10BT			0x2
+-#define LED_VAL_1000BT_100BTX		0x3 /* 1000BT on, 100BTX blink */
+-#define LED_VAL_LINKON			0x4
+-#define LED_VAL_TX			0x5
+-#define LED_VAL_RX			0x6
+-#define LED_VAL_TXRX			0x7 /* TX or RX */
+-#define LED_VAL_DUPLEXFULL		0x8
+-#define LED_VAL_COLLISION		0x9
+-#define LED_VAL_LINKON_ACTIVE		0xA /* Link on, activity blink */
+-#define LED_VAL_LINKON_RECV		0xB /* Link on, receive blink */
+-#define LED_VAL_DUPLEXFULL_COLLISION	0xC /* Duplex on, collision blink */
+-#define LED_VAL_BLINK			0xD
+-#define LED_VAL_ON			0xE
+-#define LED_VAL_OFF			0xF
 -
--	/* Configuration  */
--	u8 rom_addr[ETH_ALEN];
--	u8 addr[ETH_ALEN];
--	bool has_eeprom;
--	u8 eeprom_data[2];
+-#define LED_LINK_SHIFT			12
+-#define LED_TXRX_SHIFT			8
+-#define LED_100TX_SHIFT			4
 -
--	/* Spinlocks */
--	spinlock_t lock;
+-/* MI Register 29 - 31: Reserved Reg(0x1D - 0x1E) */
 -
--	spinlock_t tcb_send_qlock;
--	spinlock_t tcb_ready_qlock;
--	spinlock_t send_hw_lock;
+-/* Defines for PHY access routines */
 -
--	spinlock_t rcv_lock;
--	spinlock_t rcv_pend_lock;
--	spinlock_t fbr_lock;
+-/* Define bit operation flags */
+-#define TRUEPHY_BIT_CLEAR               0
+-#define TRUEPHY_BIT_SET                 1
+-#define TRUEPHY_BIT_READ                2
 -
--	spinlock_t phy_lock;
+-/* Define read/write operation flags */
+-#ifndef TRUEPHY_READ
+-#define TRUEPHY_READ                    0
+-#define TRUEPHY_WRITE                   1
+-#define TRUEPHY_MASK                    2
+-#endif
 -
--	/* Packet Filter and look ahead size */
--	u32 packet_filter;
+-/* Define master/slave configuration values */
+-#define TRUEPHY_CFG_SLAVE               0
+-#define TRUEPHY_CFG_MASTER              1
 -
--	/* multicast list */
--	u32 multicast_addr_count;
--	u8 multicast_list[NIC_MAX_MCAST_LIST][ETH_ALEN];
+-/* Define MDI/MDI-X settings */
+-#define TRUEPHY_MDI                     0
+-#define TRUEPHY_MDIX                    1
+-#define TRUEPHY_AUTO_MDI_MDIX           2
 -
--	/* Pointer to the device's PCI register space */
--	struct address_map __iomem *regs;
+-/* Define 10Base-T link polarities */
+-#define TRUEPHY_POLARITY_NORMAL         0
+-#define TRUEPHY_POLARITY_INVERTED       1
 -
--	/* Registry parameters */
--	u8 wanted_flow;		/* Flow we want for 802.3x flow control */
--	u32 registry_jumbo_packet;	/* Max supported ethernet packet size */
+-/* Define auto-negotiation results */
+-#define TRUEPHY_ANEG_NOT_COMPLETE       0
+-#define TRUEPHY_ANEG_COMPLETE           1
+-#define TRUEPHY_ANEG_DISABLED           2
 -
--	/* Derived from the registry: */
--	u8 flowcontrol;		/* flow control validated by the far-end */
+-/* Define duplex advertisement flags */
+-#define TRUEPHY_ADV_DUPLEX_NONE         0x00
+-#define TRUEPHY_ADV_DUPLEX_FULL         0x01
+-#define TRUEPHY_ADV_DUPLEX_HALF         0x02
+-#define TRUEPHY_ADV_DUPLEX_BOTH     \
+-	(TRUEPHY_ADV_DUPLEX_FULL | TRUEPHY_ADV_DUPLEX_HALF)
 -
--	/* Minimize init-time */
--	struct timer_list error_timer;
--
--	/* variable putting the phy into coma mode when boot up with no cable
--	 * plugged in after 5 seconds
--	 */
--	u8 boot_coma;
--
--	/* Next two used to save power information at power down. This
--	 * information will be used during power up to set up parts of Power
--	 * Management in JAGCore
--	 */
--	u16 pdown_speed;
--	u8 pdown_duplex;
--
--	/* Tx Memory Variables */
--	struct tx_ring tx_ring;
--
--	/* Rx Memory Variables */
--	struct rx_ring rx_ring;
--
--	/* Stats */
--	struct ce_stats stats;
--
--	struct net_device_stats net_stats;
--};
--
--#endif /* __ET131X_ADAPTER_H__ */
+-#endif /* _ET1310_PHY_H_ */
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 60ff3bc..271ae31 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -83,7 +83,6 @@
+ #include <linux/random.h>
+ #include <linux/phy.h>
+ 
+-#include "et1310_phy.h"
+ #include "et131x_adapter.h"
+ #include "et1310_tx.h"
+ #include "et1310_rx.h"
+diff --git a/drivers/staging/et131x/et131x.h b/drivers/staging/et131x/et131x.h
+index 8f61a72..84b274d 100644
+--- a/drivers/staging/et131x/et131x.h
++++ b/drivers/staging/et131x/et131x.h
+@@ -1447,3 +1447,230 @@ struct address_map {
+ 	u8 unused_exp_rom[4096];	/* MGS-size TBD */
+ 	u8 unused__[524288];	/* unused section of address map */
+ };
++
++/*
++ * Defines for generic MII registers 0x00 -> 0x0F can be found in
++ * include/linux/mii.h
++ */
++
++/* some defines for modem registers that seem to be 'reserved' */
++#define PHY_INDEX_REG              0x10
++#define PHY_DATA_REG               0x11
++#define PHY_MPHY_CONTROL_REG       0x12
++
++/* defines for specified registers */
++#define PHY_LOOPBACK_CONTROL       0x13	/* TRU_VMI_LOOPBACK_CONTROL_1_REG 19 */
++					/* TRU_VMI_LOOPBACK_CONTROL_2_REG 20 */
++#define PHY_REGISTER_MGMT_CONTROL  0x15	/* TRU_VMI_MI_SEQ_CONTROL_REG     21 */
++#define PHY_CONFIG                 0x16	/* TRU_VMI_CONFIGURATION_REG      22 */
++#define PHY_PHY_CONTROL            0x17	/* TRU_VMI_PHY_CONTROL_REG        23 */
++#define PHY_INTERRUPT_MASK         0x18	/* TRU_VMI_INTERRUPT_MASK_REG     24 */
++#define PHY_INTERRUPT_STATUS       0x19	/* TRU_VMI_INTERRUPT_STATUS_REG   25 */
++#define PHY_PHY_STATUS             0x1A	/* TRU_VMI_PHY_STATUS_REG         26 */
++#define PHY_LED_1                  0x1B	/* TRU_VMI_LED_CONTROL_1_REG      27 */
++#define PHY_LED_2                  0x1C	/* TRU_VMI_LED_CONTROL_2_REG      28 */
++					/* TRU_VMI_LINK_CONTROL_REG       29 */
++					/* TRU_VMI_TIMING_CONTROL_REG        */
++
++/* MI Register 10: Gigabit basic mode status reg(Reg 0x0A) */
++#define ET_1000BT_MSTR_SLV 0x4000
++
++/* MI Register 16 - 18: Reserved Reg(0x10-0x12) */
++
++/* MI Register 19: Loopback Control Reg(0x13)
++ *	15:	mii_en
++ *	14:	pcs_en
++ *	13:	pmd_en
++ *	12:	all_digital_en
++ *	11:	replica_en
++ *	10:	line_driver_en
++ *	9-0:	reserved
++ */
++
++/* MI Register 20: Reserved Reg(0x14) */
++
++/* MI Register 21: Management Interface Control Reg(0x15)
++ *	15-11:	reserved
++ *	10-4:	mi_error_count
++ *	3:	reserved
++ *	2:	ignore_10g_fr
++ *	1:	reserved
++ *	0:	preamble_supress_en
++ */
++
++/* MI Register 22: PHY Configuration Reg(0x16)
++ *	15:	crs_tx_en
++ *	14:	reserved
++ *	13-12:	tx_fifo_depth
++ *	11-10:	speed_downshift
++ *	9:	pbi_detect
++ *	8:	tbi_rate
++ *	7:	alternate_np
++ *	6:	group_mdio_en
++ *	5:	tx_clock_en
++ *	4:	sys_clock_en
++ *	3:	reserved
++ *	2-0:	mac_if_mode
++ */
++
++#define ET_PHY_CONFIG_TX_FIFO_DEPTH	0x3000
++
++#define ET_PHY_CONFIG_FIFO_DEPTH_8	0x0000
++#define ET_PHY_CONFIG_FIFO_DEPTH_16	0x1000
++#define ET_PHY_CONFIG_FIFO_DEPTH_32	0x2000
++#define ET_PHY_CONFIG_FIFO_DEPTH_64	0x3000
++
++/* MI Register 23: PHY CONTROL Reg(0x17)
++ *	15:	reserved
++ *	14:	tdr_en
++ *	13:	reserved
++ *	12-11:	downshift_attempts
++ *	10-6:	reserved
++ *	5:	jabber_10baseT
++ *	4:	sqe_10baseT
++ *	3:	tp_loopback_10baseT
++ *	2:	preamble_gen_en
++ *	1:	reserved
++ *	0:	force_int
++ */
++
++/* MI Register 24: Interrupt Mask Reg(0x18)
++ *	15-10:	reserved
++ *	9:	mdio_sync_lost
++ *	8:	autoneg_status
++ *	7:	hi_bit_err
++ *	6:	np_rx
++ *	5:	err_counter_full
++ *	4:	fifo_over_underflow
++ *	3:	rx_status
++ *	2:	link_status
++ *	1:	automatic_speed
++ *	0:	int_en
++ */
++
++#define ET_PHY_INT_MASK_AUTONEGSTAT	0x0100
++#define ET_PHY_INT_MASK_LINKSTAT	0x0004
++#define ET_PHY_INT_MASK_ENABLE		0x0001
++
++/* MI Register 25: Interrupt Status Reg(0x19)
++ *	15-10:	reserved
++ *	9:	mdio_sync_lost
++ *	8:	autoneg_status
++ *	7:	hi_bit_err
++ *	6:	np_rx
++ *	5:	err_counter_full
++ *	4:	fifo_over_underflow
++ *	3:	rx_status
++ *	2:	link_status
++ *	1:	automatic_speed
++ *	0:	int_en
++ */
++
++/* MI Register 26: PHY Status Reg(0x1A)
++ *	15:	reserved
++ *	14-13:	autoneg_fault
++ *	12:	autoneg_status
++ *	11:	mdi_x_status
++ *	10:	polarity_status
++ *	9-8:	speed_status
++ *	7:	duplex_status
++ *	6:	link_status
++ *	5:	tx_status
++ *	4:	rx_status
++ *	3:	collision_status
++ *	2:	autoneg_en
++ *	1:	pause_en
++ *	0:	asymmetric_dir
++ */
++#define ET_PHY_AUTONEG_STATUS	0x1000
++#define ET_PHY_POLARITY_STATUS	0x0400
++#define ET_PHY_SPEED_STATUS	0x0300
++#define ET_PHY_DUPLEX_STATUS	0x0080
++#define ET_PHY_LSTATUS		0x0040
++#define ET_PHY_AUTONEG_ENABLE	0x0020
++
++/* MI Register 27: LED Control Reg 1(0x1B)
++ *	15-14:	reserved
++ *	13-12:	led_dup_indicate
++ *	11-10:	led_10baseT
++ *	9-8:	led_collision
++ *	7-4:	reserved
++ *	3-2:	pulse_dur
++ *	1:	pulse_stretch1
++ *	0:	pulse_stretch0
++ */
++
++/* MI Register 28: LED Control Reg 2(0x1C)
++ *	15-12:	led_link
++ *	11-8:	led_tx_rx
++ *	7-4:	led_100BaseTX
++ *	3-0:	led_1000BaseT
++ */
++#define ET_LED2_LED_LINK	0xF000
++#define ET_LED2_LED_TXRX	0x0F00
++#define ET_LED2_LED_100TX	0x00F0
++#define ET_LED2_LED_1000T	0x000F
++
++/* defines for LED control reg 2 values */
++#define LED_VAL_1000BT			0x0
++#define LED_VAL_100BTX			0x1
++#define LED_VAL_10BT			0x2
++#define LED_VAL_1000BT_100BTX		0x3 /* 1000BT on, 100BTX blink */
++#define LED_VAL_LINKON			0x4
++#define LED_VAL_TX			0x5
++#define LED_VAL_RX			0x6
++#define LED_VAL_TXRX			0x7 /* TX or RX */
++#define LED_VAL_DUPLEXFULL		0x8
++#define LED_VAL_COLLISION		0x9
++#define LED_VAL_LINKON_ACTIVE		0xA /* Link on, activity blink */
++#define LED_VAL_LINKON_RECV		0xB /* Link on, receive blink */
++#define LED_VAL_DUPLEXFULL_COLLISION	0xC /* Duplex on, collision blink */
++#define LED_VAL_BLINK			0xD
++#define LED_VAL_ON			0xE
++#define LED_VAL_OFF			0xF
++
++#define LED_LINK_SHIFT			12
++#define LED_TXRX_SHIFT			8
++#define LED_100TX_SHIFT			4
++
++/* MI Register 29 - 31: Reserved Reg(0x1D - 0x1E) */
++
++/* Defines for PHY access routines */
++
++/* Define bit operation flags */
++#define TRUEPHY_BIT_CLEAR               0
++#define TRUEPHY_BIT_SET                 1
++#define TRUEPHY_BIT_READ                2
++
++/* Define read/write operation flags */
++#ifndef TRUEPHY_READ
++#define TRUEPHY_READ                    0
++#define TRUEPHY_WRITE                   1
++#define TRUEPHY_MASK                    2
++#endif
++
++/* Define master/slave configuration values */
++#define TRUEPHY_CFG_SLAVE               0
++#define TRUEPHY_CFG_MASTER              1
++
++/* Define MDI/MDI-X settings */
++#define TRUEPHY_MDI                     0
++#define TRUEPHY_MDIX                    1
++#define TRUEPHY_AUTO_MDI_MDIX           2
++
++/* Define 10Base-T link polarities */
++#define TRUEPHY_POLARITY_NORMAL         0
++#define TRUEPHY_POLARITY_INVERTED       1
++
++/* Define auto-negotiation results */
++#define TRUEPHY_ANEG_NOT_COMPLETE       0
++#define TRUEPHY_ANEG_COMPLETE           1
++#define TRUEPHY_ANEG_DISABLED           2
++
++/* Define duplex advertisement flags */
++#define TRUEPHY_ADV_DUPLEX_NONE         0x00
++#define TRUEPHY_ADV_DUPLEX_FULL         0x01
++#define TRUEPHY_ADV_DUPLEX_HALF         0x02
++#define TRUEPHY_ADV_DUPLEX_BOTH     \
++	(TRUEPHY_ADV_DUPLEX_FULL | TRUEPHY_ADV_DUPLEX_HALF)
++
 -- 
 1.7.6.4
 
