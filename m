@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab1JSWNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:13:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51301 "EHLO ogre.sisk.pl"
+	id S1755239Ab1JSWNd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:13:33 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51297 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754676Ab1JSWNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:13:06 -0400
+	id S932066Ab1JSWND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:13:03 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [PATCH 2/3] ARM: mach-shmobile: sh7372 A3SP support (v4)
-Date: Thu, 20 Oct 2011 00:14:33 +0200
+Subject: [PATCH 3/3] ARM: mach-shmobile: sh7372 A4R support (v4)
+Date: Thu, 20 Oct 2011 00:15:06 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
@@ -20,77 +20,59 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110200014.33248.rjw@sisk.pl>
+Message-Id: <201110200015.06277.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-This change adds support for the sh7372 A3SP power domain.
+This change adds support for the sh7372 A4R power domain.
 
-The sh7372 A3SP hardware power domain contains a
-wide range of I/O devices. The list of I/O devices
-include SCIF serial ports, DMA Engine hardware,
-SD and MMC controller hardware, USB controllers
-and I2C master controllers.
+The sh7372 A4R hardware power domain contains the
+SH CPU Core and a set of I/O devices including
+multimedia accelerators and I2C controllers.
 
-This patch adds the A3SP low level code which 
-powers the hardware power domain on and off. It
-also ties in platform devices to the pm domain
-support code.
-
-It is worth noting that the serial console is
-hooked up to SCIFA0 on most sh7372 boards, and
-the SCIFA0 port is included in the A3SP hardware
-power domain. For this reason we cannot output
-debug messages from the low level power control
-code in the case of A3SP.
-
-QoS support is needed in drivers before we can
-enable the A3SP power control on the fly.
+One special case about A4R is the INTCS interrupt
+controller that needs to be saved and restored to
+keep working as expected. Also the LCDC hardware
+blocks are in a different hardware power domain
+but have their IRQs routed only through INTCS. So
+as long as LCDCs are active we cannot power down
+INTCS because that would risk losing interrupts.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/board-ap4evb.c        |    4 +++
- arch/arm/mach-shmobile/board-mackerel.c      |    8 +++++++
- arch/arm/mach-shmobile/include/mach/sh7372.h |    3 ++
- arch/arm/mach-shmobile/pm-sh7372.c           |   30 ++++++++++++++++++++++-----
- arch/arm/mach-shmobile/setup-sh7372.c        |   14 ++++++++++++
- 5 files changed, 54 insertions(+), 5 deletions(-)
+ arch/arm/mach-shmobile/board-ap4evb.c        |    1 
+ arch/arm/mach-shmobile/board-mackerel.c      |    1 
+ arch/arm/mach-shmobile/include/mach/sh7372.h |    7 +++
+ arch/arm/mach-shmobile/intc-sh7372.c         |   52 ++++++++++++++++++++++++++-
+ arch/arm/mach-shmobile/pm-sh7372.c           |   29 ++++++++++++++-
+ arch/arm/mach-shmobile/setup-sh7372.c        |    8 ++++
+ 6 files changed, 96 insertions(+), 2 deletions(-)
 
 Index: linux/arch/arm/mach-shmobile/board-ap4evb.c
 ===================================================================
 --- linux.orig/arch/arm/mach-shmobile/board-ap4evb.c
 +++ linux/arch/arm/mach-shmobile/board-ap4evb.c
-@@ -1409,6 +1409,10 @@ static void __init ap4evb_init(void)
- 	sh7372_add_device_to_domain(&sh7372_a4lc, &lcdc_device);
- 	sh7372_add_device_to_domain(&sh7372_a4mp, &fsi_device);
+@@ -1412,6 +1412,7 @@ static void __init ap4evb_init(void)
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &sh_mmcif_device);
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi0_device);
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi1_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &ceu_device);
  
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sh_mmcif_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi0_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi1_device);
-+
  	hdmi_init_pm_clock();
  	fsi_init_pm_clock();
- 	sh7372_pm_init();
 Index: linux/arch/arm/mach-shmobile/board-mackerel.c
 ===================================================================
 --- linux.orig/arch/arm/mach-shmobile/board-mackerel.c
 +++ linux/arch/arm/mach-shmobile/board-mackerel.c
-@@ -1588,6 +1588,14 @@ static void __init mackerel_init(void)
- 	sh7372_add_device_to_domain(&sh7372_a4lc, &lcdc_device);
- 	sh7372_add_device_to_domain(&sh7372_a4lc, &hdmi_lcdc_device);
- 	sh7372_add_device_to_domain(&sh7372_a4mp, &fsi_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &usbhs0_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &usbhs1_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sh_mmcif_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi0_device);
-+#if !defined(CONFIG_MMC_SH_MMCIF) && !defined(CONFIG_MMC_SH_MMCIF_MODULE)
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi1_device);
-+#endif
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi2_device);
+@@ -1596,6 +1596,7 @@ static void __init mackerel_init(void)
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi1_device);
+ #endif
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &sdhi2_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &ceu_device);
  
  	hdmi_init_pm_clock();
  	sh7372_pm_init();
@@ -98,126 +80,207 @@ Index: linux/arch/arm/mach-shmobile/include/mach/sh7372.h
 ===================================================================
 --- linux.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
 +++ linux/arch/arm/mach-shmobile/include/mach/sh7372.h
-@@ -479,7 +479,9 @@ struct platform_device;
- 
+@@ -480,8 +480,11 @@ struct platform_device;
  struct sh7372_pm_domain {
  	struct generic_pm_domain genpd;
-+	struct dev_power_governor *gov;
+ 	struct dev_power_governor *gov;
++	void (*suspend)(void);
++	void (*resume)(void);
  	unsigned int bit_shift;
-+	bool no_debug;
+ 	bool no_debug;
++	bool stay_on;
  };
  
  static inline struct sh7372_pm_domain *to_sh7372_pd(struct generic_pm_domain *d)
-@@ -493,6 +495,7 @@ extern struct sh7372_pm_domain sh7372_a4
+@@ -493,6 +496,7 @@ static inline struct sh7372_pm_domain *t
+ extern struct sh7372_pm_domain sh7372_a4lc;
+ extern struct sh7372_pm_domain sh7372_a4mp;
  extern struct sh7372_pm_domain sh7372_d4;
++extern struct sh7372_pm_domain sh7372_a4r;
  extern struct sh7372_pm_domain sh7372_a3rv;
  extern struct sh7372_pm_domain sh7372_a3ri;
-+extern struct sh7372_pm_domain sh7372_a3sp;
- extern struct sh7372_pm_domain sh7372_a3sg;
+ extern struct sh7372_pm_domain sh7372_a3sp;
+@@ -509,4 +513,7 @@ extern void sh7372_pm_add_subdomain(stru
+ #define sh7372_pm_add_subdomain(pd, sd) do { } while(0)
+ #endif /* CONFIG_PM */
  
- extern void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd);
++extern void sh7372_intcs_suspend(void);
++extern void sh7372_intcs_resume(void);
++
+ #endif /* __ASM_SH7372_H__ */
+Index: linux/arch/arm/mach-shmobile/intc-sh7372.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/intc-sh7372.c
++++ linux/arch/arm/mach-shmobile/intc-sh7372.c
+@@ -606,9 +606,16 @@ static void intcs_demux(unsigned int irq
+ 	generic_handle_irq(intcs_evt2irq(evtcodeas));
+ }
+ 
++static void __iomem *intcs_ffd2;
++static void __iomem *intcs_ffd5;
++
+ void __init sh7372_init_irq(void)
+ {
+-	void __iomem *intevtsa = ioremap_nocache(0xffd20100, PAGE_SIZE);
++	void __iomem *intevtsa;
++
++	intcs_ffd2 = ioremap_nocache(0xffd20000, PAGE_SIZE);
++	intevtsa = intcs_ffd2 + 0x100;
++	intcs_ffd5 = ioremap_nocache(0xffd50000, PAGE_SIZE);
+ 
+ 	register_intc_controller(&intca_desc);
+ 	register_intc_controller(&intcs_desc);
+@@ -617,3 +624,46 @@ void __init sh7372_init_irq(void)
+ 	irq_set_handler_data(evt2irq(0xf80), (void *)intevtsa);
+ 	irq_set_chained_handler(evt2irq(0xf80), intcs_demux);
+ }
++
++static unsigned short ffd2[0x200];
++static unsigned short ffd5[0x100];
++
++void sh7372_intcs_suspend(void)
++{
++	int k;
++
++	for (k = 0x00; k <= 0x30; k += 4)
++		ffd2[k] = __raw_readw(intcs_ffd2 + k);
++
++	for (k = 0x80; k <= 0xb0; k += 4)
++		ffd2[k] = __raw_readb(intcs_ffd2 + k);
++
++	for (k = 0x180; k <= 0x188; k += 4)
++		ffd2[k] = __raw_readb(intcs_ffd2 + k);
++
++	for (k = 0x00; k <= 0x3c; k += 4)
++		ffd5[k] = __raw_readw(intcs_ffd5 + k);
++
++	for (k = 0x80; k <= 0x9c; k += 4)
++		ffd5[k] = __raw_readb(intcs_ffd5 + k);
++}
++
++void sh7372_intcs_resume(void)
++{
++	int k;
++
++	for (k = 0x00; k <= 0x30; k += 4)
++		__raw_writew(ffd2[k], intcs_ffd2 + k);
++
++	for (k = 0x80; k <= 0xb0; k += 4)
++		__raw_writeb(ffd2[k], intcs_ffd2 + k);
++
++	for (k = 0x180; k <= 0x188; k += 4)
++		__raw_writeb(ffd2[k], intcs_ffd2 + k);
++
++	for (k = 0x00; k <= 0x3c; k += 4)
++		__raw_writew(ffd5[k], intcs_ffd5 + k);
++
++	for (k = 0x80; k <= 0x9c; k += 4)
++		__raw_writeb(ffd5[k], intcs_ffd5 + k);
++}
 Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
 ===================================================================
 --- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
 +++ linux/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -92,8 +92,9 @@ static int pd_power_down(struct generic_
- 		}
- 	}
+@@ -44,6 +44,7 @@
+ #define SPDCR 0xe6180008
+ #define SWUCR 0xe6180014
+ #define SBAR 0xe6180020
++#define WUPRMSK 0xe6180028
+ #define WUPSMSK 0xe618002c
+ #define WUPSMSK2 0xe6180048
+ #define PSTR 0xe6180080
+@@ -80,6 +81,12 @@ static int pd_power_down(struct generic_
+ 	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
+ 	unsigned int mask = 1 << sh7372_pd->bit_shift;
  
--	pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
--		 mask, __raw_readl(PSTR));
-+	if (!sh7372_pd->no_debug)
-+		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
-+			 mask, __raw_readl(PSTR));
++	if (sh7372_pd->suspend)
++		sh7372_pd->suspend();
++
++	if (sh7372_pd->stay_on)
++		return 0;
++
+ 	if (__raw_readl(PSTR) & mask) {
+ 		unsigned int retry_count;
  
- 	return 0;
- }
-@@ -122,8 +123,9 @@ static int pd_power_up(struct generic_pm
+@@ -106,6 +113,9 @@ static int pd_power_up(struct generic_pm
+ 	unsigned int retry_count;
+ 	int ret = 0;
+ 
++	if (sh7372_pd->stay_on)
++		goto out;
++
+ 	if (__raw_readl(PSTR) & mask)
+ 		goto out;
+ 
+@@ -122,14 +132,23 @@ static int pd_power_up(struct generic_pm
+ 	if (__raw_readl(SWUCR) & mask)
  		ret = -EIO;
  
-  out:
--	pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
--		 mask, __raw_readl(PSTR));
-+	if (!sh7372_pd->no_debug)
-+		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
-+			 mask, __raw_readl(PSTR));
+- out:
+ 	if (!sh7372_pd->no_debug)
+ 		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
+ 			 mask, __raw_readl(PSTR));
  
++ out:
++	if (ret == 0 && sh7372_pd->resume)
++		sh7372_pd->resume();
++
  	return ret;
  }
-@@ -133,11 +135,20 @@ static bool pd_active_wakeup(struct devi
- 	return true;
- }
  
-+static bool sh7372_power_down_forbidden(struct dev_pm_domain *domain)
++static void sh7372_a4r_suspend(void)
 +{
-+	return false;
++	sh7372_intcs_suspend();
++	__raw_writel(0x300fffff, WUPRMSK); /* avoid wakeup */
 +}
 +
-+struct dev_power_governor sh7372_always_on_gov = {
-+	.power_down_ok = sh7372_power_down_forbidden,
-+};
-+
- void sh7372_init_pm_domain(struct sh7372_pm_domain *sh7372_pd)
+ static bool pd_active_wakeup(struct device *dev)
  {
- 	struct generic_pm_domain *genpd = &sh7372_pd->genpd;
- 
--	pm_genpd_init(genpd, NULL, false);
-+	pm_genpd_init(genpd, sh7372_pd->gov, false);
- 	genpd->stop_device = pm_clk_suspend;
- 	genpd->start_device = pm_clk_resume;
- 	genpd->dev_irq_safe = true;
-@@ -183,6 +194,12 @@ struct sh7372_pm_domain sh7372_a3ri = {
- 	.bit_shift = 8,
+ 	return true;
+@@ -186,6 +205,14 @@ struct sh7372_pm_domain sh7372_d4 = {
+ 	.bit_shift = 3,
  };
  
-+struct sh7372_pm_domain sh7372_a3sp = {
-+	.bit_shift = 11,
++struct sh7372_pm_domain sh7372_a4r = {
++	.bit_shift = 5,
 +	.gov = &sh7372_always_on_gov,
-+	.no_debug = true,
++	.suspend = sh7372_a4r_suspend,
++	.resume = sh7372_intcs_resume,
++	.stay_on = true,
 +};
 +
- struct sh7372_pm_domain sh7372_a3sg = {
- 	.bit_shift = 13,
+ struct sh7372_pm_domain sh7372_a3rv = {
+ 	.bit_shift = 6,
  };
-@@ -422,6 +439,9 @@ void __init sh7372_pm_init(void)
- 	__raw_writel(0x0000a501, DBGREG9);
- 	__raw_writel(0x00000000, DBGREG1);
- 
-+	/* do not convert A3SM, A3SP, A3SG, A4R power down into A4S */
-+	__raw_writel(0, PDNSEL);
-+
- 	sh7372_suspend_init();
- 	sh7372_cpuidle_init();
- }
 Index: linux/arch/arm/mach-shmobile/setup-sh7372.c
 ===================================================================
 --- linux.orig/arch/arm/mach-shmobile/setup-sh7372.c
 +++ linux/arch/arm/mach-shmobile/setup-sh7372.c
-@@ -994,6 +994,7 @@ void __init sh7372_add_standard_devices(
+@@ -991,12 +991,14 @@ void __init sh7372_add_standard_devices(
+ 	sh7372_init_pm_domain(&sh7372_a4lc);
+ 	sh7372_init_pm_domain(&sh7372_a4mp);
+ 	sh7372_init_pm_domain(&sh7372_d4);
++	sh7372_init_pm_domain(&sh7372_a4r);
  	sh7372_init_pm_domain(&sh7372_a3rv);
  	sh7372_init_pm_domain(&sh7372_a3ri);
  	sh7372_init_pm_domain(&sh7372_a3sg);
-+	sh7372_init_pm_domain(&sh7372_a3sp);
+ 	sh7372_init_pm_domain(&sh7372_a3sp);
  
  	sh7372_pm_add_subdomain(&sh7372_a4lc, &sh7372_a3rv);
++	sh7372_pm_add_subdomain(&sh7372_a4r, &sh7372_a4lc);
  
-@@ -1006,6 +1007,19 @@ void __init sh7372_add_standard_devices(
- 	sh7372_add_device_to_domain(&sh7372_a3rv, &vpu_device);
- 	sh7372_add_device_to_domain(&sh7372_a4mp, &spu0_device);
- 	sh7372_add_device_to_domain(&sh7372_a4mp, &spu1_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif0_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif1_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif2_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif3_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif4_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif5_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &scif6_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &iic1_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &dma0_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &dma1_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &dma2_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &usb_dma0_device);
-+	sh7372_add_device_to_domain(&sh7372_a3sp, &usb_dma1_device);
+ 	platform_add_devices(sh7372_early_devices,
+ 			    ARRAY_SIZE(sh7372_early_devices));
+@@ -1020,6 +1022,12 @@ void __init sh7372_add_standard_devices(
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &dma2_device);
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &usb_dma0_device);
+ 	sh7372_add_device_to_domain(&sh7372_a3sp, &usb_dma1_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &iic0_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &veu0_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &veu1_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &veu2_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &veu3_device);
++	sh7372_add_device_to_domain(&sh7372_a4r, &jpu_device);
  }
  
  void __init sh7372_add_early_devices(void)
