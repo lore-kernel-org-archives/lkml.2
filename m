@@ -1,71 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1JSCXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 22:23:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65326 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab1JSCXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 22:23:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,368,1315206000"; 
-   d="scan'208";a="79482674"
-From: "Xu, Anhua" <anhua.xu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 19 Oct 2011 10:23:12 +0800
-Subject: RE: perf tools: interface for improved PEBS ABI can accept wrong
- parameter
-Thread-Topic: perf tools: interface for improved PEBS ABI can accept wrong
- parameter
-Thread-Index: AcyNw8bcUbdWK6zOSxm4WLVPC5TYCgAQPqrQ
-Message-ID: <1A42CE6F5F474C41B63392A5F80372B212DC9365C1@shsmsx501.ccr.corp.intel.com>
-References: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
-	 <20111018181943.GC21666@elte.hu> <1318962501.14880.6.camel@twins>
-In-Reply-To: <1318962501.14880.6.camel@twins>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1752785Ab1JSC0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 22:26:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32981 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab1JSC0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 22:26:04 -0400
+Date: Tue, 18 Oct 2011 21:25:52 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
+        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
+        dhowells@redhat.com, eparis@redhat.com, netdev@vger.kernel.org
+Subject: [PATCH 9/9] make net/core/scm.c uid comparisons user namespace aware
+ (v2)
+Message-ID: <20111019022552.GA29251@sergelap>
+References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
+ <1318974898-21431-10-git-send-email-serge@hallyn.com>
+ <1318976049.2273.7.camel@Joe-Laptop>
+ <20111018232242.GA22950@hallyn.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111018232242.GA22950@hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9J2O1vq010891
 
-Thanks Peter:). The key point for this is that the detailed information about "PRECISE_IP" may not be exposed to user space.
-Error reporting may come from syscall. Anyway, expect acme's suggestions.
+(Thanks for the suggestions, Joe.)
 
+Currently uids are compared without regard for the user namespace.
+Fix that to prevent tasks in a different user namespace from
+wrongly matching on SCM_CREDENTIALS.
 
------Original Message-----
-From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl] 
-Sent: Wednesday, October 19, 2011 2:28 AM
-To: Ingo Molnar
-Cc: Xu, Anhua; Arnaldo Carvalho de Melo; linux-kernel@vger.kernel.org
-Subject: Re: perf tools: interface for improved PEBS ABI can accept wrong parameter
+In the past, either your uids had to match, or you had to have
+CAP_SETXID.  In a namespaced world, you must either (both be in the
+same user namespace and have your uids match), or you must have
+CAP_SETXID targeted at the other user namespace.  The latter can
+happen for instance if uid 500 created a new user namespace and
+now interacts with uid 0 in it.
 
-On Tue, 2011-10-18 at 20:19 +0200, Ingo Molnar wrote:
-> > +#define SAMPLE_IP_MAX        3 
-> >                               precise_ip     :  2, /* skid constraint       */
-> >                               mmap_data      :  1, /* non-exec mmap data    */
-> >                               sample_id_all  :  1, /* sample_type all events */
-> > diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> > index 928918b..a2068cc 100644
-> > --- a/tools/perf/util/parse-events.c
-> > +++ b/tools/perf/util/parse-events.c
-> > @@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
-> >       attr->exclude_user   = eu;
-> >       attr->exclude_kernel = ek;
-> >       attr->exclude_hv     = eh;
-> > -     attr->precise_ip     = precise;
-> > +     if ( precise < SAMPLE_IP_MAX )
-> > +             attr->precise_ip = precise;
-> > +     else
-> > +             return -1; 
+Changelog: Oct 18:
+	Per Joe Perches: don't mark uidequiv and gidequiv fns inline
+	(let the compiler do that if appropriate), and change the flow
+	of id comparisons to make it clearer.
 
-That name is horrid, how about PRECISE_IP_MAX? Also, I suspect acme will
-want a better error return than -1, but I'll leave that up to him.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Joe Perches <joe@perches.com>
+---
+ net/core/scm.c |   43 ++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 36 insertions(+), 7 deletions(-)
+
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 811b53f..2261607 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -43,17 +43,46 @@
+  *	setu(g)id.
+  */
+ 
+-static __inline__ int scm_check_creds(struct ucred *creds)
++static bool uidequiv(const struct cred *src, struct ucred *tgt,
++			       struct user_namespace *ns)
++{
++	if (src->user_ns != ns)
++		goto check_capable;
++	if (tgt->uid == src->uid ||
++	    tgt->uid == src->euid ||
++	    tgt->uid == src->suid)
++		return true;
++check_capable:
++	if (ns_capable(ns, CAP_SETUID))
++		return true;
++	return false;
++}
++
++static bool gidequiv(const struct cred *src, struct ucred *tgt,
++			       struct user_namespace *ns)
++{
++	if (src->user_ns != ns)
++		goto check_capable;
++	if (tgt->gid == src->gid ||
++	    tgt->gid == src->egid ||
++	    tgt->gid == src->sgid)
++		return true;
++check_capable:
++	if (ns_capable(ns, CAP_SETGID))
++		return true;
++	return false;
++}
++
++static int scm_check_creds(struct ucred *creds, struct socket *sock)
+ {
+ 	const struct cred *cred = current_cred();
++	struct user_namespace *ns = sock_net(sock->sk)->user_ns;
+ 
+-	if ((creds->pid == task_tgid_vnr(current) || capable(CAP_SYS_ADMIN)) &&
+-	    ((creds->uid == cred->uid   || creds->uid == cred->euid ||
+-	      creds->uid == cred->suid) || capable(CAP_SETUID)) &&
+-	    ((creds->gid == cred->gid   || creds->gid == cred->egid ||
+-	      creds->gid == cred->sgid) || capable(CAP_SETGID))) {
++	if ((creds->pid == task_tgid_vnr(current) || ns_capable(ns, CAP_SYS_ADMIN)) &&
++	     uidequiv(cred, creds, ns) && gidequiv(cred, creds, ns)) {
+ 	       return 0;
+ 	}
++
+ 	return -EPERM;
+ }
+ 
+@@ -169,7 +198,7 @@ int __scm_send(struct socket *sock, struct msghdr *msg, struct scm_cookie *p)
+ 			if (cmsg->cmsg_len != CMSG_LEN(sizeof(struct ucred)))
+ 				goto error;
+ 			memcpy(&p->creds, CMSG_DATA(cmsg), sizeof(struct ucred));
+-			err = scm_check_creds(&p->creds);
++			err = scm_check_creds(&p->creds, sock);
+ 			if (err)
+ 				goto error;
+ 
+-- 
+1.7.5.4
+
