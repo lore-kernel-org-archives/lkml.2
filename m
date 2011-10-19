@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab1JSRaQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:30:16 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34600 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab1JSRaO (ORCPT
+	id S1757168Ab1JSRa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:30:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47141 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab1JSRa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:30:14 -0400
-Message-ID: <4E9F0917.1040604@linux.vnet.ibm.com>
-Date: Wed, 19 Oct 2011 22:59:59 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 19 Oct 2011 13:30:58 -0400
+Date: Wed, 19 Oct 2011 10:30:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
+Subject: Re: [PATCH 07/10] block: reorganize throtl_get_tg() and
+ blk_throtl_bio()
+Message-ID: <20111019173053.GG25124@google.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-8-git-send-email-tj@kernel.org>
+ <20111019145622.GE1140@redhat.com>
+ <20111019170625.GD25124@google.com>
+ <20111019171917.GA4026@redhat.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "ashok.raj@intel.com" <ashok.raj@intel.com>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <201110122131.08811.rjw@sisk.pl> <4E9605C7.5070203@linux.vnet.ibm.com> <201110130009.26552.rjw@sisk.pl> <4E9706D8.5040105@linux.vnet.ibm.com> <20111013160602.GJ6281@google.com> <20111013170153.GB3064@aftab> <4E972001.3080204@linux.vnet.ibm.com>
-In-Reply-To: <4E972001.3080204@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111019171917.GA4026@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2011 10:59 PM, Srivatsa S. Bhat wrote:
-> On 10/13/2011 10:31 PM, Borislav Petkov wrote:
->> On Thu, Oct 13, 2011 at 12:06:02PM -0400, Tejun Heo wrote:
->>> I hate to sound like a broken recorder but the above patch isn't
->>> strictly correct for hot-swap cases, right?
->>
->> hpa is working on a ucode loading solution which will take care of your
->> hotswap case too.
->>
-> 
-> Tejun, I have written a patch below (untested) that does what you said.
-> So Boris, hpa's work would make such a patch unnecessary is it?
-> 
+Hello,
 
-I have posted this patch (tested/corrected and with changelog), in case
-it is useful/necessary. Link: https://lkml.org/lkml/2011/10/19/295
+On Wed, Oct 19, 2011 at 01:19:17PM -0400, Vivek Goyal wrote:
+> > Currently, the code has different opportunistic checks which can catch
+> > most of those cases but unfortunatly I think it just makes the bugs
+> > more obscure.
+> > 
+> > That said, we probably should be switching to internal lock once
+> > clenaup is complete.
+> 
+> So even switching to internal lock is racy. Christoph suggeted to break down
+> this sharing of queue lock and driver lock and suggested always use
+> internal queue lock and modify drivers to use their own lock and manage it.
+> It makes sense though it might be lot of work to fix drivers.
 
-> ---
-> 
->  arch/x86/kernel/microcode_core.c |   33 +++++++++++++++++++++++++++++++++
->  1 files changed, 33 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-> index f924280..849ae2d 100644
-> --- a/arch/x86/kernel/microcode_core.c
-> +++ b/arch/x86/kernel/microcode_core.c
-> @@ -155,6 +155,27 @@ static int collect_cpu_info(int cpu)
->  	return ret;
->  }
->  
-> +/*
-> + * Compare the microcode revision that the kernel has in memory
-> + * for this cpu and the microcode revision that we need to apply
-> + * on this cpu. If they match, return 0, else return -1.
-> + */
-> +static int compare_cpu_with_microcode(int cpu)
-> +{
-> +	struct ucode_cpu_info *uci_mem = ucode_cpu_info + cpu;
-> +	struct ucode_cpu_info uci_cpu;
-> +	int ret;
-> +
-> +	ret = collect_cpu_info_on_target(cpu, &uci_cpu->cpu_sig);
-> +	if(!ret) {
-> +		if (!(uci_mem->cpu_sig->sig == uci_cpu->cpu_sig->sig &&
-> +		      uci_mem->cpu_sig->pf == uci_cpu->cpu_sig->pf &&
-> +		      uci_mem->cpu_sig->rev == uci_cpu->cpu_sig->rev))
-> +			ret = -1;
-> +	}
-> +	return ret;
-> +}
-> +
->  struct apply_microcode_ctx {
->  	int err;
->  };
-> @@ -397,6 +418,18 @@ static enum ucode_state microcode_update_cpu(int cpu)
->  	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
->  	enum ucode_state ustate;
->  
-> +	/*
-> +	 * If the CPU on which we are going to update the
-> +	 * microcode and the microcode which we currently
-> +	 * have in kernel memory are incompatible, then
-> +	 * invalidate the microcode that we have (and also
-> +	 * free its memory), so that we can get the required
-> +	 * microcode afresh.
-> +	 */
-> +	if (compare_cpu_with_microcode(cpu)) {
-> +		microcode_fini_cpu(cpu);
-> +	}
-> +
->  	if (uci->valid)
->  		ustate = microcode_resume_cpu(cpu);
->  	else
-> 
+Hmmmm, yeah, right, switching itself would be racy.  Maybe not sharing
+is the solution, I don't know.  There's a way to make the switching
+safe tho.  Sth like the following.
+
+	lock_queue(q, flags)
+	{
+		spinlock_t *lock;
+
+		local_irq_save(flags);
+		lock = rcu_dereference_sched(q->queue_lock);
+		spin_lock(lock);
+	}
+
+and on cleanup, do synchronize_sched() after lock switching.  But yeah
+it still stinks.
+
+Thanks.
+
+-- 
+tejun
