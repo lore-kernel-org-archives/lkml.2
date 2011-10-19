@@ -1,149 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab1JSGiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 02:38:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58823 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab1JSGix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 02:38:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,370,1315206000"; 
-   d="scan'208";a="64039322"
-Subject: Re: iwlagn is getting very shaky
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20111019062517.GC11588@gamma.logic.tuwien.ac.at>
-References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
-	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
-	 <20111019062517.GC11588@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 22:48:24 -0700
-Message-ID: <1319003304.31823.46.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752634Ab1JSGpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 02:45:05 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:45000 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab1JSGpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 02:45:03 -0400
+Message-ID: <4E9E71EC.6040701@profihost.ag>
+Date: Wed, 19 Oct 2011 08:45:00 +0200
+From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+Reply-To: p.herz@profihost.ag
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+References: <4E9D53FF.7090609@profihost.ag> <20111018113251.GA3782@oc1711230544.ibm.com> <4E9D6C0A.1030801@profihost.ag> <20111018123838.GD3782@oc1711230544.ibm.com> <4E9D7E1C.9080202@profihost.ag> <20111018143550.GE3782@oc1711230544.ibm.com>
+In-Reply-To: <20111018143550.GE3782@oc1711230544.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi all,
+Hello Cascardo,
 
-On Tue, 2011-10-18 at 23:25 -0700, Norbert Preining wrote:
-> Hi David, hi all
-> 
-> On Di, 18 Okt 2011, David Rientjes wrote:
-> > There have been recent issues in 3.1-rc9 reported with iwlagn, see the 
-> > thread at https://lkml.org/lkml/2011/10/15/107 even though you have 
-> 
-> Interesting. I read through the thread and activated the debugfs 
-> option.
-> 
-> I could get my hardware back by
-> 	echo 1 > /sys/kernel/debug/ieee80211/phy0/iwlagn/debug/force_reset
-> 
-> [ 2761.352629] ieee80211 phy0: Hardware restart was requested
-> [ 2761.352714] iwlagn 0000:06:00.0: L1 Enabled; Disabling L0S
-> [ 2761.355763] iwlagn 0000:06:00.0: Radio type=0x1-0x2-0x0
-> [ 2779.484308] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 2779.684128] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 2779.884087] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 2780.084079] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
-> [ 2788.051381] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 2788.248079] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 2788.448083] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 2788.648140] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
-> [ 2796.614710] wlan0: authenticate with 00:24:c4:ab:bd:ef (try 1)
-> [ 2796.615623] wlan0: authenticated
-> [ 2796.618046] wlan0: associate with 00:24:c4:ab:bd:ef (try 1)
-> [ 2796.622748] wlan0: RX AssocResp from 00:24:c4:ab:bd:ef (capab=0x1 status=0 aid=1)
-> [ 2796.622751] wlan0: associated
-> [ 2871.224192] e1000e: eth0 NIC Link is Down
-> 
-> I unplugged the cable and could ping the world still, nice....
-> 
-> After a short time I got:
-> [ 2895.575964] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 2895.772067] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 2895.972101] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 2896.172054] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
-> [ 2905.316968] wlan0: deauthenticating from 00:24:c4:ab:bd:ef by local choice (reason=2)
-> [ 2905.356316] cfg80211: Calling CRDA to update world regulatory domain
-> [ 2905.361965] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 1)
-> [ 2905.560063] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 2)
-> [ 2905.760091] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 3)
-> [ 2905.960077] wlan0: authentication with 00:24:c4:ab:bd:e0 timed out
-> [ 2913.908984] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 2914.108116] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 2914.308116] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 2914.508103] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
-> [ 2922.473062] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 2922.672109] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 2922.872106] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 2923.072103] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
-> 
-> And at this time the tx_queue showed me:
-> -----------------------------------------------------------
-> hwq 00: read=91 write=91 stop=1 swq_id=0x00 (ac 0/hwq 0)s.
+ > echo m>  /proc/sysrq-trigger
+Thanks,
+I have pasted another Call Trace including memory stats at
 
->         stop-count: 1
+* http://pastebin.com/vjLHuqtk
 
-it is very interesting, for sure there is a bug here which cause NIC
-stop working, if you look at the tx queue, hwq 0 is stop, which mean
-nothing go out. I am not sure how we get into this? yes, most likely
-force_reset will fix it by reload the firmware and reset all the queues
+Not sure if memory stats are close enough to the call trace event.
 
-Could you help me how to repro this problem?
+If not, do we have to recompile the kernel to get call traces and memory 
+stats at the same time?
 
-Thanks
-Wey
+ > Do your workload works better on a previous version? I had problems
+ > using something like 2.6.32.
+Yes,
+kernel version was 2.6.32.40 before and we never had those messages 
+appearing.
 
+Regards,
+Philipp
 
-> hwq 01: read=0 write=0 stop=0 swq_id=0x05 (ac 1/hwq 1)
->         stop-count: 0
-> hwq 02: read=127 write=127 stop=0 swq_id=0x0a (ac 2/hwq 2)
->         stop-count: 0
-> hwq 03: read=0 write=0 stop=0 swq_id=0x0f (ac 3/hwq 3)
->         stop-count: 0
-> hwq 04: read=13 write=13 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 05: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 06: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 07: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 08: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 09: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 10: read=0 write=0 stop=0 swq_id=0x2a (ac 2/hwq 10)
-> hwq 11: read=0 write=0 stop=0 swq_id=0x2c (ac 0/hwq 11)
-> hwq 12: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 13: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 14: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 15: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 16: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 17: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 18: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> hwq 19: read=0 write=0 stop=0 swq_id=0x00 (ac 0/hwq 0)
-> -------------------------------------------------
-> 
-> Hope that helps. Anyone let me know if you need more testing.
-> 
-> Once more, be reminded the the firmware of the iwlagn is from
-> an experimental build that should solve the AGN stopped working
-> problem.
-> 
-> Best wishes
-> 
-> Norbert
-> ------------------------------------------------------------------------
-> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> JAIST, Japan                                 TeX Live & Debian Developer
-> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> ------------------------------------------------------------------------
-> SCRAMOGE (vb.)
-> To cut oneself whilst licking envelopes.
-> 			--- Douglas Adams, The Meaning of Liff
-
-
+Am 18.10.2011 16:35, schrieb Thadeu Lima de Souza Cascardo:
+> On Tue, Oct 18, 2011 at 03:24:44PM +0200, Philipp Herz - Profihost AG wrote:
+>> Hello Cascardo
+>>
+>>> Usually, after the stack dump, there is some
+>>> statistics about memory.
+>> Yes, i have seen this in other posts as well.
+>>
+>>> I have seen that these may be suppressed
+>>> if you have a NUMA system with lots of nodes.
+>> Yes, in our case it seems to be suppressed.
+>>
+>>> Check for NODE_SHIFT in your
+>>> config. If it's greater than 8, that output may have been suppressed.
+>> CONFIG_NODES_SHIFT=10 will be the answer.
+>>
+>> Is there any way to get those stats without recompiling the kernel?
+>>
+>>> But you may have just ignored the statistics because of the
+>>> stack dump.
+>> No, i was also wondering why other do have these ;-)
+>>
+>> Regards,
+>> Philipp
+>>
+>
+> echo m>  /proc/sysrq-trigger
+>
+> will show you that same output, but not at the time the memory failure
+> happens. It may still show you what is the condition of memory on your
+> nodes.
+>
+> I am not that much versed in the VM. It just happens that I had very
+> similar issues lately and was trying to undertand it a little more. I
+> still have to solve these issues myself.
+>
+> In my case, the workload is IO bound on extX filesystems and I see that
+> other systems have these failures due to this memory pressure. Usually,
+> after stopping the workload and unmounting the filesystems, I get most
+> of the memory in the system freed.
+>
+> Most of the failures are from GFP_ATOMIC allocations, because those
+> won't reclaim memory, but they won't allocate if there is only freed
+> memory below the threshold. Setting this threshold to a lower value
+> like it was suggested (min_free_kbytes) would have helped, but, then,
+> this allows whatever is putting pressure on your memory to also allocate
+> below the threshold and you end up in the same situation (or a worse
+> one).
+>
+> Do your workload works better on a previous version? I had problems
+> using something like 2.6.32.
+>
+> Regards,
+> Cascardo.
+>
+>> Am 18.10.2011 14:38, schrieb Thadeu Lima de Souza Cascardo:
+>>> On Tue, Oct 18, 2011 at 02:07:38PM +0200, Philipp Herz - Profihost AG wrote:
+>>>> Hello Cascardo,
+>>>>
+>>>> thanks for your detailed answer!
+>>>>
+>>>> I have uploaded two call traces to pastebin for further investigation.
+>>>>
+>>>> Maybe this can help you.
+>>>>
+>>>> * http://pastebin.com/Psg2dGYC (kworker)
+>>>> * http://pastebin.com/pPFjZqxL (php5)
+>>>>
+>>>> Regards,
+>>>> Philipp
+>>>>
+>>>
+>>> Hello, Philipp.
+>>>
+>>> That only tells us that you have a TCP workload in your system. This is
+>>> the subsystem that is trying to allocate memory. However, we do not know
+>>> why there is failure. Usually, after the stack dump, there is some
+>>> statistics about memory. I have seen that these may be suppressed if you
+>>> have a NUMA system with lots of nodes. Check for NODE_SHIFT in your
+>>> config. If it's greater than 8, that output may have been suppressed.
+>>> But you may have just ignored the statistics because of the stack dump.
+>>>
+>>> Regards,
+>>> Cascardo.
+>>>
+>>>>
+>>>> Am 18.10.2011 13:32, schrieb Thadeu Lima de Souza Cascardo:
+>>>>> On Tue, Oct 18, 2011 at 12:25:03PM +0200, Philipp Herz - Profihost AG wrote:
+>>>>>> After updating kernel (x86_64) to stable version 3 there are a few
+>>>>>> messages appearing in the kernel log such as
+>>>>>>
+>>>>>> kworker/0:1: page allocation failure: order:1, mode:0x20
+>>>>>> mysql: page allocation failure: order:1, mode:0x20
+>>>>>> php5: page allocation failure: order:1, mode:0x20
+>>>>>>
+>>>>>> Searching the net showed that these messages are known to occur since 2004.
+>>>>>>
+>>>>>> Some people were able to get rid of them by setting
+>>>>>> /proc/sys/vm/min_free_kbytes to a high enough value. This does not
+>>>>>> help in our case.
+>>>>>>
+>>>>>>
+>>>>>> Is there a kernel comand line argument to avoid these messages?
+>>>>>>
+>>>>>> As of mm/page_alloc.c these messages are marked to be only warning
+>>>>>> messages and would not appear if 'gpf_mask' was set to __GFP_NOWARN
+>>>>>> in function warn_alloc_failed.
+>>>>>>
+>>>>>> How does this mask get set? Is it set by the "external" process
+>>>>>> knocking at the memory manager?
+>>>>>>
+>>>>>
+>>>>> Hello, Philipp.
+>>>>>
+>>>>> This happens when kernel tries to allocate memory, sometimes in response
+>>>>> to some request by the user space, but also in other contexts. For
+>>>>> example, an interrupt by a network driver may try to allocate memory. In
+>>>>> this context, it will use GFP_ATOMIC as a mask, for example. The most
+>>>>> usual flags in the kernel are GFP_KERNEL and GFP_ATOMIC.
+>>>>>
+>>>>>> What is the magic behind the 'order' and 'mode'?
+>>>>>>
+>>>>>
+>>>>> The order is the binary log of the number of pages requested. So, order 1
+>>>>> allocations are 2 pages, order 4 would be 16 pages, for example.
+>>>>>
+>>>>> The mode is, in fact, gfp_flags. 0x20 is GFP_ATOMIC. This kind of
+>>>>> allocation cannot do IO or access the filesystem. Also, it cannot wait
+>>>>> for reclaim memory from cache.
+>>>>>
+>>>>> This warning is usually followed by some statistics about memory use
+>>>>> in your system. Please post it to give more information about this
+>>>>> situation.
+>>>>>
+>>>>> I have watched some of this happen when lots of cache is used by some
+>>>>> filesystems. Perhaps, some tweaking of the vm sysctl options may help,
+>>>>> but I can point any magic tweaking right now.
+>>>>>
+>>>>> Regards,
+>>>>> Cascardo.
+>>>>>
+>>>>>> I'm not a subscriber, so please CC me a copy of messages related to
+>>>>>> the subject. I'm not sure if I can help much by looking at the
+>>>>>> inside of the kernel, but I will try my best to answer any questions
+>>>>>> concerning this issue.
+>>>>>>
+>>>>>> Best regards, Philipp
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>>
+>>>
+>>
+>
