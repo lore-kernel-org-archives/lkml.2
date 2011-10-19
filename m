@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1JSS4E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:56:04 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37017 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751710Ab1JSS4A (ORCPT
+	id S1752785Ab1JSTBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 15:01:25 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:41481 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1JSTBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:56:00 -0400
-Subject: Re: Please include const-sections into linux-next
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <20111019163351.GJ15908@one.firstfloor.org>
-References: <20111013233818.GB26654@one.firstfloor.org>
-	 <1318631204.3018.101.camel@dabdike.int.hansenpartnership.com>
-	 <20111016033514.GC26654@one.firstfloor.org>
-	 <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com>
-	 <0e9ef9174a0089187fde0b3d084672ad.squirrel@www.firstfloor.org>
-	 <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com>
-	 <20111019161537.GH15908@one.firstfloor.org>
-	 <1319041281.3034.25.camel@dabdike.int.hansenpartnership.com>
-	 <20111019163351.GJ15908@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Oct 2011 13:55:57 -0500
-Message-ID: <1319050557.3034.46.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Oct 2011 15:01:21 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Greg KH <greg@kroah.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>, Allen Martin <AMartin@nvidia.com>,
+        Tom Warren <twarren@nvidia.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v3] TTY: serial_core: Fix crash if DCD drop during suspend
+Date: Wed, 19 Oct 2011 11:52:01 -0700
+Message-Id: <1319050321-14330-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20111018212105.GA10426@kroah.com>
+References: <20111018212105.GA10426@kroah.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-19 at 18:33 +0200, Andi Kleen wrote:
-> > OK, look at it another way: why do we need the type annotations?  I
-> > think it's only for section conflict checking, right?  If the compiler
-> > gets it wrong anyway, why not just dump all the type annotations, then
-> > it should have no type conflicts (spurious or otherwise) to complain
-> > about.  We already have link time section checking scripts (they're the
-> > useless ones that complain about section mismatches in dev annoations)
-> > so why not put them to work to make up for compiler deficiencies?
-> 
-> You mean removing all the init sections stuff?  I think it has been proposed
-> in the past, but it's a couple of hundred KB of memory usually.
-> Would you accept that for PA-RISC? 
-> 
-> If you have init sections you need to annotate them correctly because
-> a section is defined by its rwx attributes plus name and both need
-> to match. We didn't always check this, so there was some bitrot,
-> but it ultimatively has to be correct.
+This crash was showing up 100% of the time on Tegra CPUs when an
+agetty was running on the serial port and the console was not running
+on the serial port.  The reason the Tegra saw it so reliably is that
+the Tegra CPU internally ties DTR to DCD/DSR.  That means when we
+dropped DTR during suspend we would get always get an immediate DCD
+drop.
 
-We're talking at cross purposes. But it doesn't matter, the error
-doesn't seem to be anything to do with type.  This simple patch is
-what's causing it (I can apply it alone to the working tree) and get the
-error.
+The specific order of operations that were running:
+* uart_suspend_port() would be called to put the uart in suspend mode
+* we'd drop DTR (ops->set_mctrl(uport, 0)).
+* the DTR drop would be looped back in the CPU to be a DCD drop.
+* the DCD drop would look to the serial driver as a hangup
+* the hangup would call uart_shutdown()
+* ... suspend / resume happens ...
+* uart_resume_port() would be called and run the code in the
+  (port->flags & ASYNC_SUSPENDED) block, which would startup the port
+  (and enable tx again).
+* Since the UART would be available for tx, we'd immediately get
+  an interrupt, eventually calling transmit_chars()
+* The transmit_chars() function would crash.  The first crash would
+  be a dereference of a NULL tty member, but since the port has been
+  shutdown that was just a symptom.
 
-What I can't see is why.
+I have proposed a patch that would fix the Tegra CPUs here (see
+https://lkml.org/lkml/2011/10/11/444 - tty/serial: Prevent drop of DCD
+on suspend for Tegra UARTs).  However, even with that fix it is still
+possible for systems that have an externally visible DCD line to see a
+crash if the DCD drops at just the right time during suspend: thus
+this patch is still useful.
 
-James
-
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Alan Cox <alan@linux.intel.com>
 ---
-diff --git a/drivers/net/fealnx.c b/drivers/net/fealnx.c
-index fa8677c..196356f 100644
---- a/drivers/net/fealnx.c
-+++ b/drivers/net/fealnx.c
-@@ -150,7 +150,7 @@ struct chip_info {
- 	int flags;
- };
- 
--static const struct chip_info skel_netdrv_tbl[] __devinitdata = {
-+static const struct chip_info skel_netdrv_tbl[] __devinitconst = {
-  	{ "100/10M Ethernet PCI Adapter",	HAS_MII_XCVR },
- 	{ "100/10M Ethernet PCI Adapter",	HAS_CHIP_XCVR },
- 	{ "1000/100/10M Ethernet PCI Adapter",	HAS_MII_XCVR },
+v3: Applies against linux-next (needed after 6a3e492b)
 
+ drivers/tty/serial/serial_core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 9dc44a5..0406d7f 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -249,6 +249,13 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
+ 	}
+ 
+ 	/*
++	 * It's possible for shutdown to be called after suspend if we get
++	 * a DCD drop (hangup) at just the right time.  Clear suspended bit so
++	 * we don't try to resume a port that has been shutdown.
++	 */
++	clear_bit(ASYNCB_SUSPENDED, &port->flags);
++
++	/*
+ 	 * Free the transmit buffer page.
+ 	 */
+ 	if (state->xmit.buf) {
+-- 
+1.7.3.1
 
