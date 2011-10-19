@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab1JSUOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 16:14:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37260 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752833Ab1JSUOX (ORCPT
+	id S1753619Ab1JSUUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 16:20:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4541 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab1JSUUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 16:14:23 -0400
-Subject: Re: Please include const-sections into linux-next
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <3ede57fd7fb0eff1aebed4ed9cb08301.squirrel@www.firstfloor.org>
-References: <20111013233818.GB26654@one.firstfloor.org>
-	 <1318631204.3018.101.camel@dabdike.int.hansenpartnership.com>
-	 <20111016033514.GC26654@one.firstfloor.org>
-	 <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com>
-	 <0e9ef9174a0089187fde0b3d084672ad.squirrel@www.firstfloor.org>
-	 <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com>
-	 <20111019161537.GH15908@one.firstfloor.org>
-	 <1319041281.3034.25.camel@dabdike.int.hansenpartnership.com>
-	 <20111019163351.GJ15908@one.firstfloor.org>
-	 <1319050557.3034.46.camel@dabdike.int.hansenpartnership.com>
-	 <20111019190517.GK15908@one.firstfloor.org>
-	 <1319054693.3034.49.camel@dabdike.int.hansenpartnership.com>
-	 <1319054816.3034.50.camel@dabdike.int.hansenpartnership.com>
-	 <3ede57fd7fb0eff1aebed4ed9cb08301.squirrel@www.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Oct 2011 15:14:20 -0500
-Message-ID: <1319055260.3034.51.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Oct 2011 16:20:11 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Q9XZVK0H1tj/if6I0M8I2fjRCCI/9rS7XkO3AEgyGf41sNK/toNbB37gEYiPon4FA
+	pvNhLD015aLW7OVDP3n2Q==
+Date: Wed, 19 Oct 2011 13:20:07 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sam Tygier <samtygier@yahoo.co.uk>, Ike Panhc <ike.pan@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.1rc10 null pointer dereference
+ ideapad_backlight_notify_power
+In-Reply-To: <4E9EB1BC.9020709@yahoo.co.uk>
+Message-ID: <alpine.DEB.2.00.1110191315320.2892@chino.kir.corp.google.com>
+References: <4E9EB1BC.9020709@yahoo.co.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-19 at 22:11 +0200, Andi Kleen wrote:
-> > On Wed, 2011-10-19 at 15:04 -0500, James Bottomley wrote:
-> >> this is probably something to do with writeable strings?
-> >
-> > Bingo!  If I add -fno-writeable-strings to the compiler directives, it
-> > works.
+On Wed, 19 Oct 2011, Sam Tygier wrote:
+
+> In kernels 3.1rc9 and 3.1rc10 (from the ubuntu mainline repo) I get a crash
+> when disabling and then enabling the screen backlight with the alt+f2 key on a
+> lenovo ideapad S12 (intel version). The crash does not occur with 3.0 kernels
+> in ubuntu.  I have not tested earlier 3.1 rcs.
 > 
-> Cool thanks. I assume the resulting kernel works.
+> The crash message scrolls to fast to see, it is not writen to a log, and i
+> dont see it on a USB serial console (I may be doing something wrong, but I do
+> see other messages during boot). I managed to get some photos of the message.
+> interesting parts are:
 > 
-> This means the pa compiler defaults to -fwritable-strings? Odd.
+> BUG: unable to handle kernel NULL pointer dereference at 00000008
+> IP: [<f807b29e>]  ideapad_backlight_notify_power+0x2e/0x40 [ideapad_laptop]
+> *pde = 00000000
+> Oops: 0002 [#1] SMP
 > 
-> Are you handling that or should I add a patch to the tree?
+> call trace functions:
+> ideapad_acpi_notify
+> acpi_device_notify
+> acpi_ev_notify_dispach
+> acpi_os_execute_deferred
+> process_one_work
+> ? acpi_os_wait_events_complete
+> ????????? can't read this one
+> kthread
+> kthread_bind
+> kernel_thread_helper
+> 
+> i put the photos at http://www.hep.manchester.ac.uk/u/sam/pub/ideapad/
+> 
+> if it would be helpfull, i could try a few more times for sharper photos.
+> please let me know if there is any other useful information you need.
+> 
 
-Actually, no, sorry ... its a false positive -fno-writeable-strings
-actually produces an error which was lost in all the debug output (it's
-at the top) so it wasn't working; I only thought it was.
-
-James
-
-
+Looks light it may be changed via the acpi video driver where ->blight is 
+NULL.  Adding Ike and Matthew to the cc.
