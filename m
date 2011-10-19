@@ -1,109 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab1JSIzP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 04:55:15 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:23122 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab1JSIzN (ORCPT
+	id S1755655Ab1JSI7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 04:59:43 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:60088 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab1JSI7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 04:55:13 -0400
-X-IronPort-AV: E=Sophos;i="4.69,371,1315180800"; 
-   d="scan'208";a="8463415"
-Subject: Re: [PATCH] Fix guest memory leak and panic
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Krishna Kumar <krkumar2@in.ibm.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Date: Wed, 19 Oct 2011 09:55:11 +0100
-In-Reply-To: <1318944002.2657.76.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20111018080523.16861.55402.sendpatchset@krkumar2.in.ibm.com>
-	 <1318927016.16132.49.camel@zakaz.uk.xensource.com>
-	 <1318931232.16132.65.camel@zakaz.uk.xensource.com>
-	 <1318944002.2657.76.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
+	Wed, 19 Oct 2011 04:59:38 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 19 Oct 2011 10:59:10 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma-mapping: fix sync_single_range_* DMA debugging
+Message-ID: <20111019105910.4f79b3a8@stein>
+In-Reply-To: <4E99F69F.1080701@ladisch.de>
+References: <4DC960B2.40406@ladisch.de>
+	<20110510203826.17d1ad91@stein>
+	<4DCAAEFF.8060907@ladisch.de>
+	<20110517223618.43633eee@stein>
+	<4DD36B16.6040802@ladisch.de>
+	<4E920ABE.8070100@ladisch.de>
+	<20111015171523.434f47c8@stein>
+	<4E99E92B.6020408@ladisch.de>
+	<4E99F69F.1080701@ladisch.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-ID: <1319014511.3385.72.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 14:20 +0100, Eric Dumazet wrote:
-> But I suggest using get_page(pkt_dev->page), this seems more obvious to
-> me [ This was how I wrote the thing ;) ]
+On Oct 15 Clemens Ladisch wrote:
+> Commit 5fd75a7850b5 (dma-mapping: remove unnecessary sync_single_range_*
+> in dma_map_ops) unified not only the dma_map_ops but also the
+> corresponding debug_dma_sync_* calls.  This led to spurious WARN()ings
+> like the following because the DMA debug code was no longer able to
+> detect the DMA buffer base address without the separate offset parameter:
+> 
+> WARNING: at lib/dma-debug.c:911 check_sync+0xce/0x446()
+> firewire_ohci 0000:04:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x00000000cedaa400] [size=1024 bytes]
+> Call Trace: ...
+>  [<ffffffff811326a5>] check_sync+0xce/0x446
+>  [<ffffffff81132ad9>] debug_dma_sync_single_for_device+0x39/0x3b
+>  [<ffffffffa01d6e6a>] ohci_queue_iso+0x4f3/0x77d [firewire_ohci]
+>  ...
+> 
+> To fix this, unshare the sync_single_* and sync_single_range_*
+> implementations so that we are able to call the correct debug_dma_sync_*
+> functions.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 
-I guess it depends on whether you consider the reference to be on the
-page or to be on the frag (which contains the page). The distinction
-would only matter if pktgen were to transition to using the forthcoming
-destructors though.
+Reviewed-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-Here's a version like you describe:
+> ---
+>  include/asm-generic/dma-mapping-common.h |   14 ++++++++++++--
+>  1 files changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+> index 0c80bb3..9e31514 100644
+> --- a/include/asm-generic/dma-mapping-common.h
+> +++ b/include/asm-generic/dma-mapping-common.h
+> @@ -123,7 +123,12 @@ static inline void dma_sync_single_range_for_cpu(struct device *dev,
+>  						 size_t size,
+>  						 enum dma_data_direction dir)
+>  {
+> -	dma_sync_single_for_cpu(dev, addr + offset, size, dir);
+> +	struct dma_map_ops *ops = get_dma_ops(dev);
+> +
+> +	BUG_ON(!valid_dma_direction(dir));
+> +	if (ops->sync_single_for_cpu)
+> +		ops->sync_single_for_cpu(dev, addr + offset, size, dir);
+> +	debug_dma_sync_single_range_for_cpu(dev, addr, offset, size, dir);
+>  }
+> 
+>  static inline void dma_sync_single_range_for_device(struct device *dev,
+> @@ -132,7 +137,12 @@ static inline void dma_sync_single_range_for_device(struct device *dev,
+>  						    size_t size,
+>  						    enum dma_data_direction dir)
+>  {
+> -	dma_sync_single_for_device(dev, addr + offset, size, dir);
+> +	struct dma_map_ops *ops = get_dma_ops(dev);
+> +
+> +	BUG_ON(!valid_dma_direction(dir));
+> +	if (ops->sync_single_for_device)
+> +		ops->sync_single_for_device(dev, addr + offset, size, dir);
+> +	debug_dma_sync_single_range_for_device(dev, addr, offset, size, dir);
+>  }
+> 
+>  static inline void
 
-8<---------------------------------------------------------------
 
->From 369022220db31efb9c261cbabcb890a4d216a176 Mon Sep 17 00:00:00 2001
-From: Ian Campbell <ian.campbell@citrix.com>
-Date: Tue, 18 Oct 2011 09:59:37 +0100
-Subject: [PATCH] net: do not take an additional reference in skb_frag_set_page
 
-I audited all of the callers in the tree and only one of them (pktgen) expects
-it to do so. Taking this reference is pretty obviously confusing and error
-prone.
-
-In particular I looked at the following commits which switched callers of
-(__)skb_frag_set_page to the skb paged fragment api:
-
-6a930b9f163d7e6d9ef692e05616c4ede65038ec cxgb3: convert to SKB paged frag API.
-5dc3e196ea21e833128d51eb5b788a070fea1f28 myri10ge: convert to SKB paged frag API.
-0e0634d20dd670a89af19af2a686a6cce943ac14 vmxnet3: convert to SKB paged frag API.
-86ee8130a46769f73f8f423f99dbf782a09f9233 virtionet: convert to SKB paged frag API.
-4a22c4c919c201c2a7f4ee09e672435a3072d875 sfc: convert to SKB paged frag API.
-18324d690d6a5028e3c174fc1921447aedead2b8 cassini: convert to SKB paged frag API.
-b061b39e3ae18ad75466258cf2116e18fa5bbd80 benet: convert to SKB paged frag API.
-b7b6a688d217936459ff5cf1087b2361db952509 bnx2: convert to SKB paged frag API.
-804cf14ea5ceca46554d5801e2817bba8116b7e5 net: xfrm: convert to SKB frag APIs
-ea2ab69379a941c6f8884e290fdd28c93936a778 net: convert core to skb paged frag APIs
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
----
- include/linux/skbuff.h |    1 -
- net/core/pktgen.c      |    1 +
- 2 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 64f8695..78741da 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1765,7 +1765,6 @@ static inline void *skb_frag_address_safe(const skb_frag_t *frag)
- static inline void __skb_frag_set_page(skb_frag_t *frag, struct page *page)
- {
- 	frag->page = page;
--	__skb_frag_ref(frag);
- }
- 
- /**
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 796044a..e81f5d0 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2602,6 +2602,7 @@ static void pktgen_finalize_skb(struct pktgen_dev *pkt_dev, struct sk_buff *skb,
- 				if (!pkt_dev->page)
- 					break;
- 			}
-+			get_page(pkt_dev->page);
- 			skb_frag_set_page(skb, i, pkt_dev->page);
- 			skb_shinfo(skb)->frags[i].page_offset = 0;
- 			/*last fragment, fill rest of data*/
 -- 
-1.7.2.5
-
-
-
+Stefan Richter
+-=====-==-== =-=- =--==
+http://arcgraph.de/sr/
