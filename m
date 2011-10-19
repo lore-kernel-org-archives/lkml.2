@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1JSVKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:10:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49740 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab1JSVKI (ORCPT
+	id S1754308Ab1JSVLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:11:16 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:57921 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab1JSVLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:10:08 -0400
-Date: Wed, 19 Oct 2011 23:09:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: David Rientjes <rientjes@google.com>
-Cc: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
+	Wed, 19 Oct 2011 17:11:15 -0400
+Date: Wed, 19 Oct 2011 23:07:42 +0200
+From: Nico Schottelius <nico-linux-20111017@schottelius.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Nico Schottelius <nico-linux-20111017@schottelius.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] x86, RAS: Add attributes needed for HW injection
-Message-ID: <20111019210946.GC7503@aftab>
-References: <1319035866-29570-1-git-send-email-bp@amd64.org>
- <1319035866-29570-9-git-send-email-bp@amd64.org>
- <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com>
+Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
+Message-ID: <20111019210742.GA2432@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+References: <20111017175906.GA3461@schottelius.org>
+ <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
+ <20111017214050.GA1408@schottelius.org>
+ <20111019150122.GA6157@schottelius.org>
+ <alpine.LNX.2.00.1110191702470.3541@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1110191702470.3541@pobox.suse.cz>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.1.0-rc6-gbee709a x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 05:03:43PM -0400, David Rientjes wrote:
-> > +static int inj_extcpu_set(void *data, u64 val)
-> > +{
-> > +	struct mce *m = (struct mce *)data;
-> > +
-> > +	if (val >= num_online_cpus()) {
+Hey Jiri,
+
+Jiri Kosina [Wed, Oct 19, 2011 at 05:04:29PM +0200]:
+> On Wed, 19 Oct 2011, Nico Schottelius wrote:
 > 
-> That wouldn't catch an offline cpuid, you probably want cpu_online(val)?
+> > > [...] 
+> > > I've attached the xev output of fn+{F1-F12}.
+> > > 
+> > > F1-F4 are correct, though
+> > >   F3 = Expose on MacOS X (**)
+> > >   F4 = Dashboard (**)
+> > > F5: not mapped at all: Is KeyboardLightDecrease on MacOSX (*)
+> > > F6 is XF86AudioPrev incorrect: Should be  KeyboardLightIncrease (*)
+> > > F7 is XF86AudioPlay incorrect: Should be XF86AudioPrev
+> > > F8 is XF86AudioNext incorrect: Should be XF86AudioPlay
+> > > F9 is XF86AudioMute incorrect: Should be XF86AudioNext
+> > > F10 is XF86AudioLowerVolume incorrect: Should be XF86AudioMute
+> > > F11 is XF86AudioRaiseVolume incorrect: Should be XF86AudioLowerVolume 
+> > > F12 is XF86Eject incorrect: Should be  XF86AudioRaiseVolume 
+> > > 
+> > > Thus F7-12 are shifted by one to left in reality and as the MacBook Air
+> > 
+> > if I want to correct these bugs, which tree should I use as the base?
+> > And when I corrected those, to whom to submit?
+> 
+> Hi,
+> 
+> please use hid tree, for-next branch. The tree is located on kernel.org.
 
-Good catch, thanks.
+Alright used that one, put my changes into the mba42-fixes branch [0].
 
-So I'm looking at <arch/x86/kernel/cpuid.c> which is how the validity of
-a cpu value should be tested properly, IMHO:
+As I cannot use your tree standalone due to the display problems, I've also
+put it into the keyboardmappingfix of the tree that merges yours and the
+one from Keith [1].
 
-static int cpuid_open(struct inode *inode, struct file *file)
-{
-	...
+I've tested my patches, all keys are mapped correctly now, xev output
+is attached. Please merge my patch from [0].
 
-	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
-		return -ENXIO;	/* No such CPU */
-	...
+> > I guess the general approach would be to branch out, if it's a mba4,2,
+> > then apply the following mapping, correct?
+> 
+> Yes, there are mapping tables in hid-apple.c already, so just introduce a 
+> new one.
+> 
+> I am a bit surprised that they are needed though, the original report 
+> stated that the the table is identical to the one that is already there 
+> (apple_fn_keys[]).
 
-Thanks.
+Well, the fn-key works and it generates "different events" than without
+the tree, but the mapping is not completly correct.
+
+Looking at the code, I'm wondering if any MBA user has it correctly
+working: The macbookair_fn_keys[] misses the F5 mapping (which is what
+I see here) and I imagine there is no mba out there, that does not have
+a special key on FN+F5.
+
+And checking with the manuals I see on the net, it seems the keys have
+not changed on the air, i.e. it should be wrong on all MacBook airs.
+
+Cheers,
+
+Nico
+
+[0] http://git.schottelius.org/?p=foreign/linux-jiri-hid;a=summary
+    git://git.schottelius.org/foreign/linux-jiri-hid
+
+[1] http://git.schottelius.org/?p=foreign/linux-keith-jiri-mba;a=summary
+    git://git.schottelius.org/foreign/linux-keith-jiri-mba
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
