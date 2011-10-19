@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab1JSBQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 21:16:29 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26828 "EHLO
+	id S1752237Ab1JSB1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 21:27:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5373 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab1JSBQ1 (ORCPT
+	with ESMTP id S1751983Ab1JSB1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 21:16:27 -0400
+	Tue, 18 Oct 2011 21:27:37 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
 	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=PtjNmtHR21oPXsweh97Jl2pSJfW9bFq2+D2WLh3fReMptUYwdI5CxE6E9ERxjCONJ
-	qM/r6Owc7kG6XLH9tei9g==
-Date: Tue, 18 Oct 2011 18:16:21 -0700 (PDT)
+	b=gmNxEVCi9Iv0pozo+yscVz7oHvouSOl9zBRoOGjMtcPs8xsAPdX9Jk1mZHW/Voc7q
+	C0TPy9dK9dBZxGKdJRIXA==
+Date: Tue, 18 Oct 2011 18:27:31 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andi Kleen <andi@firstfloor.org>
-cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-In-Reply-To: <m2mxcyz4f7.fsf@firstfloor.org>
-Message-ID: <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
-References: <20111013135032.7c2c54cd.akpm@linux-foundation.org> <alpine.DEB.2.00.1110131602020.26553@router.home> <20111013142434.4d05cbdc.akpm@linux-foundation.org> <20111014122506.GB26737@sgi.com> <20111014135055.GA28592@sgi.com> <alpine.DEB.2.00.1110140856420.6411@router.home>
- <20111014141921.GC28592@sgi.com> <alpine.DEB.2.00.1110140932530.6411@router.home> <alpine.DEB.2.00.1110140958550.6411@router.home> <20111014161603.GA30561@sgi.com> <20111018134835.GA16222@sgi.com> <m2mxcyz4f7.fsf@firstfloor.org>
+To: Joe Perches <joe@perches.com>
+cc: Wolfram Sang <w.sang@pengutronix.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Andy Whitcroft <apw@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: checkpatch WARNING: patch prefix 'b' exists, appears to be a
+ -p0 patch
+In-Reply-To: <1318982469.7569.1.camel@Joe-Laptop>
+Message-ID: <alpine.DEB.2.00.1110181819110.12850@chino.kir.corp.google.com>
+References: <4E9D9558.7040705@cam.ac.uk> <alpine.DEB.2.00.1110181643450.8149@chino.kir.corp.google.com> <1318982469.7569.1.camel@Joe-Laptop>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -33,24 +32,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Andi Kleen wrote:
+On Tue, 18 Oct 2011, Joe Perches wrote:
 
-> > Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
-> > same default behavior as what we currently have?
+> > > This started happening when I run checkpatch on pretty much anything.
+> > > triggered by the b in this snipped for example
+> > > diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
+> > > index 3f8d0af..62dc2a8 100644
+> > > --- a/arch/arm/mach-pxa/stargate2.c
+> > > +++ b/arch/arm/mach-pxa/stargate2.c
+> > > @@ -54,6 +54,8 @@
+> > >  #include <linux/mfd/da903x.h>
+> > > Anyone else seeing this or have a clue what the heck is going on?
 > 
-> Tunable is bad. We don't really want a "hundreds of lines magic shell script to
-> make large systems perform". Please find a way to auto tune.
+> It's done this since:
 > 
+> $ git log -1 1e85572697b348b1a126520349a29654f2ae6a12
+> commit 1e85572697b348b1a126520349a29654f2ae6a12
+> Author: Wolfram Sang <w.sang@pengutronix.de>
+> Date:   Tue Jan 6 14:41:24 2009 -0800
+> 
+>     checkpatch: Add warning for p0-patches
+>     
 
-Agreed, and I think even if we had a tunable that it would result in 
-potentially erradic VM performance because some areas depend on "fairly 
-accurate" ZVCs and it wouldn't be clear that you're trading other unknown 
-VM issues that will affect your workload because you've increased the 
-deltas.  Let's try to avoid having to ask "what is your ZVC delta tunable 
-set at?" when someone reports a bug about reclaim stopping preemptively.
-
-That said, perhaps we need higher deltas by default and then hints in key 
-areas in the form of sync_stats_if_delta_above(x) calls that would do 
-zone_page_state_add() only when that kind of precision is actually needed.  
-For public interfaces, that would be very easy to audit to see what the 
-level of precision is when parsing the data.
+Hmm, not sure how useful that is unless both prefixes ('a' and 'b') exist.
