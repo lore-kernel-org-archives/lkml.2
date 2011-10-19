@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab1JSOzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:55:10 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:51011 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932186Ab1JSOzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:55:04 -0400
-Date: Wed, 19 Oct 2011 09:54:58 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-Message-ID: <20111019145458.GA9266@sgi.com>
-References: <20111014122506.GB26737@sgi.com>
- <20111014135055.GA28592@sgi.com>
- <alpine.DEB.2.00.1110140856420.6411@router.home>
- <20111014141921.GC28592@sgi.com>
- <alpine.DEB.2.00.1110140932530.6411@router.home>
- <alpine.DEB.2.00.1110140958550.6411@router.home>
- <20111014161603.GA30561@sgi.com>
- <20111018134835.GA16222@sgi.com>
- <m2mxcyz4f7.fsf@firstfloor.org>
- <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
+	id S1756479Ab1JSO4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:56:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63458 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754956Ab1JSO4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 10:56:30 -0400
+Date: Wed, 19 Oct 2011 10:56:22 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
+Subject: Re: [PATCH 07/10] block: reorganize throtl_get_tg() and
+ blk_throtl_bio()
+Message-ID: <20111019145622.GE1140@redhat.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-8-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1318998384-22525-8-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 06:16:21PM -0700, David Rientjes wrote:
-> On Tue, 18 Oct 2011, Andi Kleen wrote:
+On Tue, Oct 18, 2011 at 09:26:21PM -0700, Tejun Heo wrote:
+> blk_throtl_bio() and throtl_get_tg() have rather unusual interface.
 > 
-> > > Would it make sense to have the ZVC delta be tuneable (via /proc/sys/vm?), keeping the
-> > > same default behavior as what we currently have?
-> > 
-> > Tunable is bad. We don't really want a "hundreds of lines magic shell script to
-> > make large systems perform". Please find a way to auto tune.
-> > 
+> * throtl_get_tg() returns pointer to a valid tg or ERR_PTR(-ENODEV),
+>   and drops queue_lock in the latter case.  Different locking context
+>   depending on return value is error-prone and DEAD state is scheduled
+>   to be protected by queue_lock anyway.  Move DEAD check inside
+>   queue_lock and return valid tg or NULL.
+
+Tejun,
+
+A driver could call blk_cleanup_queue(), mark the queue DEAD and then
+free the driver provided spin lock. So once queue is DEAD one could
+not rely on queue lock still being there. That's the reason I did
+not try to take queue lock again if queue is marked DEAD.
+
+Now I see the change that blk_cleanup_queue will start poiting to
+internal queue lock (Thought it is racy). This will atleast make
+sure that some spinlock is around. So now this change should be
+fine.
+
 > 
-> Agreed, and I think even if we had a tunable that it would result in 
-> potentially erradic VM performance because some areas depend on "fairly 
-> accurate" ZVCs and it wouldn't be clear that you're trading other unknown 
-> VM issues that will affect your workload because you've increased the 
-> deltas.  Let's try to avoid having to ask "what is your ZVC delta tunable 
-> set at?" when someone reports a bug about reclaim stopping preemptively.
-
-Yes, I'm inclined to agree.
-
+> * blk_throtl_bio() indicates return status both with its return value
+>   and in/out param **@bio.  The former is used to indicate whether
+>   queue is found to be dead during throtl processing.  The latter
+>   whether the bio is throttled.
 > 
-> That said, perhaps we need higher deltas by default and then hints in key 
-> areas in the form of sync_stats_if_delta_above(x) calls that would do 
-> zone_page_state_add() only when that kind of precision is actually needed.  
-> For public interfaces, that would be very easy to audit to see what the 
-> level of precision is when parsing the data.
+>   There's no point in returning DEAD check result from
+>   blk_throtl_bio().  The queue can die after blk_throtl_bio() is
+>   finished but before make_request_fn() grabs queue lock.
 
-I did some manual tuning to see what deltas would be needed to achieve the
-greatest tmpfs writeback performance on a system with 640 cpus and 64 nodes:
+The reason I was returning error in case of queue DEAD is that I wanted
+IO to now return with error instead of continuing to call q->make_request_fn(q, bio) which does not do queue dead check and assumes queue is still alive.
 
-For 120 threads writing in parallel (each to it's own mountpoint), the
-threshold needs to be on the order of 1000.  At a threshold of 750, I
-start to see a slowdown of 50-60 MB/sec.
+With this change, if queue is DEAD, bio will not be throttled and we
+will continue to submit bio to queue and I am not sure who will catch
+it in __make_request()?
 
-For 400 threads writing in parallel, the threshold needs to be on the order
-of 2000 (although we're off by about 40 MB/sec at that point).
-
-The necessary deltas in these cases are quite a bit higher than the current
-125 maximum (see calculate*threshold in mm/vmstat.c).
-
-I like the idea of having certain areas triggering vm_stat sync, as long
-as we know what those key areas are and how often they might be called.
+Thanks
+Vivek
