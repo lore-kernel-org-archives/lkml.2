@@ -1,149 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab1JSPSf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:18:35 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62863 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab1JSPSd (ORCPT
+	id S932178Ab1JSPVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:21:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44146 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751782Ab1JSPVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:18:33 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: trond.myklebust@netapp.com, smfrench@gmail.com, pavel@ucw.cz, rjw@sisk.pl
-Cc: linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, john@Calva.COM,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] nfs: make TASK_KILLABLE sleeps attempt to freeze (try #2)
-Date: Wed, 19 Oct 2011 11:18:26 -0400
-Message-Id: <1319037506-6221-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1317210761-11518-5-git-send-email-jlayton@redhat.com>
-References: <1317210761-11518-5-git-send-email-jlayton@redhat.com>
+	Wed, 19 Oct 2011 11:21:40 -0400
+Date: Wed, 19 Oct 2011 16:21:32 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arvid Brodin <arvid.brodin@enea.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Memory leak in isp1760-hcd.c
+Message-ID: <20111019152132.GH29653@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somehow I ended up sending out an earlier version of this patch instead
-of the one actually tested. Here's the correct one.
+Hi Arvid,
 
-Allow the TASK_KILLABLE sleeps in NFS layer to respect the freezer. This
-should allow suspend and hibernate events to occur, even when there are
-RPC's pending on the wire.
+I get the following kmemleak report coming from the ISP1760 driver:
 
-Tested-by: John Hughes <john@Calva.COM>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/nfs/inode.c    |    4 +++-
- fs/nfs/nfs3proc.c |    4 +++-
- fs/nfs/nfs4proc.c |   13 +++++++++----
- fs/nfs/proc.c     |    4 +++-
- 4 files changed, 18 insertions(+), 7 deletions(-)
+unreferenced object 0xef42d000 (size 28):                                       
+  comm "khubd", pid 189, jiffies 4294937550 (age 1421.040s)                     
+  hex dump (first 28 bytes):                                                    
+    00 01 10 00 00 02 20 00 08 d0 42 ef 08 d0 42 ef  ...... ...B...B.           
+    00 00 00 00 00 00 00 00 ff ff ff ff              ............               
+  backtrace:                                                                    
+    [<c0080fe1>] create_object+0xa1/0x1ac                                       
+    [<c007eac5>] kmem_cache_alloc+0x8d/0xdc                                     
+    [<c01a9617>] isp1760_urb_enqueue+0x2ab/0x2f8                                
+    [<c019bbbd>] usb_hcd_submit_urb+0x75/0x574                                  
+    [<c019d8f1>] usb_start_wait_urb+0x29/0x80                                   
+    [<c019daad>] usb_control_msg+0x89/0xac                                      
+    [<c0197f43>] hub_port_init+0x4fb/0x9c8                                      
+    [<c0199c75>] hub_thread+0x5a1/0xd74                                         
+    [<c0035acd>] kthread+0x69/0x6c                                              
+    [<c000dc6d>] kernel_thread_exit+0x1/0x8                                     
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index fe12037..b7c4301 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -38,6 +38,7 @@
- #include <linux/nfs_xdr.h>
- #include <linux/slab.h>
- #include <linux/compat.h>
-+#include <linux/freezer.h>
- 
- #include <asm/system.h>
- #include <asm/uaccess.h>
-@@ -77,7 +78,8 @@ int nfs_wait_bit_killable(void *word)
- {
- 	if (fatal_signal_pending(current))
- 		return -ERESTARTSYS;
--	schedule();
-+	if (!try_to_freeze())
-+		schedule();
- 	return 0;
- }
- 
-diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
-index 85f1690..5354219 100644
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -17,6 +17,7 @@
- #include <linux/nfs_page.h>
- #include <linux/lockd/bind.h>
- #include <linux/nfs_mount.h>
-+#include <linux/freezer.h>
- 
- #include "iostat.h"
- #include "internal.h"
-@@ -32,7 +33,8 @@ nfs3_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
- 		res = rpc_call_sync(clnt, msg, flags);
- 		if (res != -EJUKEBOX && res != -EKEYEXPIRED)
- 			break;
--		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
-+		if (!try_to_freeze())
-+			schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
- 		res = -ERESTARTSYS;
- 	} while (!fatal_signal_pending(current));
- 	return res;
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 4700fae..86427d8 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -53,6 +53,7 @@
- #include <linux/sunrpc/bc_xprt.h>
- #include <linux/xattr.h>
- #include <linux/utsname.h>
-+#include <linux/freezer.h>
- 
- #include "nfs4_fs.h"
- #include "delegation.h"
-@@ -244,10 +245,12 @@ static int nfs4_delay(struct rpc_clnt *clnt, long *timeout)
- 		*timeout = NFS4_POLL_RETRY_MIN;
- 	if (*timeout > NFS4_POLL_RETRY_MAX)
- 		*timeout = NFS4_POLL_RETRY_MAX;
--	schedule_timeout_killable(*timeout);
-+	if (!try_to_freeze()) {
-+		schedule_timeout_killable(*timeout);
-+		*timeout <<= 1;
-+	}
- 	if (fatal_signal_pending(current))
- 		res = -ERESTARTSYS;
--	*timeout <<= 1;
- 	return res;
- }
- 
-@@ -3970,8 +3973,10 @@ int nfs4_proc_delegreturn(struct inode *inode, struct rpc_cred *cred, const nfs4
- static unsigned long
- nfs4_set_lock_task_retry(unsigned long timeout)
- {
--	schedule_timeout_killable(timeout);
--	timeout <<= 1;
-+	if (!try_to_freeze()) {
-+		schedule_timeout_killable(timeout);
-+		timeout <<= 1;
-+	}
- 	if (timeout > NFS4_LOCK_MAXTIMEOUT)
- 		return NFS4_LOCK_MAXTIMEOUT;
- 	return timeout;
-diff --git a/fs/nfs/proc.c b/fs/nfs/proc.c
-index ac40b85..0b70e85 100644
---- a/fs/nfs/proc.c
-+++ b/fs/nfs/proc.c
-@@ -41,6 +41,7 @@
- #include <linux/nfs_fs.h>
- #include <linux/nfs_page.h>
- #include <linux/lockd/bind.h>
-+#include <linux/freezer.h>
- #include "internal.h"
- 
- #define NFSDBG_FACILITY		NFSDBG_PROC
-@@ -59,7 +60,8 @@ nfs_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
- 		res = rpc_call_sync(clnt, msg, flags);
- 		if (res != -EKEYEXPIRED)
- 			break;
--		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
-+		if (!try_to_freeze())
-+			schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
- 		res = -ERESTARTSYS;
- 	} while (!fatal_signal_pending(current));
- 	return res;
+After some investigation, it looks like schedule_ptds() is called from
+isp1760_irq() and removes the qh from the controlqhs queue but
+ep->hcpriv still points to the qh and therefore it is not freed.
+
+Shortly after this, the isp1760_endpoint_disable() function sets
+ep->hcpriv to NULL and calls schedule_ptds() but since the corresponding
+qh is no longer in the queue, it is simply forgotten and reported by
+kmemleak.
+
+Is there a race condition between isp1760_endpoint_disable and
+isp1760_irq?
+
+Thanks.
+
 -- 
-1.7.6.4
-
+Catalin
