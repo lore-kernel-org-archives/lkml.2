@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab1JRXxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Oct 2011 19:53:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32379 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab1JRXxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Oct 2011 19:53:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=YTGpohhJrLHghq6qchDLGQbh6CCKi1qNNOxaTBIViGIpjAbyz9ns8ylpkv10a7a4t
-	dNixngB7/DT9hI8GtXcYw==
-Date: Tue, 18 Oct 2011 16:53:14 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jan Kara <jack@suse.cz>
-cc: Mark Mielke <mark@mark.mielke.cc>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Appropriate use of sync() from user space?
-In-Reply-To: <20111018211446.GF4599@quack.suse.cz>
-Message-ID: <alpine.DEB.2.00.1110181652400.8149@chino.kir.corp.google.com>
-References: <4E8CEECF.4050008@mark.mielke.cc> <20111018211446.GF4599@quack.suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1752900Ab1JSABM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Oct 2011 20:01:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48954 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752092Ab1JSABL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Oct 2011 20:01:11 -0400
+Message-ID: <1318982469.7569.1.camel@Joe-Laptop>
+Subject: Re: checkpatch WARNING: patch prefix 'b' exists, appears to be a
+ -p0 patch
+From: Joe Perches <joe@perches.com>
+To: David Rientjes <rientjes@google.com>, Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Andy Whitcroft <apw@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 18 Oct 2011 17:01:09 -0700
+In-Reply-To: <alpine.DEB.2.00.1110181643450.8149@chino.kir.corp.google.com>
+References: <4E9D9558.7040705@cam.ac.uk>
+	 <alpine.DEB.2.00.1110181643450.8149@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, Jan Kara wrote:
+On Tue, 2011-10-18 at 16:44 -0700, David Rientjes wrote:
+> On Tue, 18 Oct 2011, Jonathan Cameron wrote:
+> > This started happening when I run checkpatch on pretty much anything.
+> > triggered by the b in this snipped for example
+> > diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
+> > index 3f8d0af..62dc2a8 100644
+> > --- a/arch/arm/mach-pxa/stargate2.c
+> > +++ b/arch/arm/mach-pxa/stargate2.c
+> > @@ -54,6 +54,8 @@
+> >  #include <linux/mfd/da903x.h>
+> > Anyone else seeing this or have a clue what the heck is going on?
 
-> > Quick summary: We have a vendor who is claiming that it is required
-> > for their userspace program to execute sync(), and I am looking for
-> > some sort of authoritative document or person to refer them to that
-> > will state that this belief is incorrect and/or that this
-> > architecture is not acceptable in a Unix environment.
-> > 
-> > I checked Google and the archives and didn't find anything
-> > appropriate. Unfortunately, the word "sync" is very popular. :-)
-> > 
-> > We have users who have been experiencing 3 to 5 minutes "freezes"
-> > for a particular command which often times out and fails. I traced
-> > this down from the commercial userspace program (IBM Rational
-> > ClearCase / "cleartool mkview") that they are executing to a backend
-> > "view_server" process (also IBM Rational ClearCase) that is running
-> > sync() as a means of synchronizing their database to disk before
-> > proceeding, and VMware using a "large" memory mapped file to back
-> > it's virtual "RAM". The sync() for my computer normally completes in
-> > 7 to 8 seconds. The sync() for some of our users is taking 5 minutes
-> > or longer. This can be demonstrated simply by typing "time sync"
-> > from the command line at intervals. The time itself is relevant
-> > because if it finishes before a timeout elapses - the operation
-> > works (albeit slowly). If the timeout elapses, the operation fails.
-> > 
-> > The vendor stated that sync() is integral to their synchronization
-> > process to ensure all files reach disk before they are accessed, and
-> > that this is not a defect in their product. We have a work around -
-> > run "sync" before calling their command, and this generally avoids
-> > the failures.
-> > 
-> > I think the use of sync() in this regard is a hack. According to
-> > POSIX.1 and the Linux man pages, it seems clear to me that sync()
-> > does not guarantee data integrity (bytes guaranteed to have reached
-> > disk) - and it also seems clear that forcing all system data to
-> > flush out in response to a minor command is over kill. Like cutting
-> > down the forest to harvest fruit from a single tree.
->   Actually the manpage is wrong. Linux waits for all data to be safely on
-> disk before sync returns. So calling sync is a correct way (although
-> inefficient at times) to achieve data integrity. What kernel version are
-> you using? Different kernel versions are differently efficient when doing
-> sync(2) and quite some effort went to make sync less prone to livelocks in
-> recent kernels...
-> 
+It's done this since:
 
-Let's make sure to keep Michael Kerrisk cc'd if anything needs to be 
-clarified in the manpages.
+$ git log -1 1e85572697b348b1a126520349a29654f2ae6a12
+commit 1e85572697b348b1a126520349a29654f2ae6a12
+Author: Wolfram Sang <w.sang@pengutronix.de>
+Date:   Tue Jan 6 14:41:24 2009 -0800
+
+    checkpatch: Add warning for p0-patches
+    
+    Some people work internally with -p0-patches which has the danger that one
+    forgets to convert them to -p1 before mainlining.  Bitten myself and seen
+    p0-patches in mailing lists occasionally, this patch adds a warning to
+    checkpatch.pl in case a patch is -p0.  If you really want, you can fool
+    this check to generate false positives, this is why it just spits a
+    warning.  Making the check 100% proof is trickier than it looks, so let's
+    start with a version which catches the cases of real use.
+    
+    [apw@canonical.com: update message language, handle null prefix, add tests]
+    Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+    Signed-off-by: Andy Whitcroft <apw@canonical.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+I've always ignored it.
+
+
