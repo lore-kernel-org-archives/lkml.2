@@ -1,65 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab1JSPB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:01:28 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:55085 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756467Ab1JSPB1 (ORCPT
+	id S1756626Ab1JSPCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:02:25 -0400
+Received: from smtp-out-092.synserver.de ([212.40.185.92]:1160 "HELO
+	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755520Ab1JSPCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:01:27 -0400
-Date: Wed, 19 Oct 2011 17:01:22 +0200
-From: Nico Schottelius <nico-linux-20111017@schottelius.org>
-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
-Message-ID: <20111019150122.GA6157@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-References: <20111017175906.GA3461@schottelius.org>
- <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
- <20111017214050.GA1408@schottelius.org>
+	Wed, 19 Oct 2011 11:02:24 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 10303
+Message-ID: <4E9EE68F.6040506@metafoo.de>
+Date: Wed, 19 Oct 2011 17:02:39 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111005 Iceowl/1.0b2 Icedove/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017214050.GA1408@schottelius.org>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.1.0-rc6-gbee709a x86_64)
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de
+Subject: Re: [PATCH 3/6] IIO:CORE add global list of registered IIO devices.
+References: <1318951776-19393-1-git-send-email-jic23@cam.ac.uk> <1318951776-19393-4-git-send-email-jic23@cam.ac.uk> <4E9DC496.3010909@metafoo.de> <4E9DE2AB.3090208@cam.ac.uk> <4E9ED49B.1070005@cam.ac.uk>
+In-Reply-To: <4E9ED49B.1070005@cam.ac.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jiri,
-
-regarding the misplaced keys:
-
-Nico Schottelius [Mon, Oct 17, 2011 at 11:40:50PM +0200]:
-> [...] 
-> I've attached the xev output of fn+{F1-F12}.
+On 10/19/2011 03:46 PM, Jonathan Cameron wrote:
+> On 10/18/11 21:33, Jonathan Cameron wrote:
+>> On 10/18/11 19:25, Lars-Peter Clausen wrote:
+>>> On 10/18/2011 05:29 PM, Jonathan Cameron wrote:
+>>>> Needed for inkernel interfaces.
+>>>>
+>>>
+>>> The bus_type structure keeps a list of all devices registered on that bus, so
+>>> you should be able to use bus_for_each_dev and bus_find_device for iterating
+>>> over the iio devices.
+>> I hadn't realised that but don't think it will work anyway. There are several
+>> other things than iio_dev based devices that sit on our bus unfortunately.
+>> None are in these initial merges but they will turn up later.
+>> The most common are iio_triggers but there are also a few weird ones such
+>> as the event generator for the dummy driver and the sysfstrig control device.  
+>> We could play some games to allow these to be identified, but it's going
+>> to be a mess. Probably easier to just maintain a second list as we are doing
+>> here.  Interesting suggestion though. Thanks and feel free to point out if there
+>> is a simple way around the identification issue.
+> Actually looking into it this morning - this is trivial to do.
+> We can just check that the device_type is set appropriately before doing anything
+> else.
 > 
-> F1-F4 are correct, though
->   F3 = Expose on MacOS X (**)
->   F4 = Dashboard (**)
-> F5: not mapped at all: Is KeyboardLightDecrease on MacOSX (*)
-> F6 is XF86AudioPrev incorrect: Should be  KeyboardLightIncrease (*)
-> F7 is XF86AudioPlay incorrect: Should be XF86AudioPrev
-> F8 is XF86AudioNext incorrect: Should be XF86AudioPlay
-> F9 is XF86AudioMute incorrect: Should be XF86AudioNext
-> F10 is XF86AudioLowerVolume incorrect: Should be XF86AudioMute
-> F11 is XF86AudioRaiseVolume incorrect: Should be XF86AudioLowerVolume 
-> F12 is XF86Eject incorrect: Should be  XF86AudioRaiseVolume 
+> Thanks Lars-Peter your suggestion is should clean things up nicely.
 > 
-> Thus F7-12 are shifted by one to left in reality and as the MacBook Air
+> New version coming up.
 
-if I want to correct these bugs, which tree should I use as the base?
-And when I corrected those, to whom to submit?
+Yes, this should work. The device class iter functions already allow
+filtering on the device type, so it might even make sense to add generic
+device bus iterator functions which allow this as well, but this is probably
+something for later.
 
-I guess the general approach would be to branch out, if it's a mba4,2,
-then apply the following mapping, correct?
+>>>
+>>>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+>>>> ---
+>>>>  drivers/iio/iio.c       |    9 +++++++++
+>>>>  include/linux/iio/iio.h |    1 +
+>>>>  2 files changed, 10 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+>>>> index 9e6acc1..246a093 100644
+>>>> --- a/drivers/iio/iio.c
+>>>> +++ b/drivers/iio/iio.c
+>>>> @@ -15,6 +15,9 @@
+>>>>  #include <linux/iio/iio.h>
+>>>>  #include <linux/iio/sysfs.h>
+>>>>  
+>>>> +static DEFINE_MUTEX(iio_device_list_lock);
+>>>> +static LIST_HEAD(iio_device_list);
+>>>> +
+>>>>  static DEFINE_IDA(iio_ida);
+>>>>  
+>>>>  static struct bus_type iio_bus_type = {
+>>>> @@ -91,6 +94,9 @@ static void iio_dev_release(struct device *device)
+>>>>  {
+>>>>  	struct iio_dev *indio_dev = container_of(device, struct iio_dev, dev);
+>>>>  	iio_device_unregister_sysfs(indio_dev);
+>>>> +	mutex_lock(&iio_device_list_lock);
+>>>> +	list_del(&indio_dev->dev_list_entry);
+>>>> +	mutex_unlock(&iio_device_list_lock);
+>>>>  }
+>>>>  
+>>>>  static struct device_type iio_dev_type = {
+>>>> @@ -559,6 +565,9 @@ int iio_device_register(struct iio_dev *indio_dev)
+>>>>  	if (ret)
+>>>>  		goto error_free_sysfs;
+>>>>  
+>>>> +	mutex_lock(&iio_device_list_lock);
+>>>> +	list_add(&indio_dev->dev_list_entry, &iio_device_list);
+>>>> +	mutex_unlock(&iio_device_list_lock);
+>>>>  	return 0;
+>>>>  
+>>>>  error_free_sysfs:
+>>>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>>>> index beedc5c..f14e7dc 100644
+>>>> --- a/include/linux/iio/iio.h
+>>>> +++ b/include/linux/iio/iio.h
+>>>> @@ -192,6 +192,7 @@ struct iio_info {
+>>>>   * @info:		[DRIVER] callbacks and constant info from driver
+>>>>   * @groups:		[INTERN] attribute groups
+>>>>   * @groupcounter:	[INTERN] index of next attribute group
+>>>> + * @dev_list_entry:	[INTERN] entry in global list of iio devices
+>>>>   **/
+>>>>  struct iio_dev {
+>>>>  	int				id;
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
 
-Cheers,
-
-Nico
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
