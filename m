@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab1JSNiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 09:38:09 -0400
-Received: from cisinternet.net ([216.157.38.56]:43114 "EHLO cisinternet.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab1JSNiH convert rfc822-to-8bit (ORCPT
+	id S1756299Ab1JSNkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 09:40:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55276 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab1JSNkR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 09:38:07 -0400
-X-Greylist: delayed 2452 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Oct 2011 09:38:07 EDT
-Message-ID: <20111019084241.jjlxz6c0gc0kgwwg@webmail.cisinternet.net>
-Date: Wed, 19 Oct 2011 08:42:41 -0400
-From: Cyber One <upgraade@webmaster.com>
-Reply-to: wen@auto.lt
-To: undisclosed-recipients:;
-Subject: 
+	Wed, 19 Oct 2011 09:40:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+In-Reply-To: <20111019074336.GB3410@suse.de>
+References: <201110122012.33767.pluto@agmk.net> <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+ <alpine.LSU.2.00.1110131629530.1410@sister.anvils> <20111016235442.GB25266@redhat.com>
+ <alpine.LSU.2.00.1110171111150.2545@sister.anvils> <20111019074336.GB3410@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 19 Oct 2011 06:39:55 -0700
+X-Google-Sender-Auth: kxlVRQ_w98xogqjWxGgnBaxSL6M
+Message-ID: <CA+55aFwf75oJ3JJ2aCR8TJJm_oLireD6SDO+43GveVVb8vGw1w@mail.gmail.com>
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+To: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 19, 2011 at 12:43 AM, Mel Gorman <mgorman@suse.de> wrote:
+>
+> My vote is with the migration change. While there are occasionally
+> patches to make migration go faster, I don't consider it a hot path.
+> mremap may be used intensively by JVMs so I'd loathe to hurt it.
 
+Ok, everybody seems to like that more, and it removes code rather than
+adds it, so I certainly prefer it too. Paweł, can you test that other
+patch (to mm/migrate.c) that Hugh posted? Instead of the mremap vma
+locking patch that you already verified for your setup?
 
-Dear cyberone.com.au Account Owner:
+Hugh - that one didn't have a changelog/sign-off, so if you could
+write that up, and Paweł's testing is successful, I can apply it...
+Looks like we have acks from both Andrea and Mel.
 
-It has come to our notice that your email has not passed the   verification/
-Update process that we are presently working on. We are currently  
-upgrading our
-data base and e-mail account center, thereby deleting all Old Web mail email
-account to create more space for new accounts.
-To prevent your account from closing you will have to update it so  
-that we will
-know that it's a presently used account. To complete your account re-
-confirmation, you must  click on the link below, you must reply to this email
-immediately and enter your account details as requested below.
-
-***********************************************
-Email User-name :........ .....
-EMAIL Password :...............
-Date of Birth :...............
-Country or Territory :........
-************************************************
-
-****IMPORTANT :
-
-This updating is compulsory as a result of our recent server changes. If you
-fail to update your email address you will soon be unable to receive/send
-mails.Also your email will not be equipped with the latest anti-virus  
-system on
-our new servers.
-
-This will make your email and PC vulnerable to virus attacks from the
-internet.
-
-**** HOW TO UPDATE***
-To update simply reply the above to upgrading admin as appropriate.Failure to
-do so immediately will lead to SUSPENSION OF YOUR ACCOUNT.
-
-Thanks for your co-operation,
-CyberOne Pty Ltd
+                  Linus
