@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab1JSVMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:12:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40572 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab1JSVMd (ORCPT
+	id S1754314Ab1JSVTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:19:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:60014 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1JSVTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:12:33 -0400
+	Wed, 19 Oct 2011 17:19:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=ezVjh5BXPyEQgVUJ1f6cpLOHKdo4MrfpD/5e6QETI7Fq+pKnydnaqDFyv+cpUtIJl
+	xYI1T3Y42p/ccDTz0RhcQ==
+Date: Wed, 19 Oct 2011 14:19:06 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Borislav Petkov <bp@amd64.org>
+cc: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] x86, RAS: Add attributes needed for HW injection
+In-Reply-To: <20111019210946.GC7503@aftab>
+Message-ID: <alpine.DEB.2.00.1110191415120.5687@chino.kir.corp.google.com>
+References: <1319035866-29570-1-git-send-email-bp@amd64.org> <1319035866-29570-9-git-send-email-bp@amd64.org> <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com> <20111019210946.GC7503@aftab>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1317943022.1095.25.camel@mop>
-References: <1317943022.1095.25.camel@mop>
-From: Paul Menage <paul@paulmenage.org>
-Date: Wed, 19 Oct 2011 14:12:13 -0700
-X-Google-Sender-Auth: LHzKtiuVWaFNa4N_heoixYTvIHE
-Message-ID: <CALdu-PBLCNXTaZuODyzw_g_FQNyLqK_FsdObC=HjtEp75vkdFQ@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_A_Plumber=92s_Wish_List_for_Linux?=
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
-        david@fubar.dk, greg@kroah.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 6, 2011 at 4:17 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->
-> * fork throttling mechanism as basic cgroup functionality that is
-> available in all hierarchies independent of the controllers used:
-> This is important to implement race-free killing of all members of a
-> cgroup, so that cgroup member processes cannot fork faster then a cgroup
-> supervisor process could kill them. This needs to be recursive, so that
-> not only a cgroup but all its subgroups are covered as well.
+On Wed, 19 Oct 2011, Borislav Petkov wrote:
 
-If that's your end goal, then an alternative to the freezer support
-that others have mentioned would be a 'cgroup.signal' file which, when
-written to, would send that signal to all members of the cgroup at
-once. Perhaps simpler than having to get in the way of the fork path
-more and manage a rate-limit.
+> > That wouldn't catch an offline cpuid, you probably want cpu_online(val)?
+> 
+> Good catch, thanks.
+> 
+> So I'm looking at <arch/x86/kernel/cpuid.c> which is how the validity of
+> a cpu value should be tested properly, IMHO:
+> 
+> static int cpuid_open(struct inode *inode, struct file *file)
+> {
+> 	...
+> 
+> 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+> 		return -ENXIO;	/* No such CPU */
+> 	...
 
->
-> * allow user xattrs to be set on files in the cgroupfs (and maybe
-> procfs?)
-
-What would the use case be for this?
-
-Paul
+Right, the comment for cpumask_test_cpu(), which cpu_online() really is, 
+wants a cpu < nr_cpu_ids.  
