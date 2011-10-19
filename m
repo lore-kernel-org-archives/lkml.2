@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab1JSEFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:05:48 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49486 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab1JSEFg (ORCPT
+	id S1754757Ab1JSEF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:05:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:52511 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab1JSEFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:05:36 -0400
-Message-Id: <093448$3qutod@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939789"
+	Wed, 19 Oct 2011 00:05:50 -0400
+Message-Id: <e97c6e$3qqv6i@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128810194"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 18 Oct 2011 22:44:33 -0500
-Subject: [PATCH v5 28/36] Hexagon: Add ioremap support
+Date: Tue, 18 Oct 2011 22:48:27 -0500
+Subject: [PATCH v5 36/36] Add extra arch overrides to asm-generic/checksum.h
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+There are plausible reasons for architectures to provide their own
+versions of csum_partial_copy_nocheck and csum_tcpudp_magic.
+By protecting these, the architecture can still re-use the
+asm-generic checksum.h, instead of copying it.
+
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/mm/ioremap.c |   56 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 56 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/mm/ioremap.c
+ include/asm-generic/checksum.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/hexagon/mm/ioremap.c b/arch/hexagon/mm/ioremap.c
-new file mode 100644
-index 0000000..3a37bc3
---- /dev/null
-+++ b/arch/hexagon/mm/ioremap.c
-@@ -0,0 +1,56 @@
-+/*
-+ * I/O remap functions for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/vmalloc.h>
-+
-+void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size)
-+{
-+	unsigned long last_addr, addr;
-+	unsigned long offset = phys_addr & ~PAGE_MASK;
-+	struct vm_struct *area;
-+
-+	pgprot_t prot = __pgprot(_PAGE_PRESENT|_PAGE_READ|_PAGE_WRITE
-+					|(__HEXAGON_C_DEV << 6));
-+
-+	last_addr = phys_addr + size - 1;
-+
-+	/*  Wrapping not allowed  */
-+	if (!size || (last_addr < phys_addr))
-+		return NULL;
-+
-+	/*  Rounds up to next page size, including whole-page offset */
-+	size = PAGE_ALIGN(offset + size);
-+
-+	area = get_vm_area(size, VM_IOREMAP);
-+	addr = (unsigned long)area->addr;
-+
-+	if (ioremap_page_range(addr, addr+size, phys_addr, prot)) {
-+		vunmap((void *)addr);
-+		return NULL;
-+	}
-+
-+	return (void __iomem *) (offset + addr);
-+}
-+
-+void __iounmap(const volatile void __iomem *addr)
-+{
-+	vunmap((void *) ((unsigned long) addr & PAGE_MASK));
-+}
+diff --git a/include/asm-generic/checksum.h b/include/asm-generic/checksum.h
+index 4647c76..c084767 100644
+--- a/include/asm-generic/checksum.h
++++ b/include/asm-generic/checksum.h
+@@ -33,8 +33,10 @@ extern __wsum csum_partial_copy(const void *src, void *dst, int len, __wsum sum)
+ extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
+ 					int len, __wsum sum, int *csum_err);
+ 
++#ifndef csum_partial_copy_nocheck
+ #define csum_partial_copy_nocheck(src, dst, len, sum)	\
+ 	csum_partial_copy((src), (dst), (len), (sum))
++#endif
+ 
+ /*
+  * This is a version of ip_compute_csum() optimized for IP headers,
+@@ -63,12 +65,14 @@ csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
+ 		unsigned short proto, __wsum sum);
+ #endif
+ 
++#ifndef csum_tcpudp_magic
+ static inline __sum16
+ csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
+ 		  unsigned short proto, __wsum sum)
+ {
+ 	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
+ }
++#endif
+ 
+ /*
+  * this routine is used for miscellaneous IP-like checksums, mainly
 -- 
 1.7.1
 
