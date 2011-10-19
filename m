@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab1JSLtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 07:49:32 -0400
-Received: from mga07.intel.com ([143.182.124.22]:36957 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755934Ab1JSLtZ (ORCPT
+	id S1755960Ab1JSLtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 07:49:31 -0400
+Received: from mga12.intel.com ([143.182.124.36]:30868 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755935Ab1JSLt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 07:49:25 -0400
+	Wed, 19 Oct 2011 07:49:27 -0400
 From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 To: linux-security-module@vger.kernel.org
 Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
         zohar@linux.vnet.ibm.com, dhowells@redhat.com,
         herbert@gondor.hengli.com.au
-Subject: [PATCH v2.2 6/7] integrity: digital signature verification using multiple keyrings
-Date: Wed, 19 Oct 2011 14:51:35 +0300
-Message-Id: <f094bd1603dcf682b8ab5fb41af7c5635cb04d23.1319025009.git.dmitry.kasatkin@intel.com>
+Subject: [PATCH v2.2 7/7] evm: digital signature verification support
+Date: Wed, 19 Oct 2011 14:51:36 +0300
+Message-Id: <719be290b35bf1ea0fb35dadfbf1fa7d0fda17a5.1319025009.git.dmitry.kasatkin@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <cover.1319025009.git.dmitry.kasatkin@intel.com>
 References: <cover.1319025009.git.dmitry.kasatkin@intel.com>
@@ -24,141 +24,327 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define separate keyrings for each of the different use cases - evm, ima,
-and modules. Using different keyrings improves search performance, and also
-allows "locking" specific keyring to prevent adding new keys.
-This is useful for evm and module keyrings, when keys are usually only
-added from initramfs.
+This patch adds support for digital signature verification to EVM.
+With this feature file metadata can be protected using digital
+signature instead of an HMAC. When building an image,
+which has to be flashed to different devices, an HMAC cannot
+be used to sign file metadata, because the HMAC key should be
+different on every device.
 
 Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- security/integrity/Kconfig     |   14 +++++++++++
- security/integrity/Makefile    |    1 +
- security/integrity/digsig.c    |   48 ++++++++++++++++++++++++++++++++++++++++
- security/integrity/integrity.h |   20 ++++++++++++++++
- 4 files changed, 83 insertions(+), 0 deletions(-)
- create mode 100644 security/integrity/digsig.c
+ security/integrity/evm/evm.h        |   12 +++++
+ security/integrity/evm/evm_crypto.c |   66 ++++++++++++++++++------
+ security/integrity/evm/evm_main.c   |   94 ++++++++++++++++++++++++++++++-----
+ 3 files changed, 142 insertions(+), 30 deletions(-)
 
-diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
-index 4bf00ac..d87fa2a 100644
---- a/security/integrity/Kconfig
-+++ b/security/integrity/Kconfig
-@@ -3,5 +3,19 @@ config INTEGRITY
- 	def_bool y
- 	depends on IMA || EVM
+diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
+index d320f51..c885247 100644
+--- a/security/integrity/evm/evm.h
++++ b/security/integrity/evm/evm.h
+@@ -12,14 +12,21 @@
+  * File: evm.h
+  *
+  */
++
++#ifndef __INTEGRITY_EVM_H
++#define __INTEGRITY_EVM_H
++
+ #include <linux/xattr.h>
+ #include <linux/security.h>
++
+ #include "../integrity.h"
  
-+config INTEGRITY_DIGSIG
-+	boolean "Digital signature verification using multiple keyrings"
-+	depends on INTEGRITY
-+	default n
-+	select DIGSIG
-+	help
-+	  This option enables digital signature verification support
-+	  using multiple keyrings. It defines separate keyrings for each
-+	  of the different use cases - evm, ima, and modules.
-+	  Different keyrings improves search performance, but also allow
-+	  to "lock" certain keyring to prevent adding new keys.
-+	  This is useful for evm and module keyrings, when keys are
-+	  usually only added from initramfs.
-+
- source security/integrity/ima/Kconfig
- source security/integrity/evm/Kconfig
-diff --git a/security/integrity/Makefile b/security/integrity/Makefile
-index 0ae44ae..bece056 100644
---- a/security/integrity/Makefile
-+++ b/security/integrity/Makefile
-@@ -3,6 +3,7 @@
- #
+ extern int evm_initialized;
+ extern char *evm_hmac;
++extern char *evm_hash;
  
- obj-$(CONFIG_INTEGRITY) += integrity.o
-+obj-$(CONFIG_INTEGRITY_DIGSIG) += digsig.o
+ extern struct crypto_shash *hmac_tfm;
++extern struct crypto_shash *hash_tfm;
  
- integrity-y := iint.o
+ /* List of EVM protected security xattrs */
+ extern char *evm_config_xattrnames[];
+@@ -32,7 +39,12 @@ extern int evm_update_evmxattr(struct dentry *dentry,
+ extern int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 			 const char *req_xattr_value,
+ 			 size_t req_xattr_value_len, char *digest);
++extern int evm_calc_hash(struct dentry *dentry, const char *req_xattr_name,
++			 const char *req_xattr_value,
++			 size_t req_xattr_value_len, char *digest);
+ extern int evm_init_hmac(struct inode *inode, const struct xattr *xattr,
+ 			 char *hmac_val);
+ extern int evm_init_secfs(void);
+ extern void evm_cleanup_secfs(void);
++
++#endif
+diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
+index 5dd5b140..847a2d7 100644
+--- a/security/integrity/evm/evm_crypto.c
++++ b/security/integrity/evm/evm_crypto.c
+@@ -26,34 +26,48 @@ static unsigned char evmkey[MAX_KEY_SIZE];
+ static int evmkey_len = MAX_KEY_SIZE;
  
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-new file mode 100644
-index 0000000..b5d1e01
---- /dev/null
-+++ b/security/integrity/digsig.c
-@@ -0,0 +1,48 @@
-+/*
-+ * Copyright (C) 2011 Intel Corporation
-+ *
-+ * Author:
-+ * Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, version 2 of the License.
-+ *
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/err.h>
-+#include <linux/rbtree.h>
-+#include <linux/key-type.h>
-+#include <linux/digsig.h>
-+
-+#include "integrity.h"
-+
-+static struct key *keyring[INTEGRITY_KEYRING_MAX];
-+
-+static const char *keyring_name[INTEGRITY_KEYRING_MAX] = {
-+	"_evm",
-+	"_module",
-+	"_ima",
-+};
-+
-+int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+					const char *digest, int digestlen)
-+{
-+	if (id >= INTEGRITY_KEYRING_MAX)
-+		return -EINVAL;
-+
-+	if (!keyring[id]) {
-+		keyring[id] =
-+			request_key(&key_type_keyring, keyring_name[id], NULL);
-+		if (IS_ERR(keyring[id])) {
-+			pr_err("no %s keyring: %ld\n", keyring_name[id],
-+							PTR_ERR(keyring[id]));
-+			keyring[id] = NULL;
-+			return PTR_ERR(keyring[id]);
-+		}
+ struct crypto_shash *hmac_tfm;
++struct crypto_shash *hash_tfm;
+ 
+-static struct shash_desc *init_desc(void)
++static struct shash_desc *init_desc(const char type)
+ {
+ 	int rc;
++	char *algo;
++	struct crypto_shash **tfm;
+ 	struct shash_desc *desc;
+ 
+-	if (hmac_tfm == NULL) {
+-		hmac_tfm = crypto_alloc_shash(evm_hmac, 0, CRYPTO_ALG_ASYNC);
+-		if (IS_ERR(hmac_tfm)) {
++	if (type == EVM_XATTR_HMAC) {
++		tfm = &hmac_tfm;
++		algo = evm_hmac;
++	} else {
++		tfm = &hash_tfm;
++		algo = evm_hash;
 +	}
 +
-+	return digsig_verify(keyring[id], sig, siglen, digest, digestlen);
-+}
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index e898094..9fc723b 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -51,5 +51,25 @@ struct integrity_iint_cache {
- struct integrity_iint_cache *integrity_iint_insert(struct inode *inode);
- struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
++	if (*tfm == NULL) {
++		*tfm = crypto_alloc_shash(algo, 0, CRYPTO_ALG_ASYNC);
++		if (IS_ERR(*tfm)) {
+ 			pr_err("Can not allocate %s (reason: %ld)\n",
+-			       evm_hmac, PTR_ERR(hmac_tfm));
+-			rc = PTR_ERR(hmac_tfm);
+-			hmac_tfm = NULL;
++			       algo, PTR_ERR(*tfm));
++			rc = PTR_ERR(*tfm);
++			*tfm = NULL;
+ 			return ERR_PTR(rc);
+ 		}
+ 	}
  
-+#define INTEGRITY_KEYRING_EVM		0
-+#define INTEGRITY_KEYRING_MODULE	1
-+#define INTEGRITY_KEYRING_IMA		2
-+#define INTEGRITY_KEYRING_MAX		3
+-	desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(hmac_tfm),
++	desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(*tfm),
+ 			GFP_KERNEL);
+ 	if (!desc)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	desc->tfm = hmac_tfm;
++	desc->tfm = *tfm;
+ 	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+-	rc = crypto_shash_setkey(hmac_tfm, evmkey, evmkey_len);
+-	if (rc)
+-		goto out;
++	if (type == EVM_XATTR_HMAC) {
++		rc = crypto_shash_setkey(*tfm, evmkey, evmkey_len);
++		if (rc)
++			goto out;
++	}
 +
-+#ifdef CONFIG_INTEGRITY_DIGSIG
-+
-+int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+					const char *digest, int digestlen);
-+
-+#else
-+
-+static inline int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
-+					const char *digest, int digestlen)
+ 	rc = crypto_shash_init(desc);
+ out:
+ 	if (rc) {
+@@ -97,9 +111,11 @@ static void hmac_add_misc(struct shash_desc *desc, struct inode *inode,
+  * the hmac using the requested xattr value. Don't alloc/free memory for
+  * each xattr, but attempt to re-use the previously allocated memory.
+  */
+-int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+-		  const char *req_xattr_value, size_t req_xattr_value_len,
+-		  char *digest)
++static int evm_calc_hmac_or_hash(struct dentry *dentry,
++				const char *req_xattr_name,
++				const char *req_xattr_value,
++				size_t req_xattr_value_len,
++				char type, char *digest)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	struct shash_desc *desc;
+@@ -111,7 +127,7 @@ int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
+ 
+ 	if (!inode->i_op || !inode->i_op->getxattr)
+ 		return -EOPNOTSUPP;
+-	desc = init_desc();
++	desc = init_desc(type);
+ 	if (IS_ERR(desc))
+ 		return PTR_ERR(desc);
+ 
+@@ -145,6 +161,22 @@ out:
+ 	return error;
+ }
+ 
++int evm_calc_hmac(struct dentry *dentry, const char *req_xattr_name,
++		  const char *req_xattr_value, size_t req_xattr_value_len,
++		  char *digest)
 +{
-+	return -EOPNOTSUPP;
++	return evm_calc_hmac_or_hash(dentry, req_xattr_name, req_xattr_value,
++				req_xattr_value_len, EVM_XATTR_HMAC, digest);
 +}
 +
-+#endif /* CONFIG_INTEGRITY_DIGSIG */
++int evm_calc_hash(struct dentry *dentry, const char *req_xattr_name,
++		  const char *req_xattr_value, size_t req_xattr_value_len,
++		  char *digest)
++{
++	return evm_calc_hmac_or_hash(dentry, req_xattr_name, req_xattr_value,
++				req_xattr_value_len, IMA_XATTR_DIGEST, digest);
++}
 +
- /* set during initialization */
- extern int iint_initialized;
+ /*
+  * Calculate the hmac and update security.evm xattr
+  *
+@@ -175,7 +207,7 @@ int evm_init_hmac(struct inode *inode, const struct xattr *lsm_xattr,
+ {
+ 	struct shash_desc *desc;
+ 
+-	desc = init_desc();
++	desc = init_desc(EVM_XATTR_HMAC);
+ 	if (IS_ERR(desc)) {
+ 		printk(KERN_INFO "init_desc failed\n");
+ 		return PTR_ERR(desc);
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 8b2eff9..55ce2b4 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -25,6 +25,7 @@
+ int evm_initialized;
+ 
+ char *evm_hmac = "hmac(sha1)";
++char *evm_hash = "sha1";
+ 
+ char *evm_config_xattrnames[] = {
+ #ifdef CONFIG_SECURITY_SELINUX
+@@ -49,6 +50,29 @@ static int __init evm_set_fixmode(char *str)
+ }
+ __setup("evm=", evm_set_fixmode);
+ 
++static int evm_find_protected_xattrs(struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	char **xattr;
++	int error;
++	int count = 0;
++
++	if (!inode->i_op || !inode->i_op->getxattr)
++		return -EOPNOTSUPP;
++
++	for (xattr = evm_config_xattrnames; *xattr != NULL; xattr++) {
++		error = inode->i_op->getxattr(dentry, *xattr, NULL, 0);
++		if (error < 0) {
++			if (error == -ENODATA)
++				continue;
++			return error;
++		}
++		count++;
++	}
++
++	return count;
++}
++
+ /*
+  * evm_verify_hmac - calculate and compare the HMAC with the EVM xattr
+  *
+@@ -68,32 +92,72 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+ 					     size_t xattr_value_len,
+ 					     struct integrity_iint_cache *iint)
+ {
+-	struct evm_ima_xattr_data xattr_data;
++	struct evm_ima_xattr_data *xattr_data = NULL;
++	struct evm_ima_xattr_data calc;
+ 	enum integrity_status evm_status = INTEGRITY_PASS;
+-	int rc;
++	int rc, xattr_len;
+ 
+ 	if (iint && iint->evm_status == INTEGRITY_PASS)
+ 		return iint->evm_status;
+ 
+ 	/* if status is not PASS, try to check again - against -ENOMEM */
+ 
+-	rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
+-			   xattr_value_len, xattr_data.digest);
+-	if (rc < 0) {
+-		evm_status = (rc == -ENODATA)
+-		    ? INTEGRITY_NOXATTRS : INTEGRITY_FAIL;
++	/* first need to know the sig type */
++	rc = vfs_getxattr_alloc(dentry, XATTR_NAME_EVM, (char **)&xattr_data, 0,
++				GFP_NOFS);
++	if (rc <= 0) {
++		if (rc == 0)
++			evm_status = INTEGRITY_FAIL; /* empty */
++		else if (rc == -ENODATA) {
++			rc = evm_find_protected_xattrs(dentry);
++			if (rc > 0)
++				evm_status = INTEGRITY_NOLABEL;
++			else if (rc == 0)
++				evm_status = INTEGRITY_NOXATTRS; /* new file */
++		}
+ 		goto out;
+ 	}
+ 
+-	xattr_data.type = EVM_XATTR_HMAC;
+-	rc = vfs_xattr_cmp(dentry, XATTR_NAME_EVM, (u8 *)&xattr_data,
+-			   sizeof xattr_data, GFP_NOFS);
+-	if (rc < 0)
+-		evm_status = (rc == -ENODATA)
+-		    ? INTEGRITY_NOLABEL : INTEGRITY_FAIL;
++	xattr_len = rc - 1;
++
++	/* check value type */
++	switch (xattr_data->type) {
++	case EVM_XATTR_HMAC:
++		rc = evm_calc_hmac(dentry, xattr_name, xattr_value,
++				   xattr_value_len, calc.digest);
++		if (rc)
++			break;
++		rc = memcmp(xattr_data->digest, calc.digest,
++			    sizeof(calc.digest));
++		if (rc)
++			rc = -EINVAL;
++		break;
++	case EVM_IMA_XATTR_DIGSIG:
++		rc = evm_calc_hash(dentry, xattr_name, xattr_value,
++				xattr_value_len, calc.digest);
++		if (rc)
++			break;
++		rc = integrity_digsig_verify(INTEGRITY_KEYRING_EVM,
++					xattr_data->digest, xattr_len,
++					calc.digest, sizeof(calc.digest));
++		if (!rc) {
++			/* we probably want to replace rsa with hmac here */
++			evm_update_evmxattr(dentry, xattr_name, xattr_value,
++				   xattr_value_len);
++		}
++		break;
++	default:
++		rc = -EINVAL;
++		break;
++	}
++
++	if (rc)
++		evm_status = (rc == -ENODATA) ?
++				INTEGRITY_NOXATTRS : INTEGRITY_FAIL;
+ out:
+ 	if (iint)
+ 		iint->evm_status = evm_status;
++	kfree(xattr_data);
+ 	return evm_status;
+ }
+ 
+@@ -357,6 +421,8 @@ static int __init init_evm(void)
+ 		printk(KERN_INFO "EVM: Error registering secfs\n");
+ 		goto err;
+ 	}
++
++	return 0;
+ err:
+ 	return error;
+ }
+@@ -366,6 +432,8 @@ static void __exit cleanup_evm(void)
+ 	evm_cleanup_secfs();
+ 	if (hmac_tfm)
+ 		crypto_free_shash(hmac_tfm);
++	if (hash_tfm)
++		crypto_free_shash(hash_tfm);
+ }
+ 
+ /*
 -- 
 1.7.4.1
 
