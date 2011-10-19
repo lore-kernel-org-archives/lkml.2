@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab1JSOrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 10:47:12 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:35310 "EHLO
+	id S1756560Ab1JSOsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:48:41 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:35333 "EHLO
 	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab1JSOrK (ORCPT
+	with ESMTP id S1756442Ab1JSOrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 10:47:10 -0400
+	Wed, 19 Oct 2011 10:47:11 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -16,9 +16,9 @@ Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
         arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
         lm-sensors@lm-sensors.org, guenter.roeck@ericsson.com,
         khali@linux-fr.org, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 5/6] IIO:hwmon interface client driver.
-Date: Wed, 19 Oct 2011 15:47:07 +0100
-Message-Id: <1319035628-32580-6-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 4/6] IIO:CORE add in kernel interface mapping and getting IIO channels.
+Date: Wed, 19 Oct 2011 15:47:06 +0100
+Message-Id: <1319035628-32580-5-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1319035628-32580-1-git-send-email-jic23@cam.ac.uk>
 References: <1319035628-32580-1-git-send-email-jic23@cam.ac.uk>
@@ -26,269 +26,502 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should move to drivers/hwmon once people are happy with it.
-
-Minimal support of simple in, curr and temp attributes
-so far.
+Two elements here:
+* Map as defined in include/linux/iio/inkern.h
+* Matching code to actually get the iio_dev and channel
+that we want from the global list of IIO devices.
 
 Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/iio/Kconfig     |    8 ++
- drivers/iio/Makefile    |    1 +
- drivers/iio/iio_hwmon.c |  214 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 223 insertions(+), 0 deletions(-)
+ drivers/Makefile           |    2 +-
+ drivers/iio/Makefile       |    1 +
+ drivers/iio/iio.c          |  279 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/iio/inkern.c       |   21 ++++
+ include/linux/iio/iio.h    |    7 +-
+ include/linux/iio/inkern.h |   87 ++++++++++++++
+ 6 files changed, 390 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index 308bc97..fb6d0a1 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -11,6 +11,14 @@ menuconfig IIO
+diff --git a/drivers/Makefile b/drivers/Makefile
+index df39628..2b389c5 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -130,5 +130,5 @@ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
  
- if IIO
+ obj-$(CONFIG_HYPERV)		+= hv/
  
-+config IIO_HWMON
-+       tristate "Hwmon driver that uses channels specified via iio maps"
-+       help
-+	  This is a platform driver that in combination with a suitable
-+	  map allows IIO devices to provide  basic hwmon functionality
-+	  for those channels specified in the map.
-+
-+
- source "drivers/iio/adc/Kconfig"
- source "drivers/iio/imu/Kconfig"
- source "drivers/iio/light/Kconfig"
+-obj-$(CONFIG_IIO)		+= iio/
++obj-y		+= iio/
+ 
 diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-index cfb588a..5f9c01a 100644
+index db3c426..cfb588a 100644
 --- a/drivers/iio/Makefile
 +++ b/drivers/iio/Makefile
-@@ -6,6 +6,7 @@ obj-y = inkern.o
+@@ -1,6 +1,7 @@
+ #
+ # Makefile for the Industrial I/O subsystem
+ #
++obj-y = inkern.o
+ 
  obj-$(CONFIG_IIO) += iio.o
  industrialio-y := core.o
+diff --git a/drivers/iio/iio.c b/drivers/iio/iio.c
+index 9e6acc1..e094c40 100644
+--- a/drivers/iio/iio.c
++++ b/drivers/iio/iio.c
+@@ -12,8 +12,10 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/idr.h>
++#include <linux/err.h>
+ #include <linux/iio/iio.h>
+ #include <linux/iio/sysfs.h>
++#include <linux/iio/inkern.h>
  
-+obj-$(CONFIG_IIO_HWMON) += iio_hwmon.o
- obj-y += adc/
- obj-y += imu/
- obj-y += light/
-diff --git a/drivers/iio/iio_hwmon.c b/drivers/iio/iio_hwmon.c
+ static DEFINE_IDA(iio_ida);
+ 
+@@ -68,6 +70,278 @@ static const char * const iio_chan_info_postfix[] = {
+ 	= "quadrature_correction_raw",
+ };
+ 
++static void iio_dev_release(struct device *device);
++static struct device_type iio_dev_type = {
++	.name = "iio_device",
++	.release = iio_dev_release,
++};
++
++static int iio_match_dev(struct device *dev, void *data)
++{
++	struct iio_dev *indio_dev;
++	struct device *dev2 = data;
++
++	if (dev->type != &iio_dev_type)
++		return 0;
++
++	indio_dev = container_of(dev, struct iio_dev, dev);
++	if (indio_dev->info->get_hardware_id)
++		return indio_dev->info->get_hardware_id(indio_dev) == dev2;
++	else
++		return indio_dev->dev.parent == dev2;
++}
++
++static int iio_match_dev_name(struct device *dev, void *data)
++{
++	struct iio_dev *indio_dev;
++	const char *name = data;
++
++	if (dev->type != &iio_dev_type)
++		return 0;
++
++	indio_dev = container_of(dev, struct iio_dev, dev);
++	if (indio_dev->info->get_hardware_id)
++		return !strcmp(dev_name(indio_dev->info
++					->get_hardware_id(indio_dev)),
++			       name);
++	else if (indio_dev->dev.parent)
++		return !strcmp(dev_name(indio_dev->dev.parent), name);
++	return 0;
++}
++
++struct iio_channel *iio_channel_get(const struct device *dev,
++				    const char *name,
++				    const char *channel_name)
++{
++	struct iio_map *c_i = NULL, *c = NULL;
++	struct iio_dev *indio_dev = NULL;
++	const struct iio_chan_spec *chan = NULL;
++	struct device *dev_i;
++	int i;
++	struct iio_channel *channel;
++
++	if (dev == NULL && name == NULL && channel_name == NULL)
++		return ERR_PTR(-ENODEV);
++	/* first find matching entry the channel map */
++	list_for_each_entry(c_i, &iio_map_list, l) {
++		if ((dev && dev != c_i->consumer_dev) ||
++		    (name && strcmp(name, c_i->consumer_dev_name) != 0) ||
++		    (channel_name &&
++		     strcmp(channel_name, c_i->consumer_channel) != 0))
++			continue;
++		c = c_i;
++		break;
++	}
++	if (c == NULL)
++		return ERR_PTR(-ENODEV);
++
++	/* now find the iio device if it has been registered */
++	if (c->adc_dev)
++		dev_i = bus_find_device(&iio_bus_type, NULL, c->adc_dev,
++					&iio_match_dev);
++	else if (c->adc_dev_name)
++		dev_i = bus_find_device(&iio_bus_type, NULL,
++					(void *)c->adc_dev_name,
++					&iio_match_dev_name);
++	else
++		return ERR_PTR(-EINVAL);
++	if (IS_ERR(dev_i))
++		return (void *)dev_i;
++	if (dev_i == NULL)
++		return ERR_PTR(-ENODEV);
++	indio_dev = container_of(dev_i, struct iio_dev, dev);
++
++	/* finally verify the channel exists */
++	if (c->adc_channel_label)
++		for (i = 0; i < indio_dev->num_channels; i++)
++			if (indio_dev->channels[i].datasheet_name &&
++			    strcmp(c->adc_channel_label,
++				       indio_dev->channels[i].datasheet_name)
++			    == 0) {
++				chan = &indio_dev->channels[i];
++				break;
++			}
++	channel = kmalloc(sizeof(*channel), GFP_KERNEL);
++	if (channel == NULL)
++		return ERR_PTR(-ENOMEM);
++	channel->indio_dev = indio_dev;
++	if (chan == NULL)
++		channel->channel = &indio_dev->channels[c->channel_number];
++	else
++		channel->channel = chan;
++	return channel;
++}
++EXPORT_SYMBOL_GPL(iio_channel_get);
++
++static const struct iio_chan_spec
++*iio_chan_spec_from_name(const struct iio_dev *indio_dev,
++			 const char *name)
++{
++	int i;
++	const struct iio_chan_spec *chan = NULL;
++	for (i = 0; i < indio_dev->num_channels; i++)
++		if (indio_dev->channels[i].datasheet_name &&
++		    strcmp(name, indio_dev->channels[i].datasheet_name) == 0) {
++			chan = &indio_dev->channels[i];
++			break;
++		}
++	return chan;
++}
++
++struct iio_channel **iio_channel_get_all(const struct device *dev,
++					const char *name)
++{
++	struct iio_channel **chans;
++	struct iio_map *c = NULL;
++	struct iio_dev *indio_dev;
++	int nummaps = 0;
++	int mapind = 0;
++	int i, ret;
++	struct device *dev_i;
++
++	if (dev == NULL && name == NULL) {
++		ret = -EINVAL;
++		goto error_ret;
++	}
++
++	/* first count the matching maps */
++	list_for_each_entry(c, &iio_map_list, l)
++		if ((dev && dev != c->consumer_dev) ||
++		    (name && strcmp(name, c->consumer_dev_name) != 0))
++			continue;
++		else
++			nummaps++;
++
++	if (nummaps == 0) {
++		ret = -ENODEV;
++		goto error_ret;
++	}
++
++	chans = kzalloc(sizeof(*chans)*(nummaps + 1), GFP_KERNEL);
++	if (chans == NULL) {
++		ret = -ENOMEM;
++		goto error_ret;
++	}
++	for (i = 0; i < nummaps; i++) {
++		chans[i] = kzalloc(sizeof(*chans[0]), GFP_KERNEL);
++		if (chans[i] == NULL) {
++			ret = -ENOMEM;
++			goto error_free_chans;
++		}
++	}
++
++	/* for each map fill in the chans element */
++	list_for_each_entry(c, &iio_map_list, l) {
++		dev_i = NULL;
++		if (dev && dev != c->consumer_dev)
++			continue;
++		if (name && strcmp(name, c->consumer_dev_name) != 0)
++			continue;
++		while (1) {
++			if (c->adc_dev) {
++				dev_i = bus_find_device(&iio_bus_type,
++							dev_i,
++							c->adc_dev,
++							&iio_match_dev);
++			} else if (c->adc_dev_name) {
++				dev_i = bus_find_device(&iio_bus_type,
++							dev_i,
++							(void *)c->adc_dev_name,
++							&iio_match_dev_name);
++			} else {
++				ret = -EINVAL;
++				goto error_free_chans;
++			}
++			if (IS_ERR(dev_i)) {
++				ret = PTR_ERR(dev_i);
++				goto error_free_chans;
++			}
++			if (dev_i == NULL)
++				break;
++
++			indio_dev = container_of(dev_i, struct iio_dev, dev);
++			chans[mapind]->indio_dev = indio_dev;
++			chans[mapind]->channel =
++			iio_chan_spec_from_name(indio_dev,
++						c->adc_channel_label);
++			if (chans[mapind]->channel == NULL) {
++				ret = -EINVAL;
++				put_device(&indio_dev->dev);
++				goto error_free_chans;
++			}
++			mapind++;
++		}
++	}
++	return chans;
++
++error_free_chans:
++	for (i = 0; i < nummaps; i++)
++		if (chans[i]) {
++			put_device(&chans[i]->indio_dev->dev);
++			kfree(chans[i]);
++		}
++error_ret:
++
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL_GPL(iio_channel_get_all);
++
++void iio_channel_release(struct iio_channel *channel)
++{
++	put_device(&channel->indio_dev->dev);
++	kfree(channel);
++}
++EXPORT_SYMBOL_GPL(iio_channel_release);
++
++void iio_channel_release_all(struct iio_channel **channels)
++{
++	int i = 0;
++	struct iio_channel *chan = channels[i];
++
++	while (chan) {
++		put_device(&chan->indio_dev->dev);
++		kfree(chan);
++		i++;
++		chan = channels[i];
++	}
++	kfree(channels);
++}
++EXPORT_SYMBOL_GPL(iio_channel_release_all);
++
++int iio_read_channel_raw(struct iio_channel *chan, int *val)
++{
++	int val2;
++	return chan->indio_dev->info->read_raw(chan->indio_dev, chan->channel,
++					       val, &val2, 0);
++}
++EXPORT_SYMBOL_GPL(iio_read_channel_raw);
++
++int iio_read_channel_scale(struct iio_channel *chan, int *val, int *val2)
++{
++	/* Does this channel have shared scale? */
++	if (chan->channel->info_mask & (1 << IIO_CHAN_INFO_SCALE_SHARED))
++		return chan->indio_dev
++			->info->read_raw(chan->indio_dev,
++					 chan->channel,
++					 val, val2,
++					 (1 << IIO_CHAN_INFO_SCALE_SHARED));
++	else if (chan->channel->info_mask & (1 << IIO_CHAN_INFO_SCALE_SEPARATE))
++		return chan->indio_dev
++			->info->read_raw(chan->indio_dev,
++					 chan->channel,
++					 val, val2,
++					 (1 << IIO_CHAN_INFO_SCALE_SEPARATE));
++	else
++		return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(iio_read_channel_scale);
++
++enum iio_chan_type iio_get_channel_type(struct iio_channel *channel)
++{
++	return channel->channel->type;
++}
++EXPORT_SYMBOL_GPL(iio_get_channel_type);
++
+ static void iio_device_free_read_attr(struct iio_dev *indio_dev,
+ 						 struct iio_dev_attr *p)
+ {
+@@ -93,11 +367,6 @@ static void iio_dev_release(struct device *device)
+ 	iio_device_unregister_sysfs(indio_dev);
+ }
+ 
+-static struct device_type iio_dev_type = {
+-	.name = "iio_device",
+-	.release = iio_dev_release,
+-};
+-
+ struct iio_dev *iio_device_allocate(int sizeof_priv)
+ {
+ 	struct iio_dev *dev;
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
 new file mode 100644
-index 0000000..6eeceeb
+index 0000000..e2ba5d6
 --- /dev/null
-+++ b/drivers/iio/iio_hwmon.c
-@@ -0,0 +1,214 @@
-+/* Hwmon client for industrial I/O devices
++++ b/drivers/iio/inkern.c
+@@ -0,0 +1,21 @@
++/* The industrial I/O core in kernel channel mapping
 + *
 + * Copyright (c) 2011 Jonathan Cameron
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms of the GNU General Public License version 2 as published by
 + * the Free Software Foundation.
-+ *
-+ * Limited functionality currently supported.
 + */
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
 +#include <linux/iio/inkern.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
 +
-+/**
-+ * struct iio_hwmon_state - device instance state
-+ * @channels:		filled with null terminated array of channels from iio
-+ * @num_channels:	number of channels in channels (saves counting twice)
-+ * @hwmon_dev:		associated hwmon device
-+ * @attr_group:	the group of attributes
-+ * @attrs:		null terminated array of attribute pointers.
-+ */
-+struct iio_hwmon_state {
-+	struct iio_channel **channels;
-+	int num_channels;
-+	struct device *hwmon_dev;
-+	struct attribute_group attr_group;
-+	struct attribute **attrs;
-+};
-+
-+/*
-+ * Assumes that IIO and hwmon operate in the same base units.
-+ * This is supposed to be true, but needs verification for
-+ * new channel types.
-+ */
-+static ssize_t iio_hwmon_read_val(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	long result;
-+	int val, ret, scaleint, scalepart;
-+	struct sensor_device_attribute *sattr =
-+		to_sensor_dev_attr(attr);
-+	struct iio_hwmon_state *state = dev_get_drvdata(dev);
-+
-+	/*
-+	 * No locking between this pair, so theoretically possible
-+	 * the scale has changed.
-+	 */
-+	ret = iio_read_channel_raw(state->channels[sattr->index],
-+				   &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = iio_read_channel_scale(state->channels[sattr->index],
-+				     &scaleint, &scalepart);
-+	if (ret < 0)
-+		return ret;
-+	switch (ret) {
-+	case IIO_VAL_INT:
-+		result = val * scaleint;
-+		break;
-+	case IIO_VAL_INT_PLUS_MICRO:
-+		result = val * (scaleint * 1000000 + scalepart)/1000000;
-+		break;
-+	case IIO_VAL_INT_PLUS_NANO:
-+		result = val * (scaleint * 1000000000 + scalepart)/1000000000;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return sprintf(buf, "%ld\n", result);
-+}
-+
-+static void iio_hwmon_free_attrs(struct iio_hwmon_state *st)
++LIST_HEAD(iio_map_list);
++EXPORT_SYMBOL_GPL(iio_map_list);
++void iio_map_array_register(struct iio_map *map, int nummaps)
 +{
 +	int i;
-+	struct sensor_device_attribute *a;
-+	for (i = 0; i < st->num_channels; i++)
-+		if (st->attrs[i]) {
-+			a = to_sensor_dev_attr(
-+				container_of(st->attrs[i],
-+					     struct device_attribute,
-+					     attr));
-+			kfree(a);
-+		}
++	for (i = 0; i < nummaps; i++)
++		list_add(&map[i].l, &iio_map_list);
 +}
++EXPORT_SYMBOL(iio_map_array_register);
 +
-+static int __devinit iio_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct iio_hwmon_state *st;
-+	struct sensor_device_attribute *a;
-+	int ret, i = 0;
-+	int in_i = 1, temp_i = 1, curr_i = 1;
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+index 8b98e92..472ade9 100644
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -122,7 +122,10 @@ struct iio_dev;
+  * @write_raw_get_fmt:	callback function to query the expected
+  *			format/precision. If not set by the driver, write_raw
+  *			returns IIO_VAL_INT_PLUS_MICRO.
+- **/
++ * @get_hardware_id:	obtain device relating to hardware. Typically based on
++ *			the parent device (actual hardware).  Note that if
++ *			not specified then iio_dev.dev->parent is used.
++ */
+ struct iio_info {
+ 	struct module			*driver_module;
+ 	const struct attribute_group	*attrs;
+@@ -142,6 +145,7 @@ struct iio_info {
+ 	int (*write_raw_get_fmt)(struct iio_dev *indio_dev,
+ 			 struct iio_chan_spec const *chan,
+ 			 long mask);
++	struct device *(*get_hardware_id)(struct iio_dev *indio_dev);
+ };
+ 
+ /**
+@@ -176,6 +180,7 @@ struct iio_dev {
+ #define IIO_MAX_GROUPS 1
+ 	const struct attribute_group	*groups[IIO_MAX_GROUPS + 1];
+ 	int				groupcounter;
++	struct list_head		dev_list_entry;
+ };
+ 
+ /**
+diff --git a/include/linux/iio/inkern.h b/include/linux/iio/inkern.h
+new file mode 100644
+index 0000000..6eef0a2
+--- /dev/null
++++ b/include/linux/iio/inkern.h
+@@ -0,0 +1,87 @@
++#include <linux/device.h>
++#include <linux/list.h>
++#include <linux/iio/chan_spec.h>
 +
-+	st = kzalloc(sizeof(*st), GFP_KERNEL);
-+	if (st == NULL) {
-+		ret = -ENOMEM;
-+		goto error_ret;
-+	}
++#ifndef _IIO_INKERN_H_
++#define _IIO_INKERN_H_
 +
-+	st->channels = iio_channel_get_all(&pdev->dev, NULL);
-+	if (IS_ERR(st->channels)) {
-+		ret = PTR_ERR(st->channels);
-+		goto error_free_state;
-+	}
++struct iio_dev;
++struct iio_chan_spec;
 +
-+	/* count how many attributes we have */
-+	while (st->channels[st->num_channels])
-+		st->num_channels++;
-+
-+	st->attrs = kzalloc(sizeof(st->attrs)*(i+1), GFP_KERNEL);
-+	if (st->attrs == NULL) {
-+		ret = -ENOMEM;
-+		goto error_release_channels;
-+	}
-+	for (i = 0; i < st->num_channels; i++) {
-+		a = kzalloc(sizeof(*a), GFP_KERNEL);
-+		sysfs_attr_init(&a->dev_attr.attr);
-+		switch (iio_get_channel_type(st->channels[i])) {
-+		case IIO_VOLTAGE:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "in%d_input",
-+							  in_i++);
-+			break;
-+		case IIO_TEMP:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "temp%d_input",
-+							  temp_i++);
-+			break;
-+		case IIO_CURRENT:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "curr%d_input",
-+							  curr_i++);
-+			break;
-+		default:
-+			ret = -EINVAL;
-+			goto error_free_attrs;
-+		}
-+		if (a->dev_attr.attr.name == NULL) {
-+			ret = -ENOMEM;
-+			goto error_free_attrs;
-+		}
-+		a->dev_attr.show = iio_hwmon_read_val;
-+		a->dev_attr.attr.mode = S_IRUGO;
-+		a->index = i;
-+		st->attrs[i] = &a->dev_attr.attr;
-+	}
-+
-+	st->attr_group.attrs = st->attrs;
-+	st->hwmon_dev = hwmon_device_register(&pdev->dev);
-+
-+	ret = sysfs_create_group(&pdev->dev.kobj, &st->attr_group);
-+	if (ret < 0)
-+		goto error_free_attrs;
-+
-+	platform_set_drvdata(pdev, st);
-+
-+	return 0;
-+
-+error_free_attrs:
-+	iio_hwmon_free_attrs(st);
-+	kfree(st->attrs);
-+error_release_channels:
-+	iio_channel_release_all(st->channels);
-+error_free_state:
-+	kfree(st);
-+error_ret:
-+	return ret;
-+}
-+
-+static int __devexit iio_hwmon_remove(struct platform_device *pdev)
-+{
-+	struct iio_hwmon_state *st = platform_get_drvdata(pdev);
-+
-+	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-+	iio_hwmon_free_attrs(st);
-+	kfree(st->attrs);
-+	hwmon_device_unregister(st->hwmon_dev);
-+	iio_channel_release_all(st->channels);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver __refdata iio_hwmon_driver = {
-+	.driver = {
-+		.name = "iio_hwmon",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = iio_hwmon_probe,
-+	.remove = __devexit_p(iio_hwmon_remove),
++struct iio_channel {
++	struct iio_dev *indio_dev;
++	const struct iio_chan_spec *channel;
 +};
 +
-+static int iio_inkern_init(void)
-+{
-+	return platform_driver_register(&iio_hwmon_driver);
-+}
-+module_init(iio_inkern_init);
++extern struct list_head iio_map_list;
 +
-+static void iio_inkern_exit(void)
-+{
-+	platform_driver_unregister(&iio_hwmon_driver);
-+}
-+module_exit(iio_inkern_exit);
++struct iio_map {
++	/* iio device side */
++	struct device *adc_dev;
++	const char *adc_dev_name;
++	const char *adc_channel_label;
++	int channel_number; /*naughty starting point */
 +
-+MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
-+MODULE_DESCRIPTION("IIO to hwmon driver");
-+MODULE_LICENSE("GPL v2");
++	/* consumer side */
++	struct device *consumer_dev;
++	const char *consumer_dev_name;
++	const char *consumer_channel;
++
++	/* management - probably neater ways of doing this */
++	struct list_head l;
++};
++
++void iio_map_array_register(struct iio_map *map, int nummaps);
++/**
++ * iio_channel_get() - get an opaque reference to a specified device.
++ */
++struct iio_channel *iio_channel_get(const struct device *dev,
++				    const char *name,
++				    const char *consumer_channel);
++void iio_channel_release(struct iio_channel *chan);
++
++/**
++ * iio_channel_get_all() - get all channels associated with a client
++ *
++ * returns a null terminated array of pointers to iio_channel structures.
++ */
++struct iio_channel **iio_channel_get_all(const struct device *dev,
++					const char *name);
++
++void iio_channel_release_all(struct iio_channel **chan);
++
++/**
++ * iio_read_channel_raw() - read from a given channel
++ * @channel:	the channel being queried.
++ * @val:	value read back.
++ *
++ * Note raw reads from iio channels are in adc counts and hence
++ * scale will need to be applied if standard units required.
++ *
++ * Maybe want to pass the type as a sanity check.
++ */
++int iio_read_channel_raw(struct iio_channel *chan,
++			 int *val);
++
++/**
++ * iio_get_channel_type() - get the type of a channel
++ * @channel:	the channel being queried.
++ *
++ * returns the enum iio_chan_type of the channel
++ */
++enum iio_chan_type iio_get_channel_type(struct iio_channel *channel);
++
++/**
++ * iio_read_channel_scale() - read the scale value for a channel
++ * @channel:	the channel being queried.
++ * @val:	first part of value read back.
++ * @val2:	second part of value read back.
++ *
++ * Note returns a description of what is in val and val2, such
++ * as IIO_VAL_INT_PLUS_MICRO telling us we have a value of val
++ * + val2/1e6
++ */
++int iio_read_channel_scale(struct iio_channel *chan, int *val,
++			   int *val2);
++
++#endif
 -- 
 1.7.7
 
