@@ -1,67 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab1JSWWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:22:01 -0400
-Received: from fieldses.org ([174.143.236.118]:35542 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072Ab1JSWV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:21:59 -0400
-Date: Wed, 19 Oct 2011 18:21:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 00/26]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20111019222151.GC1874@fieldses.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932246Ab1JSWVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:21:17 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27920 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab1JSWUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:20:30 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        thellstrom@vmware.com, thomas@shipmail.org, airlied@redhat.com
+Cc: xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 06/11] ttm/driver: Expand ttm_backend_func to include two overrides for TTM page pool.
+Date: Wed, 19 Oct 2011 18:19:27 -0400
+Message-Id: <1319062772-2793-7-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
+References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4E9F4D09.00EA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 09:02:35PM +0530, Aneesh Kumar K.V wrote:
-> Hi,
-> 
-> The following set of patches implements VFS and ext4 changes needed to implement
-> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> extended by file masks to fit into the standard POSIX file permission model.
-> They are designed to work seamlessly locally as well as across the NFSv4 and
-> CIFS/SMB2 network file system protocols.
+The two overrides will be choosen by the backends whether they
+want to use a different TTM page pool than the default.
 
-Except for two questions in replies to individual patches, these look
-good to me.
+If the backend does not choose a new override, the default one
+will be used.
 
---b.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |   10 +++++++---
+ include/drm/ttm/ttm_bo_driver.h      |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 3 deletions(-)
 
-> 
-> A user-space utility for displaying and changing richacls is available at [4]
-> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-> 
-> [4] git://github.com/kvaneesh/richacl-tools.git master
-> 
-> To test richacl on ext4 use tune2fs -O richacl to enable richacl feature and mount
-> the file system using -o acl mount option.
-> 
-> More details regarding richacl can be found at
-> http://acl.bestbits.at/richacl/
-> 
-> Changes from v6:
-> a) Update patches based on review comments.
-> b) Add Acked-by:
-> c) rebase to 3.1-rc10
-> 
-> git repository With all the patches can be found at
-> git://github.com/kvaneesh/linux.git richacl
-> 
-> IMHO the patches are ready to be merged upstream. How do we push these changes
-> to Linus tree ? Andrew, Viro, any comment on how we can get this merged upstream ?
-> 
-> -aneesh
-> 
-> 
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index 24c0340..360afb3 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -861,13 +861,17 @@ EXPORT_SYMBOL(ttm_page_alloc_debugfs);
+ int ttm_get_pages(struct ttm_tt *ttm, struct list_head *pages,
+ 		  unsigned count, dma_addr_t *dma_address)
+ {
++	if (ttm->be && ttm->be->func && ttm->be->func->get_pages)
++		return ttm->be->func->get_pages(ttm, pages, count, dma_address);
+ 	return __ttm_get_pages(pages, ttm->page_flags, ttm->caching_state,
+ 				count, dma_address);
+ }
+-{
+ void ttm_put_pages(struct ttm_tt *ttm, struct list_head *pages,
+ 		   unsigned page_count, dma_addr_t *dma_address)
+ {
+-	__ttm_put_pages(pages, page_count, ttm->page_flags, ttm->caching_state,
+-			dma_address);
++	if (ttm->be && ttm->be->func && ttm->be->func->put_pages)
++		ttm->be->func->put_pages(ttm, pages, page_count, dma_address);
++	else
++		__ttm_put_pages(pages, page_count, ttm->page_flags,
++				ttm->caching_state, dma_address);
+ }
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index 09af2d7..1826c3b 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -100,6 +100,34 @@ struct ttm_backend_func {
+ 	 * Destroy the backend.
+ 	 */
+ 	void (*destroy) (struct ttm_backend *backend);
++
++	/**
++	 * ttm_get_pages override. The backend can override the default
++	 * TTM page pool code with a different one.
++	 *
++	 * Get count number of pages from pool to pages list.
++	 *
++	 * @ttm: ttm which contains flags for page allocation and caching state.
++	 * @pages: head of empty linked list where pages are filled.
++	 * @dma_address: The DMA (bus) address of pages
++	 */
++	int (*get_pages) (struct ttm_tt *ttm, struct list_head *pages,
++			  unsigned count, dma_addr_t *dma_address);
++
++	/**
++	 * ttm_put_pages override. The backend can override the default
++	 * TTM page pool code with a different implementation.
++	 *
++	 * Put linked list of pages to pool.
++	 *
++	 * @ttm: ttm which contains flags for page allocation and caching state.
++	 * @pages: list of pages to free.
++	 * @page_count: number of pages in the list. Zero can be passed for
++	 * unknown count.
++	 * @dma_address: The DMA (bus) address of pages
++	 */
++	void (*put_pages) (struct ttm_tt *ttm, struct list_head *pages,
++			   unsigned page_count, dma_addr_t *dma_address);
+ };
+ 
+ /**
+@@ -109,6 +137,8 @@ struct ttm_backend_func {
+  * @flags: For driver use.
+  * @func: Pointer to a struct ttm_backend_func that describes
+  * the backend methods.
++ * @dev: Pointer to a struct device which can be used by the TTM
++ *  [get|put)_pages overrides in 'struct ttm_backend_func'.
+  *
+  */
+ 
+@@ -116,6 +146,7 @@ struct ttm_backend {
+ 	struct ttm_bo_device *bdev;
+ 	uint32_t flags;
+ 	struct ttm_backend_func *func;
++	struct device *dev;
+ };
+ 
+ #define TTM_PAGE_FLAG_USER            (1 << 1)
+-- 
+1.7.6.4
+
