@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab1JSRNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:13:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55029 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab1JSRNE (ORCPT
+	id S1756911Ab1JSRNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:13:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19685 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756822Ab1JSRNc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:13:04 -0400
-Date: Wed, 19 Oct 2011 10:12:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
-Subject: Re: [PATCH 10/10] block: fix request_queue lifetime handling by
- making blk_queue_cleanup() proper shutdown
-Message-ID: <20111019171259.GE25124@google.com>
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
- <1318998384-22525-11-git-send-email-tj@kernel.org>
- <20111019161840.GG1140@redhat.com>
+	Wed, 19 Oct 2011 13:13:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,373,1315206000"; 
+   d="scan'208";a="28200283"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>, EDAC devel <linux-edac@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Date: Wed, 19 Oct 2011 10:13:29 -0700
+Subject: RE: [PATCH 2/9] x86, RAS: Start reorganizing RAS features support
+Thread-Topic: [PATCH 2/9] x86, RAS: Start reorganizing RAS features support
+Thread-Index: AcyObpfHLDO91B06QA+QaZy6KRLY2gAE1l1A
+Message-ID: <987664A83D2D224EAE907B061CE93D5301F19DBDB5@orsmsx505.amr.corp.intel.com>
+References: <1319035866-29570-1-git-send-email-bp@amd64.org>
+ <1319035866-29570-3-git-send-email-bp@amd64.org>
+In-Reply-To: <1319035866-29570-3-git-send-email-bp@amd64.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019161840.GG1140@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Start relocating RAS features into a centralized location under
+> arch/x86/kernel/cpu/ras/. Readjust Kconfig items and makefiles
+> accordingly.
 
-On Wed, Oct 19, 2011 at 12:18:40PM -0400, Vivek Goyal wrote:
-> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> > index 900a0c9..8edb949 100644
-> > --- a/block/blk-throttle.c
-> > +++ b/block/blk-throttle.c
-> > @@ -309,6 +309,10 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
-> >  	struct blkio_cgroup *blkcg;
-> >  	struct request_queue *q = td->queue;
-> >  
-> > +	/* no throttling for dead queue */
-> > +	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-> > +		return NULL;
-> > +
-> 
-> May be blk_throtl_bio() is probably a better place to do this check, just
-> before callig throtl_get_tg().
+Not all ras features are "cpu" orientated ... should we really be
+moving to "arch/x86/kernel/ras"?
 
-Hmmm... the thing is you need to check DEAD again once after releasing
-and re-grabbing the queuelock, os if we move the test into the caller,
-we end up having one in the caller and one in the callee, so I thought
-it would be better to keep them in the same function.  My opinion on
-it isn't too strong tho.  If you feel strong about it, please feel
-free to move it.
-
-Thank you.
-
--- 
-tejun
+-Tony
