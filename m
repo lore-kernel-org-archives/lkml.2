@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab1JSRqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 13:46:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7970 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab1JSRqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 13:46:00 -0400
-Date: Wed, 19 Oct 2011 13:45:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
+	id S1757219Ab1JSRt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 13:49:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49588 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755845Ab1JSRt5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 13:49:57 -0400
+Date: Wed, 19 Oct 2011 10:49:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
 Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
 Subject: Re: [PATCH 07/10] block: reorganize throtl_get_tg() and
  blk_throtl_bio()
-Message-ID: <20111019174556.GJ1140@redhat.com>
+Message-ID: <20111019174952.GI25124@google.com>
 References: <1318998384-22525-1-git-send-email-tj@kernel.org>
  <1318998384-22525-8-git-send-email-tj@kernel.org>
  <20111019145622.GE1140@redhat.com>
  <20111019170625.GD25124@google.com>
  <20111019171917.GA4026@redhat.com>
  <20111019173053.GG25124@google.com>
+ <20111019174556.GJ1140@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111019173053.GG25124@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111019174556.GJ1140@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 10:30:53AM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Oct 19, 2011 at 01:19:17PM -0400, Vivek Goyal wrote:
-> > > Currently, the code has different opportunistic checks which can catch
-> > > most of those cases but unfortunatly I think it just makes the bugs
-> > > more obscure.
-> > > 
-> > > That said, we probably should be switching to internal lock once
-> > > clenaup is complete.
+Hello,
+
+On Wed, Oct 19, 2011 at 01:45:56PM -0400, Vivek Goyal wrote:
+> > Hmmmm, yeah, right, switching itself would be racy.  Maybe not sharing
+> > is the solution, I don't know.  There's a way to make the switching
+> > safe tho.  Sth like the following.
 > > 
-> > So even switching to internal lock is racy. Christoph suggeted to break down
-> > this sharing of queue lock and driver lock and suggested always use
-> > internal queue lock and modify drivers to use their own lock and manage it.
-> > It makes sense though it might be lot of work to fix drivers.
+> > 	lock_queue(q, flags)
+> > 	{
+> > 		spinlock_t *lock;
+> > 
+> > 		local_irq_save(flags);
+> > 		lock = rcu_dereference_sched(q->queue_lock);
+> > 		spin_lock(lock);
+> > 	}
+> > 
+> > and on cleanup, do synchronize_sched() after lock switching.  But yeah
+> > it still stinks.
 > 
-> Hmmmm, yeah, right, switching itself would be racy.  Maybe not sharing
-> is the solution, I don't know.  There's a way to make the switching
-> safe tho.  Sth like the following.
-> 
-> 	lock_queue(q, flags)
-> 	{
-> 		spinlock_t *lock;
-> 
-> 		local_irq_save(flags);
-> 		lock = rcu_dereference_sched(q->queue_lock);
-> 		spin_lock(lock);
-> 	}
-> 
-> and on cleanup, do synchronize_sched() after lock switching.  But yeah
-> it still stinks.
+> rcu protected spinlocks. Interesting. :-)
 
-rcu protected spinlocks. Interesting. :-)
+:)
 
-IIUC, it still leaves the window open that two callers think they have
-the spinlock. One is holding the driver provided lock and other is holding
-the queue private lock.
+> IIUC, it still leaves the window open that two callers think they have
+> the spinlock. One is holding the driver provided lock and other is holding
+> the queue private lock.
 
-Thanks
-Vivek
+On blk_cleanup_queue() completion, the two are disjoint, so that
+shouldn't be a problem.  Block layer won't call into low level drivers
+and low level drivers aren't supposed to call into block layer either.
+
+Thanks.
+
+-- 
+tejun
