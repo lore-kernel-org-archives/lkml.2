@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab1JSFdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 01:33:41 -0400
-Received: from ausc60pc101.us.dell.com ([143.166.85.206]:27685 "EHLO
-	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab1JSFdk (ORCPT
+	id S1752393Ab1JSFn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 01:43:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50702 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab1JSFnz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 01:33:40 -0400
-X-Loopcount0: from 10.170.28.39
-From: <Srinivas_G_Gowda@Dell.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <minyard@acm.org>
-Date: Tue, 18 Oct 2011 22:31:13 -0700
-Subject: [PATCH] ipmi: This patch decreases the IPMI message transaction
- time in Interrupt mode
-Thread-Topic: [PATCH] ipmi: This patch decreases the IPMI message
- transaction time in Interrupt mode
-Thread-Index: AcyOIKTviBu2FbqLS/6uRaFWgULH6A==
-Message-ID: <4E9E60A1.4090408@dell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-acceptlanguage: en-US
-Content-Type: multipart/mixed; boundary="_002_4E9E60A14090408dellcom_"
+	Wed, 19 Oct 2011 01:43:55 -0400
 MIME-Version: 1.0
+In-Reply-To: <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
+References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu>
+ <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown>
+ <20110728062616.GC15204@unix33.andrew.cmu.edu> <20110728171345.67d3797d@notabene.brown>
+ <20110729142842.GA8462@unix33.andrew.cmu.edu> <20110815184957.GA16588@redhat.com>
+ <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
+From: Paul Menage <paul@paulmenage.org>
+Date: Tue, 18 Oct 2011 22:43:35 -0700
+X-Google-Sender-Auth: VKbgYTdaFhPOwd4fpFWu6Bf2AI8
+Message-ID: <CALdu-PDVh+JDqaVs1Ps6qxwZdXiTkrs-NJSP5uHnokiGvAYKZA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cgroups: convert ss->attach to use whole threadgroup
+ flex_array (cpuset, memcontrol)
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        paulmck@linux.vnet.ibm.com, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_4E9E60A14090408dellcom_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 13, 2011 at 5:36 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+> Convert ss->attach to take a flex_array of tasks instead of just the leader.
+>
+> From: Ben Blum <bblum@andrew.cmu.edu>
+>
+> This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
+> memcontrol) to accurately find the group's mm even when a non-leader does exec
+> and leaves the leader with a NULL mm pointer.
+>
+> Also converts cpuset and memcontrol to take the flex_array and iterate down it
+> until an mm is found, instead of just attempting to use the leader's mm.
+>
+> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
 
+Reviewed-by: Paul Menage <paul@paulmenage.org>
 
---_002_4E9E60A14090408dellcom_
-Content-Type: text/plain; name="0001-ipmi-interrupt-fast-transaction.patch"
-Content-Description: 0001-ipmi-interrupt-fast-transaction.patch
-Content-Disposition: attachment;
-	filename="0001-ipmi-interrupt-fast-transaction.patch"; size=1387;
-	creation-date="Wed, 19 Oct 2011 05:33:34 GMT";
-	modification-date="Wed, 19 Oct 2011 05:33:34 GMT"
-Content-Transfer-Encoding: base64
+Thanks,
+Paul
 
-U3ViamVjdDogW1BBVENIXSBUaGlzIHBhdGNoICBkZWNyZWFzZXMgdGhlIElQTUkgbWVzc2FnZSB0
-cmFuc2FjdGlvbiB0aW1lIGluIEludGVycnVwdCBtb2RlDQogLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tDQogSW4gZnVuY3Rpb24gc2VuZGVyKCksIHN0YXJ0X25leHRfbXNnKHNt
-aV9pbmZvKSBpcyB3aGVuIHRoZSBkcml2ZXIgaXMgcmVhZHkgdG8gc2VuZCB0aGUgZGF0YSB0byBC
-TUMsDQogYnV0IGNvdW50cyBvbiB0aGUgdGltZW91dCB0byBzdGFydCB0aGUgdHJhbnNhY3Rpb24u
-SW4gaW50ZXJydXB0IG1vZGUgd2hhdCBJIG9ic2VydmVkIGlzIHRoYXQgZHJpdmVyDQogc2ltcGx5
-IHdhc3RlcyB0aW1lLCBjb3VudGluZyBvbiB0aGUgdGltZXIgdG8gdHJpZ2dlciB0aGUgdHJhbnNh
-Y3Rpb24uICBXaGF0IEkgaGF2ZSBkb25lIGhlcmUgaXMgdG8NCiBjdXQgdGhlIHdhaXQsYW5kIHRy
-aWdnZXIgdGhlIGNhbGwgdG8gdGhlIGhhbmRsZXIuDQogVGhpcyBwYXRjaCBjb25zaWRlcmFibHkg
-ZGVjcmVhc2VzIHRoZSBJUE1JIHRyYW5zYWN0aW9uIHRpbWUgKGN1dHMgb2ZmIH45bXMgZm9yIGEg
-c2luZ2xlIGlwbWl0b29sIHRyYW5zYWN0aW9uKS4NCg0KIFNpZ25lZC1vZmYtYnk6IFNyaW5pdmFz
-X0dvd2RhIDxzcmluaXZhc19nX2dvd2RhQGRlbGwuY29tPg0KLS0tDQpkaWZmIC0tZ2l0IGEvZHJp
-dmVycy9jaGFyL2lwbWkvaXBtaV9zaV9pbnRmLmMgYi9kcml2ZXJzL2NoYXIvaXBtaS9pcG1pX3Np
-X2ludGYuYw0KaW5kZXggOTM5N2FiNC4uNWQxZTBjYSAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvY2hh
-ci9pcG1pL2lwbWlfc2lfaW50Zi5jDQorKysgYi9kcml2ZXJzL2NoYXIvaXBtaS9pcG1pX3NpX2lu
-dGYuYw0KQEAgLTkzMiw4ICs5MzIsMTAgQEAgc3RhdGljIHZvaWQgc2VuZGVyKHZvaWQgICAgICAg
-ICAgICAgICAgKnNlbmRfaW5mbywNCiAJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmc21pX2luZm8t
-Pm1zZ19sb2NrLCBmbGFncyk7DQogDQogCXNwaW5fbG9ja19pcnFzYXZlKCZzbWlfaW5mby0+c2lf
-bG9jaywgZmxhZ3MpOw0KLQlpZiAoc21pX2luZm8tPnNpX3N0YXRlID09IFNJX05PUk1BTCAmJiBz
-bWlfaW5mby0+Y3Vycl9tc2cgPT0gTlVMTCkNCisJaWYgKHNtaV9pbmZvLT5zaV9zdGF0ZSA9PSBT
-SV9OT1JNQUwgJiYgc21pX2luZm8tPmN1cnJfbXNnID09IE5VTEwpIHsNCiAJCXN0YXJ0X25leHRf
-bXNnKHNtaV9pbmZvKTsNCisJCW1vZF90aW1lcigmc21pX2luZm8tPnNpX3RpbWVyLCBqaWZmaWVz
-ICsgMSk7DQorCX0NCiAJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmc21pX2luZm8tPnNpX2xvY2ss
-IGZsYWdzKTsNCiB9DQogDQoNCg==
+> ---
+>  Documentation/cgroups/cgroups.txt |    7 ++++++-
+>  include/linux/cgroup.h            |    4 +++-
+>  kernel/cgroup.c                   |   16 +++++++++++++---
+>  kernel/cpuset.c                   |   16 ++++++++++++++--
+>  mm/memcontrol.c                   |   17 +++++++++++++++--
+>  5 files changed, 51 insertions(+), 9 deletions(-)
+>
+> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+> index 3fa646f..8e900ec 100644
+> --- a/Documentation/cgroups/cgroups.txt
+> +++ b/Documentation/cgroups/cgroups.txt
+> @@ -637,12 +637,17 @@ For any non-per-thread attachment work that needs to happen before
+>  attach_task. Needed by cpuset.
+>
+>  void attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> -           struct cgroup *old_cgrp, struct task_struct *task)
+> +           struct cgroup *old_cgrp, struct flex_array *group,
+> +           int group_size)
 
---_002_4E9E60A14090408dellcom_--
+Maybe flex_array should have a size field, so that you can just pass a
+single pointer here?
+
+> @@ -1452,7 +1455,16 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+>         */
+>        cpuset_attach_nodemask_from = oldcs->mems_allowed;
+>        cpuset_attach_nodemask_to = cs->mems_allowed;
+> -       mm = get_task_mm(tsk);
+> +       /*
+> +        * Find the first task in the group that still has its mm. (This could
+> +        * be not the first one if another did exec() and the leader exited.
+
+Maybe rephrase this as "This might not be the first one"?
+
+Paul
