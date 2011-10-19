@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1JSEF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:05:28 -0400
+	id S1754425Ab1JSEFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:05:37 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:35224 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab1JSEFX (ORCPT
+	with ESMTP id S1754093Ab1JSEF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:05:23 -0400
-Message-Id: <093448$3qutnt@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939773"
+	Wed, 19 Oct 2011 00:05:29 -0400
+Message-Id: <093448$3quto2@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939778"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 18 Oct 2011 22:39:11 -0500
-Subject: [PATCH v5 21/36] Hexagon: Add SMP support
+Date: Tue, 18 Oct 2011 22:41:36 -0500
+Subject: [PATCH v5 24/36] Hexagon: Provide basic implementation and/or stubs for I/O routines.
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,24 +21,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/hexagon/include/asm/smp.h |   44 +++++++
- arch/hexagon/kernel/smp.c      |  276 ++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/kernel/topology.c |   52 ++++++++
- 3 files changed, 372 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/smp.h
- create mode 100644 arch/hexagon/kernel/smp.c
- create mode 100644 arch/hexagon/kernel/topology.c
+ arch/hexagon/include/asm/io.h |  326 +++++++++++++++++++++++++++++++++++++++++
+ arch/hexagon/lib/io.c         |   91 ++++++++++++
+ 2 files changed, 417 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/io.h
+ create mode 100644 arch/hexagon/lib/io.c
 
-diff --git a/arch/hexagon/include/asm/smp.h b/arch/hexagon/include/asm/smp.h
+diff --git a/arch/hexagon/include/asm/io.h b/arch/hexagon/include/asm/io.h
 new file mode 100644
-index 0000000..87c869a
+index 0000000..b3acc2c
 --- /dev/null
-+++ b/arch/hexagon/include/asm/smp.h
-@@ -0,0 +1,44 @@
++++ b/arch/hexagon/include/asm/io.h
+@@ -0,0 +1,326 @@
 +/*
-+ * SMP definitions for the Hexagon architecture
++ * IO definitions for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -57,38 +54,320 @@ index 0000000..87c869a
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_SMP_H
-+#define __ASM_SMP_H
++#ifndef _ASM_IO_H
++#define _ASM_IO_H
 +
-+#include <linux/cpumask.h>
++#ifdef __KERNEL__
 +
-+#define raw_smp_processor_id() (current_thread_info()->cpu)
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/vmalloc.h>
++#include <asm/string.h>
++#include <asm/mem-layout.h>
++#include <asm/iomap.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
 +
-+enum ipi_message_type {
-+	IPI_NOP = 0,
-+	IPI_RESCHEDULE = 1,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP,
-+	IPI_TIMER,
-+};
++/*
++ * We don't have PCI yet.
++ * _IO_BASE is pointing at what should be unused virtual space.
++ */
++#define IO_SPACE_LIMIT 0xffff
++#define _IO_BASE ((void __iomem *)0xfe000000)
 +
-+extern void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg);
-+extern void smp_start_cpus(void);
-+extern void arch_send_call_function_single_ipi(int cpu);
-+extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
++extern int remap_area_pages(unsigned long start, unsigned long phys_addr,
++				unsigned long end, unsigned long flags);
 +
-+extern void smp_vm_unmask_irq(void *info);
++extern void __iounmap(const volatile void __iomem *addr);
++
++/* Defined in lib/io.c, needed for smc91x driver. */
++extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
++
++extern void __raw_readsl(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesl(void __iomem *addr, const void *data, int wordlen);
++
++#define readsw(p, d, l)	__raw_readsw(p, d, l)
++#define writesw(p, d, l) __raw_writesw(p, d, l)
++
++#define readsl(p, d, l)   __raw_readsl(p, d, l)
++#define writesl(p, d, l)  __raw_writesl(p, d, l)
++
++/*
++ * virt_to_phys - map virtual address to physical
++ * @address:  address to map
++ */
++static inline unsigned long virt_to_phys(volatile void *address)
++{
++	return __pa(address);
++}
++
++/*
++ * phys_to_virt - map physical address to virtual
++ * @address: address to map
++ */
++static inline void *phys_to_virt(unsigned long address)
++{
++	return __va(address);
++}
++
++/*
++ * convert a physical pointer to a virtual kernel pointer for
++ * /dev/mem access.
++ */
++#define xlate_dev_kmem_ptr(p)    __va(p)
++#define xlate_dev_mem_ptr(p)    __va(p)
++
++/*
++ * IO port access primitives.  Hexagon doesn't have special IO access
++ * instructions; all I/O is memory mapped.
++ *
++ * in/out are used for "ports", but we don't have "port instructions",
++ * so these are really just memory mapped too.
++ */
++
++/*
++ * readb - read byte from memory mapped device
++ * @addr:  pointer to memory
++ *
++ * Operates on "I/O bus memory space"
++ */
++static inline u8 readb(const volatile void __iomem *addr)
++{
++	u8 val;
++	asm volatile(
++		"%0 = memb(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++static inline u16 readw(const volatile void __iomem *addr)
++{
++	u16 val;
++	asm volatile(
++		"%0 = memh(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++static inline u32 readl(const volatile void __iomem *addr)
++{
++	u32 val;
++	asm volatile(
++		"%0 = memw(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++/*
++ * writeb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  pointer to memory
++ *
++ */
++static inline void writeb(u8 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memb(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++}
++
++static inline void writew(u16 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memh(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++
++}
++
++static inline void writel(u32 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memw(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++}
++
++#define __raw_writeb writeb
++#define __raw_writew writew
++#define __raw_writel writel
++
++#define __raw_readb readb
++#define __raw_readw readw
++#define __raw_readl readl
++
++/*
++ * Need an mtype somewhere in here, for cache type deals?
++ * This is probably too long for an inline.
++ */
++void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size);
++
++static inline void __iomem *ioremap(unsigned long phys_addr, unsigned long size)
++{
++	return ioremap_nocache(phys_addr, size);
++}
++
++static inline void iounmap(volatile void __iomem *addr)
++{
++	__iounmap(addr);
++}
++
++#define __raw_writel writel
++
++static inline void memcpy_fromio(void *dst, const volatile void __iomem *src,
++	int count)
++{
++	memcpy(dst, (void *) src, count);
++}
++
++static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
++	int count)
++{
++	memcpy((void *) dst, src, count);
++}
++
++#define PCI_IO_ADDR	(volatile void __iomem *)
++
++/*
++ * inb - read byte from I/O port or something
++ * @port:  address in I/O space
++ *
++ * Operates on "I/O bus I/O space"
++ */
++static inline u8 inb(unsigned long port)
++{
++	return readb(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline u16 inw(unsigned long port)
++{
++	return readw(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline u32 inl(unsigned long port)
++{
++	return readl(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++/*
++ * outb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  address in I/O space
++ */
++static inline void outb(u8 data, unsigned long port)
++{
++	writeb(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline void outw(u16 data, unsigned long port)
++{
++	writew(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline void outl(u32 data, unsigned long port)
++{
++	writel(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++#define outb_p outb
++#define outw_p outw
++#define outl_p outl
++
++#define inb_p inb
++#define inw_p inw
++#define inl_p inl
++
++static inline void insb(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u8 *buf = buffer;
++		do {
++			u8 x = inb(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void insw(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u16 *buf = buffer;
++		do {
++			u16 x = inw(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void insl(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u32 *buf = buffer;
++		do {
++			u32 x = inw(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void outsb(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u8 *buf = buffer;
++		do {
++			outb(*buf++, port);
++		} while (--count);
++	}
++}
++
++static inline void outsw(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u16 *buf = buffer;
++		do {
++			outw(*buf++, port);
++		} while (--count);
++	}
++}
++
++static inline void outsl(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u32 *buf = buffer;
++		do {
++			outl(*buf++, port);
++		} while (--count);
++	}
++}
++
++#define flush_write_buffers() do { } while (0)
++
++#endif /* __KERNEL__ */
 +
 +#endif
-diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+diff --git a/arch/hexagon/lib/io.c b/arch/hexagon/lib/io.c
 new file mode 100644
-index 0000000..c871a2c
+index 0000000..8ae47ba
 --- /dev/null
-+++ b/arch/hexagon/kernel/smp.c
-@@ -0,0 +1,276 @@
++++ b/arch/hexagon/lib/io.c
+@@ -0,0 +1,91 @@
 +/*
-+ * SMP support for Hexagon
++ * I/O access functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -107,320 +386,77 @@ index 0000000..c871a2c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/percpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/spinlock.h>
++#include <asm/io.h>
 +
-+#include <asm/system.h>  /*  xchg  */
-+#include <asm/time.h>    /*  timer_interrupt  */
-+#include <asm/hexagon_vm.h>
-+
-+#define BASE_IPI_IRQ 26
++/*  These are all FIFO routines!  */
 +
 +/*
-+ * cpu_possible_map needs to be filled out prior to setup_per_cpu_areas
-+ * (which is prior to any of our smp_prepare_cpu crap), in order to set
-+ * up the...  per_cpu areas.
++ * __raw_readsw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
 + */
-+
-+struct ipi_data {
-+	unsigned long bits;
-+};
-+
-+static DEFINE_PER_CPU(struct ipi_data, ipi_data);
-+
-+static inline void __handle_ipi(unsigned long *ops, struct ipi_data *ipi,
-+				int cpu)
++void __raw_readsw(const void __iomem *addr, void *data, int len)
 +{
-+	unsigned long msg = 0;
-+	do {
-+		msg = find_next_bit(ops, BITS_PER_LONG, msg+1);
++	const volatile short int *src = (short int *) addr;
++	short int *dst = (short int *) data;
 +
-+		switch (msg) {
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to readsw");
 +
-+		case IPI_TIMER:
-+			ipi_timer();
-+			break;
++	while (len-- > 0)
++		*dst++ = *src;
 +
-+		case IPI_CALL_FUNC:
-+			generic_smp_call_function_interrupt();
-+			break;
-+
-+		case IPI_CALL_FUNC_SINGLE:
-+			generic_smp_call_function_single_interrupt();
-+			break;
-+
-+		case IPI_CPU_STOP:
-+			/*
-+			 * call vmstop()
-+			 */
-+			__vmstop();
-+			break;
-+
-+		case IPI_RESCHEDULE:
-+			scheduler_ipi();
-+			break;
-+		}
-+	} while (msg < BITS_PER_LONG);
-+}
-+
-+/*  Used for IPI call from other CPU's to unmask int  */
-+void smp_vm_unmask_irq(void *info)
-+{
-+	__vmintop_locen((long) info);
-+}
-+
-+
-+/*
-+ * This is based on Alpha's IPI stuff.
-+ * Supposed to take (int, void*) as args now.
-+ * Specifically, first arg is irq, second is the irq_desc.
-+ */
-+
-+irqreturn_t handle_ipi(int irq, void *desc)
-+{
-+	int cpu = smp_processor_id();
-+	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+	unsigned long ops;
-+
-+	while ((ops = xchg(&ipi->bits, 0)) != 0)
-+		__handle_ipi(&ops, ipi, cpu);
-+	return IRQ_HANDLED;
-+}
-+
-+void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
-+{
-+	unsigned long flags;
-+	unsigned long cpu;
-+	unsigned long retval;
-+
-+	local_irq_save(flags);
-+
-+	for_each_cpu(cpu, cpumask) {
-+		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+
-+		set_bit(msg, &ipi->bits);
-+		/*  Possible barrier here  */
-+		retval = __vmintop_post(BASE_IPI_IRQ+cpu);
-+
-+		if (retval != 0) {
-+			printk(KERN_ERR "interrupt %ld not configured?\n",
-+				BASE_IPI_IRQ+cpu);
-+		}
-+	}
-+
-+	local_irq_restore(flags);
-+}
-+
-+static struct irqaction ipi_intdesc = {
-+	.handler = handle_ipi,
-+	.flags = IRQF_TRIGGER_RISING,
-+	.name = "ipi_handler"
-+};
-+
-+void __init smp_prepare_boot_cpu(void)
-+{
 +}
 +
 +/*
-+ * interrupts should already be disabled from the VM
-+ * SP should already be correct; need to set THREADINFO_REG
-+ * to point to current thread info
++ * __raw_writesw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
 + */
-+
-+void __cpuinit start_secondary(void)
++void __raw_writesw(void __iomem *addr, const void *data, int len)
 +{
-+	unsigned int cpu;
-+	unsigned long thread_ptr;
++	const short int *src = (short int *)data;
++	volatile short int *dst = (short int *)addr;
 +
-+	/*  Calculate thread_info pointer from stack pointer  */
-+	__asm__ __volatile__(
-+		"%0 = SP;\n"
-+		: "=r" (thread_ptr)
-+	);
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to writesw");
 +
-+	thread_ptr = thread_ptr & ~(THREAD_SIZE-1);
++	while (len-- > 0)
++		*dst = *src++;
 +
-+	__asm__ __volatile__(
-+		QUOTED_THREADINFO_REG " = %0;\n"
-+		:
-+		: "r" (thread_ptr)
-+	);
 +
-+	/*  Set the memory struct  */
-+	atomic_inc(&init_mm.mm_count);
-+	current->active_mm = &init_mm;
-+
-+	cpu = smp_processor_id();
-+
-+	setup_irq(BASE_IPI_IRQ + cpu, &ipi_intdesc);
-+
-+	/*  Register the clock_event dummy  */
-+	setup_percpu_clockdev();
-+
-+	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
-+
-+	set_cpu_online(cpu, true);
-+	while (!cpumask_test_cpu(cpu, cpu_active_mask))
-+		cpu_relax();
-+	local_irq_enable();
-+
-+	cpu_idle();
 +}
 +
-+
-+/*
-+ * called once for each present cpu
-+ * apparently starts up the CPU and then
-+ * maintains control until "cpu_online(cpu)" is set.
-+ */
-+
-+int __cpuinit __cpu_up(unsigned int cpu)
++/*  Pretty sure len is pre-adjusted for the length of the access already */
++void __raw_readsl(const void __iomem *addr, void *data, int len)
 +{
-+	struct task_struct *idle;
-+	struct thread_info *thread;
-+	void *stack_start;
++	const volatile long *src = (long *) addr;
++	long *dst = (long *) data;
 +
-+	/*  Create new init task for the CPU  */
-+	idle = fork_idle(cpu);
-+	if (IS_ERR(idle))
-+		panic(KERN_ERR "fork_idle failed\n");
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to readsl");
 +
-+	thread = (struct thread_info *)idle->stack;
-+	thread->cpu = cpu;
++	while (len-- > 0)
++		*dst++ = *src;
 +
-+	/*  Boot to the head.  */
-+	stack_start =  ((void *) thread) + THREAD_SIZE;
-+	__vmstart(start_secondary, stack_start);
 +
-+	while (!cpu_isset(cpu, cpu_online_map))
-+		barrier();
-+
-+	return 0;
 +}
 +
-+void __init smp_cpus_done(unsigned int max_cpus)
++void __raw_writesl(void __iomem *addr, const void *data, int len)
 +{
++	const long *src = (long *)data;
++	volatile long *dst = (long *)addr;
++
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to writesl");
++
++	while (len-- > 0)
++		*dst = *src++;
++
++
 +}
-+
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	int i;
-+
-+	/*
-+	 * should eventually have some sort of machine
-+	 * descriptor that has this stuff
-+	 */
-+
-+	/*  Right now, let's just fake it. */
-+	for (i = 0; i < max_cpus; i++)
-+		cpu_set(i, cpu_present_map);
-+
-+	/*  Also need to register the interrupts for IPI  */
-+	if (max_cpus > 1)
-+		setup_irq(BASE_IPI_IRQ, &ipi_intdesc);
-+}
-+
-+void smp_send_reschedule(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_RESCHEDULE);
-+}
-+
-+void smp_send_stop(void)
-+{
-+	struct cpumask targets;
-+	cpumask_copy(&targets, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &targets);
-+	send_ipi(&targets, IPI_CPU_STOP);
-+}
-+
-+void arch_send_call_function_single_ipi(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+}
-+
-+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-+{
-+	send_ipi(mask, IPI_CALL_FUNC);
-+}
-+
-+int setup_profiling_timer(unsigned int multiplier)
-+{
-+	return -EINVAL;
-+}
-+
-+void smp_start_cpus(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < NR_CPUS; i++)
-+		cpu_set(i, cpu_possible_map);
-+}
-diff --git a/arch/hexagon/kernel/topology.c b/arch/hexagon/kernel/topology.c
-new file mode 100644
-index 0000000..ba44751
---- /dev/null
-+++ b/arch/hexagon/kernel/topology.c
-@@ -0,0 +1,52 @@
-+/*
-+ * CPU topology for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/cpu.h>
-+#include <linux/cpumask.h>
-+#include <linux/init.h>
-+#include <linux/node.h>
-+#include <linux/nodemask.h>
-+#include <linux/percpu.h>
-+
-+/*  Swiped from MIPS.  */
-+
-+static DEFINE_PER_CPU(struct cpu, cpu_devices);
-+
-+static int __init topology_init(void)
-+{
-+	int i, ret;
-+
-+	for_each_present_cpu(i) {
-+
-+		/*
-+		 * register_cpu takes a per_cpu pointer and
-+		 * just points it at another per_cpu struct...
-+		 */
-+
-+		ret = register_cpu(&per_cpu(cpu_devices, i), i);
-+		if (ret)
-+			printk(KERN_WARNING "topology_init: register_cpu %d "
-+			       "failed (%d)\n", i, ret);
-+	}
-+
-+	return 0;
-+}
-+
-+subsys_initcall(topology_init);
 -- 
 1.7.1
 
