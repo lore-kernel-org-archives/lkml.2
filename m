@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1JSFJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 01:09:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45071 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1JSFJd (ORCPT
+	id S1754351Ab1JSFXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 01:23:14 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:42922
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752007Ab1JSFXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 01:09:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=sFbm24qrBVaF2hQCF4YtWdqKQr8NYDqR4TTsCMbnA/O0i6J/RQMJkkSGL7Ng5hntY
-	W2tGy1JVBluchn4yoiCNA==
-Date: Tue, 18 Oct 2011 22:09:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch 2/2] slab: introduce slab_max_order kernel parameter
-In-Reply-To: <alpine.DEB.2.00.1110182207500.5907@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1110182208260.5907@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1110182207500.5907@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 19 Oct 2011 01:23:12 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 19 Oct 2011 13:33:55 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <patches@linaro.org>, <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, Rajendra Nayak <rnayak@ti.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
+        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111019053354.GB31162@S2100-06.ap.freescale.net>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <20111016145536.GA29885@S2100-06.ap.freescale.net>
+ <4E9BAC4D.3010402@ti.com>
+ <20111018115836.GC30703@S2100-06.ap.freescale.net>
+ <20111018160046.GD28501@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111018160046.GD28501@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce new slab_max_order kernel parameter which is the equivalent of
-slub_max_order.
+On Tue, Oct 18, 2011 at 05:00:46PM +0100, Mark Brown wrote:
+> On Tue, Oct 18, 2011 at 07:58:37PM +0800, Shawn Guo wrote:
+> 
+> > I understand that ideally device tree is supposed to describe pure
+> > hardware configurations.  But practically, when migrating a driver
+> > to device tree probe, we are trying to move the configurations
+> > described by platform_data into device tree to save the use of
+> > platform_data for device tree probe.  Then some of the configuration
+> > may not be so purely hardware related.  But I do not see this is a
+> > critical problem.
+> 
+> It's not just Linux-specific stuff, some of this is even specific to
+> what current Linux drivers can do - updating the kernel could mean a
+> different set of constraints.
+> 
+Well, from what I see, the 'struct regulation_constraints' is defined
+in machine.h and meant to be the regulator machine/board interface.
+With the example I'm looking at, mc13892, the regulation_constraints
+configuration is fully passed from machine/board file.  If there is
+something specific to what drivers can do, it probably should be encoded
+in regulator driver rather than staying in regulation_constraints.
 
-For immediate purposes, allows users to override the heuristic that sets
-the max order to 1 by default if they have more than 32MB of RAM.  This
-may result in page allocation failures if there is substantial
-fragmentation.
+So how do you think we should proceed here?
 
-Another usecase would be to increase the max order for better
-performance.
+-- 
+Regards,
+Shawn
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Documentation/kernel-parameters.txt |    6 ++++++
- mm/slab.c                           |   20 +++++++++++++++++---
- 2 files changed, 23 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2318,6 +2318,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	slram=		[HW,MTD]
- 
-+	slab_max_order=	[MM, SLAB]
-+			Determines the maximum allowed order for slabs.
-+			A high setting may cause OOMs due to memory
-+			fragmentation.  Defaults to 1 for systems with
-+			more than 32MB of RAM, 0 otherwise.
-+
- 	slub_debug[=options[,slabs]]	[MM, SLUB]
- 			Enabling slub_debug allows one to determine the
- 			culprit if slab objects become corrupted. Enabling
-diff --git a/mm/slab.c b/mm/slab.c
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -479,11 +479,13 @@ EXPORT_SYMBOL(slab_buffer_size);
- #endif
- 
- /*
-- * Do not go above this order unless 0 objects fit into the slab.
-+ * Do not go above this order unless 0 objects fit into the slab or
-+ * overridden on the command line.
-  */
- #define	SLAB_MAX_ORDER_HI	1
- #define	SLAB_MAX_ORDER_LO	0
- static int slab_max_order = SLAB_MAX_ORDER_LO;
-+static bool slab_max_order_set __initdata;
- 
- /*
-  * Functions for storing/retrieving the cachep and or slab from the page
-@@ -851,6 +853,17 @@ static int __init noaliencache_setup(char *s)
- }
- __setup("noaliencache", noaliencache_setup);
- 
-+static int __init slab_max_order_setup(char *str)
-+{
-+	get_option(&str, &slab_max_order);
-+	slab_max_order = slab_max_order < 0 ? 0 :
-+				min(slab_max_order, MAX_ORDER - 1);
-+	slab_max_order_set = true;
-+
-+	return 1;
-+}
-+__setup("slab_max_order=", slab_max_order_setup);
-+
- #ifdef CONFIG_NUMA
- /*
-  * Special reaping functions for NUMA systems called from cache_reap().
-@@ -1499,9 +1512,10 @@ void __init kmem_cache_init(void)
- 
- 	/*
- 	 * Fragmentation resistance on low memory - only use bigger
--	 * page orders on machines with more than 32MB of memory.
-+	 * page orders on machines with more than 32MB of memory if
-+	 * not overridden on the command line.
- 	 */
--	if (totalram_pages > (32 << 20) >> PAGE_SHIFT)
-+	if (!slab_max_order_set && totalram_pages > (32 << 20) >> PAGE_SHIFT)
- 		slab_max_order = SLAB_MAX_ORDER_HI;
- 
- 	/* Bootstrap is tricky, because several objects are allocated
