@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab1JSPKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:10:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42596 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754946Ab1JSPKf (ORCPT
+	id S1756494Ab1JSPO2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:14:28 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3883 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301Ab1JSPO0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:10:35 -0400
-Date: Wed, 19 Oct 2011 16:10:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: patches@linaro.org, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        Rajendra Nayak <rnayak@ti.com>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111019151031.GA4275@opensource.wolfsonmicro.com>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-4-git-send-email-rnayak@ti.com>
- <20111016145536.GA29885@S2100-06.ap.freescale.net>
- <4E9BAC4D.3010402@ti.com>
- <20111018115836.GC30703@S2100-06.ap.freescale.net>
- <20111018160046.GD28501@opensource.wolfsonmicro.com>
- <20111019053354.GB31162@S2100-06.ap.freescale.net>
- <20111019144734.GI18713@sirena.org.uk>
- <20111019150448.GB32007@S2100-06.ap.freescale.net>
+	Wed, 19 Oct 2011 11:14:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=kLQPAMbkAzHfEN5QXyH+T18SK+wJ0GV9QJ87WF8vpgbye9nJPKf4wjyeXXLaMbVOE
+	ITQ0y4QaZnYuqb1dHsweg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019150448.GB32007@S2100-06.ap.freescale.net>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E9EA2EC.2090900@n00bsys0p.co.uk>
+References: <j7k7sf$vbf$1@dough.gmane.org> <CAErSpo7mhAsft5L4ifeWGhB+s2JQc8rbFEjJCfWEq7hW_8kR6A@mail.gmail.com>
+ <4E9EA2EC.2090900@n00bsys0p.co.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 19 Oct 2011 09:14:04 -0600
+Message-ID: <CAErSpo4pkpi77KkH=oQAaMmXRaAxCxqc6eTONhpgMZWhMOJG-Q@mail.gmail.com>
+Subject: Re: Possible bug in via-velocity on 3.0+
+To: n00b <n00b@n00bsys0p.co.uk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 11:04:49PM +0800, Shawn Guo wrote:
-> On Wed, Oct 19, 2011 at 03:47:34PM +0100, Mark Brown wrote:
+On Wed, Oct 19, 2011 at 4:14 AM, n00b <n00b@n00bsys0p.co.uk> wrote:
+> On 18/10/11 17:15, Bjorn Helgaas wrote:
+>>
+>> On Tue, Oct 18, 2011 at 10:01 AM, n00bsys0p<n00b@n00bsys0p.co.uk>  wrote:
+>>>
+>>> Hi,
+>>>
+>>> I've been trying to get a custom 3.0 kernel to boot via PXE on a VIA EPIA
+>>> EN15000G, and have run into a problem where once the thin client starts
+>>> to
+>>> load the kernel, the entire screen turns into a mosaic of random colours
+>>> and
+>>> characters.
+>>>
+>>> I've tested this serving a 2.6.35.8 kernel (configured identically to the
+>>> 3.0) to the thin client where the master and client are both fitted with
+>>> EPIA EN1500G, and it works perfectly. Also, I tried swapping the master's
+>>> motherboard to a Gigabyte GA-D525TUD (Realtek LAN chip), and it succeeded
+>>> in
+>>> serving the 3.0 kernel to an EN15000G without a fault.
+>>>
+>>> In all test cases, the master was using a 3.0 kernel.
+>>>
+>>> Through this testing, I surmise that it is something to do with the LAN
+>>> driver which is used, as this is the only thing I can see to have changed
+>>> between the two running systems. Could it be accidentally overwriting the
+>>> video RAM or something along those lines?
+>>>
+>>> Here's a link to a photo of what the screen looks like when it goes
+>>> wrong:
+>>>
+>>> https://lh3.googleusercontent.com/-sXFP41oaF9U/TpyMFg89CqI/AAAAAAAAA-I/PBrltIm0cB4/s720/PXEFail.jpg
+>>
+>> Let me see if I understand this correctly:
+>>
+>>   - The problem is on the EN15000G client.
+>>   - It occurs when the client boots 3.0 from a EN1500G server, but not
+>> when booting the same 3.0 kernel image from a GA-D525TUD server.
+>>   - It doesn't occur when booting 2.6.35.8 from a EN1500G server.
+>>   - The client boots successfully and is usable, i.e., the only
+>> problem is the temporary garbage on the screen during boot.
+>>
+>> It would be useful to see the complete dmesg log from 2.6.35.8 on the
+>> client.  If 3.0 actually does boot on the client, a dmesg log from 3.0
+>> would also be useful.  There might be a clue if we can compare them.
+>>
+>> Bjorn
+>
+> In answer:
+>  - Yes, the problem is a client machine with an EN15000G board
+>  - Correct, the 3.0 kernel image booted the client using a GA-D525TUD
+> server, but not when using an EN15000G
+>  - Correct again, the 2.6.35.8 image booted correctly from an EN15000G
+> server
+>  - Not correct. The problem is permanent when it occurs. The client machine
+> has been left for hours, and all that is visible is the garbage on screen.
 
-> > Only the board can come to a final decision.
+Good.  That's what I suspected, just wanted to make sure.
 
-> The dts is very capable and suitable to describe the board's decision.
-> But you disagree that we put all constraints description into DT.  I'm
-> a pretty confused here.  So again, what is your suggestion to this
-> 'problem'?
+> I'm not sure if it was a one-off, but I can't appear to get it to serve the
+> 3.0 kernel from the Gigabyte motherboard now. Exactly the same thing is
+> happening as with the EN15000G (garbage mosaic).
 
-The problem is that the DT is supposed to be separate to the kernel and
-the decisions can depend on what the kernel is currently capable of.
-When the data is embedded in the kernel it's not an issue as the data is
-attached to the rest of the code, when the data becomes detatched from
-the kernel it becomes an issue.
+Also good, that's what I would expect.  It would be very strange if
+the same bits worked differently, depending on what server they came
+from.
 
-I don't see any issue with leaving some things out of the DT bindings;
-you were the one raising that as a concern.
+> I've attached the dmesg log from the client for the 2.6.35.8 kernel. If I
+> manage to get the 3.0 kernel to boot again, I'll send over the dmesg log for
+> that.
+
+That makes this a regression between 2.6.35.8 and 3.0.  The easiest
+(though tedious) way to find the problem is to bisect between those
+versions (http://www.landley.net/writing/git-bisect-howto.html).
+
+I don't see many interesting via-velocity changes since 2.6.35.  I'd
+suspect some sort of video mode problem, given the screen issue.
+Maybe you could learn something by turning off vesafb and the
+bootsplash stuff.
+
+Bjorn
