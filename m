@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab1JSSHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:07:21 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:50563 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937Ab1JSSHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:07:19 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: David Miller <davem@davemloft.net>
-cc: mitsuo.hayasaka.hu@hitachi.com, andy@greyhouse.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        eric.dumazet@gmail.com, xiyou.wangcong@gmail.com
-Subject: Re: [PATCH net -v2] [BUGFIX] bonding: use local function pointer of bond->recv_probe in bond_handle_frame
-In-reply-to: <20111019.000311.1490092497677136273.davem@davemloft.net>
-References: <20111013020429.3554.78679.stgit@ltc219.sdl.hitachi.co.jp> <20111019.000311.1490092497677136273.davem@davemloft.net>
-Comments: In-reply-to David Miller <davem@davemloft.net>
-   message dated "Wed, 19 Oct 2011 00:03:11 -0400."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
-Date: Wed, 19 Oct 2011 10:59:07 -0700
-Message-ID: <26928.1319047147@death>
-x-cbid: 11101917-3534-0000-0000-000000C37DDA
+	id S1751447Ab1JSSIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:08:13 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:7045
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750759Ab1JSSIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 14:08:07 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LTBRPA-01-GPA-02
+X-M-MSG: 
+Date: Wed, 19 Oct 2011 20:07:41 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/5] oprofile: Remove exit function for timer mode
+Message-ID: <20111019180741.GI24346@erda.amd.com>
+References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
+ <1318861624-715-6-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1318861624-715-6-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> wrote:
+See below for Some more comments after testing and reviewing the
+code. Will send a new version with these comments incorporated.
 
->From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
->Date: Thu, 13 Oct 2011 11:04:29 +0900
->
->> The bond->recv_probe is called in bond_handle_frame() when
->> a packet is received, but bond_close() sets it to NULL. So,
->> a panic occurs when both functions work in parallel.
->> 
->> Why this happen:
->> After null pointer check of bond->recv_probe, an sk_buff is
->> duplicated and bond->recv_probe is called in bond_handle_frame.
->> So, a panic occurs when bond_close() is called between the
->> check and call of bond->recv_probe.
->> 
->> Patch:
->> This patch uses a local function pointer of bond->recv_probe
->> in bond_handle_frame(). So, it can avoid the null pointer
->> dereference.
->> 
->> 
->> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
->> Cc: Jay Vosburgh <fubar@us.ibm.com>
->> Cc: Andy Gospodarek <andy@greyhouse.net>
->> Cc: Eric Dumazet <eric.dumazet@gmail.com>
->> Cc: WANG Cong <xiyou.wangcong@gmail.com>
->
->Bonding folks please review this, thanks.
->
+-Robert
 
-	Looks reasonable.  Even if by some quirk of timing the
-recv_probe function ends up being entered after bond_close has
-completed, it doesn't look like there is a risk of those functions
-misbehaving (because bond_close doesn't deallocate the data structures).
+On 17.10.11 10:27:04, Robert Richter wrote:
+> +static struct notifier_block __cpuinitdata nmi_timer_cpu_nb = {
 
-	-J
+The __cpuinitdata attribute causes a section mismatch, will fix it.
 
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+> +	.notifier_call = nmi_timer_cpu_notifier
+> +};
 
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+> +static int nmi_timer_setup(void)
+> +{
+> +	int cpu, err;
+> +
+> +	/* clock cycles per tick: */
+> +	nmi_timer_attr.sample_period = (u64)cpu_khz * TICK_NSEC / NSEC_PER_MSEC;
+
+This is broken on 32 bit.
+
+Will replace it with:
+
+        /* clock cycles per tick: */
+        period = (u64)cpu_khz * 1000;
+        do_div(period, HZ);
+        nmi_timer_attr.sample_period = period;
+
+> +	pr_info("sample_period: %lld, cpu_khz: %d, nsec/tick: %ld\n",
+> +		nmi_timer_attr.sample_period, cpu_khz, TICK_NSEC);
+
+I will remove this pr_info().
+
+> +
+> +	get_online_cpus();
+> +	err = register_cpu_notifier(&nmi_timer_cpu_nb);
+> +	if (err)
+> +		goto out;
+
+> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+> index f7cd069..af9cbea 100644
+> --- a/drivers/oprofile/oprof.c
+> +++ b/drivers/oprofile/oprof.c
+> @@ -248,15 +248,21 @@ static int __init oprofile_init(void)
+>  	/* always init architecture to setup backtrace support */
+>  	err = oprofile_arch_init(&oprofile_ops);
+>  
+> -	timer_mode = err || timer;	/* fall back to timer mode on errors */
+> +	timer_mode = err || timer;
+>  	if (timer_mode) {
+>  		if (!err)
+>  			oprofile_arch_exit();
+> -		err = oprofile_timer_init(&oprofile_ops);
+> -		if (err)
+> -			return err;
+> +		/* no nmi timer mode if oprofile.timer is set: */
+> +		if (!timer)
+> +			err = op_nmi_timer_init(&oprofile_ops);
+
+As nmi timer is initialized here, we can remove it in arch/x86. This
+eases setup functions for x86.
+
+> +		/* fall back to timer mode on errors: */
+> +		if (err || timer)
+> +			err = oprofile_timer_init(&oprofile_ops);
+>  	}
+>  
+> +	if (err)
+> +		return err;
+> +
+>  	err = oprofilefs_register();
+>  	if (!err)
+>  		return 0;
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
