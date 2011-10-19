@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab1JSFn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 01:43:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50702 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab1JSFnz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 01:43:55 -0400
+	id S1755238Ab1JSFpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 01:45:16 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34760 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab1JSFpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 01:45:13 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 25/26] ext4: Implement rich acl for ext4
+In-Reply-To: <BCAE5666-30A1-484A-9808-B52E5B422A3F@dilger.ca>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-26-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <BCAE5666-30A1-484A-9808-B52E5B422A3F@dilger.ca>
+User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 19 Oct 2011 11:13:40 +0530
+Message-ID: <8739ep7cz7.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
-References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu> <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu> <20110815184957.GA16588@redhat.com>
- <20111014003601.GC22527@ghc17.ghc.andrew.cmu.edu>
-From: Paul Menage <paul@paulmenage.org>
-Date: Tue, 18 Oct 2011 22:43:35 -0700
-X-Google-Sender-Auth: VKbgYTdaFhPOwd4fpFWu6Bf2AI8
-Message-ID: <CALdu-PDVh+JDqaVs1Ps6qxwZdXiTkrs-NJSP5uHnokiGvAYKZA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cgroups: convert ss->attach to use whole threadgroup
- flex_array (cpuset, memcontrol)
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        paulmck@linux.vnet.ibm.com, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 5:36 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
-> Convert ss->attach to take a flex_array of tasks instead of just the leader.
->
-> From: Ben Blum <bblum@andrew.cmu.edu>
->
-> This lets subsystems with whole-threadgroup attach calls (i.e., cpuset and
-> memcontrol) to accurately find the group's mm even when a non-leader does exec
-> and leaves the leader with a NULL mm pointer.
->
-> Also converts cpuset and memcontrol to take the flex_array and iterate down it
-> until an mm is found, instead of just attempting to use the leader's mm.
->
-> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+On Tue, 18 Oct 2011 12:41:15 -0600, Andreas Dilger <adilger@dilger.ca> wrote:
+> On 2011-10-18, at 9:33 AM, Aneesh Kumar K.V wrote:
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > Support the richacl permission model in ext4.  The richacls are stored
+> > in "system.richacl" xattrs.This need to be enabled by tune2fs or during
+> > mkfs.ext4
+> 
+> It isn't clear from your commit comment or the code what needs to be enabled by tune2fs or mkfs.ext4.  Please list the specific ext4 feature
+> that needs to be enabled.
 
-Reviewed-by: Paul Menage <paul@paulmenage.org>
 
-Thanks,
-Paul
+The last patch explains the feature flag details 
+http://article.gmane.org/gmane.linux.kernel/1204873
 
-> ---
->  Documentation/cgroups/cgroups.txt |    7 ++++++-
->  include/linux/cgroup.h            |    4 +++-
->  kernel/cgroup.c                   |   16 +++++++++++++---
->  kernel/cpuset.c                   |   16 ++++++++++++++--
->  mm/memcontrol.c                   |   17 +++++++++++++++--
->  5 files changed, 51 insertions(+), 9 deletions(-)
->
-> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-> index 3fa646f..8e900ec 100644
-> --- a/Documentation/cgroups/cgroups.txt
-> +++ b/Documentation/cgroups/cgroups.txt
-> @@ -637,12 +637,17 @@ For any non-per-thread attachment work that needs to happen before
->  attach_task. Needed by cpuset.
->
->  void attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> -           struct cgroup *old_cgrp, struct task_struct *task)
-> +           struct cgroup *old_cgrp, struct flex_array *group,
-> +           int group_size)
+I am adding a new compat feature flag to indicate richacl is
+enabled.
 
-Maybe flex_array should have a size field, so that you can just pass a
-single pointer here?
+> 
+> > +#ifdef CONFIG_EXT4_FS_RICHACL
+> > +#define EXT4_IS_RICHACL(inode) IS_RICHACL(inode)
+> > 
+> 
+> > +#else  /* CONFIG_FS_EXT4_RICHACL */
+> > +
+> > +#define EXT4_IS_RICHACL(inode) (0)
+> 
+> It is a bit confusing that you are using both EXT4_IS_RICHACL() and
+> IS_RICHACL() in this code.  Initially I thought EXT4_IS_RICHACL() was
+> checking an ext4-specific inode flag, but it seems that it is instead
+> conditional upon the configure flags.
+> 
 
-> @@ -1452,7 +1455,16 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
->         */
->        cpuset_attach_nodemask_from = oldcs->mems_allowed;
->        cpuset_attach_nodemask_to = cs->mems_allowed;
-> -       mm = get_task_mm(tsk);
-> +       /*
-> +        * Find the first task in the group that still has its mm. (This could
-> +        * be not the first one if another did exec() and the leader exited.
+The reason is to not do the superblock flag check when EXT4_FS_RICHACL is not
+enabled.
 
-Maybe rephrase this as "This might not be the first one"?
 
-Paul
+> It looks like it should be possible to use EXT4_IS_RICHACL() in all
+> of the code, since the richacl-specific code will not be compiled
+> anyway.
+> 
+
+The reasoning is, all richacl specific code do check for whether
+MS_RICHACL is enabled or not and the common file system code does
+something similar to EXT4_IS_RICHACL() that is (0) when the file
+system is not compiled with richacl option.
+
+-aneesh
