@@ -1,73 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab1JSQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 12:21:26 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36649 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752844Ab1JSQVX (ORCPT
+	id S932196Ab1JSQVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 12:21:33 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:37964 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932156Ab1JSQVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 12:21:23 -0400
-Subject: Re: Please include const-sections into linux-next
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <20111019161537.GH15908@one.firstfloor.org>
-References: <20111013233818.GB26654@one.firstfloor.org>
-	 <1318631204.3018.101.camel@dabdike.int.hansenpartnership.com>
-	 <20111016033514.GC26654@one.firstfloor.org>
-	 <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com>
-	 <0e9ef9174a0089187fde0b3d084672ad.squirrel@www.firstfloor.org>
-	 <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com>
-	 <20111019161537.GH15908@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Oct 2011 11:21:21 -0500
-Message-ID: <1319041281.3034.25.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Oct 2011 12:21:31 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>
+Cc: Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] pinctrl: move group lookup to core
+Date: Wed, 19 Oct 2011 18:21:06 +0200
+Message-ID: <1319041266-18690-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-19 at 18:15 +0200, Andi Kleen wrote:
-> On Wed, Oct 19, 2011 at 10:54:23AM -0500, James Bottomley wrote:
-> > 
-> > > One alternative to track it down would be to apply the attached
-> > > patch to the gcc, then gcc would print it out.
-> > 
-> > I think the basic problem that excites the toolchain somehow is
-> > sectional annotations.  Can't we just dump them and do it all in a
-> 
-> We already use these annotations all over. Just currently they mess up
-> the 'r' and 'w' bits on the sections because a few (not the majority)
-> of declarations mismatch the ro vs rw sections.  My patchkit was just trying
-> to fix up those that were wrong
-> 
-> So you should be already using them.
-> 
-> Just need to find out what triggers your toolchain with these changes.
-> I suspect it's some kind of toolchain bug.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-I think I've already said 3 times that I think it's some kind of
-toolchain bug.  The problem is it's likely in all the non-x86
-toolchains.
+Now also the core needs to look up pin groups so move the lookup
+function there and expose it in the internal header.
 
-> > linker script?  Linker scripts seem to be much better tested.
-> 
-> The linker script just declares the order of the section. 
-> The attributes are a union of what the compiler declares.
-> To dump them I just use objdump --section-headers or
-> readelf -a usually.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.c   |   31 +++++++++++++++++++++++++++++++
+ drivers/pinctrl/core.h   |    2 ++
+ drivers/pinctrl/pinmux.c |   35 ++---------------------------------
+ 3 files changed, 35 insertions(+), 33 deletions(-)
 
-OK, look at it another way: why do we need the type annotations?  I
-think it's only for section conflict checking, right?  If the compiler
-gets it wrong anyway, why not just dump all the type annotations, then
-it should have no type conflicts (spurious or otherwise) to complain
-about.  We already have link time section checking scripts (they're the
-useless ones that complain about section mismatches in dev annoations)
-so why not put them to work to make up for compiler deficiencies?
-
-James
-
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index b2eaf8d..478a002 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -284,6 +284,37 @@ void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
+ 	mutex_unlock(&pctldev->gpio_ranges_lock);
+ }
+ 
++/**
++ * pinctrl_get_group_selector() - returns the group selector for a group
++ * @pctldev: the pin controller handling the group
++ * @pin_group: the pin group to look up
++ */
++int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
++			       const char *pin_group)
++{
++	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
++	unsigned group_selector = 0;
++
++	while (pctlops->list_groups(pctldev, group_selector) >= 0) {
++		const char *gname = pctlops->get_group_name(pctldev,
++							    group_selector);
++		if (!strcmp(gname, pin_group)) {
++			dev_dbg(&pctldev->dev,
++				"found group selector %u for %s\n",
++				group_selector,
++				pin_group);
++			return group_selector;
++		}
++
++		group_selector++;
++	}
++
++	dev_err(&pctldev->dev, "does not have pin group %s\n",
++		pin_group);
++
++	return -EINVAL;
++}
++
+ #ifdef CONFIG_DEBUG_FS
+ 
+ static int pinctrl_pins_show(struct seq_file *s, void *what)
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 17e0777..318f7a8 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -70,3 +70,5 @@ struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev, int pin);
+ int pinctrl_get_device_gpio_range(unsigned gpio,
+ 				  struct pinctrl_dev **outdev,
+ 				  struct pinctrl_gpio_range **outrange);
++int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
++			       const char *pin_group);
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 6544d98..64e1cdf 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -385,37 +385,6 @@ static void release_pins(struct pinctrl_dev *pctldev,
+ }
+ 
+ /**
+- * pinmux_get_group_selector() - returns the group selector for a group
+- * @pctldev: the pin controller handling the group
+- * @pin_group: the pin group to look up
+- */
+-static int pinmux_get_group_selector(struct pinctrl_dev *pctldev,
+-				     const char *pin_group)
+-{
+-	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+-	unsigned group_selector = 0;
+-
+-	while (pctlops->list_groups(pctldev, group_selector) >= 0) {
+-		const char *gname = pctlops->get_group_name(pctldev,
+-							    group_selector);
+-		if (!strcmp(gname, pin_group)) {
+-			dev_dbg(&pctldev->dev,
+-				"found group selector %u for %s\n",
+-				group_selector,
+-				pin_group);
+-			return group_selector;
+-		}
+-
+-		group_selector++;
+-	}
+-
+-	dev_err(&pctldev->dev, "does not have pin group %s\n",
+-		pin_group);
+-
+-	return -EINVAL;
+-}
+-
+-/**
+  * pinmux_check_pin_group() - check function and pin group combo
+  * @pctldev: device to check the pin group vs function for
+  * @func_selector: the function selector to check the pin group for, we have
+@@ -456,7 +425,7 @@ static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
+ 			return ret;
+ 		if (num_groups < 1)
+ 			return -EINVAL;
+-		ret = pinmux_get_group_selector(pctldev, groups[0]);
++		ret = pinctrl_get_group_selector(pctldev, groups[0]);
+ 		if (ret < 0) {
+ 			dev_err(&pctldev->dev,
+ 				"function %s wants group %s but the pin "
+@@ -481,7 +450,7 @@ static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
+ 		"check if we have pin group %s on controller %s\n",
+ 		pin_group, pinctrl_dev_get_name(pctldev));
+ 
+-	ret = pinmux_get_group_selector(pctldev, pin_group);
++	ret = pinctrl_get_group_selector(pctldev, pin_group);
+ 	if (ret < 0) {
+ 		dev_dbg(&pctldev->dev,
+ 			"%s does not support pin group %s with function %s\n",
+-- 
+1.7.3.2
 
