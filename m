@@ -1,74 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab1JSHGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 03:06:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31844 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750Ab1JSHGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 03:06:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,370,1315206000"; 
-   d="scan'208";a="64046681"
-Subject: Re: iwlagn is getting very shaky
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20111019064818.GB14817@gamma.logic.tuwien.ac.at>
-References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
-	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
-	 <CAOJsxLFXBQXDtjGkuHV8fpxSy4U0dOdzBm6=4xfy2dMQo7NvOg@mail.gmail.com>
-	 <1319003710.31823.53.camel@wwguy-huron>
-	 <20111019064818.GB14817@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Oct 2011 23:15:38 -0700
-Message-ID: <1319004938.31823.59.camel@wwguy-huron>
+	id S1755435Ab1JSHJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 03:09:29 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:47671 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab1JSHJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 03:09:28 -0400
+Date: Wed, 19 Oct 2011 03:09:14 -0400 (EDT)
+Message-Id: <20111019.030914.218521668377472155.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: eric.dumazet@gmail.com, evonlanthen@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        timo.teras@iki.fi
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
+ causes kernel oops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111018134537.GA17055@gondor.apana.org.au>
+References: <20111018114945.GA16359@gondor.apana.org.au>
+	<1318942560.2657.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111018134537.GA17055@gondor.apana.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 19 Oct 2011 00:09:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-18 at 23:48 -0700, Norbert Preining wrote:
-> On Di, 18 Okt 2011, Guy, Wey-Yi wrote:
-> > > >> loaded firmware version 8.83.5.1 build 33692 (EXP)
-> > > >>
-> > 
-> > looks like you are using experimental version of uCode, but by saying
-> > that, I don't think i will make much differences
-> > 
-> > so could you dump the tx queue to see if it is the similar problem what
-> > Norbert point out
-> 
-> Not sure what you mean Wey, should *I* Norbert use the default firmware
-> and try to reproduce it? Ir should Pekka try to reproduce it with
-> normal firmware? Or with both?
-> 
-Sorry, I was thinking ask Pekka to use the officialfirmware. But more
-important, I will like to find out is Pekka has the same issue as you
-have which is tx queue stopped.
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Tue, 18 Oct 2011 15:45:37 +0200
 
-Thanks
-Wey
+> On Tue, Oct 18, 2011 at 02:56:00PM +0200, Eric Dumazet wrote:
+>>
+>> I am ok by this way, but we might hit another similar problem elsewhere.
+>> 
+>> (igmp.c ip6_output, ...)
+>> 
+>> We effectively want to remove LL_ALLOCATED_SPACE() usage and obfuscate
+>> code...
+> 
+> Here's another idea, provide a helper to do the skb allocation
+> and the skb_reserve in one go.  That way this ugliness would only
+> need to be done once.
+
+Someone please test this:
+
+--------------------
+net: Fix crashes on devices which dynamically change needed headroom.
+
+One such device is IP_GRE.
+
+The problem is that we evaluate the device characteristics twice, once
+to determine the allocation size, and once to do the skb_reserve().
+
+Combine these into one operation using a helper function.
+
+With help from Eric Dumazet and Herbert Xu.
+
+Reported-by: Reported-by: Elmar Vonlanthen <evonlanthen@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index ddee79b..d4abb400 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -276,12 +276,22 @@ struct hh_cache {
+  * LL_ALLOCATED_SPACE also takes into account the tailroom the device
+  * may need.
+  */
++#define LL_ALIGN(__len) (((__len)&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
++
++#define __LL_RESERVED_SPACE(__hard_hdr_len, __needed_headroom) \
++	LL_ALIGN((__hard_hdr_len) + (__needed_headroom))
++
+ #define LL_RESERVED_SPACE(dev) \
+-	((((dev)->hard_header_len+(dev)->needed_headroom)&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
++	__LL_RESERVED_SPACE((dev)->hard_header_len, (dev)->needed_headroom))
++
+ #define LL_RESERVED_SPACE_EXTRA(dev,extra) \
+-	((((dev)->hard_header_len+(dev)->needed_headroom+(extra))&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
++	LL_ALIGN((dev)->hard_header_len + (dev)->needed_headroom + (extra))
++
++#define __LL_ALLOCATED_SPACE(__hard_hdr_len, __needed_headroom, __needed_tailroom) \
++	LL_ALIGN((__hard_hdr_len) + (__needed_headroom) + (__needed_tailroom))
++
+ #define LL_ALLOCATED_SPACE(dev) \
+-	((((dev)->hard_header_len+(dev)->needed_headroom+(dev)->needed_tailroom)&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
++	__LL_ALLOCATED_SPACE((dev)->hard_header_len, (dev)->needed_headroom, (dev)->needed_tailroom)
  
-> Best wishes
-> 
-> Norbert
-> ------------------------------------------------------------------------
-> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> JAIST, Japan                                 TeX Live & Debian Developer
-> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> ------------------------------------------------------------------------
-> WROOT (n.)
-> A short little berk who thinks that by pulling on his pipe and gazing
-> shrewdly at you he will give the impression that he is infinitely wise
-> and 5 ft 11 in.
-> 			--- Douglas Adams, The Meaning of Liff
-
-
+ struct header_ops {
+ 	int	(*create) (struct sk_buff *skb, struct net_device *dev,
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 8e4062f..9d96995 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1103,6 +1103,11 @@ extern struct sk_buff 		*sock_alloc_send_skb(struct sock *sk,
+ 						     unsigned long size,
+ 						     int noblock,
+ 						     int *errcode);
++extern struct sk_buff 		*sock_alloc_send_skb_reserve(struct sock *sk,
++							     struct net_device *dev,
++							     unsigned long base_size,
++							     int noblock,
++							     int *errcode);
+ extern struct sk_buff 		*sock_alloc_send_pskb(struct sock *sk,
+ 						      unsigned long header_len,
+ 						      unsigned long data_len,
+diff --git a/net/core/sock.c b/net/core/sock.c
+index bc745d0..9cefb72 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1586,6 +1586,26 @@ struct sk_buff *sock_alloc_send_skb(struct sock *sk, unsigned long size,
+ }
+ EXPORT_SYMBOL(sock_alloc_send_skb);
+ 
++struct sk_buff *sock_alloc_send_skb_reserve(struct sock *sk, struct net_device *dev,
++					    unsigned long base_size, int noblock,
++					    int *errcode)
++{
++	unsigned int hh_len = dev->hard_header_len;
++	unsigned int needed_hroom = dev->needed_headroom;
++	unsigned int needed_troom = dev->needed_tailroom;
++	unsigned int reserve, lls;
++	struct sk_buff *skb;
++
++	lls = __LL_ALLOCATED_SPACE(hh_len, needed_hroom, needed_troom);
++	skb = sock_alloc_send_skb(sk, (base_size + lls + 15), noblock, errcode);
++	if (skb) {
++		reserve = __LL_RESERVED_SPACE(hh_len, needed_hroom);
++		skb_reserve(skb, reserve);
++	}
++	return skb;
++}
++EXPORT_SYMBOL(sock_alloc_send_skb_reserve);
++
+ static void __lock_sock(struct sock *sk)
+ 	__releases(&sk->sk_lock.slock)
+ 	__acquires(&sk->sk_lock.slock)
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index 61714bd..dcecb97 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -335,12 +335,11 @@ static int raw_send_hdrinc(struct sock *sk, struct flowi4 *fl4,
+ 	if (flags&MSG_PROBE)
+ 		goto out;
+ 
+-	skb = sock_alloc_send_skb(sk,
+-				  length + LL_ALLOCATED_SPACE(rt->dst.dev) + 15,
+-				  flags & MSG_DONTWAIT, &err);
++	skb = sock_alloc_send_skb_reserve(sk, rt->dst.dev, length,
++					  flags & MSG_DONTWAIT,
++					  &err);
+ 	if (skb == NULL)
+ 		goto error;
+-	skb_reserve(skb, LL_RESERVED_SPACE(rt->dst.dev));
+ 
+ 	skb->priority = sk->sk_priority;
+ 	skb->mark = sk->sk_mark;
+diff --git a/net/ipv6/raw.c b/net/ipv6/raw.c
+index 343852e..5a8e141 100644
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -618,12 +618,11 @@ static int rawv6_send_hdrinc(struct sock *sk, void *from, int length,
+ 	if (flags&MSG_PROBE)
+ 		goto out;
+ 
+-	skb = sock_alloc_send_skb(sk,
+-				  length + LL_ALLOCATED_SPACE(rt->dst.dev) + 15,
+-				  flags & MSG_DONTWAIT, &err);
++	skb = sock_alloc_send_skb_reserve(sk, rt->dst.dev, length,
++					  flags & MSG_DONTWAIT,
++					  &err);
+ 	if (skb == NULL)
+ 		goto error;
+-	skb_reserve(skb, LL_RESERVED_SPACE(rt->dst.dev));
+ 
+ 	skb->priority = sk->sk_priority;
+ 	skb->mark = sk->sk_mark;
