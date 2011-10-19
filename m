@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab1JSW7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:59:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56433 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab1JSW7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:59:21 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/19] Resend previous incorrecly formatted patches
-Date: Wed, 19 Oct 2011 23:57:09 +0100
-Message-Id: <1319065048-2767-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
+	id S1754068Ab1JSW7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:59:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35153 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753423Ab1JSW7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 18:59:19 -0400
+Message-ID: <1319065158.27047.6.camel@Joe-Laptop>
+Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
+ Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: cloud.ren@atheros.com, davem@davemloft.net, Luis.Rodriguez@atheros.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 19 Oct 2011 15:59:18 -0700
+In-Reply-To: <20111019222140.GA9937@electric-eye.fr.zoreil.com>
+References: <1319009213-20627-1-git-send-email-cloud.ren@atheros.com>
+	 <20111019222140.GA9937@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending patches, these have now been formatted with:
+On Thu, 2011-10-20 at 00:21 +0200, Francois Romieu wrote:
+> cloud.ren@atheros.com <cloud.ren@atheros.com> :
+> > diff --git a/drivers/net/ethernet/atheros/alx/alc_cb.c b/drivers/net/ethernet/atheros/alx/alc_cb.c
+> [...]
 
-git format-patch -k -M
+A bunch of good style comments.
 
-Tested with git am sucessfully on a local tree
+> > +	hw->autoneg_advertised = (ALX_LINK_SPEED_1GB_FULL |
+> > +				  ALX_LINK_SPEED_10_HALF  |
+> > +				  ALX_LINK_SPEED_10_FULL  |
+> > +				  ALX_LINK_SPEED_100_HALF |
+> > +				  ALX_LINK_SPEED_100_FULL);
+> Parenthesis abuse.
 
-Mark Einon (19):
-      staging: et131x: Put all .c files into one big file
-      staging: et131x: Move function declarations from et131x.h to et131x.c
-      staging: et131x: Move non-register defines from et131x.h to et131x.c
-      staging: et131x: move et1310_address_map.h contents into et131x.h
-      staging: et131x: move et1310_phy.h contents into et131x.h
-      staging: et131x: move et131x_adapter.h contents into et131x.c
-      staging: et131x: move et131x_defs.h contents into et131x.c
-      staging: et131x: move et1310_rx.h contents into et131x.c
-      staging: et131x: move et1310_tx.h contents into et131x.c
-      staging: et131x: Update TODO list - remove 'put driver into single file'
-      staging: et131x: Moving two extern inline functions to .c file
-      staging: et131x: Make rx_ring.fbr{0,1} share a common structure
-      staging: et131x: Fix issues when USE_FBR0 is not defined
-      staging: et131x: use dma_alloc... instead of pci_alloc...
-      staging: et131x: Match dma_alloc_ calls with dma_free_ calls
-      staging: et131x: Tidy up PCI device table definition
-      staging: et131x: on transmit, stop the queue if the next packet will fail
-      staging: et131x: Convert rest of pci memory management to dma api
-      staging: et131x: Remove unused defines
+Maybe.  I use parenthesis too, but not the trailing | alignment.
+emacs does leading alignment nicely when you use an open paren.
 
- drivers/staging/et131x/Makefile             |   11 -
- drivers/staging/et131x/README               |    5 -
- drivers/staging/et131x/et1310_address_map.h | 1436 -------
- drivers/staging/et131x/et1310_eeprom.c      |  408 --
- drivers/staging/et131x/et1310_mac.c         |  654 ----
- drivers/staging/et131x/et1310_phy.c         |  375 --
- drivers/staging/et131x/et1310_phy.h         |  292 --
- drivers/staging/et131x/et1310_pm.c          |  204 -
- drivers/staging/et131x/et1310_rx.c          | 1160 ------
- drivers/staging/et131x/et1310_rx.h          |  245 --
- drivers/staging/et131x/et1310_tx.c          |  793 ----
- drivers/staging/et131x/et1310_tx.h          |  150 -
- drivers/staging/et131x/et131x.c             | 5577 +++++++++++++++++++++++++++
- drivers/staging/et131x/et131x.h             | 1718 ++++++++-
- drivers/staging/et131x/et131x_adapter.h     |  218 --
- drivers/staging/et131x/et131x_defs.h        |  128 -
- drivers/staging/et131x/et131x_ethtool.c     |  201 -
- drivers/staging/et131x/et131x_initpci.c     |  950 -----
- drivers/staging/et131x/et131x_isr.c         |  442 ---
- drivers/staging/et131x/et131x_netdev.c      |  662 ----
- 20 files changed, 7192 insertions(+), 8437 deletions(-)
 
