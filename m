@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab1JSMoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 08:44:39 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:58758
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab1JSMoi (ORCPT
+	id S1756117Ab1JSMtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 08:49:31 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:57693 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab1JSMt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 08:44:38 -0400
-Message-ID: <4E9EC636.8000806@kernel.dk>
-Date: Wed, 19 Oct 2011 14:44:38 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, vgoyal@redhat.com, ctalbott@google.com,
-        rni@google.com
-Subject: Re: [PATCHSET block/for-next] fix request_queue life-cycle management
-References: <1318998384-22525-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1318998384-22525-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Oct 2011 08:49:29 -0400
+Message-ID: <1319028563.8416.1.camel@edumazet-laptop>
+Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nico Schottelius <nico-linux-20111017@schottelius.org>
+Cc: Arend van Spriel <arend@broadcom.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Wed, 19 Oct 2011 14:49:23 +0200
+In-Reply-To: <20111019123602.GA11883@schottelius.org>
+References: <20111019123602.GA11883@schottelius.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-19 06:26, Tejun Heo wrote:
-> This patchset is on top of the block/for-next cef1e172c7 "Merge branch
-> 'for-3.2/mtip32xx' into for-next" and available in the following git
-> branch.
+Le mercredi 19 octobre 2011 à 14:36 +0200, Nico Schottelius a écrit :
+> Hello,
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-ref
+> I've
+> 
+> Eric Dumazet [Tue, Oct 18, 2011 at 02:24:25PM +0200]:
+> > Must be a mutex_unlock(some_mltex) missing somewhere.
+> > 
+> > Then later, a process holding RTNL is blocking on mutex_lock(some_mutex)
+> > 
+> > Try a "CONFIG_LOCKDEP=y" enabled build
+> 
+> Did so, attached is the dmesg output after 3x suspend.
+> 
+> It also seems this bug gets more / only triggered when I loose the
+> connection to a wpa2-eap network that is defined like this:
+> 
+> network={
+>    ssid="eth"
+>   id_str="eth-802.2x"
+>    key_mgmt=WPA-EAP
+>    proto=WPA2
+>    eap=TTLS
+>    pairwise=CCMP TKIP
+>    group=CCMP TKIP
+>    phase2="auth=MSCHAPV2"
+>    identity="MYNAME"
+>    password="forgottoremoveit"
+> }
+> 
+> Hope the dmesg output helps and we can remove the problem soon
+> and making the mba finally almost completly usable :-)
+> 
 
-I've applied this, thanks a lot for taking the time to sort these rules.
-It's been broken for a long time.
+Sorry, no CONFIG_LOCKDEP in your config or dmesg. Maybe you sent a
+previous dmesg/config file ?
 
--- 
-Jens Axboe
+Note that you have "CONFIG_LOCKDEP_SUPPORT=y", not "CONFIG_LOCKDEP=y"
+
+
 
