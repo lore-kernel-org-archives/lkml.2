@@ -1,129 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1JSQfe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 12:35:34 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:29312
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751791Ab1JSQfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 12:35:33 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz146fK1432N98dKzz1202hzz8275bhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LTBNES-01-98O-02
-X-M-MSG: 
-Date: Wed, 19 Oct 2011 18:33:28 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>
-Subject: Re: [PATCH 4/5] oprofile: Remove exit function for timer mode
-Message-ID: <20111019163328.GG24346@erda.amd.com>
-References: <1318861624-715-1-git-send-email-robert.richter@amd.com>
- <1318861624-715-5-git-send-email-robert.richter@amd.com>
- <20111018061346.GD16304@elte.hu>
+	id S1756435Ab1JSQkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 12:40:23 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:50270 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556Ab1JSQkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 12:40:22 -0400
+Date: Wed, 19 Oct 2011 09:38:16 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linus.ml.walleij@gmail.com" <linus.ml.walleij@gmail.com>,
+        "zdevai@gmail.com" <zdevai@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>
+Subject: Re: [PATCH 5/6] IIO:hwmon interface client driver.
+Message-ID: <20111019163816.GC2264@ericsson.com>
+References: <1319035628-32580-1-git-send-email-jic23@cam.ac.uk>
+ <1319035628-32580-6-git-send-email-jic23@cam.ac.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111018061346.GD16304@elte.hu>
+In-Reply-To: <1319035628-32580-6-git-send-email-jic23@cam.ac.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.10.11 02:13:47, Ingo Molnar wrote:
+On Wed, Oct 19, 2011 at 10:47:07AM -0400, Jonathan Cameron wrote:
+> Should move to drivers/hwmon once people are happy with it.
 > 
-> * Robert Richter <robert.richter@amd.com> wrote:
+> Minimal support of simple in, curr and temp attributes
+> so far.
 > 
-> >  	/* failed */
-> > -	if (timer_mode)
-> > -		oprofile_timer_exit();
-> > -	else
-> > +	if (!timer_mode)
-> >  		oprofile_arch_exit();
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+
+Couple of comments below.
+
+> ---
+>  drivers/iio/Kconfig     |    8 ++
+>  drivers/iio/Makefile    |    1 +
+>  drivers/iio/iio_hwmon.c |  214 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 223 insertions(+), 0 deletions(-)
 > 
-> > -	if (timer_mode)
-> > -		oprofile_timer_exit();
-> > -	else
-> > +	if (!timer_mode)
-> >  		oprofile_arch_exit();
+> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+> index 308bc97..fb6d0a1 100644
+> --- a/drivers/iio/Kconfig
+> +++ b/drivers/iio/Kconfig
+> @@ -11,6 +11,14 @@ menuconfig IIO
+>  
+>  if IIO
+>  
+> +config IIO_HWMON
+> +       tristate "Hwmon driver that uses channels specified via iio maps"
+> +       help
+> +	  This is a platform driver that in combination with a suitable
+> +	  map allows IIO devices to provide  basic hwmon functionality
+> +	  for those channels specified in the map.
+> +
+Should probably also depend on HWMON
+
+> +
+>  source "drivers/iio/adc/Kconfig"
+>  source "drivers/iio/imu/Kconfig"
+>  source "drivers/iio/light/Kconfig"
+> diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
+> index cfb588a..5f9c01a 100644
+> --- a/drivers/iio/Makefile
+> +++ b/drivers/iio/Makefile
+> @@ -6,6 +6,7 @@ obj-y = inkern.o
+>  obj-$(CONFIG_IIO) += iio.o
+>  industrialio-y := core.o
+>  
+> +obj-$(CONFIG_IIO_HWMON) += iio_hwmon.o
+>  obj-y += adc/
+>  obj-y += imu/
+>  obj-y += light/
+> diff --git a/drivers/iio/iio_hwmon.c b/drivers/iio/iio_hwmon.c
+> new file mode 100644
+> index 0000000..6eeceeb
+> --- /dev/null
+> +++ b/drivers/iio/iio_hwmon.c
+> @@ -0,0 +1,214 @@
+> +/* Hwmon client for industrial I/O devices
+> + *
+> + * Copyright (c) 2011 Jonathan Cameron
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + *
+> + * Limited functionality currently supported.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/iio/inkern.h>
+> +#include <linux/hwmon.h>
+> +#include <linux/hwmon-sysfs.h>
+> +
+> +/**
+> + * struct iio_hwmon_state - device instance state
+> + * @channels:		filled with null terminated array of channels from iio
+> + * @num_channels:	number of channels in channels (saves counting twice)
+> + * @hwmon_dev:		associated hwmon device
+> + * @attr_group:	the group of attributes
+> + * @attrs:		null terminated array of attribute pointers.
+> + */
+> +struct iio_hwmon_state {
+> +	struct iio_channel **channels;
+> +	int num_channels;
+> +	struct device *hwmon_dev;
+> +	struct attribute_group attr_group;
+> +	struct attribute **attrs;
+> +};
+> +
+> +/*
+> + * Assumes that IIO and hwmon operate in the same base units.
+> + * This is supposed to be true, but needs verification for
+> + * new channel types.
+> + */
+> +static ssize_t iio_hwmon_read_val(struct device *dev,
+> +				  struct device_attribute *attr,
+> +				  char *buf)
+> +{
+> +	long result;
+> +	int val, ret, scaleint, scalepart;
+> +	struct sensor_device_attribute *sattr =
+> +		to_sensor_dev_attr(attr);
+
+Does this need more than one line ?
+
+> +	struct iio_hwmon_state *state = dev_get_drvdata(dev);
+> +
+> +	/*
+> +	 * No locking between this pair, so theoretically possible
+> +	 * the scale has changed.
+> +	 */
+> +	ret = iio_read_channel_raw(state->channels[sattr->index],
+> +				   &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = iio_read_channel_scale(state->channels[sattr->index],
+> +				     &scaleint, &scalepart);
+> +	if (ret < 0)
+> +		return ret;
+> +	switch (ret) {
+> +	case IIO_VAL_INT:
+> +		result = val * scaleint;
+> +		break;
+> +	case IIO_VAL_INT_PLUS_MICRO:
+> +		result = val * (scaleint * 1000000 + scalepart)/1000000;
+> +		break;
+> +	case IIO_VAL_INT_PLUS_NANO:
+> +		result = val * (scaleint * 1000000000 + scalepart)/1000000000;
+
+I think you might want to use long or even long long for all variables here,
+or at least typecast to long or long long. Concern is that for example
+"scaleint * 1000000000" may be calculated as int and would easily overflow;
+even as long it would easily overflow.
+
+There should be blanks around '/' (why doesn't checkpatch complain about this anymore ?).
+
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	return sprintf(buf, "%ld\n", result);
+> +}
+> +
+> +static void iio_hwmon_free_attrs(struct iio_hwmon_state *st)
+> +{
+> +	int i;
+> +	struct sensor_device_attribute *a;
+> +	for (i = 0; i < st->num_channels; i++)
+> +		if (st->attrs[i]) {
+> +			a = to_sensor_dev_attr(
+> +				container_of(st->attrs[i],
+> +					     struct device_attribute,
+> +					     attr));
+> +			kfree(a);
+> +		}
+> +}
+> +
+> +static int __devinit iio_hwmon_probe(struct platform_device *pdev)
+> +{
+> +	struct iio_hwmon_state *st;
+> +	struct sensor_device_attribute *a;
+> +	int ret, i = 0;
+> +	int in_i = 1, temp_i = 1, curr_i = 1;
+> +
+> +	st = kzalloc(sizeof(*st), GFP_KERNEL);
+> +	if (st == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_ret;
+> +	}
+> +
+> +	st->channels = iio_channel_get_all(&pdev->dev, NULL);
+> +	if (IS_ERR(st->channels)) {
+> +		ret = PTR_ERR(st->channels);
+> +		goto error_free_state;
+> +	}
+> +
+> +	/* count how many attributes we have */
+> +	while (st->channels[st->num_channels])
+> +		st->num_channels++;
+> +
+> +	st->attrs = kzalloc(sizeof(st->attrs)*(i+1), GFP_KERNEL);
+
+Blanks around '*' and '+'.
+i == 0 here, so what is the point, and what are you trying to do ?
+Should it be st->num_channels instead of i + 1 ?
+
+> +	if (st->attrs == NULL) {
+> +		ret = -ENOMEM;
+> +		goto error_release_channels;
+> +	}
+> +	for (i = 0; i < st->num_channels; i++) {
+> +		a = kzalloc(sizeof(*a), GFP_KERNEL);
+
+What if this fails ?
+
+> +		sysfs_attr_init(&a->dev_attr.attr);
+> +		switch (iio_get_channel_type(st->channels[i])) {
+> +		case IIO_VOLTAGE:
+> +			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
+> +							  "in%d_input",
+> +							  in_i++);
+> +			break;
+> +		case IIO_TEMP:
+> +			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
+> +							  "temp%d_input",
+> +							  temp_i++);
+> +			break;
+> +		case IIO_CURRENT:
+> +			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
+> +							  "curr%d_input",
+> +							  curr_i++);
+> +			break;
+> +		default:
+> +			ret = -EINVAL;
+> +			goto error_free_attrs;
+> +		}
+> +		if (a->dev_attr.attr.name == NULL) {
+> +			ret = -ENOMEM;
+> +			goto error_free_attrs;
+> +		}
+I think this and the above EINVAL will result in leaking "a" since you did not store it
+in st->attrs[i] yet.
+
+> +		a->dev_attr.show = iio_hwmon_read_val;
+> +		a->dev_attr.attr.mode = S_IRUGO;
+> +		a->index = i;
+> +		st->attrs[i] = &a->dev_attr.attr;
+> +	}
+> +
+> +	st->attr_group.attrs = st->attrs;
+> +	st->hwmon_dev = hwmon_device_register(&pdev->dev);
+> +
+Would be better to do this after successfully creating the sysfs attributes.
+
+> +	ret = sysfs_create_group(&pdev->dev.kobj, &st->attr_group);
+> +	if (ret < 0)
+> +		goto error_free_attrs;
+> +
+> +	platform_set_drvdata(pdev, st);
+> +
+You need to do this prior to creating the sysfs entries, since the read functions
+expect it to be there.
+
+> +	return 0;
+> +
+> +error_free_attrs:
+
+This doesn't unregister the hwmon device.
+
+> +	iio_hwmon_free_attrs(st);
+> +	kfree(st->attrs);
+> +error_release_channels:
+> +	iio_channel_release_all(st->channels);
+> +error_free_state:
+> +	kfree(st);
+> +error_ret:
+> +	return ret;
+> +}
+> +
+> +static int __devexit iio_hwmon_remove(struct platform_device *pdev)
+> +{
+> +	struct iio_hwmon_state *st = platform_get_drvdata(pdev);
+> +
+> +	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
+> +	iio_hwmon_free_attrs(st);
+> +	kfree(st->attrs);
+> +	hwmon_device_unregister(st->hwmon_dev);
+> +	iio_channel_release_all(st->channels);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver __refdata iio_hwmon_driver = {
+> +	.driver = {
+> +		.name = "iio_hwmon",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = iio_hwmon_probe,
+> +	.remove = __devexit_p(iio_hwmon_remove),
+> +};
+> +
+> +static int iio_inkern_init(void)
+> +{
+> +	return platform_driver_register(&iio_hwmon_driver);
+> +}
+> +module_init(iio_inkern_init);
+> +
+> +static void iio_inkern_exit(void)
+> +{
+> +	platform_driver_unregister(&iio_hwmon_driver);
+> +}
+> +module_exit(iio_inkern_exit);
+> +
+> +MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
+> +MODULE_DESCRIPTION("IIO to hwmon driver");
+> +MODULE_LICENSE("GPL v2");
+> -- 
+> 1.7.7
 > 
-> ... and the ugliness didnt improve much here either.
-> 
-> Any reason why oprofile_arch_exit() couldnt check timer_mode?
-
-The two fixes are the smallest possible solution for stable kernels.
-... and they don't look nice.
-
-Moving the check to oprofile_arch_exit() would mean to make timer_mode
-global and to touch all oprofile_arch_exit() functions for all archs.
-But we could get rid of timer_mode if the exit function would be part
-of struct oprofile_operations. For this we would have to touch the
-code for all architectures too, and I actually want to avoid this. But
-it would be a nice solution.
-
-Anyway, I have some improvements in patch #5 that make the code looks a
-bit better. See below for a preview, will post a v2 patch set after
-testing. As said, I could remove variable timer_mode completely by
-moving exit functions to oprofile_operations. This could be on top of
-the changes below.
-
--Robert
-
-
-
-diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-index f7cd069..d2994e7 100644
---- a/drivers/oprofile/oprof.c
-+++ b/drivers/oprofile/oprof.c
-@@ -246,26 +246,23 @@ static int __init oprofile_init(void)
-        int err;
- 
-        /* always init architecture to setup backtrace support */
-+       timer_mode = 0;
-        err = oprofile_arch_init(&oprofile_ops);
--
--       timer_mode = err || timer;      /* fall back to timer mode on errors */
--       if (timer_mode) {
--               if (!err)
--                       oprofile_arch_exit();
--               err = oprofile_timer_init(&oprofile_ops);
--               if (err)
--                       return err;
-+       if (!err) {
-+               if (!timer && oprofilefs_register())
-+                       return 0;
-+               oprofile_arch_exit();
-        }
- 
--       err = oprofilefs_register();
--       if (!err)
--               return 0;
--
--       /* failed */
--       if (!timer_mode)
--               oprofile_arch_exit();
-+       /* setup timer mode */
-+       timer_mode = 1;
-+       err = op_nmi_timer_init(&oprofile_ops);
-+       if (err)
-+               err = oprofile_timer_init(&oprofile_ops);
-+       if (err)
-+               return err;
- 
--       return err;
-+       return oprofilefs_register();
- }
- 
- 
-
-
-
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Guenter Roeck
+Distinguished Engineer
+PDU IP Systems
