@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1JSSxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 14:53:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39309 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab1JSSxp (ORCPT
+	id S1752527Ab1JSS4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 14:56:04 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37017 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751710Ab1JSS4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 14:53:45 -0400
-Date: Wed, 19 Oct 2011 11:53:40 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrey Vagin <avagin@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
-Message-ID: <20111019185340.GM25124@google.com>
-References: <20111014110416.552685686@openvz.org>
- <20111014110511.670174429@openvz.org>
- <20111014171033.GC4294@google.com>
- <20111014173304.GD4294@google.com>
- <4E9E9255.7090601@parallels.com>
- <20111019182228.GJ25124@google.com>
- <20111019184926.GY14464@moon>
- <20111019185210.GZ14464@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019185210.GZ14464@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 19 Oct 2011 14:56:00 -0400
+Subject: Re: Please include const-sections into linux-next
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <20111019163351.GJ15908@one.firstfloor.org>
+References: <20111013233818.GB26654@one.firstfloor.org>
+	 <1318631204.3018.101.camel@dabdike.int.hansenpartnership.com>
+	 <20111016033514.GC26654@one.firstfloor.org>
+	 <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com>
+	 <0e9ef9174a0089187fde0b3d084672ad.squirrel@www.firstfloor.org>
+	 <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com>
+	 <20111019161537.GH15908@one.firstfloor.org>
+	 <1319041281.3034.25.camel@dabdike.int.hansenpartnership.com>
+	 <20111019163351.GJ15908@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Oct 2011 13:55:57 -0500
+Message-ID: <1319050557.3034.46.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Oct 19, 2011 at 10:52:10PM +0400, Cyrill Gorcunov wrote:
-> On Wed, Oct 19, 2011 at 10:49:26PM +0400, Cyrill Gorcunov wrote:
-> ..
-> > 
-> > Hi Tejun,
-> > 
-> > apart from controversy on elf'ish restore, I would like to know if there
-> > a way to poke alien process memory with something faster than sizeof(long)
-> > at once as ptrace proposes. At moment on my test tasks it's not that long
-> > but the problem is there are servers with GBs of memory and snapshotting
-> > memory data becomes a bottleneck. The same applies to restore procedure,
-> > especially on big-data-chunks. Hm? Am I missing something obvious?
-> > 
+On Wed, 2011-10-19 at 18:33 +0200, Andi Kleen wrote:
+> > OK, look at it another way: why do we need the type annotations?  I
+> > think it's only for section conflict checking, right?  If the compiler
+> > gets it wrong anyway, why not just dump all the type annotations, then
+> > it should have no type conflicts (spurious or otherwise) to complain
+> > about.  We already have link time section checking scripts (they're the
+> > useless ones that complain about section mismatches in dev annoations)
+> > so why not put them to work to make up for compiler deficiencies?
 > 
-> Drop it, I had something different in mind, sorry for noise.
+> You mean removing all the init sections stuff?  I think it has been proposed
+> in the past, but it's a couple of hundred KB of memory usually.
+> Would you accept that for PA-RISC? 
+> 
+> If you have init sections you need to annotate them correctly because
+> a section is defined by its rwx attributes plus name and both need
+> to match. We didn't always check this, so there was some bitrot,
+> but it ultimatively has to be correct.
 
-Heh, just in case.  Before resuming the restored process, the restorer
-has full control.  Letting the target process reading and mmapping
-itself should be enough, I think.
+We're talking at cross purposes. But it doesn't matter, the error
+doesn't seem to be anything to do with type.  This simple patch is
+what's causing it (I can apply it alone to the working tree) and get the
+error.
 
-Thanks.
+What I can't see is why.
 
--- 
-tejun
+James
+
+---
+diff --git a/drivers/net/fealnx.c b/drivers/net/fealnx.c
+index fa8677c..196356f 100644
+--- a/drivers/net/fealnx.c
++++ b/drivers/net/fealnx.c
+@@ -150,7 +150,7 @@ struct chip_info {
+ 	int flags;
+ };
+ 
+-static const struct chip_info skel_netdrv_tbl[] __devinitdata = {
++static const struct chip_info skel_netdrv_tbl[] __devinitconst = {
+  	{ "100/10M Ethernet PCI Adapter",	HAS_MII_XCVR },
+ 	{ "100/10M Ethernet PCI Adapter",	HAS_CHIP_XCVR },
+ 	{ "1000/100/10M Ethernet PCI Adapter",	HAS_MII_XCVR },
+
+
