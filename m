@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab1JSQPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 12:15:41 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:47780 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1JSQPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 12:15:40 -0400
-Date: Wed, 19 Oct 2011 18:15:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: Please include const-sections into linux-next
-Message-ID: <20111019161537.GH15908@one.firstfloor.org>
-References: <20111013233818.GB26654@one.firstfloor.org> <1318631204.3018.101.camel@dabdike.int.hansenpartnership.com> <20111016033514.GC26654@one.firstfloor.org> <1318799006.2995.1.camel@dabdike.int.hansenpartnership.com> <0e9ef9174a0089187fde0b3d084672ad.squirrel@www.firstfloor.org> <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com>
+	id S1755662Ab1JSQRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 12:17:38 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45160 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752007Ab1JSQRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 12:17:37 -0400
+Message-ID: <1319041056.14493.12.camel@Joe-Laptop>
+Subject: Re: checkpatch WARNING: patch prefix 'b' exists, appears to be a
+ -p0 patch
+From: Joe Perches <joe@perches.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, David Rientjes <rientjes@google.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 19 Oct 2011 09:17:36 -0700
+In-Reply-To: <20111019112220.GG3217@pengutronix.de>
+References: <4E9D9558.7040705@cam.ac.uk>
+	 <alpine.DEB.2.00.1110181643450.8149@chino.kir.corp.google.com>
+	 <1318982469.7569.1.camel@Joe-Laptop>
+	 <alpine.DEB.2.00.1110181819110.12850@chino.kir.corp.google.com>
+	 <4E9E89F2.2060103@cam.ac.uk> <20111019102630.GE3217@pengutronix.de>
+	 <4E9EAEB7.6080601@cam.ac.uk> <20111019112220.GG3217@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319039663.3034.18.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 10:54:23AM -0500, James Bottomley wrote:
+On Wed, 2011-10-19 at 13:22 +0200, Wolfram Sang wrote:
+> > Maybe something as simple as a comment in the checkpatch source
+> > to say that such a file / directory can cause false positives?
 > 
-> > One alternative to track it down would be to apply the attached
-> > patch to the gcc, then gcc would print it out.
+> I'd hope this error message would be clear enough, what do you think?
 > 
-> I think the basic problem that excites the toolchain somehow is
-> sectional annotations.  Can't we just dump them and do it all in a
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 3dfc471..19e4de7 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1506,7 +1506,7 @@ sub process {
+>  			if (!$file && $tree && $p1_prefix ne '' &&
+>  			    -e "$root/$p1_prefix") {
+>  				WARN("PATCH_PREFIX",
+> -				     "patch prefix '$p1_prefix' exists, appears to be a -p0 patch\n");
+> +				     "patch prefix '$p1_prefix' exists as file/directory. Make sure this isn't a -p0 patch\n");
+>  			}
+>  
+>  			if ($realfile =~ m@^include/asm/@) {
+> 
 
-We already use these annotations all over. Just currently they mess up
-the 'r' and 'w' bits on the sections because a few (not the majority)
-of declarations mismatch the ro vs rw sections.  My patchkit was just trying
-to fix up those that were wrong
+How about:
 
-So you should be already using them.
+ scripts/checkpatch.pl |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Just need to find out what triggers your toolchain with these changes.
-I suspect it's some kind of toolchain bug.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 2300964..6259b12 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1499,17 +1499,17 @@ sub process {
+ 			$realfile =~ s@^([^/]*)/@@;
+ 
+ 		} elsif ($line =~ /^\+\+\+\s+(\S+)/) {
++			my $patched_file = "$root/$1";
+ 			$realfile = $1;
+ 			$realfile =~ s@^([^/]*)/@@;
+ 
+-			$p1_prefix = $1;
+-			if (!$file && $tree && $p1_prefix ne '' &&
+-			    -e "$root/$p1_prefix") {
++			if (!$file && $tree && $realfile ne '' &&
++			    -e "$patched_file") {
+ 				WARN("PATCH_PREFIX",
+-				     "patch prefix '$p1_prefix' exists, appears to be a -p0 patch\n");
++				     "patched file '$patched_file' exists, patch appears to be a -p0 patch\n");
+ 			}
+ 
+-			if ($realfile =~ m@^include/asm/@) {
++			if ($patched_file =~ m@/include/asm/@) {
+ 				ERROR("MODIFIED_INCLUDE_ASM",
+ 				      "do not modify files in include/asm, change architecture specific files in include/asm-<architecture>\n" . "$here$rawline\n");
+ 			}
 
-> linker script?  Linker scripts seem to be much better tested.
 
-The linker script just declares the order of the section. 
-The attributes are a union of what the compiler declares.
-To dump them I just use objdump --section-headers or
-readelf -a usually.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
