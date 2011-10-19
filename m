@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab1JSMHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 08:07:42 -0400
-Received: from smtp-out-086.synserver.de ([212.40.185.86]:1136 "HELO
-	smtp-out-054.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754474Ab1JSMHl (ORCPT
+	id S1756006Ab1JSMJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 08:09:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49671 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754474Ab1JSMJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 08:07:41 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22945
-Message-ID: <4E9EBD98.9090705@metafoo.de>
-Date: Wed, 19 Oct 2011 14:07:52 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111005 Iceowl/1.0b2 Icedove/3.1.15
+	Wed, 19 Oct 2011 08:09:03 -0400
+Date: Wed, 19 Oct 2011 13:09:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Zeng Zhaoming <zhaoming.zeng@freescale.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/2] ASoC: sgtl5000: Fix define for SGTL5000_BIAS_R_MASK
+Message-ID: <20111019120901.GD3107@opensource.wolfsonmicro.com>
+References: <1318992896.7128.1.camel@phoenix>
 MIME-Version: 1.0
-To: Liam Girdwood <lrg@ti.com>
-CC: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: ssm2602: Use snd_soc_update_bits for read-modify-write
-References: <1319004451.16275.1.camel@phoenix> <1319012280.4133.0.camel@odin>
-In-Reply-To: <1319012280.4133.0.camel@odin>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318992896.7128.1.camel@phoenix>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2011 10:18 AM, Liam Girdwood wrote:
-> On Wed, 2011-10-19 at 14:07 +0800, Axel Lin wrote:
->> Use snd_soc_update_bits for read-modify-write register access instead of
->> open-coding it using snd_soc_read and snd_soc_write
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Acked-by: Liam Girdwood <lrg@ti.com>
-> 
+On Wed, Oct 19, 2011 at 10:54:56AM +0800, Axel Lin wrote:
+> According to the datasheet:
+> CHIP_MIC_CTRL 0x002A
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Applied both, thanks.
