@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1JSVDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:03:50 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29121 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab1JSVDt (ORCPT
+	id S1754203Ab1JSVGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:06:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47890 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab1JSVGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:03:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=YFK+MSFd/aOIgyQrPhA8GJ8rns4Hp4mXoxVGpGhIUowCDPecKoOWXkalszb+im95a
-	04ZWiX2mrZsYUepgiL1lw==
-Date: Wed, 19 Oct 2011 14:03:43 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Borislav Petkov <bp@amd64.org>
-cc: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 8/9] x86, RAS: Add attributes needed for HW injection
-In-Reply-To: <1319035866-29570-9-git-send-email-bp@amd64.org>
-Message-ID: <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com>
-References: <1319035866-29570-1-git-send-email-bp@amd64.org> <1319035866-29570-9-git-send-email-bp@amd64.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 19 Oct 2011 17:06:32 -0400
+From: Carlos Corbacho <carlos@strangeworlds.co.uk>
+To: Jyrki Kuoppala <jkp@iki.fi>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH] Fix to qt1010 tuner frequency selection (media/dvb)
+Date: Wed, 19 Oct 2011 22:06:27 +0100
+Message-ID: <2165330.TqTdf0zloM@valkyrie>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc10cc+; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <4E7F58BB.5080803@iki.fi>
+References: <4E528FAE.5060801@iki.fi> <5010154.A6jI82beuA@valkyrie> <4E7F58BB.5080803@iki.fi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Oct 2011, Borislav Petkov wrote:
+Jyrki,
 
-> diff --git a/arch/x86/kernel/cpu/ras/amd/mce-inject.c b/arch/x86/kernel/cpu/ras/amd/mce-inject.c
-> index 1b797bd..8646080 100644
-> --- a/arch/x86/kernel/cpu/ras/amd/mce-inject.c
-> +++ b/arch/x86/kernel/cpu/ras/amd/mce-inject.c
-> @@ -77,6 +77,59 @@ static int toggle_hw_mce_inject(unsigned int cpu, bool enable)
->  }
->  
->  /*
-> + * HW or SW injection
-> + */
-> +static int hw_inj_get(void *data, u64 *val)
-> +{
-> +	struct mce *m = (struct mce *)data;
-> +
-> +	*val = !!(m->inject_flags & MCJ_HW_MSR_INJECT);
-> +
-> +	return 0;
-> +}
-> +
-> +static int hw_inj_set(void *data, u64 val)
-> +{
-> +	struct mce *m = (struct mce *)data;
-> +
-> +	switch (val) {
-> +	case 0:
-> +		m->inject_flags &= (u8)~MCJ_HW_MSR_INJECT;
-> +		break;
-> +
-> +	case 1:
-> +		m->inject_flags |= MCJ_HW_MSR_INJECT;
-> +		break;
-> +
-> +	default:
-> +		printk(KERN_ERR "%s: Only 0 or 1 allowed!\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +
-> +DEFINE_SIMPLE_ATTRIBUTE(hw_inj_fops, hw_inj_get, hw_inj_set, "%llu\n");
-> +
-> +/*
-> + * On which CPU to inject?
-> + */
-> +MCE_INJECT_GET(extcpu);
-> +
-> +static int inj_extcpu_set(void *data, u64 val)
-> +{
-> +	struct mce *m = (struct mce *)data;
-> +
-> +	if (val >= num_online_cpus()) {
+So after a bit more testing...
 
-That wouldn't catch an offline cpuid, you probably want cpu_online(val)?
+[...]
 
-> +		printk(KERN_ERR "%s: Non-existent CPU: %llu\n", __func__, val);
-> +		return -EINVAL;
-> +	}
-> +	m->extcpu = val;
-> +	return 0;
-> +}
-> +
-> +DEFINE_SIMPLE_ATTRIBUTE(extcpu_fops, inj_extcpu_get, inj_extcpu_set, "%llu\n");
-> +
-> +/*
->   * This denotes into which bank we're injecting and triggers
->   * the injection, at the same time.
->   */
-> @@ -116,6 +169,8 @@ struct dfs_node {
->  	{ .name = "misc",	.fops = &misc_fops },
->  	{ .name = "addr",	.fops = &addr_fops },
->  	{ .name = "bank",	.fops = &bank_fops },
-> +	{ .name = "hw_inject",	.fops = &hw_inj_fops },
-> +	{ .name = "cpu",	.fops = &extcpu_fops },
->  };
->  
->  static int __init init_mce_inject(void)
+> >>        /* 22 */
+> >>        if      (freq<  450000000) rd[15].val = 0xd0; /* 450 MHz
+> >>        */
+> >> 
+> >> -    else if (freq<  482000000) rd[15].val = 0xd1; /* 482 MHz */
+> >> +    else if (freq<  482000000) rd[15].val = 0xd2; /* 482 MHz */
+
+This change isn't so good.
+
+With this change, I can no longer tune to channel 21 (474 MHz). If I revert it 
+back to 0xd1, it's fine.
+
+[...]
+
+> >> 
+> >>        else if (freq<  514000000) rd[15].val = 0xd4; /* 514 MHz
+> >>        */
+> >> 
+> >> -    else if (freq<  546000000) rd[15].val = 0xd7; /* 546 MHz */
+> >> +    else if (freq<  546000000) rd[15].val = 0xd6; /* 546 MHz */
+> >> +    else if (freq<  578000000) rd[15].val = 0xd8; /* 578 MHz */
+
+(This change is still good though, as this does allow me to now tune to the 
+BBC channels in this range).
+
+-Carlos
