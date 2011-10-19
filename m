@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1JSIBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 04:01:51 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:46010 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753486Ab1JSIBu (ORCPT
+	id S1755517Ab1JSICz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 04:02:55 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:57901 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab1JSICu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 04:01:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E9D9F88.109@metafoo.de>
-References: <1318890308.15935.0.camel@phoenix>
-	<4E9D9F88.109@metafoo.de>
-Date: Wed, 19 Oct 2011 09:01:49 +0100
-Message-ID: <CABS+qY1puXbMmgb8RMgoQydp7fKX4KJ9Z6GEZ40--X_fDBCxZQ@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH v2] ASoC: ad193x: Use snd_soc_update_bits for read-modify-write
-From: "Girdwood, Liam" <lrg@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Barry Song <21cnbao@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Oct 2011 04:02:50 -0400
+Date: Wed, 19 Oct 2011 04:02:40 -0400 (EDT)
+Message-Id: <20111019.040240.758852119107748001.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: herbert@gondor.hengli.com.au, evonlanthen@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        timo.teras@iki.fi
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
+ causes kernel oops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1319010739.18562.6.camel@edumazet-laptop>
+References: <1319008713.17914.8.camel@edumazet-laptop>
+	<20111019.033052.851679720607111734.davem@davemloft.net>
+	<1319010739.18562.6.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 19 Oct 2011 01:02:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2011 16:47, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 10/18/2011 12:25 AM, Axel Lin wrote:
->> Use snd_soc_update_bits for read-modify-write register access instead of
->> open-coding it using snd_soc_read and snd_soc_write
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
->
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 19 Oct 2011 09:52:19 +0200
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+> For GRE tunnels, I dont think IPv6 fragmentation could be relevant,
+> but maybe IGMP could trigger a problem ?
+
+Funny... icmpv6 uses ip6_append_data() which uses hh_len in a
+local variable, which seems to suggest that it's immune to
+this problem.
+
+IPV4 side seems identical in this regard.
+
+So, as far as I can see, my patch is sufficient to cover IP_GRE
+reasonably in the 'net' tree.
+
+Agreed?
+
+If so, someone please test this thing :-)
