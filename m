@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab1JSWtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 18:49:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51409 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab1JSWts (ORCPT
+	id S1754369Ab1JSW7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 18:59:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56433 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab1JSW7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 18:49:48 -0400
-Date: Wed, 19 Oct 2011 18:49:35 -0400 (EDT)
-Message-Id: <20111019.184935.1359396091815243878.davem@davemloft.net>
-To: ebiederm@xmission.com
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        htejun@gmail.com, fubar@us.ibm.com, andy@greyhouse.net
-Subject: Re: [PATCH 0/5] Better namespace handling for
- /sys/class/net/bonding_masters
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <m18voh158i.fsf@fess.ebiederm.org>
-References: <m1hb3dbae5.fsf@fess.ebiederm.org>
-	<20111019.000932.523712028439316177.davem@davemloft.net>
-	<m18voh158i.fsf@fess.ebiederm.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 19 Oct 2011 15:49:40 -0700 (PDT)
+	Wed, 19 Oct 2011 18:59:21 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/19] Resend previous incorrecly formatted patches
+Date: Wed, 19 Oct 2011 23:57:09 +0100
+Message-Id: <1319065048-2767-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 19 Oct 2011 06:27:25 -0700
+Resending patches, these have now been formatted with:
 
-> David Miller <davem@davemloft.net> writes:
-> 
->> From: ebiederm@xmission.com (Eric W. Biederman)
->> Date: Thu, 13 Oct 2011 00:47:46 -0700
->>
->>> Greg, Dave I'm don't know whose tree to merge this through as this code
->>> is equally device-core and networking.  I am hoping that we can get this
->>> improvement merged for 3.2.
->>
->> I'm happy to take this series into my net-next tree.
->>
->> Greg?  Any objections?
-> 
-> on the 13th Greg said:
-> 
->> These all look fine to me, and I have no problem with them going through
->> the network tree as that will most likely be the easiest way due to any
->> potential merge issues.
->> 
->> David, feel free to add an:
->> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+git format-patch -k -M
 
-Awesome, thanks for the reminder, I'll apply these right now.
+Tested with git am sucessfully on a local tree
+
+Mark Einon (19):
+      staging: et131x: Put all .c files into one big file
+      staging: et131x: Move function declarations from et131x.h to et131x.c
+      staging: et131x: Move non-register defines from et131x.h to et131x.c
+      staging: et131x: move et1310_address_map.h contents into et131x.h
+      staging: et131x: move et1310_phy.h contents into et131x.h
+      staging: et131x: move et131x_adapter.h contents into et131x.c
+      staging: et131x: move et131x_defs.h contents into et131x.c
+      staging: et131x: move et1310_rx.h contents into et131x.c
+      staging: et131x: move et1310_tx.h contents into et131x.c
+      staging: et131x: Update TODO list - remove 'put driver into single file'
+      staging: et131x: Moving two extern inline functions to .c file
+      staging: et131x: Make rx_ring.fbr{0,1} share a common structure
+      staging: et131x: Fix issues when USE_FBR0 is not defined
+      staging: et131x: use dma_alloc... instead of pci_alloc...
+      staging: et131x: Match dma_alloc_ calls with dma_free_ calls
+      staging: et131x: Tidy up PCI device table definition
+      staging: et131x: on transmit, stop the queue if the next packet will fail
+      staging: et131x: Convert rest of pci memory management to dma api
+      staging: et131x: Remove unused defines
+
+ drivers/staging/et131x/Makefile             |   11 -
+ drivers/staging/et131x/README               |    5 -
+ drivers/staging/et131x/et1310_address_map.h | 1436 -------
+ drivers/staging/et131x/et1310_eeprom.c      |  408 --
+ drivers/staging/et131x/et1310_mac.c         |  654 ----
+ drivers/staging/et131x/et1310_phy.c         |  375 --
+ drivers/staging/et131x/et1310_phy.h         |  292 --
+ drivers/staging/et131x/et1310_pm.c          |  204 -
+ drivers/staging/et131x/et1310_rx.c          | 1160 ------
+ drivers/staging/et131x/et1310_rx.h          |  245 --
+ drivers/staging/et131x/et1310_tx.c          |  793 ----
+ drivers/staging/et131x/et1310_tx.h          |  150 -
+ drivers/staging/et131x/et131x.c             | 5577 +++++++++++++++++++++++++++
+ drivers/staging/et131x/et131x.h             | 1718 ++++++++-
+ drivers/staging/et131x/et131x_adapter.h     |  218 --
+ drivers/staging/et131x/et131x_defs.h        |  128 -
+ drivers/staging/et131x/et131x_ethtool.c     |  201 -
+ drivers/staging/et131x/et131x_initpci.c     |  950 -----
+ drivers/staging/et131x/et131x_isr.c         |  442 ---
+ drivers/staging/et131x/et131x_netdev.c      |  662 ----
+ 20 files changed, 7192 insertions(+), 8437 deletions(-)
+
