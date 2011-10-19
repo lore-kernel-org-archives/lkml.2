@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab1JSGsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 02:48:35 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:34687 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab1JSGse (ORCPT
+	id S1755371Ab1JSGvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 02:51:46 -0400
+Received: from lvk-gate.cmc.msu.ru ([212.192.248.233]:40491 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753037Ab1JSGvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 02:48:34 -0400
-Date: Wed, 19 Oct 2011 15:48:18 +0900
-From: Norbert Preining <preining@logic.at>
-To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: iwlagn is getting very shaky
-Message-ID: <20111019064818.GB14817@gamma.logic.tuwien.ac.at>
-References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at> <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com> <CAOJsxLFXBQXDtjGkuHV8fpxSy4U0dOdzBm6=4xfy2dMQo7NvOg@mail.gmail.com> <1319003710.31823.53.camel@wwguy-huron>
+	Wed, 19 Oct 2011 02:51:45 -0400
+X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Oct 2011 02:51:45 EDT
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+To: linux-kernel@vger.kernel.org
+Subject: high-order allocation + highmem + streaming DMA - possible?
+Date: Wed, 19 Oct 2011 10:45:40 +0400
+User-Agent: KMail/1.9.9
+Cc: stefan@lvk.cs.msu.su
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1319003710.31823.53.camel@wwguy-huron>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-Id: <201110191045.42613@zigzag.lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 18 Okt 2011, Guy, Wey-Yi wrote:
-> > >> loaded firmware version 8.83.5.1 build 33692 (EXP)
-> > >>
-> 
-> looks like you are using experimental version of uCode, but by saying
-> that, I don't think i will make much differences
-> 
-> so could you dump the tx queue to see if it is the similar problem what
-> Norbert point out
+Hello.
 
-Not sure what you mean Wey, should *I* Norbert use the default firmware
-and try to reproduce it? Ir should Pekka try to reproduce it with
-normal firmware? Or with both?
+We are writing a driver for a custom PCI device that receives large amount 
+of data.
 
-Best wishes
+Device is capable of DMAing received data in 64k chunks.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-WROOT (n.)
-A short little berk who thinks that by pulling on his pipe and gazing
-shrewdly at you he will give the impression that he is infinitely wise
-and 5 ft 11 in.
-			--- Douglas Adams, The Meaning of Liff
+We have been going to:
+- use physically-continuous 64k-sized memory areas using alloc_pages() with 
+order=4,
+- allocate large number of such areas on driver init,
+- implement mmap() to map those all to userspace for zero-copy processing,
+- use streaming DMA to actually receive data
+
+However I can't find a way to use streaming DMA for large highmem areas.
+- pci_map_single() is for linear mapping and can't work with highmem
+- pci_map_page() can work with highmem but is limited to one page
+- pci_map_sg() is for s/g lists, not for single 64k blocks.
+
+Is there a way to use streaming DMA with large memory areas located in 
+highmem?
+Or in this situation buffers in highmem can't be used?
+
+Nikita
