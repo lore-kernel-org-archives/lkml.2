@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab1JSVJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:09:42 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:39513 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab1JSVJl (ORCPT
+	id S1754277Ab1JSVKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:10:09 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49740 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab1JSVKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:09:41 -0400
-Date: Wed, 19 Oct 2011 17:09:16 -0400 (EDT)
-Message-Id: <20111019.170916.1029139785670746405.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, paul@paulmenage.org, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org
-Subject: Re: [PATCH v7 0/8] Request for inclusion: tcp memory buffers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4E983177.5000005@parallels.com>
-References: <4E9746B0.7030603@parallels.com>
-	<20111013.161819.264553121596077263.davem@davemloft.net>
-	<4E983177.5000005@parallels.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 19 Oct 2011 14:09:21 -0700 (PDT)
+	Wed, 19 Oct 2011 17:10:08 -0400
+Date: Wed, 19 Oct 2011 23:09:46 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: David Rientjes <rientjes@google.com>
+Cc: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] x86, RAS: Add attributes needed for HW injection
+Message-ID: <20111019210946.GC7503@aftab>
+References: <1319035866-29570-1-git-send-email-bp@amd64.org>
+ <1319035866-29570-9-git-send-email-bp@amd64.org>
+ <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Fri, 14 Oct 2011 16:56:23 +0400
+On Wed, Oct 19, 2011 at 05:03:43PM -0400, David Rientjes wrote:
+> > +static int inj_extcpu_set(void *data, u64 val)
+> > +{
+> > +	struct mce *m = (struct mce *)data;
+> > +
+> > +	if (val >= num_online_cpus()) {
+> 
+> That wouldn't catch an offline cpuid, you probably want cpu_online(val)?
 
-> Please let me know what do you think of the following patch. It is
-> still crude, and applies on top of what I had, for simplicity. I can
-> of course rework all the series for the next submission. The main idea
-> is:
+Good catch, thanks.
 
-Thanks, I promise to look at this soon.
+So I'm looking at <arch/x86/kernel/cpuid.c> which is how the validity of
+a cpu value should be tested properly, IMHO:
+
+static int cpuid_open(struct inode *inode, struct file *file)
+{
+	...
+
+	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+		return -ENXIO;	/* No such CPU */
+	...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
