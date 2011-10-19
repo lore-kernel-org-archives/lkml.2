@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1JSEL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:11:27 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:35224 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1JSEFU (ORCPT
+	id S1754465Ab1JSELq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:11:46 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:33086 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab1JSEFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:05:20 -0400
-Message-Id: <093448$3qutng@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939760"
+	Wed, 19 Oct 2011 00:05:12 -0400
+Message-Id: <e97c6e$3qqv5e@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128810158"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 18 Oct 2011 22:37:14 -0500
-Subject: [PATCH v5 19/36] Hexagon: Add ptrace support
+Date: Tue, 18 Oct 2011 22:21:47 -0500
+Subject: [PATCH v5 15/36] Hexagon: Add init_task and process functions
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,23 +19,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/ptrace.h |   35 +++++++
- arch/hexagon/kernel/ptrace.c      |  180 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 215 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/ptrace.h
- create mode 100644 arch/hexagon/kernel/ptrace.c
+ arch/hexagon/kernel/init_task.c |   54 ++++++++
+ arch/hexagon/kernel/process.c   |  279 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 333 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/kernel/init_task.c
+ create mode 100644 arch/hexagon/kernel/process.c
 
-diff --git a/arch/hexagon/include/asm/ptrace.h b/arch/hexagon/include/asm/ptrace.h
+diff --git a/arch/hexagon/kernel/init_task.c b/arch/hexagon/kernel/init_task.c
 new file mode 100644
-index 0000000..3d2f607
+index 0000000..73283d3
 --- /dev/null
-+++ b/arch/hexagon/include/asm/ptrace.h
-@@ -0,0 +1,35 @@
++++ b/arch/hexagon/kernel/init_task.c
+@@ -0,0 +1,54 @@
 +/*
-+ * Ptrace definitions for the Hexagon architecture
++ * Init task definition
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -54,206 +53,324 @@ index 0000000..3d2f607
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_PTRACE_H
-+#define _ASM_PTRACE_H
-+
-+#include <asm/registers.h>
-+
-+#define instruction_pointer(regs) pt_elr(regs)
-+#define user_stack_pointer(regs) ((regs)->r29)
-+
-+#define profile_pc(regs) instruction_pointer(regs)
-+
-+/* kprobe-based event tracer support */
-+extern int regs_query_register_offset(const char *name);
-+extern const char *regs_query_register_name(unsigned int offset);
-+
-+#endif
-diff --git a/arch/hexagon/kernel/ptrace.c b/arch/hexagon/kernel/ptrace.c
-new file mode 100644
-index 0000000..bea3f08
---- /dev/null
-+++ b/arch/hexagon/kernel/ptrace.c
-@@ -0,0 +1,180 @@
-+/*
-+ * Ptrace support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <generated/compile.h>
-+
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
 +#include <linux/mm.h>
-+#include <linux/smp.h>
-+#include <linux/errno.h>
-+#include <linux/ptrace.h>
-+#include <linux/regset.h>
-+#include <linux/user.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/init_task.h>
++#include <linux/fs.h>
++#include <linux/mqueue.h>
++#include <asm/thread_info.h>
++#include <asm/uaccess.h>
++#include <asm/pgtable.h>
 +
-+#include <asm/system.h>
-+#include <asm/user.h>
++static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
++static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
 +
-+static int genregs_get(struct task_struct *target,
-+		   const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
++/*
++ * Initial thread structure.
++ *
++ * We need to make sure that this is 8192-byte aligned due to the
++ * way process stacks are handled. This is done by making sure
++ * the linker maps this in the .text segment right after head.S,
++ * and making head.S ensure the proper alignment.
++ */
++union thread_union init_thread_union
++	__attribute__((__section__(".data.init_task"),
++		__aligned__(THREAD_SIZE))) = {
++			INIT_THREAD_INFO(init_task)
++		};
++
++/*
++ * Initial task structure.
++ *
++ * All other task structs will be allocated on slabs in fork.c
++ */
++struct task_struct init_task = INIT_TASK(init_task);
++EXPORT_SYMBOL(init_task);
+diff --git a/arch/hexagon/kernel/process.c b/arch/hexagon/kernel/process.c
+new file mode 100644
+index 0000000..18c4f0b
+--- /dev/null
++++ b/arch/hexagon/kernel/process.c
+@@ -0,0 +1,279 @@
++/*
++ * Process creation support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/sched.h>
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/tick.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
++
++/*
++ * Kernel thread creation.  The desired kernel function is "wrapped"
++ * in the kernel_thread_helper function, which does cleanup
++ * afterwards.
++ */
++static void __noreturn kernel_thread_helper(void *arg, int (*fn)(void *))
 +{
-+	int ret;
-+	unsigned int dummy;
-+	struct pt_regs *regs = task_pt_regs(target);
-+
-+
-+	if (!regs)
-+		return -EIO;
-+
-+	/* The general idea here is that the copyout must happen in
-+	 * exactly the same order in which the userspace expects these
-+	 * regs. Now, the sequence in userspace does not match the
-+	 * sequence in the kernel, so everything past the 32 gprs
-+	 * happens one at a time.
-+	 */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &regs->r00, 0, 32*sizeof(unsigned long));
-+
-+#define ONEXT(KPT_REG, USR_REG) \
-+	if (!ret) \
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, \
-+			KPT_REG, offsetof(struct user_regs_struct, USR_REG), \
-+			offsetof(struct user_regs_struct, USR_REG) + \
-+				 sizeof(unsigned long));
-+
-+	/* Must be exactly same sequence as struct user_regs_struct */
-+	ONEXT(&regs->sa0, sa0);
-+	ONEXT(&regs->lc0, lc0);
-+	ONEXT(&regs->sa1, sa1);
-+	ONEXT(&regs->lc1, lc1);
-+	ONEXT(&regs->m0, m0);
-+	ONEXT(&regs->m1, m1);
-+	ONEXT(&regs->usr, usr);
-+	ONEXT(&regs->preds, p3_0);
-+	ONEXT(&regs->gp, gp);
-+	ONEXT(&regs->ugp, ugp);
-+	ONEXT(&pt_elr(regs), pc);
-+	dummy = pt_cause(regs);
-+	ONEXT(&dummy, cause);
-+	ONEXT(&pt_badva(regs), badva);
-+
-+	/* Pad the rest with zeros, if needed */
-+	if (!ret)
-+		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+					offsetof(struct user_regs_struct, pad1), -1);
-+	return ret;
++	do_exit(fn(arg));
 +}
 +
-+static int genregs_set(struct task_struct *target,
-+		   const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
++int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
 +{
-+	int ret;
-+	unsigned long bucket;
-+	struct pt_regs *regs = task_pt_regs(target);
++	struct pt_regs regs;
 +
-+	if (!regs)
-+		return -EIO;
-+
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs->r00, 0, 32*sizeof(unsigned long));
-+
-+#define INEXT(KPT_REG, USR_REG) \
-+	if (!ret) \
-+		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, \
-+			KPT_REG, offsetof(struct user_regs_struct, USR_REG), \
-+			offsetof(struct user_regs_struct, USR_REG) + \
-+				sizeof(unsigned long));
-+
-+	/* Must be exactly same sequence as struct user_regs_struct */
-+	INEXT(&regs->sa0, sa0);
-+	INEXT(&regs->lc0, lc0);
-+	INEXT(&regs->sa1, sa1);
-+	INEXT(&regs->lc1, lc1);
-+	INEXT(&regs->m0, m0);
-+	INEXT(&regs->m1, m1);
-+	INEXT(&regs->usr, usr);
-+	INEXT(&regs->preds, p3_0);
-+	INEXT(&regs->gp, gp);
-+	INEXT(&regs->ugp, ugp);
-+	INEXT(&pt_elr(regs), pc);
-+
-+	/* CAUSE and BADVA aren't writeable. */
-+	INEXT(&bucket, cause);
-+	INEXT(&bucket, badva);
-+
-+	/* Ignore the rest, if needed */
-+	if (!ret)
-+		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
-+					offsetof(struct user_regs_struct, pad1), -1);
-+
-+	if (ret)
-+		return ret;
-+
++	memset(&regs, 0, sizeof(regs));
 +	/*
-+	 * This is special; SP is actually restored by the VM via the
-+	 * special event record which is set by the special trap.
++	 * Yes, we're exploting illicit knowledge of the ABI here.
 +	 */
-+	regs->hvmer.vmpsp = regs->r29;
++	regs.r00 = (unsigned long) arg;
++	regs.r01 = (unsigned long) fn;
++	pt_set_elr(&regs, (unsigned long)kernel_thread_helper);
++	pt_set_kmode(&regs);
++
++	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
++}
++EXPORT_SYMBOL(kernel_thread);
++
++/*
++ * Program thread launch.  Often defined as a macro in processor.h,
++ * but we're shooting for a small footprint and it's not an inner-loop
++ * performance-critical operation.
++ *
++ * The Hexagon ABI specifies that R28 is zero'ed before program launch,
++ * so that gets automatically done here.  If we ever stop doing that here,
++ * we'll probably want to define the ELF_PLAT_INIT macro.
++ */
++void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
++{
++	/* Set to run with user-mode data segmentation */
++	set_fs(USER_DS);
++	/* We want to zero all data-containing registers. Is this overkill? */
++	memset(regs, 0, sizeof(*regs));
++	/* We might want to also zero all Processor registers here */
++	pt_set_usermode(regs);
++	pt_set_elr(regs, pc);
++	pt_set_rte_sp(regs, sp);
++}
++
++/*
++ *  Spin, or better still, do a hardware or VM wait instruction
++ *  If hardware or VM offer wait termination even though interrupts
++ *  are disabled.
++ */
++static void default_idle(void)
++{
++	__vmwait();
++}
++
++void (*idle_sleep)(void) = default_idle;
++
++void cpu_idle(void)
++{
++	while (1) {
++		tick_nohz_stop_sched_tick(1);
++		local_irq_disable();
++		while (!need_resched()) {
++			idle_sleep();
++			/*  interrupts wake us up, but aren't serviced  */
++			local_irq_enable();	/* service interrupt   */
++			local_irq_disable();
++		}
++		local_irq_enable();
++		tick_nohz_restart_sched_tick();
++		schedule();
++	}
++}
++
++/*
++ *  Return saved PC of a blocked thread
++ */
++unsigned long thread_saved_pc(struct task_struct *tsk)
++{
 +	return 0;
 +}
 +
-+enum hexagon_regset {
-+	REGSET_GENERAL,
-+};
-+
-+static const struct user_regset hexagon_regsets[] = {
-+	[REGSET_GENERAL] = {
-+		.core_note_type = NT_PRSTATUS,
-+		.n = ELF_NGREG,
-+		.size = sizeof(unsigned long),
-+		.align = sizeof(unsigned long),
-+		.get = genregs_get,
-+		.set = genregs_set,
-+	},
-+};
-+
-+static const struct user_regset_view hexagon_user_view = {
-+	.name = UTS_MACHINE,
-+	.e_machine = ELF_ARCH,
-+	.ei_osabi = ELF_OSABI,
-+	.regsets = hexagon_regsets,
-+	.n = ARRAY_SIZE(hexagon_regsets)
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++/*
++ * Copy architecture-specific thread state
++ */
++int copy_thread(unsigned long clone_flags, unsigned long usp,
++		unsigned long unused, struct task_struct *p,
++		struct pt_regs *regs)
 +{
-+	return &hexagon_user_view;
++	struct thread_info *ti = task_thread_info(p);
++	struct hexagon_switch_stack *ss;
++	struct pt_regs *childregs;
++	asmlinkage void ret_from_fork(void);
++
++	childregs = (struct pt_regs *) (((unsigned long) ti + THREAD_SIZE) -
++					sizeof(*childregs));
++
++	memcpy(childregs, regs, sizeof(*childregs));
++	ti->regs = childregs;
++
++	/*
++	 * Establish kernel stack pointer and initial PC for new thread
++	 */
++	ss = (struct hexagon_switch_stack *) ((unsigned long) childregs -
++						    sizeof(*ss));
++	ss->lr = (unsigned long)ret_from_fork;
++	p->thread.switch_sp = ss;
++
++	/* If User mode thread, set pt_reg stack pointer as per parameter */
++	if (user_mode(childregs)) {
++		pt_set_rte_sp(childregs, usp);
++
++		/* Child sees zero return value */
++		childregs->r00 = 0;
++
++		/*
++		 * The clone syscall has the C signature:
++		 * int [r0] clone(int flags [r0],
++		 *           void *child_frame [r1],
++		 *           void *parent_tid [r2],
++		 *           void *child_tid [r3],
++		 *           void *thread_control_block [r4]);
++		 * ugp is used to provide TLS support.
++		 */
++		if (clone_flags & CLONE_SETTLS)
++			childregs->ugp = childregs->r04;
++
++		/*
++		 * Parent sees new pid -- not necessary, not even possible at
++		 * this point in the fork process
++		 * Might also want to set things like ti->addr_limit
++		 */
++	} else {
++		/*
++		 * If kernel thread, resume stack is kernel stack base.
++		 * Note that this is pointer arithmetic on pt_regs *
++		 */
++		pt_set_rte_sp(childregs, (unsigned long)(childregs + 1));
++		/*
++		 * We need the current thread_info fast path pointer
++		 * set up in pt_regs.  The register to be used is
++		 * parametric for assembler code, but the mechanism
++		 * doesn't drop neatly into C.  Needs to be fixed.
++		 */
++		childregs->THREADINFO_REG = (unsigned long) ti;
++	}
++
++	/*
++	 * thread_info pointer is pulled out of task_struct "stack"
++	 * field on switch_to.
++	 */
++	p->stack = (void *)ti;
++
++	return 0;
 +}
 +
-+void ptrace_disable(struct task_struct *child)
++/*
++ * Release any architecture-specific resources locked by thread
++ */
++void release_thread(struct task_struct *dead_task)
 +{
-+	/* Boilerplate - resolves to null inline if no HW single-step */
-+	user_disable_single_step(child);
 +}
 +
-+long arch_ptrace(struct task_struct *child, long request,
-+		 unsigned long addr, unsigned long data)
++/*
++ * Free any architecture-specific thread data structures, etc.
++ */
++void exit_thread(void)
 +{
-+	return ptrace_request(child, request, addr, data);
++}
++
++/*
++ * Some archs flush debug and FPU info here
++ */
++void flush_thread(void)
++{
++}
++
++/*
++ * The "wait channel" terminology is archaic, but what we want
++ * is an identification of the point at which the scheduler
++ * was invoked by a blocked thread.
++ */
++unsigned long get_wchan(struct task_struct *p)
++{
++	unsigned long fp, pc;
++	unsigned long stack_page;
++	int count = 0;
++	if (!p || p == current || p->state == TASK_RUNNING)
++		return 0;
++
++	stack_page = (unsigned long)task_stack_page(p);
++	fp = ((struct hexagon_switch_stack *)p->thread.switch_sp)->fp;
++	do {
++		if (fp < (stack_page + sizeof(struct thread_info)) ||
++			fp >= (THREAD_SIZE - 8 + stack_page))
++			return 0;
++		pc = ((unsigned long *)fp)[1];
++		if (!in_sched_functions(pc))
++			return pc;
++		fp = *(unsigned long *) fp;
++	} while (count++ < 16);
++
++	return 0;
++}
++
++/*
++ * Borrowed from PowerPC -- basically allow smaller kernel stacks if we
++ * go crazy with the page sizes.
++ */
++#if THREAD_SHIFT < PAGE_SHIFT
++
++static struct kmem_cache *thread_info_cache;
++
++struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
++{
++	struct thread_info *ti;
++
++	ti = kmem_cache_alloc_node(thread_info_cache, GFP_KERNEL, node);
++	if (unlikely(ti == NULL))
++		return NULL;
++#ifdef CONFIG_DEBUG_STACK_USAGE
++	memset(ti, 0, THREAD_SIZE);
++#endif
++	return ti;
++}
++
++void free_thread_info(struct thread_info *ti)
++{
++	kmem_cache_free(thread_info_cache, ti);
++}
++
++/*  Weak symbol; called by init/main.c  */
++
++void thread_info_cache_init(void)
++{
++	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
++					      THREAD_SIZE, 0, NULL);
++	BUG_ON(thread_info_cache == NULL);
++}
++
++#endif /* THREAD_SHIFT < PAGE_SHIFT */
++
++/*
++ * Required placeholder.
++ */
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
++{
++	return 0;
 +}
 -- 
 1.7.1
