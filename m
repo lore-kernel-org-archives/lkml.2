@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab1JSM00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 08:26:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37703 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751761Ab1JSM0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 08:26:25 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAOH1cHkrtzr4o=ygqrMnUfDhwC=U+QJOtuqS+vfQyeXP_TvjaQ@mail.gmail.com>
-References: <CAOH1cHkrtzr4o=ygqrMnUfDhwC=U+QJOtuqS+vfQyeXP_TvjaQ@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> <9908.1318413!
- 955@redhat.com> <CAOH1cHkg_eQRCHxOxiOPgO=-aZfnjts-tLFQFKffk5JjEfqy2w@mail.gmail.com> <CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com> <32454.1318519287@redhat.com> <CAOH1cHkFitTHBkHzg+m7cZycOZTgWW8hF0g0=+pX6bPNVZNTxw@mail.gmail.com> <17609.1318584129@redhat.com> 
-To: Mark Moseley <moseleymark@gmail.com>
-Cc: dhowells@redhat.com,
-        Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-Date: Wed, 19 Oct 2011 13:25:06 +0100
-Message-ID: <19081.1319027106@redhat.com>
+	id S1756068Ab1JSMdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 08:33:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55862 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab1JSMdL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 08:33:11 -0400
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Wolfram Sang <w.sang@pengutronix.de>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH] checkpatch: improve error message for p1-check
+Date: Wed, 19 Oct 2011 14:33:03 +0200
+Message-Id: <1319027583-17842-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.6.3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Moseley <moseleymark@gmail.com> wrote:
+The old error message was not precise. State now explicitly that the
+prefix exists as a file/directory. Also change the conclusion ("appears
+to be") into an instruction ("make sure").
 
-> Presumably it gets to bcull and stops storing but nothing's getting pruned.
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Andy Whitcroft <apw@canonical.com>
+---
+ scripts/checkpatch.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It is possible that all the objects are pinned by inodes just sitting there in
-the client's inode cache doing nothing.  Thus fscache thinks they're in use.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 3dfc471..4bb4f88 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1506,7 +1506,7 @@ sub process {
+ 			if (!$file && $tree && $p1_prefix ne '' &&
+ 			    -e "$root/$p1_prefix") {
+ 				WARN("PATCH_PREFIX",
+-				     "patch prefix '$p1_prefix' exists, appears to be a -p0 patch\n");
++				     "patch prefix '$p1_prefix' exists as file/directory. Make sure this isn't a -p0 patch\n");
+ 			}
+ 
+ 			if ($realfile =~ m@^include/asm/@) {
+-- 
+1.7.6.3
 
-Any more oopses from fscache or cachefiles?
-
-David
