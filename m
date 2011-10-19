@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab1JSNxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 09:53:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45650 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab1JSNxg (ORCPT
+	id S1755381Ab1JSOAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 10:00:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37912 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259Ab1JSOA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 09:53:36 -0400
-Date: Wed, 19 Oct 2011 11:53:31 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf ui browser: Honour the xterm colors
-Message-ID: <20111019135331.GB2229@ghostprotocols.net>
-References: <1318974247-6683-1-git-send-email-acme@infradead.org>
- <1318974247-6683-7-git-send-email-acme@infradead.org>
- <4E9E082D.8040403@gmail.com>
- <20111018235133.GA3494@ghostprotocols.net>
- <20111019011233.GB3494@ghostprotocols.net>
- <20111019024124.GA4596@ghostprotocols.net>
- <4E9E3DE6.6040600@gmail.com>
+	Wed, 19 Oct 2011 10:00:29 -0400
+Date: Wed, 19 Oct 2011 15:00:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kyle Manna <kyle.manna@fuel7.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 6/6] mfd: TPS65910: Improve regulator init data
+Message-ID: <20111019140027.GH18713@sirena.org.uk>
+References: <1318962388-26151-1-git-send-email-kyle.manna@fuel7.com>
+ <1318962388-26151-7-git-send-email-kyle.manna@fuel7.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E9E3DE6.6040600@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1318962388-26151-7-git-send-email-kyle.manna@fuel7.com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 18, 2011 at 09:03:02PM -0600, David Ahern escreveu:
-> On 10/18/2011 08:41 PM, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Oct 18, 2011 at 11:12:33PM -0200, Arnaldo Carvalho de Melo escreveu:
-> >> Em Tue, Oct 18, 2011 at 09:51:33PM -0200, Arnaldo Carvalho de Melo escreveu:
-> >>> Em Tue, Oct 18, 2011 at 05:13:49PM -0600, David Ahern escreveu:
-> >>>> Using gnome3 with Fedora 15 these last 2 color sets don't look so good.
-> >>>> The 'black' background is not really black - more of a gray'ish look and
+On Tue, Oct 18, 2011 at 01:26:28PM -0500, Kyle Manna wrote:
+> Improve the interface between platform code/board files to the TPS65910
 
-> >>> Yeah, I also noticed that libslang's "black" is kinda like a
-> >>> bright black, really strange, I need to figure this out and also how to
-> >>> get the colors currently set in the terminal to get this finally like
-> >>> --stdio.
+Again, *always* CC maintainers on patches.
 
-> >> https://bugzilla.redhat.com/show_bug.cgi?id=426948
+> regulators.  The TWL4030/6030 code was used as an example interface.
 
-> >> I know need to continue reading to figure out how to overcome this, as
+This isn't a good sign...
 
-> > Ok, the following patch, that I pushed to my perf/core branch, does the
-> > trick...
+> This improved interface will allow use of the regulators without
+> specifying all the constraints. Also gets rid of an assumption that
+> the platform pass in an array of correct size and was unchecked.
 
-> Indeed it does. Much better color contrasts -- for me anyways.
+You've not described the changes between the two interfaces.  Note that
+empty constraints should be absolutely fine with the API.
 
-Thanks for testing it, really appreciated!
+> +	if (init_data->constraints.name)
+> +		pmic->desc[i].name = init_data->constraints.name;
+> +	else
+> +		pmic->desc[i].name = info[i].name;
 
-- Arnaldo
+No, this is broken.  The name of the regulator is a fixed property of
+the device and isn't something that ought to be overridden per system.
+
+> +	/* TPS65910 and TPS65911 Regulators */
+> +	rdev = add_regulator(pmic, info, TPS65910_REG_VRTC,
+> +			pmic_plat_data->vrtc);
+> +	if (IS_ERR(rdev))
+> +		return PTR_ERR(rdev);
+> +	rdev = add_regulator(pmic, info, TPS65910_REG_VIO,
+> +			pmic_plat_data->vio);
+> +
+> +	if (IS_ERR(rdev))
+> +		return PTR_ERR(rdev);
+> +
+> +	rdev = add_regulator(pmic, info, TPS65910_REG_VDD1,
+> +			pmic_plat_data->vdd1);
+> +	if (IS_ERR(rdev))
+> +		return PTR_ERR(rdev);
+
+This looks like a regression - we've gone from looping over an array
+which is nice and simple to explicit code for each individual regulator
+giving us lots of repetitive code...
+
+> -err_unregister_regulator:
+> -	while (--i >= 0)
+> -		regulator_unregister(pmic->rdev[i]);
+> -	kfree(pmic->rdev);
+
+...and loosing all our cleanup if things go wrong which isn't great
+either.
