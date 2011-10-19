@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1JSV6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 17:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49681 "EHLO mx1.redhat.com"
+	id S1754923Ab1JSV7D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 17:59:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38127 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754165Ab1JSV6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 17:58:54 -0400
-Date: Wed, 19 Oct 2011 23:53:26 +0200
+	id S1754165Ab1JSV67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 17:58:59 -0400
+Date: Wed, 19 Oct 2011 23:54:02 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
@@ -22,8 +22,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Roland McGrath <roland@hack.frob.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 12/X] uprobes: x86: introduce abort_xol()
-Message-ID: <20111019215326.GF16395@redhat.com>
+Subject: [PATCH 14/X] uprobes: uprobe_deny_signal: check
+	__fatal_signal_pending()
+Message-ID: <20111019215402.GH16395@redhat.com>
 References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,54 +35,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A separate "patch", just to emphasize that I do not know what
-actually abort_xol() should do! I do not understand this asm
-magic.
+Change uprobe_deny_signal() to check __fatal_signal_pending() along with
+xol_was_trapped().
 
-This patch simply changes regs->ip back to the probed insn,
-obviously this is not enough to handle UPROBES_FIX_*. Please
-take care.
-
-If it is not clear, abort_xol() is needed when we should
-re-execute the original insn (replaced with int3), see the
-next patch.
+Normally this is not really needed but this is safer. And this makes more
+clear the fact that even SIGKILL is handled via UTASK_SSTEP_TRAPPED. Once
+again, SIGKILL can be pending because of the core-dumping, we should not
+exit with regs->ip pointing to ->xol_vaddr.
 ---
- arch/x86/include/asm/uprobes.h |    1 +
- arch/x86/kernel/uprobes.c      |    9 +++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/uprobes.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index f0fbdab..6209da1 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -51,6 +51,7 @@ extern void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr);
- extern int pre_xol(struct uprobe *uprobe, struct pt_regs *regs);
- extern int post_xol(struct uprobe *uprobe, struct pt_regs *regs);
- extern bool xol_was_trapped(struct task_struct *tsk);
-+extern void abort_xol(struct pt_regs *regs);
- extern int uprobe_exception_notify(struct notifier_block *self,
- 				       unsigned long val, void *data);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index c861c27..bc11a89 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -511,6 +511,15 @@ bool xol_was_trapped(struct task_struct *tsk)
- 	return false;
- }
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index aa5492a..9e9d4e4 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -1335,7 +1335,7 @@ bool uprobe_deny_signal(void)
+ 		clear_tsk_thread_flag(tsk, TIF_SIGPENDING);
+ 		spin_unlock_irq(&tsk->sighand->siglock);
  
-+void abort_xol(struct pt_regs *regs)
-+{
-+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-+	// !!! Dear Srikar and Ananth, please implement me !!!
-+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-+	struct uprobe_task *utask = current->utask;
-+	regs->ip = utask->vaddr;
-+}
-+
- /*
-  * Called after single-stepping. To avoid the SMP problems that can
-  * occur when we temporarily put back the original opcode to
+-		if (xol_was_trapped(tsk)) {
++		if (__fatal_signal_pending(tsk) || xol_was_trapped(tsk)) {
+ 			utask->state = UTASK_SSTEP_TRAPPED;
+ 			set_tsk_thread_flag(tsk, TIF_UPROBE);
+ 			set_tsk_thread_flag(tsk, TIF_NOTIFY_RESUME);
 -- 
 1.5.5.1
 
