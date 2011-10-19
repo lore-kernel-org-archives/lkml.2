@@ -1,60 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab1JSPVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 11:21:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44146 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751782Ab1JSPVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 11:21:40 -0400
-Date: Wed, 19 Oct 2011 16:21:32 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arvid Brodin <arvid.brodin@enea.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Memory leak in isp1760-hcd.c
-Message-ID: <20111019152132.GH29653@arm.com>
+	id S932220Ab1JSPWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 11:22:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752308Ab1JSPWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 11:22:09 -0400
+Date: Wed, 19 Oct 2011 11:22:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, ctalbott@google.com
+Subject: Re: [PATCH 08/10] block: make get_request[_wait]() fail if queue is
+ dead
+Message-ID: <20111019152203.GF1140@redhat.com>
+References: <1318998384-22525-1-git-send-email-tj@kernel.org>
+ <1318998384-22525-9-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1318998384-22525-9-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arvid,
+On Tue, Oct 18, 2011 at 09:26:22PM -0700, Tejun Heo wrote:
+> Currently get_request[_wait]() allocates request whether queue is dead
+> or not.  This patch makes get_request[_wait]() return NULL if @q is
+> dead.  blk_queue_bio() is updated to fail the submitted bio if request
+> allocation fails.  While at it, add docbook comments for
+> get_request[_wait]().
+> 
+> Note that the current code has rather unclear (there are spurious DEAD
+> tests scattered around) assumption that the owner of a queue
+> guarantees that no request travels block layer if the queue is dead
+> and this patch in itself doesn't change much; however, this will allow
+> fixing the broken assumption in the next patch.
 
-I get the following kmemleak report coming from the ISP1760 driver:
+Ok, so this patch will now make sure that __make_request() will return
+error if queue is dead. So previous blk_throtl_bio() change is fine.
 
-unreferenced object 0xef42d000 (size 28):                                       
-  comm "khubd", pid 189, jiffies 4294937550 (age 1421.040s)                     
-  hex dump (first 28 bytes):                                                    
-    00 01 10 00 00 02 20 00 08 d0 42 ef 08 d0 42 ef  ...... ...B...B.           
-    00 00 00 00 00 00 00 00 ff ff ff ff              ............               
-  backtrace:                                                                    
-    [<c0080fe1>] create_object+0xa1/0x1ac                                       
-    [<c007eac5>] kmem_cache_alloc+0x8d/0xdc                                     
-    [<c01a9617>] isp1760_urb_enqueue+0x2ab/0x2f8                                
-    [<c019bbbd>] usb_hcd_submit_urb+0x75/0x574                                  
-    [<c019d8f1>] usb_start_wait_urb+0x29/0x80                                   
-    [<c019daad>] usb_control_msg+0x89/0xac                                      
-    [<c0197f43>] hub_port_init+0x4fb/0x9c8                                      
-    [<c0199c75>] hub_thread+0x5a1/0xd74                                         
-    [<c0035acd>] kthread+0x69/0x6c                                              
-    [<c000dc6d>] kernel_thread_exit+0x1/0x8                                     
+Thanks
+Vivek
 
-After some investigation, it looks like schedule_ptds() is called from
-isp1760_irq() and removes the qh from the controlqhs queue but
-ep->hcpriv still points to the qh and therefore it is not freed.
-
-Shortly after this, the isp1760_endpoint_disable() function sets
-ep->hcpriv to NULL and calls schedule_ptds() but since the corresponding
-qh is no longer in the queue, it is simply forgotten and reported by
-kmemleak.
-
-Is there a race condition between isp1760_endpoint_disable and
-isp1760_irq?
-
-Thanks.
-
--- 
-Catalin
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> ---
+>  block/blk-core.c |   54 ++++++++++++++++++++++++++++++++++++++----------------
+>  1 files changed, 38 insertions(+), 16 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 7a90317..fc10f53 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -710,10 +710,19 @@ static bool blk_rq_should_init_elevator(struct bio *bio)
+>  	return true;
+>  }
+>  
+> -/*
+> - * Get a free request, queue_lock must be held.
+> - * Returns NULL on failure, with queue_lock held.
+> - * Returns !NULL on success, with queue_lock *not held*.
+> +/**
+> + * get_request - get a free request
+> + * @q: request_queue to allocate request from
+> + * @rw_flags: RW and SYNC flags
+> + * @bio: bio to allocate request for (can be %NULL)
+> + * @gfp_mask: allocation mask
+> + *
+> + * Get a free request from @q.  This function may fail under memory
+> + * pressure or if @q is dead.
+> + *
+> + * Must be callled with @q->queue_lock held and,
+> + * Returns %NULL on failure, with @q->queue_lock held.
+> + * Returns !%NULL on success, with @q->queue_lock *not held*.
+>   */
+>  static struct request *get_request(struct request_queue *q, int rw_flags,
+>  				   struct bio *bio, gfp_t gfp_mask)
+> @@ -724,6 +733,9 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+>  	const bool is_sync = rw_is_sync(rw_flags) != 0;
+>  	int may_queue;
+>  
+> +	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+> +		return NULL;
+> +
+>  	may_queue = elv_may_queue(q, rw_flags);
+>  	if (may_queue == ELV_MQUEUE_NO)
+>  		goto rq_starved;
+> @@ -816,11 +828,18 @@ out:
+>  	return rq;
+>  }
+>  
+> -/*
+> - * No available requests for this queue, wait for some requests to become
+> - * available.
+> +/**
+> + * get_request_wait - get a free request with retry
+> + * @q: request_queue to allocate request from
+> + * @rw_flags: RW and SYNC flags
+> + * @bio: bio to allocate request for (can be %NULL)
+>   *
+> - * Called with q->queue_lock held, and returns with it unlocked.
+> + * Get a free request from @q.  This function keeps retrying under memory
+> + * pressure and fails iff @q is dead.
+> + *
+> + * Must be callled with @q->queue_lock held and,
+> + * Returns %NULL on failure, with @q->queue_lock held.
+> + * Returns !%NULL on success, with @q->queue_lock *not held*.
+>   */
+>  static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+>  					struct bio *bio)
+> @@ -834,6 +853,9 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+>  		struct io_context *ioc;
+>  		struct request_list *rl = &q->rq;
+>  
+> +		if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+> +			return NULL;
+> +
+>  		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
+>  				TASK_UNINTERRUPTIBLE);
+>  
+> @@ -864,19 +886,15 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+>  {
+>  	struct request *rq;
+>  
+> -	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+> -		return NULL;
+> -
+>  	BUG_ON(rw != READ && rw != WRITE);
+>  
+>  	spin_lock_irq(q->queue_lock);
+> -	if (gfp_mask & __GFP_WAIT) {
+> +	if (gfp_mask & __GFP_WAIT)
+>  		rq = get_request_wait(q, rw, NULL);
+> -	} else {
+> +	else
+>  		rq = get_request(q, rw, NULL, gfp_mask);
+> -		if (!rq)
+> -			spin_unlock_irq(q->queue_lock);
+> -	}
+> +	if (!rq)
+> +		spin_unlock_irq(q->queue_lock);
+>  	/* q->queue_lock is unlocked at this point */
+>  
+>  	return rq;
+> @@ -1300,6 +1318,10 @@ get_rq:
+>  	 * Returns with the queue unlocked.
+>  	 */
+>  	req = get_request_wait(q, rw_flags, bio);
+> +	if (unlikely(!req)) {
+> +		bio_endio(bio, -ENODEV);	/* @q is dead */
+> +		goto out_unlock;
+> +	}
+>  
+>  	/*
+>  	 * After dropping the lock and possibly sleeping here, our request
+> -- 
+> 1.7.3.1
