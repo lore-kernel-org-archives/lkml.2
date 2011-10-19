@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab1JSE2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:28:04 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40977 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab1JSE0i (ORCPT
+	id S1755114Ab1JSE2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:28:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44380 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab1JSE0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:26:38 -0400
+	Wed, 19 Oct 2011 00:26:34 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com
 Cc: ctalbott@google.com, ni@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/10] block: pass around REQ_* flags instead of broken down booleans during request alloc/free
-Date: Tue, 18 Oct 2011 21:26:18 -0700
-Message-Id: <1318998384-22525-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/10] block: fix genhd refcounting in blkio_policy_parse_and_set()
+Date: Tue, 18 Oct 2011 21:26:16 -0700
+Message-Id: <1318998384-22525-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1318998384-22525-1-git-send-email-tj@kernel.org>
 References: <1318998384-22525-1-git-send-email-tj@kernel.org>
@@ -20,123 +20,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_alloc_request() and freed_request() take different combinations of
-REQ_* @flags, @priv and @is_sync when @flags is superset of the latter
-two.  Make them take @flags only.  This cleans up the code a bit and
-will ease updating allocation related REQ_* flags.
+blkio_policy_parse_and_set() calls blkio_check_dev_num() to check
+whether the given dev_t is valid.  blkio_check_dev_num() uses
+get_gendisk() for verification but never puts the returned genhd
+leaking the reference.
 
-This patch doesn't introduce any functional difference.
+This patch collapses blkio_check_dev_num() into its caller and updates
+it such that the genhd is put before returning.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/blk-core.c |   36 +++++++++++++++++-------------------
- 1 files changed, 17 insertions(+), 19 deletions(-)
+ block/blk-cgroup.c |   56 +++++++++++++++++++++------------------------------
+ 1 files changed, 23 insertions(+), 33 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index a995141..fafa669 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -575,7 +575,7 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index b596e54..d61ec56 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -768,25 +768,14 @@ static uint64_t blkio_get_stat(struct blkio_group *blkg,
+ 	return disk_total;
  }
  
- static struct request *
--blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
-+blk_alloc_request(struct request_queue *q, unsigned int flags, gfp_t gfp_mask)
+-static int blkio_check_dev_num(dev_t dev)
+-{
+-	int part = 0;
+-	struct gendisk *disk;
+-
+-	disk = get_gendisk(dev, &part);
+-	if (!disk || part)
+-		return -ENODEV;
+-
+-	return 0;
+-}
+-
+ static int blkio_policy_parse_and_set(char *buf,
+ 	struct blkio_policy_node *newpn, enum blkio_policy_id plid, int fileid)
  {
- 	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
++	struct gendisk *disk = NULL;
+ 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
+-	int ret;
+ 	unsigned long major, minor;
+-	int i = 0;
++	int i = 0, ret = -EINVAL;
++	int part;
+ 	dev_t dev;
+ 	u64 temp;
  
-@@ -586,12 +586,10 @@ blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
- 
- 	rq->cmd_flags = flags | REQ_ALLOCED;
- 
--	if (priv) {
--		if (unlikely(elv_set_request(q, rq, gfp_mask))) {
--			mempool_free(rq, q->rq.rq_pool);
--			return NULL;
--		}
--		rq->cmd_flags |= REQ_ELVPRIV;
-+	if ((flags & REQ_ELVPRIV) &&
-+	    unlikely(elv_set_request(q, rq, gfp_mask))) {
-+		mempool_free(rq, q->rq.rq_pool);
-+		return NULL;
+@@ -804,37 +793,36 @@ static int blkio_policy_parse_and_set(char *buf,
  	}
  
- 	return rq;
-@@ -650,12 +648,13 @@ static void __freed_request(struct request_queue *q, int sync)
-  * A request has just been released.  Account for it, update the full and
-  * congestion status, wake up any waiters.   Called under q->queue_lock.
-  */
--static void freed_request(struct request_queue *q, int sync, int priv)
-+static void freed_request(struct request_queue *q, unsigned int flags)
- {
- 	struct request_list *rl = &q->rq;
-+	int sync = rw_is_sync(flags);
+ 	if (i != 2)
+-		return -EINVAL;
++		goto out;
  
- 	rl->count[sync]--;
--	if (priv)
-+	if (flags & REQ_ELVPRIV)
- 		rl->elvpriv--;
+ 	p = strsep(&s[0], ":");
+ 	if (p != NULL)
+ 		major_s = p;
+ 	else
+-		return -EINVAL;
++		goto out;
  
- 	__freed_request(q, sync);
-@@ -695,7 +694,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	struct request_list *rl = &q->rq;
- 	struct io_context *ioc = NULL;
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
--	int may_queue, priv = 0;
-+	int may_queue;
+ 	minor_s = s[0];
+ 	if (!minor_s)
+-		return -EINVAL;
++		goto out;
  
- 	may_queue = elv_may_queue(q, rw_flags);
- 	if (may_queue == ELV_MQUEUE_NO)
-@@ -739,17 +738,17 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	rl->count[is_sync]++;
- 	rl->starved[is_sync] = 0;
+-	ret = strict_strtoul(major_s, 10, &major);
+-	if (ret)
+-		return -EINVAL;
++	if (strict_strtoul(major_s, 10, &major))
++		goto out;
  
--	if (blk_rq_should_init_elevator(bio)) {
--		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
--		if (priv)
--			rl->elvpriv++;
-+	if (blk_rq_should_init_elevator(bio) &&
-+	    !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags)) {
-+		rw_flags |= REQ_ELVPRIV;
-+		rl->elvpriv++;
+-	ret = strict_strtoul(minor_s, 10, &minor);
+-	if (ret)
+-		return -EINVAL;
++	if (strict_strtoul(minor_s, 10, &minor))
++		goto out;
+ 
+ 	dev = MKDEV(major, minor);
+ 
+-	ret = strict_strtoull(s[1], 10, &temp);
+-	if (ret)
+-		return -EINVAL;
++	if (strict_strtoull(s[1], 10, &temp))
++		goto out;
+ 
+ 	/* For rule removal, do not check for device presence. */
+ 	if (temp) {
+-		ret = blkio_check_dev_num(dev);
+-		if (ret)
+-			return ret;
++		disk = get_gendisk(dev, &part);
++		if (!disk || part) {
++			ret = -ENODEV;
++			goto out;
++		}
  	}
  
- 	if (blk_queue_io_stat(q))
- 		rw_flags |= REQ_IO_STAT;
- 	spin_unlock_irq(q->queue_lock);
+ 	newpn->dev = dev;
+@@ -843,7 +831,7 @@ static int blkio_policy_parse_and_set(char *buf,
+ 	case BLKIO_POLICY_PROP:
+ 		if ((temp < BLKIO_WEIGHT_MIN && temp > 0) ||
+ 		     temp > BLKIO_WEIGHT_MAX)
+-			return -EINVAL;
++			goto out;
  
--	rq = blk_alloc_request(q, rw_flags, priv, gfp_mask);
-+	rq = blk_alloc_request(q, rw_flags, gfp_mask);
- 	if (unlikely(!rq)) {
- 		/*
- 		 * Allocation failed presumably due to memory. Undo anything
-@@ -759,7 +758,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 		 * wait queue, but this is pretty rare.
- 		 */
- 		spin_lock_irq(q->queue_lock);
--		freed_request(q, is_sync, priv);
-+		freed_request(q, rw_flags);
+ 		newpn->plid = plid;
+ 		newpn->fileid = fileid;
+@@ -860,7 +848,7 @@ static int blkio_policy_parse_and_set(char *buf,
+ 		case BLKIO_THROTL_read_iops_device:
+ 		case BLKIO_THROTL_write_iops_device:
+ 			if (temp > THROTL_IOPS_MAX)
+-				return -EINVAL;
++				goto out;
  
- 		/*
- 		 * in the very unlikely event that allocation failed and no
-@@ -1051,14 +1050,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
- 	 * it didn't come out of our reserved rq pools
- 	 */
- 	if (req->cmd_flags & REQ_ALLOCED) {
--		int is_sync = rq_is_sync(req) != 0;
--		int priv = req->cmd_flags & REQ_ELVPRIV;
-+		unsigned int flags = req->cmd_flags;
- 
- 		BUG_ON(!list_empty(&req->queuelist));
- 		BUG_ON(!hlist_unhashed(&req->hash));
- 
- 		blk_free_request(q, req);
--		freed_request(q, is_sync, priv);
-+		freed_request(q, flags);
+ 			newpn->plid = plid;
+ 			newpn->fileid = fileid;
+@@ -871,8 +859,10 @@ static int blkio_policy_parse_and_set(char *buf,
+ 	default:
+ 		BUG();
  	}
+-
+-	return 0;
++	ret = 0;
++out:
++	put_disk(disk);
++	return ret;
  }
- EXPORT_SYMBOL_GPL(__blk_put_request);
+ 
+ unsigned int blkcg_get_weight(struct blkio_cgroup *blkcg,
 -- 
 1.7.3.1
 
