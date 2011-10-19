@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab1JSE12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:27:28 -0400
+	id S1755076Ab1JSE2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:28:04 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:40977 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755040Ab1JSE0s (ORCPT
+	with ESMTP id S1754956Ab1JSE0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:26:48 -0400
+	Wed, 19 Oct 2011 00:26:38 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com
 Cc: ctalbott@google.com, ni@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/10] block: make get_request[_wait]() fail if queue is dead
-Date: Tue, 18 Oct 2011 21:26:22 -0700
-Message-Id: <1318998384-22525-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/10] block: pass around REQ_* flags instead of broken down booleans during request alloc/free
+Date: Tue, 18 Oct 2011 21:26:18 -0700
+Message-Id: <1318998384-22525-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1318998384-22525-1-git-send-email-tj@kernel.org>
 References: <1318998384-22525-1-git-send-email-tj@kernel.org>
@@ -20,130 +20,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently get_request[_wait]() allocates request whether queue is dead
-or not.  This patch makes get_request[_wait]() return NULL if @q is
-dead.  blk_queue_bio() is updated to fail the submitted bio if request
-allocation fails.  While at it, add docbook comments for
-get_request[_wait]().
+blk_alloc_request() and freed_request() take different combinations of
+REQ_* @flags, @priv and @is_sync when @flags is superset of the latter
+two.  Make them take @flags only.  This cleans up the code a bit and
+will ease updating allocation related REQ_* flags.
 
-Note that the current code has rather unclear (there are spurious DEAD
-tests scattered around) assumption that the owner of a queue
-guarantees that no request travels block layer if the queue is dead
-and this patch in itself doesn't change much; however, this will allow
-fixing the broken assumption in the next patch.
+This patch doesn't introduce any functional difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/blk-core.c |   54 ++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 38 insertions(+), 16 deletions(-)
+ block/blk-core.c |   36 +++++++++++++++++-------------------
+ 1 files changed, 17 insertions(+), 19 deletions(-)
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index 7a90317..fc10f53 100644
+index a995141..fafa669 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -710,10 +710,19 @@ static bool blk_rq_should_init_elevator(struct bio *bio)
- 	return true;
+@@ -575,7 +575,7 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
  }
  
--/*
-- * Get a free request, queue_lock must be held.
-- * Returns NULL on failure, with queue_lock held.
-- * Returns !NULL on success, with queue_lock *not held*.
-+/**
-+ * get_request - get a free request
-+ * @q: request_queue to allocate request from
-+ * @rw_flags: RW and SYNC flags
-+ * @bio: bio to allocate request for (can be %NULL)
-+ * @gfp_mask: allocation mask
-+ *
-+ * Get a free request from @q.  This function may fail under memory
-+ * pressure or if @q is dead.
-+ *
-+ * Must be callled with @q->queue_lock held and,
-+ * Returns %NULL on failure, with @q->queue_lock held.
-+ * Returns !%NULL on success, with @q->queue_lock *not held*.
-  */
- static struct request *get_request(struct request_queue *q, int rw_flags,
- 				   struct bio *bio, gfp_t gfp_mask)
-@@ -724,6 +733,9 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
- 	int may_queue;
+ static struct request *
+-blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
++blk_alloc_request(struct request_queue *q, unsigned int flags, gfp_t gfp_mask)
+ {
+ 	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
  
-+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+@@ -586,12 +586,10 @@ blk_alloc_request(struct request_queue *q, int flags, int priv, gfp_t gfp_mask)
+ 
+ 	rq->cmd_flags = flags | REQ_ALLOCED;
+ 
+-	if (priv) {
+-		if (unlikely(elv_set_request(q, rq, gfp_mask))) {
+-			mempool_free(rq, q->rq.rq_pool);
+-			return NULL;
+-		}
+-		rq->cmd_flags |= REQ_ELVPRIV;
++	if ((flags & REQ_ELVPRIV) &&
++	    unlikely(elv_set_request(q, rq, gfp_mask))) {
++		mempool_free(rq, q->rq.rq_pool);
 +		return NULL;
-+
+ 	}
+ 
+ 	return rq;
+@@ -650,12 +648,13 @@ static void __freed_request(struct request_queue *q, int sync)
+  * A request has just been released.  Account for it, update the full and
+  * congestion status, wake up any waiters.   Called under q->queue_lock.
+  */
+-static void freed_request(struct request_queue *q, int sync, int priv)
++static void freed_request(struct request_queue *q, unsigned int flags)
+ {
+ 	struct request_list *rl = &q->rq;
++	int sync = rw_is_sync(flags);
+ 
+ 	rl->count[sync]--;
+-	if (priv)
++	if (flags & REQ_ELVPRIV)
+ 		rl->elvpriv--;
+ 
+ 	__freed_request(q, sync);
+@@ -695,7 +694,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 	struct request_list *rl = &q->rq;
+ 	struct io_context *ioc = NULL;
+ 	const bool is_sync = rw_is_sync(rw_flags) != 0;
+-	int may_queue, priv = 0;
++	int may_queue;
+ 
  	may_queue = elv_may_queue(q, rw_flags);
  	if (may_queue == ELV_MQUEUE_NO)
- 		goto rq_starved;
-@@ -816,11 +828,18 @@ out:
- 	return rq;
- }
+@@ -739,17 +738,17 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 	rl->count[is_sync]++;
+ 	rl->starved[is_sync] = 0;
  
--/*
-- * No available requests for this queue, wait for some requests to become
-- * available.
-+/**
-+ * get_request_wait - get a free request with retry
-+ * @q: request_queue to allocate request from
-+ * @rw_flags: RW and SYNC flags
-+ * @bio: bio to allocate request for (can be %NULL)
-  *
-- * Called with q->queue_lock held, and returns with it unlocked.
-+ * Get a free request from @q.  This function keeps retrying under memory
-+ * pressure and fails iff @q is dead.
-+ *
-+ * Must be callled with @q->queue_lock held and,
-+ * Returns %NULL on failure, with @q->queue_lock held.
-+ * Returns !%NULL on success, with @q->queue_lock *not held*.
-  */
- static struct request *get_request_wait(struct request_queue *q, int rw_flags,
- 					struct bio *bio)
-@@ -834,6 +853,9 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
- 		struct io_context *ioc;
- 		struct request_list *rl = &q->rq;
+-	if (blk_rq_should_init_elevator(bio)) {
+-		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
+-		if (priv)
+-			rl->elvpriv++;
++	if (blk_rq_should_init_elevator(bio) &&
++	    !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags)) {
++		rw_flags |= REQ_ELVPRIV;
++		rl->elvpriv++;
+ 	}
  
-+		if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-+			return NULL;
-+
- 		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
- 				TASK_UNINTERRUPTIBLE);
+ 	if (blk_queue_io_stat(q))
+ 		rw_flags |= REQ_IO_STAT;
+ 	spin_unlock_irq(q->queue_lock);
  
-@@ -864,19 +886,15 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
- {
- 	struct request *rq;
+-	rq = blk_alloc_request(q, rw_flags, priv, gfp_mask);
++	rq = blk_alloc_request(q, rw_flags, gfp_mask);
+ 	if (unlikely(!rq)) {
+ 		/*
+ 		 * Allocation failed presumably due to memory. Undo anything
+@@ -759,7 +758,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 		 * wait queue, but this is pretty rare.
+ 		 */
+ 		spin_lock_irq(q->queue_lock);
+-		freed_request(q, is_sync, priv);
++		freed_request(q, rw_flags);
  
--	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
--		return NULL;
--
- 	BUG_ON(rw != READ && rw != WRITE);
- 
- 	spin_lock_irq(q->queue_lock);
--	if (gfp_mask & __GFP_WAIT) {
-+	if (gfp_mask & __GFP_WAIT)
- 		rq = get_request_wait(q, rw, NULL);
--	} else {
-+	else
- 		rq = get_request(q, rw, NULL, gfp_mask);
--		if (!rq)
--			spin_unlock_irq(q->queue_lock);
--	}
-+	if (!rq)
-+		spin_unlock_irq(q->queue_lock);
- 	/* q->queue_lock is unlocked at this point */
- 
- 	return rq;
-@@ -1300,6 +1318,10 @@ get_rq:
- 	 * Returns with the queue unlocked.
+ 		/*
+ 		 * in the very unlikely event that allocation failed and no
+@@ -1051,14 +1050,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+ 	 * it didn't come out of our reserved rq pools
  	 */
- 	req = get_request_wait(q, rw_flags, bio);
-+	if (unlikely(!req)) {
-+		bio_endio(bio, -ENODEV);	/* @q is dead */
-+		goto out_unlock;
-+	}
+ 	if (req->cmd_flags & REQ_ALLOCED) {
+-		int is_sync = rq_is_sync(req) != 0;
+-		int priv = req->cmd_flags & REQ_ELVPRIV;
++		unsigned int flags = req->cmd_flags;
  
- 	/*
- 	 * After dropping the lock and possibly sleeping here, our request
+ 		BUG_ON(!list_empty(&req->queuelist));
+ 		BUG_ON(!hlist_unhashed(&req->hash));
+ 
+ 		blk_free_request(q, req);
+-		freed_request(q, is_sync, priv);
++		freed_request(q, flags);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(__blk_put_request);
 -- 
 1.7.3.1
 
