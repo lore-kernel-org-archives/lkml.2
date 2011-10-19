@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1JSEOS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 00:14:18 -0400
+	id S1752035Ab1JSEEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 00:04:51 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:31960 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab1JSEEx (ORCPT
+	with ESMTP id S1750944Ab1JSEEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 00:04:53 -0400
-Message-Id: <093448$3qutji@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939634"
+	Wed, 19 Oct 2011 00:04:47 -0400
+Message-Id: <093448$3qutj7@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6503"; a="128939623"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 18 Oct 2011 21:29:34 -0500
-Subject: [PATCH v5 04/36] Hexagon: Add atomic ops support
+Date: Tue, 18 Oct 2011 21:17:19 -0500
+Subject: [PATCH v5 01/36] Hexagon: Add generic headers
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,23 +19,94 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/atomic.h |  164 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 164 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/atomic.h
+ arch/hexagon/include/asm/Kbuild        |   59 +++++++++++++++++++++++
+ arch/hexagon/include/asm/bitsperlong.h |   26 ++++++++++
+ arch/hexagon/include/asm/mutex.h       |    8 +++
+ arch/hexagon/include/asm/setup.h       |   29 +++++++++++
+ arch/hexagon/include/asm/user.h        |   81 ++++++++++++++++++++++++++++++++
+ 5 files changed, 203 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/Kbuild
+ create mode 100644 arch/hexagon/include/asm/bitsperlong.h
+ create mode 100644 arch/hexagon/include/asm/mutex.h
+ create mode 100644 arch/hexagon/include/asm/setup.h
+ create mode 100644 arch/hexagon/include/asm/user.h
 
-diff --git a/arch/hexagon/include/asm/atomic.h b/arch/hexagon/include/asm/atomic.h
+diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
 new file mode 100644
-index 0000000..e220f90
+index 0000000..6219617
 --- /dev/null
-+++ b/arch/hexagon/include/asm/atomic.h
-@@ -0,0 +1,164 @@
++++ b/arch/hexagon/include/asm/Kbuild
+@@ -0,0 +1,59 @@
++include include/asm-generic/Kbuild.asm
++
++header-y += registers.h
++header-y += ucontext.h
++header-y += user.h
++
++generic-y += auxvec.h
++generic-y += bug.h
++generic-y += bugs.h
++generic-y += cpumask.h
++generic-y += cputime.h
++generic-y += current.h
++generic-y += device.h
++generic-y += div64.h
++generic-y += emergency-restart.h
++generic-y += errno.h
++generic-y += fb.h
++generic-y += fcntl.h
++generic-y += ftrace.h
++generic-y += hardirq.h
++generic-y += hw_irq.h
++generic-y += ioctl.h
++generic-y += ioctls.h
++generic-y += iomap.h
++generic-y += ipcbuf.h
++generic-y += ipc.h
++generic-y += irq_regs.h
++generic-y += kdebug.h
++generic-y += kmap_types.h
++generic-y += local64.h
++generic-y += local.h
++generic-y += local.h
++generic-y += mman.h
++generic-y += msgbuf.h
++generic-y += pci.h
++generic-y += percpu.h
++generic-y += poll.h
++generic-y += posix_types.h
++generic-y += resource.h
++generic-y += rwsem.h
++generic-y += scatterlist.h
++generic-y += sections.h
++generic-y += segment.h
++generic-y += sembuf.h
++generic-y += shmbuf.h
++generic-y += shmparam.h
++generic-y += siginfo.h
++generic-y += socket.h
++generic-y += sockios.h
++generic-y += statfs.h
++generic-y += stat.h
++generic-y += termbits.h
++generic-y += termios.h
++generic-y += topology.h
++generic-y += types.h
++generic-y += ucontext.h
++generic-y += unaligned.h
++generic-y += xor.h
++
+diff --git a/arch/hexagon/include/asm/bitsperlong.h b/arch/hexagon/include/asm/bitsperlong.h
+new file mode 100644
+index 0000000..2701cae
+--- /dev/null
++++ b/arch/hexagon/include/asm/bitsperlong.h
+@@ -0,0 +1,26 @@
 +/*
-+ * Atomic operations for the Hexagon architecture
-+ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -52,147 +123,148 @@ index 0000000..e220f90
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_ATOMIC_H
-+#define _ASM_ATOMIC_H
++#ifndef __ASM_HEXAGON_BITSPERLONG_H
++#define __ASM_HEXAGON_BITSPERLONG_H
 +
-+#include <linux/types.h>
++#define __BITS_PER_LONG 32
 +
-+#define ATOMIC_INIT(i)		{ (i) }
-+#define atomic_set(v, i)	((v)->counter = (i))
++#include <asm-generic/bitsperlong.h>
 +
-+/**
-+ * atomic_read - reads a word, atomically
-+ * @v: pointer to atomic value
++#endif
+diff --git a/arch/hexagon/include/asm/mutex.h b/arch/hexagon/include/asm/mutex.h
+new file mode 100644
+index 0000000..58b52de
+--- /dev/null
++++ b/arch/hexagon/include/asm/mutex.h
+@@ -0,0 +1,8 @@
++/*
++ * Pull in the generic implementation for the mutex fastpath.
 + *
-+ * Assumes all word reads on our architecture are atomic.
++ * TODO: implement optimized primitives instead, or leave the generic
++ * implementation in place, or pick the atomic_xchg() based generic
++ * implementation. (see asm-generic/mutex-xchg.h for details)
 + */
-+#define atomic_read(v)		((v)->counter)
-+
-+/**
-+ * atomic_xchg - atomic
-+ * @v: pointer to memory to change
-+ * @new: new value (technically passed in a register -- see xchg)
++#include <asm-generic/mutex-xchg.h>
+diff --git a/arch/hexagon/include/asm/setup.h b/arch/hexagon/include/asm/setup.h
+new file mode 100644
+index 0000000..3b754c5
+--- /dev/null
++++ b/arch/hexagon/include/asm/setup.h
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+#define atomic_xchg(v, new)	(xchg(&((v)->counter), (new)))
 +
++#ifndef _ASM_SETUP_H
++#define _ASM_SETUP_H
 +
-+/**
-+ * atomic_cmpxchg - atomic compare-and-exchange values
-+ * @v: pointer to value to change
-+ * @old:  desired old value to match
-+ * @new:  new value to put in
++#include <linux/init.h>
++#include <asm-generic/setup.h>
++
++extern char external_cmdline_buffer;
++
++void __init setup_arch_memory(void);
++
++#endif
+diff --git a/arch/hexagon/include/asm/user.h b/arch/hexagon/include/asm/user.h
+new file mode 100644
+index 0000000..3a55078
+--- /dev/null
++++ b/arch/hexagon/include/asm/user.h
+@@ -0,0 +1,81 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
-+ * Parameters are then pointer, value-in-register, value-in-register,
-+ * and the output is the old value.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
-+ * Apparently this is complicated for archs that don't support
-+ * the memw_locked like we do (or it's broken or whatever).
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * Kind of the lynchpin of the rest of the generically defined routines.
-+ * Remember V2 had that bug with dotnew predicate set by memw_locked.
-+ *
-+ * "old" is "expected" old val, __oldval is actual old value
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
-+{
-+	int __oldval;
 +
-+	asm volatile(
-+		"1:	%0 = memw_locked(%1);\n"
-+		"	{ P0 = cmp.eq(%0,%2);\n"
-+		"	  if (!P0.new) jump:nt 2f; }\n"
-+		"	memw_locked(%1,P0) = %3;\n"
-+		"	if (!P0) jump 1b;\n"
-+		"2:\n"
-+		: "=&r" (__oldval)
-+		: "r" (&v->counter), "r" (old), "r" (new)
-+		: "memory", "p0"
-+	);
++#ifndef HEXAGON_ASM_USER_H
++#define HEXAGON_ASM_USER_H
 +
-+	return __oldval;
-+}
-+
-+static inline int atomic_add_return(int i, atomic_t *v)
-+{
-+	int output;
-+
-+	__asm__ __volatile__ (
-+		"1:	%0 = memw_locked(%1);\n"
-+		"	%0 = add(%0,%2);\n"
-+		"	memw_locked(%1,P3)=%0;\n"
-+		"	if !P3 jump 1b;\n"
-+		: "=&r" (output)
-+		: "r" (&v->counter), "r" (i)
-+		: "memory", "p3"
-+	);
-+	return output;
-+
-+}
-+
-+#define atomic_add(i, v) atomic_add_return(i, (v))
-+
-+static inline int atomic_sub_return(int i, atomic_t *v)
-+{
-+	int output;
-+	__asm__ __volatile__ (
-+		"1:	%0 = memw_locked(%1);\n"
-+		"	%0 = sub(%0,%2);\n"
-+		"	memw_locked(%1,P3)=%0\n"
-+		"	if !P3 jump 1b;\n"
-+		: "=&r" (output)
-+		: "r" (&v->counter), "r" (i)
-+		: "memory", "p3"
-+	);
-+	return output;
-+}
-+
-+#define atomic_sub(i, v) atomic_sub_return(i, (v))
-+
-+/**
-+ * atomic_add_unless - add unless the number is a given value
-+ * @v: pointer to value
-+ * @a: amount to add
-+ * @u: unless value is equal to u
++/*
++ * Layout for registers passed in elf core dumps to userspace.
 + *
-+ * Returns 1 if the add happened, 0 if it didn't.
++ * Basically a rearranged subset of "pt_regs".
++ *
++ * Interested parties:  libc, gdb...
 + */
-+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
-+{
-+	int output, __oldval;
-+	asm volatile(
-+		"1:	%0 = memw_locked(%2);"
-+		"	{"
-+		"		p3 = cmp.eq(%0, %4);"
-+		"		if (p3.new) jump:nt 2f;"
-+		"		%0 = add(%0, %3);"
-+		"		%1 = #0;"
-+		"	}"
-+		"	memw_locked(%2, p3) = %0;"
-+		"	{"
-+		"		if !p3 jump 1b;"
-+		"		%1 = #1;"
-+		"	}"
-+		"2:"
-+		: "=&r" (__oldval), "=&r" (output)
-+		: "r" (v), "r" (a), "r" (u)
-+		: "memory", "p3"
-+	);
-+	return output;
-+}
 +
-+#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
-+
-+#define atomic_inc(v) atomic_add(1, (v))
-+#define atomic_dec(v) atomic_sub(1, (v))
-+
-+#define atomic_inc_and_test(v) (atomic_add_return(1, (v)) == 0)
-+#define atomic_dec_and_test(v) (atomic_sub_return(1, (v)) == 0)
-+#define atomic_sub_and_test(i, v) (atomic_sub_return(i, (v)) == 0)
-+#define atomic_add_negative(i, v) (atomic_add_return(i, (v)) < 0)
-+
-+
-+#define atomic_inc_return(v) (atomic_add_return(1, v))
-+#define atomic_dec_return(v) (atomic_sub_return(1, v))
++struct user_regs_struct {
++	unsigned long r0;
++	unsigned long r1;
++	unsigned long r2;
++	unsigned long r3;
++	unsigned long r4;
++	unsigned long r5;
++	unsigned long r6;
++	unsigned long r7;
++	unsigned long r8;
++	unsigned long r9;
++	unsigned long r10;
++	unsigned long r11;
++	unsigned long r12;
++	unsigned long r13;
++	unsigned long r14;
++	unsigned long r15;
++	unsigned long r16;
++	unsigned long r17;
++	unsigned long r18;
++	unsigned long r19;
++	unsigned long r20;
++	unsigned long r21;
++	unsigned long r22;
++	unsigned long r23;
++	unsigned long r24;
++	unsigned long r25;
++	unsigned long r26;
++	unsigned long r27;
++	unsigned long r28;
++	unsigned long r29;
++	unsigned long r30;
++	unsigned long r31;
++	unsigned long sa0;
++	unsigned long lc0;
++	unsigned long sa1;
++	unsigned long lc1;
++	unsigned long m0;
++	unsigned long m1;
++	unsigned long usr;
++	unsigned long p3_0;
++	unsigned long gp;
++	unsigned long ugp;
++	unsigned long pc;
++	unsigned long cause;
++	unsigned long badva;
++	unsigned long pad1;  /* pad out to 48 words total */
++	unsigned long pad2;  /* pad out to 48 words total */
++	unsigned long pad3;  /* pad out to 48 words total */
++};
 +
 +#endif
 -- 
