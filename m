@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1JTPDA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 11:03:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64792 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1JTPC6 convert rfc822-to-8bit (ORCPT
+	id S1755268Ab1JTPGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 11:06:10 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49653 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab1JTPGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 11:02:58 -0400
+	Thu, 20 Oct 2011 11:06:08 -0400
+Date: Thu, 20 Oct 2011 17:06:05 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: David Rientjes <rientjes@google.com>
+Cc: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] x86, RAS: Add attributes needed for HW injection
+Message-ID: <20111020150605.GH12080@aftab>
+References: <1319035866-29570-1-git-send-email-bp@amd64.org>
+ <1319035866-29570-9-git-send-email-bp@amd64.org>
+ <alpine.DEB.2.00.1110191402490.5687@chino.kir.corp.google.com>
+ <20111019210946.GC7503@aftab>
+ <alpine.DEB.2.00.1110191415120.5687@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1110202347320.2696@nippy.intranet>
-References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdWOhKcoDoyTnKJzruZ=gpV5uKNFpXnGCkrac7oEkCihJw@mail.gmail.com>
-	<alpine.LNX.2.00.1110202347320.2696@nippy.intranet>
-Date: Thu, 20 Oct 2011 17:02:57 +0200
-X-Google-Sender-Auth: 8ojlD-Y2yFjo6inlkOCO3OXrin4
-Message-ID: <CAMuHMdVMp65XzV2zu7V8sgwsniCAxD7NDDnHSvp5gO-8g1ovHg@mail.gmail.com>
-Subject: Re: [PATCH 00/28 v6] m68k: Convert to genirq
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110191415120.5687@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 15:40, Finn Thain <fthain@telegraphics.com.au> wrote:
-> On Thu, 20 Oct 2011, Geert Uytterhoeven wrote:
->
->> > There are some known issues with drivers, which Finn and Michael are
->> > looking into.
->>
->> Any fixes I still have to apply?
->
-> I did some further testing on Baboon and OSS hardware etc. and I didn't
-> find any new regressions to fix.
->
-> There is a cleanup patch though --
-> http://article.gmane.org/gmane.linux.ports.m68k/2726
+On Wed, Oct 19, 2011 at 05:19:06PM -0400, David Rientjes wrote:
+> On Wed, 19 Oct 2011, Borislav Petkov wrote:
+> 
+> > > That wouldn't catch an offline cpuid, you probably want cpu_online(val)?
+> > 
+> > Good catch, thanks.
+> > 
+> > So I'm looking at <arch/x86/kernel/cpuid.c> which is how the validity of
+> > a cpu value should be tested properly, IMHO:
+> > 
+> > static int cpuid_open(struct inode *inode, struct file *file)
+> > {
+> > 	...
+> > 
+> > 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+> > 		return -ENXIO;	/* No such CPU */
+> > 	...
+> 
+> Right, the comment for cpumask_test_cpu(), which cpu_online() really is, 
+> wants a cpu < nr_cpu_ids.
 
-OK, I'll add it.
+Fixed, thanks.
 
->> Updated, on top of m68k master (which is at v3.1-rc10 now).
->> http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
->>
->> If noone objects, I'd like to add this to the m68k master and for-3.2
->> branches.
->
-> Sounds good. The mac_esp fix I sent is already in linux-next.
+-- 
+Regards/Gruss,
+Boris.
 
-Thanks for reminding me I still have to apply that one :-)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
