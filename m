@@ -1,294 +1,890 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1JTCj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 22:39:28 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45852 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728Ab1JTCj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 22:39:26 -0400
-MIME-Version: 1.0
-Date: Thu, 20 Oct 2011 10:39:24 +0800
-Message-ID: <CAH-7YMmqs9j2-UTUSCZaFDEhxmjkAZvHzKVvbvy7nsG8JpFA9w@mail.gmail.com>
-Subject: [PATCH] ACL supports to mqueue
-From: Zhou Peng <ailvpeng25@gmail.com>
-To: Casey Schaufler <casey@schaufler-ca.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0015174c1962606f9104afb1dd8f
+	id S1755966Ab1JTClu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 22:41:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46861 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751099Ab1JTClt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 22:41:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,375,1315206000"; 
+   d="scan'208";a="79867599"
+Subject: Re: [PATCH] Code clean up for percpu_xxx() functions
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <alpine.DEB.2.00.1110191033480.24001@router.home>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+	 <alpine.DEB.2.00.1110120910540.26610@router.home>
+	 <1318908091.23426.52.camel@debian>
+	 <alpine.DEB.2.00.1110180932330.687@router.home>
+	 <1319016218.23426.104.camel@debian>
+	 <alpine.DEB.2.00.1110191033480.24001@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Oct 2011 10:44:47 +0800
+Message-ID: <1319078687.23426.146.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015174c1962606f9104afb1dd8f
-Content-Type: text/plain; charset=ISO-8859-1
 
-This patch adds ACL supports to mqueue filesystem.
-Based on Linux 3.0.4.
+> Acked-by: Christoph Lameter <cl@gentwo.org>
 
-Signed-off-by: Zhou Peng <zhoupeng@nfs.iscas.ac.cn>
+Thanks, Christoph! 
+and resend for code style problem correction. 
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index 19891aa..dbf0aca 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -151,6 +151,14 @@ config TMPFS_XATTR
+========
+>From b8d595063259a636778b14c43f3cf024e908fd25 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 20 Oct 2011 10:25:50 +0800
+Subject: [PATCH 1/2] Code clean up for percpu_xxx() functions
 
- 	  If unsure, say N.
+Since percpu_xxx() serial functions are duplicate with this_cpu_xxx().
+Removing percpu_xxx() definition and replacing them by this_cpu_xxx() in
+code.
 
-+config MQUEUE_POSIX_ACL
-+       bool "Mqueue POSIX Access Control Lists support"
-+       depends on POSIX_MQUEUE
-+       select GENERIC_ACL
-+       help
-+         Mqueue is a file system which is used to suport POSIX msg queue.
-+	 Say y to get Access Control Lists support for mqueue file system.
-+
- config HUGETLBFS
- 	bool "HugeTLB file system support"
- 	depends on X86 || IA64 || SPARC64 || (S390 && 64BIT) || \
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 14fb6d6..e9d7ea9 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -10,6 +10,9 @@
-  *
-  * Audit:                   George Wilson           (ltcgcw@us.ibm.com)
-  *
-+ * ACL:
-+ * Copyright (c) 2011       Zhou Peng               (ailvpeng25@gmail.com)
-+ *
-  * This file is released under the GPL.
-  */
+And further more, as Christoph Lameter's requirement, I try to use
+__this_cpu_xx to replace this_cpu_xxx if it is in preempt safe scenario.
+The preempt safe scenarios include:
+1, in irq/softirq/nmi handler
+2, protected by preempt_disable
+3, protected by spin_lock
+4, if the code context imply that it is preempt safe, like the code is
+follows or be followed a preempt safe code.
 
-@@ -33,6 +36,9 @@
- #include <linux/pid.h>
- #include <linux/ipc_namespace.h>
- #include <linux/slab.h>
-+#include <linux/xattr.h>
-+#include <linux/posix_acl.h>
-+#include <linux/generic_acl.h>
+I left the xen/kvm part code unchanged, since no any idea of them.
 
- #include <net/sock.h>
- #include "util.h"
-@@ -76,6 +82,9 @@ struct mqueue_inode_info {
- };
+BTW, In fact, this_cpu_xxx are same as __this_cpu_xxx since all funcs
+implement in a single instruction for x86 machine. But it maybe
+different for other platforms, so, doing this distinguish is helpful for
+other platforms' performance.
 
- static const struct inode_operations mqueue_dir_inode_operations;
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+static const struct inode_operations mqueue_inode_operations;
-+#endif
- static const struct file_operations mqueue_file_operations;
- static const struct super_operations mqueue_super_ops;
- static void remove_notification(struct mqueue_inode_info *info);
-@@ -84,6 +93,14 @@ static struct kmem_cache *mqueue_inode_cachep;
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Christoph Lameter <cl@gentwo.org>
+---
+ arch/x86/include/asm/current.h        |    2 +-
+ arch/x86/include/asm/hardirq.h        |    9 +++--
+ arch/x86/include/asm/irq_regs.h       |    4 +-
+ arch/x86/include/asm/mmu_context.h    |   12 ++++----
+ arch/x86/include/asm/percpu.h         |   24 ++++++---------
+ arch/x86/include/asm/smp.h            |    4 +-
+ arch/x86/include/asm/stackprotector.h |    4 +-
+ arch/x86/include/asm/thread_info.h    |    2 +-
+ arch/x86/include/asm/tlbflush.h       |    4 +-
+ arch/x86/kernel/cpu/common.c          |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c      |    4 +-
+ arch/x86/kernel/cpu/perf_event.c      |    4 +-
+ arch/x86/kernel/paravirt.c            |   12 ++++----
+ arch/x86/kernel/process_32.c          |    2 +-
+ arch/x86/kernel/process_64.c          |   12 ++++----
+ arch/x86/kvm/x86.c                    |   14 ++++----
+ arch/x86/mm/tlb.c                     |   10 +++---
+ arch/x86/xen/enlighten.c              |    6 ++--
+ arch/x86/xen/irq.c                    |    8 ++--
+ arch/x86/xen/mmu.c                    |   20 ++++++------
+ arch/x86/xen/multicalls.h             |    2 +-
+ arch/x86/xen/smp.c                    |    2 +-
+ include/linux/percpu.h                |   53 ---------------------------------
+ include/linux/topology.h              |    4 +-
+ net/netfilter/xt_TEE.c                |   12 ++++----
+ net/socket.c                          |    4 +-
+ 26 files changed, 90 insertions(+), 146 deletions(-)
 
- static struct ctl_table_header * mq_sysctl_table;
-
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+static const struct xattr_handler *mqueue_xattr_handlers[] = {
-+	&generic_acl_access_handler,
-+	&generic_acl_default_handler,
-+	NULL
-+};
-+#endif
-+
- static inline struct mqueue_inode_info *MQUEUE_I(struct inode *inode)
+diff --git a/arch/x86/include/asm/current.h b/arch/x86/include/asm/current.h
+index 4d447b7..9476c04 100644
+--- a/arch/x86/include/asm/current.h
++++ b/arch/x86/include/asm/current.h
+@@ -11,7 +11,7 @@ DECLARE_PER_CPU(struct task_struct *, current_task);
+ 
+ static __always_inline struct task_struct *get_current(void)
  {
- 	return container_of(inode, struct mqueue_inode_info, vfs_inode);
-@@ -122,12 +139,19 @@ static struct inode *mqueue_get_inode(struct
-super_block *sb,
- 		inode->i_gid = current_fsgid();
- 		inode->i_mtime = inode->i_ctime = inode->i_atime =
- 				CURRENT_TIME;
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+		cache_no_acl(inode);
-+#endif
-
- 		if (S_ISREG(mode)) {
- 			struct mqueue_inode_info *info;
- 			struct task_struct *p = current;
- 			unsigned long mq_bytes, mq_msg_tblsz;
-
-+#ifdef CONFIG_MQUEUE_POSIX_ACL			
-+			inode->i_op = &mqueue_inode_operations;
-+#endif
-+
- 			inode->i_fop = &mqueue_file_operations;
- 			inode->i_size = FILENT_SIZE;
- 			/* mqueue specific info */
-@@ -192,6 +216,11 @@ static int mqueue_fill_super(struct super_block
-*sb, void *data, int silent)
- 	sb->s_magic = MQUEUE_MAGIC;
- 	sb->s_op = &mqueue_super_ops;
-
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+	sb->s_xattr = mqueue_xattr_handlers;
-+	sb->s_flags |= MS_POSIXACL;
-+#endif
-+
- 	inode = mqueue_get_inode(sb, ns, S_IFDIR | S_ISVTX | S_IRWXUGO,
- 				NULL);
- 	if (!inode) {
-@@ -322,6 +351,16 @@ static int mqueue_create(struct inode *dir,
-struct dentry *dentry,
- 		goto out_unlock;
- 	}
-
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+	error = generic_acl_init(inode, dir);
-+	if (error) {
-+		iput(inode);
-+		spin_lock(&mq_lock);
-+		ipc_ns->mq_queues_count--;
-+		goto out_unlock;
-+	}
-+#endif
-+
- 	put_ipc_ns(ipc_ns);
- 	dir->i_size += DIRENT_SIZE;
- 	dir->i_ctime = dir->i_mtime = dir->i_atime = CURRENT_TIME;
-@@ -1217,10 +1256,46 @@ out:
- 	return ret;
+-	return percpu_read_stable(current_task);
++	return this_cpu_read_stable(current_task);
  }
-
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+static int mqueue_setattr(struct dentry *dentry, struct iattr *attr)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	int error;
-+
-+	error = simple_setattr(dentry, attr);
-+	if (error)
-+		return error;
-+
-+	if (attr->ia_valid & ATTR_MODE)
-+		error = generic_acl_chmod(inode);
-+
-+	return error;
-+}
+ 
+ #define current get_current()
+diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
+index 55e4de6..2890444 100644
+--- a/arch/x86/include/asm/hardirq.h
++++ b/arch/x86/include/asm/hardirq.h
+@@ -35,14 +35,15 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+ 
+ #define __ARCH_IRQ_STAT
+ 
+-#define inc_irq_stat(member)	percpu_inc(irq_stat.member)
++#define inc_irq_stat(member)	__this_cpu_inc(irq_stat.member)
+ 
+-#define local_softirq_pending()	percpu_read(irq_stat.__softirq_pending)
++#define local_softirq_pending()	__this_cpu_read(irq_stat.__softirq_pending)
+ 
+ #define __ARCH_SET_SOFTIRQ_PENDING
+ 
+-#define set_softirq_pending(x)	percpu_write(irq_stat.__softirq_pending, (x))
+-#define or_softirq_pending(x)	percpu_or(irq_stat.__softirq_pending, (x))
++#define set_softirq_pending(x)	\
++		__this_cpu_write(irq_stat.__softirq_pending, (x))
++#define or_softirq_pending(x)	__this_cpu_or(irq_stat.__softirq_pending, (x))
+ 
+ extern void ack_bad_irq(unsigned int irq);
+ 
+diff --git a/arch/x86/include/asm/irq_regs.h b/arch/x86/include/asm/irq_regs.h
+index 7784322..15639ed 100644
+--- a/arch/x86/include/asm/irq_regs.h
++++ b/arch/x86/include/asm/irq_regs.h
+@@ -15,7 +15,7 @@ DECLARE_PER_CPU(struct pt_regs *, irq_regs);
+ 
+ static inline struct pt_regs *get_irq_regs(void)
+ {
+-	return percpu_read(irq_regs);
++	return __this_cpu_read(irq_regs);
+ }
+ 
+ static inline struct pt_regs *set_irq_regs(struct pt_regs *new_regs)
+@@ -23,7 +23,7 @@ static inline struct pt_regs *set_irq_regs(struct pt_regs *new_regs)
+ 	struct pt_regs *old_regs;
+ 
+ 	old_regs = get_irq_regs();
+-	percpu_write(irq_regs, new_regs);
++	__this_cpu_write(irq_regs, new_regs);
+ 
+ 	return old_regs;
+ }
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 6902152..02ca533 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -25,8 +25,8 @@ void destroy_context(struct mm_struct *mm);
+ static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
+ {
+ #ifdef CONFIG_SMP
+-	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
+-		percpu_write(cpu_tlbstate.state, TLBSTATE_LAZY);
++	if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
++		__this_cpu_write(cpu_tlbstate.state, TLBSTATE_LAZY);
+ #endif
+ }
+ 
+@@ -37,8 +37,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 
+ 	if (likely(prev != next)) {
+ #ifdef CONFIG_SMP
+-		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+-		percpu_write(cpu_tlbstate.active_mm, next);
++		__this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
++		__this_cpu_write(cpu_tlbstate.active_mm, next);
+ #endif
+ 		cpumask_set_cpu(cpu, mm_cpumask(next));
+ 
+@@ -56,8 +56,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 	}
+ #ifdef CONFIG_SMP
+ 	else {
+-		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+-		BUG_ON(percpu_read(cpu_tlbstate.active_mm) != next);
++		__this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
++		BUG_ON(__this_cpu_read(cpu_tlbstate.active_mm) != next);
+ 
+ 		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
+ 			/* We were in lazy tlb mode and leave_mm disabled
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 3470c9d..520005e 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -46,7 +46,7 @@
+ 
+ #ifdef CONFIG_SMP
+ #define __percpu_prefix		"%%"__stringify(__percpu_seg)":"
+-#define __my_cpu_offset		percpu_read(this_cpu_off)
++#define __my_cpu_offset		__this_cpu_read(this_cpu_off)
+ 
+ /*
+  * Compared to the generic __my_cpu_offset version, the following
+@@ -351,23 +351,15 @@ do {									\
+ })
+ 
+ /*
+- * percpu_read() makes gcc load the percpu variable every time it is
+- * accessed while percpu_read_stable() allows the value to be cached.
+- * percpu_read_stable() is more efficient and can be used if its value
++ * this_cpu_read() makes gcc load the percpu variable every time it is
++ * accessed while this_cpu_read_stable() allows the value to be cached.
++ * this_cpu_read_stable() is more efficient and can be used if its value
+  * is guaranteed to be valid across cpus.  The current users include
+  * get_current() and get_thread_info() both of which are actually
+  * per-thread variables implemented as per-cpu variables and thus
+  * stable for the duration of the respective task.
+  */
+-#define percpu_read(var)		percpu_from_op("mov", var, "m" (var))
+-#define percpu_read_stable(var)		percpu_from_op("mov", var, "p" (&(var)))
+-#define percpu_write(var, val)		percpu_to_op("mov", var, val)
+-#define percpu_add(var, val)		percpu_add_op(var, val)
+-#define percpu_sub(var, val)		percpu_add_op(var, -(val))
+-#define percpu_and(var, val)		percpu_to_op("and", var, val)
+-#define percpu_or(var, val)		percpu_to_op("or", var, val)
+-#define percpu_xor(var, val)		percpu_to_op("xor", var, val)
+-#define percpu_inc(var)		percpu_unary_op("inc", var)
++#define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
+ 
+ #define __this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+ #define __this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+@@ -551,7 +543,11 @@ static __always_inline int x86_this_cpu_constant_test_bit(unsigned int nr,
+ {
+ 	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
+ 
+-	return ((1UL << (nr % BITS_PER_LONG)) & percpu_read(*a)) != 0;
++#ifdef CONFIG_X86_64
++	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_8(*a)) != 0;
++#else
++	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_4(*a)) != 0;
 +#endif
-+
- static const struct inode_operations mqueue_dir_inode_operations = {
- 	.lookup = simple_lookup,
- 	.create = mqueue_create,
- 	.unlink = mqueue_unlink,
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+	.setxattr    = generic_setxattr,
-+	.getxattr    = generic_getxattr,
-+	.listxattr   = generic_listxattr,
-+	.removexattr = generic_removexattr,
-+	.check_acl   = generic_check_acl,
-+	.setattr     = mqueue_setattr,
-+#endif
-+};
-+
-+static const struct inode_operations mqueue_inode_operations = {
-+#ifdef CONFIG_MQUEUE_POSIX_ACL
-+	.setxattr    = generic_setxattr,
-+	.getxattr    = generic_getxattr,
-+	.listxattr   = generic_listxattr,
-+	.removexattr = generic_removexattr,
-+	.check_acl   = generic_check_acl,
-+	.setattr     = mqueue_setattr,
-+#endif
- };
+ }
+ 
+ static inline int x86_this_cpu_variable_test_bit(int nr,
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 73b11bc..dd5749b 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -188,11 +188,11 @@ extern unsigned disabled_cpus __cpuinitdata;
+  * from the initial startup. We map APIC_BASE very early in page_setup(),
+  * so this is correct in the x86 case.
+  */
+-#define raw_smp_processor_id() (percpu_read(cpu_number))
++#define raw_smp_processor_id() (this_cpu_read(cpu_number))
+ extern int safe_smp_processor_id(void);
+ 
+ #elif defined(CONFIG_X86_64_SMP)
+-#define raw_smp_processor_id() (percpu_read(cpu_number))
++#define raw_smp_processor_id() (this_cpu_read(cpu_number))
+ 
+ #define stack_smp_processor_id()					\
+ ({								\
+diff --git a/arch/x86/include/asm/stackprotector.h b/arch/x86/include/asm/stackprotector.h
+index 1575177..e8a60c9 100644
+--- a/arch/x86/include/asm/stackprotector.h
++++ b/arch/x86/include/asm/stackprotector.h
+@@ -76,9 +76,9 @@ static __always_inline void boot_init_stack_canary(void)
+ 
+ 	current->stack_canary = canary;
+ #ifdef CONFIG_X86_64
+-	percpu_write(irq_stack_union.stack_canary, canary);
++	__this_cpu_write(irq_stack_union.stack_canary, canary);
+ #else
+-	percpu_write(stack_canary.canary, canary);
++	__this_cpu_write(stack_canary.canary, canary);
+ #endif
+ }
+ 
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index a1fe5c1..8b19667 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -219,7 +219,7 @@ DECLARE_PER_CPU(unsigned long, kernel_stack);
+ static inline struct thread_info *current_thread_info(void)
+ {
+ 	struct thread_info *ti;
+-	ti = (void *)(percpu_read_stable(kernel_stack) +
++	ti = (void *)(this_cpu_read_stable(kernel_stack) +
+ 		      KERNEL_STACK_OFFSET - THREAD_SIZE);
+ 	return ti;
+ }
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 169be89..e90eec0 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -156,8 +156,8 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate);
+ 
+ static inline void reset_lazy_tlbstate(void)
+ {
+-	percpu_write(cpu_tlbstate.state, 0);
+-	percpu_write(cpu_tlbstate.active_mm, &init_mm);
++	__this_cpu_write(cpu_tlbstate.state, 0);
++	__this_cpu_write(cpu_tlbstate.active_mm, &init_mm);
+ }
+ 
+ #endif	/* SMP */
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 6218439..780d9db 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1158,7 +1158,7 @@ void __cpuinit cpu_init(void)
+ 	oist = &per_cpu(orig_ist, cpu);
+ 
+ #ifdef CONFIG_NUMA
+-	if (cpu != 0 && percpu_read(numa_node) == 0 &&
++	if (cpu != 0 && __this_cpu_read(numa_node) == 0 &&
+ 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
+ 		set_numa_node(early_cpu_to_node(cpu));
+ #endif
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 08363b0..5b0ebce 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -512,7 +512,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 	struct mce m;
+ 	int i;
+ 
+-	percpu_inc(mce_poll_count);
++	__this_cpu_inc(mce_poll_count);
+ 
+ 	mce_gather_info(&m, NULL);
+ 
+@@ -906,7 +906,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 
+ 	atomic_inc(&mce_entry);
+ 
+-	percpu_inc(mce_exception_count);
++	__this_cpu_inc(mce_exception_count);
+ 
+ 	if (notify_die(DIE_NMI, "machine check", regs, error_code,
+ 			   18, SIGKILL) == NOTIFY_STOP)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index cfa62ec..2e22701 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1389,7 +1389,7 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	case DIE_NMI:
+ 		break;
+ 	case DIE_NMIUNKNOWN:
+-		this_nmi = percpu_read(irq_stat.__nmi_count);
++		this_nmi = __this_cpu_read(irq_stat.__nmi_count);
+ 		if (this_nmi != __this_cpu_read(pmu_nmi.marked))
+ 			/* let the kernel handle the unknown nmi */
+ 			return NOTIFY_DONE;
+@@ -1409,7 +1409,7 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	if (!handled)
+ 		return NOTIFY_DONE;
+ 
+-	this_nmi = percpu_read(irq_stat.__nmi_count);
++	this_nmi = __this_cpu_read(irq_stat.__nmi_count);
+ 	if ((handled > 1) ||
+ 		/* the next nmi could be a back-to-back nmi */
+ 	    ((__this_cpu_read(pmu_nmi.marked) == this_nmi) &&
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index d90272e..2f0c1d1 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -239,16 +239,16 @@ static DEFINE_PER_CPU(enum paravirt_lazy_mode, paravirt_lazy_mode) = PARAVIRT_LA
+ 
+ static inline void enter_lazy(enum paravirt_lazy_mode mode)
+ {
+-	BUG_ON(percpu_read(paravirt_lazy_mode) != PARAVIRT_LAZY_NONE);
++	BUG_ON(__this_cpu_read(paravirt_lazy_mode) != PARAVIRT_LAZY_NONE);
+ 
+-	percpu_write(paravirt_lazy_mode, mode);
++	__this_cpu_write(paravirt_lazy_mode, mode);
+ }
+ 
+ static void leave_lazy(enum paravirt_lazy_mode mode)
+ {
+-	BUG_ON(percpu_read(paravirt_lazy_mode) != mode);
++	BUG_ON(__this_cpu_read(paravirt_lazy_mode) != mode);
+ 
+-	percpu_write(paravirt_lazy_mode, PARAVIRT_LAZY_NONE);
++	__this_cpu_write(paravirt_lazy_mode, PARAVIRT_LAZY_NONE);
+ }
+ 
+ void paravirt_enter_lazy_mmu(void)
+@@ -265,7 +265,7 @@ void paravirt_start_context_switch(struct task_struct *prev)
+ {
+ 	BUG_ON(preemptible());
+ 
+-	if (percpu_read(paravirt_lazy_mode) == PARAVIRT_LAZY_MMU) {
++	if (__this_cpu_read(paravirt_lazy_mode) == PARAVIRT_LAZY_MMU) {
+ 		arch_leave_lazy_mmu_mode();
+ 		set_ti_thread_flag(task_thread_info(prev), TIF_LAZY_MMU_UPDATES);
+ 	}
+@@ -287,7 +287,7 @@ enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
+ 	if (in_interrupt())
+ 		return PARAVIRT_LAZY_NONE;
+ 
+-	return percpu_read(paravirt_lazy_mode);
++	return __this_cpu_read(paravirt_lazy_mode);
+ }
+ 
+ void arch_flush_lazy_mmu_mode(void)
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 7a3b651..55feac1 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -373,7 +373,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	if (prev->gs | next->gs)
+ 		lazy_load_gs(next->gs);
+ 
+-	percpu_write(current_task, next_p);
++	__this_cpu_write(current_task, next_p);
+ 
+ 	return prev_p;
+ }
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index f693e44..c3617c3 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -73,7 +73,7 @@ EXPORT_SYMBOL_GPL(idle_notifier_unregister);
+ 
+ void enter_idle(void)
+ {
+-	percpu_write(is_idle, 1);
++	__this_cpu_write(is_idle, 1);
+ 	atomic_notifier_call_chain(&idle_notifier, IDLE_START, NULL);
+ }
+ 
+@@ -336,7 +336,7 @@ start_thread_common(struct pt_regs *regs, unsigned long new_ip,
+ 	load_gs_index(0);
+ 	regs->ip		= new_ip;
+ 	regs->sp		= new_sp;
+-	percpu_write(old_rsp, new_sp);
++	this_cpu_write(old_rsp, new_sp);
+ 	regs->cs		= _cs;
+ 	regs->ss		= _ss;
+ 	regs->flags		= X86_EFLAGS_IF;
+@@ -470,11 +470,11 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	/*
+ 	 * Switch the PDA and FPU contexts.
+ 	 */
+-	prev->usersp = percpu_read(old_rsp);
+-	percpu_write(old_rsp, next->usersp);
+-	percpu_write(current_task, next_p);
++	prev->usersp = __this_cpu_read(old_rsp);
++	__this_cpu_write(old_rsp, next->usersp);
++	__this_cpu_write(current_task, next_p);
+ 
+-	percpu_write(kernel_stack,
++	__this_cpu_write(kernel_stack,
+ 		  (unsigned long)task_stack_page(next_p) +
+ 		  THREAD_SIZE - KERNEL_STACK_OFFSET);
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 84a28ea..5ff2516 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5024,15 +5024,15 @@ static DEFINE_PER_CPU(struct kvm_vcpu *, current_vcpu);
+ 
+ static int kvm_is_in_guest(void)
+ {
+-	return percpu_read(current_vcpu) != NULL;
++	return this_cpu_read(current_vcpu) != NULL;
+ }
+ 
+ static int kvm_is_user_mode(void)
+ {
+ 	int user_mode = 3;
+ 
+-	if (percpu_read(current_vcpu))
+-		user_mode = kvm_x86_ops->get_cpl(percpu_read(current_vcpu));
++	if (this_cpu_read(current_vcpu))
++		user_mode = kvm_x86_ops->get_cpl(this_cpu_read(current_vcpu));
+ 
+ 	return user_mode != 0;
+ }
+@@ -5041,8 +5041,8 @@ static unsigned long kvm_get_guest_ip(void)
+ {
+ 	unsigned long ip = 0;
+ 
+-	if (percpu_read(current_vcpu))
+-		ip = kvm_rip_read(percpu_read(current_vcpu));
++	if (this_cpu_read(current_vcpu))
++		ip = kvm_rip_read(this_cpu_read(current_vcpu));
+ 
+ 	return ip;
+ }
+@@ -5055,13 +5055,13 @@ static struct perf_guest_info_callbacks kvm_guest_cbs = {
+ 
+ void kvm_before_handle_nmi(struct kvm_vcpu *vcpu)
+ {
+-	percpu_write(current_vcpu, vcpu);
++	__this_cpu_write(current_vcpu, vcpu);
+ }
+ EXPORT_SYMBOL_GPL(kvm_before_handle_nmi);
+ 
+ void kvm_after_handle_nmi(struct kvm_vcpu *vcpu)
+ {
+-	percpu_write(current_vcpu, NULL);
++	__this_cpu_write(current_vcpu, NULL);
+ }
+ EXPORT_SYMBOL_GPL(kvm_after_handle_nmi);
+ 
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..e931db0 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -61,10 +61,10 @@ static DEFINE_PER_CPU_READ_MOSTLY(int, tlb_vector_offset);
+  */
+ void leave_mm(int cpu)
+ {
+-	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
++	if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
+ 		BUG();
+ 	cpumask_clear_cpu(cpu,
+-			  mm_cpumask(percpu_read(cpu_tlbstate.active_mm)));
++			  mm_cpumask(__this_cpu_read(cpu_tlbstate.active_mm)));
+ 	load_cr3(swapper_pg_dir);
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -152,8 +152,8 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 		 * BUG();
+ 		 */
+ 
+-	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
+-		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
++	if (f->flush_mm == __this_cpu_read(cpu_tlbstate.active_mm)) {
++		if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+ 			if (f->flush_va == TLB_FLUSH_ALL)
+ 				local_flush_tlb();
+ 			else
+@@ -322,7 +322,7 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ static void do_flush_tlb_all(void *info)
+ {
+ 	__flush_tlb_all();
+-	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
++	if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
+ 		leave_mm(smp_processor_id());
+ }
+ 
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 2d69617..c4e362a 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -776,11 +776,11 @@ static DEFINE_PER_CPU(unsigned long, xen_cr0_value);
+ 
+ static unsigned long xen_read_cr0(void)
+ {
+-	unsigned long cr0 = percpu_read(xen_cr0_value);
++	unsigned long cr0 = this_cpu_read(xen_cr0_value);
+ 
+ 	if (unlikely(cr0 == 0)) {
+ 		cr0 = native_read_cr0();
+-		percpu_write(xen_cr0_value, cr0);
++		this_cpu_write(xen_cr0_value, cr0);
+ 	}
+ 
+ 	return cr0;
+@@ -790,7 +790,7 @@ static void xen_write_cr0(unsigned long cr0)
+ {
+ 	struct multicall_space mcs;
+ 
+-	percpu_write(xen_cr0_value, cr0);
++	this_cpu_write(xen_cr0_value, cr0);
+ 
+ 	/* Only pay attention to cr0.TS; everything else is
+ 	   ignored. */
+diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
+index 8bbb465..1573376 100644
+--- a/arch/x86/xen/irq.c
++++ b/arch/x86/xen/irq.c
+@@ -26,7 +26,7 @@ static unsigned long xen_save_fl(void)
+ 	struct vcpu_info *vcpu;
+ 	unsigned long flags;
+ 
+-	vcpu = percpu_read(xen_vcpu);
++	vcpu = this_cpu_read(xen_vcpu);
+ 
+ 	/* flag has opposite sense of mask */
+ 	flags = !vcpu->evtchn_upcall_mask;
+@@ -50,7 +50,7 @@ static void xen_restore_fl(unsigned long flags)
+ 	   make sure we're don't switch CPUs between getting the vcpu
+ 	   pointer and updating the mask. */
+ 	preempt_disable();
+-	vcpu = percpu_read(xen_vcpu);
++	vcpu = this_cpu_read(xen_vcpu);
+ 	vcpu->evtchn_upcall_mask = flags;
+ 	preempt_enable_no_resched();
+ 
+@@ -72,7 +72,7 @@ static void xen_irq_disable(void)
+ 	   make sure we're don't switch CPUs between getting the vcpu
+ 	   pointer and updating the mask. */
+ 	preempt_disable();
+-	percpu_read(xen_vcpu)->evtchn_upcall_mask = 1;
++	this_cpu_read(xen_vcpu)->evtchn_upcall_mask = 1;
+ 	preempt_enable_no_resched();
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_irq_disable);
+@@ -86,7 +86,7 @@ static void xen_irq_enable(void)
+ 	   the caller is confused and is trying to re-enable interrupts
+ 	   on an indeterminate processor. */
+ 
+-	vcpu = percpu_read(xen_vcpu);
++	vcpu = this_cpu_read(xen_vcpu);
+ 	vcpu->evtchn_upcall_mask = 0;
+ 
+ 	/* Doesn't matter if we get preempted here, because any
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 3dd53f9..6a7aaac 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1106,14 +1106,14 @@ static void drop_other_mm_ref(void *info)
+ 	struct mm_struct *mm = info;
+ 	struct mm_struct *active_mm;
+ 
+-	active_mm = percpu_read(cpu_tlbstate.active_mm);
++	active_mm = this_cpu_read(cpu_tlbstate.active_mm);
+ 
+-	if (active_mm == mm && percpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
++	if (active_mm == mm && this_cpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
+ 		leave_mm(smp_processor_id());
+ 
+ 	/* If this cpu still has a stale cr3 reference, then make sure
+ 	   it has been flushed. */
+-	if (percpu_read(xen_current_cr3) == __pa(mm->pgd))
++	if (this_cpu_read(xen_current_cr3) == __pa(mm->pgd))
+ 		load_cr3(swapper_pg_dir);
+ }
+ 
+@@ -1220,17 +1220,17 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
+ 
+ static void xen_write_cr2(unsigned long cr2)
+ {
+-	percpu_read(xen_vcpu)->arch.cr2 = cr2;
++	this_cpu_read(xen_vcpu)->arch.cr2 = cr2;
+ }
+ 
+ static unsigned long xen_read_cr2(void)
+ {
+-	return percpu_read(xen_vcpu)->arch.cr2;
++	return this_cpu_read(xen_vcpu)->arch.cr2;
+ }
+ 
+ unsigned long xen_read_cr2_direct(void)
+ {
+-	return percpu_read(xen_vcpu_info.arch.cr2);
++	return this_cpu_read(xen_vcpu_info.arch.cr2);
+ }
+ 
+ static void xen_flush_tlb(void)
+@@ -1313,12 +1313,12 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
+ 
+ static unsigned long xen_read_cr3(void)
+ {
+-	return percpu_read(xen_cr3);
++	return this_cpu_read(xen_cr3);
+ }
+ 
+ static void set_current_cr3(void *v)
+ {
+-	percpu_write(xen_current_cr3, (unsigned long)v);
++	this_cpu_write(xen_current_cr3, (unsigned long)v);
+ }
+ 
+ static void __xen_write_cr3(bool kernel, unsigned long cr3)
+@@ -1341,7 +1341,7 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
+ 	xen_extend_mmuext_op(&op);
+ 
+ 	if (kernel) {
+-		percpu_write(xen_cr3, cr3);
++		this_cpu_write(xen_cr3, cr3);
+ 
+ 		/* Update xen_current_cr3 once the batch has actually
+ 		   been submitted. */
+@@ -1357,7 +1357,7 @@ static void xen_write_cr3(unsigned long cr3)
+ 
+ 	/* Update while interrupts are disabled, so its atomic with
+ 	   respect to ipis */
+-	percpu_write(xen_cr3, cr3);
++	this_cpu_write(xen_cr3, cr3);
+ 
+ 	__xen_write_cr3(true, cr3);
+ 
+diff --git a/arch/x86/xen/multicalls.h b/arch/x86/xen/multicalls.h
+index dee79b7..9c2e74f 100644
+--- a/arch/x86/xen/multicalls.h
++++ b/arch/x86/xen/multicalls.h
+@@ -47,7 +47,7 @@ static inline void xen_mc_issue(unsigned mode)
+ 		xen_mc_flush();
+ 
+ 	/* restore flags saved in xen_mc_batch */
+-	local_irq_restore(percpu_read(xen_mc_irq_flags));
++	local_irq_restore(this_cpu_read(xen_mc_irq_flags));
+ }
+ 
+ /* Set up a callback to be called when the current batch is flushed */
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 041d4fe..449f868 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -76,7 +76,7 @@ static void __cpuinit cpu_bringup(void)
+ 	xen_setup_cpu_clockevents();
+ 
+ 	set_cpu_online(cpu, true);
+-	percpu_write(cpu_state, CPU_ONLINE);
++	this_cpu_write(cpu_state, CPU_ONLINE);
+ 	wmb();
+ 
+ 	/* We can take interrupts now: we're officially "up". */
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 9ca008f..aad7e1c 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -165,59 +165,6 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
+ #define alloc_percpu(type)	\
+ 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type), __alignof__(type))
+ 
+-/*
+- * Optional methods for optimized non-lvalue per-cpu variable access.
+- *
+- * @var can be a percpu variable or a field of it and its size should
+- * equal char, int or long.  percpu_read() evaluates to a lvalue and
+- * all others to void.
+- *
+- * These operations are guaranteed to be atomic w.r.t. preemption.
+- * The generic versions use plain get/put_cpu_var().  Archs are
+- * encouraged to implement single-instruction alternatives which don't
+- * require preemption protection.
+- */
+-#ifndef percpu_read
+-# define percpu_read(var)						\
+-  ({									\
+-	typeof(var) *pr_ptr__ = &(var);					\
+-	typeof(var) pr_ret__;						\
+-	pr_ret__ = get_cpu_var(*pr_ptr__);				\
+-	put_cpu_var(*pr_ptr__);						\
+-	pr_ret__;							\
+-  })
+-#endif
+-
+-#define __percpu_generic_to_op(var, val, op)				\
+-do {									\
+-	typeof(var) *pgto_ptr__ = &(var);				\
+-	get_cpu_var(*pgto_ptr__) op val;				\
+-	put_cpu_var(*pgto_ptr__);					\
+-} while (0)
+-
+-#ifndef percpu_write
+-# define percpu_write(var, val)		__percpu_generic_to_op(var, (val), =)
+-#endif
+-
+-#ifndef percpu_add
+-# define percpu_add(var, val)		__percpu_generic_to_op(var, (val), +=)
+-#endif
+-
+-#ifndef percpu_sub
+-# define percpu_sub(var, val)		__percpu_generic_to_op(var, (val), -=)
+-#endif
+-
+-#ifndef percpu_and
+-# define percpu_and(var, val)		__percpu_generic_to_op(var, (val), &=)
+-#endif
+-
+-#ifndef percpu_or
+-# define percpu_or(var, val)		__percpu_generic_to_op(var, (val), |=)
+-#endif
+-
+-#ifndef percpu_xor
+-# define percpu_xor(var, val)		__percpu_generic_to_op(var, (val), ^=)
+-#endif
+ 
+ /*
+  * Branching function to split up a function into a set of functions that
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index fc839bf..aede2d9 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -235,7 +235,7 @@ static inline int cpu_to_node(int cpu)
+ #ifndef set_numa_node
+ static inline void set_numa_node(int node)
+ {
+-	percpu_write(numa_node, node);
++	__this_cpu_write(numa_node, node);
+ }
+ #endif
+ 
+@@ -270,7 +270,7 @@ DECLARE_PER_CPU(int, _numa_mem_);
+ #ifndef set_numa_mem
+ static inline void set_numa_mem(int node)
+ {
+-	percpu_write(_numa_mem_, node);
++	__this_cpu_write(_numa_mem_, node);
+ }
+ #endif
+ 
+diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
+index 5f054a0..678084c 100644
+--- a/net/netfilter/xt_TEE.c
++++ b/net/netfilter/xt_TEE.c
+@@ -90,7 +90,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 	struct iphdr *iph;
+ 
+-	if (percpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	/*
+ 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
+@@ -127,9 +127,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	ip_send_check(iph);
+ 
+ 	if (tee_tg_route4(skb, info)) {
+-		percpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip_local_out(skb);
+-		percpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+@@ -170,7 +170,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 
+-	if (percpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	skb = pskb_copy(skb, GFP_ATOMIC);
+ 	if (skb == NULL)
+@@ -188,9 +188,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ 		--iph->hop_limit;
+ 	}
+ 	if (tee_tg_route6(skb, info)) {
+-		percpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip6_local_out(skb);
+-		percpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+diff --git a/net/socket.c b/net/socket.c
+index ffe92ca..2845d38 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -479,7 +479,7 @@ static struct socket *sock_alloc(void)
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
+ 
+-	percpu_add(sockets_in_use, 1);
++	__this_cpu_add(sockets_in_use, 1);
+ 	return sock;
+ }
+ 
+@@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
+ 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
+ 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
+ 
+-	percpu_sub(sockets_in_use, 1);
++	__this_cpu_sub(sockets_in_use, 1);
+ 	if (!sock->file) {
+ 		iput(SOCK_INODE(sock));
+ 		return;
+-- 
+1.6.3.3
 
- static const struct file_operations mqueue_file_operations = {
 
---
-Zhou Peng
 
---0015174c1962606f9104afb1dd8f
-Content-Type: text/x-patch; charset=US-ASCII; name="posix_msg_queue_acl_linux 3.0.4.diff"
-Content-Disposition: attachment; 
-	filename="posix_msg_queue_acl_linux 3.0.4.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gtz550wb0
 
-VGhpcyBwYXRjaCBhZGRzIEFDTCBzdXBwb3J0cyB0byBtcXVldWUgZmlsZXN5c3RlbS4KQmFzZWQg
-b24gTGludXggMy4wLjQuCgpTaWduZWQtb2ZmLWJ5OiBaaG91IFBlbmcgPHpob3VwZW5nQG5mcy5p
-c2Nhcy5hYy5jbj4KCmRpZmYgLS1naXQgYS9mcy9LY29uZmlnIGIvZnMvS2NvbmZpZwppbmRleCAx
-OTg5MWFhLi5kYmYwYWNhIDEwMDY0NAotLS0gYS9mcy9LY29uZmlnCisrKyBiL2ZzL0tjb25maWcK
-QEAgLTE1MSw2ICsxNTEsMTQgQEAgY29uZmlnIFRNUEZTX1hBVFRSCiAKIAkgIElmIHVuc3VyZSwg
-c2F5IE4uCiAKK2NvbmZpZyBNUVVFVUVfUE9TSVhfQUNMCisgICAgICAgYm9vbCAiTXF1ZXVlIFBP
-U0lYIEFjY2VzcyBDb250cm9sIExpc3RzIHN1cHBvcnQiCisgICAgICAgZGVwZW5kcyBvbiBQT1NJ
-WF9NUVVFVUUKKyAgICAgICBzZWxlY3QgR0VORVJJQ19BQ0wKKyAgICAgICBoZWxwCisgICAgICAg
-ICBNcXVldWUgaXMgYSBmaWxlIHN5c3RlbSB3aGljaCBpcyB1c2VkIHRvIHN1cG9ydCBQT1NJWCBt
-c2cgcXVldWUuCisJIFNheSB5IHRvIGdldCBBY2Nlc3MgQ29udHJvbCBMaXN0cyBzdXBwb3J0IGZv
-ciBtcXVldWUgZmlsZSBzeXN0ZW0uCisKIGNvbmZpZyBIVUdFVExCRlMKIAlib29sICJIdWdlVExC
-IGZpbGUgc3lzdGVtIHN1cHBvcnQiCiAJZGVwZW5kcyBvbiBYODYgfHwgSUE2NCB8fCBTUEFSQzY0
-IHx8IChTMzkwICYmIDY0QklUKSB8fCBcCmRpZmYgLS1naXQgYS9pcGMvbXF1ZXVlLmMgYi9pcGMv
-bXF1ZXVlLmMKaW5kZXggMTRmYjZkNi4uZTlkN2VhOSAxMDA2NDQKLS0tIGEvaXBjL21xdWV1ZS5j
-CisrKyBiL2lwYy9tcXVldWUuYwpAQCAtMTAsNiArMTAsOSBAQAogICoKICAqIEF1ZGl0OiAgICAg
-ICAgICAgICAgICAgICBHZW9yZ2UgV2lsc29uICAgICAgICAgICAobHRjZ2N3QHVzLmlibS5jb20p
-CiAgKgorICogQUNMOgorICogQ29weXJpZ2h0IChjKSAyMDExICAgICAgIFpob3UgUGVuZyAgICAg
-ICAgICAgICAgIChhaWx2cGVuZzI1QGdtYWlsLmNvbSkKKyAqCiAgKiBUaGlzIGZpbGUgaXMgcmVs
-ZWFzZWQgdW5kZXIgdGhlIEdQTC4KICAqLwogCkBAIC0zMyw2ICszNiw5IEBACiAjaW5jbHVkZSA8
-bGludXgvcGlkLmg+CiAjaW5jbHVkZSA8bGludXgvaXBjX25hbWVzcGFjZS5oPgogI2luY2x1ZGUg
-PGxpbnV4L3NsYWIuaD4KKyNpbmNsdWRlIDxsaW51eC94YXR0ci5oPgorI2luY2x1ZGUgPGxpbnV4
-L3Bvc2l4X2FjbC5oPgorI2luY2x1ZGUgPGxpbnV4L2dlbmVyaWNfYWNsLmg+CiAKICNpbmNsdWRl
-IDxuZXQvc29jay5oPgogI2luY2x1ZGUgInV0aWwuaCIKQEAgLTc2LDYgKzgyLDkgQEAgc3RydWN0
-IG1xdWV1ZV9pbm9kZV9pbmZvIHsKIH07CiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgaW5vZGVfb3Bl
-cmF0aW9ucyBtcXVldWVfZGlyX2lub2RlX29wZXJhdGlvbnM7CisjaWZkZWYgQ09ORklHX01RVUVV
-RV9QT1NJWF9BQ0wKK3N0YXRpYyBjb25zdCBzdHJ1Y3QgaW5vZGVfb3BlcmF0aW9ucyBtcXVldWVf
-aW5vZGVfb3BlcmF0aW9uczsKKyNlbmRpZgogc3RhdGljIGNvbnN0IHN0cnVjdCBmaWxlX29wZXJh
-dGlvbnMgbXF1ZXVlX2ZpbGVfb3BlcmF0aW9uczsKIHN0YXRpYyBjb25zdCBzdHJ1Y3Qgc3VwZXJf
-b3BlcmF0aW9ucyBtcXVldWVfc3VwZXJfb3BzOwogc3RhdGljIHZvaWQgcmVtb3ZlX25vdGlmaWNh
-dGlvbihzdHJ1Y3QgbXF1ZXVlX2lub2RlX2luZm8gKmluZm8pOwpAQCAtODQsNiArOTMsMTQgQEAg
-c3RhdGljIHN0cnVjdCBrbWVtX2NhY2hlICptcXVldWVfaW5vZGVfY2FjaGVwOwogCiBzdGF0aWMg
-c3RydWN0IGN0bF90YWJsZV9oZWFkZXIgKiBtcV9zeXNjdGxfdGFibGU7CiAKKyNpZmRlZiBDT05G
-SUdfTVFVRVVFX1BPU0lYX0FDTAorc3RhdGljIGNvbnN0IHN0cnVjdCB4YXR0cl9oYW5kbGVyICpt
-cXVldWVfeGF0dHJfaGFuZGxlcnNbXSA9IHsKKwkmZ2VuZXJpY19hY2xfYWNjZXNzX2hhbmRsZXIs
-CisJJmdlbmVyaWNfYWNsX2RlZmF1bHRfaGFuZGxlciwKKwlOVUxMCit9OworI2VuZGlmCisKIHN0
-YXRpYyBpbmxpbmUgc3RydWN0IG1xdWV1ZV9pbm9kZV9pbmZvICpNUVVFVUVfSShzdHJ1Y3QgaW5v
-ZGUgKmlub2RlKQogewogCXJldHVybiBjb250YWluZXJfb2YoaW5vZGUsIHN0cnVjdCBtcXVldWVf
-aW5vZGVfaW5mbywgdmZzX2lub2RlKTsKQEAgLTEyMiwxMiArMTM5LDE5IEBAIHN0YXRpYyBzdHJ1
-Y3QgaW5vZGUgKm1xdWV1ZV9nZXRfaW5vZGUoc3RydWN0IHN1cGVyX2Jsb2NrICpzYiwKIAkJaW5v
-ZGUtPmlfZ2lkID0gY3VycmVudF9mc2dpZCgpOwogCQlpbm9kZS0+aV9tdGltZSA9IGlub2RlLT5p
-X2N0aW1lID0gaW5vZGUtPmlfYXRpbWUgPQogCQkJCUNVUlJFTlRfVElNRTsKKyNpZmRlZiBDT05G
-SUdfTVFVRVVFX1BPU0lYX0FDTAorCQljYWNoZV9ub19hY2woaW5vZGUpOworI2VuZGlmCiAKIAkJ
-aWYgKFNfSVNSRUcobW9kZSkpIHsKIAkJCXN0cnVjdCBtcXVldWVfaW5vZGVfaW5mbyAqaW5mbzsK
-IAkJCXN0cnVjdCB0YXNrX3N0cnVjdCAqcCA9IGN1cnJlbnQ7CiAJCQl1bnNpZ25lZCBsb25nIG1x
-X2J5dGVzLCBtcV9tc2dfdGJsc3o7CiAKKyNpZmRlZiBDT05GSUdfTVFVRVVFX1BPU0lYX0FDTAkJ
-CQorCQkJaW5vZGUtPmlfb3AgPSAmbXF1ZXVlX2lub2RlX29wZXJhdGlvbnM7CisjZW5kaWYKKwog
-CQkJaW5vZGUtPmlfZm9wID0gJm1xdWV1ZV9maWxlX29wZXJhdGlvbnM7CiAJCQlpbm9kZS0+aV9z
-aXplID0gRklMRU5UX1NJWkU7CiAJCQkvKiBtcXVldWUgc3BlY2lmaWMgaW5mbyAqLwpAQCAtMTky
-LDYgKzIxNiwxMSBAQCBzdGF0aWMgaW50IG1xdWV1ZV9maWxsX3N1cGVyKHN0cnVjdCBzdXBlcl9i
-bG9jayAqc2IsIHZvaWQgKmRhdGEsIGludCBzaWxlbnQpCiAJc2ItPnNfbWFnaWMgPSBNUVVFVUVf
-TUFHSUM7CiAJc2ItPnNfb3AgPSAmbXF1ZXVlX3N1cGVyX29wczsKIAorI2lmZGVmIENPTkZJR19N
-UVVFVUVfUE9TSVhfQUNMCisJc2ItPnNfeGF0dHIgPSBtcXVldWVfeGF0dHJfaGFuZGxlcnM7CisJ
-c2ItPnNfZmxhZ3MgfD0gTVNfUE9TSVhBQ0w7CisjZW5kaWYKKwogCWlub2RlID0gbXF1ZXVlX2dl
-dF9pbm9kZShzYiwgbnMsIFNfSUZESVIgfCBTX0lTVlRYIHwgU19JUldYVUdPLAogCQkJCU5VTEwp
-OwogCWlmICghaW5vZGUpIHsKQEAgLTMyMiw2ICszNTEsMTYgQEAgc3RhdGljIGludCBtcXVldWVf
-Y3JlYXRlKHN0cnVjdCBpbm9kZSAqZGlyLCBzdHJ1Y3QgZGVudHJ5ICpkZW50cnksCiAJCWdvdG8g
-b3V0X3VubG9jazsKIAl9CiAKKyNpZmRlZiBDT05GSUdfTVFVRVVFX1BPU0lYX0FDTAorCWVycm9y
-ID0gZ2VuZXJpY19hY2xfaW5pdChpbm9kZSwgZGlyKTsKKwlpZiAoZXJyb3IpIHsKKwkJaXB1dChp
-bm9kZSk7CisJCXNwaW5fbG9jaygmbXFfbG9jayk7CisJCWlwY19ucy0+bXFfcXVldWVzX2NvdW50
-LS07CisJCWdvdG8gb3V0X3VubG9jazsKKwl9CisjZW5kaWYKKwogCXB1dF9pcGNfbnMoaXBjX25z
-KTsKIAlkaXItPmlfc2l6ZSArPSBESVJFTlRfU0laRTsKIAlkaXItPmlfY3RpbWUgPSBkaXItPmlf
-bXRpbWUgPSBkaXItPmlfYXRpbWUgPSBDVVJSRU5UX1RJTUU7CkBAIC0xMjE3LDEwICsxMjU2LDQ2
-IEBAIG91dDoKIAlyZXR1cm4gcmV0OwogfQogCisjaWZkZWYgQ09ORklHX01RVUVVRV9QT1NJWF9B
-Q0wKK3N0YXRpYyBpbnQgbXF1ZXVlX3NldGF0dHIoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBzdHJ1
-Y3QgaWF0dHIgKmF0dHIpCit7CisJc3RydWN0IGlub2RlICppbm9kZSA9IGRlbnRyeS0+ZF9pbm9k
-ZTsKKwlpbnQgZXJyb3I7CisKKwllcnJvciA9IHNpbXBsZV9zZXRhdHRyKGRlbnRyeSwgYXR0cik7
-CisJaWYgKGVycm9yKQorCQlyZXR1cm4gZXJyb3I7CisKKwlpZiAoYXR0ci0+aWFfdmFsaWQgJiBB
-VFRSX01PREUpCisJCWVycm9yID0gZ2VuZXJpY19hY2xfY2htb2QoaW5vZGUpOworCisJcmV0dXJu
-IGVycm9yOworfQorI2VuZGlmCisKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgaW5vZGVfb3BlcmF0aW9u
-cyBtcXVldWVfZGlyX2lub2RlX29wZXJhdGlvbnMgPSB7CiAJLmxvb2t1cCA9IHNpbXBsZV9sb29r
-dXAsCiAJLmNyZWF0ZSA9IG1xdWV1ZV9jcmVhdGUsCiAJLnVubGluayA9IG1xdWV1ZV91bmxpbmss
-CisjaWZkZWYgQ09ORklHX01RVUVVRV9QT1NJWF9BQ0wKKwkuc2V0eGF0dHIgICAgPSBnZW5lcmlj
-X3NldHhhdHRyLAorCS5nZXR4YXR0ciAgICA9IGdlbmVyaWNfZ2V0eGF0dHIsCisJLmxpc3R4YXR0
-ciAgID0gZ2VuZXJpY19saXN0eGF0dHIsCisJLnJlbW92ZXhhdHRyID0gZ2VuZXJpY19yZW1vdmV4
-YXR0ciwKKwkuY2hlY2tfYWNsICAgPSBnZW5lcmljX2NoZWNrX2FjbCwKKwkuc2V0YXR0ciAgICAg
-PSBtcXVldWVfc2V0YXR0ciwKKyNlbmRpZgorfTsKKworc3RhdGljIGNvbnN0IHN0cnVjdCBpbm9k
-ZV9vcGVyYXRpb25zIG1xdWV1ZV9pbm9kZV9vcGVyYXRpb25zID0geworI2lmZGVmIENPTkZJR19N
-UVVFVUVfUE9TSVhfQUNMCisJLnNldHhhdHRyICAgID0gZ2VuZXJpY19zZXR4YXR0ciwKKwkuZ2V0
-eGF0dHIgICAgPSBnZW5lcmljX2dldHhhdHRyLAorCS5saXN0eGF0dHIgICA9IGdlbmVyaWNfbGlz
-dHhhdHRyLAorCS5yZW1vdmV4YXR0ciA9IGdlbmVyaWNfcmVtb3ZleGF0dHIsCisJLmNoZWNrX2Fj
-bCAgID0gZ2VuZXJpY19jaGVja19hY2wsCisJLnNldGF0dHIgICAgID0gbXF1ZXVlX3NldGF0dHIs
-CisjZW5kaWYKIH07CiAKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgZmlsZV9vcGVyYXRpb25zIG1xdWV1
-ZV9maWxlX29wZXJhdGlvbnMgPSB7Cg==
---0015174c1962606f9104afb1dd8f--
