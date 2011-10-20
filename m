@@ -1,160 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab1JTPsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 11:48:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53283 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab1JTPr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 11:47:59 -0400
-Subject: Re: sig->cputimer.lock/rq->lock lockdep report
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111006155537.GA27563@redhat.com>
-References: <20111006155537.GA27563@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Oct 2011 17:47:50 +0200
-Message-ID: <1319125670.8405.36.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
-Content-Transfer-Encoding: 7bit
+	id S1756641Ab1JTPzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 11:55:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46240 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753494Ab1JTPzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 11:55:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,379,1315206000"; 
+   d="scan'208";a="64594977"
+Date: Thu, 20 Oct 2011 23:55:42 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] nfs: writeback pages wait queue
+Message-ID: <20111020155542.GA7054@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 11:55 -0400, Dave Jones wrote:
-> [   35.630234] [ INFO: possible circular locking dependency detected ]
-> [   35.630234] 3.1.0-rc8+ #16
-> [   35.630234] -------------------------------------------------------
-> [   35.630234] modprobe/1036 is trying to acquire lock:
-> [   35.630234]  (&(&sig->cputimer.lock)->rlock){-.....}, at: [<ffffffff8104935e>] account_group_exec_runtime+0x32/0x49
-> [   35.630234] 
-> [   35.630234] but task is already holding lock:
-> [   35.630234]  (&rq->lock){-.-.-.}, at: [<ffffffff81058638>] scheduler_tick+0x3d/0x238
-> [   35.630234] 
-> [   35.630234] which lock already depends on the new lock.
+The generic writeback routines are departing from congestion_wait()
+in preference of get_request_wait(), aka. waiting on the block queues.
 
-I ran into a rather similar lockdep warning in v3.0.7, so it doesn't
-seem to be a regression:
+Introduce the missing writeback wait queue for NFS, otherwise its
+writeback pages will grow out of control, exhausting all PG_dirty pages.
 
-[   30.389966] =======================================================
-[   30.389970] [ INFO: possible circular locking dependency detected ]
-[   30.389974] 3.0.7-local0.fc14.x86_64 #1
-[   30.389976] -------------------------------------------------------
-[   30.389979] modprobe/809 is trying to acquire lock:
-[   30.389982]  (&(&sig->cputimer.lock)->rlock){......}, at: [<ffffffff8104b730>] account_group_exec_runtime+0x34/0x4b
-[   30.389994] 
-[   30.389994] but task is already holding lock:
-[   30.389997]  (&rq->lock){-.-.-.}, at: [<ffffffff810548d5>] try_to_wake_up+0x18f/0x1d7
-[   30.390005] 
-[   30.390005] which lock already depends on the new lock.
-[   30.390007] 
-[   30.390009] 
-[   30.390010] the existing dependency chain (in reverse order) is:
-[   30.390012] 
-[   30.390013] -> #2 (&rq->lock){-.-.-.}:
-[   30.390018]        [<ffffffff8108f9c2>] lock_acquire+0xb7/0xfb
-[   30.390020]        [<ffffffff814ef2cb>] _raw_spin_lock+0x36/0x69
-[   30.390020]        [<ffffffff8104bc86>] __task_rq_lock+0x60/0x8f
-[   30.390020]        [<ffffffff81054ccd>] wake_up_new_task+0x46/0xd2
-[   30.390020]        [<ffffffff8105c227>] do_fork+0x201/0x2ce
-[   30.390020]        [<ffffffff81010db1>] kernel_thread+0x75/0x77
-[   30.390020]        [<ffffffff814d6382>] rest_init+0x26/0xbe
-[   30.390020]        [<ffffffff81d47bc3>] start_kernel+0x3ee/0x3f9
-[   30.390020]        [<ffffffff81d472cb>] x86_64_start_reservations+0xb6/0xba
-[   30.390020]        [<ffffffff81d473d0>] x86_64_start_kernel+0x101/0x110
-[   30.390020] 
-[   30.390020] -> #1 (&p->pi_lock){-.-.-.}:
-[   30.390020]        [<ffffffff8108f9c2>] lock_acquire+0xb7/0xfb
-[   30.390020]        [<ffffffff814ef43b>] _raw_spin_lock_irqsave+0x45/0x7f
-[   30.390020]        [<ffffffff8107c179>] thread_group_cputimer+0x32/0xbd
-[   30.390020]        [<ffffffff8107c22f>] cpu_timer_sample_group+0x2b/0x76
-[   30.390020]        [<ffffffff8107d28a>] set_process_cpu_timer+0x36/0xdd
-[   30.390020]        [<ffffffff8107d370>] update_rlimit_cpu+0x3f/0x5b
-[   30.390020]        [<ffffffff8120a054>] selinux_bprm_committing_creds+0xc9/0xce
-[   30.390020]        [<ffffffff812016fc>] security_bprm_committing_creds+0x13/0x15
-[   30.390020]        [<ffffffff81147ee1>] install_exec_creds+0x16/0x55
-[   30.390020]        [<ffffffff811861b8>] load_elf_binary+0xf65/0x178d
-[   30.390020]        [<ffffffff81147d28>] search_binary_handler+0x8f/0x232
-[   30.390020]        [<ffffffff81149738>] do_execve_common.clone.21+0x195/0x292
-[   30.390020]        [<ffffffff81149850>] do_execve+0x1b/0x1d
-[   30.390020]        [<ffffffff810116d2>] sys_execve+0x43/0x5a
-[   30.390020]        [<ffffffff814f6c1c>] stub_execve+0x6c/0xc0
-[   30.390020] 
-[   30.390020] -> #0 (&(&sig->cputimer.lock)->rlock){......}:
-[   30.390020]        [<ffffffff8108f1fa>] __lock_acquire+0xadc/0xdd8
-[   30.390020]        [<ffffffff8108f9c2>] lock_acquire+0xb7/0xfb
-[   30.390020]        [<ffffffff814ef2cb>] _raw_spin_lock+0x36/0x69
-[   30.390020]        [<ffffffff8104b730>] account_group_exec_runtime+0x34/0x4b
-[   30.390020]        [<ffffffff8104b819>] update_curr+0xd2/0xf0
-[   30.390020]        [<ffffffff8104f405>] check_preempt_wakeup+0xd0/0x1d9
-[   30.390020]        [<ffffffff8104a817>] check_preempt_curr+0x34/0x74
-[   30.390020]        [<ffffffff8104a997>] ttwu_do_wakeup+0x4d/0xe0
-[   30.390020]        [<ffffffff810507a8>] ttwu_do_activate.clone.98+0x5c/0x61
-[   30.390020]        [<ffffffff810548e1>] try_to_wake_up+0x19b/0x1d7
-[   30.390020]        [<ffffffff8105492f>] default_wake_function+0x12/0x14
-[   30.390020]        [<ffffffff81047526>] __wake_up_common+0x4e/0x84
-[   30.390020]        [<ffffffff8104d547>] __wake_up+0x39/0x4d
-[   30.390020]        [<ffffffff810af184>] audit_log_end+0x71/0x8f
-[   30.390020]        [<ffffffff810b3404>] audit_log_exit+0x2d6/0xf63
-[   30.390020]        [<ffffffff810b4a95>] audit_syscall_exit+0x4b/0x14b
-[   30.390020]        [<ffffffff810146fc>] syscall_trace_leave+0x3d/0x101
-[   30.390020]        [<ffffffff814f6a78>] int_check_syscall_exit_work+0x34/0x3d
-[   30.390020] 
-[   30.390020] other info that might help us debug this:
-[   30.390020] 
-[   30.390020] Chain exists of:
-[   30.390020]   &(&sig->cputimer.lock)->rlock --> &p->pi_lock --> &rq->lock
-[   30.390020] 
-[   30.390020]  Possible unsafe locking scenario:
-[   30.390020] 
-[   30.390020]        CPU0                    CPU1
-[   30.390020]        ----                    ----
-[   30.390020]   lock(&rq->lock);
-[   30.390020]                                lock(&p->pi_lock);
-[   30.390020]                                lock(&rq->lock);
-[   30.390020]   lock(&(&sig->cputimer.lock)->rlock);
-[   30.390020] 
-[   30.390020]  *** DEADLOCK ***
-[   30.390020] 
-[   30.390020] 3 locks held by modprobe/809:
-[   30.390020]  #0:  (kauditd_wait.lock){......}, at: [<ffffffff8104d530>] __wake_up+0x22/0x4d
-[   30.390020]  #1:  (&p->pi_lock){-.-.-.}, at: [<ffffffff81054774>] try_to_wake_up+0x2e/0x1d7
-[   30.390020]  #2:  (&rq->lock){-.-.-.}, at: [<ffffffff810548d5>] try_to_wake_up+0x18f/0x1d7
-[   30.390020] 
-[   30.390020] stack backtrace:
-[   30.390020] Pid: 809, comm: modprobe Not tainted 3.0.7-local0.fc14.x86_64 #1
-[   30.390020] Call Trace:
-[   30.390020]  [<ffffffff8108d967>] print_circular_bug+0x1f8/0x209
-[   30.390020]  [<ffffffff8108f1fa>] __lock_acquire+0xadc/0xdd8
-[   30.390020]  [<ffffffff8104b730>] ? account_group_exec_runtime+0x34/0x4b
-[   30.390020]  [<ffffffff8108f9c2>] lock_acquire+0xb7/0xfb
-[   30.390020]  [<ffffffff8104b730>] ? account_group_exec_runtime+0x34/0x4b
-[   30.390020]  [<ffffffff814ef2cb>] _raw_spin_lock+0x36/0x69
-[   30.390020]  [<ffffffff8104b730>] ? account_group_exec_runtime+0x34/0x4b
-[   30.390020]  [<ffffffff8104b730>] account_group_exec_runtime+0x34/0x4b
-[   30.390020]  [<ffffffff8104b819>] update_curr+0xd2/0xf0
-[   30.390020]  [<ffffffff8104f405>] check_preempt_wakeup+0xd0/0x1d9
-[   30.390020]  [<ffffffff8104a817>] check_preempt_curr+0x34/0x74
-[   30.390020]  [<ffffffff8104a997>] ttwu_do_wakeup+0x4d/0xe0
-[   30.390020]  [<ffffffff810507a8>] ttwu_do_activate.clone.98+0x5c/0x61
-[   30.390020]  [<ffffffff810548e1>] try_to_wake_up+0x19b/0x1d7
-[   30.390020]  [<ffffffff8108d31f>] ? lock_acquired+0x1ea/0x215
-[   30.390020]  [<ffffffff8105492f>] default_wake_function+0x12/0x14
-[   30.390020]  [<ffffffff81047526>] __wake_up_common+0x4e/0x84
-[   30.390020]  [<ffffffff8104d530>] ? __wake_up+0x22/0x4d
-[   30.390020]  [<ffffffff8104d547>] __wake_up+0x39/0x4d
-[   30.390020]  [<ffffffff810af184>] audit_log_end+0x71/0x8f
-[   30.390020]  [<ffffffff810b3404>] audit_log_exit+0x2d6/0xf63
-[   30.390020]  [<ffffffff8108f8e3>] ? lock_release+0x18a/0x1b2
-[   30.390020]  [<ffffffff810b2592>] ? rcu_read_unlock+0x21/0x23
-[   30.390020]  [<ffffffff810b462c>] ? audit_filter_inodes+0x11b/0x12a
-[   30.390020]  [<ffffffff810b4a95>] audit_syscall_exit+0x4b/0x14b
-[   30.390020]  [<ffffffff814f6a3c>] ? int_very_careful+0x5/0xd
-[   30.390020]  [<ffffffff810146fc>] syscall_trace_leave+0x3d/0x101
-[   30.390020]  [<ffffffff814f6a78>] int_check_syscall_exit_work+0x34/0x3d
+Feng: do more coarse grained throttle on each ->writepages rather than
+on each page, for better performance and avoid throttled-before-send-rpc
+deadlock
 
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/nfs/client.c           |    2 
+ fs/nfs/write.c            |   84 +++++++++++++++++++++++++++++++-----
+ include/linux/nfs_fs_sb.h |    1 
+ 3 files changed, 77 insertions(+), 10 deletions(-)
 
-Paul Bolle
-
+--- linux-next.orig/fs/nfs/write.c	2011-10-20 23:08:17.000000000 +0800
++++ linux-next/fs/nfs/write.c	2011-10-20 23:45:59.000000000 +0800
+@@ -190,11 +190,64 @@ static int wb_priority(struct writeback_
+  * NFS congestion control
+  */
+ 
++#define NFS_WAIT_PAGES	(1024L >> (PAGE_SHIFT - 10))
+ int nfs_congestion_kb;
+ 
+-#define NFS_CONGESTION_ON_THRESH 	(nfs_congestion_kb >> (PAGE_SHIFT-10))
+-#define NFS_CONGESTION_OFF_THRESH	\
+-	(NFS_CONGESTION_ON_THRESH - (NFS_CONGESTION_ON_THRESH >> 2))
++/*
++ * SYNC requests will block on (2*limit) and wakeup on (2*limit-NFS_WAIT_PAGES)
++ * ASYNC requests will block on (limit) and wakeup on (limit - NFS_WAIT_PAGES)
++ * In this way SYNC writes will never be blocked by ASYNC ones.
++ */
++
++static void nfs_set_congested(long nr, struct backing_dev_info *bdi)
++{
++	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
++
++	if (nr > limit && !test_bit(BDI_async_congested, &bdi->state))
++		set_bdi_congested(bdi, BLK_RW_ASYNC);
++	else if (nr > 2 * limit && !test_bit(BDI_sync_congested, &bdi->state))
++		set_bdi_congested(bdi, BLK_RW_SYNC);
++}
++
++static void nfs_wait_congested(int is_sync,
++			       struct backing_dev_info *bdi,
++			       wait_queue_head_t *wqh)
++{
++	int waitbit = is_sync ? BDI_sync_congested : BDI_async_congested;
++	DEFINE_WAIT(wait);
++
++	if (!test_bit(waitbit, &bdi->state))
++		return;
++
++	for (;;) {
++		prepare_to_wait(&wqh[is_sync], &wait, TASK_UNINTERRUPTIBLE);
++		if (!test_bit(waitbit, &bdi->state))
++			break;
++
++		io_schedule();
++	}
++	finish_wait(&wqh[is_sync], &wait);
++}
++
++static void nfs_wakeup_congested(long nr,
++				 struct backing_dev_info *bdi,
++				 wait_queue_head_t *wqh)
++{
++	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
++
++	if (nr < 2 * limit - min(limit / 8, NFS_WAIT_PAGES)) {
++		if (test_bit(BDI_sync_congested, &bdi->state))
++			clear_bdi_congested(bdi, BLK_RW_SYNC);
++		if (waitqueue_active(&wqh[BLK_RW_SYNC]))
++			wake_up(&wqh[BLK_RW_SYNC]);
++	}
++	if (nr < limit - min(limit / 8, NFS_WAIT_PAGES)) {
++		if (test_bit(BDI_async_congested, &bdi->state))
++			clear_bdi_congested(bdi, BLK_RW_ASYNC);
++		if (waitqueue_active(&wqh[BLK_RW_ASYNC]))
++			wake_up(&wqh[BLK_RW_ASYNC]);
++	}
++}
+ 
+ static int nfs_set_page_writeback(struct page *page)
+ {
+@@ -205,11 +258,8 @@ static int nfs_set_page_writeback(struct
+ 		struct nfs_server *nfss = NFS_SERVER(inode);
+ 
+ 		page_cache_get(page);
+-		if (atomic_long_inc_return(&nfss->writeback) >
+-				NFS_CONGESTION_ON_THRESH) {
+-			set_bdi_congested(&nfss->backing_dev_info,
+-						BLK_RW_ASYNC);
+-		}
++		nfs_set_congested(atomic_long_inc_return(&nfss->writeback),
++				  &nfss->backing_dev_info);
+ 	}
+ 	return ret;
+ }
+@@ -221,8 +271,10 @@ static void nfs_end_page_writeback(struc
+ 
+ 	end_page_writeback(page);
+ 	page_cache_release(page);
+-	if (atomic_long_dec_return(&nfss->writeback) < NFS_CONGESTION_OFF_THRESH)
+-		clear_bdi_congested(&nfss->backing_dev_info, BLK_RW_ASYNC);
++
++	nfs_wakeup_congested(atomic_long_dec_return(&nfss->writeback),
++			     &nfss->backing_dev_info,
++			     nfss->writeback_wait);
+ }
+ 
+ static struct nfs_page *nfs_find_and_lock_request(struct page *page, bool nonblock)
+@@ -323,10 +375,17 @@ static int nfs_writepage_locked(struct p
+ 
+ int nfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
++	struct inode *inode = page->mapping->host;
++	struct nfs_server *nfss = NFS_SERVER(inode);
+ 	int ret;
+ 
+ 	ret = nfs_writepage_locked(page, wbc);
+ 	unlock_page(page);
++
++	nfs_wait_congested(wbc->sync_mode == WB_SYNC_ALL,
++			   &nfss->backing_dev_info,
++			   nfss->writeback_wait);
++
+ 	return ret;
+ }
+ 
+@@ -342,6 +401,7 @@ static int nfs_writepages_callback(struc
+ int nfs_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ {
+ 	struct inode *inode = mapping->host;
++	struct nfs_server *nfss = NFS_SERVER(inode);
+ 	unsigned long *bitlock = &NFS_I(inode)->flags;
+ 	struct nfs_pageio_descriptor pgio;
+ 	int err;
+@@ -358,6 +418,10 @@ int nfs_writepages(struct address_space 
+ 	err = write_cache_pages(mapping, wbc, nfs_writepages_callback, &pgio);
+ 	nfs_pageio_complete(&pgio);
+ 
++	nfs_wait_congested(wbc->sync_mode == WB_SYNC_ALL,
++			   &nfss->backing_dev_info,
++			   nfss->writeback_wait);
++
+ 	clear_bit_unlock(NFS_INO_FLUSHING, bitlock);
+ 	smp_mb__after_clear_bit();
+ 	wake_up_bit(bitlock, NFS_INO_FLUSHING);
+--- linux-next.orig/include/linux/nfs_fs_sb.h	2011-10-20 23:08:17.000000000 +0800
++++ linux-next/include/linux/nfs_fs_sb.h	2011-10-20 23:45:12.000000000 +0800
+@@ -102,6 +102,7 @@ struct nfs_server {
+ 	struct nfs_iostats __percpu *io_stats;	/* I/O statistics */
+ 	struct backing_dev_info	backing_dev_info;
+ 	atomic_long_t		writeback;	/* number of writeback pages */
++	wait_queue_head_t	writeback_wait[2];
+ 	int			flags;		/* various flags */
+ 	unsigned int		caps;		/* server capabilities */
+ 	unsigned int		rsize;		/* read size */
+--- linux-next.orig/fs/nfs/client.c	2011-10-20 23:08:17.000000000 +0800
++++ linux-next/fs/nfs/client.c	2011-10-20 23:45:12.000000000 +0800
+@@ -1066,6 +1066,8 @@ static struct nfs_server *nfs_alloc_serv
+ 	INIT_LIST_HEAD(&server->layouts);
+ 
+ 	atomic_set(&server->active, 0);
++	init_waitqueue_head(&server->writeback_wait[BLK_RW_SYNC]);
++	init_waitqueue_head(&server->writeback_wait[BLK_RW_ASYNC]);
+ 
+ 	server->io_stats = nfs_alloc_iostats();
+ 	if (!server->io_stats) {
