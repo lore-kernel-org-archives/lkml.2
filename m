@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab1JTJee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:34:34 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:50926 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756260Ab1JTJdK (ORCPT
+	id S1756313Ab1JTJfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:35:52 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:48451 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab1JTJfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:33:10 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        lm-sensors@lm-sensors.org, guenter.roeck@ericsson.com,
-        khali@linux-fr.org, thomas.petazzoni@free-electrons.com,
-        maxime.ripard@free-electrons.com, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 6/6] stargate2: example of map configuration for iio to hwmon example.
-Date: Thu, 20 Oct 2011 10:33:07 +0100
-Message-Id: <1319103187-27791-7-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
-References: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
+	Thu, 20 Oct 2011 05:35:50 -0400
+Date: Thu, 20 Oct 2011 11:35:41 +0200
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, evonlanthen@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        timo.teras@iki.fi
+Subject: Re: PROBLEM: System call 'sendmsg' of process ospfd (quagga)
+	causes kernel oops
+Message-ID: <20111020093541.GA3024@gondor.apana.org.au>
+References: <1319008713.17914.8.camel@edumazet-laptop> <20111019.033052.851679720607111734.davem@davemloft.net> <20111019080807.GA25099@gondor.apana.org.au> <20111020.053050.383972361986316046.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020.053050.383972361986316046.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not commit.
----
- arch/arm/mach-pxa/stargate2.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+On Thu, Oct 20, 2011 at 05:30:50AM -0400, David Miller wrote:
+>
+> So I'm a little confused what your suggestion for rc10 really
+> is :-)
 
-diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
-index 3f8d0af..48dcbb7 100644
---- a/arch/arm/mach-pxa/stargate2.c
-+++ b/arch/arm/mach-pxa/stargate2.c
-@@ -54,6 +54,8 @@
- #include <linux/mfd/da903x.h>
- #include <linux/sht15.h>
- 
-+#include <linux/iio/inkern.h>
-+
- #include "devices.h"
- #include "generic.h"
- 
-@@ -406,6 +408,24 @@ static struct i2c_pxa_platform_data i2c_pdata = {
- 	.fast_mode = 1,
- };
- 
-+static struct platform_device iio_hwmon_test = {
-+	.name = "iio_hwmon",
-+};
-+
-+static struct iio_map adc_map[] = {
-+	{
-+		.adc_dev_name = "0-0035",
-+		.adc_channel_label = "AIN1",
-+		.consumer_dev = &iio_hwmon_test.dev,
-+		.consumer_channel = "testchan1",
-+	}, {
-+		.adc_dev_name = "0-0035",
-+		.adc_channel_label = "AIN2",
-+		.consumer_dev = &iio_hwmon_test.dev,
-+		.consumer_channel = "testchan2",
-+	},
-+};
-+
- static void __init imote2_stargate2_init(void)
- {
- 
-@@ -423,6 +443,8 @@ static void __init imote2_stargate2_init(void)
- 
- 	pxa27x_set_i2c_power_info(&i2c_pwr_pdata);
- 	pxa_set_i2c_info(&i2c_pdata);
-+
-+	iio_map_array_register(adc_map, ARRAY_SIZE(adc_map));
- }
- 
- #ifdef CONFIG_MACH_INTELMOTE2
-@@ -971,6 +993,7 @@ static struct platform_device *stargate2_devices[] = {
- 	&stargate2_sram,
- 	&smc91x_device,
- 	&sht15,
-+	&iio_hwmon_test,
- };
- 
- static void __init stargate2_init(void)
+I meant his first initial patch :)
+
+While it is suboptimal in the sense that should the value of
+needed_headroom increase we'll end up constantly reallocating
+skbs, I believe that it is at least semantically correct.
+
+In the time being I'll look more closely at all the users of
+needed_headroom to see if there's anything we've missed.
+
+Thanks,
 -- 
-1.7.7
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
