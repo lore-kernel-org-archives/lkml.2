@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1JTG3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:29:12 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:1383 "EHLO mms1.broadcom.com"
+	id S1755449Ab1JTGab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:30:31 -0400
+Received: from mail.agmk.net ([91.192.224.71]:54004 "EHLO mail.agmk.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579Ab1JTG3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:29:10 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4E9FBFA7.4040502@broadcom.com>
-Date: Thu, 20 Oct 2011 08:28:55 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
- Gecko/20110922 Thunderbird/3.1.15
+	id S1751487Ab1JTGaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 02:30:30 -0400
+From: =?utf-8?q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Date: Thu, 20 Oct 2011 08:30:21 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00092-g8bc03e8; KDE/4.7.2; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+References: <201110122012.33767.pluto@agmk.net> <CA+55aFwf75oJ3JJ2aCR8TJJm_oLireD6SDO+43GveVVb8vGw1w@mail.gmail.com> <alpine.LSU.2.00.1110191234570.6900@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1110191234570.6900@sister.anvils>
 MIME-Version: 1.0
-To: "Nico Schottelius" <nico-linux-20111017@schottelius.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
-References: <20111019123602.GA11883@schottelius.org>
- <1319028563.8416.1.camel@edumazet-laptop>
- <20111019130749.GD11883@schottelius.org>
- <20111019142837.GA1414@schottelius.org> <4E9EE20F.1030403@broadcom.com>
- <20111019145501.GB1414@schottelius.org> <4E9EFF51.6000104@broadcom.com>
- <20111019214250.GC2432@schottelius.org>
-In-Reply-To: <20111019214250.GC2432@schottelius.org>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=B5E1A116
-X-WSS-ID: 62811ED43JW7488640-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201110200830.22062.pluto@agmk.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2011 11:42 PM, Nico Schottelius wrote:
+On Wednesday 19 of October 2011 21:42:15 Hugh Dickins wrote:
+> On Wed, 19 Oct 2011, Linus Torvalds wrote:
+> > On Wed, Oct 19, 2011 at 12:43 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > >
+> > > My vote is with the migration change. While there are occasionally
+> > > patches to make migration go faster, I don't consider it a hot path.
+> > > mremap may be used intensively by JVMs so I'd loathe to hurt it.
+> > 
+> > Ok, everybody seems to like that more, and it removes code rather than
+> > adds it, so I certainly prefer it too. Pawel, can you test that other
+> > patch (to mm/migrate.c) that Hugh posted? Instead of the mremap vma
+> > locking patch that you already verified for your setup?
+> > 
+> > Hugh - that one didn't have a changelog/sign-off, so if you could
+> > write that up, and Pawel's testing is successful, I can apply it...
+> > Looks like we have acks from both Andrea and Mel.
 > 
-> I'll soon (Friday) leave the environment permanently,
-> thus testing will not be easily possible anymore.
-
-Let's hope we have a conclusion by then.
-
-> If this issue is 5Ghz related only, can I somehow trigger it without an AP
-> running in that band / i.e. make the card try to use the 5 Ghz band although
-> there is no ap nearby?
+> Yes, I'm glad to have that input from Andrea and Mel, thank you.
 > 
-> Cheers,
+> Here we go.  I can't add a Tested-by since Pawel was reporting on the
+> alternative patch, but perhaps you'll be able to add that in later.
 > 
-> Nico
+> I may have read too much into Pawel's mail, but it sounded like he
+> would have expected an eponymous find_get_pages() lockup by now,
+> and was pleased that this patch appeared to have cured that.
 > 
+> I've spent quite a while trying to explain find_get_pages() lockup by
+> a missed migration entry, but I just don't see it: I don't expect this
+> (or the alternative) patch to do anything to fix that problem.  I won't
+> mind if it magically goes away, but I expect we'll need more info from
+> the debug patch I sent Justin a couple of days ago.
 
-The warning is in the receive path so you need some transmitter to sent
-packets to you. So you need the AP. If you can provide 'iwconfig' output
-when associated it will tell on which channel it is.
+the latest patch (mm/migrate.c) applied on 3.0.4 also survives points
+1) and 2) described previously (https://lkml.org/lkml/2011/10/18/427),
+so please apply it to the upstream/stable git tree.
 
-Gr. AvS
+from the other side, both patches don't help for 3.0.4+vserver host soft-lock
+which dies in few hours of stressing. iirc this lock has started with 2.6.38.
+is there any major change in memory managment area in 2.6.38 that i can bisect
+and test with vserver?
 
+BR,
+Paweł.
