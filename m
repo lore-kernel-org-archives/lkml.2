@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab1JTVsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:48:17 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52290 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab1JTVsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:48:15 -0400
-Date: Thu, 20 Oct 2011 17:48:07 -0400 (EDT)
-Message-Id: <20111020.174807.1345631716931276111.davem@davemloft.net>
-To: eibach@gdsys.de
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH] net: Fix driver name for mdio-gpio.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1318943051-22432-1-git-send-email-eibach@gdsys.de>
-References: <1318943051-22432-1-git-send-email-eibach@gdsys.de>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1753378Ab1JTVw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:52:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557Ab1JTVwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 17:52:55 -0400
+Date: Thu, 20 Oct 2011 19:52:36 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] Add an experimental EDAC driver for Sandy Bridge
+Message-ID: <20111020195236.513dd138@redhat.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 14:48:11 -0700 (PDT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Eibach <eibach@gdsys.de>
-Date: Tue, 18 Oct 2011 15:04:11 +0200
+This patch series add an experimental driver for Sandy Bridge machines.
+Minimum CPU step required for it to work is step-C0.
 
-> Since commit
-> "7488876... dt/net: Eliminate users of of_platform_{,un}register_driver"
-> there are two platform drivers named "mdio-gpio" registered.
-> I renamed the of variant to "mdio-ofgpio".
-> 
-> Signed-off-by: Dirk Eibach <eibach@gdsys.de>
+This driver is experimental, and might be blaming the wrong memory DIMM,
+so use it with care. Reports are welcomed.
 
-Applied, thanks.
+Mark A. Grondona (1):
+  EDAC: Fix incorrect edac mode reporting in sb_edac
+
+Mauro Carvalho Chehab (3):
+  edac: Add an experimental new driver to support Sandy Bridge CPU's
+  edac: sb_edac: Add it to the building system
+  edac: tag sb_edac as EXPERIMENTAL, as it requires more testing
+
+ drivers/edac/Kconfig   |   15 +
+ drivers/edac/Makefile  |    1 +
+ drivers/edac/sb_edac.c | 1893 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 1909 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/edac/sb_edac.c
+
+-- 
+1.7.6.4
+
