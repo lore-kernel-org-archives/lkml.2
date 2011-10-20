@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab1JTK6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:58:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55595 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1JTK6S (ORCPT
+	id S1753768Ab1JTLCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 07:02:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38327 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1JTLCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:58:18 -0400
-Subject: Re: [PATCH 12/21 v2] m68k: drop unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@snapgear.com>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAMuHMdVpAhJDhTDSwRWb7s4KvMGzh+twL7DhH1Ww=ZNK9aNE2w@mail.gmail.com>
-References: <1318925407.6414.22.camel@x61.thuisdomein>
-	 <4E9D6C05.9040106@snapgear.com> <1318941043.6414.35.camel@x61.thuisdomein>
-	 <4E9FB0D6.9080301@snapgear.com>
-	 <CAMuHMdVpAhJDhTDSwRWb7s4KvMGzh+twL7DhH1Ww=ZNK9aNE2w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Oct 2011 12:58:13 +0200
-Message-ID: <1319108293.8405.21.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Oct 2011 07:02:17 -0400
+Date: Thu, 20 Oct 2011 13:02:14 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Zeng Zhaoming <zhaoming.zeng@freescale.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: Use SGTL5000_LINREG_VDDD_MASK instead of
+ hardcoded mask value
+Message-ID: <20111020110214.GC2379@pengutronix.de>
+References: <1319107769.8866.3.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4ZLFUWh1odzi/v6L"
+Content-Disposition: inline
+In-Reply-To: <1319107769.8866.3.camel@phoenix>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 08:54 +0200, Geert Uytterhoeven wrote:
-> BTW, a few of the *_SCC symbols became orphaned, too.
 
-Yes, MVME147_SCC, MVME162_SCC and BVME6000_SCC look unused. I missed
-those because of these lines:
-config SERIAL_CONSOLE
-        bool "Support for serial port console"
-        depends on [..] MVME147_SCC || [...] MVME162_SCC || BVME6000_SCC [...]
+--4ZLFUWh1odzi/v6L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The scripts I used aren't smart enough to evaluate a second instance of
-these symbols. One of the simple heuristics they used was: "mentioned a
-second time in any of the Kconfig files means it is used".
+On Thu, Oct 20, 2011 at 06:49:29PM +0800, Axel Lin wrote:
+> We have defined SGTL5000_LINREG_VDDD_MASK in sgtl5000.h,
+> use it instead of hardcoded (0x1 << 4) - 1 for the mask.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-I haven't yet discovered a smarter way to do this. In this case that
-might be: if any other usage of the symbol in the Kconfig doesn't
-"select" any other symbol it is unused (provided, of course, there's no
-instance of CONFIG_$symbol in any non-Kconfig file) . But I don't know
-if that will work. Moreover, this requires an actual parser of the
-Kconfig syntax. I've chosen to keep things as dumb as possible, and use
-as little understanding of the Kconfig syntax as possible. I still found
-quite a number of unused symbols with an acceptable signal to noise
-ratio. False-negatives like these are the downside.
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Paul Bolle
+--4ZLFUWh1odzi/v6L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk6f/7YACgkQD27XaX1/VRujkQCgvbBT+W0D/cvxeU1/RwizmSRl
+TN4AniW36F+60OJpzwudfi4Q0q56H6+J
+=A16E
+-----END PGP SIGNATURE-----
+
+--4ZLFUWh1odzi/v6L--
