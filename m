@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab1JTJiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:38:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57477 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119Ab1JTJiG (ORCPT
+	id S1756356Ab1JTJlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:41:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56565 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab1JTJlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:38:06 -0400
-From: qemulist@gmail.com
-Date: Thu, 20 Oct 2011 17:37:30 +0800
-To: Gong Chen <clumsycg@gmail.com>
-Cc: pingfank@linux.vnet.ibm.com, aliguori@us.ibm.com, seabios@seabios.org,
-        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, shaohua.li@intel.com,
-        dave@linux.vnet.ibm.com, lenb@kernel.org
-Subject: Re: [Qemu-devel] [PATCH 1/1] ACPI: Call ACPI remove handler when
- handling ACPI eject event
-Message-ID: <20111020093730.GA18393@oc8440477808.ibm.com>
-References: <1318992470-10195-1-git-send-email-pingfank@linux.vnet.ibm.com>
- <1318992470-10195-2-git-send-email-pingfank@linux.vnet.ibm.com>
- <CAMJ_OhjLvsZ3Vir3hVX2Ha+jA-ORX=3PBapY=B+aZP-ynqbB6A@mail.gmail.com>
+	Thu, 20 Oct 2011 05:41:50 -0400
+Date: Thu, 20 Oct 2011 10:41:40 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: patches@linaro.org, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        lrg@ti.com, Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111020094140.GK18713@sirena.org.uk>
+References: <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <20111016145536.GA29885@S2100-06.ap.freescale.net>
+ <4E9BAC4D.3010402@ti.com>
+ <20111018115836.GC30703@S2100-06.ap.freescale.net>
+ <20111018160046.GD28501@opensource.wolfsonmicro.com>
+ <20111019053354.GB31162@S2100-06.ap.freescale.net>
+ <20111019144734.GI18713@sirena.org.uk>
+ <20111019150448.GB32007@S2100-06.ap.freescale.net>
+ <20111019151031.GA4275@opensource.wolfsonmicro.com>
+ <4E9F9892.9070007@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMJ_OhjLvsZ3Vir3hVX2Ha+jA-ORX=3PBapY=B+aZP-ynqbB6A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E9F9892.9070007@ti.com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 09:35:46PM +0800, Gong Chen wrote:
-> On Wed, Oct 19, 2011 at 10:47 AM,  <pingfank@linux.vnet.ibm.com> wrote:
-> > From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> >
-> > Call the remove handler for ACPI_NOTIFY_EJECT_REQUEST
-> >
-> > Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> > ---
-> >  drivers/acpi/bus.c      |    2 +-
-> >  drivers/acpi/scan.c     |    2 +-
-> >  include/acpi/acpi_bus.h |    2 ++
-> >  3 files changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-> > index 437ddbf..d06ec6d 100644
-> > --- a/drivers/acpi/bus.c
-> > +++ b/drivers/acpi/bus.c
-> > @@ -764,7 +764,7 @@ static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
-> >                break;
-> >
-> >        case ACPI_NOTIFY_EJECT_REQUEST:
-> > -               /* TBD */
-> > +               acpi_os_hotplug_execute(acpi_bus_hot_remove_device, handle);
-> >                break;
-> >
-> >        case ACPI_NOTIFY_DEVICE_CHECK_LIGHT:
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index 449c556..3b97b61 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -83,7 +83,7 @@ acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, cha
-> >  }
-> >  static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
-> >
-> > -static void acpi_bus_hot_remove_device(void *context)
-> > +void acpi_bus_hot_remove_device(void *context)
-> >  {
-> >        struct acpi_device *device;
-> >        acpi_handle handle = context;
-> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> > index 6cd5b64..b19c09d 100644
-> > --- a/include/acpi/acpi_bus.h
-> > +++ b/include/acpi/acpi_bus.h
-> > @@ -310,6 +310,8 @@ extern int unregister_acpi_notifier(struct notifier_block *);
-> >
-> >  extern int register_acpi_bus_notifier(struct notifier_block *nb);
-> >  extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
-> > +extern void acpi_bus_hot_remove_device(void *context);
-> > +
-> >  /*
-> >  * External Functions
-> >  */
-> > --
-> > 1.7.4.4
-> >
-> 
-> I preferred the patch from Shen before. Here is the link:
-> https://lkml.org/lkml/2011/9/24/15
-> As Bjorn said, "long-term goal to move the hotplug flow out of drivers and into
-> the ACPI core". An arbitrary change in the global level just mess up the codes.
-Got it, thanks. And so will this feature emerge in upstream soon?
+On Thu, Oct 20, 2011 at 09:12:10AM +0530, Rajendra Nayak wrote:
+> On Wednesday 19 October 2011 08:40 PM, Mark Brown wrote:
 
-Thanks and regards,
-pingfan
+> >I don't see any issue with leaving some things out of the DT bindings;
+> >you were the one raising that as a concern.
+
+> The problem is, that there doesn't seem to be a clean way to embed
+> *board data* into the kernel with DT, if left out of the DT bindings.
+> There is the auxdata way of still attaching platform_data, but that I
+> thought was a stopgap for just handling function pointers.
+
+We can always start off just completely omitting the data and then see
+how we go from there.  If we only cover 50% of users that's still 50%
+more than are currently covered with device tree right now and it means
+we can then spin round and look at the bits that are hard again without
+review fatigue on the bits that are easy.
