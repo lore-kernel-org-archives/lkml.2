@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab1JTIpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 04:45:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49645 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab1JTIpl convert rfc822-to-8bit (ORCPT
+	id S1756075Ab1JTIp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 04:45:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51097 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab1JTIpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 04:45:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111020081451.GC14464@moon>
-References: <1319096606-11568-1-git-send-email-ricardo.ribalda@gmail.com>
- <CAOJsxLGZLx-Wybi=BM41pN5X5Xw=qw4dEC_q=Qy903GpKj6Nzw@mail.gmail.com> <20111020081451.GC14464@moon>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Thu, 20 Oct 2011 10:45:01 +0200
-Message-ID: <CAPybu_3kqqtfv1XyhruS3AMiRbd=wdMUr4rJL1UmDG_+z2m9jA@mail.gmail.com>
-Subject: Re: [PATCH] tools/perf: Increase symbol KSYM_NAME_LEN size
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
-        anton@samba.org, daahern@cisco.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Oct 2011 04:45:54 -0400
+Date: Thu, 20 Oct 2011 04:45:41 -0400 (EDT)
+Message-Id: <20111020.044541.970282389722164761.davem@davemloft.net>
+To: cloud.ren@Atheros.com
+Cc: Luis.Rodriguez@Atheros.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
+ Ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1319093184-19696-1-git-send-email-cloud.ren@Atheros.com>
+References: <1319093184-19696-1-git-send-email-cloud.ren@Atheros.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 01:45:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That is 4gb size :S..... I have tried making a dummy program
+From: <cloud.ren@Atheros.com>
+Date: Thu, 20 Oct 2011 14:46:24 +0800
 
-int tttttt......ttttt (int a, int b){
-return a+b;
-}
+> +#define __far
 
-int main(int arg, char *[]argv){
-    return tttt....tttt(1,2);
-}
+So much unused crap left in these header files, get rid of this stuff.
 
-and it has worked at least until t^16384 both in gcc and in gdb, and I
-guess it would have continue working until much more.
++#define ALX_HW_WARN(_fmt, _args...) \
++		ALX_HW_PRINTA(WARNING, _fmt, ## _args)
++
++#define ALX_HW_INFO(_fmt, _args...) \
++		ALX_HW_PRINTA(INFO, _fmt, ## _args)
++
++#define ALX_HW_DBG(_fmt, _args...) \
++		ALX_HW_PRINTA(DEBUG, _fmt, ## _args)
++
 
-Right now, I think we can increase it until 512, to be on the safe
-side, and keep it simple. What do you think?
+We told you to get rid of your customized debug logging interfaces,
+yet all of this stuff is still there.
 
-  best regards
++/* delay function */
++#define US_DELAY(_hw, _n)	__US_DELAY(_n)
++#define MS_DELAY(_hw, _n)	__MS_DELAY(_n)
++#define __US_DELAY(_n)		udelay(_n)
++#define __MS_DELAY(_n)		mdelay(_n)
 
-On Thu, Oct 20, 2011 at 10:14, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Thu, Oct 20, 2011 at 10:54:40AM +0300, Pekka Enberg wrote:
-> ...
->>
->> Is there some specified maximum length for symbols (e.g. in ELF spec)?
->> I'm OK with the patch but I'd prefer we didn't bump up the number
->> blindly there's something "official" number we can use.
->>
->>                         Pekka
->
-> Elf restricts offsets in string table by 4 bytes, so probably the option
-> is to have complete .strtab being read somewhere and use indices when needed.
-> (note I didn't check where perf tool need those names).
->
->        Cyrill
->
+Useless wrappers for standard kernel interfaces, kill this.
 
++#define DEBUG_INFO(_a, _b)
++#define DEBUG_INFOS(_a, _b)
 
+Again we told you to get rid of this stuff.
 
--- 
-Ricardo Ribalda
+I suspect it's going to take may rounds of feedback before this driver
+is anywhere near ready for inclusion.
+
+Please just submit it to staging and let it cook there for a couple
+weeks in the interests of our sanity.
