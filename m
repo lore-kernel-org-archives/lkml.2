@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1JTThI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 15:37:08 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:63311 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1JTThG convert rfc822-to-8bit (ORCPT
+	id S1752270Ab1JTTtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 15:49:35 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:51795 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab1JTTtd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 15:37:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <29424.1319100412@redhat.com>
-References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
-	<2150.1314882260@redhat.com>
-	<CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com>
-	<CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com>
-	<5149.1317036720@redhat.com>
-	<CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com>
-	<CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com>
-	<6324.1317308270@redhat.com>
-	<CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com>
-	<12748.1317313818@redhat.com>
-	<CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com>
-	<CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com>
-	<18003.1317336244@redhat.com>
-	<CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com>
-	<6261.1317385734@redhat.com>
-	<CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com>
-	<8905.1317984176@redhat.com>
-	<CAOH1cHnagaAVQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com>
-	<32454.1318519287@redhat.com>
-	<CAOH1cHkFitTHBkHzg+m7cZycOZTgWW8hF0g0=+pX6bPNVZNTxw@mail.gmail.com>
-	<17609.1318584129@redhat.com>
-	<CAOH1cHkrtzr4o=ygqrMnUfDhwC=U+QJOtuqS+vfQyeXP_TvjaQ@mail.gmail.com>
-	<19081.1319027106@redhat.com>
-	<CAOH1cH=smX1tWLB6PwaRfcrOu5YErF3TGUDoRnLZGmxvGH9rAA@mail.gmail.com>
-	<29424.1319100412@redhat.com>
-Date: Thu, 20 Oct 2011 12:37:05 -0700
-Message-ID: <CAOH1cHnsFvAAUnBN=Ek7VZ=6JdDsuA0pGdxagUdZoQrWg5oD3A@mail.gmail.com>
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-From: Mark Moseley <moseleymark@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Oct 2011 15:49:33 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=spIDwyjlQeA37PGBClaBvybXw6PK+FHXdMQjp+Oau1w= c=1 sm=1
+ a=tIsKcYu7PxIA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=JfrnYn6hAAAA:8 a=7mF_9xXiul8E6uBlTIwA:9
+ a=ihzJB1jDj5YMu21uOywA:7 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20111020174915.GA9987@fieldses.org>
+Date: Thu, 20 Oct 2011 13:49:33 -0600
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>, agruen@kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com
 Content-Transfer-Encoding: 8BIT
+Message-Id: <E394C0CC-6124-42FD-9962-A061DC4784E3@dilger.ca>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019222021.GB1874@fieldses.org> <87k4805alx.fsf@linux.vnet.ibm.com> <20111020091434.GC5444@fieldses.org> <20111020091946.GA23773@infradead.org> <87aa8w53kj.fsf@linux.vnet.ibm.com> <20111020174915.GA9987@fieldses.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 1:46 AM, David Howells <dhowells@redhat.com> wrote:
-> Mark Moseley <moseleymark@gmail.com> wrote:
->
->> I left the existing cache in place. For a few hours, it was culling
->
-> That will be whilst the inode cache was filling, I suspect.
->
->> Is there anything I can do to verify whether the objects are indeed
->> pinned? This is a pretty busy box. The nfs inode cache is quite large
->> (from slabtop):
->
-> Hmmm...  Can you get me a dump of /proc/fs/fscache/stats to look at?
->
-> The "Objects:" and "Relinqs:" lines are the most interesting.  On the first
-> line avl=N shows the number of objects that are in the "available" state -
-> ie. are live for caching.
->
-> Also, can you do:
->
->        df -i /path/to/cache/partition
->
-> to get the number of inodes available and used.
+On 2011-10-20, at 11:49 AM, J. Bruce Fields wrote:
+> On Thu, Oct 20, 2011 at 04:32:04PM +0530, Aneesh Kumar K.V wrote:
+>> On Thu, 20 Oct 2011 05:19:46 -0400, Christoph Hellwig <hch@infradead.org> wrote:
+>>> Storing strings is an extremly stupid idea.  The only thing that would
+>>> make sense would be storing a windows-style 128-bit GUID.
+>> 
+>> How about updating the richacl_xattr as below 
+>> 
+>> struct richace_xattr {
+>> 	__le16		e_type;
+>> 	__le16		e_flags;
+>> 	__le32		e_mask;
+>> 	__le32		e_size;
+>> 	u8		e_id[0];
+>> };
+>> 
+>> now e_flags can contain ACE4_SPECIAL_WHO to indicate value in e_id
+>> indicate special who values (which could be 1 byte value indicating
+>> OWNER@, GROUP@ or EVERYONE@), ACE4_UNIXID_WHO, to indicate value
+>> in e_id is the little endian value of unix id. ACE_WINSID_WHO to
+>> indicate e_id is the 128 bit array containing SID value. ?
+> 
+> That's effectively still a string.
+> 
+> Would it be so bad to have to introduce another xattr type if we needed
+> a new id type?  You'll have to modify the filesystem and the userspace
+> tools and everything anyway, won't you?
+> 
+> But if we decide we don't need strings, then at a minimum let's make
+> these some fixed small size.
+> 
+> You could do something like:
+> 
+> 	struct richace_xattr {
+> 		__le16		e_type;
+> 		__le16		e_flags;
+> 		__le32		e_mask;
+> 		__le32		e_id[4];
+> 	}
+> 
+> and just use e_id[0] for now.  That would still leave room for a 128-bit
+> id, or for a 32-bit uid + some-size namespace-id.
+
+Just as an FYI, from back when we were trying to port Lustre to Solaris,
+Solaris itself uses a 64-bit "FUID" (32-bit UID + 32-bit namespace) to
+handle this.
+
+It has a table for arbitrary mapping of 128-bit Windows domains to a
+32-bit FUID namespace (don't know much detail here, sorry), and it is
+(reasonably) expected that a single system will not be in more than
+2^32 namespaces at once.  This keeps the datatypes sane (u64 or 2x u32)
+and doesn't put much complexity into the filesystem/kernel.  For most
+uses, the high 32-bit value is 0 (local Unix domain).
+
+Cheers, Andreas
 
 
-# df /var/cache/fscache/
-Filesystem           1K-blocks      Used Available Use% Mounted on
-/dev/sdb6             29338652  16148968  11699352  58% /var/cache/fscache
 
-# df -i /var/cache/fscache/
-Filesystem            Inodes   IUsed   IFree IUse% Mounted on
-/dev/sdb6            1864128  339163 1524965   19% /var/cache/fscache
+
+
