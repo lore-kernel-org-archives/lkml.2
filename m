@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1JTGUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:20:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53561 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab1JTGUk (ORCPT
+	id S932342Ab1JTGVC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:21:02 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47325 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab1JTGU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:20:40 -0400
+	Thu, 20 Oct 2011 02:20:59 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 08/24]  Staging: comedi: fix printk issue in das800.c
-Date: Thu, 20 Oct 2011 11:48:54 +0530
-Message-Id: <1319091550-2558-8-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 10/24] Staging: comedi: fix printk issue in cb_pcidas64.c
+Date: Thu, 20 Oct 2011 11:48:56 +0530
+Message-Id: <1319091550-2558-10-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,77 +23,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the das800.c file that fixes up a printk found by
-the checkpatch.pl tool.
-Converted printks to pr_<level>.
-Removed unnecessary uses of printks.
+This is a patch to the cb_pcidas64.c file that fixes up a printk
+warning found by the checkpatch.pl tool.
+Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
+Converted printks to dev_printk.
+Removed unnecessary printk statement.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/das800.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidas64.c |   31 ++++++++++++-------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/comedi/drivers/das800.c
-index 96d41ad..a589698 100644
---- a/drivers/staging/comedi/drivers/das800.c
-+++ b/drivers/staging/comedi/drivers/das800.c
-@@ -466,42 +466,40 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	unsigned long irq_flags;
- 	int board;
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index 3dc68ef..51c48e3 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -83,6 +83,8 @@ TODO:
+ 	make ao fifo size adjustable like ai fifo
+ */
  
--	printk("comedi%d: das800: io 0x%lx", dev->minor, iobase);
- 	if (irq)
--		printk(", irq %u", irq);
--	printk("\n");
-+		pr_debug("irq %u\n", irq);
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../comedidev.h"
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+@@ -1739,8 +1741,6 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	uint32_t local_range, local_decode;
+ 	int retval;
  
- 	/* allocate and initialize dev->private */
- 	if (alloc_private(dev, sizeof(struct das800_private)) < 0)
- 		return -ENOMEM;
- 
- 	if (iobase == 0) {
--		printk("io base address required for das800\n");
-+		pr_err("io base address required for das800\n");
- 		return -EINVAL;
+-	pr_info("comedi%d: cb_pcidas64\n", dev->minor);
+-
+ /*
+  * Allocate the private structure area.
+  */
+@@ -1776,17 +1776,15 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
  	}
  
- 	/* check if io addresses are available */
- 	if (!request_region(iobase, DAS800_SIZE, "das800")) {
--		printk("I/O port conflict\n");
-+		pr_err("I/O port conflict\n");
+ 	if (dev->board_ptr == NULL) {
+-		printk
+-		    ("No supported ComputerBoards/MeasurementComputing card found\n");
++		dev_err(dev->hw_dev, "No supported ComputerBoards/MeasurementComputing card found\n");
  		return -EIO;
  	}
- 	dev->iobase = iobase;
  
- 	board = das800_probe(dev);
- 	if (board < 0) {
--		printk("unable to determine board type\n");
-+		pr_err("unable to determine board type\n");
- 		return -ENODEV;
+-	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	dev_dbg(dev->hw_dev,  "Found %s on bus %i, slot %i\n", board(dev)->name,
++		pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 
+ 	if (comedi_pci_enable(pcidev, driver_cb_pcidas.driver_name)) {
+-		printk(KERN_WARNING
+-		       " failed to enable PCI device and request regions\n");
++		dev_err(dev->hw_dev, "failed to enable PCI device and request regions\n");
+ 		return -EIO;
  	}
- 	dev->board_ptr = das800_boards + board;
+ 	pci_set_master(pcidev);
+@@ -1814,7 +1812,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 	/* grab our IRQ */
- 	if (irq == 1 || irq > 7) {
--		printk("irq out of range\n");
-+		pr_err("irq out of range\n");
+ 	if (!priv(dev)->plx9080_iobase || !priv(dev)->main_iobase
+ 	    || !priv(dev)->dio_counter_iobase) {
+-		printk(" failed to remap io memory\n");
++		dev_err(dev->hw_dev, "failed to remap io memory\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1850,17 +1848,19 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	priv(dev)->hw_revision =
+ 	    hw_revision(dev, readw(priv(dev)->main_iobase + HW_STATUS_REG));
+-	printk(" stc hardware revision %i\n", priv(dev)->hw_revision);
++	dev_dbg(dev->hw_dev, "stc hardware revision %i\n",
++		priv(dev)->hw_revision);
+ 	init_plx9080(dev);
+ 	init_stc_registers(dev);
+ 	/*  get irq */
+ 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
+ 			"cb_pcidas64", dev)) {
+-		printk(" unable to allocate irq %u\n", pcidev->irq);
++		dev_err(dev->hw_dev, "unable to allocate irq %u\n",
++			pcidev->irq);
  		return -EINVAL;
  	}
- 	if (irq) {
- 		if (request_irq(irq, das800_interrupt, 0, "das800", dev)) {
--			printk("unable to allocate irq %u\n", irq);
-+			pr_err("unable to allocate irq %u\n", irq);
- 			return -EINVAL;
- 		}
- 	}
-@@ -557,7 +555,6 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	dev->irq = pcidev->irq;
+-	printk(" irq %u\n", dev->irq);
++	dev_dbg(dev->hw_dev, "irq %u\n", dev->irq);
  
- static int das800_detach(struct comedi_device *dev)
+ 	retval = setup_subdevices(dev);
+ 	if (retval < 0)
+@@ -1882,8 +1882,6 @@ static int detach(struct comedi_device *dev)
  {
--	printk("comedi%d: das800: remove\n", dev->minor);
+ 	unsigned int i;
  
- 	/* only free stuff if it has been allocated by _attach */
- 	if (dev->iobase)
+-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
+-
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+ 	if (priv(dev)) {
+@@ -2093,7 +2091,8 @@ static int ai_config_calibration_source(struct comedi_device *dev,
+ 	else
+ 		num_calibration_sources = 8;
+ 	if (source >= num_calibration_sources) {
+-		printk("invalid calibration source: %i\n", source);
++		dev_err(dev->hw_dev, "invalid calibration source: %i\n",
++			source);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -2924,7 +2923,7 @@ static void pio_drain_ai_fifo_16(struct comedi_device *dev)
+ 		}
+ 
+ 		if (num_samples < 0) {
+-			printk(" cb_pcidas64: bug! num_samples < 0\n");
++			dev_err(dev->hw_dev, "bug! num_samples < 0\n");
+ 			break;
+ 		}
+ 
 -- 
 1.7.6.4
 
