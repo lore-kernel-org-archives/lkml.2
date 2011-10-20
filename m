@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab1JTURy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 16:17:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49149 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1JTURw (ORCPT
+	id S1752369Ab1JTUSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 16:18:00 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43254 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab1JTUR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 16:17:52 -0400
-Message-ID: <1319141867.2854.19.camel@edumazet-laptop>
-Subject: Re: Kernel panic from tg3 net driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: ari.m.savolainen@gmail.com, richardcochran@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 20 Oct 2011 22:17:47 +0200
-In-Reply-To: <20111020.161147.33259825921677777.davem@davemloft.net>
-References: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-	 <20111020.155659.486754557434415381.davem@davemloft.net>
-	 <1319141125.2854.14.camel@edumazet-laptop>
-	 <20111020.161147.33259825921677777.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Oct 2011 16:17:58 -0400
+Date: Thu, 20 Oct 2011 16:17:41 -0400 (EDT)
+Message-Id: <20111020.161741.1961240945982687125.davem@davemloft.net>
+To: mihai.maruseac@gmail.com
+Cc: shemminger@vyatta.com, eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl,
+        therbert@google.com, jpirko@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
+        mmaruseac@ixiacom.com
+Subject: Re: [PATCH] dev: use name hash for dev_seq_ops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1319097717-14910-1-git-send-email-mmaruseac@ixiacom.com>
+References: <1319097717-14910-1-git-send-email-mmaruseac@ixiacom.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 13:17:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 octobre 2011 à 16:11 -0400, David Miller a écrit :
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Thu, 20 Oct 2011 22:05:25 +0200
-> 
-> > And I think this was fixed yesterday ?
-> > 
-> > De: 	roy.qing.li@gmail.com
-> > À: 	ari.m.savolainen@gmail.com, netdev@vger.kernel.org
-> > Sujet: 	[PATCH net-next] neigh: fix rcu splat in neigh_update()
-> > Date: 	Tue, 18 Oct 2011 16:32:42 +0800 (18/10/2011 10:32:42)
-> > 
-> 
-> Good catch, it seems to be this bug.
+From: Mihai Maruseac <mihai.maruseac@gmail.com>
+Date: Thu, 20 Oct 2011 11:01:57 +0300
 
-Oh well, sorry, it seems it was one bug hit during bisection, but maybe
-its completely unrelated to the real problem.
+> Instead of using the dev->next chain and trying to resync at each call to
+> dev_seq_start, use the name hash, keeping the bucket and the offset in
+> seq->private field.
 
+I'm totally fine with this patch from a technical perspective, but I'd
+like one small thing tidied up before I apply this.
 
+> +	unsigned int pos; /* bucket << 24 + offset */
 
+Please don't mention this as a constant in the comment, if we ever
+change NETDEV_HASHBITS this comment will be inaccurate.
+
+I'd suggest putting the BUCKET_SPACE define before the dev_iter_state
+definition, and using BUCKET_SPACE in the comment instead of 24.
+
+Thanks.
