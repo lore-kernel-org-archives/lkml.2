@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab1JTGV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:21:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44102 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab1JTGVx (ORCPT
+	id S932507Ab1JTGWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:22:09 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:65381 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932477Ab1JTGWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:21:53 -0400
+	Thu, 20 Oct 2011 02:22:06 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 18/24] Staging: comedi: fix printk issue in ni_at_a2150.c
-Date: Thu, 20 Oct 2011 11:49:04 +0530
-Message-Id: <1319091550-2558-18-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 20/24] Staging: comedi: fix printk issue in cb_pcidas.c
+Date: Thu, 20 Oct 2011 11:49:06 +0530
+Message-Id: <1319091550-2558-20-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,153 +23,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ni_at_a2150.c file that fixes up a printk
+This is a patch to the cb_pcidas.c file that fixes up a printk
 warning found by the checkpatch.pl tool
 converted printks to dev_printk.
 Removed unnecessary printk statements.
-Fixed brace coding issue.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/ni_at_a2150.c |   43 +++++++++----------------
- 1 files changed, 16 insertions(+), 27 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidas.c |   49 ++++++++++------------------
+ 1 files changed, 17 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
-index 32e675e..54ddb2b 100644
---- a/drivers/staging/comedi/drivers/ni_at_a2150.c
-+++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
-@@ -211,17 +211,14 @@ static void __exit driver_a2150_cleanup_module(void)
- module_init(driver_a2150_init_module);
- module_exit(driver_a2150_cleanup_module);
- 
--#ifdef A2150_DEBUG
--
- static void ni_dump_regs(struct comedi_device *dev)
- {
--	printk("config bits 0x%x\n", devpriv->config_bits);
--	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
--	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
-+	dev_dbg(dev->hw_dev, "config bits 0x%x\n", devpriv->config_bits);
-+	dev_dbg(dev->hw_dev, "irq dma bits 0x%x\n", devpriv->irq_dma_bits);
-+	dev_dbg(dev->hw_dev, "status bits 0x%x\n",
-+		inw(dev->iobase + STATUS_REG));
- }
- 
--#endif
--
- /* interrupt service routine */
- static irqreturn_t a2150_interrupt(int irq, void *d)
- {
-@@ -347,8 +344,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	static const int timeout = 2000;
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
+index 9dec153..a0ce1ae 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas.c
+@@ -565,8 +565,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ 	int index;
  	int i;
  
--	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
--	       iobase);
- 	if (irq) {
- 		printk(", irq %u", irq);
- 	} else {
-@@ -359,20 +354,19 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	} else {
- 		printk(", no dma");
- 	}
+-	pr_info("comedi%d: cb_pcidas: ", dev->minor);
+-
+ /*
+  * Allocate the private structure area.
+  */
+@@ -576,7 +574,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ /*
+  * Probe the device to determine what device in the series it is.
+  */
 -	printk("\n");
  
- 	/* allocate and initialize dev->private */
- 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
- 		return -ENOMEM;
+ 	for_each_pci_dev(pcidev) {
+ 		/*  is it not a computer boards card? */
+@@ -600,20 +597,17 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ 		}
+ 	}
  
- 	if (iobase == 0) {
--		printk(" io base address required\n");
-+		dev_err(dev->hw_dev, "io base address required\n");
+-	printk("No supported ComputerBoards/MeasurementComputing card found on "
+-	       "requested position\n");
++	dev_err(dev->hw_dev,
++		"No supported ComputerBoards/MeasurementComputing card found on requested position\n");
+ 	return -EIO;
+ 
+ found:
+ 
+-	printk("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+-
+ 	/*
+ 	 * Enable PCI device and reserve I/O ports.
+ 	 */
+ 	if (comedi_pci_enable(pcidev, "cb_pcidas")) {
+-		printk(" Failed to enable PCI device and request regions\n");
++		dev_err(dev->hw_dev, "Failed to enable PCI device and request regions\n");
+ 		return -EIO;
+ 	}
+ 	/*
+@@ -639,7 +633,8 @@ found:
+ 	/*  get irq */
+ 	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
+ 			IRQF_SHARED, "cb_pcidas", dev)) {
+-		printk(" unable to allocate irq %d\n", devpriv->pci_dev->irq);
++		dev_err(dev->hw_dev, "unable to allocate irq %d\n",
++			devpriv->pci_dev->irq);
+ 		return -EINVAL;
+ 	}
+ 	dev->irq = devpriv->pci_dev->irq;
+@@ -768,17 +763,13 @@ found:
+  */
+ static int cb_pcidas_detach(struct comedi_device *dev)
+ {
+-	pr_info("comedi%d: cb_pcidas: remove\n", dev->minor);
+-
+ 	if (devpriv) {
+ 		if (devpriv->s5933_config) {
+ 			/*  disable and clear interrupts on amcc s5933 */
+ 			outl(INTCSR_INBOX_INTR_STATUS,
+ 			     devpriv->s5933_config + AMCC_OP_REG_INTCSR);
+-#ifdef CB_PCIDAS_DEBUG
+-			printk("detaching, incsr is 0x%x\n",
+-			       inl(devpriv->s5933_config + AMCC_OP_REG_INTCSR));
+-#endif
++			dev_dbg(dev->hw_dev, "detaching, incsr is 0x%x\n",
++				inl(devpriv->s5933_config + AMCC_OP_REG_INTCSR));
+ 		}
+ 	}
+ 	if (dev->irq)
+@@ -858,7 +849,8 @@ static int ai_config_calibration_source(struct comedi_device *dev,
+ 	unsigned int source = data[1];
+ 
+ 	if (source >= num_calibration_sources) {
+-		printk("invalid calibration source: %i\n", source);
++		dev_err(dev->hw_dev, "invalid calibration source: %i\n",
++			source);
  		return -EINVAL;
  	}
  
- 	/* check if io addresses are available */
- 	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -381,12 +375,13 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (irq) {
- 		/*  check that irq is supported */
- 		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
--			printk(" invalid irq line %u\n", irq);
-+			dev_err(dev->hw_dev, "invalid irq line %u\n", irq);
- 			return -EINVAL;
- 		}
- 		if (request_irq(irq, a2150_interrupt, 0,
- 				driver_a2150.driver_name, dev)) {
--			printk("unable to allocate irq %u\n", irq);
-+			dev_err(dev->hw_dev, "unable to allocate irq %u\n",
-+				irq);
- 			return -EINVAL;
- 		}
- 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
-@@ -395,11 +390,12 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  initialize dma */
- 	if (dma) {
- 		if (dma == 4 || dma > 7) {
--			printk(" invalid dma channel %u\n", dma);
-+			dev_err(dev->hw_dev, "invalid dma channel %u\n", dma);
- 			return -EINVAL;
- 		}
- 		if (request_dma(dma, driver_a2150.driver_name)) {
--			printk(" failed to allocate dma channel %u\n", dma);
-+			dev_err(dev->hw_dev, "failed to allocate dma channel %u\n",
-+				dma);
- 			return -EINVAL;
- 		}
- 		devpriv->dma = dma;
-@@ -466,7 +462,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+@@ -1278,9 +1270,7 @@ static int cb_pcidas_ai_cmd(struct comedi_device *dev,
+ 		bits |= PACER_INT;
+ 	outw(bits, devpriv->control_status + ADCMUX_CONT);
  
- static int a2150_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
- 
- 	/* only free stuff if it has been allocated by _attach */
- 	if (dev->iobase) {
-@@ -731,12 +726,9 @@ static int a2150_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	outw(trigger_bits, dev->iobase + TRIGGER_REG);
- 
- 	/*  start acquisition for soft trigger */
--	if (cmd->start_src == TRIG_NOW) {
-+	if (cmd->start_src == TRIG_NOW)
- 		outw(0, dev->iobase + FIFO_START_REG);
--	}
--#ifdef A2150_DEBUG
- 	ni_dump_regs(dev);
+-#ifdef CB_PCIDAS_DEBUG
+-	printk("comedi: sent 0x%x to adcmux control\n", bits);
 -#endif
++	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to adcmux control\n", bits);
+ 
+ 	/*  load counters */
+ 	if (cmd->convert_src == TRIG_TIMER)
+@@ -1305,9 +1295,8 @@ static int cb_pcidas_ai_cmd(struct comedi_device *dev,
+ 	} else {
+ 		devpriv->adc_fifo_bits |= INT_FHF;	/* interrupt fifo half full */
+ 	}
+-#ifdef CB_PCIDAS_DEBUG
+-	printk("comedi: adc_fifo_bits are 0x%x\n", devpriv->adc_fifo_bits);
+-#endif
++	dev_dbg(dev->hw_dev, "comedi: adc_fifo_bits are 0x%x\n",
++		devpriv->adc_fifo_bits);
+ 	/*  enable (and clear) interrupts */
+ 	outw(devpriv->adc_fifo_bits | EOAI | INT | LADFUL,
+ 	     devpriv->control_status + INT_ADCFIFO);
+@@ -1331,9 +1320,7 @@ static int cb_pcidas_ai_cmd(struct comedi_device *dev,
+ 	if (cmd->convert_src == TRIG_NOW && cmd->chanlist_len > 1)
+ 		bits |= BURSTE;
+ 	outw(bits, devpriv->control_status + TRIG_CONTSTAT);
+-#ifdef CB_PCIDAS_DEBUG
+-	printk("comedi: sent 0x%x to trig control\n", bits);
+-#endif
++	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to trig control\n", bits);
  
  	return 0;
  }
-@@ -801,9 +793,7 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 		ni_dump_regs(dev);
- #endif
- 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
--#ifdef A2150_DEBUG
--		printk(" data is %i\n", data[n]);
+@@ -1548,9 +1535,8 @@ static int cb_pcidas_ao_inttrig(struct comedi_device *dev,
+ 	/*  enable dac half-full and empty interrupts */
+ 	spin_lock_irqsave(&dev->spinlock, flags);
+ 	devpriv->adc_fifo_bits |= DAEMIE | DAHFIE;
+-#ifdef CB_PCIDAS_DEBUG
+-	printk("comedi: adc_fifo_bits are 0x%x\n", devpriv->adc_fifo_bits);
 -#endif
-+		dev_dbg(dev->hw_dev, "data is %i\n", data[n]);
- 		data[n] ^= 0x8000;
- 	}
++	dev_dbg(dev->hw_dev, "comedi: adc_fifo_bits are 0x%x\n",
++		devpriv->adc_fifo_bits);
+ 	/*  enable and clear interrupts */
+ 	outw(devpriv->adc_fifo_bits | DAEMI | DAHFI,
+ 	     devpriv->control_status + INT_ADCFIFO);
+@@ -1558,9 +1544,8 @@ static int cb_pcidas_ao_inttrig(struct comedi_device *dev,
+ 	/*  start dac */
+ 	devpriv->ao_control_bits |= DAC_START | DACEN | DAC_EMPTY;
+ 	outw(devpriv->ao_control_bits, devpriv->control_status + DAC_CSR);
+-#ifdef CB_PCIDAS_DEBUG
+-	printk("comedi: sent 0x%x to dac control\n", devpriv->ao_control_bits);
+-#endif
++	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to dac control\n",
++		devpriv->ao_control_bits);
+ 	spin_unlock_irqrestore(&dev->spinlock, flags);
  
-@@ -860,11 +850,10 @@ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
- 	case TRIG_ROUND_NEAREST:
- 	default:
- 		/*  if least upper bound is better approximation */
--		if (lub - *period < *period - glb) {
-+		if (lub - *period < *period - glb)
- 			*period = lub;
--		} else {
-+		else
- 			*period = glb;
--		}
- 		break;
- 	case TRIG_ROUND_UP:
- 		*period = lub;
+ 	async->inttrig = NULL;
 -- 
 1.7.6.4
 
