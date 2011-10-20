@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab1JTW0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 18:26:18 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:56803 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750782Ab1JTW0R (ORCPT
+	id S1751634Ab1JTW0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 18:26:48 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25953
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751462Ab1JTW0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 18:26:17 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Oct 2011 18:26:16 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAFudoE55LCxn/2dsb2JhbABCqRmBBoFuAQEFOhwjEAgDGC4UJQMhE719Eoc2YQSlaw
-Date: Fri, 21 Oct 2011 09:21:09 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
-Message-ID: <20111020222109.GB14993@dastard>
-References: <4E9E0B71.9020708@am.sony.com>
- <20111019073547.GR21648@n2100.arm.linux.org.uk>
- <4E9F5F1B.1020106@am.sony.com>
+	Thu, 20 Oct 2011 18:26:46 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zzbb2dK9371K936eK103dK1432N98dKzz1202hzzz32i668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LTDYBK-01-5D2-02
+X-M-MSG: 
+Message-ID: <1319149574.13035.6.camel@jshin-Toonie>
+Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Yinghai Lu <yinghai.lu@oracle.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Oct 2011 17:26:14 -0500
+In-Reply-To: <4EA09EA2.3030203@zytor.com>
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+	 <4EA09EA2.3030203@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E9F5F1B.1020106@am.sony.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 04:36:59PM -0700, Tim Bird wrote:
-> On 10/19/2011 12:35 AM, Russell King - ARM Linux wrote:
-> > On Tue, Oct 18, 2011 at 04:27:45PM -0700, Tim Bird wrote:
-> >> I'm about to submit a set of patches (really pretty small)
-> >> to add 4K stack support to ARM (defaulted to 'N').
-> >>
-> >> This has been kicking around in my Sony tree for a few years,
-> >> and it's about time to mainline it.  The first patch is
-> >> the actual 4KSTACKS patch.  See subsequent patches
-> >> for tools to help with stack reduction to avoid the problems
-> >> that apparently led to the removal of this feature on x86.
-> > 
-> > This isn't a good idea - if the feature has been abandoned on x86,
-> > people aren't going to be soo concerned about the stack usage of
-> > each function.  They're going to accept that there's more stack
-> > space available, and we'll see code paths that start expecting that.
+On Thu, 2011-10-20 at 17:20 -0500, H. Peter Anvin wrote:
+> On 10/20/2011 02:15 PM, Jacob Shin wrote:
+> > On systems with very large memory (1 TB in our case), BIOS may report a
+> > reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+> > these from the direct mapping.
 > 
-> Well, the difference in size is not an order of magnitude.  Current
-> stacks are only twice as big as what this feature optionally allows.
-> So people really shouldn't go crazy with their stack usage.
+> > +			if (ei->type == E820_RESERVED)
+> > +				continue;
 > 
-> Granted we're already seeing a bit of stack bloat, but IMHO this should
-> be nipped in the bud.  If the stack grows a lot more, it will likely
-> need to shift to 16K, which would REALLY be costly on machines
-> with lots of threads and low memory.
+> This should probably be ei->type != E820_RAM or something similar.  I
+> haven't looked yet, what does the < 4 GiB code do?
 
-FWIW, I was seriously considering bringing up 16k stacks on x86-64
-as a topic for the kernel summit. We've been getting reports of the
-8k stack being blown on different filesystems for the past year or
-so on relatively trivial storage configs....
+Hm, okay, it calls e820_end_of_low_ram_pfn() which effectively is !=
+E820_RAM.
 
-Cheers,
+I'll fix this, test, then resend.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks!
+
+-Jacob Shin
+Advanced Micro Devices, Inc.
+
+> 
+> 	-hpa
+> 
+> 
+
+
+
