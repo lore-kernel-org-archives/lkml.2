@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab1JTQ43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 12:56:29 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:17372 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab1JTQ42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 12:56:28 -0400
-X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4EA052B0.2080409@die-jansens.de>
-Date: Thu, 20 Oct 2011 18:56:16 +0200
-From: Arne Jansen <lists@die-jansens.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1756812Ab1JTQ6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 12:58:38 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:57069 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752474Ab1JTQ6h convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 12:58:37 -0400
 MIME-Version: 1.0
-To: Arne Jansen <sensille@gmx.net>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] ulist: generic data structure to build unique lists
-References: <1319122241-7222-1-git-send-email-sensille@gmx.net>
-In-Reply-To: <1319122241-7222-1-git-send-email-sensille@gmx.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1319119369.24621.84.camel@matrix>
+References: <1319119369.24621.84.camel@matrix>
+Date: Thu, 20 Oct 2011 17:58:36 +0100
+Message-ID: <CABS+qY3Fb6Ou+j-TE8Qit-HDx+SRafBoaZfgPs1CegidX2Dv0g@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH v7 1/3] ASoC: da7210: Add support for DAPM
+From: "Girdwood, Liam" <lrg@ti.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.10.2011 16:50, Arne Jansen wrote:
+On 20 October 2011 15:02, Ashish Chavan <ashish.chavan@kpitcummins.com> wrote:
+> This patch adds support for DAPM covering all inputs and outputs
+> as well as ADC and DAC.
+>
+> Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> ---
+> Changes since v3:
+> - Added missing routes for In-mixer left and right
+> - Added comment explaining rational behind use of STANDBY registers
+>
+> Changes since v1:
+> - used supply widget for mic bias
+> - removed mic bias hookup
+> - assigned dapm widgets and routes in card struct
+> - removed explicit setting of default mixer settings
+> - removed explicit setting of ios to standby mode
+> ---
+>  sound/soc/codecs/da7210.c |  240 ++++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 216 insertions(+), 24 deletions(-)
+>
 
-> + * This function is used to iterate an ulist. The iteration is started with
-> + * @prev = %NULL. It returns the next element from the ulist or %NULL when the
-> + * end is reached. No guarantee is made with respect to the order in which
-> + * the elements are returned. They might neither be returned in order of
-> + * addition nor in ascending order.
-> + * It is allowed to call ulist_add during an enumeration. Newly added items
-> + * are guaranteed to show up in the running enumeration.
-
-Thinking twice about it this guarantee most probably implies that the
-items are returned  in order of addition. This is currently the case.
-
-> + */
+Acked-by: Liam Girdwood <lrg@ti.com>
