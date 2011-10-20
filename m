@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1JTVQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:16:00 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:53518 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab1JTVP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:15:57 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Subject: Re: [RFC PATCH 06/17] phy_driver: Add and use phy_driver_[un]register_multiple()
-Date: Thu, 20 Oct 2011 17:15:54 -0400
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc4; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@conan.davemloft.net>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Baruch Siach <baruch@tkos.co.il>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com> <1319144425-15547-7-git-send-email-Kyle.D.Moffett@boeing.com>
-In-Reply-To: <1319144425-15547-7-git-send-email-Kyle.D.Moffett@boeing.com>
+	id S1753917Ab1JTVQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:16:15 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:56065 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753503Ab1JTVQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 17:16:13 -0400
+Date: Thu, 20 Oct 2011 17:16:00 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Phillip Lougher <phil.lougher@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        greg@kroah.com, linux-kernel@vger.kernel.org,
+        phillip@lougher.demon.co.uk
+Subject: Re: Procedural requirements for restoring kernel.org accounts
+Message-ID: <20111020211600.GC16820@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Phillip Lougher <phil.lougher@gmail.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, greg@kroah.com,
+	linux-kernel@vger.kernel.org, phillip@lougher.demon.co.uk
+References: <20111014152100.GA11717@kroah.com>
+ <4E988564.40905@zytor.com>
+ <CA+2-8GA-R3TETVLubOO8uMQq1a3-LmQ=STrXM1kf+8WbgfhTLQ@mail.gmail.com>
+ <20111020220922.6bfed01b@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2518635.yaTGvqVo4f";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110201715.58441.vapier@gentoo.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020220922.6bfed01b@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2518635.yaTGvqVo4f
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On Thu, Oct 20, 2011 at 10:09:22PM +0100, Alan Cox wrote:
+> > this.  So, will there be another key signing session held during the
+> > three days of LCE, and will the procedure mentioned in the link above
+> > ("If you would like to participate, please send an e-mail to
+> > prague-key-submission@googlegroups.com") apply too?
+> 
+> That sounds a good plan because I suspect LCE will have a number of
+> kernel hackers around who are not at KS, and KS will have plenty of us
+> who have gone home before LCE.
 
-On Thursday 20 October 2011 17:00:13 Kyle Moffett wrote:
-> +	return phy_driver_register_multiple(bcm63xx_drivers,
-> +			ARRAY_SIZE(bcm63xx_drivers));
+I was looking into setting up a separate key signing event at LCE, but
+the schedule is really packed, so it wasn't clear we could find a slot
+that would work for everyone.  Also, I simply ran out of time to try
+to organize yet another key signing event.
 
-if only the arm ARRAY_AND_SIZE() macro could gain traction in the wider tree:
-	return phy_driver_register_multiple(ARRAY_AND_SIZE(bcm63xx_drivers));
+This is why I suggested a more informal approach of people
+pre-printing fingerprints on slips of paper which could be exchanged,
+using something like gpg-key2ps.  If everyone comes prepared with
+these slips of paper, we can either try to organize a room where it's
+easier for people to find each other, or it can be done in an ad-hoc
+fashion during the coffee/tea breaks.
 
-ignoring that, this patch looks cool
+						- Ted
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
-
---nextPart2518635.yaTGvqVo4f
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJOoI+OAAoJEEFjO5/oN/WBsHMP/jZTwb5Xeq8jBajesYQifnXR
-0D8NsclNkel6sI7JcvWaMc8LwPQAjauwG5LY3bCD/meJE/WijKcnpYzbppMkKlBB
-9oJgMJzINdzOQG6S2zMiMPF6uyfvBrVrh/6KAS/LRH9WebGjQGWcT3yGaZHt6F0J
-rnFsEh3Qj4TM5hFjjrWQucDSePBfSYA4xe/dmG7O35NR0R/PyZ/VZdtXTRHLoRiS
-icg+nKxMZ1/Xa6rDugCXdbnpCD89wPJzSgZ7TRBJeCSUBR1Ny/MYmtXMLKZlhSxQ
-qLiXLYORWZKUlHfiNwSrpnaHA+dJBaEXIBSuI3/aoAkbm5ZuTTlQL5I6cbtenU/a
-7R96d6/J+P9k3PJiYL3MLoOTrJyzoQ8UNDmR+NlWOnswuQImJE45jWuBZOm4RDRW
-a7K3e8FAmEhl890pOB1dcsQTg4GjIN4UgkOBuyhLtn2VMAe3VHNjSssVWdFfQ9Ma
-k6kijdVn5pewdAZROBYZlSq9hzcfgluoOTsCgrwARDmfN07xBWkm/gq68/gSvbx4
-VVb4A8RMtMsGro3naHky95nNAflbd+5BbsUSZpMdWaBEHyAjjFqBUVqsHrW1dAiN
-+4jUOLTwzpAswwKBU2X9LV+Ee5Ztj4hZ/Sg65trK4DQe+2KRNvFpckn9TV2L3WsS
-ku8l1lKtCbGH/t/auRru
-=hN1g
------END PGP SIGNATURE-----
-
---nextPart2518635.yaTGvqVo4f--
