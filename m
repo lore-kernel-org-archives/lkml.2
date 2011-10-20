@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab1JTVPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:15:44 -0400
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35677
-	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753261Ab1JTVNY (ORCPT
+	id S1753866Ab1JTVPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:15:49 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:39328
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753831Ab1JTVPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:13:24 -0400
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: [RFC PATCH 09/17] mv643xx_eth: Use standardized phy_init_hw() for PHY reset
-Date: Thu, 20 Oct 2011 17:00:16 -0400
-Message-Id: <1319144425-15547-10-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+	Thu, 20 Oct 2011 17:15:45 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LTDV1Y-02-DIK-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Yinghai Lu <yinghai.lu@oracle.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+Date: Thu, 20 Oct 2011 16:15:26 -0500
+Message-ID: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PHY does not need to be reset immediately before phy_attach(), as
-that function will call phy_init_hw() properly on its own.  Furthermore,
-the PHY should not be manually reset, as that will undo board-specific
-PHY fixups and driver-specific phy->drv->config_init() register tweaks.
+On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+these from the direct mapping.
 
-NOTE: Depends on earlier phy_init_hw() patch.
-
-Not-yet-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Cc: stable@kernel.org   # > 2.6.32
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- drivers/net/mv643xx_eth.c |   22 +---------------------
- 1 files changed, 1 insertions(+), 21 deletions(-)
+ arch/x86/kernel/setup.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/mv643xx_eth.c b/drivers/net/mv643xx_eth.c
-index 2596999..d3e223c 100644
---- a/drivers/net/mv643xx_eth.c
-+++ b/drivers/net/mv643xx_eth.c
-@@ -2188,23 +2188,6 @@ static inline void oom_timer_wrapper(unsigned long data)
- 	napi_schedule(&mp->napi);
- }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index afaf384..af19a61 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -937,8 +937,21 @@ void __init setup_arch(char **cmdline_p)
  
--static void phy_reset(struct mv643xx_eth_private *mp)
--{
--	int data;
--
--	data = phy_read(mp->phy, MII_BMCR);
--	if (data < 0)
--		return;
--
--	data |= BMCR_RESET;
--	if (phy_write(mp->phy, MII_BMCR, data) < 0)
--		return;
--
--	do {
--		data = phy_read(mp->phy, MII_BMCR);
--	} while (data >= 0 && data & BMCR_RESET);
--}
--
- static void port_start(struct mv643xx_eth_private *mp)
- {
- 	u32 pscr;
-@@ -2217,7 +2200,7 @@ static void port_start(struct mv643xx_eth_private *mp)
- 		struct ethtool_cmd cmd;
- 
- 		mv643xx_eth_get_settings(mp->dev, &cmd);
--		phy_reset(mp);
-+		phy_init_hw(mp->phy);
- 		mv643xx_eth_set_settings(mp->dev, &cmd);
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		int i;
++		for (i = 0; i < e820.nr_map; i++) {
++			struct e820entry *ei = &e820.map[i];
++
++			if (ei->addr + ei->size <= 1UL << 32)
++				continue;
++
++			if (ei->type == E820_RESERVED)
++				continue;
++
++			max_pfn_mapped = init_memory_mapping(
++				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
++				ei->addr + ei->size);
++		}
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
  	}
- 
-@@ -2779,9 +2762,6 @@ static struct phy_device *phy_scan(struct mv643xx_eth_private *mp,
- static void phy_init(struct mv643xx_eth_private *mp, int speed, int duplex)
- {
- 	struct phy_device *phy = mp->phy;
--
--	phy_reset(mp);
--
- 	phy_attach(mp->dev, dev_name(&phy->dev), 0, PHY_INTERFACE_MODE_GMII);
- 
- 	if (speed == 0) {
 -- 
-1.7.2.5
+1.7.1
+
 
