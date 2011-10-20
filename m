@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab1JTQyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 12:54:39 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:60820 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753824Ab1JTQyi (ORCPT
+	id S1756810Ab1JTQ43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 12:56:29 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:17372 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab1JTQ42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 12:54:38 -0400
+	Thu, 20 Oct 2011 12:56:28 -0400
+X-RZG-AUTH: :IGUXYVOIf/Z0yAghYbpIhzghmj8icP68r1arC3zTx2B9G7/X5zri/u5Y1+fsZ6BmRA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4EA052B0.2080409@die-jansens.de>
+Date: Thu, 20 Oct 2011 18:56:16 +0200
+From: Arne Jansen <lists@die-jansens.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <20111020110214.GC2379@pengutronix.de>
-References: <1319107769.8866.3.camel@phoenix>
-	<20111020110214.GC2379@pengutronix.de>
-Date: Thu, 20 Oct 2011 17:54:37 +0100
-Message-ID: <CABS+qY3gdG746vQ4sU-Wbi2x2JGV3O55O6RmdoXax4_prJ3Kkg@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: Use SGTL5000_LINREG_VDDD_MASK instead of hardcoded
- mask value
-From: "Girdwood, Liam" <lrg@ti.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Zeng Zhaoming <zhaoming.zeng@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
+To: Arne Jansen <sensille@gmx.net>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] ulist: generic data structure to build unique lists
+References: <1319122241-7222-1-git-send-email-sensille@gmx.net>
+In-Reply-To: <1319122241-7222-1-git-send-email-sensille@gmx.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 October 2011 12:02, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> On Thu, Oct 20, 2011 at 06:49:29PM +0800, Axel Lin wrote:
->> We have defined SGTL5000_LINREG_VDDD_MASK in sgtl5000.h,
->> use it instead of hardcoded (0x1 << 4) - 1 for the mask.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
->
+On 20.10.2011 16:50, Arne Jansen wrote:
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+> + * This function is used to iterate an ulist. The iteration is started with
+> + * @prev = %NULL. It returns the next element from the ulist or %NULL when the
+> + * end is reached. No guarantee is made with respect to the order in which
+> + * the elements are returned. They might neither be returned in order of
+> + * addition nor in ascending order.
+> + * It is allowed to call ulist_add during an enumeration. Newly added items
+> + * are guaranteed to show up in the running enumeration.
+
+Thinking twice about it this guarantee most probably implies that the
+items are returned  in order of addition. This is currently the case.
+
+> + */
