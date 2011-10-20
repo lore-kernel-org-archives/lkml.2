@@ -1,69 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab1JTSjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 14:39:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37432 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab1JTSjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 14:39:19 -0400
-Date: Thu, 20 Oct 2011 20:39:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111020183913.GA21918@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	David Rientjes <rientjes@google.com>,
-	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-	Tejun Heo <tj@kernel.org>, Tejun Heo <htejun@gmail.com>,
-	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-	linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20111015201239.GA3475@swordfish>
- <alpine.DEB.2.00.1110151436420.15894@chino.kir.corp.google.com>
- <20111015222324.GA16432@liondog.tnic>
- <alpine.DEB.2.00.1110151529570.25063@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110151529570.25063@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751481Ab1JTSjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 14:39:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39226 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab1JTSjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 14:39:39 -0400
+Message-ID: <1319135973.1020.9.camel@mop>
+Subject: A =?UTF-8?Q?Plumber=E2=80=99s?= Wish List for Linux, updated
+ version 2
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: linux-kernel@vger.kernel.org
+Cc: lennart@poettering.net, harald@redhat.com, david@fubar.dk, greg@kroah.com
+Date: Thu, 20 Oct 2011 20:39:33 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0 (3.2.0-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 15, 2011 at 03:32:32PM -0700, David Rientjes wrote:
-> Could you try to revert f59de8992aa6 ("lockdep: Clear whole lockdep_map on 
-> initialization") with this patch and see if it helps?  Thanks.
-> ---
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -2874,7 +2874,10 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
->  void lockdep_init_map(struct lockdep_map *lock, const char *name,
->  		      struct lock_class_key *key, int subclass)
->  {
-> -	memset(lock, 0, sizeof(*lock));
-> +	int i;
-> +
-> +	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
-> +		lock->class_cache[i] = NULL;
->  
->  #ifdef CONFIG_LOCK_STAT
->  	lock->cpu = raw_smp_processor_id();
+Update: this is the second version, it incorporates the original list,
+adds a couple of new items, and includes references to some useful
+feedback and patches that have already been prepared.
 
-FWIW,
+We’d like to share our current wish list of plumbing layer features we
+are hoping to see implemented in the near future in the Linux kernel and
+associated tools. Some items we can implement on our own, others are not
+our area of expertise, and we will need help getting them implemented.
 
-the box has been running here with f59de8992aa6 reverted for a couple of
-days now and no sign of the warning. I'll keep watching it but it looks
-ok so far, so David, you could've nailed it.
+Acknowledging that this wish list of ours only gets longer and not
+shorter, even though we have implemented a number of other features on
+our own in the previous years, we are posting this list here, in the
+hope to find some help.
 
-Thanks.
+If you happen to be interested in working on something from this list or
+able to help out, we’d be delighted. Please ping us in case you need
+clarifications or more information on specific items.
 
--- 
-Regards/Gruss,
-    Boris.
+
+Thanks,
+Kay, Lennart, Harald, David in the name of all the other plumbers
+
+
+And here is the wish list, in no particular order:
+
+tmpfs:
+======
+* support user quota on tmpfs to prevent DoS vulnerabilities
+on /tmp, /dev/shm, /run/user/$USER. This is kinda important. Idea:
+global RLIMIT_TMPFS_QUOTA over all mounted tmpfs file systems. NEW!
+
+* support fallocate() properly: NEW!
+   fallocate(5, 0, 0, 7663616) = -1 EOPNOTSUPP
+
+
+fanotify:
+=========
+* events for renames NEW!
+
+* allow safe unprivileged access NEW!
+
+* pass information about the open flags to the file system monitors, in
+order to allow clients to figure out whether other applications opened
+files for writing or just read-only. NEW!
+
+* allow to find out if a file actually was written to, when closed after
+opening it read-write NEW!
+
+
+filesystems:
+============
+* (ioctl based?) interface to query and modify the label of a mounted
+FAT volume: A FAT label is implemented as a hidden directory entry in
+the file system, which need to be renamed when changing the file system
+label. This is impossible to do from userspace without remounting. Hence
+we’d like to see a kernel interface that is available on the mounted
+file system mount point itself. Of course, bonus points, if this new
+interface can be implemented for other file systems as well.
+
+* faster xattrs on ext2/3/4 (i.e. allow userspace to make use of xattr
+without paying the performance penalty for the seeks. Alex Larsson will
+provide you with the measurement data how xattr checking is magnitudes
+slower when trying to implement a simple file list). Suggestion: provide
+a simple flag in struct stat to inform userspace whether it is worth
+looking for xattrs (i.e. think STAT_XATTRS_FOUND or STAT_XATTRS_MAYBE)
+NEW!
+
+
+mounting:
+=========
+* allow creation of read-only bind mounts in a single mount() call,
+instead of two NEW!
+
+* Similar, allow configuration of namespace propagation settings for
+mount points in the initial mount() syscall, instead of always requiring
+two (which is racy, and ugly, and stuff). NEW!
+
+
+memory management:
+==================
+* swappiness control as madvise() for individual memory pages NEW!
+
+
+core kernel:
+============
+[PATCH] * hostname change notification:
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=70b932563a9514b248cc71a29bd0907bf95b4a5e NEW!
+
+[PATCH] * PR_SET_CHILD_SUBREAPER
+Reviewed and probably ready-to-merge patch:
+ http://permalink.gmane.org/gmane.linux.man/2071 NEW!
+
+* allow 64 bit PIDs / use 32 bit pids by default, in order to fix PID
+recycle vulnerabilities NEW!
+
+* allow changing argv[] of a process without mucking with environ[]:
+Something like setproctitle() or a prctl() would be ideal. Of course it
+is questionable if services like sendmail make use of this, but otoh for
+services which fork but do not immediately exec() another binary being
+able to rename this child processes in ps is of importance.
+
+
+driver model:
+=============
+* CPU modaliases in /sys/devices/system/cpu/cpuX/modalias:
+useful to allow module auto-loading of e.g. cpufreq drivers and KVM
+modules. Andy Kleen has a patch to create the alias file itself. CPU
+‘struct sysdev’ needs to be converted to ‘struct device’ and a ‘struct
+bus_type cpu’ needs to be introduced to allow proper CPU coldplug event
+replay at bootup. This is one of the last remaining places where
+automatic hardware-triggered module auto-loading is not available. And
+we’d like to see that fix to make numerous ugly userspace work-arounds
+to achieve the same go away.
+
+* export ‘struct device_type fb/fbcon’ of ‘struct class graphics’
+Userspace wants to easily distinguish ‘fb’ and ‘fbcon’ from each other
+without the need to match on the device name.
+
+
+security:
+=========
+[PATCH] * expose CAP_LAST_CAP somehow in the running kernel at runtime:
+Userspace needs to know the highest valid capability of the running
+kernel, which right now cannot reliably be retrieved from header files
+only. The fact that this value cannot be detected properly right now
+creates various problems for libraries compiled on newer header files
+which are run on older kernels. They assume capabilities are available
+which actually aren’t. Specifically, libcap-ng claims that all running
+processes retain the higher capabilities in this case due to the
+“inverted” semantics of CapBnd in /proc/$PID/status.
+Dan Ballard
+https://lkml.org/lkml/2011/10/12/452
+
+
+userspace:
+==========
+* module-init-tools: provide a proper libmodprobe.so from
+module-init-tools:
+Early boot tools, installers, driver install disks want to access
+information about available modules, and match devices to available
+modules to hook up driver overwrites, driver update disks, installer
+tweaks, and to optimize bootup module handling.
+
+
+cgroups:
+========
+* fork throttling mechanism as basic cgroup functionality that is
+available in all hierarchies independent of the controllers used:
+This is important to implement race-free killing of all members of a
+cgroup, so that cgroup member processes cannot fork faster then a cgroup
+supervisor process could kill them. This needs to be recursive, so that
+not only a cgroup but all its subgroups are covered as well.
+Patches for task_conter from Frederic Weisbecker
+http://article.gmane.org/gmane.linux.kernel/1198795
+Possibly use the freezer Tejun is looking into.
+
+* proper cgroup-is-empty notification interface:
+The current call_usermodehelper() interface is an unefficient and an
+ugly hack. Tools would prefer anything more lightweight like a netlink,
+poll() or fanotify interface.
+
+* allow user xattrs to be set on files in the cgroupfs (and maybe
+procfs?)
+
+* allow making use of the “cpu” cgroup controller by default without
+breaking RT. Right now creating a cgroup in the “cpu” hierarchy that
+shall be able to take advantage of RT is impossible for the generic case
+since it needs an RT budget configured which is from a limited resource
+pool. What we want is the ability to create cgroups in “cpu” whose
+processes get an non-RT weight applied, but for RT take advantage of the
+parent’s RT budget. We want the separation of RT and non-RT budget
+assignment in the “cpu” hierarchy, because right now, you lose RT
+functionality in it unless you assign an RT budget. This issue severely
+limits the usefulness of “cpu” hierarchy on general purpose systems
+right now.
+
+* Add a timerslack cgroup controller, to allow increasing the timer
+slack of user session cgroups when the machine is idle.
+ Patch from: Kirill A. Shutemov
+ http://article.gmane.org/gmane.linux.kernel/1201782
+ http://lwn.net/Articles/463357/
+
+
+namespaces:
+===========
+* simple, reliable and future-proof way to detect whether a specific pid
+is running in a CLONE_NEWUTS/CLONE_NEWPID container, i.e. not in the
+root PID namespace/UTS namespace. Currently, there are available a few
+ugly hacks to detect this (for example a process wanting to know whether
+it is running in a PID namespace could just look for a PID 2 being
+around and named kthreadd which is a kernel thread only visible in the
+root namespace), however all these solutions encode information and
+expectations that better shouldn’t be encoded in a namespace test like
+this. This functionality is needed in particular since the removal of
+the the ns cgroup controller which provided the namespace membership
+information to user code.
+
+
+AF_UNIX:
+========
+* An auxiliary meta data message for AF_UNIX called SCM_CGROUPS (or
+something like that), i.e. a way to attach sender cgroup membership to
+messages sent via AF_UNIX. This is useful in case services such as
+syslog shall be shared among various containers (or service cgroups),
+and the syslog implementation needs to be able to distinguish the
+sending cgroup in order to separate the logs on disk. Of course stm
+SCM_CREDENTIALS can be used to look up the PID of the sender followed by
+a check in /proc/$PID/cgroup, but that is necessarily racy, and actually
+a very real race in real life.
+
+* SCM_PROCSTATUS for retrieving sender process information supplying at
+least: comm, exec, cmdline, audit session, audit loginuid.
+
+
+All time favourites:
+====================
+These items have been requested many times already, and we want to make
+sure they aren’t forgotten. We know they are hard to implement, and we
+don’t know how to get there, but nonetheless, here they are:
+
+* Oldie But Goldie: some kind of unionfs or union mount. A minimal
+version that supports only read-only filesystems would already be a big
+step forward. NEW!
+
+* revoke() NEW!
+
+* Notifications when non-child processes die, in an efficient way
+focussing on explicit PIDs (i.e. not taskstats) in some form (idea:
+poll() for POLLERR on /proc/$PID) NEW!
+
