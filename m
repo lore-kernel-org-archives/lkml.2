@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab1JTK0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:26:20 -0400
-Received: from mx.kernel.net.pl ([217.73.31.3]:54554 "EHLO an2.kernel.pl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750751Ab1JTK0T convert rfc822-to-8bit (ORCPT
+	id S1756521Ab1JTKcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:32:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41798 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab1JTKcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:26:19 -0400
-From: Witold Krecicki <wpk@culm.net>
-To: Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 0/6] cgroup: add isolation_root flag, poor man's namespaces for cgroups
-Date: Thu, 20 Oct 2011 12:25:59 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.6.2; x86_64; ; )
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Matt Helsley <matthltc@us.ibm.com>
-References: <1317382585-12172-1-git-send-email-wpk@culm.net> <CALdu-PDCxS49_GBBUQUskotKb_46O31YM8Tx+cniGfBa5X169g@mail.gmail.com>
-In-Reply-To: <CALdu-PDCxS49_GBBUQUskotKb_46O31YM8Tx+cniGfBa5X169g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110201225.59627.wpk@culm.net>
+	Thu, 20 Oct 2011 06:32:15 -0400
+Subject: Re: patch] cpusets, cgroups: disallow attaching kthreadd
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: David Rientjes <rientjes@google.com>
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>
+In-Reply-To: <alpine.DEB.2.00.1110191243110.2892@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <1318927355.21167.3.camel@twins>
+	 <1318927629.9641.27.camel@marge.simson.net>
+	 <1318928763.21167.5.camel@twins>
+	 <1318929825.9641.32.camel@marge.simson.net>
+	 <1318932693.6748.5.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1110181336150.2639@chino.kir.corp.google.com>
+	 <1319010659.29774.3.camel@twins>
+	 <alpine.DEB.2.00.1110191243110.2892@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Oct 2011 12:32:07 +0200
+Message-ID: <1319106727.8653.3.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia czwartek, 20 października 2011 o 12:11:54 Paul Menage napisał(a):
-> After talking with Eric Biederman at LPC about the virtualizability of
-> containers, I was wondering whether we could go even further, and say
-> that a hierarchy (in the sense of a tree of cgroups with a bound set
-> of subsystems) could be broken at the point of an isolation root. The
-> container could then construct its own hierarchies with potentially
-> different combinations of subsystems.
-I tried to make it as simple as possible - and this approach (looking at patch 
-length) seemed to be the simplest (we really don't care about 'other' cgroups 
-that might appear). Other approaches would probably require major rewrites of 
-cgroups code.
-
-> > I'm really not sure if the 'mount' part (patch 5) is done correctly,
-> > please review carefully.
+On Wed, 2011-10-19 at 12:47 -0700, David Rientjes wrote:
+> On Wed, 19 Oct 2011, Peter Zijlstra wrote:
 > 
-> It looks simple, I agree, and as though it *ought* to work. My first
-> worry with this was that if the parent system unmount the hierarchy,
-> and all the tasks in the child container died (so its namespace was
-> cleaned up), what would keep the root or the parent-created hierarchy
-> alive? But I think that since the super-block also has a reference on
-> the root dentry itself, it should be OK.
-I've tested it and 'it works' so no problem there :)
-I'm currently testing this setup with several containers launched under 
-modified LXC (creating 'container_name' cgroup, then 'container_name/rootfs', 
-then setting them both to desired values and putting init in 
-'container_name/rootfs') - no problems so far.
+> > My thinking is that kthreadd is the mother of all kernel threads and the
+> > kernel assumes it can spawn kthreads without constraints, a valid
+> > assumption IMO.
+> > 
+> 
+> Cgroups don't necessarily imply constraints,
 
--- 
-Witold Krecicki
+And yet they're called: Control Groups..
 
+>  though, you could devise a 
+> cgroup to just do monitoring or statistics tracking for an aggregate of 
+> tasks and placing kthreadd in such a cgroup would make perfect sense 
+> because then, since children are forked in the same cgroup, you can 
+> monitor or gather statistics for all kthreads.  This can be your only 
+> cgroup on the system.
+
+I guess you could, but does it really make sense? Also, you could sort
+this by extending the cgroup interface to explicitly distinct between
+controllers and !controllers.
+
+> Cpusets, though, does imply cpu constraints, which is why we decline 
+> PF_THREAD_BOUND threads from moving in the first place, which is the 
+> source of Mike's issue.  It's can_attach() function can explicitly decline 
+> kthreadd as well since the cpu constraints of both types of threads should 
+> never be altered by either cpusets or sched_setaffinity().
+
+Yeah, and I'm saying we want to exclude _all_ controllers from placing
+constraints on kthreadd, even those that might not immediately break
+stuff.
 
