@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab1JTQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 12:44:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55063 "EHLO mga09.intel.com"
+	id S932227Ab1JTQou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 12:44:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19144 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753824Ab1JTQoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 12:44:25 -0400
+	id S1753486Ab1JTQot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 12:44:49 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="65180090"
-Date: Thu, 20 Oct 2011 18:47:43 +0200
+X-IronPort-AV: E=Sophos;i="4.69,380,1315206000"; 
+   d="scan'208";a="75854802"
+Date: Thu, 20 Oct 2011 18:48:17 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86, mrst: add platform support for MSIC MFD driver
-Message-ID: <20111020164743.GA3871@sortiz-mobl>
-References: <20111018091311.GD7694@sortiz-mobl>
- <1318930882-10017-1-git-send-email-mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Virupax Sadashivpetimath 
+	<virupax.sadashivpetimath@stericsson.com>,
+        Philippe Langlais <philippe.langlais@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/4] mfd/ab8500-core: add interrupt disable hook
+Message-ID: <20111020164817.GB3871@sortiz-mobl>
+References: <1318322957-11435-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318930882-10017-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1318322957-11435-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika,
+Hi Linus,
 
-On Tue, Oct 18, 2011 at 12:41:22PM +0300, Mika Westerberg wrote:
-> The MSIC MFD driver creates platform devices for MSIC device drivers so we
-> don't need to create them in platform code anymore.
+
+On Tue, Oct 11, 2011 at 10:49:17AM +0200, Linus Walleij wrote:
+> From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
 > 
-> This patch adds a new runtime check which determines whether we are running
-> on a Medfield platform and enables the MSIC MFD driver accordingly.
+> Add the missing interrupt disable hook in the irq_chip
+> callbacks for ab8500.
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-I applied this new version, thanks.
+> Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
+> Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+All 4 patches applied, thanks.
 
 Cheers,
 Samuel.
