@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab1JTVUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:20:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64047 "EHLO mx1.redhat.com"
+	id S1753712Ab1JTVVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:21:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33698 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958Ab1JTVUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:20:23 -0400
-Date: Thu, 20 Oct 2011 17:20:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Subject: Re: [PATCH 2/2] blk-throttle: Take blkcg->lock while traversing
- blkcg->policy_list
-Message-ID: <20111020212021.GA2841@redhat.com>
-References: <1319144906-5066-1-git-send-email-vgoyal@redhat.com>
- <1319144906-5066-2-git-send-email-vgoyal@redhat.com>
- <20111020211140.GY25124@google.com>
+	id S1753105Ab1JTVVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 17:21:09 -0400
+Message-ID: <4EA0909C.3040509@zytor.com>
+Date: Thu, 20 Oct 2011 14:20:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111020211140.GY25124@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Phillip Lougher <phil.lougher@gmail.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, phillip@lougher.demon.co.uk
+Subject: Re: Procedural requirements for restoring kernel.org accounts
+References: <20111014152100.GA11717@kroah.com> <4E988564.40905@zytor.com> <CA+2-8GA-R3TETVLubOO8uMQq1a3-LmQ=STrXM1kf+8WbgfhTLQ@mail.gmail.com> <20111020220922.6bfed01b@lxorguk.ukuu.org.uk> <20111020211600.GC16820@thunk.org>
+In-Reply-To: <20111020211600.GC16820@thunk.org>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 02:11:40PM -0700, Tejun Heo wrote:
-> Hello,
+On 10/20/2011 02:16 PM, Ted Ts'o wrote:
 > 
-> On Thu, Oct 20, 2011 at 05:08:26PM -0400, Vivek Goyal wrote:
-> > blkcg->policy_list is protected by blkcg->lock. Its not rcu protected
-> > list. So even for readers, they need to take blkcg->lock. There are
-> > few functions which were reading the list without taking lock. Fix it.
-> > 
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> I was looking into setting up a separate key signing event at LCE, but
+> the schedule is really packed, so it wasn't clear we could find a slot
+> that would work for everyone.  Also, I simply ran out of time to try
+> to organize yet another key signing event.
 > 
->  Acked-by: Tejun Heo <tj@kernel.org>
+> This is why I suggested a more informal approach of people
+> pre-printing fingerprints on slips of paper which could be exchanged,
+> using something like gpg-key2ps.  If everyone comes prepared with
+> these slips of paper, we can either try to organize a room where it's
+> easier for people to find each other, or it can be done in an ad-hoc
+> fashion during the coffee/tea breaks.
 > 
-> And yeap, some of rcu usages in cfq/iocg seem either incorrect or
-> unnecessary.  Trying to clean up that now too.
 
-Cool. I am waiting for the patches as I am curious to know what's incorrect
-or unnecessary.
+Aren't there any BOF slots or something like that?
 
-I noticed above two problems while trying to figure out how can we cleanup
-the device rules when devices goes away. One place could be.
+	-hpa
 
-blk_throtl_exit() {
-	blkiocg_del_blkio_group() {
-		delete_any_policy_nodes_associated_with_this device;
-	}
-}
-
-The only problem with this approach is that it will cleanup per device
-weight rules also at elevator_exit() time which is not same as device
-removal and one might device to bring CFQ back on device and we will
-need the rules again.
-
-cfq_exit_queue()
-  cfq_release_cfq_groups
-    cfq_blkiocg_del_blkio_group()
-      blkiocg_del_blkio_group()
-
-Thanks
-Vivek
