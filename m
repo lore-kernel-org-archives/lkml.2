@@ -1,262 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab1JTX0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 19:26:49 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58004 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab1JTX0s (ORCPT
+	id S1752051Ab1JTX2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 19:28:17 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:28827 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab1JTX2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 19:26:48 -0400
-Date: Thu, 20 Oct 2011 21:26:43 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com
-Subject: Re: [PATCH] perf top: fix crash on annotate request
-Message-ID: <20111020232643.GB3404@ghostprotocols.net>
-References: <1319143168-14468-1-git-send-email-dsahern@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319143168-14468-1-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Oct 2011 19:28:15 -0400
+Message-ID: <1319153279.2918.16.camel@deadeye>
+Subject: Re: [RFC PATCH 15/17] phy_device: Add "port" and "transciever"
+ fields
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        David Decotigny <decot@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 21 Oct 2011 00:27:59 +0100
+In-Reply-To: <1319144425-15547-16-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+	 <1319144425-15547-16-git-send-email-Kyle.D.Moffett@boeing.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 20 Oct 2011 23:28:15.0144 (UTC) FILETIME=[F0DB8A80:01CC8F7F]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18460.005
+X-TM-AS-Result: No--11.379900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 20, 2011 at 02:39:28PM -0600, David Ahern escreveu:
-> Command:
->   perf top -ag --sort comm,dso
-
-Aha, so this is what leads to the crash, i.e. a non symbolic view, when
-"sym" is not in --sort. I'm applying this fix instead:
-
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index af12e6f..4663dcb 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -882,6 +882,13 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			 */
- 			goto out_free_stack;
- 		case 'a':
-+			if (!browser->has_symbols) {
-+				ui__warning(
-+			"Annotation is only available for symbolic views, "
-+			"include \"sym\" in --sort to use it.");
-+				continue;
-+			}
-+
- 			if (browser->selection == NULL ||
- 			    browser->selection->sym == NULL ||
- 			    browser->selection->map->dso->annotate_warned)
-
-I had already fixed this for the menu case, where all the things that
-only make sense for symbols are not present, forgot about the 'a'
-hotkey.
-
-Thanks for reporting and for the patch anyway!
-
-- Arnaldo
- 
-> crashes with signature:
+On Thu, 2011-10-20 at 17:00 -0400, Kyle Moffett wrote:
+> Some PHYs have multiple software-selectable inputs and outputs,
+> including RGMII, SGMII, SerDes, etc.  New fields are added to the
+> "struct phy_device" for "port" and "transciever" to allow "ethtool" to
+> switch outputs at runtime.  The defaults for the new fields are
+> identical to the hardcoded values used previously.
 > 
->     nr_events=1, timer=0x417220 <perf_top__sort_new_samples>, arg=0x751540, delay_secs=2)
->     at util/ui/browsers/annotate.c:405
->     evidx=<value optimized out>, nr_events=<value optimized out>, timer=<value optimized out>,
->     arg=<value optimized out>, delay_secs=<value optimized out>)
->     at util/ui/browsers/annotate.c:373
->     helpline=<value optimized out>, ev_name=0x860b60 "cycles", left_exits=false,
->     timer=0x417220 <perf_top__sort_new_samples>, arg=0x751540, delay_secs=2)
->     at util/ui/browsers/hists.c:997
->     help=0x502b30 "For a higher level overview, try: perf top --sort comm,dso",
->     timer=0x417220 <perf_top__sort_new_samples>, arg=0x751540, delay_secs=2)
->     at util/ui/browsers/hists.c:1204
+> This should make no functional changes to the PHY layer behavior, but
+> it will allow later PHY/ethernet drivers to override those fields.
 > 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 > ---
->  tools/perf/builtin-annotate.c          |    7 ++++---
->  tools/perf/builtin-top.c               |    2 +-
->  tools/perf/util/annotate.c             |   24 +++++++++++++++++++-----
->  tools/perf/util/annotate.h             |    5 +++--
->  tools/perf/util/hist.c                 |    4 ++--
->  tools/perf/util/hist.h                 |    3 ++-
->  tools/perf/util/ui/browsers/annotate.c |    3 ++-
->  7 files changed, 33 insertions(+), 15 deletions(-)
+>  drivers/net/phy/phy.c        |    4 ++--
+>  drivers/net/phy/phy_device.c |    2 ++
+>  include/linux/phy.h          |    4 ++++
+>  3 files changed, 8 insertions(+), 2 deletions(-)
 > 
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 3ea764a..2c8362a 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -108,10 +108,11 @@ static int process_sample_event(union perf_event *event,
->  	return 0;
->  }
+> diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+> index c378f91..5f72055 100644
+> --- a/drivers/net/phy/phy.c
+> +++ b/drivers/net/phy/phy.c
+> @@ -290,9 +290,9 @@ int phy_ethtool_gset(struct phy_device *phydev, struct ethtool_cmd *cmd)
 >  
-> -static int hist_entry__tty_annotate(struct hist_entry *he, int evidx)
-> +static int hist_entry__tty_annotate(struct hist_entry *he, int evidx,
-> +				    int nr_events)
->  {
->  	return symbol__tty_annotate(he->ms.sym, he->ms.map, evidx,
-> -				    print_line, full_paths, 0, 0);
-> +				    print_line, full_paths, 0, 0, nr_events);
->  }
+>  	ethtool_cmd_speed_set(cmd, phydev->speed);
+>  	cmd->duplex = phydev->duplex;
+> -	cmd->port = PORT_MII;
+> +	cmd->port = phydev->port;
+>  	cmd->phy_address = phydev->addr;
+> -	cmd->transceiver = XCVR_EXTERNAL;
+> +	cmd->transceiver = phydev->transciever;
+
+'transceiver' is spelt thus.
+
+[...]
+> --- a/include/linux/phy.h
+> +++ b/include/linux/phy.h
+> @@ -308,6 +308,10 @@ struct phy_device {
+>  	u32 supported;
+>  	u32 advertising;
 >  
->  static void hists__find_annotations(struct hists *self, int evidx,
-> @@ -154,7 +155,7 @@ find_next:
->  			if (next != NULL)
->  				nd = next;
->  		} else {
-> -			hist_entry__tty_annotate(he, evidx);
-> +			hist_entry__tty_annotate(he, evidx, nr_events);
->  			nd = rb_next(nd);
->  			/*
->  			 * Since we have a hist_entry per IP for the same
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index 7a87171..b6e8353 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -177,7 +177,7 @@ static int parse_source(struct hist_entry *he)
->  		return err;
->  	}
->  
-> -	err = symbol__annotate(sym, map, 0);
-> +	err = symbol__annotate(sym, map, 0, top.evlist->nr_entries);
->  	if (err == 0) {
->  out_assign:
->  		top.sym_filter_entry = he;
-> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-> index bc8f477..c9090d8 100644
-> --- a/tools/perf/util/annotate.c
-> +++ b/tools/perf/util/annotate.c
-> @@ -197,7 +197,8 @@ static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
->  }
->  
->  static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
-> -				      FILE *file, size_t privsize)
-> +				      FILE *file, size_t privsize,
-> +				      int nr_events)
->  {
->  	struct annotation *notes = symbol__annotation(sym);
->  	struct objdump_line *objdump_line;
-> @@ -253,12 +254,24 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
->  		free(line);
->  		return -1;
->  	}
+> +	/* The current port/xcvr info (Copper, Fibre, MII, Direct-Attach) */
+> +	u8 port;
+> +	u8 transceiver;
 > +
-> +	pthread_mutex_lock(&notes->lock);
-> +	if (notes->src == NULL &&
-> +		symbol__alloc_hist(sym, nr_events) < 0) {
-> +		pthread_mutex_unlock(&notes->lock);
-> +		ui__warning("Not enough memory for annotating '%s' symbol!\n",
-> +			    sym->name);
-> +		return -1;
-> +	}
-> +	pthread_mutex_unlock(&notes->lock);
-> +
->  	objdump__add_line(&notes->src->source, objdump_line);
+
+And yet you got it right here.
+
+Ben.
+
+>  	int autoneg;
 >  
->  	return 0;
->  }
->  
-> -int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
-> +int symbol__annotate(struct symbol *sym, struct map *map,
-> +		     size_t privsize, int nr_events)
->  {
->  	struct dso *dso = map->dso;
->  	char *filename = dso__build_id_filename(dso, NULL, 0);
-> @@ -343,7 +356,8 @@ fallback:
->  		goto out_free_filename;
->  
->  	while (!feof(file))
-> -		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
-> +		if (symbol__parse_objdump_line(sym, map, file,
-> +					       privsize, nr_events) < 0)
->  			break;
->  
->  	pclose(file);
-> @@ -583,14 +597,14 @@ void objdump_line_list__purge(struct list_head *head)
->  
->  int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
->  			 bool print_lines, bool full_paths, int min_pcnt,
-> -			 int max_lines)
-> +			 int max_lines, int nr_events)
->  {
->  	struct dso *dso = map->dso;
->  	const char *filename = dso->long_name;
->  	struct rb_root source_line = RB_ROOT;
->  	u64 len;
->  
-> -	if (symbol__annotate(sym, map, 0) < 0)
-> +	if (symbol__annotate(sym, map, 0, nr_events) < 0)
->  		return -1;
->  
->  	len = sym->end - sym->start;
-> diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-> index d907252..1a7842d 100644
-> --- a/tools/perf/util/annotate.h
-> +++ b/tools/perf/util/annotate.h
-> @@ -75,7 +75,8 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
->  int symbol__alloc_hist(struct symbol *sym, int nevents);
->  void symbol__annotate_zero_histograms(struct symbol *sym);
->  
-> -int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize);
-> +int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize,
-> +		     int nr_events);
->  int symbol__annotate_init(struct map *map __used, struct symbol *sym);
->  int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
->  			    bool full_paths, int min_pcnt, int max_lines,
-> @@ -86,7 +87,7 @@ void objdump_line_list__purge(struct list_head *head);
->  
->  int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
->  			 bool print_lines, bool full_paths, int min_pcnt,
-> -			 int max_lines);
-> +			 int max_lines, int nr_events);
->  
->  #ifdef NO_NEWT_SUPPORT
->  static inline int symbol__tui_annotate(struct symbol *sym __used,
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index f6a9939..0ebfa3e 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -1180,9 +1180,9 @@ int hist_entry__inc_addr_samples(struct hist_entry *he, int evidx, u64 ip)
->  	return symbol__inc_addr_samples(he->ms.sym, he->ms.map, evidx, ip);
->  }
->  
-> -int hist_entry__annotate(struct hist_entry *he, size_t privsize)
-> +int hist_entry__annotate(struct hist_entry *he, size_t privsize, int nr_events)
->  {
-> -	return symbol__annotate(he->ms.sym, he->ms.map, privsize);
-> +	return symbol__annotate(he->ms.sym, he->ms.map, privsize, nr_events);
->  }
->  
->  void hists__inc_nr_events(struct hists *hists, u32 type)
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index 575bcbc..99ead17 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -94,7 +94,8 @@ size_t hists__fprintf(struct hists *self, struct hists *pair,
->  		      int max_rows, int max_cols, FILE *fp);
->  
->  int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
-> -int hist_entry__annotate(struct hist_entry *self, size_t privsize);
-> +int hist_entry__annotate(struct hist_entry *self, size_t privsize,
-> +			 int nr_events);
->  
->  void hists__filter_by_dso(struct hists *hists);
->  void hists__filter_by_thread(struct hists *hists);
-> diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-> index 1a12d8f..4eb1faf 100644
-> --- a/tools/perf/util/ui/browsers/annotate.c
-> +++ b/tools/perf/util/ui/browsers/annotate.c
-> @@ -402,7 +402,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
->  	if (map->dso->annotate_warned)
->  		return -1;
->  
-> -	if (symbol__annotate(sym, map, sizeof(struct objdump_line_rb_node)) < 0) {
-> +	if (symbol__annotate(sym, map, sizeof(struct objdump_line_rb_node),
-> +			     nr_events) < 0) {
->  		ui__error_window(ui_helpline__last_msg);
->  		return -1;
->  	}
-> -- 
-> 1.7.6.4
+>  	int link_timeout;
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
