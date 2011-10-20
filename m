@@ -1,96 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab1JTTtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 15:49:35 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:51795 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab1JTTtd convert rfc822-to-8bit (ORCPT
+	id S1752463Ab1JTT4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 15:56:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43968 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752336Ab1JTT4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 15:49:33 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=spIDwyjlQeA37PGBClaBvybXw6PK+FHXdMQjp+Oau1w= c=1 sm=1
- a=tIsKcYu7PxIA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=JfrnYn6hAAAA:8 a=7mF_9xXiul8E6uBlTIwA:9
- a=ihzJB1jDj5YMu21uOywA:7 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
-Mime-Version: 1.0 (Apple Message framework v1084)
+	Thu, 20 Oct 2011 15:56:40 -0400
+Date: Thu, 20 Oct 2011 20:56:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+	regulator_init_data
+Message-ID: <20111020195638.GA17384@opensource.wolfsonmicro.com>
+References: <20111018160046.GD28501@opensource.wolfsonmicro.com> <20111019053354.GB31162@S2100-06.ap.freescale.net> <20111019144734.GI18713@sirena.org.uk> <20111019150448.GB32007@S2100-06.ap.freescale.net> <20111019151031.GA4275@opensource.wolfsonmicro.com> <4E9F9892.9070007@ti.com> <20111020094140.GK18713@sirena.org.uk> <20111020162743.GB31337@atomide.com> <20111020164006.GA10155@sirena.org.uk> <20111020170534.GC31337@atomide.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20111020174915.GA9987@fieldses.org>
-Date: Thu, 20 Oct 2011 13:49:33 -0600
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, agruen@kernel.org,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E394C0CC-6124-42FD-9962-A061DC4784E3@dilger.ca>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019222021.GB1874@fieldses.org> <87k4805alx.fsf@linux.vnet.ibm.com> <20111020091434.GC5444@fieldses.org> <20111020091946.GA23773@infradead.org> <87aa8w53kj.fsf@linux.vnet.ibm.com> <20111020174915.GA9987@fieldses.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+In-Reply-To: <20111020170534.GC31337@atomide.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-20, at 11:49 AM, J. Bruce Fields wrote:
-> On Thu, Oct 20, 2011 at 04:32:04PM +0530, Aneesh Kumar K.V wrote:
->> On Thu, 20 Oct 2011 05:19:46 -0400, Christoph Hellwig <hch@infradead.org> wrote:
->>> Storing strings is an extremly stupid idea.  The only thing that would
->>> make sense would be storing a windows-style 128-bit GUID.
->> 
->> How about updating the richacl_xattr as below 
->> 
->> struct richace_xattr {
->> 	__le16		e_type;
->> 	__le16		e_flags;
->> 	__le32		e_mask;
->> 	__le32		e_size;
->> 	u8		e_id[0];
->> };
->> 
->> now e_flags can contain ACE4_SPECIAL_WHO to indicate value in e_id
->> indicate special who values (which could be 1 byte value indicating
->> OWNER@, GROUP@ or EVERYONE@), ACE4_UNIXID_WHO, to indicate value
->> in e_id is the little endian value of unix id. ACE_WINSID_WHO to
->> indicate e_id is the 128 bit array containing SID value. ?
-> 
-> That's effectively still a string.
-> 
-> Would it be so bad to have to introduce another xattr type if we needed
-> a new id type?  You'll have to modify the filesystem and the userspace
-> tools and everything anyway, won't you?
-> 
-> But if we decide we don't need strings, then at a minimum let's make
-> these some fixed small size.
-> 
-> You could do something like:
-> 
-> 	struct richace_xattr {
-> 		__le16		e_type;
-> 		__le16		e_flags;
-> 		__le32		e_mask;
-> 		__le32		e_id[4];
-> 	}
-> 
-> and just use e_id[0] for now.  That would still leave room for a 128-bit
-> id, or for a 32-bit uid + some-size namespace-id.
+On Thu, Oct 20, 2011 at 10:05:34AM -0700, Tony Lindgren wrote:
 
-Just as an FYI, from back when we were trying to port Lustre to Solaris,
-Solaris itself uses a 64-bit "FUID" (32-bit UID + 32-bit namespace) to
-handle this.
+> Right, but in addition the board specific integration variables still
+> need to be passed somehow to the driver.
 
-It has a table for arbitrary mapping of 128-bit Windows domains to a
-32-bit FUID namespace (don't know much detail here, sorry), and it is
-(reasonably) expected that a single system will not be in more than
-2^32 namespaces at once.  This keeps the datatypes sane (u64 or 2x u32)
-and doesn't put much complexity into the filesystem/kernel.  For most
-uses, the high 32-bit value is 0 (local Unix domain).
-
-Cheers, Andreas
-
-
-
-
-
+I'm not sure you're aware of what the regulator bindings that are being
+discussed are - they're entirely board specific.  The discussion was
+about how to handle certain parts of the feature set Linux currently
+has.
