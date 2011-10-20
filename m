@@ -1,206 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab1JXNHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:07:39 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:63881 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340Ab1JXNHg (ORCPT
+	id S932578Ab1JXNHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:07:49 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:63199 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340Ab1JXNHr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:07:36 -0400
-Date: Thu, 20 Oct 2011 17:00:53 -0400
+	Mon, 24 Oct 2011 09:07:47 -0400
+Date: Wed, 19 Oct 2011 23:46:31 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>, davem@davemloft.net
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S . Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3/4] net: xen-netback: use API provided by xenbus module
- to map rings
-Message-ID: <20111020210053.GA19558@phenom.dumpdata.com>
-References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
- <1319107519-2253-4-git-send-email-david.vrabel@citrix.com>
+To: Li Dongyang <lidongyang@novell.com>
+Cc: Jan Beulich <JBeulich@suse.com>, Dong Yang Li <lidongyang@suse.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/blk[front|back]: Enhance discard
+ support with secure erasing support.
+Message-ID: <20111020034631.GC2401@phenom.dumpdata.com>
+References: <1318260494-27985-4-git-send-email-konrad.wilk@oracle.com>
+ <1318263187.21903.464.camel@zakaz.uk.xensource.com>
+ <20111010164250.GG28646@phenom.oracle.com>
+ <1318274402.27397.13.camel@dagon.hellion.org.uk>
+ <20111010195749.GA5755@phenom.oracle.com>
+ <4E940E21020000780005AA29@nat28.tlf.novell.com>
+ <20111011155133.GC29349@phenom.oracle.com>
+ <20111011205729.GB22668@phenom.oracle.com>
+ <4E9C4855020000780005BA73@victor.provo.novell.com>
+ <CAKH3R4_TDxyNcsgZBOxQRS4U61h=bhY+Vap72AWa4CdQyQ7QfQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1319107519-2253-4-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <CAKH3R4_TDxyNcsgZBOxQRS4U61h=bhY+Vap72AWa4CdQyQ7QfQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4EA56314.00F6:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090208.4EA56316.000A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 11:45:18AM +0100, David Vrabel wrote:
-> The xenbus module provides xenbus_map_ring_valloc() and
-> xenbus_map_ring_vfree().  Use these to map the Tx and Rx ring pages
-> granted by the frontend.
+On Thu, Oct 20, 2011 at 11:17:14AM +0800, Li Dongyang wrote:
+> I think we also should mark the vbd has discard_secure if we are
+> usingthe file backend,as if we punch a hole in the image, those blocks
+> are freed tofilesystem and hardly to getthem back, or maybe write
+> zeros to the range before we punch the hole is better?
+
+You would have to write zeros to that range (or perhaps random values)
+to emulate the secure delete. If you have a patch for that I would be interested
+in seeing it.
+
+Hmm, which reminds me - I should repost this patch series.
+
+> On Mon, Oct 17, 2011 at 9:23 PM, Jan Beulich <JBeulich@suse.com> wrote:
+> >>>> On 11.10.11 at 22:57, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> >> --- a/drivers/block/xen-blkfront.c
+> >> +++ b/drivers/block/xen-blkfront.c
+> >>...
+> >> @@ -705,7 +711,7 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+> >>  static void blkif_completion(struct blk_shadow *s)
+> >>  {
+> >>       int i;
+> >
+> > This function gets called for all types of requests, and hence must filter
+> > discard ones now that what would be nr_segments can be non-zero,
+> > e.g.
+> >
+> >        if (s->req.operation == BLKIF_OP_DISCARD)
+> >                return;
+> >
+> > Jan
+> >
+> >> -     for (i = 0; i < s->req.nr_segments; i++)
+> >> +     for (i = 0; i < s->req.u1.nr_segments; i++)
+> >>               gnttab_end_foreign_access(s->req.u.rw.seg[i].gref, 0, 0UL);
+> >>  }
+> >>
+> >
+> >
 > 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
-
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-> Dave, this is a standalone patch and can be applied independently of
-> the rest of the series.
-
-.. or Dave, if you would like I can carry these patches.
-
-> 
->  drivers/net/xen-netback/common.h  |   11 ++---
->  drivers/net/xen-netback/netback.c |   80 ++++++++-----------------------------
->  2 files changed, 22 insertions(+), 69 deletions(-)
-> 
-> diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-> index 161f207..94b79c3 100644
-> --- a/drivers/net/xen-netback/common.h
-> +++ b/drivers/net/xen-netback/common.h
-> @@ -58,10 +58,6 @@ struct xenvif {
->  	u8               fe_dev_addr[6];
->  
->  	/* Physical parameters of the comms window. */
-> -	grant_handle_t   tx_shmem_handle;
-> -	grant_ref_t      tx_shmem_ref;
-> -	grant_handle_t   rx_shmem_handle;
-> -	grant_ref_t      rx_shmem_ref;
->  	unsigned int     irq;
->  
->  	/* List of frontends to notify after a batch of frames sent. */
-> @@ -70,8 +66,6 @@ struct xenvif {
->  	/* The shared rings and indexes. */
->  	struct xen_netif_tx_back_ring tx;
->  	struct xen_netif_rx_back_ring rx;
-> -	struct vm_struct *tx_comms_area;
-> -	struct vm_struct *rx_comms_area;
->  
->  	/* Frontend feature information. */
->  	u8 can_sg:1;
-> @@ -106,6 +100,11 @@ struct xenvif {
->  	wait_queue_head_t waiting_to_free;
->  };
->  
-> +static inline struct xenbus_device *xenvif_to_xenbus_device(struct xenvif *vif)
-> +{
-> +	return to_xenbus_device(vif->dev->dev.parent);
-> +}
-> +
->  #define XEN_NETIF_TX_RING_SIZE __CONST_RING_SIZE(xen_netif_tx, PAGE_SIZE)
->  #define XEN_NETIF_RX_RING_SIZE __CONST_RING_SIZE(xen_netif_rx, PAGE_SIZE)
->  
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index fd00f25..3af2924 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -1577,88 +1577,42 @@ static int xen_netbk_kthread(void *data)
->  
->  void xen_netbk_unmap_frontend_rings(struct xenvif *vif)
->  {
-> -	struct gnttab_unmap_grant_ref op;
-> -
-> -	if (vif->tx.sring) {
-> -		gnttab_set_unmap_op(&op, (unsigned long)vif->tx_comms_area->addr,
-> -				    GNTMAP_host_map, vif->tx_shmem_handle);
-> -
-> -		if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
-> -			BUG();
-> -	}
-> -
-> -	if (vif->rx.sring) {
-> -		gnttab_set_unmap_op(&op, (unsigned long)vif->rx_comms_area->addr,
-> -				    GNTMAP_host_map, vif->rx_shmem_handle);
-> -
-> -		if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
-> -			BUG();
-> -	}
-> -	if (vif->rx_comms_area)
-> -		free_vm_area(vif->rx_comms_area);
-> -	if (vif->tx_comms_area)
-> -		free_vm_area(vif->tx_comms_area);
-> +	if (vif->tx.sring)
-> +		xenbus_unmap_ring_vfree(xenvif_to_xenbus_device(vif),
-> +					vif->tx.sring);
-> +	if (vif->rx.sring)
-> +		xenbus_unmap_ring_vfree(xenvif_to_xenbus_device(vif),
-> +					vif->rx.sring);
->  }
->  
->  int xen_netbk_map_frontend_rings(struct xenvif *vif,
->  				 grant_ref_t tx_ring_ref,
->  				 grant_ref_t rx_ring_ref)
->  {
-> -	struct gnttab_map_grant_ref op;
-> +	void *addr;
->  	struct xen_netif_tx_sring *txs;
->  	struct xen_netif_rx_sring *rxs;
->  
->  	int err = -ENOMEM;
->  
-> -	vif->tx_comms_area = alloc_vm_area(PAGE_SIZE);
-> -	if (vif->tx_comms_area == NULL)
-> +	err = xenbus_map_ring_valloc(xenvif_to_xenbus_device(vif),
-> +				     tx_ring_ref, &addr);
-> +	if (err)
->  		goto err;
->  
-> -	vif->rx_comms_area = alloc_vm_area(PAGE_SIZE);
-> -	if (vif->rx_comms_area == NULL)
-> -		goto err;
-> -
-> -	gnttab_set_map_op(&op, (unsigned long)vif->tx_comms_area->addr,
-> -			  GNTMAP_host_map, tx_ring_ref, vif->domid);
-> -
-> -	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-> -		BUG();
-> -
-> -	if (op.status) {
-> -		netdev_warn(vif->dev,
-> -			    "failed to map tx ring. err=%d status=%d\n",
-> -			    err, op.status);
-> -		err = op.status;
-> -		goto err;
-> -	}
-> -
-> -	vif->tx_shmem_ref    = tx_ring_ref;
-> -	vif->tx_shmem_handle = op.handle;
-> -
-> -	txs = (struct xen_netif_tx_sring *)vif->tx_comms_area->addr;
-> +	txs = (struct xen_netif_tx_sring *)addr;
->  	BACK_RING_INIT(&vif->tx, txs, PAGE_SIZE);
->  
-> -	gnttab_set_map_op(&op, (unsigned long)vif->rx_comms_area->addr,
-> -			  GNTMAP_host_map, rx_ring_ref, vif->domid);
-> -
-> -	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
-> -		BUG();
-> -
-> -	if (op.status) {
-> -		netdev_warn(vif->dev,
-> -			    "failed to map rx ring. err=%d status=%d\n",
-> -			    err, op.status);
-> -		err = op.status;
-> +	err = xenbus_map_ring_valloc(xenvif_to_xenbus_device(vif),
-> +				     rx_ring_ref, &addr);
-> +	if (err)
->  		goto err;
-> -	}
-> -
-> -	vif->rx_shmem_ref     = rx_ring_ref;
-> -	vif->rx_shmem_handle  = op.handle;
-> -	vif->rx_req_cons_peek = 0;
->  
-> -	rxs = (struct xen_netif_rx_sring *)vif->rx_comms_area->addr;
-> +	rxs = (struct xen_netif_rx_sring *)addr;
->  	BACK_RING_INIT(&vif->rx, rxs, PAGE_SIZE);
->  
-> +	vif->rx_req_cons_peek = 0;
-> +
->  	return 0;
->  
->  err:
-> -- 
-> 1.7.2.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
