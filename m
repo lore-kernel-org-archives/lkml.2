@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab1JTVPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:15:43 -0400
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35676
+	id S1753958Ab1JTVQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:16:59 -0400
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35674
 	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242Ab1JTVNY (ORCPT
+	by vger.kernel.org with ESMTP id S1753152Ab1JTVNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:13:24 -0400
+	Thu, 20 Oct 2011 17:13:23 -0400
 From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Paul <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 12/17] tc35815: Use standard phy_init_hw() instead of BMCR_RESET bit
-Date: Thu, 20 Oct 2011 17:00:19 -0400
-Message-Id: <1319144425-15547-13-git-send-email-Kyle.D.Moffett@boeing.com>
+        Kumar Gala <galak@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [RFC PATCH 13/17] mpc836x: Move board-specific bcm5481 fixup out of the PHY driver
+Date: Thu, 20 Oct 2011 17:00:20 -0400
+Message-Id: <1319144425-15547-14-git-send-email-Kyle.D.Moffett@boeing.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
 References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
@@ -22,44 +23,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PHY should not be manually reset with the BMCR, as that will undo
-board-specific PHY fixups and driver-specific phy->drv->config_init().
+By comparing the BCM5481 registers modified in the ->config_aneg()
+method with the datasheet I have for the BCM5482, it appears that the
+register writes are adjusting signal timing to work around a known
+trace-length issue on the PCB.
 
-Instead, the PHY should be reset using phy_init_hw().
+Such hardware workarounds don't belong in the generic driver, and should
+instead be placed in a board-specific PHY fixup.
 
-NOTE: Depends on earlier phy_init_hw() patch.
+NOTE: Needs testing by somebody with the hardware.
 
-Not-yet-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 ---
- drivers/net/tc35815.c |   15 ++-------------
- 1 files changed, 2 insertions(+), 13 deletions(-)
+ arch/powerpc/platforms/83xx/mpc836x_rdk.c |   35 ++++++++++++++++++++++++++++
+ drivers/net/phy/broadcom.c                |   36 -----------------------------
+ 2 files changed, 35 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/net/tc35815.c b/drivers/net/tc35815.c
-index 4a55a16..c3422f8 100644
---- a/drivers/net/tc35815.c
-+++ b/drivers/net/tc35815.c
-@@ -1175,19 +1175,8 @@ static void tc35815_restart(struct net_device *dev)
+diff --git a/arch/powerpc/platforms/83xx/mpc836x_rdk.c b/arch/powerpc/platforms/83xx/mpc836x_rdk.c
+index b0090aa..b7cc607 100644
+--- a/arch/powerpc/platforms/83xx/mpc836x_rdk.c
++++ b/arch/powerpc/platforms/83xx/mpc836x_rdk.c
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
++#include <linux/phy.h>
+ #include <linux/of_platform.h>
+ #include <linux/io.h>
+ #include <asm/prom.h>
+@@ -38,6 +39,36 @@ static int __init mpc836x_rdk_declare_of_platform_devices(void)
+ }
+ machine_device_initcall(mpc836x_rdk, mpc836x_rdk_declare_of_platform_devices);
+ 
++static int mpc836x_rdk_bcm5481_fixup(struct phy_device *phydev)
++{
++	int reg;
++
++	if (phydev->interface != PHY_INTERFACE_MODE_RGMII_RXID)
++		return;
++
++	/*
++	 * There is no BCM5481 specification available, so down
++	 * here is everything we know about "register 0x18". This
++	 * at least helps BCM5481 to successfuly receive packets
++	 * on MPC8360E-RDK board. Peter Barada <peterb@logicpd.com>
++	 * says: "This sets delay between the RXD and RXC signals
++	 * instead of using trace lengths to achieve timing".
++	 */
++
++	/* Set RDX clk delay. */
++	reg = 0x7 | (0x7 << 12);
++	phy_write(phydev, 0x18, reg);
++	reg = phy_read(phydev, 0x18);
++	if (reg < 0)
++		return reg;
++
++	/* Set RDX-RXC skew. */
++	reg |= (1 << 8);
++	/* Write bits 14:0. */
++	reg |= (1 << 15);
++	return phy_write(phydev, 0x18, reg);
++}
++
+ static void __init mpc836x_rdk_setup_arch(void)
  {
- 	struct tc35815_local *lp = netdev_priv(dev);
+ #ifdef CONFIG_PCI
+@@ -54,6 +85,10 @@ static void __init mpc836x_rdk_setup_arch(void)
+ #ifdef CONFIG_QUICC_ENGINE
+ 	qe_reset();
+ #endif
++#ifdef CONFIG_BROADCOM_PHY
++	phy_register_fixup_for_uid(0x0143bca0, 0xfffffff0,
++			&mpc836x_rdk_bcm5481_phy_fixup);
++#endif
+ }
  
--	if (lp->phy_dev) {
--		int timeout;
+ static void __init mpc836x_rdk_init_IRQ(void)
+diff --git a/drivers/net/phy/broadcom.c b/drivers/net/phy/broadcom.c
+index 1b83f75..8c03ebc 100644
+--- a/drivers/net/phy/broadcom.c
++++ b/drivers/net/phy/broadcom.c
+@@ -539,41 +539,6 @@ static int bcm54xx_config_intr(struct phy_device *phydev)
+ 	return err;
+ }
+ 
+-static int bcm5481_config_aneg(struct phy_device *phydev)
+-{
+-	int ret;
 -
--		phy_write(lp->phy_dev, MII_BMCR, BMCR_RESET);
--		timeout = 100;
--		while (--timeout) {
--			if (!(phy_read(lp->phy_dev, MII_BMCR) & BMCR_RESET))
--				break;
--			udelay(1);
--		}
--		if (!timeout)
--			printk(KERN_ERR "%s: BMCR reset failed.\n", dev->name);
+-	/* Aneg firsly. */
+-	ret = genphy_config_aneg(phydev);
+-
+-	/* Then we can set up the delay. */
+-	if (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID) {
+-		u16 reg;
+-
+-		/*
+-		 * There is no BCM5481 specification available, so down
+-		 * here is everything we know about "register 0x18". This
+-		 * at least helps BCM5481 to successfuly receive packets
+-		 * on MPC8360E-RDK board. Peter Barada <peterb@logicpd.com>
+-		 * says: "This sets delay between the RXD and RXC signals
+-		 * instead of using trace lengths to achieve timing".
+-		 */
+-
+-		/* Set RDX clk delay. */
+-		reg = 0x7 | (0x7 << 12);
+-		phy_write(phydev, 0x18, reg);
+-
+-		reg = phy_read(phydev, 0x18);
+-		/* Set RDX-RXC skew. */
+-		reg |= (1 << 8);
+-		/* Write bits 14:0. */
+-		reg |= (1 << 15);
+-		phy_write(phydev, 0x18, reg);
 -	}
-+	if (lp->phy_dev)
-+		phy_init_hw(lp->phy_dev);
- 
- 	spin_lock_bh(&lp->rx_lock);
- 	spin_lock_irq(&lp->lock);
+-
+-	return ret;
+-}
+-
+ static int brcm_phy_setbits(struct phy_device *phydev, int reg, int set)
+ {
+ 	int val;
+@@ -736,7 +701,6 @@ static struct phy_driver broadcom_drivers[] = { {
+ 			  SUPPORTED_Pause | SUPPORTED_Asym_Pause,
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+ 	.config_init	= bcm54xx_config_init,
+-	.config_aneg	= bcm5481_config_aneg,
+ 	.ack_interrupt	= bcm54xx_ack_interrupt,
+ 	.config_intr	= bcm54xx_config_intr,
+ 	.driver		= { .owner = THIS_MODULE },
 -- 
 1.7.2.5
 
