@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1JTDk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 23:40:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38335 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab1JTDk4 (ORCPT
+	id S1753035Ab1JTDmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 23:42:21 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:54348 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751864Ab1JTDmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 23:40:56 -0400
-Message-ID: <4E9F983E.7000601@infradead.org>
-Date: Thu, 20 Oct 2011 01:40:46 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Wed, 19 Oct 2011 23:42:20 -0400
+Message-ID: <4E9F9892.9070007@ti.com>
+Date: Thu, 20 Oct 2011 09:12:10 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Antonio Ospite <ospite@studenti.unina.it>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        "Tomas M." <tmezzadra@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: kernel OOPS when releasing usb webcam (random)
-References: <4E9CB0C2.3030902@gmail.com> <alpine.DEB.2.00.1110171703210.13515@chino.kir.corp.google.com> <20111018104054.07aa2bcf462c0268a23c0139@studenti.unina.it> <alpine.DEB.2.00.1110181332320.2639@chino.kir.corp.google.com> <alpine.DEB.2.00.1110191321200.2892@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110191321200.2892@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Shawn Guo <shawn.guo@freescale.com>, patches@linaro.org, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-4-git-send-email-rnayak@ti.com> <20111016145536.GA29885@S2100-06.ap.freescale.net> <4E9BAC4D.3010402@ti.com> <20111018115836.GC30703@S2100-06.ap.freescale.net> <20111018160046.GD28501@opensource.wolfsonmicro.com> <20111019053354.GB31162@S2100-06.ap.freescale.net> <20111019144734.GI18713@sirena.org.uk> <20111019150448.GB32007@S2100-06.ap.freescale.net> <20111019151031.GA4275@opensource.wolfsonmicro.com>
+In-Reply-To: <20111019151031.GA4275@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 19-10-2011 18:21, David Rientjes escreveu:
-> On Tue, 18 Oct 2011, David Rientjes wrote:
-> 
->> Guennadi or Mauro, how is this going to Linus?  It sounds like 3.1 
->> material since we've received at least a couple of reports of this in the 
->> past week.
->>
-> 
-> This fix is now in Linus' tree at e58fced201ad ("[media] videodev: fix a 
-> NULL pointer dereference in v4l2_device_release()") for 3.1.
+On Wednesday 19 October 2011 08:40 PM, Mark Brown wrote:
+> The problem is that the DT is supposed to be separate to the kernel and
+> the decisions can depend on what the kernel is currently capable of.
+> When the data is embedded in the kernel it's not an issue as the data is
+> attached to the rest of the code, when the data becomes detatched from
+> the kernel it becomes an issue.
 
-Yes, I sent it upstream earlier today. Btw, Greg also picked it for stable.
-It should be there for the next 3.0.x kernel as well.
+completely agreed.
 
-Regards,
-Mauro
+>
+> I don't see any issue with leaving some things out of the DT bindings;
+> you were the one raising that as a concern.
+
+The problem is, that there doesn't seem to be a clean way to embed
+*board data* into the kernel with DT, if left out of the DT bindings.
+There is the auxdata way of still attaching platform_data, but that I
+thought was a stopgap for just handling function pointers.
