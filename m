@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1JTO4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 10:56:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752950Ab1JTO4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 10:56:39 -0400
-Date: Thu, 20 Oct 2011 16:47:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg KH <gregkh@suse.de>, Tejun Heo <htejun@gmail.com>,
-        Luke Macken <lmacken@redhat.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH stable-3.0] ptrace: don't clear GROUP_STOP_SIGMASK on
-	double-stop
-Message-ID: <20111020144726.GB27610@redhat.com>
-References: <20110926170632.GA16936@redhat.com> <20111019230027.GD32438@kroah.com>
+	id S1755529Ab1JTPDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 11:03:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64792 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab1JTPC6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 11:02:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019230027.GD32438@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LNX.2.00.1110202347320.2696@nippy.intranet>
+References: <1315742394-16036-1-git-send-email-geert@linux-m68k.org>
+	<CAMuHMdWOhKcoDoyTnKJzruZ=gpV5uKNFpXnGCkrac7oEkCihJw@mail.gmail.com>
+	<alpine.LNX.2.00.1110202347320.2696@nippy.intranet>
+Date: Thu, 20 Oct 2011 17:02:57 +0200
+X-Google-Sender-Auth: 8ojlD-Y2yFjo6inlkOCO3OXrin4
+Message-ID: <CAMuHMdVMp65XzV2zu7V8sgwsniCAxD7NDDnHSvp5gO-8g1ovHg@mail.gmail.com>
+Subject: Re: [PATCH 00/28 v6] m68k: Convert to genirq
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19, Greg KH wrote:
+On Thu, Oct 20, 2011 at 15:40, Finn Thain <fthain@telegraphics.com.au> wrote:
+> On Thu, 20 Oct 2011, Geert Uytterhoeven wrote:
 >
-> On Mon, Sep 26, 2011 at 07:06:32PM +0200, Oleg Nesterov wrote:
-> > https://bugzilla.redhat.com/show_bug.cgi?id=740121
-> >
-> > 1. Luke Macken triggered WARN_ON(!(group_stop & GROUP_STOP_SIGMASK))
-> >    in do_signal_stop().
-> >
-> >    This is because do_signal_stop() clears GROUP_STOP_SIGMASK part
-> >    unconditionally but doesn't update it if task_is_stopped().
-> >
-> > 2. Looking at this problem I noticed that WARN_ON_ONCE(!ptrace) is
-> >    not right, a stopped-but-resumed tracee can clone the untraced
-> >    thread in the SIGNAL_STOP_STOPPED group, the new thread can start
-> >    another group-stop.
-> >
-> >    Remove this warning, we need more fixes to make it true.
-> >
-> > Reported-by: Luke Macken <lmacken@redhat.com>
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>> > There are some known issues with drivers, which Finn and Michael are
+>> > looking into.
+>>
+>> Any fixes I still have to apply?
 >
-> I still don't understand, did this fix ever get into Linus's tree?  If
-> so, what is the git commit id.
+> I did some further testing on Baboon and OSS hardware etc. and I didn't
+> find any new regressions to fix.
 >
-> If not, why not?
+> There is a cleanup patch though --
+> http://article.gmane.org/gmane.linux.ports.m68k/2726
 
-I already explained:
+OK, I'll add it.
 
-	No. As I said, 3.1 has the similar problem. But not the same, and you
-	need the quite different test-case to trigger the bug.
+>> Updated, on top of m68k master (which is at v3.1-rc10 now).
+>> http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
+>>
+>> If noone objects, I'd like to add this to the m68k master and for-3.2
+>> branches.
+>
+> Sounds good. The mac_esp fix I sent is already in linux-next.
 
-	We are discussing the possible fixes for 3.1, but this code was changed
-	very much and it doesn't make sense to compare the fixes for 3.1 and 3.0.
+Thanks for reminding me I still have to apply that one :-)
 
-IOW. This code was rewritten in 3.1, this particlular problem
-was "fixed" by accident, but in fact the problem just mutated.
+Gr{oetje,eeting}s,
 
-> I can't apply it to the 3.0-stable tree unless it is
-> there, or there is a very good reason why it isn't.
+                        Geert
 
-OK, please ignore then.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Oleg.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
