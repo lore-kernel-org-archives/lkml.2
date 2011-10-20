@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab1JTVQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:16:15 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:56065 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753503Ab1JTVQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:16:13 -0400
-Date: Thu, 20 Oct 2011 17:16:00 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Phillip Lougher <phil.lougher@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        greg@kroah.com, linux-kernel@vger.kernel.org,
-        phillip@lougher.demon.co.uk
-Subject: Re: Procedural requirements for restoring kernel.org accounts
-Message-ID: <20111020211600.GC16820@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Phillip Lougher <phil.lougher@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, greg@kroah.com,
-	linux-kernel@vger.kernel.org, phillip@lougher.demon.co.uk
-References: <20111014152100.GA11717@kroah.com>
- <4E988564.40905@zytor.com>
- <CA+2-8GA-R3TETVLubOO8uMQq1a3-LmQ=STrXM1kf+8WbgfhTLQ@mail.gmail.com>
- <20111020220922.6bfed01b@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111020220922.6bfed01b@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1753765Ab1JTVPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:15:43 -0400
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35676
+	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753242Ab1JTVNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 17:13:24 -0400
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul <paul.gortmaker@windriver.com>
+Subject: [RFC PATCH 12/17] tc35815: Use standard phy_init_hw() instead of BMCR_RESET bit
+Date: Thu, 20 Oct 2011 17:00:19 -0400
+Message-Id: <1319144425-15547-13-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 10:09:22PM +0100, Alan Cox wrote:
-> > this.  So, will there be another key signing session held during the
-> > three days of LCE, and will the procedure mentioned in the link above
-> > ("If you would like to participate, please send an e-mail to
-> > prague-key-submission@googlegroups.com") apply too?
-> 
-> That sounds a good plan because I suspect LCE will have a number of
-> kernel hackers around who are not at KS, and KS will have plenty of us
-> who have gone home before LCE.
+The PHY should not be manually reset with the BMCR, as that will undo
+board-specific PHY fixups and driver-specific phy->drv->config_init().
 
-I was looking into setting up a separate key signing event at LCE, but
-the schedule is really packed, so it wasn't clear we could find a slot
-that would work for everyone.  Also, I simply ran out of time to try
-to organize yet another key signing event.
+Instead, the PHY should be reset using phy_init_hw().
 
-This is why I suggested a more informal approach of people
-pre-printing fingerprints on slips of paper which could be exchanged,
-using something like gpg-key2ps.  If everyone comes prepared with
-these slips of paper, we can either try to organize a room where it's
-easier for people to find each other, or it can be done in an ad-hoc
-fashion during the coffee/tea breaks.
+NOTE: Depends on earlier phy_init_hw() patch.
 
-						- Ted
+Not-yet-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ drivers/net/tc35815.c |   15 ++-------------
+ 1 files changed, 2 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/tc35815.c b/drivers/net/tc35815.c
+index 4a55a16..c3422f8 100644
+--- a/drivers/net/tc35815.c
++++ b/drivers/net/tc35815.c
+@@ -1175,19 +1175,8 @@ static void tc35815_restart(struct net_device *dev)
+ {
+ 	struct tc35815_local *lp = netdev_priv(dev);
+ 
+-	if (lp->phy_dev) {
+-		int timeout;
+-
+-		phy_write(lp->phy_dev, MII_BMCR, BMCR_RESET);
+-		timeout = 100;
+-		while (--timeout) {
+-			if (!(phy_read(lp->phy_dev, MII_BMCR) & BMCR_RESET))
+-				break;
+-			udelay(1);
+-		}
+-		if (!timeout)
+-			printk(KERN_ERR "%s: BMCR reset failed.\n", dev->name);
+-	}
++	if (lp->phy_dev)
++		phy_init_hw(lp->phy_dev);
+ 
+ 	spin_lock_bh(&lp->rx_lock);
+ 	spin_lock_irq(&lp->lock);
+-- 
+1.7.2.5
 
