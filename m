@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab1JTIRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 04:17:36 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:44908 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab1JTIRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 04:17:35 -0400
-From: Krishna Kumar <krkumar2@in.ibm.com>
-To: rusty@rustcorp.com.au, mst@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Krishna Kumar <krkumar2@in.ibm.com>,
-        virtualization@lists.linux-foundation.org
-Date: Thu, 20 Oct 2011 13:47:27 +0530
-Message-Id: <20111020081727.509.83122.sendpatchset@krkumar2.in.ibm.com>
-Subject: [PATCH] virtio_net: Clean up set_skb_frag()
-x-cbid: 11101923-3568-0000-0000-0000008DDA47
+	id S1755710Ab1JTIaP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 04:30:15 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:41458 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723Ab1JTIaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 04:30:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+In-Reply-To: <20111019222021.GB1874@fieldses.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019222021.GB1874@fieldses.org>
+User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 20 Oct 2011 14:00:02 +0530
+Message-ID: <87k4805alx.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove manual initialization in set_skb_frag, and instead
-use __skb_fill_page_desc() to do the same. Patch tested
-on net-next.
+On Wed, 19 Oct 2011 18:20:21 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Tue, Oct 18, 2011 at 09:02:56PM +0530, Aneesh Kumar K.V wrote:
+> > +#define RICHACL_XATTR "system.richacl"
+> > +
+> > +struct richace_xattr {
+> > +	__le16		e_type;
+> > +	__le16		e_flags;
+> > +	__le32		e_mask;
+> > +	__le32		e_id;
+> > +	char		e_who[0];
+> > +};
+> 
+> Does it really make sense to use a string here just to pick between the
+> three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
+> integer?  Is the goal to expand this somehow eventually?
 
-Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
----
- drivers/net/virtio_net.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+I guess Andreas wanted the disk layout to be able to store user@domain
+format if needed. That should make the layout flexible enough so that
+we won't have to add another xattr later.
 
-diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
---- org/drivers/net/virtio_net.c	2011-10-20 08:34:31.000000000 +0530
-+++ new/drivers/net/virtio_net.c	2011-10-20 08:43:57.000000000 +0530
-@@ -143,18 +143,15 @@ static void skb_xmit_done(struct virtque
- static void set_skb_frag(struct sk_buff *skb, struct page *page,
- 			 unsigned int offset, unsigned int *len)
- {
-+	int size = min((unsigned)PAGE_SIZE - offset, *len);
- 	int i = skb_shinfo(skb)->nr_frags;
--	skb_frag_t *f;
- 
--	f = &skb_shinfo(skb)->frags[i];
--	skb_frag_size_set(f, min((unsigned)PAGE_SIZE - offset, *len));
--	f->page_offset = offset;
--	__skb_frag_set_page(f, page);
-+	__skb_fill_page_desc(skb, i, page, offset, size);
- 
--	skb->data_len += skb_frag_size(f);
--	skb->len += skb_frag_size(f);
-+	skb->data_len += size;
-+	skb->len += size;
- 	skb_shinfo(skb)->nr_frags++;
--	*len -= skb_frag_size(f);
-+	*len -= size;
- }
- 
- static struct sk_buff *page_to_skb(struct virtnet_info *vi,
-
+-aneesh
