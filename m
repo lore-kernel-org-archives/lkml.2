@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab1JTM0h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 08:26:37 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:38433 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab1JTM0g convert rfc822-to-8bit (ORCPT
+	id S1752907Ab1JTMbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 08:31:50 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:48029 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab1JTMbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 08:26:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Xfz1rTmfYO40ItIYLW+d+o7HSsj6rQxTsqAJg56cwsEry75Gn4pcx6PEDkJvQxFVx
-	er5AYBzDEtZEHex2wc56Q==
+	Thu, 20 Oct 2011 08:31:49 -0400
+Date: Thu, 20 Oct 2011 14:31:26 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] CPU hotplug, x86 microcode: Revalidate microcode before
+ microcode update
+Message-ID: <20111020123126.GC12080@aftab>
+References: <4E9F05F9.7080901@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <m2wrc0xpbg.fsf@firstfloor.org>
-References: <1319060737.2604.38.camel@schen9-DESK>
-	<m2wrc0xpbg.fsf@firstfloor.org>
-Date: Thu, 20 Oct 2011 05:26:32 -0700
-Message-ID: <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve idle
- load balancing scalability
-From: Venki Pallipadi <venki@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9F05F9.7080901@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 9:24 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> Tim Chen <tim.c.chen@linux.intel.com> writes:
->>   */
->>  static struct {
->> -     atomic_t load_balancer;
->> -     atomic_t first_pick_cpu;
->> -     atomic_t second_pick_cpu;
->> -     cpumask_var_t idle_cpus_mask;
->> +     atomic_t load_balancer ____cacheline_aligned;
->> +     atomic_t first_pick_cpu ____cacheline_aligned;
->> +     atomic_t second_pick_cpu ____cacheline_aligned;
->> +     cpumask_var_t idle_cpus_mask ____cacheline_aligned;
->
-> On large configs idle_cpu_masks may be allocated.  May need
-> more changes to tell the allocator to cache align/pad too?
->
+Hi Srivatsa,
 
-An alternate approach is to split this struct per node/socket and do
-the nohz idle balancing logic at that level. That should be more
-scalable in terms of nohz balancing (ensure one CPU wont be doing nohz
-balancing for huge number of idle CPUs). I had looked at that approach
-couple of years earlier and couldn't measure that much of a gain. May
-be it is time to revisit that with increased core count.
+On Wed, Oct 19, 2011 at 01:16:41PM -0400, Srivatsa S. Bhat wrote:
+> However, since I am not aware of what hpa's new ucode loading solution
+> is, nor how it will handle this case, I thought of posting this patch
+> (now tested and fine-tuned),
 
-Thanks,
-Venki
+Hehe, please don't tell me you tested it by really hotswapping an x86
+CPU :-).
+
+> so that it can be applied in case this
+> patch is deemed to be necessary/desirable to avoid breaking hot-swap cases.
+> 
+> Thanks,
+> Srivatsa S. Bhat
+> 
+> ---
+> 
+> This patch is intended to go with the patch posted at
+> http://thread.gmane.org/gmane.linux.kernel/1200882/focus=1200991
+> 
+> Since that patch optimizes microcode update by keeping the microcode image
+> in kernel memory and not freeing it up even when the CPU goes offline, it
+> means we would be applying the same microcode image when the CPU comes back
+> online.
+> 
+> However, if physically hotplugging of CPUs is supported, then we could
+> physically hot-unplug CPUs and then hot-plug new (and possibly a different
+> type of) CPUs. In such a case, it would be wrong to blindly apply the same
+> old microcode (that the kernel maintained for the old CPU) to this new CPU.
+> 
+> Hence, this patch adds a validation to check whether the microcode revision
+> we have in kernel memory and the revision that needs to be applied to the
+> CPU that was just brought online, are the same or not. If they happen to be
+> different, then it invalidates and frees the kernel's copy of the microcode,
+> triggering a fresh request to userspace to get the appropriate microcode
+> image for this CPU.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Ok, seriously, I think your patch looks very good and it should be doing
+what it's supposed to and the commit message is very good in explaining
+what happens, but, unless there's a real problem it fixes, it is not
+needed.
+
+I know, I know, what about the hotswapping case, you'd say. Well,
+this is not real, I'd guess hotswapping on x86 is still no more than
+scribbles on some whiteboard (unless I'm proven wrong, of course) so
+fixing hypothetical cases is not something we should do - the kernel
+bloat level is not very low as it is right now and there are _much_ more
+_real_ issues which could make much better use of your expertise and
+patches.
+
+:-)
+
+So, this should probably be x86 maintainers' call, but I, for one, don't
+think this patch is necessary, IMHO.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
