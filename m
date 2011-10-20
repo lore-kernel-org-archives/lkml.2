@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab1JTOBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 10:01:48 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51537 "EHLO
+	id S1755369Ab1JTOBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 10:01:55 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51555 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab1JTOBr (ORCPT
+	with ESMTP id S1752054Ab1JTOBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 10:01:47 -0400
-X-AuditID: b753bd60-a2688ba000000655-7f-4ea029c8f1de
-X-AuditID: b753bd60-a2688ba000000655-7f-4ea029c8f1de
+	Thu, 20 Oct 2011 10:01:53 -0400
+X-AuditID: b753bd60-a0ca5ba000005c89-d5-4ea029ce8849
+X-AuditID: b753bd60-a0ca5ba000005c89-d5-4ea029ce8849
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC PATCH v2 1/2] x86: Add a sanity test of x86 decoder
+Subject: [RFC PATCH v2 2/2] [RESEND] x86: Fix insn decoder for longer
+ instruction
 To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
@@ -18,11 +19,13 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
         yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Date: Thu, 20 Oct 2011 23:01:09 +0900
-Message-ID: <20111020140109.20938.92572.stgit@localhost.localdomain>
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Thu, 20 Oct 2011 23:01:30 +0900
+Message-ID: <20111020140129.20938.77504.stgit@localhost.localdomain>
 In-Reply-To: <20111019064401.GA2075@elte.hu>
 References: <20111019064401.GA2075@elte.hu>
 User-Agent: StGIT/0.14.3
@@ -34,355 +37,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a sanity test of x86 insn decoder against the random
-input. This test is also able to reproduce the bug by
-passing random-seed and iteration-number, or by passing
-input while which has invalid byte code.
+Fix x86 insn decoder for hardening against invalid length
+instructions. This adds length checkings for each byte-read
+site and if it exceeds MAX_INSN_SIZE, returns immediately.
+This can happen when decoding unreliable binary.
 
-Changes in V2:
- - Code cleanup.
- - Show how to reproduce the error by insn_sanity test.
+ For example, without this patch,
+
+$ echo  66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 |\
+ ./insn_sanity -i -
+Error: Found an access violation:
+Instruction = {
+        .prefixes = {
+                .value = 1711276134, bytes[] = {66, 0, 0, 66},
+                .got = 1, .nbytes = 16},
+        .rex_prefix = {
+                .value = 0, bytes[] = {0, 0, 0, 0},
+                .got = 1, .nbytes = 0},
+        .vex_prefix = {
+                .value = 0, bytes[] = {0, 0, 0, 0},
+                .got = 1, .nbytes = 0},
+        .opcode = {
+                .value = 144, bytes[] = {90, 0, 0, 0},
+                .got = 1, .nbytes = 1},
+...
+        .attr = 0, .opnd_bytes = 2, .addr_bytes = 4,
+        .length = 17, .x86_64 = 0, .kaddr = 0x7fffedc67ae0}
+You can reproduce this with below command(s);
+ $ echo  66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 | ./insn_sanity -i -
+Failure: decoded and checked 1 given instructions with 1 errors (seed:0x0)
+
+
+ With this patch;
+
+
+ $ echo  66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 |\
+  ./insn_sanity -i -
+ Success: decoded and checked 1 given instructions with 0
+ errors (seed:0x0)
+
+
+Caller can check whether it happened by insn_complete().
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
 
- arch/x86/include/asm/insn.h  |    7 +
- arch/x86/tools/Makefile      |   10 +-
- arch/x86/tools/insn_sanity.c |  275 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 291 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/tools/insn_sanity.c
+ arch/x86/lib/insn.c |   48 +++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 43 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/insn.h b/arch/x86/include/asm/insn.h
-index 88c765e..74df3f1 100644
---- a/arch/x86/include/asm/insn.h
-+++ b/arch/x86/include/asm/insn.h
-@@ -137,6 +137,13 @@ static inline int insn_is_avx(struct insn *insn)
- 	return (insn->vex_prefix.value != 0);
+diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+index 9f33b98..374562e 100644
+--- a/arch/x86/lib/insn.c
++++ b/arch/x86/lib/insn.c
+@@ -22,14 +22,23 @@
+ #include <asm/inat.h>
+ #include <asm/insn.h>
+ 
+-#define get_next(t, insn)	\
+-	({t r; r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
++/* Verify next sizeof(t) bytes can be on the same instruction */
++#define validate_next(t, insn, n)	\
++	((insn)->next_byte + sizeof(t) + n - (insn)->kaddr <= MAX_INSN_SIZE)
++
++#define __get_next(t, insn)	\
++	({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
++
++#define __peek_nbyte_next(t, insn, n)	\
++	({ t r = *(t*)((insn)->next_byte + n); r; })
+ 
+-#define peek_next(t, insn)	\
+-	({t r; r = *(t*)insn->next_byte; r; })
++#define get_next(t, insn)	\
++	({ if (unlikely(!validate_next(t, insn, 0))) goto err_out; __get_next(t, insn); })
+ 
+ #define peek_nbyte_next(t, insn, n)	\
+-	({t r; r = *(t*)((insn)->next_byte + n); r; })
++	({ if (unlikely(!validate_next(t, insn, n))) goto err_out; __peek_nbyte_next(t, insn, n); })
++
++#define peek_next(t, insn)	peek_nbyte_next(t, insn, 0)
+ 
+ /**
+  * insn_init() - initialize struct insn
+@@ -158,6 +167,8 @@ vex_end:
+ 	insn->vex_prefix.got = 1;
+ 
+ 	prefixes->got = 1;
++
++err_out:
+ 	return;
  }
  
-+/* Ensure this instruction is decoded completely */
-+static inline int insn_complete(struct insn *insn)
-+{
-+	return insn->opcode.got && insn->modrm.got && insn->sib.got &&
-+		insn->displacement.got && insn->immediate.got;
-+}
+@@ -208,6 +219,9 @@ void insn_get_opcode(struct insn *insn)
+ 		insn->attr = 0;	/* This instruction is bad */
+ end:
+ 	opcode->got = 1;
 +
- static inline insn_byte_t insn_vex_m_bits(struct insn *insn)
- {
- 	if (insn->vex_prefix.nbytes == 2)	/* 2 bytes VEX */
-diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
-index f820826..3255c3d 100644
---- a/arch/x86/tools/Makefile
-+++ b/arch/x86/tools/Makefile
-@@ -18,14 +18,22 @@ chkobjdump = $(srctree)/arch/x86/tools/chkobjdump.awk
- quiet_cmd_posttest = TEST    $@
-       cmd_posttest = ($(OBJDUMP) -v | $(AWK) -f $(chkobjdump)) || $(OBJDUMP) -d -j .text $(objtree)/vmlinux | $(AWK) -f $(distill_awk) | $(obj)/test_get_len $(posttest_64bit) $(posttest_verbose)
- 
--posttest: $(obj)/test_get_len vmlinux
-+quiet_cmd_sanitytest = TEST    $@
-+      cmd_sanitytest = $(obj)/insn_sanity $(posttest_64bit) -m 1000000
-+
-+posttest: $(obj)/test_get_len vmlinux $(obj)/insn_sanity
- 	$(call cmd,posttest)
-+	$(call cmd,sanitytest)
- 
- hostprogs-y	:= test_get_len
-+hostprogs-y	:= insn_sanity
- 
- # -I needed for generated C source and C source which in the kernel tree.
- HOSTCFLAGS_test_get_len.o := -Wall -I$(objtree)/arch/x86/lib/ -I$(srctree)/arch/x86/include/ -I$(srctree)/arch/x86/lib/ -I$(srctree)/include/
- 
-+HOSTCFLAGS_insn_sanity.o := -Wall -I$(objtree)/arch/x86/lib/ -I$(srctree)/arch/x86/include/ -I$(srctree)/arch/x86/lib/ -I$(srctree)/include/
-+
- # Dependencies are also needed.
- $(obj)/test_get_len.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
- 
-+$(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
-diff --git a/arch/x86/tools/insn_sanity.c b/arch/x86/tools/insn_sanity.c
-new file mode 100644
-index 0000000..478b35a
---- /dev/null
-+++ b/arch/x86/tools/insn_sanity.c
-@@ -0,0 +1,275 @@
-+/*
-+ * x86 decoder sanity test - based on test_get_insn.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2009
-+ * Copyright (C) Hitachi, Ltd., 2011
-+ */
-+
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <string.h>
-+#include <assert.h>
-+#include <unistd.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+
-+#define unlikely(cond) (cond)
-+#define ARRAY_SIZE(a)	(sizeof(a)/sizeof(a[0]))
-+
-+#include <asm/insn.h>
-+#include <inat.c>
-+#include <insn.c>
-+
-+/*
-+ * Test of instruction analysis against tampering.
-+ * Feed random binary to instruction decoder and ensure not to
-+ * access out-of-instruction-buffer.
-+ */
-+
-+#define DEFAULT_MAX_ITER	10000
-+#define INSN_NOP 0x90
-+
-+static const char 	*prog;		/* Program name */
-+static int		verbose;	/* Verbosity */
-+static int		x86_64;		/* x86-64 bit mode flag */
-+static unsigned int	seed;		/* Random seed */
-+static unsigned long	iter_start;	/* Start of iteration number */
-+static unsigned long	iter_end = DEFAULT_MAX_ITER;	/* End of iteration number */
-+static FILE		*input_file;	/* Input file name */
-+
-+static void usage(const char *err)
-+{
-+	if (err)
-+		fprintf(stderr, "Error: %s\n\n", err);
-+	fprintf(stderr, "Usage: %s [-y|-n|-v] [-s seed[,no]] [-m max] [-i input]\n", prog);
-+	fprintf(stderr, "\t-y	64bit mode\n");
-+	fprintf(stderr, "\t-n	32bit mode\n");
-+	fprintf(stderr, "\t-v	Verbose mode\n");
-+	fprintf(stderr, "\t-s	Give a random seed (and iteration number)\n");
-+	fprintf(stderr, "\t-m	Give a maximum iteration number\n");
-+	fprintf(stderr, "\t-i	Give an input file with decoded binary\n");
-+	exit(1);
-+}
-+
-+static void dump_field(FILE *fp, const char *name, const char *indent,
-+		       struct insn_field *field)
-+{
-+	fprintf(fp, "%s.%s = {\n", indent, name);
-+	fprintf(fp, "%s\t.value = %d, bytes[] = {%x, %x, %x, %x},\n",
-+		indent, field->value, field->bytes[0], field->bytes[1],
-+		field->bytes[2], field->bytes[3]);
-+	fprintf(fp, "%s\t.got = %d, .nbytes = %d},\n", indent,
-+		field->got, field->nbytes);
-+}
-+
-+static void dump_insn(FILE *fp, struct insn *insn)
-+{
-+	fprintf(fp, "Instruction = {\n");
-+	dump_field(fp, "prefixes", "\t",	&insn->prefixes);
-+	dump_field(fp, "rex_prefix", "\t",	&insn->rex_prefix);
-+	dump_field(fp, "vex_prefix", "\t",	&insn->vex_prefix);
-+	dump_field(fp, "opcode", "\t",		&insn->opcode);
-+	dump_field(fp, "modrm", "\t",		&insn->modrm);
-+	dump_field(fp, "sib", "\t",		&insn->sib);
-+	dump_field(fp, "displacement", "\t",	&insn->displacement);
-+	dump_field(fp, "immediate1", "\t",	&insn->immediate1);
-+	dump_field(fp, "immediate2", "\t",	&insn->immediate2);
-+	fprintf(fp, "\t.attr = %x, .opnd_bytes = %d, .addr_bytes = %d,\n",
-+		insn->attr, insn->opnd_bytes, insn->addr_bytes);
-+	fprintf(fp, "\t.length = %d, .x86_64 = %d, .kaddr = %p}\n",
-+		insn->length, insn->x86_64, insn->kaddr);
-+}
-+
-+static void dump_stream(FILE *fp, const char *msg, unsigned long nr_iter,
-+			unsigned char *insn_buf, struct insn *insn)
-+{
-+	int i;
-+
-+	fprintf(fp, "%s:\n", msg);
-+
-+	dump_insn(stderr, insn);
-+
-+	fprintf(fp, "You can reproduce this with below command(s);\n");
-+
-+	/* Input a decoded instruction sequence directly */
-+	fprintf(fp, " $ echo ");
-+	for (i = 0; i < MAX_INSN_SIZE; i++)
-+		fprintf(fp, " %02x", insn_buf[i]);
-+	fprintf(fp, " | %s -i -\n", prog);
-+
-+	if (!input_file) {
-+		fprintf(fp, "Or \n");
-+		/* Give a seed and iteration number */
-+		fprintf(fp, " $ %s -s 0x%x,%lu\n", prog, seed, nr_iter);
-+	}
-+}
-+
-+static void init_random_seed(void)
-+{
-+	int fd;
-+
-+	fd = open("/dev/urandom", O_RDONLY);
-+	if (fd < 0)
-+		goto fail;
-+
-+	if (read(fd, &seed, sizeof(seed)) != sizeof(seed))
-+		goto fail;
-+
-+	close(fd);
++err_out:
 +	return;
-+fail:
-+	usage("Failed to open /dev/urandom");
-+}
+ }
+ 
+ /**
+@@ -241,6 +255,9 @@ void insn_get_modrm(struct insn *insn)
+ 	if (insn->x86_64 && inat_is_force64(insn->attr))
+ 		insn->opnd_bytes = 8;
+ 	modrm->got = 1;
 +
-+/* Read given instruction sequence from the input file */
-+static int read_next_insn(unsigned char *insn_buf)
-+{
-+	char buf[256]  = "", *tmp;
-+	int i;
++err_out:
++	return;
+ }
+ 
+ 
+@@ -290,6 +307,9 @@ void insn_get_sib(struct insn *insn)
+ 		}
+ 	}
+ 	insn->sib.got = 1;
 +
-+	tmp = fgets(buf, ARRAY_SIZE(buf), input_file);
-+	if (tmp == NULL || feof(input_file))
-+		return 0;
++err_out:
++	return;
+ }
+ 
+ 
+@@ -351,6 +371,9 @@ void insn_get_displacement(struct insn *insn)
+ 	}
+ out:
+ 	insn->displacement.got = 1;
 +
-+	for (i = 0; i < MAX_INSN_SIZE; i++) {
-+		insn_buf[i] = (unsigned char)strtoul(tmp, &tmp, 16);
-+		if (*tmp != ' ')
-+			break;
-+	}
++err_out:
++	return;
+ }
+ 
+ /* Decode moffset16/32/64 */
+@@ -373,6 +396,9 @@ static void __get_moffset(struct insn *insn)
+ 		break;
+ 	}
+ 	insn->moffset1.got = insn->moffset2.got = 1;
 +
-+	return i;
-+}
++err_out:
++	return;
+ }
+ 
+ /* Decode imm v32(Iz) */
+@@ -389,6 +415,9 @@ static void __get_immv32(struct insn *insn)
+ 		insn->immediate.nbytes = 4;
+ 		break;
+ 	}
 +
-+static int generate_insn(unsigned char *insn_buf)
-+{
-+	int i;
++err_out:
++	return;
+ }
+ 
+ /* Decode imm v64(Iv/Ov) */
+@@ -411,6 +440,9 @@ static void __get_immv(struct insn *insn)
+ 		break;
+ 	}
+ 	insn->immediate1.got = insn->immediate2.got = 1;
 +
-+	if (input_file)
-+		return read_next_insn(insn_buf);
++err_out:
++	return;
+ }
+ 
+ /* Decode ptr16:16/32(Ap) */
+@@ -432,6 +464,9 @@ static void __get_immptr(struct insn *insn)
+ 	insn->immediate2.value = get_next(unsigned short, insn);
+ 	insn->immediate2.nbytes = 2;
+ 	insn->immediate1.got = insn->immediate2.got = 1;
 +
-+	/* Fills buffer with random binary up to MAX_INSN_SIZE */
-+	for (i = 0; i < MAX_INSN_SIZE - 1; i += 2)
-+		*(unsigned short *)(&insn_buf[i]) = random() & 0xffff;
++err_out:
++	return;
+ }
+ 
+ /**
+@@ -496,6 +531,9 @@ void insn_get_immediate(struct insn *insn)
+ 	}
+ done:
+ 	insn->immediate.got = 1;
 +
-+	while (i < MAX_INSN_SIZE)
-+		insn_buf[i++] = random() & 0xff;
-+
-+	return i;
-+}
-+
-+static void parse_args(int argc, char **argv)
-+{
-+	int c;
-+	char *tmp = NULL;
-+	int set_seed = 0;
-+
-+	prog = argv[0];
-+	while ((c = getopt(argc, argv, "ynvs:m:i:")) != -1) {
-+		switch (c) {
-+		case 'y':
-+			x86_64 = 1;
-+			break;
-+		case 'n':
-+			x86_64 = 0;
-+			break;
-+		case 'v':
-+			verbose = 1;
-+			break;
-+		case 'i':
-+			if (strcmp("-", optarg) == 0)
-+				input_file = stdin;
-+			else
-+				input_file = fopen(optarg, "r");
-+			if (!input_file)
-+				usage("Failed to open input file");
-+			break;
-+		case 's':
-+			seed = (unsigned int)strtoul(optarg, &tmp, 0);
-+			if (*tmp == ',') {
-+				optarg = tmp + 1;
-+				iter_start = strtoul(optarg, &tmp, 0);
-+			}
-+			if (*tmp != '\0' || tmp == optarg)
-+				usage("Failed to parse seed");
-+			set_seed = 1;
-+			break;
-+		case 'm':
-+			iter_end = strtoul(optarg, &tmp, 0);
-+			if (*tmp != '\0' || tmp == optarg)
-+				usage("Failed to parse max_iter");
-+			break;
-+		default:
-+			usage(NULL);
-+		}
-+	}
-+
-+	/* Check errors */
-+	if (iter_end < iter_start)
-+		usage("Max iteration number must be bigger than iter-num");
-+
-+	if (set_seed && input_file)
-+		usage("Don't use input file (-i) with random seed (-s)");
-+
-+	/* Initialize random seed */
-+	if (!input_file) {
-+		if (!set_seed)	/* No seed is given */
-+			init_random_seed();
-+		srand(seed);
-+	}
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	struct insn insn;
-+	int insns = 0;
-+	int errors = 0;
-+	unsigned long i;
-+	unsigned char insn_buf[MAX_INSN_SIZE * 2];
-+
-+	parse_args(argc, argv);
-+
-+	/* Prepare stop bytes with NOPs */
-+	memset(insn_buf + MAX_INSN_SIZE, INSN_NOP, MAX_INSN_SIZE);
-+
-+	for (i = 0; i < iter_end; i++) {
-+		if (generate_insn(insn_buf) <= 0)
-+			break;
-+
-+		if (i < iter_start)	/* Skip to given iteration number */
-+			continue;
-+
-+		/* Decode an instruction */
-+		insn_init(&insn, insn_buf, x86_64);
-+		insn_get_length(&insn);
-+
-+		if (verbose && !insn_complete(&insn))
-+			dump_stream(stdout, "Info: Found an undecodable input", i, insn_buf, &insn);
-+
-+		if (insn.next_byte <= insn.kaddr ||
-+		    insn.kaddr + MAX_INSN_SIZE < insn.next_byte) {
-+			/* Access out-of-range memory */
-+			dump_stream(stdout, "Error: Found an access violation", i, insn_buf, &insn);
-+			errors++;
-+		}
-+		insns++;
-+	}
-+
-+	fprintf(stdout, "%s: decoded and checked %d %s instructions with %d errors (seed:0x%x)\n", (errors) ? "Failure" : "Success", insns, (input_file) ? "given" : "random", errors, seed);
-+
-+	return errors ? 1 : 0;
-+}
++err_out:
++	return;
+ }
+ 
+ /**
 
