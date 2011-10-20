@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1JTMhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 08:37:21 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42080 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752574Ab1JTMhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 08:37:19 -0400
-Date: Thu, 20 Oct 2011 14:37:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH ] ide-{cd,floppy,tape}: Do not include <linux/irq.h>
-Message-ID: <20111020123714.GB28316@gere.osrc.amd.com>
-References: <1319112675-27523-1-git-send-email-geert@linux-m68k.org>
+	id S1753404Ab1JTMvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 08:51:50 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35568 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab1JTMvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 08:51:49 -0400
+Date: Thu, 20 Oct 2011 10:51:43 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com
+Subject: Re: [PATCH] perf top: fix crash on annotate request
+Message-ID: <20111020125143.GA1772@ghostprotocols.net>
+References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
+ <20111019183848.GE2229@ghostprotocols.net>
+ <4E9F1AA0.4010706@gmail.com>
+ <20111019192011.GG2229@ghostprotocols.net>
+ <4E9F4392.406@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1319112675-27523-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <4E9F4392.406@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 02:11:15PM +0200, Geert Uytterhoeven wrote:
-> The top of <linux/irq.h> has this comment:
+Em Wed, Oct 19, 2011 at 03:39:30PM -0600, David Ahern escreveu:
+> On 10/19/2011 01:20 PM, Arnaldo Carvalho de Melo wrote:
+> > Can you check if that is the problem? I.e. take notes->lock, check if
+> > ->src is NULL, if so call symbol__alloc_hist, etc?
+> > 
 > 
->  * Please do not include this file in generic code.  There is currently
->  * no requirement for any architecture to implement anything held
->  * within this file.
->  *
->  * Thanks. --rmk
+> Reproduced it on a lab box. This fixes the segfault:
 > 
-> Remove inclusion of <linux/irq.h>, to prevent the following compile error
-> from happening soon:
+> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+> index bc8f477..6bd501a 100644
+> --- a/tools/perf/util/annotate.c
+> +++ b/tools/perf/util/annotate.c
+> @@ -253,6 +253,17 @@ static int symbol__parse_objdump_line(struct symbol
+> *sym, struct map *map,
+>         free(line);
+>         return -1;
+>     }
+> +
+> +   pthread_mutex_lock(&notes->lock);
+> +   if (notes->src == NULL &&
+> +       symbol__alloc_hist(sym, 1) < 0) {
+> +       pthread_mutex_unlock(&notes->lock);
+> +       ui__warning("Not enough memory for annotating '%s' symbol!\n",
+> +               sym->name);
+> +       return -1;
+> +   }
+> +   pthread_mutex_unlock(&notes->lock);
+> +
+>     objdump__add_line(&notes->src->source, objdump_line);
 > 
-> | include/linux/irq.h:132: error: redefinition of ‘struct irq_data’
-> | include/linux/irq.h:286: error: redefinition of ‘struct irq_chip’
+>     return 0;
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: linux-ide@vger.kernel.org
+> Should I plumb nr_events down versus assuming its 1?
 
-Acked-by: Borislav Petkov <bp@alien8.de>
+better to plumb it properly, i.e. at some point where you have access to
+evlist to get its ->nr_entries so that we properly support multiple
+events.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+- Arnaldo
