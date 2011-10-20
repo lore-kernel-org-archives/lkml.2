@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab1JTGDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:03:23 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:4844 "EHLO
-	VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab1JTGDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:03:22 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 20 Oct 2011 14:14:09 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Rajendra Nayak <rnayak@ti.com>
-CC: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
-        <patches@linaro.org>, <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111020061408.GE32007@S2100-06.ap.freescale.net>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-4-git-send-email-rnayak@ti.com>
- <20111018132032.GD30703@S2100-06.ap.freescale.net>
- <4E9EB61C.1040207@ti.com>
- <20111019144215.GA32007@S2100-06.ap.freescale.net>
- <4E9FAF42.5060200@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4E9FAF42.5060200@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	id S1754074Ab1JTGK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:10:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49971 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752757Ab1JTGKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 02:10:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="64994740"
+Subject: Re: [PATCH] Code clean up for percpu_xxx() functions
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <1319090667.23426.159.camel@debian>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+	 <alpine.DEB.2.00.1110120910540.26610@router.home>
+	 <1318908091.23426.52.camel@debian>
+	 <alpine.DEB.2.00.1110180932330.687@router.home>
+	 <1319016218.23426.104.camel@debian>
+	 <alpine.DEB.2.00.1110191033480.24001@router.home>
+	 <1319078687.23426.146.camel@debian>
+	 <1319087281.8416.45.camel@edumazet-laptop>
+	 <1319090667.23426.159.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Oct 2011 14:13:22 +0800
+Message-ID: <1319091202.23426.163.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 10:48:58AM +0530, Rajendra Nayak wrote:
-> >Let's look at mc13892-regulator driver.  There are 23 regulators defined
-> >in array mc13892_regulators.  Needless to say, there is a dev behind
-> >mc13892-regulator driver.  And when getting probed, this driver will
-> >call regulator_register() to register those 23 regulators individually.
-> >That said, for non-dt world, we have 1 + 23 'dev' with that 1 as the
-> >parent of all other 23 'dev' (wrapped by regulator_dev).  But with the
-> >current DT implementation, we will have at least 1 + 23 * 2 'dev'.
-> >These extra 23 'dev' is totally new with DT.
-> >
+On Thu, 2011-10-20 at 14:04 +0800, Alex,Shi wrote:
+> > Sorry this huge patch brings too many potential bugs.
+> > 
+> > I ask you a separate patch for the networking part, because I dont want
+> > to Ack all the other parts.
+> > 
 > 
-> but thats only because the mc13892-regulator driver is implemeted in
-> such a way that all the regulators on the platform are bundled in as
-> *one* device.
+> Thanks a lot for review! I split the first patch into 2 according your
+> suggestion. The second one for network here: 
 
-I did not look into too many regulator drivers, but I expect this is
-way that most regulator drivers are implemented in.  Having
-mc13892-regulator being probed 23 times to register these 23 regulators
-just makes less sense to me.
-
-> It would again depend on how you would pass these from
-> the DT, if you indeed stick to the same way of bundling all regulators
-> as one device from DT, the mc13892-regulator probe would just get called
-> once and there would be one device associated, no?
-> 
-Yes, I indeed would stick to the same way of bundling the registration
-of all regulators with mc13892-regulator being probed once.  The problem
-I have with the current regulator core DT implementation is that it
-assumes the device_node of rdev->dev (dev wrapped in regulator_dev) is
-being attached to rdev->dev.parent rather than itself.  Back to
-mc13892-regulator example, that said, it requires the dev of
-mc13892-regulator have the device_node of individual regulator attached
-to.  IOW, the current implementation forces mc13892-regulator to be
-probed 23 times to register those 23 regulators.  This is wrong to me.
-
--- 
-Regards,
-Shawn
+Sorry for too big patch, any other split requirements? 
 
