@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1JTVRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:17:31 -0400
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35675
-	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753161Ab1JTVNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:13:22 -0400
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Decotigny <decot@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [RFC PATCH 15/17] phy_device: Add "port" and "transciever" fields
-Date: Thu, 20 Oct 2011 17:00:22 -0400
-Message-Id: <1319144425-15547-16-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+	id S1753486Ab1JTVUZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:20:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958Ab1JTVUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 17:20:23 -0400
+Date: Thu, 20 Oct 2011 17:20:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: [PATCH 2/2] blk-throttle: Take blkcg->lock while traversing
+ blkcg->policy_list
+Message-ID: <20111020212021.GA2841@redhat.com>
+References: <1319144906-5066-1-git-send-email-vgoyal@redhat.com>
+ <1319144906-5066-2-git-send-email-vgoyal@redhat.com>
+ <20111020211140.GY25124@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020211140.GY25124@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some PHYs have multiple software-selectable inputs and outputs,
-including RGMII, SGMII, SerDes, etc.  New fields are added to the
-"struct phy_device" for "port" and "transciever" to allow "ethtool" to
-switch outputs at runtime.  The defaults for the new fields are
-identical to the hardcoded values used previously.
+On Thu, Oct 20, 2011 at 02:11:40PM -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Oct 20, 2011 at 05:08:26PM -0400, Vivek Goyal wrote:
+> > blkcg->policy_list is protected by blkcg->lock. Its not rcu protected
+> > list. So even for readers, they need to take blkcg->lock. There are
+> > few functions which were reading the list without taking lock. Fix it.
+> > 
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> 
+>  Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> And yeap, some of rcu usages in cfq/iocg seem either incorrect or
+> unnecessary.  Trying to clean up that now too.
 
-This should make no functional changes to the PHY layer behavior, but
-it will allow later PHY/ethernet drivers to override those fields.
+Cool. I am waiting for the patches as I am curious to know what's incorrect
+or unnecessary.
 
-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
----
- drivers/net/phy/phy.c        |    4 ++--
- drivers/net/phy/phy_device.c |    2 ++
- include/linux/phy.h          |    4 ++++
- 3 files changed, 8 insertions(+), 2 deletions(-)
+I noticed above two problems while trying to figure out how can we cleanup
+the device rules when devices goes away. One place could be.
 
-diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-index c378f91..5f72055 100644
---- a/drivers/net/phy/phy.c
-+++ b/drivers/net/phy/phy.c
-@@ -290,9 +290,9 @@ int phy_ethtool_gset(struct phy_device *phydev, struct ethtool_cmd *cmd)
- 
- 	ethtool_cmd_speed_set(cmd, phydev->speed);
- 	cmd->duplex = phydev->duplex;
--	cmd->port = PORT_MII;
-+	cmd->port = phydev->port;
- 	cmd->phy_address = phydev->addr;
--	cmd->transceiver = XCVR_EXTERNAL;
-+	cmd->transceiver = phydev->transciever;
- 	cmd->autoneg = phydev->autoneg;
- 
- 	return 0;
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index fc0f315..d01b272 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -141,6 +141,8 @@ static struct phy_device* phy_device_create(struct mii_bus *bus,
- 
- 	dev->speed = 0;
- 	dev->duplex = -1;
-+	dev->port = PORT_MII;
-+	dev->transceiver = XCVR_EXTERNAL;
- 	dev->pause = dev->asym_pause = 0;
- 	dev->link = 1;
- 	dev->interface = PHY_INTERFACE_MODE_GMII;
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index f07fc1c..0cb300d 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -308,6 +308,10 @@ struct phy_device {
- 	u32 supported;
- 	u32 advertising;
- 
-+	/* The current port/xcvr info (Copper, Fibre, MII, Direct-Attach) */
-+	u8 port;
-+	u8 transceiver;
-+
- 	int autoneg;
- 
- 	int link_timeout;
--- 
-1.7.2.5
+blk_throtl_exit() {
+	blkiocg_del_blkio_group() {
+		delete_any_policy_nodes_associated_with_this device;
+	}
+}
 
+The only problem with this approach is that it will cleanup per device
+weight rules also at elevator_exit() time which is not same as device
+removal and one might device to bring CFQ back on device and we will
+need the rules again.
+
+cfq_exit_queue()
+  cfq_release_cfq_groups
+    cfq_blkiocg_del_blkio_group()
+      blkiocg_del_blkio_group()
+
+Thanks
+Vivek
