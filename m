@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1JTVN1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:13:27 -0400
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35669
+	id S1753391Ab1JTVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:13:26 -0400
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35665
 	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752511Ab1JTVNV (ORCPT
+	by vger.kernel.org with ESMTP id S1751926Ab1JTVNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Oct 2011 17:13:21 -0400
 From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        David Miller <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [RFC PATCH 16/17] phy_device: Add phy_setmask helper function
-Date: Thu, 20 Oct 2011 17:00:23 -0400
-Message-Id: <1319144425-15547-17-git-send-email-Kyle.D.Moffett@boeing.com>
+        "David S. Miller" <davem@davemloft.net>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Joe Perches <joe@perches.com>, Jon Mason <jdmason@kudzu.us>
+Subject: [RFC PATCH 10/17] pxa186_eth: Use standardized phy_init_hw() for PHY reset
+Date: Thu, 20 Oct 2011 17:00:17 -0400
+Message-Id: <1319144425-15547-11-git-send-email-Kyle.D.Moffett@boeing.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
 References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
@@ -24,48 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the PHY layer there are frequently occasions when code needs to
-modify only some subset of the bits in a particular 16-bit register.
+The PHY does not need to be reset immediately before phy_attach(), as
+that function will call phy_init_hw() properly on its own.  Furthermore,
+the PHY should not be manually reset, as that will undo board-specific
+PHY fixups and driver-specific phy->drv->config_init() register tweaks.
 
-To clean up the flow control and improve readability a phy_setmask()
-helper function is added.
+NOTE: Depends on earlier phy_init_hw() patch.
 
-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Not-yet-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 ---
- include/linux/phy.h |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ drivers/net/pxa168_eth.c |   21 +--------------------
+ 1 files changed, 1 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 0cb300d..3713c8d 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -474,6 +474,26 @@ static inline int phy_write(struct phy_device *phydev, u32 regnum, u16 val)
- 	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
+diff --git a/drivers/net/pxa168_eth.c b/drivers/net/pxa168_eth.c
+index d17d062..ab3bca9 100644
+--- a/drivers/net/pxa168_eth.c
++++ b/drivers/net/pxa168_eth.c
+@@ -323,23 +323,6 @@ static void ethernet_phy_set_addr(struct pxa168_eth_private *pep, int phy_addr)
+ 	wrl(pep, PHY_ADDRESS, reg_data);
  }
  
-+/**
-+ * phy_setmask - Convenience function for changing PHY register bits
-+ * @phydev: the phy_device struct
-+ * @regnum: register number to write
-+ * @val: value to write to the @mask bits of @regnum
-+ * @mask: the mask of bits to change
-+ *
-+ * NOTE: MUST NOT be called from interrupt context,
-+ * because the bus read/write functions may wait for an interrupt
-+ * to conclude the operation.
-+ */
-+static inline int phy_setmask(struct phy_device *phydev, u16 regnum,
-+		u16 val, u16 mask)
-+{
-+	int ret = phy_read(phydev, regnum);
-+	if (ret < 0)
-+		return ret;
-+	return phy_write(phydev, regnum, (ret & ~mask) | (val & mask));
-+}
-+
- int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id);
- struct phy_device* get_phy_device(struct mii_bus *bus, int addr);
- int phy_device_register(struct phy_device *phy);
+-static void ethernet_phy_reset(struct pxa168_eth_private *pep)
+-{
+-	int data;
+-
+-	data = phy_read(pep->phy, MII_BMCR);
+-	if (data < 0)
+-		return;
+-
+-	data |= BMCR_RESET;
+-	if (phy_write(pep->phy, MII_BMCR, data) < 0)
+-		return;
+-
+-	do {
+-		data = phy_read(pep->phy, MII_BMCR);
+-	} while (data >= 0 && data & BMCR_RESET);
+-}
+-
+ static void rxq_refill(struct net_device *dev)
+ {
+ 	struct pxa168_eth_private *pep = netdev_priv(dev);
+@@ -647,7 +630,7 @@ static void eth_port_start(struct net_device *dev)
+ 		struct ethtool_cmd cmd;
+ 
+ 		pxa168_get_settings(pep->dev, &cmd);
+-		ethernet_phy_reset(pep);
++		phy_init_hw(pep->phy);
+ 		pxa168_set_settings(pep->dev, &cmd);
+ 	}
+ 
+@@ -1393,8 +1376,6 @@ static struct phy_device *phy_scan(struct pxa168_eth_private *pep, int phy_addr)
+ static void phy_init(struct pxa168_eth_private *pep, int speed, int duplex)
+ {
+ 	struct phy_device *phy = pep->phy;
+-	ethernet_phy_reset(pep);
+-
+ 	phy_attach(pep->dev, dev_name(&phy->dev), 0, PHY_INTERFACE_MODE_MII);
+ 
+ 	if (speed == 0) {
 -- 
 1.7.2.5
 
