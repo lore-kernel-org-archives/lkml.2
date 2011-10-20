@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1JTVoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:44:25 -0400
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:34930 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751609Ab1JTVoY (ORCPT
+	id S1753250Ab1JTVsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:48:17 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52290 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab1JTVsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:44:24 -0400
-X-Greylist: delayed 986 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Oct 2011 17:44:24 EDT
-Message-ID: <4EA0925C.3000100@lougher.demon.co.uk>
-Date: Thu, 20 Oct 2011 22:27:56 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Phillip Lougher <phil.lougher@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        greg@kroah.com, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Procedural requirements for restoring kernel.org accounts
-References: <20111014152100.GA11717@kroah.com>	<4E988564.40905@zytor.com>	<CA+2-8GA-R3TETVLubOO8uMQq1a3-LmQ=STrXM1kf+8WbgfhTLQ@mail.gmail.com> <20111020220922.6bfed01b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111020220922.6bfed01b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 20 Oct 2011 17:48:15 -0400
+Date: Thu, 20 Oct 2011 17:48:07 -0400 (EDT)
+Message-Id: <20111020.174807.1345631716931276111.davem@davemloft.net>
+To: eibach@gdsys.de
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] net: Fix driver name for mdio-gpio.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1318943051-22432-1-git-send-email-eibach@gdsys.de>
+References: <1318943051-22432-1-git-send-email-eibach@gdsys.de>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 14:48:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
->> I live in Wales which isn't overly blessed with kernel developers
+From: Dirk Eibach <eibach@gdsys.de>
+Date: Tue, 18 Oct 2011 15:04:11 +0200
+
+> Since commit
+> "7488876... dt/net: Eliminate users of of_platform_{,un}register_driver"
+> there are two platform drivers named "mdio-gpio" registered.
+> I renamed the of variant to "mdio-ofgpio".
 > 
-> There are quite a few of us at least at the southern end of it (not
-> that I've actually generated a key yet).
+> Signed-off-by: Dirk Eibach <eibach@gdsys.de>
 
-Well you must all be hiding pretty well then, because I live in the
-southern end too (though Chepstow is hardly Cardiff or Swansea) :-)
-
-Phillip
-
+Applied, thanks.
