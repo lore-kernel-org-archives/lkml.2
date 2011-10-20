@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1JTWHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 18:07:15 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:53952 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab1JTWHO (ORCPT
+	id S1751194Ab1JTWJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 18:09:20 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28039 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750713Ab1JTWJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 18:07:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=EnbtixWKGlSsC+WFRrPEfZoPn4cK5SOFnIHuq2F42lTm535BI8pbjjDKiV2K2LWR4
-	zEkuWyNO+V2ZfhwMXKVNA==
-From: Louis Huemiller <lhuemill@google.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Louis Huemiller <lhuemill@google.com>
-Subject: [PATCH] fs: grow_dev_page() failure path not a BUG()
-Date: Thu, 20 Oct 2011 15:05:56 -0700
-Message-Id: <1319148356-15063-1-git-send-email-lhuemill@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 20 Oct 2011 18:09:19 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/9GEebB1EWZJoXsvp/+Qdg
+Date: Thu, 20 Oct 2011 15:09:14 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111020220914.GP3842@atomide.com>
+References: <20111019151031.GA4275@opensource.wolfsonmicro.com>
+ <4E9F9892.9070007@ti.com>
+ <20111020094140.GK18713@sirena.org.uk>
+ <20111020162743.GB31337@atomide.com>
+ <20111020164006.GA10155@sirena.org.uk>
+ <20111020170534.GC31337@atomide.com>
+ <20111020172218.GE31337@atomide.com>
+ <20111020195734.GB17384@opensource.wolfsonmicro.com>
+ <20111020201054.GN3842@atomide.com>
+ <20111020214225.GB22709@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020214225.GB22709@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function grow_dev_page() contains a label named failed which
-is jumped to on allocation failure.  When the system is low on
-memory, which is not a bug, this path can be taken.  This patch
-removes the BUG() call, so that this path can be exercised for
-proper operation on a debug kernel, without panicing the system.
+* Mark Brown <broonie@opensource.wolfsonmicro.com> [111020 14:08]:
+> On Thu, Oct 20, 2011 at 01:10:55PM -0700, Tony Lindgren wrote:
+> 
+> > We still need to figure out how to get the above board specific
+> > data to the device driver probe in a way where we can avoid having
+> > platform glue code. Any thoughts on that?
+> 
+> I think we should just not bother with most of the above and see if
+> anyone notices, with the exception of always on and status changes it's
+> vanishingly rare for anyone to actually do anything constructive with
+> them.  
 
-Signed-off-by: Louis Huemiller <lhuemill@google.com>
----
- fs/buffer.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+OK
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 1a80b04..04781e6 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1032,7 +1032,6 @@ grow_dev_page(struct block_device *bdev, sector_t block,
- 	return page;
- 
- failed:
--	BUG();
- 	unlock_page(page);
- 	page_cache_release(page);
- 	return NULL;
--- 
-1.7.3.1
+> Neither of the two I mentioned are Linux specific either, they mean
+> somehing useful for any OS it's just that the decision is policy which
+> is going to depend on the OS version.  Status changes we can probably
+> allow people to enable, it'll just mean that older device trees won't
+> get good power use out of newer kernels and if you move to an older
+> kernel things will start exploding as drivers loose regulator support.
+> Always on we can probably live without, it's a combination of
+> overspecification and interaction with _has_full_constraints() which
+> isn't represented in this binding anyway.
 
+Yeah, lot of these are "how the regulator using driver is using
+the regulator" or "how the operating system is using the regulator"
+type policies.
+
+Regards,
+
+Tony
