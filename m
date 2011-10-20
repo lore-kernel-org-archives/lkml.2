@@ -1,134 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab1JTP4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 11:56:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48114 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756221Ab1JTP4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 11:56:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,379,1315206000"; 
-   d="scan'208";a="64595293"
-Date: Thu, 20 Oct 2011 23:56:42 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tang Feng <feng.tang@intel.com>
-Subject: [PATCH 2/2] nfs: scale writeback threshold proportional to dirty
- threshold
-Message-ID: <20111020155642.GB7054@localhost>
-References: <20111020155542.GA7054@localhost>
+	id S1756741Ab1JTP4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 11:56:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58766 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756710Ab1JTP4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 11:56:52 -0400
+Date: Thu, 20 Oct 2011 08:56:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrey Vagin <avagin@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
+Message-ID: <20111020155645.GV25124@google.com>
+References: <20111014110416.552685686@openvz.org>
+ <20111014110511.670174429@openvz.org>
+ <20111014171033.GC4294@google.com>
+ <20111014173304.GD4294@google.com>
+ <4E9E9255.7090601@parallels.com>
+ <20111019182228.GJ25124@google.com>
+ <4E9FDCEF.5050008@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111020155542.GA7054@localhost>
+In-Reply-To: <4E9FDCEF.5050008@parallels.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfs_congestion_kb is to control the max allowed writeback and in-commit
-pages. It's not reasonable for them to outnumber dirty and to-commit
-pages. So each of them should not take more than 1/4 dirty threshold.
+Hello,
 
-Considering that nfs_init_writepagecache() is called on fresh boot,
-at the time dirty_thresh is much higher than the real dirty limit after
-lots of user space memory consumptions, use 1/8 instead.
+On Thu, Oct 20, 2011 at 12:33:51PM +0400, Pavel Emelyanov wrote:
+> > To shared kernel data structures.
+> 
+> Yet again - keeping shared stuctres self-consistent from which point of view? From
+> the kernel's one - already handled with in-kernel locks. From the userspace one -
+> every single kernel API provides a *way* to do things right, but doesn't provide
+> the fool protection.
 
-Feng: fix deadlock by preventing (nfs_congestion_kb == 0)
+Sigh, no, in exec and related paths, the fact that all other threads
+have been zapped are depended upon and the exec'ing task assumes
+exclusive access to resources which in usual cases would require other
+forms of exclusion.  Maybe there are not too many of them and things
+can definitely be audited and updated but it is pretty intricate down
+there and I just don't see good enough justification here.
 
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/nfs/write.c      |   36 +++++++++++++++++-------------------
- mm/page-writeback.c |    6 ++++++
- 2 files changed, 23 insertions(+), 19 deletions(-)
+> >> One of the abilities to restore multy-threaded task can be - clone threads from
+> >> the userspace, then wait for them to prepare themselves the way they need it,
+> >> then the threads go to sleep and the leader one calls execve. Thus the userspace
+> >> state consistency is OK.
+> > 
+> > If you're gonna let userspace do it, why bother with in-kernel thing
+> > at all?
+> 
+> Because userspace cannot just flush itself memory and registers and switch to new
+> ones. Someone's help is required anyway. Did I misunderstood your question?
 
---- linux-next.orig/fs/nfs/write.c	2011-10-20 23:45:59.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2011-10-20 23:53:16.000000000 +0800
-@@ -1782,6 +1782,22 @@ out:
- }
- #endif
- 
-+void nfs_update_congestion_thresh(void)
-+{
-+	unsigned long background_thresh;
-+	unsigned long dirty_thresh;
-+
-+	/*
-+	 * Limit to 1/8 dirty threshold, so that writeback+in_commit pages
-+	 * won't overnumber dirty+to_commit pages.
-+	 */
-+	global_dirty_limits(&background_thresh, &dirty_thresh);
-+	dirty_thresh <<= PAGE_SHIFT - 10;
-+	dirty_thresh += 1024;
-+
-+	nfs_congestion_kb = dirty_thresh / 8;
-+}
-+
- int __init nfs_init_writepagecache(void)
- {
- 	nfs_wdata_cachep = kmem_cache_create("nfs_write_data",
-@@ -1801,25 +1817,7 @@ int __init nfs_init_writepagecache(void)
- 	if (nfs_commit_mempool == NULL)
- 		return -ENOMEM;
- 
--	/*
--	 * NFS congestion size, scale with available memory.
--	 *
--	 *  64MB:    8192k
--	 * 128MB:   11585k
--	 * 256MB:   16384k
--	 * 512MB:   23170k
--	 *   1GB:   32768k
--	 *   2GB:   46340k
--	 *   4GB:   65536k
--	 *   8GB:   92681k
--	 *  16GB:  131072k
--	 *
--	 * This allows larger machines to have larger/more transfers.
--	 * Limit the default to 256M
--	 */
--	nfs_congestion_kb = (16*int_sqrt(totalram_pages)) << (PAGE_SHIFT-10);
--	if (nfs_congestion_kb > 256*1024)
--		nfs_congestion_kb = 256*1024;
-+	nfs_update_congestion_thresh();
- 
- 	return 0;
- }
---- linux-next.orig/mm/page-writeback.c	2011-10-20 23:45:23.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-10-20 23:48:07.000000000 +0800
-@@ -207,6 +207,10 @@ static int calc_period_shift(void)
- 	return 2 + ilog2(dirty_total - 1);
- }
- 
-+void __weak nfs_update_congestion_thresh(void)
-+{
-+}
-+
- /*
-  * update the period when the dirty threshold changes.
-  */
-@@ -217,6 +221,7 @@ static void update_completion_period(voi
- 	prop_change_shift(&vm_dirties, shift);
- 
- 	writeback_set_ratelimit();
-+	nfs_update_congestion_thresh();
- }
- 
- int dirty_background_ratio_handler(struct ctl_table *table, int write,
-@@ -447,6 +452,7 @@ unsigned long bdi_dirty_limit(struct bac
- 
- 	return bdi_dirty;
- }
-+EXPORT_SYMBOL_GPL(global_dirty_limits);
- 
- /*
-  * Dirty position control.
+ptrace?
+
+> >>> * It's still calling exec_mmap(), so the exec'ing thread will be on
+> >>>   the new mm while other threads would still be on the old one.
+> >>
+> >> Why do you think it's a problem?
+> > 
+> > Ummm.... they aren't on the same address space?  How can that be okay?
+> 
+> The similar (but mirrored) thing with vfork - two tasks are on the same address space,
+> but the child is supposed not to kill the parent's one. And this is OK for most of the
+> apps using it.
+
+I really don't know what to say here.  This is a clear bug.  You
+should be switching mm's of other threads too if you want to go this
+way.  vfork has have nothing to do with this.
+
+> > It's not only wrong from CR POV.  The kernel disallows
+> > CLONE_THREAD/SIGHAND w/o CLONE_VM and depend on that assumption,
+> > you're breaking that.
+> 
+> OK, if this is the only problem we can keep the mm_struct itself just unmapping the
+> vmas with unmap(0, 0xff...f) and repopulating one.
+
+Yeah, and change another basic assumption without proper audit or
+consideration for a feature which is borderline unnecessary?
+
+> > IMHO, this is a fundamentally broken approach which isn't even
+> > necessary.  So, FWIW, NACK.
+> 
+> It's a pity :( Anyway, as I stated above, we'll try to compare two
+> real implementations, not abstract assumptions.
+
+Given the state of this thread, I'm pretty skeptical this one can
+survive but, hey, who knows?
+
+Thank you.
+
+-- 
+tejun
