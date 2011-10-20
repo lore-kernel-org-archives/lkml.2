@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab1JTJdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:33:55 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:51035 "EHLO
+	id S1756308Ab1JTJdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:33:13 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:50862 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab1JTJdM (ORCPT
+	with ESMTP id S1756255Ab1JTJdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:33:12 -0400
+	Thu, 20 Oct 2011 05:33:08 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -17,292 +17,107 @@ Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
         lm-sensors@lm-sensors.org, guenter.roeck@ericsson.com,
         khali@linux-fr.org, thomas.petazzoni@free-electrons.com,
         maxime.ripard@free-electrons.com, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 5/6] IIO:hwmon interface client driver.
-Date: Thu, 20 Oct 2011 10:33:06 +0100
-Message-Id: <1319103187-27791-6-git-send-email-jic23@cam.ac.uk>
+Subject: [RFC V3 PATCH 0/6] IIO in kernel interfaces
+Date: Thu, 20 Oct 2011 10:33:01 +0100
+Message-Id: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
-References: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should move to drivers/hwmon once people are happy with it.
+Since V2:
 
-Minimal support of simple in, curr and temp attributes
-so far.
+Fixes as per Guenter's comments on the iio_hwmon driver.
+Only one that differred slightly from Guenters suggestion
+is the value calculation where I reordered things to reduce
+the chance of overflow as well as casting to longs.
+Thanks Guenter!
 
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
----
- drivers/iio/Kconfig     |    8 ++
- drivers/iio/Makefile    |    1 +
- drivers/iio/iio_hwmon.c |  227 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 236 insertions(+), 0 deletions(-)
+Since V1:
+Uses the bus's list of devices instead of having a local one.
+     (thanks to Lars-Peter).
 
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index 308bc97..c2f0970 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -11,6 +11,14 @@ menuconfig IIO
- 
- if IIO
- 
-+config IIO_HWMON
-+       tristate "Hwmon driver that uses channels specified via iio maps"
-+       depends on HWMON
-+       help
-+	  This is a platform driver that in combination with a suitable
-+	  map allows IIO devices to provide  basic hwmon functionality
-+	  for those channels specified in the map.
-+
- source "drivers/iio/adc/Kconfig"
- source "drivers/iio/imu/Kconfig"
- source "drivers/iio/light/Kconfig"
-diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-index cfb588a..5f9c01a 100644
---- a/drivers/iio/Makefile
-+++ b/drivers/iio/Makefile
-@@ -6,6 +6,7 @@ obj-y = inkern.o
- obj-$(CONFIG_IIO) += iio.o
- industrialio-y := core.o
- 
-+obj-$(CONFIG_IIO_HWMON) += iio_hwmon.o
- obj-y += adc/
- obj-y += imu/
- obj-y += light/
-diff --git a/drivers/iio/iio_hwmon.c b/drivers/iio/iio_hwmon.c
-new file mode 100644
-index 0000000..b3348ad
---- /dev/null
-+++ b/drivers/iio/iio_hwmon.c
-@@ -0,0 +1,227 @@
-+/* Hwmon client for industrial I/O devices
-+ *
-+ * Copyright (c) 2011 Jonathan Cameron
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * Limited functionality currently supported.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/iio/inkern.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+
-+/**
-+ * struct iio_hwmon_state - device instance state
-+ * @channels:		filled with null terminated array of channels from iio
-+ * @num_channels:	number of channels in channels (saves counting twice)
-+ * @hwmon_dev:		associated hwmon device
-+ * @attr_group:	the group of attributes
-+ * @attrs:		null terminated array of attribute pointers.
-+ */
-+struct iio_hwmon_state {
-+	struct iio_channel **channels;
-+	int num_channels;
-+	struct device *hwmon_dev;
-+	struct attribute_group attr_group;
-+	struct attribute **attrs;
-+};
-+
-+/*
-+ * Assumes that IIO and hwmon operate in the same base units.
-+ * This is supposed to be true, but needs verification for
-+ * new channel types.
-+ */
-+static ssize_t iio_hwmon_read_val(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	long result;
-+	int val, ret, scaleint, scalepart;
-+	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
-+	struct iio_hwmon_state *state = dev_get_drvdata(dev);
-+
-+	/*
-+	 * No locking between this pair, so theoretically possible
-+	 * the scale has changed.
-+	 */
-+	ret = iio_read_channel_raw(state->channels[sattr->index],
-+				   &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = iio_read_channel_scale(state->channels[sattr->index],
-+				     &scaleint, &scalepart);
-+	if (ret < 0)
-+		return ret;
-+	switch (ret) {
-+	case IIO_VAL_INT:
-+		result = val * scaleint;
-+		break;
-+	case IIO_VAL_INT_PLUS_MICRO:
-+		result = (long)val * (long)scaleint +
-+			(long)val * (long)scalepart / 1000000L;
-+		break;
-+	case IIO_VAL_INT_PLUS_NANO:
-+		result = (long)val * (long)scaleint +
-+			(long)val * (long)scalepart / 1000000000L;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return sprintf(buf, "%ld\n", result);
-+}
-+
-+static void iio_hwmon_free_attrs(struct iio_hwmon_state *st)
-+{
-+	int i;
-+	struct sensor_device_attribute *a;
-+	for (i = 0; i < st->num_channels; i++)
-+		if (st->attrs[i]) {
-+			a = to_sensor_dev_attr(
-+				container_of(st->attrs[i],
-+					     struct device_attribute,
-+					     attr));
-+			kfree(a);
-+		}
-+}
-+
-+static int __devinit iio_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct iio_hwmon_state *st;
-+	struct sensor_device_attribute *a;
-+	int ret, i;
-+	int in_i = 1, temp_i = 1, curr_i = 1;
-+
-+	st = kzalloc(sizeof(*st), GFP_KERNEL);
-+	if (st == NULL) {
-+		ret = -ENOMEM;
-+		goto error_ret;
-+	}
-+
-+	st->channels = iio_channel_get_all(&pdev->dev, NULL);
-+	if (IS_ERR(st->channels)) {
-+		ret = PTR_ERR(st->channels);
-+		goto error_free_state;
-+	}
-+
-+	/* count how many attributes we have */
-+	while (st->channels[st->num_channels])
-+		st->num_channels++;
-+
-+	st->attrs = kzalloc(sizeof(st->attrs) * (st->num_channels + 1),
-+			    GFP_KERNEL);
-+	if (st->attrs == NULL) {
-+		ret = -ENOMEM;
-+		goto error_release_channels;
-+	}
-+	for (i = 0; i < st->num_channels; i++) {
-+		a = kzalloc(sizeof(*a), GFP_KERNEL);
-+		if (a == NULL) {
-+			ret = -ENOMEM;
-+			goto error_free_attrs;
-+		}
-+
-+		sysfs_attr_init(&a->dev_attr.attr);
-+		switch (iio_get_channel_type(st->channels[i])) {
-+		case IIO_VOLTAGE:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "in%d_input",
-+							  in_i++);
-+			break;
-+		case IIO_TEMP:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "temp%d_input",
-+							  temp_i++);
-+			break;
-+		case IIO_CURRENT:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "curr%d_input",
-+							  curr_i++);
-+			break;
-+		default:
-+			ret = -EINVAL;
-+			kfree(a);
-+			goto error_free_attrs;
-+		}
-+		if (a->dev_attr.attr.name == NULL) {
-+			kfree(a);
-+			ret = -ENOMEM;
-+			goto error_free_attrs;
-+		}
-+		a->dev_attr.show = iio_hwmon_read_val;
-+		a->dev_attr.attr.mode = S_IRUGO;
-+		a->index = i;
-+		st->attrs[i] = &a->dev_attr.attr;
-+	}
-+
-+	st->attr_group.attrs = st->attrs;
-+	platform_set_drvdata(pdev, st);
-+	ret = sysfs_create_group(&pdev->dev.kobj, &st->attr_group);
-+	if (ret < 0)
-+		goto error_free_attrs;
-+
-+	st->hwmon_dev = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(st->hwmon_dev)) {
-+		ret = PTR_ERR(st->hwmon_dev);
-+		goto error_remove_group;
-+	}
-+	return 0;
-+
-+error_remove_group:
-+	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-+error_free_attrs:
-+	iio_hwmon_free_attrs(st);
-+	kfree(st->attrs);
-+error_release_channels:
-+	iio_channel_release_all(st->channels);
-+error_free_state:
-+	kfree(st);
-+error_ret:
-+	return ret;
-+}
-+
-+static int __devexit iio_hwmon_remove(struct platform_device *pdev)
-+{
-+	struct iio_hwmon_state *st = platform_get_drvdata(pdev);
-+
-+	hwmon_device_unregister(st->hwmon_dev);
-+	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-+	iio_hwmon_free_attrs(st);
-+	kfree(st->attrs);
-+	iio_channel_release_all(st->channels);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver __refdata iio_hwmon_driver = {
-+	.driver = {
-+		.name = "iio_hwmon",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = iio_hwmon_probe,
-+	.remove = __devexit_p(iio_hwmon_remove),
-+};
-+
-+static int iio_inkern_init(void)
-+{
-+	return platform_driver_register(&iio_hwmon_driver);
-+}
-+module_init(iio_inkern_init);
-+
-+static void iio_inkern_exit(void)
-+{
-+	platform_driver_unregister(&iio_hwmon_driver);
-+}
-+module_exit(iio_inkern_exit);
-+
-+MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
-+MODULE_DESCRIPTION("IIO to hwmon driver");
-+MODULE_LICENSE("GPL v2");
+Added are interfaces for getting all channels mapped to a particular
+device.
+
+Hwmon driver is now vaguely complete - hence cc'd hwmon. If people
+are happy I'd expect this to ultimately end up in drivers/hmwon.
+Right now it is acting as a test driver for these interfaces.
+
+Thanks and all comments welcome. I've added hwmon to the cc list 
+this time round.
+
+V1 message:
+There are obviously some rough corners in here that will need cleaning up.
+For now I've just put this out there to see if anyone radically disagrees
+on the direction.  It sits on top the recent rfc to move first bit of IIO
+out of staging with a few buglets fixed.  Best bet if anyone wants to
+test is to pull from:
+
+https://github.com/jic23/linux-iio/tree/outofstaging
+
+which now also includes these patches.
+
+Intereresting patches are 3 and 4.  5 gives a trivial example of
+a driver using this (hwmon driver that only takes first matching channel
+and sticks it out as in1_input - breaks all sorts elements of the hwmon
+interface spec.)
+
+For now I've gone with Mark Brown's suggestion of a datasheet_name for
+finding the channels on the device.  Patch 2 hacks this name into the
+max1363 driver.  I'll probably put a version matching on channel number and
+type in at a later date.
+
+Here we just have a pull interface.  Push is considerably harder to do
+and needs quite a lot more of the IIO infrastructure to be in place
+(triggers / buffers etc). Events obviously require IIO event handling
+to be there. Hence all of that will have to wait until those elements
+have in of themselves been posted for review.
+
+It is pretty clear to me that hwmon interface for starters needs the
+ability to say - 'give me all mappings that correspond to me'.
+
+This is what I intend to add next followed by some utility functions
+to make it easy to match the hwmon interface.
+
+At that point I'll propose the hwmon driver goes into drivers/hwmon
+(subject to the underlying iio stuff merging).
+
+Fun fun fun.  Thanks to Linus an Mark for their input on this.
+Hope this is roughly what you guys were looking for.
+
+Also on my list to do is to check this very thoroughly for any
+possible race conditions around the removal of the underlying
+device.
+
+Jonathan
+
+Jonathan Cameron (6):
+  IIO: core: add datasheet_name to chan_spec
+  IIO:ADC:max1363 add datasheet_name entries.
+  IIO:CORE: put defs needed by inkern and userspace interfaces into
+    chan_spec.h
+  IIO:CORE add in kernel interface mapping and getting IIO channels.
+  IIO:hwmon interface client driver.
+  stargate2: example of map configuration for iio to hwmon example.
+
+ arch/arm/mach-pxa/stargate2.c  |   23 ++++
+ drivers/Makefile               |    2 +-
+ drivers/iio/Kconfig            |    8 +
+ drivers/iio/Makefile           |    2 +
+ drivers/iio/adc/max1363_core.c |    4 +-
+ drivers/iio/iio.c              |  279 +++++++++++++++++++++++++++++++++++++++-
+ drivers/iio/iio_hwmon.c        |  227 ++++++++++++++++++++++++++++++++
+ drivers/iio/inkern.c           |   21 +++
+ include/linux/iio/chan_spec.h  |   46 +++++++
+ include/linux/iio/iio.h        |   41 +-----
+ include/linux/iio/inkern.h     |   87 +++++++++++++
+ 11 files changed, 700 insertions(+), 40 deletions(-)
+ create mode 100644 drivers/iio/iio_hwmon.c
+ create mode 100644 drivers/iio/inkern.c
+ create mode 100644 include/linux/iio/chan_spec.h
+ create mode 100644 include/linux/iio/inkern.h
+
 -- 
 1.7.7
 
