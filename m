@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab1JTJeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:34:12 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:51027 "EHLO
+	id S1756477Ab1JTJee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:34:34 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:50926 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756296Ab1JTJdM (ORCPT
+	with ESMTP id S1756260Ab1JTJdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:33:12 -0400
+	Thu, 20 Oct 2011 05:33:10 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -17,9 +17,9 @@ Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
         lm-sensors@lm-sensors.org, guenter.roeck@ericsson.com,
         khali@linux-fr.org, thomas.petazzoni@free-electrons.com,
         maxime.ripard@free-electrons.com, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 3/6] IIO:CORE: put defs needed by inkern and userspace interfaces into chan_spec.h
-Date: Thu, 20 Oct 2011 10:33:04 +0100
-Message-Id: <1319103187-27791-4-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 6/6] stargate2: example of map configuration for iio to hwmon example.
+Date: Thu, 20 Oct 2011 10:33:07 +0100
+Message-Id: <1319103187-27791-7-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
 References: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
@@ -27,122 +27,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+Do not commit.
 ---
- include/linux/iio/chan_spec.h |   46 +++++++++++++++++++++++++++++++++++++++++
- include/linux/iio/iio.h       |   33 +----------------------------
- 2 files changed, 47 insertions(+), 32 deletions(-)
+ arch/arm/mach-pxa/stargate2.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/iio/chan_spec.h b/include/linux/iio/chan_spec.h
-new file mode 100644
-index 0000000..933480b
---- /dev/null
-+++ b/include/linux/iio/chan_spec.h
-@@ -0,0 +1,46 @@
-+/*
-+ * The industrial I/O channel descriptions
-+ *
-+ * Copyright (c) 2008-2011 Jonathan Cameron
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ */
-+
-+#ifndef _IIO_CHAN_SPEC_H_
-+#define _IIO_CHAN_SPEC_H_
-+
-+enum iio_data_type {
-+	IIO_RAW,
-+	IIO_PROCESSED,
-+};
-+
-+enum iio_direction {
-+	IIO_IN,
-+	IIO_OUT,
-+};
-+
-+enum iio_chan_type {
-+	IIO_VOLTAGE,
-+	IIO_CURRENT,
-+	IIO_POWER,
-+	IIO_CAPACITANCE,
-+	IIO_ACCEL,
-+	IIO_ANGL_VEL,
-+	IIO_MAGN,
-+	IIO_LIGHT,
-+	IIO_INTENSITY,
-+	IIO_PROXIMITY,
-+	IIO_TEMP,
-+	IIO_INCLI,
-+	IIO_ROT,
-+	IIO_ANGL,
-+	IIO_TIMESTAMP,
-+};
-+
-+#define IIO_VAL_INT 1
-+#define IIO_VAL_INT_PLUS_MICRO 2
-+#define IIO_VAL_INT_PLUS_NANO 3
-+
-+#endif
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index beedc5c..8b98e92 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -9,6 +9,7 @@
-  */
- #include <linux/klist.h>
- #include <linux/device.h>
-+#include <linux/iio/chan_spec.h>
+diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
+index 3f8d0af..48dcbb7 100644
+--- a/arch/arm/mach-pxa/stargate2.c
++++ b/arch/arm/mach-pxa/stargate2.c
+@@ -54,6 +54,8 @@
+ #include <linux/mfd/da903x.h>
+ #include <linux/sht15.h>
  
- #ifndef _IIO_H_
- #define _IIO_H_
-@@ -16,29 +17,6 @@
- /* Minimum alignment of priv within iio_dev */
- #define IIO_ALIGN L1_CACHE_BYTES
++#include <linux/iio/inkern.h>
++
+ #include "devices.h"
+ #include "generic.h"
  
--enum iio_data_type {
--	IIO_RAW,
--	IIO_PROCESSED,
--};
--
--enum iio_chan_type {
--	IIO_VOLTAGE,
--	IIO_CURRENT,
--	IIO_POWER,
--	IIO_CAPACITANCE,
--	IIO_ACCEL,
--	IIO_ANGL_VEL,
--	IIO_MAGN,
--	IIO_LIGHT,
--	IIO_INTENSITY,
--	IIO_PROXIMITY,
--	IIO_TEMP,
--	IIO_INCLI,
--	IIO_ROT,
--	IIO_ANGL,
--	IIO_TIMESTAMP,
--};
--
- enum iio_modifier {
- 	IIO_NO_MOD,
- 	IIO_MOD_X,
-@@ -73,15 +51,6 @@ enum iio_chan_info_enum {
- 	IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SEPARATE,
+@@ -406,6 +408,24 @@ static struct i2c_pxa_platform_data i2c_pdata = {
+ 	.fast_mode = 1,
  };
  
--enum iio_direction {
--	IIO_IN,
--	IIO_OUT,
--};
--
--#define IIO_VAL_INT 1
--#define IIO_VAL_INT_PLUS_MICRO 2
--#define IIO_VAL_INT_PLUS_NANO 3
--
- /**
-  * struct iio_chan_spec - specification of a single channel
-  * @type:		What type of measurement is the channel making.
++static struct platform_device iio_hwmon_test = {
++	.name = "iio_hwmon",
++};
++
++static struct iio_map adc_map[] = {
++	{
++		.adc_dev_name = "0-0035",
++		.adc_channel_label = "AIN1",
++		.consumer_dev = &iio_hwmon_test.dev,
++		.consumer_channel = "testchan1",
++	}, {
++		.adc_dev_name = "0-0035",
++		.adc_channel_label = "AIN2",
++		.consumer_dev = &iio_hwmon_test.dev,
++		.consumer_channel = "testchan2",
++	},
++};
++
+ static void __init imote2_stargate2_init(void)
+ {
+ 
+@@ -423,6 +443,8 @@ static void __init imote2_stargate2_init(void)
+ 
+ 	pxa27x_set_i2c_power_info(&i2c_pwr_pdata);
+ 	pxa_set_i2c_info(&i2c_pdata);
++
++	iio_map_array_register(adc_map, ARRAY_SIZE(adc_map));
+ }
+ 
+ #ifdef CONFIG_MACH_INTELMOTE2
+@@ -971,6 +993,7 @@ static struct platform_device *stargate2_devices[] = {
+ 	&stargate2_sram,
+ 	&smc91x_device,
+ 	&sht15,
++	&iio_hwmon_test,
+ };
+ 
+ static void __init stargate2_init(void)
 -- 
 1.7.7
 
