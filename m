@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab1JTXrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 19:47:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48123 "EHLO mx2.suse.de"
+	id S1752171Ab1JTXzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 19:55:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57840 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab1JTXrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 19:47:05 -0400
-Date: Fri, 21 Oct 2011 01:47:03 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jack@suse.cz, linux-kernel@vger.kernel.org,
-        Ashish Sangwan <ashishsangwan2@gmail.com>
-Subject: Re: [PATCH] udf : skip mirror metadata FE since metadata FE is ok.
-Message-ID: <20111020234703.GI20542@quack.suse.cz>
-References: <1319036598-4367-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319036598-4367-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751933Ab1JTXzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 19:55:20 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAOH1cH=VvOjcE8FAPshytZwmhrwfhS1kcq=oV_btaPON7sWmfQ@mail.gmail.com>
+References: <CAOH1cH=VvOjcE8FAPshytZwmhrwfhS1kcq=oV_btaPON7sWmfQ@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> <CAOH1cHnagaA!
+ VQ+8h_thqe7sneeiE6dCcD-U_NgZoO2PZRbixMg@mail.gmail.com> <32454.1318519287@redhat.com> <CAOH1cHkFitTHBkHzg+m7cZycOZTgWW8hF0g0=+pX6bPNVZNTxw@mail.gmail.com> <17609.1318584129@redhat.com> <CAOH1cHkrtzr4o=ygqrMnUfDhwC=U+QJOtuqS+vfQyeXP_TvjaQ@mail.gmail.com> <19081.1319027106@redhat.com> <CAOH1cH=smX1tWLB6PwaRfcrOu5YErF3TGUDoRnLZGmxvGH9rAA@mail.gmail.com> <29711.1319101384@redhat.com> 
+To: Mark Moseley <moseleymark@gmail.com>
+Cc: dhowells@redhat.com,
+        Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+Date: Fri, 21 Oct 2011 00:05:02 +0100
+Message-ID: <28872.1319151902@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20-10-11 00:03:18, Namjae Jeon wrote:
-> By Jan Kara's suggestion, This patch skip mirror metadata FE since
-> metadata FE is ok. And try to read it only the first time
-> udf_get_pblock_meta25() fails to map the block from metadata FE.
->
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> Signed-off-by: Ashish Sangwan <ashishsangwan2@gmail.com>
-> ---
->  fs/udf/partition.c |   20 ++++++++++++++++++++
->  fs/udf/super.c     |   33 ++++++++++++++++-----------------
->  2 files changed, 36 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/udf/partition.c b/fs/udf/partition.c
-> index f3e472c..8bfc25b 100644
-> --- a/fs/udf/partition.c
-> +++ b/fs/udf/partition.c
-> @@ -311,6 +311,7 @@ uint32_t udf_get_pblock_meta25(struct super_block *sb, uint32_t block,
->  	struct udf_meta_data *mdata;
->  	uint32_t retblk;
->  	struct inode *inode;
-> +	struct kernel_lb_addr addr;
->  
->  	udf_debug("READING from METADATA\n");
->  
-> @@ -323,6 +324,25 @@ uint32_t udf_get_pblock_meta25(struct super_block *sb, uint32_t block,
->  	retblk = udf_try_read_meta(inode, block, partition, offset);
->  	if (retblk == 0xFFFFFFFF) {
->  		udf_warn(sb, "error reading from METADATA, trying to read from MIRROR\n");
-> +		if (mdata->s_mirror_fe == NULL) {
-  This won't be good because if s_mirror_fe cannot be loaded as well, you'd
-just try loading it on every block mapping which failed from the primary
-metadata map. So you should have a flag somewhere whether in mdata, whether
-you tried loading mirror_fe or not and use that.
+Mark Moseley <moseleymark@gmail.com> wrote:
 
-> +			/* mirror file entry */
-> +			addr.logicalBlockNum = mdata->s_mirror_file_loc;
-> +			addr.partitionReferenceNum = map->s_partition_num;
-> +			udf_debug("Mirror metadata file location: block = %d part = %d\n",
-> +				addr.logicalBlockNum,
-> +				addr.partitionReferenceNum);
-> +			mdata->s_mirror_fe = udf_iget(sb, &addr);
-> +
-> +			if (mdata->s_mirror_fe == NULL)
-> +				udf_err(sb, "mirror inode efe not found");
-> +			else if (UDF_I(mdata->s_mirror_fe)->i_alloc_type !=
-> +					ICBTAG_FLAG_AD_SHORT) {
-> +				udf_warn(sb, "mirror inode efe does not have short allocation descriptors!\n");
-> +				iput(mdata->s_mirror_fe);
-> +				mdata->s_mirror_fe = NULL;
-> +			}
-  Also please create a helper function for loading metadata/mirror metadat
-FE so that we don't have loading duplicated in three places... Thanks.
+> Nope, it wasn't. I had to reboot it back into the previous kernel for
+> the weekend. I got a couple of oops though in the past 12 hours. I
+> unfortunately hadn't fired up that dump again though (I have now and
+> will send a new dump when I get another crash)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Okay.  I'm away next week at a pair of conferences, but I'll try and have a
+look.
+
+> [67666.389761] kernel BUG at fs/fscache/operation.c:426!
+
+Can you have a look what's on line 426 for you, please?  It's a blank line in
+my kernel.  I think I've managed to rearrange my patches to muck the ordering
+up.
+
+David
