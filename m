@@ -1,254 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab1JTSjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 14:39:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39226 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab1JTSjj (ORCPT
+	id S1751517Ab1JTSkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 14:40:22 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:45479 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab1JTSkV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 14:39:39 -0400
-Message-ID: <1319135973.1020.9.camel@mop>
-Subject: A =?UTF-8?Q?Plumber=E2=80=99s?= Wish List for Linux, updated
- version 2
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: linux-kernel@vger.kernel.org
-Cc: lennart@poettering.net, harald@redhat.com, david@fubar.dk, greg@kroah.com
-Date: Thu, 20 Oct 2011 20:39:33 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0 (3.2.0-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 20 Oct 2011 14:40:21 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "hughd@chromium.org" <hughd@chromium.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Thu, 20 Oct 2011 14:39:36 -0400
+Subject: RE: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Topic: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Index: AcyPUIklcPuRmINOSRShvoYk0k6EwQABW1BA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C575669A7@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
+ <20111017164715.e42591d5.akpm@linux-foundation.org>
+ <20111018124929.GA3452@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57565D3A@USINDEVS01.corp.hds.com>
+ <20111018151058.GE3452@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5756688D@USINDEVS01.corp.hds.com>
+ <20111020174826.GA3452@redhat.com>
+In-Reply-To: <20111020174826.GA3452@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110200207
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update: this is the second version, it incorporates the original list,
-adds a couple of new items, and includes references to some useful
-feedback and patches that have already been prepared.
+Hi,
 
-We’d like to share our current wish list of plumbing layer features we
-are hoping to see implemented in the near future in the Linux kernel and
-associated tools. Some items we can implement on our own, others are not
-our area of expertise, and we will need help getting them implemented.
+>I am confused.  Did you mean 'panic' kernel parameter is _not_ set?
+>
 
-Acknowledging that this wish list of ours only gets longer and not
-shorter, even though we have implemented a number of other features on
-our own in the previous years, we are posting this list here, in the
-hope to find some help.
+I meant that  if panic parameter _is_ set (like panic=1), 
+emergency_restart() will be called in panic path.
+And then, kmsg_dump(KMSG_DUMP_EMERG) will be called.
 
-If you happen to be interested in working on something from this list or
-able to help out, we’d be delighted. Please ping us in case you need
-clarifications or more information on specific items.
+        <snip>
+	60 NORET_TYPE void panic(const char * fmt, ...)  
+	61 {
+	.
+	.
+	123         if (panic_timeout != 0) { 
+	124                 /* 
+	125                  * This will not be a clean reboot, with everything 
+	126                  * shutting down.  But if there is a chance of 
+	127                  * rebooting the system it will be rebooted. 
+	128                  */ 
+	129                 emergency_restart(); 
+	130         }
+	<snip>
 
+>Actually, BUG_ON is probably overkill, perhaps a WARN_ON would be more
+>appropriate.
 
-Thanks,
-Kay, Lennart, Harald, David in the name of all the other plumbers
+I don't think both BUG_ON and WARN_ON are appropriate.
+kmsg_dump(KMSG_DUMP_EMERG) should be called successfully in panic path.
 
+>I wonder if it would be smarter to split your patch in half.  The part
+>where you move kmsg_dump to below stop_cpus is probably non-controversial.
+>That might make it sooner than the more controversial bust_spinlock
+>pieces.
 
-And here is the wish list, in no particular order:
+Thank you for your suggestion. I will split my patch.
 
-tmpfs:
-======
-* support user quota on tmpfs to prevent DoS vulnerabilities
-on /tmp, /dev/shm, /run/user/$USER. This is kinda important. Idea:
-global RLIMIT_TMPFS_QUOTA over all mounted tmpfs file systems. NEW!
+Seiji
 
-* support fallocate() properly: NEW!
-   fallocate(5, 0, 0, 7663616) = -1 EOPNOTSUPP
-
-
-fanotify:
-=========
-* events for renames NEW!
-
-* allow safe unprivileged access NEW!
-
-* pass information about the open flags to the file system monitors, in
-order to allow clients to figure out whether other applications opened
-files for writing or just read-only. NEW!
-
-* allow to find out if a file actually was written to, when closed after
-opening it read-write NEW!
-
-
-filesystems:
-============
-* (ioctl based?) interface to query and modify the label of a mounted
-FAT volume: A FAT label is implemented as a hidden directory entry in
-the file system, which need to be renamed when changing the file system
-label. This is impossible to do from userspace without remounting. Hence
-we’d like to see a kernel interface that is available on the mounted
-file system mount point itself. Of course, bonus points, if this new
-interface can be implemented for other file systems as well.
-
-* faster xattrs on ext2/3/4 (i.e. allow userspace to make use of xattr
-without paying the performance penalty for the seeks. Alex Larsson will
-provide you with the measurement data how xattr checking is magnitudes
-slower when trying to implement a simple file list). Suggestion: provide
-a simple flag in struct stat to inform userspace whether it is worth
-looking for xattrs (i.e. think STAT_XATTRS_FOUND or STAT_XATTRS_MAYBE)
-NEW!
-
-
-mounting:
-=========
-* allow creation of read-only bind mounts in a single mount() call,
-instead of two NEW!
-
-* Similar, allow configuration of namespace propagation settings for
-mount points in the initial mount() syscall, instead of always requiring
-two (which is racy, and ugly, and stuff). NEW!
-
-
-memory management:
-==================
-* swappiness control as madvise() for individual memory pages NEW!
-
-
-core kernel:
-============
-[PATCH] * hostname change notification:
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=70b932563a9514b248cc71a29bd0907bf95b4a5e NEW!
-
-[PATCH] * PR_SET_CHILD_SUBREAPER
-Reviewed and probably ready-to-merge patch:
- http://permalink.gmane.org/gmane.linux.man/2071 NEW!
-
-* allow 64 bit PIDs / use 32 bit pids by default, in order to fix PID
-recycle vulnerabilities NEW!
-
-* allow changing argv[] of a process without mucking with environ[]:
-Something like setproctitle() or a prctl() would be ideal. Of course it
-is questionable if services like sendmail make use of this, but otoh for
-services which fork but do not immediately exec() another binary being
-able to rename this child processes in ps is of importance.
-
-
-driver model:
-=============
-* CPU modaliases in /sys/devices/system/cpu/cpuX/modalias:
-useful to allow module auto-loading of e.g. cpufreq drivers and KVM
-modules. Andy Kleen has a patch to create the alias file itself. CPU
-‘struct sysdev’ needs to be converted to ‘struct device’ and a ‘struct
-bus_type cpu’ needs to be introduced to allow proper CPU coldplug event
-replay at bootup. This is one of the last remaining places where
-automatic hardware-triggered module auto-loading is not available. And
-we’d like to see that fix to make numerous ugly userspace work-arounds
-to achieve the same go away.
-
-* export ‘struct device_type fb/fbcon’ of ‘struct class graphics’
-Userspace wants to easily distinguish ‘fb’ and ‘fbcon’ from each other
-without the need to match on the device name.
-
-
-security:
-=========
-[PATCH] * expose CAP_LAST_CAP somehow in the running kernel at runtime:
-Userspace needs to know the highest valid capability of the running
-kernel, which right now cannot reliably be retrieved from header files
-only. The fact that this value cannot be detected properly right now
-creates various problems for libraries compiled on newer header files
-which are run on older kernels. They assume capabilities are available
-which actually aren’t. Specifically, libcap-ng claims that all running
-processes retain the higher capabilities in this case due to the
-“inverted” semantics of CapBnd in /proc/$PID/status.
-Dan Ballard
-https://lkml.org/lkml/2011/10/12/452
-
-
-userspace:
-==========
-* module-init-tools: provide a proper libmodprobe.so from
-module-init-tools:
-Early boot tools, installers, driver install disks want to access
-information about available modules, and match devices to available
-modules to hook up driver overwrites, driver update disks, installer
-tweaks, and to optimize bootup module handling.
-
-
-cgroups:
-========
-* fork throttling mechanism as basic cgroup functionality that is
-available in all hierarchies independent of the controllers used:
-This is important to implement race-free killing of all members of a
-cgroup, so that cgroup member processes cannot fork faster then a cgroup
-supervisor process could kill them. This needs to be recursive, so that
-not only a cgroup but all its subgroups are covered as well.
-Patches for task_conter from Frederic Weisbecker
-http://article.gmane.org/gmane.linux.kernel/1198795
-Possibly use the freezer Tejun is looking into.
-
-* proper cgroup-is-empty notification interface:
-The current call_usermodehelper() interface is an unefficient and an
-ugly hack. Tools would prefer anything more lightweight like a netlink,
-poll() or fanotify interface.
-
-* allow user xattrs to be set on files in the cgroupfs (and maybe
-procfs?)
-
-* allow making use of the “cpu” cgroup controller by default without
-breaking RT. Right now creating a cgroup in the “cpu” hierarchy that
-shall be able to take advantage of RT is impossible for the generic case
-since it needs an RT budget configured which is from a limited resource
-pool. What we want is the ability to create cgroups in “cpu” whose
-processes get an non-RT weight applied, but for RT take advantage of the
-parent’s RT budget. We want the separation of RT and non-RT budget
-assignment in the “cpu” hierarchy, because right now, you lose RT
-functionality in it unless you assign an RT budget. This issue severely
-limits the usefulness of “cpu” hierarchy on general purpose systems
-right now.
-
-* Add a timerslack cgroup controller, to allow increasing the timer
-slack of user session cgroups when the machine is idle.
- Patch from: Kirill A. Shutemov
- http://article.gmane.org/gmane.linux.kernel/1201782
- http://lwn.net/Articles/463357/
-
-
-namespaces:
-===========
-* simple, reliable and future-proof way to detect whether a specific pid
-is running in a CLONE_NEWUTS/CLONE_NEWPID container, i.e. not in the
-root PID namespace/UTS namespace. Currently, there are available a few
-ugly hacks to detect this (for example a process wanting to know whether
-it is running in a PID namespace could just look for a PID 2 being
-around and named kthreadd which is a kernel thread only visible in the
-root namespace), however all these solutions encode information and
-expectations that better shouldn’t be encoded in a namespace test like
-this. This functionality is needed in particular since the removal of
-the the ns cgroup controller which provided the namespace membership
-information to user code.
-
-
-AF_UNIX:
-========
-* An auxiliary meta data message for AF_UNIX called SCM_CGROUPS (or
-something like that), i.e. a way to attach sender cgroup membership to
-messages sent via AF_UNIX. This is useful in case services such as
-syslog shall be shared among various containers (or service cgroups),
-and the syslog implementation needs to be able to distinguish the
-sending cgroup in order to separate the logs on disk. Of course stm
-SCM_CREDENTIALS can be used to look up the PID of the sender followed by
-a check in /proc/$PID/cgroup, but that is necessarily racy, and actually
-a very real race in real life.
-
-* SCM_PROCSTATUS for retrieving sender process information supplying at
-least: comm, exec, cmdline, audit session, audit loginuid.
-
-
-All time favourites:
-====================
-These items have been requested many times already, and we want to make
-sure they aren’t forgotten. We know they are hard to implement, and we
-don’t know how to get there, but nonetheless, here they are:
-
-* Oldie But Goldie: some kind of unionfs or union mount. A minimal
-version that supports only read-only filesystems would already be a big
-step forward. NEW!
-
-* revoke() NEW!
-
-* Notifications when non-child processes die, in an efficient way
-focussing on explicit PIDs (i.e. not taskstats) in some form (idea:
-poll() for POLLERR on /proc/$PID) NEW!
-
+>On Thu, Oct 20, 2011 at 11:13:26AM -0400, Seiji Aguchi wrote:
+>> Don,
+>>
+>> >That is part of the wider problem with kmsg_dump that Vivek talks about
+>> >with me, is that it is just a giant hook in the panic path with limited
+>> >auditing.  So we need to explicit set our expectations with BUG_ONs/WARNs
+>> >otherwise we might get bit later by them.
+>>
+>> I found an issue while developing a patch v2.
+>>
+>> We can't call BUG_ON(in_nmi() && reason != KMSG_DUMP_PANIC)
+>> because kmsg_dump(KMSG_DUMP_EMERG) is called in NMI context if "panic" kernel parameter is set.
+>
+>I am confused.  Did you mean 'panic' kernel parameter is _not_ set?
+>
+>Actually, BUG_ON is probably overkill, perhaps a WARN_ON would be more
+>appropriate.
+>
+>>
+>> I will keep doing research bust_spinlock() or vprintk() so that lockdep checking works and we can avoid any deadlocks.
+>
+>I wonder if it would be smarter to split your patch in half.  The part
+>where you move kmsg_dump to below stop_cpus is probably non-controversial.
+>That might make it sooner than the more controversial bust_spinlock
+>pieces.
+>
+>Cheers,
+>Don
