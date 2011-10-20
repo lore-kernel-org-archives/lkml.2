@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab1JTJdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:33:13 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:50862 "EHLO
+	id S1756465Ab1JTJeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:34:12 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:51027 "EHLO
 	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756255Ab1JTJdI (ORCPT
+	with ESMTP id S1756296Ab1JTJdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:33:08 -0400
+	Thu, 20 Oct 2011 05:33:12 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -17,107 +17,132 @@ Cc: linus.ml.walleij@gmail.com, zdevai@gmail.com, linux@arm.linux.org.uk,
         lm-sensors@lm-sensors.org, guenter.roeck@ericsson.com,
         khali@linux-fr.org, thomas.petazzoni@free-electrons.com,
         maxime.ripard@free-electrons.com, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [RFC V3 PATCH 0/6] IIO in kernel interfaces
-Date: Thu, 20 Oct 2011 10:33:01 +0100
-Message-Id: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 3/6] IIO:CORE: put defs needed by inkern and userspace interfaces into chan_spec.h
+Date: Thu, 20 Oct 2011 10:33:04 +0100
+Message-Id: <1319103187-27791-4-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
+References: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since V2:
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ include/linux/iio/chan_spec.h |   46 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/iio/iio.h       |   33 +----------------------------
+ 2 files changed, 47 insertions(+), 32 deletions(-)
 
-Fixes as per Guenter's comments on the iio_hwmon driver.
-Only one that differred slightly from Guenters suggestion
-is the value calculation where I reordered things to reduce
-the chance of overflow as well as casting to longs.
-Thanks Guenter!
-
-Since V1:
-Uses the bus's list of devices instead of having a local one.
-     (thanks to Lars-Peter).
-
-Added are interfaces for getting all channels mapped to a particular
-device.
-
-Hwmon driver is now vaguely complete - hence cc'd hwmon. If people
-are happy I'd expect this to ultimately end up in drivers/hmwon.
-Right now it is acting as a test driver for these interfaces.
-
-Thanks and all comments welcome. I've added hwmon to the cc list 
-this time round.
-
-V1 message:
-There are obviously some rough corners in here that will need cleaning up.
-For now I've just put this out there to see if anyone radically disagrees
-on the direction.  It sits on top the recent rfc to move first bit of IIO
-out of staging with a few buglets fixed.  Best bet if anyone wants to
-test is to pull from:
-
-https://github.com/jic23/linux-iio/tree/outofstaging
-
-which now also includes these patches.
-
-Intereresting patches are 3 and 4.  5 gives a trivial example of
-a driver using this (hwmon driver that only takes first matching channel
-and sticks it out as in1_input - breaks all sorts elements of the hwmon
-interface spec.)
-
-For now I've gone with Mark Brown's suggestion of a datasheet_name for
-finding the channels on the device.  Patch 2 hacks this name into the
-max1363 driver.  I'll probably put a version matching on channel number and
-type in at a later date.
-
-Here we just have a pull interface.  Push is considerably harder to do
-and needs quite a lot more of the IIO infrastructure to be in place
-(triggers / buffers etc). Events obviously require IIO event handling
-to be there. Hence all of that will have to wait until those elements
-have in of themselves been posted for review.
-
-It is pretty clear to me that hwmon interface for starters needs the
-ability to say - 'give me all mappings that correspond to me'.
-
-This is what I intend to add next followed by some utility functions
-to make it easy to match the hwmon interface.
-
-At that point I'll propose the hwmon driver goes into drivers/hwmon
-(subject to the underlying iio stuff merging).
-
-Fun fun fun.  Thanks to Linus an Mark for their input on this.
-Hope this is roughly what you guys were looking for.
-
-Also on my list to do is to check this very thoroughly for any
-possible race conditions around the removal of the underlying
-device.
-
-Jonathan
-
-Jonathan Cameron (6):
-  IIO: core: add datasheet_name to chan_spec
-  IIO:ADC:max1363 add datasheet_name entries.
-  IIO:CORE: put defs needed by inkern and userspace interfaces into
-    chan_spec.h
-  IIO:CORE add in kernel interface mapping and getting IIO channels.
-  IIO:hwmon interface client driver.
-  stargate2: example of map configuration for iio to hwmon example.
-
- arch/arm/mach-pxa/stargate2.c  |   23 ++++
- drivers/Makefile               |    2 +-
- drivers/iio/Kconfig            |    8 +
- drivers/iio/Makefile           |    2 +
- drivers/iio/adc/max1363_core.c |    4 +-
- drivers/iio/iio.c              |  279 +++++++++++++++++++++++++++++++++++++++-
- drivers/iio/iio_hwmon.c        |  227 ++++++++++++++++++++++++++++++++
- drivers/iio/inkern.c           |   21 +++
- include/linux/iio/chan_spec.h  |   46 +++++++
- include/linux/iio/iio.h        |   41 +-----
- include/linux/iio/inkern.h     |   87 +++++++++++++
- 11 files changed, 700 insertions(+), 40 deletions(-)
- create mode 100644 drivers/iio/iio_hwmon.c
- create mode 100644 drivers/iio/inkern.c
- create mode 100644 include/linux/iio/chan_spec.h
- create mode 100644 include/linux/iio/inkern.h
-
+diff --git a/include/linux/iio/chan_spec.h b/include/linux/iio/chan_spec.h
+new file mode 100644
+index 0000000..933480b
+--- /dev/null
++++ b/include/linux/iio/chan_spec.h
+@@ -0,0 +1,46 @@
++/*
++ * The industrial I/O channel descriptions
++ *
++ * Copyright (c) 2008-2011 Jonathan Cameron
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#ifndef _IIO_CHAN_SPEC_H_
++#define _IIO_CHAN_SPEC_H_
++
++enum iio_data_type {
++	IIO_RAW,
++	IIO_PROCESSED,
++};
++
++enum iio_direction {
++	IIO_IN,
++	IIO_OUT,
++};
++
++enum iio_chan_type {
++	IIO_VOLTAGE,
++	IIO_CURRENT,
++	IIO_POWER,
++	IIO_CAPACITANCE,
++	IIO_ACCEL,
++	IIO_ANGL_VEL,
++	IIO_MAGN,
++	IIO_LIGHT,
++	IIO_INTENSITY,
++	IIO_PROXIMITY,
++	IIO_TEMP,
++	IIO_INCLI,
++	IIO_ROT,
++	IIO_ANGL,
++	IIO_TIMESTAMP,
++};
++
++#define IIO_VAL_INT 1
++#define IIO_VAL_INT_PLUS_MICRO 2
++#define IIO_VAL_INT_PLUS_NANO 3
++
++#endif
+diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+index beedc5c..8b98e92 100644
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -9,6 +9,7 @@
+  */
+ #include <linux/klist.h>
+ #include <linux/device.h>
++#include <linux/iio/chan_spec.h>
+ 
+ #ifndef _IIO_H_
+ #define _IIO_H_
+@@ -16,29 +17,6 @@
+ /* Minimum alignment of priv within iio_dev */
+ #define IIO_ALIGN L1_CACHE_BYTES
+ 
+-enum iio_data_type {
+-	IIO_RAW,
+-	IIO_PROCESSED,
+-};
+-
+-enum iio_chan_type {
+-	IIO_VOLTAGE,
+-	IIO_CURRENT,
+-	IIO_POWER,
+-	IIO_CAPACITANCE,
+-	IIO_ACCEL,
+-	IIO_ANGL_VEL,
+-	IIO_MAGN,
+-	IIO_LIGHT,
+-	IIO_INTENSITY,
+-	IIO_PROXIMITY,
+-	IIO_TEMP,
+-	IIO_INCLI,
+-	IIO_ROT,
+-	IIO_ANGL,
+-	IIO_TIMESTAMP,
+-};
+-
+ enum iio_modifier {
+ 	IIO_NO_MOD,
+ 	IIO_MOD_X,
+@@ -73,15 +51,6 @@ enum iio_chan_info_enum {
+ 	IIO_CHAN_INFO_QUADRATURE_CORRECTION_RAW_SEPARATE,
+ };
+ 
+-enum iio_direction {
+-	IIO_IN,
+-	IIO_OUT,
+-};
+-
+-#define IIO_VAL_INT 1
+-#define IIO_VAL_INT_PLUS_MICRO 2
+-#define IIO_VAL_INT_PLUS_NANO 3
+-
+ /**
+  * struct iio_chan_spec - specification of a single channel
+  * @type:		What type of measurement is the channel making.
 -- 
 1.7.7
 
