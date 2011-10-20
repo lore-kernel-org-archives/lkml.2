@@ -1,125 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab1JTSkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 14:40:22 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:45479 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab1JTSkV convert rfc822-to-8bit (ORCPT
+	id S1751470Ab1JTSlj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 14:41:39 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10624 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab1JTSli convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 14:40:21 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Chen, Gong" <gong.chen@intel.com>,
+	Thu, 20 Oct 2011 14:41:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 20 Oct 2011 11:41:30 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "hughd@chromium.org" <hughd@chromium.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 20 Oct 2011 14:39:36 -0400
-Subject: RE: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
- other cpus in panic path
-Thread-Topic: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
- other cpus in panic path
-Thread-Index: AcyPUIklcPuRmINOSRShvoYk0k6EwQABW1BA
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C575669A7@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
- <20111017164715.e42591d5.akpm@linux-foundation.org>
- <20111018124929.GA3452@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57565D3A@USINDEVS01.corp.hds.com>
- <20111018151058.GE3452@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5756688D@USINDEVS01.corp.hds.com>
- <20111020174826.GA3452@redhat.com>
-In-Reply-To: <20111020174826.GA3452@redhat.com>
-Accept-Language: ja-JP, en-US
+        Barry Song <21cnbao@gmail.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 20 Oct 2011 11:41:29 -0700
+Subject: RE: [PATCH 2/2] pinctrl: add a generic control interface
+Thread-Topic: [PATCH 2/2] pinctrl: add a generic control interface
+Thread-Index: AcyPLl3O9d8SAsFnQNqnOtcnoBcPTwAIE2zA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173D51C235@HQMAIL01.nvidia.com>
+References: <1319041274-18723-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF173D51C039@HQMAIL01.nvidia.com>
+	<20111020024556.GD32007@S2100-06.ap.freescale.net>
+ <CACRpkdbK6bmYQbUcwxBRoq6L3YJ9yq5fQuF7zEbrStbiCrYEQQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbK6bmYQbUcwxBRoq6L3YJ9yq5fQuF7zEbrStbiCrYEQQ@mail.gmail.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110200207
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus Walleij wrote at Thursday, October 20, 2011 7:44 AM:
+> On Thu, Oct 20, 2011 at 4:45 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> 
+> > We should not require device driver to call these APIs directly.  There
+> > are so many pinctrl subsystem internal details left to its users.
+> 
+> As explained I already have drivers that need to do this. OK they
+> are out-of-tree, but they do exist.
+> 
+> For U5500 we have a SIM card driver which sets pull down resistance
+> and load capacitance in response to information retrieved from the
+> card at runtime. This is not static or internal to pinctrl at all. How should
+> I solve this if pin configuration is not exposed?
 
->I am confused.  Did you mean 'panic' kernel parameter is _not_ set?
->
+I think drivers should operate at a higher level than "set pin X's param
+Y to value Z".
 
-I meant that  if panic parameter _is_ set (like panic=1), 
-emergency_restart() will be called in panic path.
-And then, kmsg_dump(KMSG_DUMP_EMERG) will be called.
+I imagine the set of states that the SIM card driver needs to set up are
+defined by the SIM protocol.
 
-        <snip>
-	60 NORET_TYPE void panic(const char * fmt, ...)  
-	61 {
-	.
-	.
-	123         if (panic_timeout != 0) { 
-	124                 /* 
-	125                  * This will not be a clean reboot, with everything 
-	126                  * shutting down.  But if there is a chance of 
-	127                  * rebooting the system it will be rebooted. 
-	128                  */ 
-	129                 emergency_restart(); 
-	130         }
-	<snip>
+So, the driver communicates with the SIM card, find out that it supports
+Certain clock frequencies or capabilities etc., and then needs to program
+the SIM card and associated SoC-side HW to operate in the selected mode.
 
->Actually, BUG_ON is probably overkill, perhaps a WARN_ON would be more
->appropriate.
+The set of legal modes for the SIM card protocol is presumably pretty
+small, so the SIM driver might want to request "basic" or "fast" operation
+(note: I have zero knowledge of SIM cars, so those mode names are bogus).
 
-I don't think both BUG_ON and WARN_ON are appropriate.
-kmsg_dump(KMSG_DUMP_EMERG) should be called successfully in panic path.
+Similarly, SD/MMC drivers might know about a mode name for each clock
+frequency (or range) that an SD card is allowed to support by spec.
 
->I wonder if it would be smarter to split your patch in half.  The part
->where you move kmsg_dump to below stop_cpus is probably non-controversial.
->That might make it sooner than the more controversial bust_spinlock
->pieces.
+However, I still think it's a good idea for pinctrl drivers to expose
+each of their available configuration options with as little veneer or
+abstraction as possible.
 
-Thank you for your suggestion. I will split my patch.
+To bridge these two levels of abstraction, I think the pinctrl core
+needs to be provided with information or an API to map between them.
 
-Seiji
+I imagine this could be implemented as a table rather similar to the
+existing mux table, or even part of that mux table.
 
->On Thu, Oct 20, 2011 at 11:13:26AM -0400, Seiji Aguchi wrote:
->> Don,
->>
->> >That is part of the wider problem with kmsg_dump that Vivek talks about
->> >with me, is that it is just a giant hook in the panic path with limited
->> >auditing.  So we need to explicit set our expectations with BUG_ONs/WARNs
->> >otherwise we might get bit later by them.
->>
->> I found an issue while developing a patch v2.
->>
->> We can't call BUG_ON(in_nmi() && reason != KMSG_DUMP_PANIC)
->> because kmsg_dump(KMSG_DUMP_EMERG) is called in NMI context if "panic" kernel parameter is set.
->
->I am confused.  Did you mean 'panic' kernel parameter is _not_ set?
->
->Actually, BUG_ON is probably overkill, perhaps a WARN_ON would be more
->appropriate.
->
->>
->> I will keep doing research bust_spinlock() or vprintk() so that lockdep checking works and we can avoid any deadlocks.
->
->I wonder if it would be smarter to split your patch in half.  The part
->where you move kmsg_dump to below stop_cpus is probably non-controversial.
->That might make it sooner than the more controversial bust_spinlock
->pieces.
->
->Cheers,
->Don
+The table would be at least partially board-specific (since a given SD
+instance might be mux'd onto a different set of pins between two boards,
+and the values for each param might be determined during board
+characterization), but for a given HW module (SIM, SD), at least some
+of the data might be the same across any board that use that function,
+irrespective of which set of pins is in use or independent of board
+characterization. So, we might have to think about how the board and
+SoC code (and/or DT board/SoC bindings) could interact to reduce
+duplication of common settings, but we should probably defer that
+discussion.
+
+-- 
+nvpublic
+
