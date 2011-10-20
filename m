@@ -1,88 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab1JTBBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 21:01:52 -0400
-Received: from shawmail.shawcable.com ([64.59.128.220]:13088 "EHLO
-	mail.shawcable.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab1JTBBv convert rfc822-to-8bit (ORCPT
+	id S1755798Ab1JTBIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 21:08:45 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:51100 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab1JTBIo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 21:01:51 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=l0hTUOwXBBZC3xuFbE1ochJnP84ph5EBJB8ZSEz2E7A= c=1 sm=1
- a=CSHQtCKG1fQA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=SOq6UgPBAAAA:8 a=VwQbUJbxAAAA:8
- a=AbMvaSVIJi3zZKyypecA:9 a=07QDKq3cAmvwtKJbznEA:7 a=CjuIK1q_8ugA:10
- a=GggyOlg3CnYA:10 a=MlDzmOR2rr8A:10 a=CHvbGjLrMYgA:10 a=MRfdvb_iZmAA:10
- a=x8gzFH9gYPwA:10 a=5y_flRe8UpcA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-X-IronPort-AV: E=Sophos;i="4.69,375,1315202400"; 
-   d="scan'208";a="483120083"
-X-reinject: true
-References: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
-In-Reply-To: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
-Mime-Version: 1.0 (iPhone Mail 8L1)
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <ACE78D84-0E94-4E7A-99BF-C20583018697@dilger.ca>
+	Wed, 19 Oct 2011 21:08:44 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zzbb2dK9371Kc89bh1418M1432N98dKzz1202hzz8275bhz2fh668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+X-FB-SS: 0,
+Message-ID: <4E9F7483.9050608@am.sony.com>
+Date: Wed, 19 Oct 2011 18:08:19 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
+References: <4E9E0B71.9020708@am.sony.com>	<20111019073547.GR21648@n2100.arm.linux.org.uk>	<4E9F5F1B.1020106@am.sony.com> <yw1xvcrkr03h.fsf@unicorn.mansr.com>
+In-Reply-To: <yw1xvcrkr03h.fsf@unicorn.mansr.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-X-Mailer: iPhone Mail (8L1)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: Latency writing to an mlocked ext4 mapping
-Date: Wed, 19 Oct 2011 19:02:46 -0600
-To: Andy Lutomirski <luto@amacapital.net>
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What kernel are you using?  A change to keep pages consistent during writeout was landed not too long ago (maybe Linux 3.0) in order to allow checksumming of the data. 
+On 10/19/2011 05:13 PM, � wrote:
+> Tim Bird <tim.bird@am.sony.com> writes:
+>> Well, the difference in size is not an order of magnitude.  Current
+>> stacks are only twice as big as what this feature optionally allows.
+>> So people really shouldn't go crazy with their stack usage.
+>>
+>> Granted we're already seeing a bit of stack bloat, but IMHO this should
+>> be nipped in the bud.  If the stack grows a lot more, it will likely
+>> need to shift to 16K, which would REALLY be costly on machines
+>> with lots of threads and low memory.
+> 
+> In binary, 8k is an order of magnitude greater than 4k.
+Touche' ;-)
 
-We discussed doing copy-on-write, but there are relatively few mmap users and it wasn't clear whether the complexity was worth it. 
+> Having suffered
+> the consequences of 4k stacks on x86, I have to side with those
+> reluctant to include this.
 
-Cheers, Andreas
+Can you please provide more detail on what consequences
+you suffered?  I think it would help the discussion.
 
-On 2011-10-19, at 6:39 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+If you had some examples where the burden of supporting 4K stacks
+was onerous, that would be useful.  I know that defaulting it to
+'Y' introduced lots of subtle bugs that desktop users had issues
+with.  The situation is completely different in deeply embedded,
+because our user-space is completely constrained and controlled.
 
-> I have a real-time program that has everything mlocked (i.e.
-> mlockall(MCL_CURRENT | MCL_FUTURE)).  It has some log files opened for
-> writing.  Those files are opened and memset to zero in another thread
-> to fault everything in.  The system is under light I/O load with very
-> little memory pressure.
+Also, there are a now a plethora of stack depth monitoring, guarding,
+and reporting tools already in mainline, some of which weren't
+there during the painful era.
+
+>> I don't want to give up on a small-footprint Linux so easily,
+>> and the discipline for keeping stacks small is probably good
+>> for code hygiene anyway.
 > 
-> Latencytop shows frequent latency in the real-time threads.  The main
-> offenders are:
+> I see your point of view, but an optional setting available only on an
+> architecture not used by the majority is probably not going to have much
+> of an impact on code hygiene.
 > 
-> schedule sleep_on_page wait_on_page_bit ext4_page_mkwrite do_wp_page
-> handle_pte_fault handle_mm_fault do_page_fault page_fault
+> 4k stacks were tried, and the conclusion was that too much of the kernel
+> simply cannot work within so small a space.  Maintaining a list of safe
+> (or unsafe) combinations is probably not feasible either.
+
+That's not what was in the message of the commit that removed them
+on x86.  Instead it was conjecture about high numbers of threads
+being only applicable to x86_64.
+
+Are you basing the conclusion above on conjecture or measurement?  In
+my configuration, the worst code paths are using approximately 2K of
+stack most of the time, and peak out at about 2.5K.
+
+>>> If we switch to 4K stacks, the problems of stack usage become ours.
+>>> Do we have the capacity to be able to address these issues as they
+>>> crop up?
+>>
+>> Since it's optional, it would become the problem of the people
+>> who actually use the option.  If you think tracking down stack
+>> abusers is going to be a pain, just don't do it.
 > 
-> schedule do_get_write_access jbd2_journal_get_write_access
-> __ext4_journal_get_write_access ext4_reserve_inode_write
-> ext4_mark_inode_dirty ext4_dirty_inode __mark_inode_dirty
-> file_update_time do_wp_page handle_pte_fault handle_mm_fault
+> It will still be one more thing to sanity check in every bug report.
+> The end result will be more crashes going ignored due to lacking
+> information, and I don't think that's a good thing.
+
+I don't think mainline is overwhelmed with bug reports from
+embedded developers.  Most of the time, embedded devs are so far behind
+in kernel version that they can't reasonably (and don't) report many
+bugs found. (I know that this is not helping my case, but I'm trying to be
+honest here.)
+
+If 4K stacks were being turned on for the general population of Linux
+users, then I would agree with you.  But this will likely only be
+turned on by a few people, in controlled situations. If you think
+tainting the kernel would help with the bug reporting, I'd be
+OK with that.  We could introduce a "crazy embedded config - you're
+on your own" taint flag.
+
 > 
+>> If I do it, and get pushback, then I'll make the case to individual
+>> function authors, and we'll see what happens from there.  As it is,
+>> this patch has been useful for me, and continues to be useful
+>> even in the current kernel version, with no other changes
+>> required in mainline.
+>>
+>> Having said this, I've written a tool to rather easily identify
+>> the functions which use the most stack, and so far the routines
+>> I've looked at have had rather simple solutions.  It almost always
+>> boils down to a single big data item on the stack.
 > 
-> I imagine the problem is that the system is periodically writing out
-> my dirty pages and marking them clean (and hence write protected).
-> When I try to write to them, the kernel makes them writable again,
-> which causes latency either due to updating the inode mtime or because
-> the file is being written to disk when I try to write to it.
+> Chasing heavy stack consumers is of course always a good thing, whatever
+> the stack size.
 > 
-> Is there any way to prevent this?  One possibility would be a way to
-> ask the kernel not to write the file out to disk.  Another would be a
-> way to ask the kernel to make a copy of the file when it writes it
-> disk and leave the original mapping writable.
+>> I can understand if people don't want to take patches which
+>> unconditionally limit their stack usage - especially if there's
+>> a performance impact. But I don't see much rationale for not
+>> limiting their stack usage conditionally (that is, do something
+>> slightly different on #ifdef CONFIG_4KSTACKS).  If people
+>> object to even that, then I'll maintain those patches out of
+>> tree, if they're really needed.
 > 
-> Obviously I can fix this by mapping anonymous memory, but then I need
-> another thread to periodically write my logs out to disk, and if that
-> crashes, I lose data.
+> Having such a conditional increases the maintenance burden for that
+> function.  Changes will be made without testing the 4k alternative,
+> which sooner or later will break, possibly in subtle ways.
+
+Which will affect no one but those who opt in.  I just don't
+think the maintenance burden will be that big.  (At least,
+no one need be bothered by this, unless contacted by someone
+who cares.)
+
+>> Once again, our products work even without such patches now,
+>> based on the configs we're using and the user-space we're running.
+>> Note that this is defaulted to 'N', so no one should be negatively
+>> affected unless they opt in.
+>>
+>> So, I understand your point.  I would, however, like to have
+>> this patch applied, and then deal with any problems as they
+>> come up, rather than preemptively kill the feature on speculative
+>> problems.
 > 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
-> Office: (310) 553-5322
-> Mobile: (650) 906-0647
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> An option that will probably, let's be realistic, only be used by you
+> doesn't really belong in mainline.  You are essentially asking everybody
+> else to carry the burden of supporting something only you seem to need.
+
+I'm not so sure that I'm the only one interested in this.
+I'll ask around and see if I can find others.  I'll have
+a good chance at ELC Europe next week.
+
+But in general this attitude is really depressing.  I can
+remember when support for niche use cases was considered good.
+I understand the tradeoff if the maintenance burden is high,
+but I'm not convinced it is.  I don't expect anyone to
+proactively guard against or remedy stack depth issues.  But if
+they'd be open to accepting patches from those who care, that'd
+be nice.
+
+If you're saying that Linux is only for use on general purpose
+platforms, and deeply embedded doesn't matter, I think that's sad.
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
