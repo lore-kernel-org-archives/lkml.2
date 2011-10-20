@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab1JTFU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 01:20:29 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:42503 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab1JTFU0 (ORCPT
+	id S1753854Ab1JTFZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 01:25:19 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:24834 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab1JTFZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 01:20:26 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 08/26] vfs: Add new file and directory create permission flags
-In-Reply-To: <20111019164216.GC30864@fieldses.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019164216.GC30864@fieldses.org>
-User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 20 Oct 2011 10:50:08 +0530
-Message-ID: <87r5285jef.fsf@linux.vnet.ibm.com>
+	Thu, 20 Oct 2011 01:25:16 -0400
+Message-ID: <4E9FB0D6.9080301@snapgear.com>
+Date: Thu, 20 Oct 2011 15:25:42 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11102005-6148-0000-0000-000000742CA6
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/21 v2] m68k: drop unused Kconfig symbols
+References: <1318925407.6414.22.camel@x61.thuisdomein>	 <4E9D6C05.9040106@snapgear.com> <1318941043.6414.35.camel@x61.thuisdomein>
+In-Reply-To: <1318941043.6414.35.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Oct 2011 12:42:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Tue, Oct 18, 2011 at 09:02:43PM +0530, Aneesh Kumar K.V wrote:
-> > From: Andreas Gruenbacher <agruen@kernel.org>
-> > 
-> > Some permission models distinguish between the permission to create a
-> > non-directory and a directory.  Pass this information down to
-> > inode_permission() as mask flags
-> ...
-> > diff --git a/include/linux/fs.h b/include/linux/fs.h
-> > index f3ebf86..60361c6 100644
-> > --- a/include/linux/fs.h
-> > +++ b/include/linux/fs.h
-> > @@ -67,6 +67,8 @@ struct inodes_stat_t {
-> >  #define MAY_CHDIR		0x00000040
-> >  /* called from RCU mode, don't block */
-> >  #define MAY_NOT_BLOCK		0x00000080
-> > +#define MAY_CREATE_FILE		0x00000100
-> > +#define MAY_CREATE_DIR		0x00000200
-> 
-> Hm, are the flags in fs/nfsd/vfs.h going to need fixing up?
-> 
-> Looking at the nfsd code....  No, I guess it's OK, nfsd does
-> 
-> 	err = inode_permission(inode, acc & (MAY_READ|MAY_WRITE|MAY_EXEC));
-> 
+Hi Paul,
 
-nfsd bits need fixing once nfs starts doing richacl permission check.
-The changes I did can be found at
-https://github.com/kvaneesh/linux/commits/richacl-fullset/
+On 18/10/11 22:30, Paul Bolle wrote:
+> On Tue, 2011-10-18 at 22:07 +1000, Greg Ungerer wrote:
+>>> - dropped SOM5282EM too (discovered this while doing this second
+>>>     version, my scripts aren't smart enough too catch it)
+>>
+>> Hmm. I don't want to lose the SOM5282EM config option. Although it
+>> isn't used inside the code it does let the configurer know that this
+>> specific board is supported.
+>
+> Isn't there another way? You're also adding a configuration option. This
+> means your configurer has to make a decision whether or not to enable
+> support for that board while this decision actually has no effect.
+
+Yes, that is the idea. The configurer doesn't need to know it has
+no effect (at least currently anyway). But they know that the board
+is supported.
 
 
-> So we can wait to fix up any collisions until we need to pass these
-> extra bits.
-> 
+> Apparently that support comes for free (I'm guessing once M528x support
+> is enabled, I haven't checked that). Wouldn't a comment do? Or adding a
+> line to some help text?
+>
+> In the mean time I suppose you're willing to fix this part of my patch
+> yourself (ie, I don't have to redo this again).
 
-Yes. And that we will do once we get the VFS and local file system
-changes upstream.
+Yes, thats fine, I will fix it and apply.
 
--aneesh
+Geert: are you ok with the changes?
 
+Thanks
+Greg
+
+
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
