@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab1JTRT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 13:19:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7911 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756829Ab1JTRT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 13:19:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="65163853"
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
- idle load balancing scalability
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venki Pallipadi <venki@google.com>
-In-Reply-To: <1319084319.8416.38.camel@edumazet-laptop>
-References: <1319060737.2604.38.camel@schen9-DESK>
-	 <1319084319.8416.38.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Oct 2011 10:19:13 -0700
-Message-ID: <1319131153.2604.40.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756873Ab1JTRWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 13:22:25 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54882 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753899Ab1JTRWY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 13:22:24 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18S+ZvoHolwYNz0whmKUBpE
+Date: Thu, 20 Oct 2011 10:22:19 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111020172218.GE31337@atomide.com>
+References: <20111018160046.GD28501@opensource.wolfsonmicro.com>
+ <20111019053354.GB31162@S2100-06.ap.freescale.net>
+ <20111019144734.GI18713@sirena.org.uk>
+ <20111019150448.GB32007@S2100-06.ap.freescale.net>
+ <20111019151031.GA4275@opensource.wolfsonmicro.com>
+ <4E9F9892.9070007@ti.com>
+ <20111020094140.GK18713@sirena.org.uk>
+ <20111020162743.GB31337@atomide.com>
+ <20111020164006.GA10155@sirena.org.uk>
+ <20111020170534.GC31337@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020170534.GC31337@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 06:18 +0200, Eric Dumazet wrote:
-
-> Dont you increase cache footprint, say for an Uniprocessor machine ?
+* Tony Lindgren <tony@atomide.com> [111020 09:31]:
 > 
-> (CONFIG_SMP=n)
-> 
-> ____cacheline_aligned_in_smp seems more suitable in this case.
-> 
-> 
-> 
-Okay, using the smp version of the cache align in this updated patch.
+> That's where a DT entry specific configuration string might be the best
+> option as it still allows describing the hardware using DT standards,
+> while also allowing board specific configuration too.
 
-Thanks.
+Hmm, actually, can't we just pass the board specific configuration in
+the board specific .dts file and then it gets merged in with the
+arch independent DT node?
 
-------------
+Regards,
 
-Idle load balancing makes use of a global structure nohz to keep track
-of the cpu doing the idle load balancing, first and second busy cpu and
-the cpus that are idle.  This leads to scalability issue.
-
-For workload that has processes waking up and going to sleep often, the 
-load_balancer, first_pick_cpu, second_cpu and idle_cpus_mask in the
-no_hz structure get updated very frequently. This causes lots of cache
-bouncing and slowing down the idle and wakeup path for large system with
-many cores/sockets.  This is evident from up to 41% of cpu cycles spent
-in the function select_nohz_load_balancer from a test work load I ran.
-By putting these fields in their own cache line, the problem can be
-mitigated.
-
-The test workload has multiple pairs of processes. Within a process
-pair, each process receive and then send message back and forth to the
-other process via a pipe connecting them. So at any one time, half the
-processes are active.
-
-I found that for 32 pairs of processes, I got an increase of the rate of
-context switching between the processes by 37% and by 24% for 64 process
-pairs. The test was run on a 8 socket 64 cores NHM-EX system, where
-hyper-threading has been turned on.
-
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index bc8ee99..4ae4b7d 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3639,10 +3639,10 @@ static inline void init_sched_softirq_csd(struct call_single_data *csd)
-  *   load balancing for all the idle CPUs.
-  */
- static struct {
--	atomic_t load_balancer;
--	atomic_t first_pick_cpu;
--	atomic_t second_pick_cpu;
--	cpumask_var_t idle_cpus_mask;
-+	atomic_t load_balancer ____cacheline_aligned_in_smp;
-+	atomic_t first_pick_cpu ____cacheline_aligned_in_smp;
-+	atomic_t second_pick_cpu ____cacheline_aligned_in_smp;
-+	cpumask_var_t idle_cpus_mask ____cacheline_aligned_in_smp;
- 	cpumask_var_t grp_idle_mask;
- 	unsigned long next_balance;     /* in jiffy units */
- } nohz ____cacheline_aligned;
-
-
+Tony
