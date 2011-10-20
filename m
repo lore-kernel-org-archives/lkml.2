@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab1JTOXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 10:23:47 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35636 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752331Ab1JTOXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 10:23:46 -0400
-Date: Thu, 20 Oct 2011 14:24:07 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, oleg@redhat.com,
-        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        dhowells@redhat.com, eparis@redhat.com,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH 9/9] make net/core/scm.c uid comparisons user namespace
- aware
-Message-ID: <20111020142407.GA2118@hallyn.com>
-References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
- <1318974898-21431-10-git-send-email-serge@hallyn.com>
- <m1sjmpytpf.fsf@fess.ebiederm.org>
- <20111020125801.GA1315@hallyn.com>
- <m1fwinvl8u.fsf@fess.ebiederm.org>
+	id S1755901Ab1JTO3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 10:29:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53744 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755799Ab1JTO3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 10:29:34 -0400
+Date: Thu, 20 Oct 2011 10:29:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
+ interfaces
+In-Reply-To: <20111020111743.13b40558@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1fwinvl8u.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
-> 
-> > Quoting Eric W. Biederman (ebiederm@xmission.com):
-> >> Serge Hallyn <serge@hallyn.com> writes:
-> >> 
-> >> > From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-> >> >
-> >> > Currently uids are compared without regard for the user namespace.
-> >> > Fix that to prevent tasks in a different user namespace from
-> >> > wrongly matching on SCM_CREDENTIALS.
-> >> >
-> >> > In the past, either your uids had to match, or you had to have
-> >> > CAP_SETXID.  In a namespaced world, you must either (both be in the
-> >> > same user namespace and have your uids match), or you must have
-> >> > CAP_SETXID targeted at the other user namespace.  The latter can
-> >> > happen for instance if uid 500 created a new user namespace and
-> >> > now interacts with uid 0 in it.
-> >> 
-> >> Serge this approach is wrong.
-> >
-> > Thanks for looking, Eric.
-> >
-> >> Because we pass the cred and the pid through the socket socket itself
-> >> is just a conduit and should be ignored in this context.
-> >
-> > Ok, that makes sense, but
-> >
-> >> The only interesting test should be are you allowed to impersonate other
-> >> users in your current userk namespace.
-> >
-> > Why in your current user namespace?  Shouldn't it be in the
-> > target user ns?  I understand it could be wrong to tie the
-> > user ns owning the socket to the target userns (though I still
-> > kind of like it), but just because I have CAP_SETUID in my
-> > own user_ns doesn't mean I should be able to pose as another
-> > uid in your user_ns.
-> 
-> First and foremost it is important that you be able if you have the
-> capability to impersonate other users in your current user namespace.
-> That is what the capability actually controls.
-> 
-> None of this allows you to impersonate any user in any other user
-> namespace.  The translation between users prevents that.
-> 
-> > (Now I also see that cred_to_ucred() translates to the current
-> > user_ns, so that should have been a hint to me before about
-> > your intent, but I'm not convinced I agree with your intent).
-> >
-> > And you do the same with the pid.  Why is that a valid assumption?
-> 
-> Yes.  Basically all the code is allow you to impersonate people you
-> would have been able to impersonate before.  If your target is in
-> another namespace you can not fool them.
-> 
-> With pids the logic should be a lot clearer.  Pretend to be a pid you can
-> see in your current pid namespace.  Lookup and convert to struct pid aka
-> the namespace agnostic object.  On output return the pid value that
-> the target process will know you as.
-> 
-> Ultimately I think we need a ns_capable for the current user namespace
-> instead of a global one.  But I don't see any rush to introduce
-> ns_capable here.
+On Thu, 20 Oct 2011, NeilBrown wrote:
 
-I think I agree - I was mistakenly thinking that without this patch
-there is an opportunity for a less privileged task in child user ns
-to impersonate, but that's not possible, so let's drop this patch
-for now!
+> > All a client needs to know is whether or not _it_ is busy, so that it
+> > can provide correct information to the daemon.  (Some clients may also
+> > need to be notified each time the system resumes -- that's a separate
+> > matter.)  As for the rest, a client may as well assume that the system
+> > is perpetually on the verge of suspending, except when it has
+> > personally told the daemon to stay awake.
+> 
+> I don't think it is always appropriate to assume the system is on the verge
+> of suspending except when explicitly asking for stay-awake.
 
-thanks,
--serge
+For some programs it may not be appropriate, but for wakeup clients I 
+believe it is.
+
+> Consider a daemon tasked with managing the "GSM" interface in a phone.
+> Any message from the GSM module will wake the phone if it is suspended.
+> 
+> When suspended, the daemon only wants to get "incoming call" and "incoming
+> SMS" events.
+> When not suspended, the daemon also wants "Active cell changed" events so
+> that it can make this information available to some display widget.
+> 
+> So when it is told that a suspend is imminent it quickly tells the GSM
+> module to be quieter and then says "OK".  If it had to assume it was always
+> on the verge, it could never allow active-cell-changed events.
+> 
+> You could argue that the GSM daemon should only be reporting CELL changes -
+> and so the GSM module should only be asked to report them - when the widget
+> (or some other client) is explicitly asking for them.  So when the screen
+> goes blank, the widget stops getting expose events, so it rescinds is request
+> for updates and the GSM daemon passes that on to the GSM module.  So when
+> suspend happens, the GSM module has already stopped reporting.
+> 
+> But I'm not convinced that complexity is always justified.
+> 
+> I could make the situation a little more complex.  There might be a daemon
+> which wants to monitor GSM cell locations and so is always asking.
+> The GSM daemon might have a policy that if anyone wants those updates, then
+>  - if system is awake for some other reason, report them as they arrive
+>  - if system is otherwise suspended, wake up every 10 minutes to poll and
+>    report.
+> 
+> In that case the suspend-client (the GSM daemon) really does care about the
+> difference between an explicit stay-awake and a late reply to a
+> suspend-imminent message.
+> 
+> So I'm still inclined to think that the two cases need to be treated
+> separately.
+
+The way I see it, your GSM daemon needs to know when the system is 
+about to go into suspend.  That's a separate matter from communicating 
+information about wakeup activity to/from the PM daemon.
+
+What should happen is this: When the PM daemon is ready to start a
+suspend (none of its clients need to keep the system awake), it should
+broadcast the fact that a suspend is about to begin.  This broadcast
+could take various forms, the simplest of which is to run a shell
+script.
+
+In fact, we may want to integrate the PM daemon into pm-utils at a 
+level above where the various suspend scripts get run.
+
+Alan Stern
+
