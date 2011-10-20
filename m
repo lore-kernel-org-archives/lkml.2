@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab1JTRs4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 13:48:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23406 "EHLO mx1.redhat.com"
+	id S1756911Ab1JTRt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 13:49:26 -0400
+Received: from fieldses.org ([174.143.236.118]:43115 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab1JTRsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 13:48:54 -0400
-Date: Thu, 20 Oct 2011 13:48:26 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "hughd@chromium.org" <hughd@chromium.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH -next] make pstore/kmsg_dump run after stopping
- other cpus in panic path
-Message-ID: <20111020174826.GA3452@redhat.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5747DC7B@USINDEVS01.corp.hds.com>
- <20111017164715.e42591d5.akpm@linux-foundation.org>
- <20111018124929.GA3452@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57565D3A@USINDEVS01.corp.hds.com>
- <20111018151058.GE3452@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5756688D@USINDEVS01.corp.hds.com>
+	id S1754406Ab1JTRtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 13:49:25 -0400
+Date: Thu, 20 Oct 2011 13:49:15 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, agruen@kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+Message-ID: <20111020174915.GA9987@fieldses.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20111019222021.GB1874@fieldses.org>
+ <87k4805alx.fsf@linux.vnet.ibm.com>
+ <20111020091434.GC5444@fieldses.org>
+ <20111020091946.GA23773@infradead.org>
+ <87aa8w53kj.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C5756688D@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87aa8w53kj.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 11:13:26AM -0400, Seiji Aguchi wrote:
-> Don,
+On Thu, Oct 20, 2011 at 04:32:04PM +0530, Aneesh Kumar K.V wrote:
+> On Thu, 20 Oct 2011 05:19:46 -0400, Christoph Hellwig <hch@infradead.org> wrote:
+> > On Thu, Oct 20, 2011 at 05:14:34AM -0400, J. Bruce Fields wrote:
+> > > > > Does it really make sense to use a string here just to pick between the
+> > > > > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
+> > > > > integer?  Is the goal to expand this somehow eventually?
+> > > > 
+> > 
+> > > > I guess Andreas wanted the disk layout to be able to store user@domain
+> > > > format if needed.
+> > > 
+> > > Is that likely?  For that to be useful, tasks would need to be able to
+> > > run as user@domain strings.  And we'd probably want owners and groups to
+> > > also be user@domain strings.
+> > > 
+> > > The container people seem to eventually want to add some kind of
+> > > namespace identifier everywhere:
+> > > 
+> > > 	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
+> > > 
+> > > in which case I guess we'd likely end up with (uid, user namespace id)
+> > > instead of user@domain?
+> > 
+> > 
+> > Storing strings is an extremly stupid idea.  The only thing that would
+> > make sense would be storing a windows-style 128-bit GUID.
+> > 
 > 
-> >That is part of the wider problem with kmsg_dump that Vivek talks about
-> >with me, is that it is just a giant hook in the panic path with limited
-> >auditing.  So we need to explicit set our expectations with BUG_ONs/WARNs
-> >otherwise we might get bit later by them.
+> How about updating the richacl_xattr as below 
 > 
-> I found an issue while developing a patch v2.
+> struct richace_xattr {
+> 	__le16		e_type;
+> 	__le16		e_flags;
+> 	__le32		e_mask;
+> 	__le32		e_size;
+> 	u8		e_id[0];
+> };
 > 
-> We can't call BUG_ON(in_nmi() && reason != KMSG_DUMP_PANIC)
-> because kmsg_dump(KMSG_DUMP_EMERG) is called in NMI context if "panic" kernel parameter is set.
+> now e_flags can contain ACE4_SPECIAL_WHO to indicate value in e_id
+> indicate special who values (which could be 1 byte value indicating
+> OWNER@, GROUP@ or EVERYONE@), ACE4_UNIXID_WHO, to indicate value
+> in e_id is the little endian value of unix id. ACE_WINSID_WHO to
+> indicate e_id is the 128 bit array containing SID value. ?
 
-I am confused.  Did you mean 'panic' kernel parameter is _not_ set?
+That's effectively still a string.
 
-Actually, BUG_ON is probably overkill, perhaps a WARN_ON would be more
-appropriate.
+Would it be so bad to have to introduce another xattr type if we needed
+a new id type?  You'll have to modify the filesystem and the userspace
+tools and everything anyway, won't you?
 
-> 
-> I will keep doing research bust_spinlock() or vprintk() so that lockdep checking works and we can avoid any deadlocks.
+But if we decide we don't need strings, then at a minimum let's make
+these some fixed small size.
 
-I wonder if it would be smarter to split your patch in half.  The part
-where you move kmsg_dump to below stop_cpus is probably non-controversial.
-That might make it sooner than the more controversial bust_spinlock
-pieces.
+You could do something like:
 
-Cheers,
-Don
+	struct richace_xattr {
+		__le16		e_type;
+		__le16		e_flags;
+		__le32		e_mask;
+		__le32		e_id[4];
+	}
+
+and just use e_id[0] for now.  That would still leave room for a 128-bit
+id, or for a 32-bit uid + some-size namespace-id.
+
+Cc'ing Eric Biederman in hopes of finding out whether that would satifsy
+whatever wacky future ideas might be expected for user namespaces.
+
+--b.
