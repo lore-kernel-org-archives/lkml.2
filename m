@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1JTDO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 23:14:28 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:60418 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab1JTDO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 23:14:27 -0400
-Date: Thu, 20 Oct 2011 12:14:21 +0900
-From: Norbert Preining <preining@logic.at>
-To: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
-Cc: David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: iwlagn is getting very shaky
-Message-ID: <20111020031421.GS11060@gamma.logic.tuwien.ac.at>
-References: <20111019062517.GC11588@gamma.logic.tuwien.ac.at> <1319003304.31823.46.camel@wwguy-huron> <20111019064628.GA14817@gamma.logic.tuwien.ac.at> <1319004836.31823.57.camel@wwguy-huron> <20111019124931.GC3963@gamma.logic.tuwien.ac.at> <1319038282.25023.21.camel@wwguy-ubuntu> <20111020020225.GO11060@gamma.logic.tuwien.ac.at> <1319074339.31823.68.camel@wwguy-huron> <20111020025123.GR11060@gamma.logic.tuwien.ac.at> <E9954878DD1FB34FAE5187FB88C58A3501A0D0992E@orsmsx506.amr.corp.intel.com>
+	id S1752545Ab1JTDRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 23:17:33 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:53541 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1JTDRc convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 19 Oct 2011 23:17:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E9954878DD1FB34FAE5187FB88C58A3501A0D0992E@orsmsx506.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E9C4855020000780005BA73@victor.provo.novell.com>
+References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
+	<1318260494-27985-4-git-send-email-konrad.wilk@oracle.com>
+	<1318263187.21903.464.camel@zakaz.uk.xensource.com>
+	<20111010164250.GG28646@phenom.oracle.com>
+	<1318274402.27397.13.camel@dagon.hellion.org.uk>
+	<20111010195749.GA5755@phenom.oracle.com>
+	<4E940E21020000780005AA29@nat28.tlf.novell.com>
+	<20111011155133.GC29349@phenom.oracle.com>
+	<20111011205729.GB22668@phenom.oracle.com>
+	<4E9C4855020000780005BA73@victor.provo.novell.com>
+Date: Thu, 20 Oct 2011 11:17:14 +0800
+Message-ID: <CAKH3R4_TDxyNcsgZBOxQRS4U61h=bhY+Vap72AWa4CdQyQ7QfQ@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/blk[front|back]: Enhance discard
+ support with secure erasing support.
+From: Li Dongyang <lidongyang@novell.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Dong Yang Li <lidongyang@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mi, 19 Okt 2011, Guy, Wey-Yi W wrote:
-> Hmm, I am sure I have the attachment, but here I attach again.
-> 
-> Also, the patch is simple. Only few lines
-
-No attachment again ... something is filtering here???
-
-Please include it directly in the email
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-`How do you feel?' he asked him.
-bits of me keep
-passing out.' ....
-`We're safe,' he said.
-`Oh good,' said Arthur.
-in one of the
-spaceships of the Vogon Constructor Fleet.'
-this is obviously some strange usage of
-the word "safe" that I wasn't previously aware of.'
-                 --- Arthur after his first ever teleport ride.
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
+I think we also should mark the vbd has discard_secure if we are
+usingthe file backend,as if we punch a hole in the image, those blocks
+are freed tofilesystem and hardly to getthem back, or maybe write
+zeros to the range before we punch the hole is better?
+On Mon, Oct 17, 2011 at 9:23 PM, Jan Beulich <JBeulich@suse.com> wrote:
+>>>> On 11.10.11 at 22:57, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> --- a/drivers/block/xen-blkfront.c
+>> +++ b/drivers/block/xen-blkfront.c
+>>...
+>> @@ -705,7 +711,7 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+>>  static void blkif_completion(struct blk_shadow *s)
+>>  {
+>>       int i;
+>
+> This function gets called for all types of requests, and hence must filter
+> discard ones now that what would be nr_segments can be non-zero,
+> e.g.
+>
+>        if (s->req.operation == BLKIF_OP_DISCARD)
+>                return;
+>
+> Jan
+>
+>> -     for (i = 0; i < s->req.nr_segments; i++)
+>> +     for (i = 0; i < s->req.u1.nr_segments; i++)
+>>               gnttab_end_foreign_access(s->req.u.rw.seg[i].gref, 0, 0UL);
+>>  }
+>>
+>
+>
