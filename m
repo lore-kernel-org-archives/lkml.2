@@ -1,67 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab1JTKpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:45:50 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:44130 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab1JTKpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:45:49 -0400
+	id S1756629Ab1JTKp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:45:57 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21057 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756609Ab1JTKpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:45:55 -0400
 X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
-   d="scan'208";a="18393781"
+   d="scan'208";a="167577550"
 From: David Vrabel <david.vrabel@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/4] xen: map foreign pages for shared rings by updating the PTEs directly
-Date: Thu, 20 Oct 2011 11:45:15 +0100
-Message-ID: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH 1/4] xen: use generic functions instead of xen_{alloc,free}_vm_area()
+Date: Thu, 20 Oct 2011 11:45:16 +0100
+Message-ID: <1319107519-2253-2-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
+References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches allows the vmalloc_sync_all() to be removed
-from alloc_vm_area() by getting the hypervisor to update the PTEs (in
-init_mm) directly rather than having the hypervisor look in the
-current page tables to find the PTEs.
+Replace calls to the Xen-specific xen_alloc_vm_area() and
+xen_free_vm_area() functions with the generic equivalent
+(alloc_vm_area() and free_vm_area()).
 
-Once the hypervisor has updated the PTEs, the normal mechanism of
-syncing the page tables after a fault works as expected.
+On x86, these were identical already.
 
-This mechanism doesn't currently work on the ia64 port as that does
-not support the GNTMAP_contains_pte flag.
-
-Andrew, patch 4 (xen: map foreign pages for shared rings by updating
-the PTEs directly) depends on patch 1 so it's probably best to go via
-Konrad's Xen tree with your acked-by.
-
-David
-
-David Vrabel (4):
-  xen: use generic functions instead of xen_{alloc,free}_vm_area()
-  block: xen-blkback: use API provided by xenbus module to map rings
-  net: xen-netback: use API provided by xenbus module to map rings
-  xen: map foreign pages for shared rings by updating the PTEs directly
-
- arch/ia64/include/asm/xen/grant_table.h |   29 -----------
- arch/ia64/xen/grant-table.c             |   62 ------------------------
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+ arch/ia64/include/asm/xen/grant_table.h |   29 --------------
+ arch/ia64/xen/grant-table.c             |   62 -------------------------------
  arch/x86/include/asm/xen/grant_table.h  |    7 ---
  arch/x86/xen/grant-table.c              |    2 +-
- drivers/block/xen-blkback/common.h      |    5 +--
- drivers/block/xen-blkback/xenbus.c      |   54 +++------------------
- drivers/net/xen-netback/common.h        |   11 ++--
- drivers/net/xen-netback/netback.c       |   80 +++++++------------------------
- drivers/xen/xenbus/xenbus_client.c      |   15 ++++--
- include/linux/vmalloc.h                 |    2 +-
+ drivers/xen/xenbus/xenbus_client.c      |    6 +-
  include/xen/grant_table.h               |    1 -
- mm/vmalloc.c                            |   27 +++++-----
- 12 files changed, 55 insertions(+), 240 deletions(-)
+ 6 files changed, 4 insertions(+), 103 deletions(-)
  delete mode 100644 arch/ia64/include/asm/xen/grant_table.h
  delete mode 100644 arch/x86/include/asm/xen/grant_table.h
 
+diff --git a/arch/ia64/include/asm/xen/grant_table.h b/arch/ia64/include/asm/xen/grant_table.h
+deleted file mode 100644
+index 2b1fae0..0000000
+--- a/arch/ia64/include/asm/xen/grant_table.h
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/******************************************************************************
+- * arch/ia64/include/asm/xen/grant_table.h
+- *
+- * Copyright (c) 2008 Isaku Yamahata <yamahata at valinux co jp>
+- *                    VA Linux Systems Japan K.K.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- */
+-
+-#ifndef _ASM_IA64_XEN_GRANT_TABLE_H
+-#define _ASM_IA64_XEN_GRANT_TABLE_H
+-
+-struct vm_struct *xen_alloc_vm_area(unsigned long size);
+-void xen_free_vm_area(struct vm_struct *area);
+-
+-#endif /* _ASM_IA64_XEN_GRANT_TABLE_H */
+diff --git a/arch/ia64/xen/grant-table.c b/arch/ia64/xen/grant-table.c
+index 48cca37..c182813 100644
+--- a/arch/ia64/xen/grant-table.c
++++ b/arch/ia64/xen/grant-table.c
+@@ -31,68 +31,6 @@
+ 
+ #include <asm/xen/hypervisor.h>
+ 
+-struct vm_struct *xen_alloc_vm_area(unsigned long size)
+-{
+-	int order;
+-	unsigned long virt;
+-	unsigned long nr_pages;
+-	struct vm_struct *area;
+-
+-	order = get_order(size);
+-	virt = __get_free_pages(GFP_KERNEL, order);
+-	if (virt == 0)
+-		goto err0;
+-	nr_pages = 1 << order;
+-	scrub_pages(virt, nr_pages);
+-
+-	area = kmalloc(sizeof(*area), GFP_KERNEL);
+-	if (area == NULL)
+-		goto err1;
+-
+-	area->flags = VM_IOREMAP;
+-	area->addr = (void *)virt;
+-	area->size = size;
+-	area->pages = NULL;
+-	area->nr_pages = nr_pages;
+-	area->phys_addr = 0;	/* xenbus_map_ring_valloc uses this field!  */
+-
+-	return area;
+-
+-err1:
+-	free_pages(virt, order);
+-err0:
+-	return NULL;
+-}
+-EXPORT_SYMBOL_GPL(xen_alloc_vm_area);
+-
+-void xen_free_vm_area(struct vm_struct *area)
+-{
+-	unsigned int order = get_order(area->size);
+-	unsigned long i;
+-	unsigned long phys_addr = __pa(area->addr);
+-
+-	/* This area is used for foreign page mappping.
+-	 * So underlying machine page may not be assigned. */
+-	for (i = 0; i < (1 << order); i++) {
+-		unsigned long ret;
+-		unsigned long gpfn = (phys_addr >> PAGE_SHIFT) + i;
+-		struct xen_memory_reservation reservation = {
+-			.nr_extents   = 1,
+-			.address_bits = 0,
+-			.extent_order = 0,
+-			.domid        = DOMID_SELF
+-		};
+-		set_xen_guest_handle(reservation.extent_start, &gpfn);
+-		ret = HYPERVISOR_memory_op(XENMEM_populate_physmap,
+-					   &reservation);
+-		BUG_ON(ret != 1);
+-	}
+-	free_pages((unsigned long)area->addr, order);
+-	kfree(area);
+-}
+-EXPORT_SYMBOL_GPL(xen_free_vm_area);
+-
+-
+ /****************************************************************************
+  * grant table hack
+  * cmd: GNTTABOP_xxx
+diff --git a/arch/x86/include/asm/xen/grant_table.h b/arch/x86/include/asm/xen/grant_table.h
+deleted file mode 100644
+index fdbbb45..0000000
+--- a/arch/x86/include/asm/xen/grant_table.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef _ASM_X86_XEN_GRANT_TABLE_H
+-#define _ASM_X86_XEN_GRANT_TABLE_H
+-
+-#define xen_alloc_vm_area(size)	alloc_vm_area(size)
+-#define xen_free_vm_area(area)	free_vm_area(area)
+-
+-#endif /* _ASM_X86_XEN_GRANT_TABLE_H */
+diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+index 49ba9b5..6bbfd7a 100644
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ 
+ 	if (shared == NULL) {
+ 		struct vm_struct *area =
+-			xen_alloc_vm_area(PAGE_SIZE * max_nr_gframes);
++			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
+ 		BUG_ON(area == NULL);
+ 		shared = area->addr;
+ 		*__shared = shared;
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index cdacf92..229d3ad 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -443,7 +443,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
+ 
+ 	*vaddr = NULL;
+ 
+-	area = xen_alloc_vm_area(PAGE_SIZE);
++	area = alloc_vm_area(PAGE_SIZE);
+ 	if (!area)
+ 		return -ENOMEM;
+ 
+@@ -453,7 +453,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
+ 		BUG();
+ 
+ 	if (op.status != GNTST_okay) {
+-		xen_free_vm_area(area);
++		free_vm_area(area);
+ 		xenbus_dev_fatal(dev, op.status,
+ 				 "mapping in shared page %d from domain %d",
+ 				 gnt_ref, dev->otherend_id);
+@@ -552,7 +552,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
+ 		BUG();
+ 
+ 	if (op.status == GNTST_okay)
+-		xen_free_vm_area(area);
++		free_vm_area(area);
+ 	else
+ 		xenbus_dev_error(dev, op.status,
+ 				 "unmapping page at handle %d error %d",
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index b1fab6b..8a8bb76 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -43,7 +43,6 @@
+ #include <xen/interface/grant_table.h>
+ 
+ #include <asm/xen/hypervisor.h>
+-#include <asm/xen/grant_table.h>
+ 
+ #include <xen/features.h>
+ 
 -- 
 1.7.2.5
 
