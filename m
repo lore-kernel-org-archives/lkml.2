@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1JTT5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 15:57:34 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58653 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab1JTT5d (ORCPT
+	id S1752652Ab1JTT5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 15:57:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43984 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752420Ab1JTT5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 15:57:33 -0400
-Date: Thu, 20 Oct 2011 15:56:59 -0400 (EDT)
-Message-Id: <20111020.155659.486754557434415381.davem@davemloft.net>
-To: ari.m.savolainen@gmail.com
-Cc: richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Kernel panic from tg3 net driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-References: <CAEbykaXz+J8abVzU3yjqZG2+yhHNrQWsQy2c8wNyoERWPpxWKQ@mail.gmail.com>
-	<CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 12:57:02 -0700 (PDT)
+	Thu, 20 Oct 2011 15:57:35 -0400
+Date: Thu, 20 Oct 2011 20:57:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+	regulator_init_data
+Message-ID: <20111020195734.GB17384@opensource.wolfsonmicro.com>
+References: <20111019053354.GB31162@S2100-06.ap.freescale.net> <20111019144734.GI18713@sirena.org.uk> <20111019150448.GB32007@S2100-06.ap.freescale.net> <20111019151031.GA4275@opensource.wolfsonmicro.com> <4E9F9892.9070007@ti.com> <20111020094140.GK18713@sirena.org.uk> <20111020162743.GB31337@atomide.com> <20111020164006.GA10155@sirena.org.uk> <20111020170534.GC31337@atomide.com> <20111020172218.GE31337@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020172218.GE31337@atomide.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ari Savolainen <ari.m.savolainen@gmail.com>
-Date: Thu, 20 Oct 2011 22:30:44 +0300
+On Thu, Oct 20, 2011 at 10:22:19AM -0700, Tony Lindgren wrote:
 
-> I finally got time to continue bisecting. The commit that causes the
-> kernel panic is:  2669069aacc9 "tg3: enable transmit time stamping."
+> Hmm, actually, can't we just pass the board specific configuration in
+> the board specific .dts file and then it gets merged in with the
+> arch independent DT node?
 
-I thought initially that the issue might be that we have to do the
-skb_tx_timestamp() call before we advance the mailbox transmit
-descriptor pointer.
-
-But that shouldn't matter, we run with a lock held, and TX reclaim takes
-that same lock.
-
-So I'm sort of stumped at the moment.
-
+I don't understand what an "arch independent DT node" would be?
