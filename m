@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab1JTPZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 11:25:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51562 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753001Ab1JTPZ2 convert rfc822-to-8bit (ORCPT
+	id S1756163Ab1JTP1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 11:27:38 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:22328 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab1JTP1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 11:25:28 -0400
-thread-index: AcyPPHxdCnaCWxmfQEKH/CL+rvtz0g==
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
-Subject: Re: [PATCHv9 03/18] TEMP: OMAP3xxx: hwmod data: add PRM hwmod
-From: Tero Kristo <t-kristo@ti.com>
-Reply-To: <t-kristo@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: Paul Walmsley <paul@pwsan.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <4EA03562.7000309@ti.com>
-References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-4-git-send-email-t-kristo@ti.com> <alpine.DEB.2.00.1110101320180.5205@utopia.booyaka.com> <4E934D79.4080000@ti.com> <alpine.DEB.2.00.1110101416530.5205@utopia.booyaka.com> <4E936F0E.9050203@ti.com> <alpine.DEB.2.00.1110101725140.5205@utopia.booyaka.com> <4E954CDA.10107@ti.com> <alpine.DEB.2.00.1110131033410.24155@utopia.booyaka.com> <alpine.DEB.2.00.1110131047110.24155@utopia.booyaka.com> <4EA03562.7000309@ti.com>
-Content-Type: text/plain; charset="utf-8"
-Organization: Texas Instruments
-Date: Thu, 20 Oct 2011 18:25:21 +0300
-Message-ID: <1319124321.4979.7.camel@sokoban>
+	Thu, 20 Oct 2011 11:27:37 -0400
+X-IronPort-AV: E=Sophos;i="4.69,379,1315195200"; 
+   d="scan'208";a="167620761"
+Message-ID: <4EA03DDC.9070808@citrix.com>
+Date: Thu, 20 Oct 2011 16:27:24 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8BIT
+To: David Vrabel <david.vrabel@citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] block: initialize the bounce pool if high memory may
+ be added later
+References: <1318334018-3312-1-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1318334018-3312-1-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 16:51 +0200, Cousson, Benoit wrote:
-> On 10/13/2011 6:51 PM, Paul Walmsley wrote:
-> > On Thu, 13 Oct 2011, Paul Walmsley wrote:
-> >
-> >> On Wed, 12 Oct 2011, Cousson, Benoit wrote:
-> >>
-> >>> On 10/11/2011 1:26 AM, Paul Walmsley wrote:
-> >>>> On Tue, 11 Oct 2011, Cousson, Benoit wrote:
-> >>>>
-> >>>>> In fact the device name does not have to match the hwmod name. So we
-> >>>>> can just create an "omap2_prm" omap_device for OMAP2, "omap3_prm"
-> >>>>> omap_device for OMAP3... That will allow the relevant PRM driver to
-> >>>>> be bound to the proper device.
-> >>>>
-> >>>> Incidentally, given that we would be using the hwmod name and the version
-> >>>> number to determine the appropriate omap_device name, what IP version
-> >>>> numbers should we assign to these PRM IP blocks for different SoCs?
-> >>>
-> >>> It can just be 1, 2 and 3... The idea is just to differentiate the IP for each
-> >>> OMAP.
-> >>
-> >> So those are basically arbitrary?  Something is not clear here.
-> >>
-> >> In the current hwmod design, IP blocks with different interfaces were
-> >> intended to be uniquely identified by the hwmod name alone.  That is why
-> >> omap_hwmod_lookup() only takes a 'name' parameter.
-> >>
-> >> If I understand what you want to do, you wish to change this to uniquely
-> >> identify them by a (name, interface version number) tuple.
-> >>
-> >> I don't have a problem with this in theory, but it implies some changes to
-> >> the existing model.  Specifically:
-> >>
-> >> - we'll need to add an interface version number to the struct omap_hwmod
-> >>
-> >> - we'll need to modify omap_hwmod_lookup() to take an interface version
-> >> number
-> >>
-> >> - the "ti,hwmod" DT binding that you proposed earlier will need to include
-> >> an interface version number
-> >
-> > Hmm, reflecting on this further, is your intention to bind drivers to
-> > hwmods by the struct omap_hwmod_class instead?
+On 11/10/11 12:53, David Vrabel wrote:
+> init_emergency_pool() does not create the page pool for bouncing block
+> requests if the current count of high pages is zero.  If high memory
+> may be added later (either via memory hotplug or a balloon driver in a
+> virtualized system) then a oops occurs if a request with a high page
+> need bouncing because the pool does not exist.
 > 
-> Well, somehow, the class was added for that purpose, to allow one timer 
-> driver to bind to 2 different hwmods. But in that case the device name 
-> was the same.
-> 
-> > If we define that "rev" field as the interface version number, that should
-> > probably work.
-> >
-> > So then in C struct format, in a platform_device system, the mapping table
-> > would basically become
-> >
-> > struct omap_hwmod_driver_map {
-> > 	const char *class_name;
-> > 	const u32 class_rev;
-> > 	const char *platform_device_name;
-> > }
-> 
-> This is needed if and only if you want to have a different driver for 
-> the same IP.
-> 
-> In the case of the timer, we do have only one device name and one driver:
-> class=timer, rev=1, device=omap_timer
-> class=timer, rev=2, device=omap_timer
-> 
-> Regards,
-> Benoit
+> So, always create the pool if memory hotplug is enabled and change the
+> test so it's valid even if all high pages are currently in the balloon
+> (the balloon drivers adjust totalhigh_pages but not max_pfn).
 
-Currently the delta between the different versions of the driver are so
-minimal that it is easy to cope both omap3 and omap4 PRM with the same
-driver; however it might be beneficial in the future to split it up. The
-detection logic I made into devices.c file can easily be changed to suit
-whatever need. It does not really matter whether there is a different
-name for the hwmod or not, it is probably easier implementation wise if
-the hwmod name is same, but only some field within e.g. class changes.
+Jens, you don't seem to have picked up this patch yet.  Should it have
+gone via Andrew Morton instead?
 
--Tero
+David
 
-
-Texas Instruments Oy, Porkkalankatu 22, 00180 Helsinki, Finland. Business ID: 0115040-6. Domicile: Helsinki
- 
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>  mm/bounce.c |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/bounce.c b/mm/bounce.c
+> index 1481de6..434fb4f 100644
+> --- a/mm/bounce.c
+> +++ b/mm/bounce.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/init.h>
+>  #include <linux/hash.h>
+>  #include <linux/highmem.h>
+> +#include <linux/bootmem.h>
+>  #include <asm/tlbflush.h>
+>  
+>  #include <trace/events/block.h>
+> @@ -26,12 +27,10 @@ static mempool_t *page_pool, *isa_page_pool;
+>  #ifdef CONFIG_HIGHMEM
+>  static __init int init_emergency_pool(void)
+>  {
+> -	struct sysinfo i;
+> -	si_meminfo(&i);
+> -	si_swapinfo(&i);
+> -
+> -	if (!i.totalhigh)
+> +#ifndef CONFIG_MEMORY_HOTPLUG
+> +	if (max_pfn <= max_low_pfn)
+>  		return 0;
+> +#endif
+>  
+>  	page_pool = mempool_create_page_pool(POOL_SIZE, 0);
+>  	BUG_ON(!page_pool);
 
