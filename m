@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab1JTKqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:46:15 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:37231 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756445Ab1JTKqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:46:12 -0400
+	id S932243Ab1JTKqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:46:33 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:46458 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755706Ab1JTKqb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:46:31 -0400
 X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
-   d="scan'208";a="18393808"
+   d="scan'208";a="167577629"
 From: David Vrabel <david.vrabel@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 2/4] block: xen-blkback: use API provided by xenbus module to map rings
-Date: Thu, 20 Oct 2011 11:45:17 +0100
-Message-ID: <1319107519-2253-3-git-send-email-david.vrabel@citrix.com>
+        David Vrabel <david.vrabel@citrix.com>, netdev@vger.kernel.org,
+        "David S . Miller" <davem@davemloft.net>
+Subject: [PATCH 3/4] net: xen-netback: use API provided by xenbus module to map rings
+Date: Thu, 20 Oct 2011 11:45:18 +0100
+Message-ID: <1319107519-2253-4-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
 References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
@@ -25,142 +27,165 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The xenbus module provides xenbus_map_ring_valloc() and
-xenbus_map_ring_vfree().  Use these to map the ring pages granted by
-the frontend.
+xenbus_map_ring_vfree().  Use these to map the Tx and Rx ring pages
+granted by the frontend.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 ---
- drivers/block/xen-blkback/common.h |    5 +--
- drivers/block/xen-blkback/xenbus.c |   54 ++++-------------------------------
- 2 files changed, 8 insertions(+), 51 deletions(-)
+Dave, this is a standalone patch and can be applied independently of
+the rest of the series.
 
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 00c57c9..7ec0e88 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -139,7 +139,7 @@ struct xen_blkif {
- 	/* Comms information. */
- 	enum blkif_protocol	blk_protocol;
- 	union blkif_back_rings	blk_rings;
--	struct vm_struct	*blk_ring_area;
-+	void			*blk_ring;
- 	/* The VBD attached to this interface. */
- 	struct xen_vbd		vbd;
- 	/* Back pointer to the backend_info. */
-@@ -163,9 +163,6 @@ struct xen_blkif {
- 	int			st_wr_sect;
+ drivers/net/xen-netback/common.h  |   11 ++---
+ drivers/net/xen-netback/netback.c |   80 ++++++++-----------------------------
+ 2 files changed, 22 insertions(+), 69 deletions(-)
+
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 161f207..94b79c3 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -58,10 +58,6 @@ struct xenvif {
+ 	u8               fe_dev_addr[6];
  
- 	wait_queue_head_t	waiting_to_free;
--
--	grant_handle_t		shmem_handle;
--	grant_ref_t		shmem_ref;
+ 	/* Physical parameters of the comms window. */
+-	grant_handle_t   tx_shmem_handle;
+-	grant_ref_t      tx_shmem_ref;
+-	grant_handle_t   rx_shmem_handle;
+-	grant_ref_t      rx_shmem_ref;
+ 	unsigned int     irq;
+ 
+ 	/* List of frontends to notify after a batch of frames sent. */
+@@ -70,8 +66,6 @@ struct xenvif {
+ 	/* The shared rings and indexes. */
+ 	struct xen_netif_tx_back_ring tx;
+ 	struct xen_netif_rx_back_ring rx;
+-	struct vm_struct *tx_comms_area;
+-	struct vm_struct *rx_comms_area;
+ 
+ 	/* Frontend feature information. */
+ 	u8 can_sg:1;
+@@ -106,6 +100,11 @@ struct xenvif {
+ 	wait_queue_head_t waiting_to_free;
  };
  
++static inline struct xenbus_device *xenvif_to_xenbus_device(struct xenvif *vif)
++{
++	return to_xenbus_device(vif->dev->dev.parent);
++}
++
+ #define XEN_NETIF_TX_RING_SIZE __CONST_RING_SIZE(xen_netif_tx, PAGE_SIZE)
+ #define XEN_NETIF_RX_RING_SIZE __CONST_RING_SIZE(xen_netif_rx, PAGE_SIZE)
  
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 5fd2010..69233dd 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -120,38 +120,6 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
- 	return blkif;
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index fd00f25..3af2924 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1577,88 +1577,42 @@ static int xen_netbk_kthread(void *data)
+ 
+ void xen_netbk_unmap_frontend_rings(struct xenvif *vif)
+ {
+-	struct gnttab_unmap_grant_ref op;
+-
+-	if (vif->tx.sring) {
+-		gnttab_set_unmap_op(&op, (unsigned long)vif->tx_comms_area->addr,
+-				    GNTMAP_host_map, vif->tx_shmem_handle);
+-
+-		if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
+-			BUG();
+-	}
+-
+-	if (vif->rx.sring) {
+-		gnttab_set_unmap_op(&op, (unsigned long)vif->rx_comms_area->addr,
+-				    GNTMAP_host_map, vif->rx_shmem_handle);
+-
+-		if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
+-			BUG();
+-	}
+-	if (vif->rx_comms_area)
+-		free_vm_area(vif->rx_comms_area);
+-	if (vif->tx_comms_area)
+-		free_vm_area(vif->tx_comms_area);
++	if (vif->tx.sring)
++		xenbus_unmap_ring_vfree(xenvif_to_xenbus_device(vif),
++					vif->tx.sring);
++	if (vif->rx.sring)
++		xenbus_unmap_ring_vfree(xenvif_to_xenbus_device(vif),
++					vif->rx.sring);
  }
  
--static int map_frontend_page(struct xen_blkif *blkif, unsigned long shared_page)
--{
+ int xen_netbk_map_frontend_rings(struct xenvif *vif,
+ 				 grant_ref_t tx_ring_ref,
+ 				 grant_ref_t rx_ring_ref)
+ {
 -	struct gnttab_map_grant_ref op;
++	void *addr;
+ 	struct xen_netif_tx_sring *txs;
+ 	struct xen_netif_rx_sring *rxs;
+ 
+ 	int err = -ENOMEM;
+ 
+-	vif->tx_comms_area = alloc_vm_area(PAGE_SIZE);
+-	if (vif->tx_comms_area == NULL)
++	err = xenbus_map_ring_valloc(xenvif_to_xenbus_device(vif),
++				     tx_ring_ref, &addr);
++	if (err)
+ 		goto err;
+ 
+-	vif->rx_comms_area = alloc_vm_area(PAGE_SIZE);
+-	if (vif->rx_comms_area == NULL)
+-		goto err;
 -
--	gnttab_set_map_op(&op, (unsigned long)blkif->blk_ring_area->addr,
--			  GNTMAP_host_map, shared_page, blkif->domid);
+-	gnttab_set_map_op(&op, (unsigned long)vif->tx_comms_area->addr,
+-			  GNTMAP_host_map, tx_ring_ref, vif->domid);
 -
 -	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
 -		BUG();
 -
 -	if (op.status) {
--		DPRINTK("Grant table operation failure !\n");
--		return op.status;
+-		netdev_warn(vif->dev,
+-			    "failed to map tx ring. err=%d status=%d\n",
+-			    err, op.status);
+-		err = op.status;
+-		goto err;
 -	}
 -
--	blkif->shmem_ref = shared_page;
--	blkif->shmem_handle = op.handle;
+-	vif->tx_shmem_ref    = tx_ring_ref;
+-	vif->tx_shmem_handle = op.handle;
 -
--	return 0;
--}
+-	txs = (struct xen_netif_tx_sring *)vif->tx_comms_area->addr;
++	txs = (struct xen_netif_tx_sring *)addr;
+ 	BACK_RING_INIT(&vif->tx, txs, PAGE_SIZE);
+ 
+-	gnttab_set_map_op(&op, (unsigned long)vif->rx_comms_area->addr,
+-			  GNTMAP_host_map, rx_ring_ref, vif->domid);
 -
--static void unmap_frontend_page(struct xen_blkif *blkif)
--{
--	struct gnttab_unmap_grant_ref op;
--
--	gnttab_set_unmap_op(&op, (unsigned long)blkif->blk_ring_area->addr,
--			    GNTMAP_host_map, blkif->shmem_handle);
--
--	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
+-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
 -		BUG();
--}
 -
- static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- 			 unsigned int evtchn)
- {
-@@ -161,35 +129,29 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- 	if (blkif->irq)
- 		return 0;
- 
--	blkif->blk_ring_area = alloc_vm_area(PAGE_SIZE);
--	if (!blkif->blk_ring_area)
--		return -ENOMEM;
--
--	err = map_frontend_page(blkif, shared_page);
--	if (err) {
--		free_vm_area(blkif->blk_ring_area);
-+	err = xenbus_map_ring_valloc(blkif->be->dev, shared_page, &blkif->blk_ring);
-+	if (err < 0)
- 		return err;
+-	if (op.status) {
+-		netdev_warn(vif->dev,
+-			    "failed to map rx ring. err=%d status=%d\n",
+-			    err, op.status);
+-		err = op.status;
++	err = xenbus_map_ring_valloc(xenvif_to_xenbus_device(vif),
++				     rx_ring_ref, &addr);
++	if (err)
+ 		goto err;
 -	}
+-
+-	vif->rx_shmem_ref     = rx_ring_ref;
+-	vif->rx_shmem_handle  = op.handle;
+-	vif->rx_req_cons_peek = 0;
  
- 	switch (blkif->blk_protocol) {
- 	case BLKIF_PROTOCOL_NATIVE:
- 	{
- 		struct blkif_sring *sring;
--		sring = (struct blkif_sring *)blkif->blk_ring_area->addr;
-+		sring = (struct blkif_sring *)blkif->blk_ring;
- 		BACK_RING_INIT(&blkif->blk_rings.native, sring, PAGE_SIZE);
- 		break;
- 	}
- 	case BLKIF_PROTOCOL_X86_32:
- 	{
- 		struct blkif_x86_32_sring *sring_x86_32;
--		sring_x86_32 = (struct blkif_x86_32_sring *)blkif->blk_ring_area->addr;
-+		sring_x86_32 = (struct blkif_x86_32_sring *)blkif->blk_ring;
- 		BACK_RING_INIT(&blkif->blk_rings.x86_32, sring_x86_32, PAGE_SIZE);
- 		break;
- 	}
- 	case BLKIF_PROTOCOL_X86_64:
- 	{
- 		struct blkif_x86_64_sring *sring_x86_64;
--		sring_x86_64 = (struct blkif_x86_64_sring *)blkif->blk_ring_area->addr;
-+		sring_x86_64 = (struct blkif_x86_64_sring *)blkif->blk_ring;
- 		BACK_RING_INIT(&blkif->blk_rings.x86_64, sring_x86_64, PAGE_SIZE);
- 		break;
- 	}
-@@ -201,8 +163,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- 						    xen_blkif_be_int, 0,
- 						    "blkif-backend", blkif);
- 	if (err < 0) {
--		unmap_frontend_page(blkif);
--		free_vm_area(blkif->blk_ring_area);
-+		xenbus_unmap_ring_vfree(blkif->be->dev, blkif->blk_ring);
- 		blkif->blk_rings.common.sring = NULL;
- 		return err;
- 	}
-@@ -228,8 +189,7 @@ static void xen_blkif_disconnect(struct xen_blkif *blkif)
- 	}
+-	rxs = (struct xen_netif_rx_sring *)vif->rx_comms_area->addr;
++	rxs = (struct xen_netif_rx_sring *)addr;
+ 	BACK_RING_INIT(&vif->rx, rxs, PAGE_SIZE);
  
- 	if (blkif->blk_rings.common.sring) {
--		unmap_frontend_page(blkif);
--		free_vm_area(blkif->blk_ring_area);
-+		xenbus_unmap_ring_vfree(blkif->be->dev, blkif->blk_ring);
- 		blkif->blk_rings.common.sring = NULL;
- 	}
- }
++	vif->rx_req_cons_peek = 0;
++
+ 	return 0;
+ 
+ err:
 -- 
 1.7.2.5
 
