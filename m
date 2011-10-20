@@ -1,119 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab1JTQaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 12:30:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60348 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab1JTQaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 12:30:21 -0400
-Date: Thu, 20 Oct 2011 09:30:09 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
-        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [RFD] Isolated memory cgroups again
-Message-ID: <20111020163009.GB25505@tiehlicka.suse.cz>
-References: <20111020013305.GD21703@tiehlicka.suse.cz>
- <20111020105950.fd04f58f.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756764Ab1JTQeW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 12:34:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61570 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab1JTQeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 12:34:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: driver for Atmel true hardware random number generator
+Date: Thu, 20 Oct 2011 18:31:36 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        herbert@gondor.hengli.com.au
+References: <4E92BEE9.5090604@atmel.com> <4E9D92CD.6010008@atmel.com>
+In-Reply-To: <4E9D92CD.6010008@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111020105950.fd04f58f.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110201831.36246.arnd@arndb.de>
+X-Provags-ID: V02:K0:N81ZCUd2Q2jE/eqtRnswo3ZZ5egOOm8slC+tGJ1KDxO
+ qGtKupGpun+iG7R7ywpBulPwYatqVofsuYBrl7sTNrApAWc6e8
+ fMiIuwbgV4ScLi4r8C9abmEDLDmytyrgrJXADhyyKM/u0Bzwxv
+ NRJek62RVfwmx3gEvOFxHX5fINDpZlSjZTS/5gm078h9lR5pfF
+ qEPVzalPeayqpuj5CFC4IZWMbMk39VAP7sWPQPvpn8arHtzL8C
+ oCmAqiwM5v28FbCf72BUMPRk27pDL7uY0BKIzgpb9ErmymNr7b
+ i4dZ6Wp1hK6av6YJUU9E4WR8QFbIALYycAtzFbfJ3zSCDEGgpU
+ bpmNXzmS0DMMvOFBdmp4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20-10-11 10:59:50, KAMEZAWA Hiroyuki wrote:
-> On Wed, 19 Oct 2011 18:33:09 -0700
-> Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> > I realize that this will be controversial but I would like to hear
-> > whether this is strictly no-go or whether we can go that direction (the
-> > implementation might differ of course).
+On Tuesday 18 October 2011, Nicolas Ferre wrote:
+> On 10/10/2011 11:46 AM, Nicolas Ferre :
+> > Hi Arnd,
 > > 
-> > The patch is still half baked but I guess it should be sufficient to
-> > show what I am trying to achieve.
-> > The basic idea is that memcgs would get a new attribute (isolated) which
-> > would control whether that group should be considered during global
-> > reclaim.
-> > This means that we could achieve a certain memory isolation for
-> > processes in the group from the rest of the system activity which has
-> > been traditionally done by mlocking the important parts of memory.
-> > This approach, however, has some advantages. First of all, it is a kind
-> > of all or nothing type of approach. Either the memory is important and
-> > mlocked or you have no guarantee that it keeps resident. 
-> > Secondly it is much more prone to OOM situation.
-> > Let's consider a case where a memory is evictable in theory but you
-> > would pay quite much if you have to get it back resident (pre calculated
-> > data from database - e.g. reports). The memory wouldn't be used very
-> > often so it would be a number one candidate to evict after some time.
-> > We would want to have something like a clever mlock in such a case which
-> > would evict that memory only if the cgroup itself gets under memory
-> > pressure (e.g. peak workload). This is not hard to do if we are not
-> > over committing the memory but things get tricky otherwise.
-> > With the isolated memcgs we get exactly such a guarantee because we would
-> > reclaim such a memory only from the hard limit reclaim paths or if the
-> > soft limit reclaim if it is set up.
-> > 
-> > Any thoughts comments?
-> > 
+> > Here is a couple of patches for adding the True Random Number Generator
+> > that can be find on some AT91SAM SoCs.
+> > Herbert Xu told me that this material can go through the ARM SoC tree.
 > 
-> I can only say
->  - it can be implemented in a clean way.
->  - maybe customers wants it.
->  - This kinds of "mlock" can be harmful and make system admin difficult.
+> Ping?
 
-It is usually admin who sets up control groups and their attributes.
+I'm sorry I missed this at first. I've pulled it into the next/driver
+branch now.
 
->  - I'm not sure there will be a chance for security issue, DOS attack.
+Thanks,
 
-It depends what you consider by the DOS attack. In scenarios I have in
-mind it is usually the important workload that is isolated which means
-that the feature helps preventing DOS attack on it.
-If you are more thinking about the rest (not isolated groups) then yes,
-there will be a bigger pressure on them. This is something that has to
-be considered when the system is set up.
-
-> 
-> Hmm...if the number of isolated pages can be shown in /proc/meminfo,
-> I'll not have strong NACK.
-
-This will be trivial to implement.
-
-> 
-> But I personally think we should make softlimit better rather than
-> adding new interface. If this feature can be archieved when setting
-> softlimit=UNLIMITED, it's simple. And Johannes' work will make this
-> easy to be implemented.
-
-As I already said. I am not insisting on the implementation. I just
-consider isolation important and we have several customers who need
-this. If this can be done by the soft limit reclaim only I will not
-object for sure. Configuration would need to be careful in both cases
-anyway.
-
-> (total rewrite of softlimit should be required...I think.)
-> 
-> Thanks,
-> -Kame
-
-Thanks
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+	Arnd
