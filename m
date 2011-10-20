@@ -1,74 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab1JTBca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 21:32:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35744 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab1JTBc3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 21:32:29 -0400
-Message-ID: <4E9F7A25.1060001@canonical.com>
-Date: Thu, 20 Oct 2011 09:32:21 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1755895Ab1JTBdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 21:33:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46189 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754537Ab1JTBdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 21:33:21 -0400
+Date: Wed, 19 Oct 2011 18:33:09 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
+        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [RFD] Isolated memory cgroups again
+Message-ID: <20111020013305.GD21703@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Sam Tygier <samtygier@yahoo.co.uk>, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.1rc10 null pointer dereference ideapad_backlight_notify_power
-References: <4E9EB1BC.9020709@yahoo.co.uk> <alpine.DEB.2.00.1110191315320.2892@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110191315320.2892@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2011 04:20 AM, David Rientjes wrote:
-> On Wed, 19 Oct 2011, Sam Tygier wrote:
-> 
->> In kernels 3.1rc9 and 3.1rc10 (from the ubuntu mainline repo) I get a crash
->> when disabling and then enabling the screen backlight with the alt+f2 key on a
->> lenovo ideapad S12 (intel version). The crash does not occur with 3.0 kernels
->> in ubuntu.  I have not tested earlier 3.1 rcs.
->>
->> The crash message scrolls to fast to see, it is not writen to a log, and i
->> dont see it on a USB serial console (I may be doing something wrong, but I do
->> see other messages during boot). I managed to get some photos of the message.
->> interesting parts are:
->>
->> BUG: unable to handle kernel NULL pointer dereference at 00000008
->> IP: [<f807b29e>]  ideapad_backlight_notify_power+0x2e/0x40 [ideapad_laptop]
->> *pde = 00000000
->> Oops: 0002 [#1] SMP
->>
->> call trace functions:
->> ideapad_acpi_notify
->> acpi_device_notify
->> acpi_ev_notify_dispach
->> acpi_os_execute_deferred
->> process_one_work
->> ? acpi_os_wait_events_complete
->> ????????? can't read this one
->> kthread
->> kthread_bind
->> kernel_thread_helper
->>
->> i put the photos at http://www.hep.manchester.ac.uk/u/sam/pub/ideapad/
->>
->> if it would be helpfull, i could try a few more times for sharper photos.
->> please let me know if there is any other useful information you need.
->>
-> 
-> Looks light it may be changed via the acpi video driver where ->blight is 
-> NULL.  Adding Ike and Matthew to the cc.
-> 
+Hi all,
+this is a request for discussion (I hope we can touch this during memcg
+meeting during the upcoming KS). I have brought this up earlier this
+year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
+The patch got much smaller since then due to excellent Johannes' memcg
+naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
+which this is based on.
+I realize that this will be controversial but I would like to hear
+whether this is strictly no-go or whether we can go that direction (the
+implementation might differ of course).
 
-This issue has been reported[1] and patch[2] is ready.
+The patch is still half baked but I guess it should be sufficient to
+show what I am trying to achieve.
+The basic idea is that memcgs would get a new attribute (isolated) which
+would control whether that group should be considered during global
+reclaim.
+This means that we could achieve a certain memory isolation for
+processes in the group from the rest of the system activity which has
+been traditionally done by mlocking the important parts of memory.
+This approach, however, has some advantages. First of all, it is a kind
+of all or nothing type of approach. Either the memory is important and
+mlocked or you have no guarantee that it keeps resident. 
+Secondly it is much more prone to OOM situation.
+Let's consider a case where a memory is evictable in theory but you
+would pay quite much if you have to get it back resident (pre calculated
+data from database - e.g. reports). The memory wouldn't be used very
+often so it would be a number one candidate to evict after some time.
+We would want to have something like a clever mlock in such a case which
+would evict that memory only if the cgroup itself gets under memory
+pressure (e.g. peak workload). This is not hard to do if we are not
+over committing the memory but things get tricky otherwise.
+With the isolated memcgs we get exactly such a guarantee because we would
+reclaim such a memory only from the hard limit reclaim paths or if the
+soft limit reclaim if it is set up.
 
-[1] http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg02340.html
+Any thoughts comments?
 
-[2] http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg02343.html
-    http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg02346.html
+---
+From: Michal Hocko <mhocko@suse.cz>
+Subject: Implement isolated cgroups
 
-Thanks for reporting this issue.
+This patch adds a new per-cgroup knob (isolated) which controls whether
+pages charged for the group should be considered for the global reclaim
+or they are reclaimed only during soft reclaim and under per-cgroup
+memory pressure.
+
+The value can be modified by GROUP/memory.isolated knob.
+
+The primary idea behind isolated cgroups is in a better isolation of a group
+from the global system activity. At the moment, memory cgroups are mainly
+used to throttle processes in a group by placing a cap on their memory
+usage. However, mem. cgroups don't protect their (charged) memory from being
+evicted by the global reclaim as groups are considered during global
+reclaim.
+
+The feature will provide an easy way to setup a mission critical workload in
+the memory isolated environment without necessity of mlock. Due to
+per-cgroup reclaim we can even handle memory usage spikes much more
+gracefully because a part of the working set can get reclaimed (unlike OOM
+killed as if mlock has been used). So we can look at the feature as an
+intelligent mlock (protect from external memory pressure and reclaim on
+internal pressure).
+
+The implementation ignores isolated group status for the soft reclaim which
+means that every isolated group can configure how much memory it can
+sacrifice under global memory pressure. Soft unlimited groups are isolated
+from the global memory pressure completely.
+
+Please note that the feature has to be used with caution because isolated
+groups will make a bigger reclaim pressure to non-isolated cgroups.
+
+Implementation is really simple because we just have to hook into shrink_zone
+and exclude isolated groups if we are doing the global reclaiming.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+TODO
+- consider hierarchies - I am not sure whether we want to have
+  non-consistent isolated status in the hierarchy - probably not
+- handle root cgroup
+- Do we want some checks whether the current setting is safe?
+- is bool sufficient. Don't we rather want something like priority
+  instead?
+
+
+ include/linux/memcontrol.h |    7 +++++++
+ mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ mm/vmscan.c                |    8 +++++++-
+ 3 files changed, 58 insertions(+), 1 deletion(-)
+
+Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/memcontrol.c
+===================================================================
+--- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/mm/memcontrol.c
++++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/memcontrol.c
+@@ -258,6 +258,9 @@ struct mem_cgroup {
+ 	/* set when res.limit == memsw.limit */
+ 	bool		memsw_is_minimum;
+ 
++	/* is the group isolated from the global memory pressure? */
++	bool		isolated;
++
+ 	/* protect arrays of thresholds */
+ 	struct mutex thresholds_lock;
+ 
+@@ -287,6 +290,11 @@ struct mem_cgroup {
+ 	spinlock_t pcp_counter_lock;
+ };
+ 
++bool mem_cgroup_isolated(struct mem_cgroup *mem)
++{
++	return mem->isolated;
++}
++
+ /* Stuffs for move charges at task migration. */
+ /*
+  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+@@ -4561,6 +4569,37 @@ static int mem_control_numa_stat_open(st
+ }
+ #endif /* CONFIG_NUMA */
+ 
++static int mem_cgroup_isolated_write(struct cgroup *cgrp, struct cftype *cft,
++		const char *buffer)
++{
++	int ret = -EINVAL;
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++
++	if (mem_cgroup_is_root(mem))
++		goto out;
++
++	if (!strcasecmp(buffer, "true"))
++		mem->isolated = true;
++	else if (!strcasecmp(buffer, "false"))
++		mem->isolated = false;
++	else
++		goto out;
++
++	ret = 0;
++out:
++	return ret;
++}
++
++static int mem_cgroup_isolated_read(struct cgroup *cgrp, struct cftype *cft,
++		struct seq_file *seq)
++{
++	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
++
++	seq_puts(seq, (mem->isolated)?"true":"false");
++
++	return 0;
++}
++
+ static struct cftype mem_cgroup_files[] = {
+ 	{
+ 		.name = "usage_in_bytes",
+@@ -4624,6 +4663,11 @@ static struct cftype mem_cgroup_files[]
+ 		.unregister_event = mem_cgroup_oom_unregister_event,
+ 		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
+ 	},
++	{
++		.name = "isolated",
++		.write_string = mem_cgroup_isolated_write,
++		.read_seq_string = mem_cgroup_isolated_read,
++	},
+ #ifdef CONFIG_NUMA
+ 	{
+ 		.name = "numa_stat",
+Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/include/linux/memcontrol.h
+===================================================================
+--- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/include/linux/memcontrol.h
++++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/include/linux/memcontrol.h
+@@ -165,6 +165,9 @@ void mem_cgroup_split_huge_fixup(struct
+ bool mem_cgroup_bad_page_check(struct page *page);
+ void mem_cgroup_print_bad_page(struct page *page);
+ #endif
++
++bool mem_cgroup_isolated(struct mem_cgroup *mem);
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct mem_cgroup;
+ 
+@@ -382,6 +385,10 @@ static inline
+ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ {
+ }
++bool mem_cgroup_isolated(struct mem_cgroup *mem)
++{
++	return false;
++}
+ #endif /* CONFIG_CGROUP_MEM_CONT */
+ 
+ #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
+Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/vmscan.c
+===================================================================
+--- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/mm/vmscan.c
++++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/vmscan.c
+@@ -2109,7 +2109,13 @@ static void shrink_zone(int priority, st
+ 			.zone = zone,
+ 		};
+ 
+-		shrink_mem_cgroup_zone(priority, &mz, sc);
++		/*
++		 * Do not reclaim from an isolated group if we are in
++		 * the global reclaim.
++		 */
++		if (!(mem_cgroup_isolated(mem) && global_reclaim(sc)))
++			shrink_mem_cgroup_zone(priority, &mz, sc);
++
+ 		/*
+ 		 * Limit reclaim has historically picked one memcg and
+ 		 * scanned it with decreasing priority levels until
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
