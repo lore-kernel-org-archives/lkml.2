@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab1JTKqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:46:33 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:46458 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755706Ab1JTKqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:46:31 -0400
+	id S932328Ab1JTKqn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:46:43 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:52448 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932262Ab1JTKql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:46:41 -0400
 X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
-   d="scan'208";a="167577629"
+   d="scan'208";a="18393843"
 From: David Vrabel <david.vrabel@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>, netdev@vger.kernel.org,
-        "David S . Miller" <davem@davemloft.net>
-Subject: [PATCH 3/4] net: xen-netback: use API provided by xenbus module to map rings
-Date: Thu, 20 Oct 2011 11:45:18 +0100
-Message-ID: <1319107519-2253-4-git-send-email-david.vrabel@citrix.com>
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: [PATCH 4/4] xen: map foreign pages for shared rings by updating the PTEs directly
+Date: Thu, 20 Oct 2011 11:45:19 +0100
+Message-ID: <1319107519-2253-5-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
 References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
@@ -26,166 +26,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The xenbus module provides xenbus_map_ring_valloc() and
-xenbus_map_ring_vfree().  Use these to map the Tx and Rx ring pages
-granted by the frontend.
+When mapping a foreign page with xenbus_map_ring_valloc() with the
+GNTTABOP_map_grant_ref hypercall, set the GNTMAP_contains_pte flag and
+pass a pointer to the PTE (in init_mm).
+
+After the page is mapped, the usual fault mechanism can be used to
+update additional MMs.  This allows the vmalloc_sync_all() to be
+removed from alloc_vm_area().
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 ---
-Dave, this is a standalone patch and can be applied independently of
-the rest of the series.
+ arch/x86/xen/grant-table.c         |    2 +-
+ drivers/xen/xenbus/xenbus_client.c |   11 ++++++++---
+ include/linux/vmalloc.h            |    2 +-
+ mm/vmalloc.c                       |   27 +++++++++++++--------------
+ 4 files changed, 23 insertions(+), 19 deletions(-)
 
- drivers/net/xen-netback/common.h  |   11 ++---
- drivers/net/xen-netback/netback.c |   80 ++++++++-----------------------------
- 2 files changed, 22 insertions(+), 69 deletions(-)
-
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 161f207..94b79c3 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -58,10 +58,6 @@ struct xenvif {
- 	u8               fe_dev_addr[6];
+diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+index 6bbfd7a..5a40d24 100644
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
  
- 	/* Physical parameters of the comms window. */
--	grant_handle_t   tx_shmem_handle;
--	grant_ref_t      tx_shmem_ref;
--	grant_handle_t   rx_shmem_handle;
--	grant_ref_t      rx_shmem_ref;
- 	unsigned int     irq;
- 
- 	/* List of frontends to notify after a batch of frames sent. */
-@@ -70,8 +66,6 @@ struct xenvif {
- 	/* The shared rings and indexes. */
- 	struct xen_netif_tx_back_ring tx;
- 	struct xen_netif_rx_back_ring rx;
--	struct vm_struct *tx_comms_area;
--	struct vm_struct *rx_comms_area;
- 
- 	/* Frontend feature information. */
- 	u8 can_sg:1;
-@@ -106,6 +100,11 @@ struct xenvif {
- 	wait_queue_head_t waiting_to_free;
- };
- 
-+static inline struct xenbus_device *xenvif_to_xenbus_device(struct xenvif *vif)
-+{
-+	return to_xenbus_device(vif->dev->dev.parent);
-+}
-+
- #define XEN_NETIF_TX_RING_SIZE __CONST_RING_SIZE(xen_netif_tx, PAGE_SIZE)
- #define XEN_NETIF_RX_RING_SIZE __CONST_RING_SIZE(xen_netif_rx, PAGE_SIZE)
- 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index fd00f25..3af2924 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1577,88 +1577,42 @@ static int xen_netbk_kthread(void *data)
- 
- void xen_netbk_unmap_frontend_rings(struct xenvif *vif)
+ 	if (shared == NULL) {
+ 		struct vm_struct *area =
+-			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
++			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
+ 		BUG_ON(area == NULL);
+ 		shared = area->addr;
+ 		*__shared = shared;
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index 229d3ad..52bc57f 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -34,6 +34,7 @@
+ #include <linux/types.h>
+ #include <linux/vmalloc.h>
+ #include <asm/xen/hypervisor.h>
++#include <asm/xen/page.h>
+ #include <xen/interface/xen.h>
+ #include <xen/interface/event_channel.h>
+ #include <xen/events.h>
+@@ -435,19 +436,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
+ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
  {
--	struct gnttab_unmap_grant_ref op;
--
--	if (vif->tx.sring) {
--		gnttab_set_unmap_op(&op, (unsigned long)vif->tx_comms_area->addr,
--				    GNTMAP_host_map, vif->tx_shmem_handle);
--
--		if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
--			BUG();
--	}
--
--	if (vif->rx.sring) {
--		gnttab_set_unmap_op(&op, (unsigned long)vif->rx_comms_area->addr,
--				    GNTMAP_host_map, vif->rx_shmem_handle);
--
--		if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
--			BUG();
--	}
--	if (vif->rx_comms_area)
--		free_vm_area(vif->rx_comms_area);
--	if (vif->tx_comms_area)
--		free_vm_area(vif->tx_comms_area);
-+	if (vif->tx.sring)
-+		xenbus_unmap_ring_vfree(xenvif_to_xenbus_device(vif),
-+					vif->tx.sring);
-+	if (vif->rx.sring)
-+		xenbus_unmap_ring_vfree(xenvif_to_xenbus_device(vif),
-+					vif->rx.sring);
+ 	struct gnttab_map_grant_ref op = {
+-		.flags = GNTMAP_host_map,
++		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
+ 		.ref   = gnt_ref,
+ 		.dom   = dev->otherend_id,
+ 	};
+ 	struct vm_struct *area;
++	pte_t *pte;
+ 
+ 	*vaddr = NULL;
+ 
+-	area = alloc_vm_area(PAGE_SIZE);
++	area = alloc_vm_area(PAGE_SIZE, &pte);
+ 	if (!area)
+ 		return -ENOMEM;
+ 
+-	op.host_addr = (unsigned long)area->addr;
++	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
+ 
+ 	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
+ 		BUG();
+@@ -526,6 +528,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
+ 	struct gnttab_unmap_grant_ref op = {
+ 		.host_addr = (unsigned long)vaddr,
+ 	};
++	unsigned int level;
+ 
+ 	/* It'd be nice if linux/vmalloc.h provided a find_vm_area(void *addr)
+ 	 * method so that we don't have to muck with vmalloc internals here.
+@@ -547,6 +550,8 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
+ 	}
+ 
+ 	op.handle = (grant_handle_t)area->phys_addr;
++	op.host_addr = arbitrary_virt_to_machine(
++		lookup_address((unsigned long)vaddr, &level)).maddr;
+ 
+ 	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
+ 		BUG();
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 9332e52..1a77252 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -118,7 +118,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
+ #endif
+ 
+ /* Allocate/destroy a 'vmalloc' VM area. */
+-extern struct vm_struct *alloc_vm_area(size_t size);
++extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
+ extern void free_vm_area(struct vm_struct *area);
+ 
+ /* for /dev/kmem */
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 5016f19..b5deec6 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2105,23 +2105,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
+ 
+ static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
+ {
+-	/* apply_to_page_range() does all the hard work. */
++	pte_t ***p = data;
++
++	if (p) {
++		*(*p) = pte;
++		(*p)++;
++	}
+ 	return 0;
  }
  
- int xen_netbk_map_frontend_rings(struct xenvif *vif,
- 				 grant_ref_t tx_ring_ref,
- 				 grant_ref_t rx_ring_ref)
+ /**
+  *	alloc_vm_area - allocate a range of kernel address space
+  *	@size:		size of the area
++ *	@ptes:		returns the PTEs for the address space
+  *
+  *	Returns:	NULL on failure, vm_struct on success
+  *
+  *	This function reserves a range of kernel address space, and
+  *	allocates pagetables to map that range.  No actual mappings
+- *	are created.  If the kernel address space is not shared
+- *	between processes, it syncs the pagetable across all
+- *	processes.
++ *	are created.
++ *
++ *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
++ *	allocated for the VM area are returned.
+  */
+-struct vm_struct *alloc_vm_area(size_t size)
++struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
  {
--	struct gnttab_map_grant_ref op;
-+	void *addr;
- 	struct xen_netif_tx_sring *txs;
- 	struct xen_netif_rx_sring *rxs;
+ 	struct vm_struct *area;
  
- 	int err = -ENOMEM;
+@@ -2135,19 +2142,11 @@ struct vm_struct *alloc_vm_area(size_t size)
+ 	 * of kernel virtual address space and mapped into init_mm.
+ 	 */
+ 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
+-				area->size, f, NULL)) {
++				size, f, ptes ? &ptes : NULL)) {
+ 		free_vm_area(area);
+ 		return NULL;
+ 	}
  
--	vif->tx_comms_area = alloc_vm_area(PAGE_SIZE);
--	if (vif->tx_comms_area == NULL)
-+	err = xenbus_map_ring_valloc(xenvif_to_xenbus_device(vif),
-+				     tx_ring_ref, &addr);
-+	if (err)
- 		goto err;
- 
--	vif->rx_comms_area = alloc_vm_area(PAGE_SIZE);
--	if (vif->rx_comms_area == NULL)
--		goto err;
+-	/*
+-	 * If the allocated address space is passed to a hypercall
+-	 * before being used then we cannot rely on a page fault to
+-	 * trigger an update of the page tables.  So sync all the page
+-	 * tables here.
+-	 */
+-	vmalloc_sync_all();
 -
--	gnttab_set_map_op(&op, (unsigned long)vif->tx_comms_area->addr,
--			  GNTMAP_host_map, tx_ring_ref, vif->domid);
--
--	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
--		BUG();
--
--	if (op.status) {
--		netdev_warn(vif->dev,
--			    "failed to map tx ring. err=%d status=%d\n",
--			    err, op.status);
--		err = op.status;
--		goto err;
--	}
--
--	vif->tx_shmem_ref    = tx_ring_ref;
--	vif->tx_shmem_handle = op.handle;
--
--	txs = (struct xen_netif_tx_sring *)vif->tx_comms_area->addr;
-+	txs = (struct xen_netif_tx_sring *)addr;
- 	BACK_RING_INIT(&vif->tx, txs, PAGE_SIZE);
- 
--	gnttab_set_map_op(&op, (unsigned long)vif->rx_comms_area->addr,
--			  GNTMAP_host_map, rx_ring_ref, vif->domid);
--
--	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
--		BUG();
--
--	if (op.status) {
--		netdev_warn(vif->dev,
--			    "failed to map rx ring. err=%d status=%d\n",
--			    err, op.status);
--		err = op.status;
-+	err = xenbus_map_ring_valloc(xenvif_to_xenbus_device(vif),
-+				     rx_ring_ref, &addr);
-+	if (err)
- 		goto err;
--	}
--
--	vif->rx_shmem_ref     = rx_ring_ref;
--	vif->rx_shmem_handle  = op.handle;
--	vif->rx_req_cons_peek = 0;
- 
--	rxs = (struct xen_netif_rx_sring *)vif->rx_comms_area->addr;
-+	rxs = (struct xen_netif_rx_sring *)addr;
- 	BACK_RING_INIT(&vif->rx, rxs, PAGE_SIZE);
- 
-+	vif->rx_req_cons_peek = 0;
-+
- 	return 0;
- 
- err:
+ 	return area;
+ }
+ EXPORT_SYMBOL_GPL(alloc_vm_area);
 -- 
 1.7.2.5
 
