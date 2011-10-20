@@ -1,66 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab1JTF75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 01:59:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45831 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab1JTF74 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 01:59:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
-References: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
-	<ACE78D84-0E94-4E7A-99BF-C20583018697@dilger.ca>
-	<CALCETrU23vyCXPG6mJU9qaPeAGOWDQtur5C+LRT154V5FM=Ajg@mail.gmail.com>
-	<CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
-Date: Wed, 19 Oct 2011 22:59:55 -0700
-Message-ID: <CALCETrUcOKQAJTTmCSD3Q3wYS-zLqv6tBa4AdkK50bNobRhDUQ@mail.gmail.com>
-Subject: Re: Latency writing to an mlocked ext4 mapping
-From: Andy Lutomirski <luto@amacapital.net>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753965Ab1JTGBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:01:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12409 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753176Ab1JTGB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 02:01:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,377,1315206000"; 
+   d="scan'208";a="64432126"
+Subject: Re: [PATCH] Code clean up for percpu_xxx() functions
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <1319087281.8416.45.camel@edumazet-laptop>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+	 <alpine.DEB.2.00.1110120910540.26610@router.home>
+	 <1318908091.23426.52.camel@debian>
+	 <alpine.DEB.2.00.1110180932330.687@router.home>
+	 <1319016218.23426.104.camel@debian>
+	 <alpine.DEB.2.00.1110191033480.24001@router.home>
+	 <1319078687.23426.146.camel@debian>
+	 <1319087281.8416.45.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Oct 2011 14:04:27 +0800
+Message-ID: <1319090667.23426.159.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 7:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Oct 19, 2011 at 6:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, Oct 19, 2011 at 6:02 PM, Andreas Dilger <adilger@dilger.ca> wrote:
->>> What kernel are you using?  A change to keep pages consistent during writeout was landed not too long ago (maybe Linux 3.0) in order to allow checksumming of the data.
->>
->> 3.0.6, with no relevant patches.  (I have a one-liner added to the tcp
->> code that I'll submit sometime soon.)  Would this explain the latency
->> in file_update_time or is that a separate issue?  file_update_time
->> seems like a good thing to make fully asynchronous (especially if the
->> file in question is a fifo, but I've already moved my fifos to tmpfs).
->
-> On 2.6.39.4, I got one instance of:
->
-> call_rwsem_down_read_failed ext4_map_blocks ext4_da_get_block_prep
-> __block_write_begin ext4_da_write_begin ext4_page_mkwrite do_wp_page
-> handle_pte_fault handle_mm_fault do_page_fault page_fault
->
-> but I'm not seeing the large numbers of the ext4_page_mkwrite trace
-> that I get on 3.0.6.  file_update_time is now by far the dominant
-> cause of latency.
 
-The culprit seems to be do_wp_page -> file_update_time ->
-mark_inode_dirty_sync.  This surprises me for two reasons:
+> Sorry this huge patch brings too many potential bugs.
+> 
+> I ask you a separate patch for the networking part, because I dont want
+> to Ack all the other parts.
+> 
 
- - Why the _sync?  Are we worried that data will be written out before
-the metadata?  If so, surely there's a better way than adding latency
-here.
+Thanks a lot for review! I split the first patch into 2 according your
+suggestion. The second one for network here: 
 
- - Why are we calling file_update_time at all?  Presumably we also
-update the time when the page is written back (if not, that sounds
-like a bug, since the contents may be changed after something saw the
-mtime update), and, if so, why bother updating it on the first write?
-Anything that relies on this behavior is, I think, unreliable, because
-the page could be made writable arbitrarily early by another program
-that changes nothing.
+>From d5d71127ad22890f6f13fa382736c0df7f5d0231 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 20 Oct 2011 13:44:37 +0800
+Subject: [PATCH 2/2] change this_cpu_xxx funcs for preempt safe scenarios
 
---Andy
+If context is preempt safe, using __this_cpu_xxx to replace this_cpu_xxx
+have performance benefit, since the later has a abundant preempt_disable
+instruction.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ net/netfilter/xt_TEE.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
+index e78103d..678084c 100644
+--- a/net/netfilter/xt_TEE.c
++++ b/net/netfilter/xt_TEE.c
+@@ -90,7 +90,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 	struct iphdr *iph;
+ 
+-	if (this_cpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	/*
+ 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
+@@ -127,9 +127,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	ip_send_check(iph);
+ 
+ 	if (tee_tg_route4(skb, info)) {
+-		this_cpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip_local_out(skb);
+-		this_cpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+@@ -170,7 +170,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 
+-	if (this_cpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	skb = pskb_copy(skb, GFP_ATOMIC);
+ 	if (skb == NULL)
+@@ -188,9 +188,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ 		--iph->hop_limit;
+ 	}
+ 	if (tee_tg_route6(skb, info)) {
+-		this_cpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip6_local_out(skb);
+-		this_cpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+-- 
+1.6.3.3
+
+
+
