@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab1JTIp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 04:45:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51097 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab1JTIpy (ORCPT
+	id S1756106Ab1JTIqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 04:46:10 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35981 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab1JTIqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 04:45:54 -0400
-Date: Thu, 20 Oct 2011 04:45:41 -0400 (EDT)
-Message-Id: <20111020.044541.970282389722164761.davem@davemloft.net>
-To: cloud.ren@Atheros.com
-Cc: Luis.Rodriguez@Atheros.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
- Ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1319093184-19696-1-git-send-email-cloud.ren@Atheros.com>
-References: <1319093184-19696-1-git-send-email-cloud.ren@Atheros.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 20 Oct 2011 04:46:07 -0400
+Message-ID: <1319100362.3781.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] virtio_net: Clean up set_skb_frag()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Krishna Kumar <krkumar2@in.ibm.com>
+Cc: rusty@rustcorp.com.au, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        virtualization@lists.linux-foundation.org
+Date: Thu, 20 Oct 2011 10:46:02 +0200
+In-Reply-To: <20111020081727.509.83122.sendpatchset@krkumar2.in.ibm.com>
+References: <20111020081727.509.83122.sendpatchset@krkumar2.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 01:45:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: <cloud.ren@Atheros.com>
-Date: Thu, 20 Oct 2011 14:46:24 +0800
+Le jeudi 20 octobre 2011 à 13:47 +0530, Krishna Kumar a écrit :
+> Remove manual initialization in set_skb_frag, and instead
+> use __skb_fill_page_desc() to do the same. Patch tested
+> on net-next.
+> 
+> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+> ---
+>  drivers/net/virtio_net.c |   13 +++++--------
+>  1 file changed, 5 insertions(+), 8 deletions(-)
+> 
+> diff -ruNp org/drivers/net/virtio_net.c new/drivers/net/virtio_net.c
+> --- org/drivers/net/virtio_net.c	2011-10-20 08:34:31.000000000 +0530
+> +++ new/drivers/net/virtio_net.c	2011-10-20 08:43:57.000000000 +0530
+> @@ -143,18 +143,15 @@ static void skb_xmit_done(struct virtque
+>  static void set_skb_frag(struct sk_buff *skb, struct page *page,
+>  			 unsigned int offset, unsigned int *len)
+>  {
+> +	int size = min((unsigned)PAGE_SIZE - offset, *len);
+>  	int i = skb_shinfo(skb)->nr_frags;
+> -	skb_frag_t *f;
+>  
+> -	f = &skb_shinfo(skb)->frags[i];
+> -	skb_frag_size_set(f, min((unsigned)PAGE_SIZE - offset, *len));
+> -	f->page_offset = offset;
+> -	__skb_frag_set_page(f, page);
+> +	__skb_fill_page_desc(skb, i, page, offset, size);
+>  
+> -	skb->data_len += skb_frag_size(f);
+> -	skb->len += skb_frag_size(f);
+> +	skb->data_len += size;
+> +	skb->len += size;
+>  	skb_shinfo(skb)->nr_frags++;
+> -	*len -= skb_frag_size(f);
+> +	*len -= size;
+>  }
+>  
+>  static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+> 
+> --
 
-> +#define __far
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-So much unused crap left in these header files, get rid of this stuff.
+Seems fine to me. There is a truesize patch for this driver, I'll send
+it once your patch is in.
 
-+#define ALX_HW_WARN(_fmt, _args...) \
-+		ALX_HW_PRINTA(WARNING, _fmt, ## _args)
-+
-+#define ALX_HW_INFO(_fmt, _args...) \
-+		ALX_HW_PRINTA(INFO, _fmt, ## _args)
-+
-+#define ALX_HW_DBG(_fmt, _args...) \
-+		ALX_HW_PRINTA(DEBUG, _fmt, ## _args)
-+
 
-We told you to get rid of your customized debug logging interfaces,
-yet all of this stuff is still there.
 
-+/* delay function */
-+#define US_DELAY(_hw, _n)	__US_DELAY(_n)
-+#define MS_DELAY(_hw, _n)	__MS_DELAY(_n)
-+#define __US_DELAY(_n)		udelay(_n)
-+#define __MS_DELAY(_n)		mdelay(_n)
-
-Useless wrappers for standard kernel interfaces, kill this.
-
-+#define DEBUG_INFO(_a, _b)
-+#define DEBUG_INFOS(_a, _b)
-
-Again we told you to get rid of this stuff.
-
-I suspect it's going to take may rounds of feedback before this driver
-is anywhere near ready for inclusion.
-
-Please just submit it to staging and let it cook there for a couple
-weeks in the interests of our sanity.
