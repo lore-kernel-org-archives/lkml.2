@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab1JTF6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 01:58:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54193 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab1JTF6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 01:58:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="64991901"
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
- idle load balancing scalability
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Venki Pallipadi <venki@google.com>
-In-Reply-To: <1319084319.8416.38.camel@edumazet-laptop>
-References: <1319060737.2604.38.camel@schen9-DESK>
-	 <1319084319.8416.38.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Wed, 19 Oct 2011 22:57:44 -0700
-Message-ID: <1319090264.14569.1.camel@sbsiddha-mobl2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932158Ab1JTF75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 01:59:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45831 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab1JTF74 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 01:59:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
+References: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
+	<ACE78D84-0E94-4E7A-99BF-C20583018697@dilger.ca>
+	<CALCETrU23vyCXPG6mJU9qaPeAGOWDQtur5C+LRT154V5FM=Ajg@mail.gmail.com>
+	<CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
+Date: Wed, 19 Oct 2011 22:59:55 -0700
+Message-ID: <CALCETrUcOKQAJTTmCSD3Q3wYS-zLqv6tBa4AdkK50bNobRhDUQ@mail.gmail.com>
+Subject: Re: Latency writing to an mlocked ext4 mapping
+From: Andy Lutomirski <luto@amacapital.net>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-19 at 21:18 -0700, Eric Dumazet wrote:
-> > +	atomic_t load_balancer ____cacheline_aligned;
-> > +	atomic_t first_pick_cpu ____cacheline_aligned;
-> > +	atomic_t second_pick_cpu ____cacheline_aligned;
-> > +	cpumask_var_t idle_cpus_mask ____cacheline_aligned;
-> >  	cpumask_var_t grp_idle_mask;
-> >  	unsigned long next_balance;     /* in jiffy units */
-> >  } nohz ____cacheline_aligned;
-> > 
-> 
-> Dont you increase cache footprint, say for an Uniprocessor machine ?
-> 
-> (CONFIG_SMP=n)
-> 
-> ____cacheline_aligned_in_smp seems more suitable in this case.
+On Wed, Oct 19, 2011 at 7:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Oct 19, 2011 at 6:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Wed, Oct 19, 2011 at 6:02 PM, Andreas Dilger <adilger@dilger.ca> wrote:
+>>> What kernel are you using?  A change to keep pages consistent during writeout was landed not too long ago (maybe Linux 3.0) in order to allow checksumming of the data.
+>>
+>> 3.0.6, with no relevant patches.  (I have a one-liner added to the tcp
+>> code that I'll submit sometime soon.)  Would this explain the latency
+>> in file_update_time or is that a separate issue?  file_update_time
+>> seems like a good thing to make fully asynchronous (especially if the
+>> file in question is a fifo, but I've already moved my fifos to tmpfs).
+>
+> On 2.6.39.4, I got one instance of:
+>
+> call_rwsem_down_read_failed ext4_map_blocks ext4_da_get_block_prep
+> __block_write_begin ext4_da_write_begin ext4_page_mkwrite do_wp_page
+> handle_pte_fault handle_mm_fault do_page_fault page_fault
+>
+> but I'm not seeing the large numbers of the ext4_page_mkwrite trace
+> that I get on 3.0.6.  file_update_time is now by far the dominant
+> cause of latency.
 
-I believe this code is already under ifdef CONFIG_SMP.
+The culprit seems to be do_wp_page -> file_update_time ->
+mark_inode_dirty_sync.  This surprises me for two reasons:
 
-thanks,
-suresh
+ - Why the _sync?  Are we worried that data will be written out before
+the metadata?  If so, surely there's a better way than adding latency
+here.
 
+ - Why are we calling file_update_time at all?  Presumably we also
+update the time when the page is written back (if not, that sounds
+like a bug, since the contents may be changed after something saw the
+mtime update), and, if so, why bother updating it on the first write?
+Anything that relies on this behavior is, I think, unreliable, because
+the page could be made writable arbitrarily early by another program
+that changes nothing.
 
+--Andy
