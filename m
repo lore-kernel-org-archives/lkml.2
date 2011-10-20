@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab1JTQkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 12:40:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51516 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab1JTQkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 12:40:09 -0400
-Date: Thu, 20 Oct 2011 17:40:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111020164006.GA10155@sirena.org.uk>
-References: <4E9BAC4D.3010402@ti.com>
- <20111018115836.GC30703@S2100-06.ap.freescale.net>
- <20111018160046.GD28501@opensource.wolfsonmicro.com>
- <20111019053354.GB31162@S2100-06.ap.freescale.net>
- <20111019144734.GI18713@sirena.org.uk>
- <20111019150448.GB32007@S2100-06.ap.freescale.net>
- <20111019151031.GA4275@opensource.wolfsonmicro.com>
- <4E9F9892.9070007@ti.com>
- <20111020094140.GK18713@sirena.org.uk>
- <20111020162743.GB31337@atomide.com>
+	id S1756778Ab1JTQmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 12:42:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60913 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab1JTQmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 12:42:12 -0400
+Date: Thu, 20 Oct 2011 09:42:06 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
+        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [RFD] Isolated memory cgroups again
+Message-ID: <20111020164205.GC25505@tiehlicka.suse.cz>
+References: <20111020013305.GD21703@tiehlicka.suse.cz>
+ <4E9FE1FC.8080103@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111020162743.GB31337@atomide.com>
-X-Cookie: boy, n:
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4E9FE1FC.8080103@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 09:27:43AM -0700, Tony Lindgren wrote:
-> * Mark Brown <broonie@opensource.wolfsonmicro.com> [111020 02:07]:
+On Thu 20-10-11 12:55:24, Glauber Costa wrote:
+> On 10/20/2011 05:33 AM, Michal Hocko wrote:
+> >Hi all,
+> >this is a request for discussion (I hope we can touch this during memcg
+> >meeting during the upcoming KS). I have brought this up earlier this
+> >year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
+> >The patch got much smaller since then due to excellent Johannes' memcg
+> >naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
+> >which this is based on.
+> >I realize that this will be controversial but I would like to hear
+> >whether this is strictly no-go or whether we can go that direction (the
+> >implementation might differ of course).
+> >
+> >The patch is still half baked but I guess it should be sufficient to
+> >show what I am trying to achieve.
+> >The basic idea is that memcgs would get a new attribute (isolated) which
+> >would control whether that group should be considered during global
+> >reclaim.
+> 
+> I'd like to hear a bit more of your use cases,
 
-> > We can always start off just completely omitting the data and then see
-> > how we go from there.  If we only cover 50% of users that's still 50%
-> > more than are currently covered with device tree right now and it means
-> > we can then spin round and look at the bits that are hard again without
-> > review fatigue on the bits that are easy.
+The primary goal is to isolate the primary workload (e.g. database) from
+the rest of the system which provide a support for the primary workload
+(backups, administration tools etc). While we can do that even now just
+by wrapping everything into different groups and set up proper limits it
+gets really tricky if you want to overcommit the box because then the
+global reclaim is inevitable so we will start reclaiming from all
+groups.
 
-> We still need to pass the board configuration somehow, otherwise we can
-> never remove all the platform data glue layers. And if we can't do that,
-> we'll forever have all the nasty merge conflicts when adding new drivers.
-> And there's an unnecessary dependency between adding drivers and the
-> core SoC code.
+> but at first, I don't like it. I think we should always, regardless of
+> any knobs or definitions, be able to globally select a task or set of
+> tasks, and kill them.
 
-The current patches cover the overwhelming majority of the existing
-board configuration - the stuff that's Linux specific is also relatively
-rarely used in actual systems.  For example all the board I work with
-regularly would be perfectly happy with the generic stuff - the Linux
-specific stuff is relatively rarely used.
+The patchset is not about OOM but rather about the reclaim. If there is
+a global OOM situation we do not care about isolated memcgs.
+
+[...]
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
