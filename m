@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1JTFZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 01:25:19 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:24834 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab1JTFZQ (ORCPT
+	id S1753957Ab1JTFar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 01:30:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:7533 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab1JTFao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 01:25:16 -0400
-Message-ID: <4E9FB0D6.9080301@snapgear.com>
-Date: Thu, 20 Oct 2011 15:25:42 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Thu, 20 Oct 2011 01:30:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=L8zCkiRif2ohnjl4W23lwjVEoNCYmWK3XtZAkk0rbkVz3AmkLaxg1fDLg+CF+mo/6
+	tDVZyASbB/YIqbVnX4p4w==
+Date: Wed, 19 Oct 2011 22:30:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Norbert Preining <preining@logic.at>
+cc: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: iwlagn is getting very shaky
+In-Reply-To: <20111020031421.GS11060@gamma.logic.tuwien.ac.at>
+Message-ID: <alpine.DEB.2.00.1110192230140.4618@chino.kir.corp.google.com>
+References: <20111019062517.GC11588@gamma.logic.tuwien.ac.at> <1319003304.31823.46.camel@wwguy-huron> <20111019064628.GA14817@gamma.logic.tuwien.ac.at> <1319004836.31823.57.camel@wwguy-huron> <20111019124931.GC3963@gamma.logic.tuwien.ac.at>
+ <1319038282.25023.21.camel@wwguy-ubuntu> <20111020020225.GO11060@gamma.logic.tuwien.ac.at> <1319074339.31823.68.camel@wwguy-huron> <20111020025123.GR11060@gamma.logic.tuwien.ac.at> <E9954878DD1FB34FAE5187FB88C58A3501A0D0992E@orsmsx506.amr.corp.intel.com>
+ <20111020031421.GS11060@gamma.logic.tuwien.ac.at>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/21 v2] m68k: drop unused Kconfig symbols
-References: <1318925407.6414.22.camel@x61.thuisdomein>	 <4E9D6C05.9040106@snapgear.com> <1318941043.6414.35.camel@x61.thuisdomein>
-In-Reply-To: <1318941043.6414.35.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Thu, 20 Oct 2011, Norbert Preining wrote:
 
-On 18/10/11 22:30, Paul Bolle wrote:
-> On Tue, 2011-10-18 at 22:07 +1000, Greg Ungerer wrote:
->>> - dropped SOM5282EM too (discovered this while doing this second
->>>     version, my scripts aren't smart enough too catch it)
->>
->> Hmm. I don't want to lose the SOM5282EM config option. Although it
->> isn't used inside the code it does let the configurer know that this
->> specific board is supported.
->
-> Isn't there another way? You're also adding a configuration option. This
-> means your configurer has to make a decision whether or not to enable
-> support for that board while this decision actually has no effect.
+> No attachment again ... something is filtering here???
+> 
+> Please include it directly in the email
+> 
 
-Yes, that is the idea. The configurer doesn't need to know it has
-no effect (at least currently anyway). But they know that the board
-is supported.
-
-
-> Apparently that support comes for free (I'm guessing once M528x support
-> is enabled, I haven't checked that). Wouldn't a comment do? Or adding a
-> line to some help text?
->
-> In the mean time I suppose you're willing to fix this part of my patch
-> yourself (ie, I don't have to redo this again).
-
-Yes, thats fine, I will fix it and apply.
-
-Geert: are you ok with the changes?
-
-Thanks
-Greg
-
-
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Not sure why you're not receiving the inlined patch, you can see it at 
+https://lkml.org/lkml/2011/10/19/505
