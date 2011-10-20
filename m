@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab1JTMcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 08:32:51 -0400
-Received: from fieldses.org ([174.143.236.118]:60804 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658Ab1JTMcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 08:32:50 -0400
-Date: Thu, 20 Oct 2011 08:32:42 -0400
-From: "bfields@fieldses.org" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH 0/5] SUNRPC: "RPC pipefs per network namespace"
- preparations
-Message-ID: <20111020123242.GN5444@fieldses.org>
-References: <20111017120629.4541.67395.stgit@localhost6.localdomain6>
- <4EA000C6.1040502@parallels.com>
+	id S1753132Ab1JTMgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 08:36:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36007 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751402Ab1JTMgU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 08:36:20 -0400
+Date: Thu, 20 Oct 2011 13:36:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v3 2/8] ASoC: da7210: Add support for DAPM
+Message-ID: <20111020123614.GB3484@opensource.wolfsonmicro.com>
+References: <1318590098.12107.509.camel@matrix>
+ <20111014192008.GD2931@opensource.wolfsonmicro.com>
+ <1318666803.613.21.camel@matrix>
+ <20111017214107.GC5200@opensource.wolfsonmicro.com>
+ <1319008895.7230.11.camel@matrix>
+ <20111019121341.GE3107@opensource.wolfsonmicro.com>
+ <1319111265.24621.14.camel@matrix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EA000C6.1040502@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1319111265.24621.14.camel@matrix>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 03:06:46PM +0400, Stanislav Kinsbursky wrote:
-> Guys, please, spend some of your expensive time to review this patch-set briefly.
+On Thu, Oct 20, 2011 at 05:17:45PM +0530, Ashish Chavan wrote:
 
-I'll try to take a look soon, but I'm travelling tomorrow through the
-31st, and things will be a little hectic.
+> Is there anything else that I need to take care of?
 
-Just one quick comment:
-
-> >The only problem about I'm not sure how to solve properly yet, is auth gss
-> >pipes creations operations. Hoping for some help with it.
-
-I suspect one reason it may be a little complicated is the
-upcall-version switching.  The old version is deprecated, and there's no
-need to support the combination of the old version with the a new
-feature like containers.  And now that it's been there a while the
-version-switching code already achieved its goal of avoiding a flag day.
-So, one approach might be:
-
-	- move all the code for the old gss upcall and for the version
-	  switching under a new CONFIG_DEPRECATED_GSS, or similar.
-	- print a warning if the old stuff is used, and plan to rip it
-	  out completely in a future kernel version.
-	- do something that works just in the !CONFIG_DEPRECATED_GSS
-	  case.
-
-Would that help?
-
---b.
+Not that I remember but often major issues obscure others so more may
+become apparent on more detailed review.
