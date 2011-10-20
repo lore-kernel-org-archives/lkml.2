@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194Ab1JTWJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 18:09:20 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28039 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750713Ab1JTWJT (ORCPT
+	id S1751370Ab1JTWKw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 18:10:52 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:16974
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750992Ab1JTWKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 18:09:19 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/9GEebB1EWZJoXsvp/+Qdg
-Date: Thu, 20 Oct 2011 15:09:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111020220914.GP3842@atomide.com>
-References: <20111019151031.GA4275@opensource.wolfsonmicro.com>
- <4E9F9892.9070007@ti.com>
- <20111020094140.GK18713@sirena.org.uk>
- <20111020162743.GB31337@atomide.com>
- <20111020164006.GA10155@sirena.org.uk>
- <20111020170534.GC31337@atomide.com>
- <20111020172218.GE31337@atomide.com>
- <20111020195734.GB17384@opensource.wolfsonmicro.com>
- <20111020201054.GN3842@atomide.com>
- <20111020214225.GB22709@opensource.wolfsonmicro.com>
+	Thu, 20 Oct 2011 18:10:51 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zzbb2dK9371K936eK103dK1432N98dKzz1202hzz8275bhz32i668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LTDXLT-01-4OV-02
+X-M-MSG: 
+Message-ID: <1319148647.13035.4.camel@jshin-Toonie>
+Subject: Re: [PATCH 1/1] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai.lu@oracle.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Oct 2011 17:10:47 -0500
+In-Reply-To: <4EA092DD.8020203@zytor.com>
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+	 <m2sjmnxsi3.fsf@firstfloor.org> <4EA092DD.8020203@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111020214225.GB22709@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mark Brown <broonie@opensource.wolfsonmicro.com> [111020 14:08]:
-> On Thu, Oct 20, 2011 at 01:10:55PM -0700, Tony Lindgren wrote:
+On Thu, 2011-10-20 at 16:30 -0500, H. Peter Anvin wrote:
+> On 10/20/2011 02:28 PM, Andi Kleen wrote:
+> > Jacob Shin <jacob.shin@amd.com> writes:
+> > 
+> >> On systems with very large memory (1 TB in our case), BIOS may report a
+> >> reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+> >> these from the direct mapping.
+> > 
+> > This doesn't make much sense.  Holes above 4GB are completely legal.
+> > 
+> > If you need to workaround a specific broken BIOS you would need a quirk
+> > only matching that system, with a suitable "BIOS is broken" message.
+> > 
 > 
-> > We still need to figure out how to get the above board specific
-> > data to the device driver probe in a way where we can avoid having
-> > platform glue code. Any thoughts on that?
+> The problem is that apparently right now we map those unconditionally
+> into the 1:1 map and mark them cacheable in PAT, which we *don't* for
+> the < 4 GiB map.
 > 
-> I think we should just not bother with most of the above and see if
-> anyone notices, with the exception of always on and status changes it's
-> vanishingly rare for anyone to actually do anything constructive with
-> them.  
+> This thus makes the behavior match < 4 GiB, which is the correct
+> behavior; this should be made clear in the patch description.
 
-OK
+Will something like:
 
-> Neither of the two I mentioned are Linux specific either, they mean
-> somehing useful for any OS it's just that the decision is policy which
-> is going to depend on the OS version.  Status changes we can probably
-> allow people to enable, it'll just mean that older device trees won't
-> get good power use out of newer kernels and if you move to an older
-> kernel things will start exploding as drivers loose regulator support.
-> Always on we can probably live without, it's a combination of
-> overspecification and interaction with _has_full_constraints() which
-> isn't represented in this binding anyway.
+"On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range.
+Avoid mapping them unconditionally into kernel 1:1 direct mapping as
+cacheable memory, as we also already do for the MMIO hole under 4 GB."
 
-Yeah, lot of these are "how the regulator using driver is using
-the regulator" or "how the operating system is using the regulator"
-type policies.
+Work?
 
-Regards,
+Otherwise, does the patch look acceptable?
 
-Tony
+Thanks!
+
+-Jacob Shin
+Advanced Micro Devices, Inc.
+
+> 
+> 	-hpa
+> 
+
+
+
