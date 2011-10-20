@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab1JTGWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:22:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64400 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab1JTGWL (ORCPT
+	id S932473Ab1JTGV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:21:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44102 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab1JTGVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:22:11 -0400
+	Thu, 20 Oct 2011 02:21:53 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 21/24] Staging: comedi: fix warning issue in cb_das16_cs.c
-Date: Thu, 20 Oct 2011 11:49:07 +0530
-Message-Id: <1319091550-2558-21-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 18/24] Staging: comedi: fix printk issue in ni_at_a2150.c
+Date: Thu, 20 Oct 2011 11:49:04 +0530
+Message-Id: <1319091550-2558-18-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,115 +23,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
+This is a patch to the ni_at_a2150.c file that fixes up a printk
+warning found by the checkpatch.pl tool
 converted printks to dev_printk.
 Removed unnecessary printk statements.
-Fixed line over 80 character and NULL initilization issue.
+Fixed brace coding issue.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_das16_cs.c |   26 ++++++++++++--------------
- 1 files changed, 12 insertions(+), 14 deletions(-)
+ drivers/staging/comedi/drivers/ni_at_a2150.c |   43 +++++++++----------------
+ 1 files changed, 16 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 8a1b8a7..71676d8 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -31,6 +31,8 @@ Status: experimental
+diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
+index 32e675e..54ddb2b 100644
+--- a/drivers/staging/comedi/drivers/ni_at_a2150.c
++++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
+@@ -211,17 +211,14 @@ static void __exit driver_a2150_cleanup_module(void)
+ module_init(driver_a2150_init_module);
+ module_exit(driver_a2150_cleanup_module);
  
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/interrupt.h>
- #include <linux/slab.h>
- #include "../comedidev.h"
-@@ -99,7 +101,7 @@ static struct comedi_driver driver_das16cs = {
- 	.detach = das16cs_detach,
- };
- 
--static struct pcmcia_device *cur_dev = NULL;
-+static struct pcmcia_device *cur_dev;
- 
- static const struct comedi_lrange das16cs_ai_range = { 4, {
- 							   RANGE(-10, 10),
-@@ -150,7 +152,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
- 			return das16cs_boards + i;
- 	}
- 
--	printk("unknown board!\n");
-+	dev_dbg(dev->hw_dev, "unknown board!\n");
- 
- 	return NULL;
+-#ifdef A2150_DEBUG
+-
+ static void ni_dump_regs(struct comedi_device *dev)
+ {
+-	printk("config bits 0x%x\n", devpriv->config_bits);
+-	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
+-	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
++	dev_dbg(dev->hw_dev, "config bits 0x%x\n", devpriv->config_bits);
++	dev_dbg(dev->hw_dev, "irq dma bits 0x%x\n", devpriv->irq_dma_bits);
++	dev_dbg(dev->hw_dev, "status bits 0x%x\n",
++		inw(dev->iobase + STATUS_REG));
  }
-@@ -163,20 +165,17 @@ static int das16cs_attach(struct comedi_device *dev,
- 	int ret;
+ 
+-#endif
+-
+ /* interrupt service routine */
+ static irqreturn_t a2150_interrupt(int irq, void *d)
+ {
+@@ -347,8 +344,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	static const int timeout = 2000;
  	int i;
  
--	printk("comedi%d: cb_das16_cs: ", dev->minor);
- 
- 	link = cur_dev;		/* XXX hack */
- 	if (!link)
- 		return -EIO;
- 
- 	dev->iobase = link->resource[0]->start;
--	printk("I/O base=0x%04lx ", dev->iobase);
-+	dev_dbg(dev->hw_dev, "I/O base=0x%04lx\n", dev->iobase);
- 
--	printk("fingerprint:\n");
-+	dev_dbg(dev->hw_dev, "fingerprint:\n");
- 	for (i = 0; i < 48; i += 2)
--		printk("%04x ", inw(dev->iobase + i));
--
+-	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
+-	       iobase);
+ 	if (irq) {
+ 		printk(", irq %u", irq);
+ 	} else {
+@@ -359,20 +354,19 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	} else {
+ 		printk(", no dma");
+ 	}
 -	printk("\n");
-+		dev_dbg(dev->hw_dev, "%04x\n", inw(dev->iobase + i));
  
- 	ret = request_irq(link->irq, das16cs_interrupt,
- 			  IRQF_SHARED, "cb_das16_cs", dev);
-@@ -185,7 +184,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	/* allocate and initialize dev->private */
+ 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
+ 		return -ENOMEM;
  
- 	dev->irq = link->irq;
- 
--	printk("irq=%u ", dev->irq);
-+	dev_dbg(dev->hw_dev, "irq=%u\n", dev->irq);
- 
- 	dev->board_ptr = das16cs_probe(dev, link);
- 	if (!dev->board_ptr)
-@@ -252,14 +251,11 @@ static int das16cs_attach(struct comedi_device *dev,
- 		s->type = COMEDI_SUBD_UNUSED;
+ 	if (iobase == 0) {
+-		printk(" io base address required\n");
++		dev_err(dev->hw_dev, "io base address required\n");
+ 		return -EINVAL;
  	}
  
--	printk("attached\n");
--
- 	return 1;
- }
+ 	/* check if io addresses are available */
+ 	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
+-		printk(" I/O port conflict\n");
++		dev_err(dev->hw_dev, "I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -381,12 +375,13 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	if (irq) {
+ 		/*  check that irq is supported */
+ 		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
+-			printk(" invalid irq line %u\n", irq);
++			dev_err(dev->hw_dev, "invalid irq line %u\n", irq);
+ 			return -EINVAL;
+ 		}
+ 		if (request_irq(irq, a2150_interrupt, 0,
+ 				driver_a2150.driver_name, dev)) {
+-			printk("unable to allocate irq %u\n", irq);
++			dev_err(dev->hw_dev, "unable to allocate irq %u\n",
++				irq);
+ 			return -EINVAL;
+ 		}
+ 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
+@@ -395,11 +390,12 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/*  initialize dma */
+ 	if (dma) {
+ 		if (dma == 4 || dma > 7) {
+-			printk(" invalid dma channel %u\n", dma);
++			dev_err(dev->hw_dev, "invalid dma channel %u\n", dma);
+ 			return -EINVAL;
+ 		}
+ 		if (request_dma(dma, driver_a2150.driver_name)) {
+-			printk(" failed to allocate dma channel %u\n", dma);
++			dev_err(dev->hw_dev, "failed to allocate dma channel %u\n",
++				dma);
+ 			return -EINVAL;
+ 		}
+ 		devpriv->dma = dma;
+@@ -466,7 +462,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- static int das16cs_detach(struct comedi_device *dev)
+ static int a2150_detach(struct comedi_device *dev)
  {
--	printk("comedi%d: das16cs: remove\n", dev->minor);
+-	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
  
- 	if (dev->irq)
- 		free_irq(dev->irq, dev);
-@@ -312,7 +308,7 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
- 				break;
- 		}
- 		if (to == TIMEOUT) {
--			printk("cb_das16_cs: ai timeout\n");
-+			dev_err(dev->hw_dev, "ai timeout\n");
- 			return -ETIME;
- 		}
- 		data[i] = (unsigned short)inw(dev->iobase + 0);
-@@ -370,7 +366,9 @@ static int das16cs_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
+ 	/* only free stuff if it has been allocated by _attach */
+ 	if (dev->iobase) {
+@@ -731,12 +726,9 @@ static int a2150_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	outw(trigger_bits, dev->iobase + TRIGGER_REG);
  
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/*
-+	 * step 2: make sure trigger sources are unique and mutually compatible
-+	 */
+ 	/*  start acquisition for soft trigger */
+-	if (cmd->start_src == TRIG_NOW) {
++	if (cmd->start_src == TRIG_NOW)
+ 		outw(0, dev->iobase + FIFO_START_REG);
+-	}
+-#ifdef A2150_DEBUG
+ 	ni_dump_regs(dev);
+-#endif
  
- 	/* note that mutual compatibility is not an issue here */
- 	if (cmd->scan_begin_src != TRIG_TIMER &&
+ 	return 0;
+ }
+@@ -801,9 +793,7 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		ni_dump_regs(dev);
+ #endif
+ 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
+-#ifdef A2150_DEBUG
+-		printk(" data is %i\n", data[n]);
+-#endif
++		dev_dbg(dev->hw_dev, "data is %i\n", data[n]);
+ 		data[n] ^= 0x8000;
+ 	}
+ 
+@@ -860,11 +850,10 @@ static int a2150_get_timing(struct comedi_device *dev, unsigned int *period,
+ 	case TRIG_ROUND_NEAREST:
+ 	default:
+ 		/*  if least upper bound is better approximation */
+-		if (lub - *period < *period - glb) {
++		if (lub - *period < *period - glb)
+ 			*period = lub;
+-		} else {
++		else
+ 			*period = glb;
+-		}
+ 		break;
+ 	case TRIG_ROUND_UP:
+ 		*period = lub;
 -- 
 1.7.6.4
 
