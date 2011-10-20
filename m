@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1JTEYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 00:24:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22328 "EHLO mga11.intel.com"
+	id S1752591Ab1JTEpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 00:45:51 -0400
+Received: from mail.kaapeli.fi ([84.20.139.148]:32851 "EHLO mail.kaapeli.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab1JTEYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 00:24:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,376,1315206000"; 
-   d="scan'208";a="75663213"
-From: Andi Kleen <andi@firstfloor.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venki Pallipadi <venki@google.com>
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve idle load balancing scalability
-References: <1319060737.2604.38.camel@schen9-DESK>
-Date: Wed, 19 Oct 2011 21:24:51 -0700
-In-Reply-To: <1319060737.2604.38.camel@schen9-DESK> (Tim Chen's message of
-	"Wed, 19 Oct 2011 14:45:37 -0700")
-Message-ID: <m2wrc0xpbg.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751518Ab1JTEpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 00:45:50 -0400
+Message-ID: <4E9FA779.5040406@iki.fi>
+Date: Thu, 20 Oct 2011 07:45:45 +0300
+From: Jyrki Kuoppala <jkp@iki.fi>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Carlos Corbacho <carlos@strangeworlds.co.uk>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH] Fix to qt1010 tuner frequency selection (media/dvb)
+References: <4E528FAE.5060801@iki.fi> <5010154.A6jI82beuA@valkyrie> <4E7F58BB.5080803@iki.fi> <2165330.TqTdf0zloM@valkyrie>
+In-Reply-To: <2165330.TqTdf0zloM@valkyrie>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tim Chen <tim.c.chen@linux.intel.com> writes:
->   */
->  static struct {
-> -	atomic_t load_balancer;
-> -	atomic_t first_pick_cpu;
-> -	atomic_t second_pick_cpu;
-> -	cpumask_var_t idle_cpus_mask;
-> +	atomic_t load_balancer ____cacheline_aligned;
-> +	atomic_t first_pick_cpu ____cacheline_aligned;
-> +	atomic_t second_pick_cpu ____cacheline_aligned;
-> +	cpumask_var_t idle_cpus_mask ____cacheline_aligned;
+I think my problem frequency has also been at the later spot. It is possible there is something more complicated going on at 474 MHz - so based on your testing, it's best to apply just the latter change, at least for now.
 
-On large configs idle_cpu_masks may be allocated.  May need
-more changes to tell the allocator to cache align/pad too?
+Jyrki
 
--Andi
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+
++    else if (freq<   546000000) rd[15].val = 0xd6; /* 546 MHz */
+
++    else if (freq<   546000000) rd[15].val = 0xd6; /* 546 MHz */
+
+
+20.10.2011 00:06, Carlos Corbacho kirjoitti:
+> Jyrki,
+>
+> So after a bit more testing...
+>
+> [...]
+>
+>>>>         /* 22 */
+>>>>         if      (freq<   450000000) rd[15].val = 0xd0; /* 450 MHz
+>>>>         */
+>>>>
+>>>> -    else if (freq<   482000000) rd[15].val = 0xd1; /* 482 MHz */
+>>>> +    else if (freq<   482000000) rd[15].val = 0xd2; /* 482 MHz */
+> This change isn't so good.
+>
+> With this change, I can no longer tune to channel 21 (474 MHz). If I revert it
+> back to 0xd1, it's fine.
+>
+> [...]
+>
+>>>>         else if (freq<   514000000) rd[15].val = 0xd4; /* 514 MHz
+>>>>         */
+>>>>
+>>>> -    else if (freq<   546000000) rd[15].val = 0xd7; /* 546 MHz */
+>>>> +    else if (freq<   546000000) rd[15].val = 0xd6; /* 546 MHz */
+>>>> +    else if (freq<   578000000) rd[15].val = 0xd8; /* 578 MHz */
+> (This change is still good though, as this does allow me to now tune to the
+> BBC channels in this range).
+>
+> -Carlos
+
