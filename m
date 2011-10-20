@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab1JTVVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:21:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33698 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105Ab1JTVVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:21:09 -0400
-Message-ID: <4EA0909C.3040509@zytor.com>
-Date: Thu, 20 Oct 2011 14:20:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753691Ab1JTVYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:24:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63515 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab1JTVX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 17:23:59 -0400
+Date: Thu, 20 Oct 2011 14:23:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
+Message-ID: <20111020212353.GZ25124@google.com>
+References: <20111015201239.GA3475@swordfish>
+ <alpine.DEB.2.00.1110151436420.15894@chino.kir.corp.google.com>
+ <20111015222324.GA16432@liondog.tnic>
+ <alpine.DEB.2.00.1110151529570.25063@chino.kir.corp.google.com>
+ <20111020183913.GA21918@liondog.tnic>
+ <20111020185329.GA3586@swordfish.minsk.epam.com>
+ <20111020190701.GB3586@swordfish.minsk.epam.com>
+ <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Phillip Lougher <phil.lougher@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, phillip@lougher.demon.co.uk
-Subject: Re: Procedural requirements for restoring kernel.org accounts
-References: <20111014152100.GA11717@kroah.com> <4E988564.40905@zytor.com> <CA+2-8GA-R3TETVLubOO8uMQq1a3-LmQ=STrXM1kf+8WbgfhTLQ@mail.gmail.com> <20111020220922.6bfed01b@lxorguk.ukuu.org.uk> <20111020211600.GC16820@thunk.org>
-In-Reply-To: <20111020211600.GC16820@thunk.org>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2011 02:16 PM, Ted Ts'o wrote:
-> 
-> I was looking into setting up a separate key signing event at LCE, but
-> the schedule is really packed, so it wasn't clear we could find a slot
-> that would work for everyone.  Also, I simply ran out of time to try
-> to organize yet another key signing event.
-> 
-> This is why I suggested a more informal approach of people
-> pre-printing fingerprints on slips of paper which could be exchanged,
-> using something like gpg-key2ps.  If everyone comes prepared with
-> these slips of paper, we can either try to organize a room where it's
-> easier for people to find each other, or it can be done in an ad-hoc
-> fashion during the coffee/tea breaks.
-> 
+Hello,
 
-Aren't there any BOF slots or something like that?
+On Thu, Oct 20, 2011 at 02:17:29PM -0700, David Rientjes wrote:
+> On Thu, 20 Oct 2011, Sergey Senozhatsky wrote:
+> 
+> > > > FWIW,
+> > > > 
+> > > > the box has been running here with f59de8992aa6 reverted for a couple of
+> > > > days now and no sign of the warning. I'll keep watching it but it looks
+> > > > ok so far, so David, you could've nailed it.
+> > > > 
+> > > 
+> > > Hello,
+> > > Well, the same with me. My laptop has been running with reverted f59de8992aa6 without any
+> > > problems so far. Yet, I'm not sure I understand how memset() and loop could
+> > > produce different results.
+> > > 
+> > 
+> > Oh, well, nevermind I think I get it. 
+> > 
+> > Reverting opens https://bugzilla.kernel.org/show_bug.cgi?id=35532 again.  
+> > 
+> 
+> I don't know what that is since bugzilla.kernel.org is down :)  The 
+> problem is that the memset(), in addition to all the other fields in 
+> lockdep_map, clears the "name" field, which is what the scheduler uses 
+> via lock_set_sublcass() to prevent this lockdep warning.  My initial 
+> speculation seems to be confirmed since either you or Borislav have been 
+> able to reproduce the warning since removing the memset().
+> 
+> Tejun, would you like to revert f59de8992aa6 ("lockdep: Clear whole 
+> lockdep_map on initialization") since it fixes this lockdep warning?
 
-	-hpa
+Hmmm... the issue was that kmemcheck noticed that memory regions in
+lockdep_map are accessed before being set to any value.  I'm feeling
+dim as usual and don't understand what's going on here.  The function
+looks like the following.
 
+
+ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+		       struct lock_class_key *key, int subclass)
+ {
+	 memset(lock, 0, sizeof(*lock));
+
+ #ifdef CONFIG_LOCK_STAT
+	 lock->cpu = raw_smp_processor_id();
+ #endif
+	 if (DEBUG_LOCKS_WARN_ON(!name)) {
+		 lock->name = "NULL";
+		 return;
+	 }
+
+	 lock->name = name;
+
+
+So, according to this thread, the problem is that the memset() clears
+lock->name field, right?  But how can that be a problem?  lock->name
+is always set to either "NULL" or @name.  Why would clearing it before
+setting make any difference?  What am I missing?
+
+Thanks.
+
+-- 
+tejun
