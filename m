@@ -1,227 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab1JTOBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 10:01:55 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51555 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab1JTOBx (ORCPT
+	id S1754462Ab1JTOEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 10:04:49 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40492 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab1JTOEs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 10:01:53 -0400
-X-AuditID: b753bd60-a0ca5ba000005c89-d5-4ea029ce8849
-X-AuditID: b753bd60-a0ca5ba000005c89-d5-4ea029ce8849
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC PATCH v2 2/2] [RESEND] x86: Fix insn decoder for longer
- instruction
-To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, robert.richter@amd.com, ravitillo@lbl.gov,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Thu, 20 Oct 2011 23:01:30 +0900
-Message-ID: <20111020140129.20938.77504.stgit@localhost.localdomain>
-In-Reply-To: <20111019064401.GA2075@elte.hu>
-References: <20111019064401.GA2075@elte.hu>
-User-Agent: StGIT/0.14.3
+	Thu, 20 Oct 2011 10:04:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
+References: <1319041274-18723-1-git-send-email-linus.walleij@stericsson.com>
+	<20111020023140.GC32007@S2100-06.ap.freescale.net>
+	<CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
+Date: Thu, 20 Oct 2011 16:04:47 +0200
+Message-ID: <CACRpkdYCgY9w8UgMKLgxSsu=Veo01-YSKBWndqU_uCTE-GjZuQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: add a generic control interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix x86 insn decoder for hardening against invalid length
-instructions. This adds length checkings for each byte-read
-site and if it exceeds MAX_INSN_SIZE, returns immediately.
-This can happen when decoding unreliable binary.
+On Thu, Oct 20, 2011 at 11:17 AM, Barry Song <21cnbao@gmail.com> wrote:
+> [Shawn]
+>> I like Stephen's idea about having 'u32 param' and let pinctrl drivers
+>> to encode/decode this u32 for their pinctrl controller.  It makes
+>> people's life much easier.
+>
+> A multifunctional API is actually  a bad and hard-to-use API. i agree
+> we can make param u32 instead of enum and let specific driver
+> customizes the param by itself.
 
- For example, without this patch,
+I am hesitant about that idea because it echoes something I have
+heard before, about how every system is so very special.
 
-$ echo  66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 |\
- ./insn_sanity -i -
-Error: Found an access violation:
-Instruction = {
-        .prefixes = {
-                .value = 1711276134, bytes[] = {66, 0, 0, 66},
-                .got = 1, .nbytes = 16},
-        .rex_prefix = {
-                .value = 0, bytes[] = {0, 0, 0, 0},
-                .got = 1, .nbytes = 0},
-        .vex_prefix = {
-                .value = 0, bytes[] = {0, 0, 0, 0},
-                .got = 1, .nbytes = 0},
-        .opcode = {
-                .value = 144, bytes[] = {90, 0, 0, 0},
-                .got = 1, .nbytes = 1},
-...
-        .attr = 0, .opnd_bytes = 2, .addr_bytes = 4,
-        .length = 17, .x86_64 = 0, .kaddr = 0x7fffedc67ae0}
-You can reproduce this with below command(s);
- $ echo  66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 | ./insn_sanity -i -
-Failure: decoded and checked 1 given instructions with 1 errors (seed:0x0)
+Greg had this very famous quote, "yes you're special, just like
+everyone else"...
 
+I think (and of course this may be completely wrong, but it's my
+working hypthesis) that the things that software wants to do to
+pins are:
 
- With this patch;
+- Enumerable, not vast
 
+- Actually often very much the same things, just named
+  differently
 
- $ echo  66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 |\
-  ./insn_sanity -i -
- Success: decoded and checked 1 given instructions with 0
- errors (seed:0x0)
+- Often possible to express in terms of SI-units (Ohms, nanoseconds,
+  Farad, Volt per sec, ...)
 
+> But if there are some common params, for example, PULL, OC/OD,
+> WAKEUP_ENABLE, which almost all platforms need,  why don't we make
+> them have common definitions like:
+>
+> #define PIN_CONFIG_PULL                             0
+> #define PIN_CONFIG_OPEN_DRAIN                1
+> ....
+> #define PIN_CONFIG_USER                            5 (in case)
+>
+> if one platform has config not in the up list, then:
+>
+> #define PIN_CONFIG_TERGA_XXX                PIN_CONFIG_USER
+> #define PIN_CONFIG_TERGA_YYY                (PIN_CONFIG_USER + 1)
+>
+> without the common definition from  PIN_CONFIG_PULL to
+> PIN_CONFIG_USER, many platforms will need to definite them repeatedly.
+> that is what we hate.
 
-Caller can check whether it happened by insn_complete().
+In the patch you're quoting:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
+>>> + * @PIN_CONFIG_END: this is the last enumerator for pin configurations, if
+>>> + *   you need to pass in custom configurations to the pin controller, use
+>>> + *   PIN_CONFIG_END+1 as the base offset
 
- arch/x86/lib/insn.c |   48 +++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 43 insertions(+), 5 deletions(-)
+So you begin your custom enum like this:
 
-diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-index 9f33b98..374562e 100644
---- a/arch/x86/lib/insn.c
-+++ b/arch/x86/lib/insn.c
-@@ -22,14 +22,23 @@
- #include <asm/inat.h>
- #include <asm/insn.h>
- 
--#define get_next(t, insn)	\
--	({t r; r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
-+/* Verify next sizeof(t) bytes can be on the same instruction */
-+#define validate_next(t, insn, n)	\
-+	((insn)->next_byte + sizeof(t) + n - (insn)->kaddr <= MAX_INSN_SIZE)
-+
-+#define __get_next(t, insn)	\
-+	({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
-+
-+#define __peek_nbyte_next(t, insn, n)	\
-+	({ t r = *(t*)((insn)->next_byte + n); r; })
- 
--#define peek_next(t, insn)	\
--	({t r; r = *(t*)insn->next_byte; r; })
-+#define get_next(t, insn)	\
-+	({ if (unlikely(!validate_next(t, insn, 0))) goto err_out; __get_next(t, insn); })
- 
- #define peek_nbyte_next(t, insn, n)	\
--	({t r; r = *(t*)((insn)->next_byte + n); r; })
-+	({ if (unlikely(!validate_next(t, insn, n))) goto err_out; __peek_nbyte_next(t, insn, n); })
-+
-+#define peek_next(t, insn)	peek_nbyte_next(t, insn, 0)
- 
- /**
-  * insn_init() - initialize struct insn
-@@ -158,6 +167,8 @@ vex_end:
- 	insn->vex_prefix.got = 1;
- 
- 	prefixes->got = 1;
-+
-+err_out:
- 	return;
- }
- 
-@@ -208,6 +219,9 @@ void insn_get_opcode(struct insn *insn)
- 		insn->attr = 0;	/* This instruction is bad */
- end:
- 	opcode->got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /**
-@@ -241,6 +255,9 @@ void insn_get_modrm(struct insn *insn)
- 	if (insn->x86_64 && inat_is_force64(insn->attr))
- 		insn->opnd_bytes = 8;
- 	modrm->got = 1;
-+
-+err_out:
-+	return;
- }
- 
- 
-@@ -290,6 +307,9 @@ void insn_get_sib(struct insn *insn)
- 		}
- 	}
- 	insn->sib.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- 
-@@ -351,6 +371,9 @@ void insn_get_displacement(struct insn *insn)
- 	}
- out:
- 	insn->displacement.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /* Decode moffset16/32/64 */
-@@ -373,6 +396,9 @@ static void __get_moffset(struct insn *insn)
- 		break;
- 	}
- 	insn->moffset1.got = insn->moffset2.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /* Decode imm v32(Iz) */
-@@ -389,6 +415,9 @@ static void __get_immv32(struct insn *insn)
- 		insn->immediate.nbytes = 4;
- 		break;
- 	}
-+
-+err_out:
-+	return;
- }
- 
- /* Decode imm v64(Iv/Ov) */
-@@ -411,6 +440,9 @@ static void __get_immv(struct insn *insn)
- 		break;
- 	}
- 	insn->immediate1.got = insn->immediate2.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /* Decode ptr16:16/32(Ap) */
-@@ -432,6 +464,9 @@ static void __get_immptr(struct insn *insn)
- 	insn->immediate2.value = get_next(unsigned short, insn);
- 	insn->immediate2.nbytes = 2;
- 	insn->immediate1.got = insn->immediate2.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /**
-@@ -496,6 +531,9 @@ void insn_get_immediate(struct insn *insn)
- 	}
- done:
- 	insn->immediate.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /**
+#include <linus/pinctrl/pinctrl.h>
 
+enum foo_pin_config {
+    PIN_CONFIG_FOO_XXX = PIN_CONFIG_END+1,
+    PIN_CONFIG_FOO_YYY,
+    ....
+};
+
+Enums are good because in theory they give some
+type safety. (Maybe not in practice. Hm.) But lecture me a bit
+about why this is such a bad idea and I will change them into
+#define:s but I want a solid case for it first.
+
+Maybe PIN_CONFIG_END is not such a good name for the
+last enum since there are more configs in the expanded cases...
+
+Yet again, can I have some examples of what
+PIN_CONFIG_USER may *actually* be, which would be
+absolutely impossible to express in some neutral way, and
+ridiculous to have in the generic enum?
+
+There is a lot of things with strange names in some current
+pin controllers/muxes, but strange names doesn't count,
+it has to be a strange concept behind it to be strange for real.
+
+At one point when I was creating pinmux I was told this was
+pointless because one platform was doing pinmux, another
+padmux, a third "mission modes", a fourth "alternat functions".
+But it turns out that these are just different names for one and
+the same thing, so I have this maybe naïve idea that pin
+control/bias/drive/etc may largely be the same.
+
+Example setting a pin "floating", "high impedance", tristate",
+"high-Z" or "off" turns out to often mean the exact same thing.
+
+Yours,
+Linus Walleij
