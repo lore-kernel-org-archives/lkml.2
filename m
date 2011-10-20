@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab1JTIiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 04:38:20 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33831 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab1JTIiS (ORCPT
+	id S1756019Ab1JTIpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 04:45:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49645 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab1JTIpl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 04:38:18 -0400
-Message-ID: <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-Date: Thu, 20 Oct 2011 10:38:13 +0200
-In-Reply-To: <1319095929.23426.180.camel@debian>
-References: <1318237851.27949.190.camel@debian>
-	 <alpine.DEB.2.00.1110101026080.16264@router.home>
-	 <1318324774.27949.693.camel@debian>
-	 <alpine.DEB.2.00.1110110910480.3388@router.home>
-	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
-	 <alpine.DEB.2.00.1110120910540.26610@router.home>
-	 <1318908091.23426.52.camel@debian>
-	 <alpine.DEB.2.00.1110180932330.687@router.home>
-	 <1319016218.23426.104.camel@debian>
-	 <alpine.DEB.2.00.1110191033480.24001@router.home>
-	 <1319078687.23426.146.camel@debian>
-	 <1319087281.8416.45.camel@edumazet-laptop>
-	 <1319095929.23426.180.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 20 Oct 2011 04:45:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111020081451.GC14464@moon>
+References: <1319096606-11568-1-git-send-email-ricardo.ribalda@gmail.com>
+ <CAOJsxLGZLx-Wybi=BM41pN5X5Xw=qw4dEC_q=Qy903GpKj6Nzw@mail.gmail.com> <20111020081451.GC14464@moon>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Thu, 20 Oct 2011 10:45:01 +0200
+Message-ID: <CAPybu_3kqqtfv1XyhruS3AMiRbd=wdMUr4rJL1UmDG_+z2m9jA@mail.gmail.com>
+Subject: Re: [PATCH] tools/perf: Increase symbol KSYM_NAME_LEN size
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
+        anton@samba.org, daahern@cisco.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 octobre 2011 Ã  15:32 +0800, Alex,Shi a Ã©crit :
-> percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-> for further code clean up.
-> 
-> And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-> performance since __this_cpu_xxx has no redundant preempt_disable()
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  net/netfilter/xt_TEE.c |   12 ++++++------
->  net/socket.c           |    4 ++--
->  2 files changed, 8 insertions(+), 8 deletions(-)
+That is 4gb size :S..... I have tried making a dummy program
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+int tttttt......ttttt (int a, int b){
+return a+b;
+}
 
-Thanks !
+int main(int arg, char *[]argv){
+    return tttt....tttt(1,2);
+}
+
+and it has worked at least until t^16384 both in gcc and in gdb, and I
+guess it would have continue working until much more.
+
+Right now, I think we can increase it until 512, to be on the safe
+side, and keep it simple. What do you think?
+
+  best regards
+
+On Thu, Oct 20, 2011 at 10:14, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Thu, Oct 20, 2011 at 10:54:40AM +0300, Pekka Enberg wrote:
+> ...
+>>
+>> Is there some specified maximum length for symbols (e.g. in ELF spec)?
+>> I'm OK with the patch but I'd prefer we didn't bump up the number
+>> blindly there's something "official" number we can use.
+>>
+>>                         Pekka
+>
+> Elf restricts offsets in string table by 4 bytes, so probably the option
+> is to have complete .strtab being read somewhere and use indices when needed.
+> (note I didn't check where perf tool need those names).
+>
+>        Cyrill
+>
 
 
+
+-- 
+Ricardo Ribalda
