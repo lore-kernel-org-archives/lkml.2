@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab1JTNTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 09:19:14 -0400
-Received: from comu.ring0.de ([46.4.151.82]:47162 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433Ab1JTNTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 09:19:13 -0400
-X-Greylist: delayed 1323 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Oct 2011 09:19:12 EDT
-X-Spam-Report: * -2.6 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.1 RDNS_NONE Delivered to trusted network by a host with no rDNS
-	*  0.1 AWL AWL: From: address is in the auto white-list
-Date: Thu, 20 Oct 2011 14:57:05 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, govindraj.ti@gmail.com,
-        pawel.szyszuk@stericsson.com, sjur.brandeland@stericsson.com,
-        peter_henn@gmx.de
-Subject: Re: [RFC PATCHv5 0/7] HSI framework and drivers
-Message-ID: <20111020125705.GA2121@earth.universe>
-References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
+	id S1754142Ab1JTNUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 09:20:55 -0400
+Received: from mx.kernel.net.pl ([217.73.31.3]:39438 "EHLO an2.kernel.pl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751740Ab1JTNUy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 09:20:54 -0400
+From: Witold Krecicki <wpk@culm.net>
+To: Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 1/6] cgroup: add cgroup.isolation_root flag entry to the cgroup filesystem
+Date: Thu, 20 Oct 2011 15:20:44 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.6.2; x86_64; ; )
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+References: <1317382585-12172-1-git-send-email-wpk@culm.net> <1317382585-12172-2-git-send-email-wpk@culm.net> <CALdu-PDeW4PfGPePv6gUNihq1J0kKKWEm=6jm5OphcQY9+Jnvg@mail.gmail.com>
+In-Reply-To: <CALdu-PDeW4PfGPePv6gUNihq1J0kKKWEm=6jm5OphcQY9+Jnvg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
-Content-Disposition: inline
-In-Reply-To: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110201520.45234.wpk@culm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dnia czwartek, 20 października 2011 o 12:12:37 Paul Menage napisał(a):
+> On Fri, Sep 30, 2011 at 4:36 AM, Witold Krecicki <wpk@culm.net> wrote:
+> > + */
+> > +static struct cgroup *cgroup_get_isolation_root(struct cgroup *cgrp)
+> > +{
+> > +       for (;;) {
+> > +               if (!cgrp)
+> > +                       return NULL;
+> > +               if (isolation_root(cgrp))
+> > +                       return cgrp;
+> > +               cgrp = cgrp->parent;
+> > +       }
+> > +       return NULL;
+> > +}
+> 
+> What are the locking requirements for cgroup_get_isolation_root?
 
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+IMHO none - this function is performed only if there is a task in a cgroup, so 
+cgroup cannot be removed (and a task cannot leave cgroup) - also, you cannot 
+change isolation_root flag if the isolation_root is busy. 
 
-Hi,
 
-What's the status of this patch? Are there plans to merge it into
-3.2?
+In here we really need locking, after fixes:
+static int cgroup_isolation_root_write(struct cgroup *cgrp,
+                                     struct cftype *cft, 
+                                     u64 val)
+{
+        if (cgrp->parent == NULL)
+                return -EPERM; 
+        cgroup_lock();
+        if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
+                cgroup_unlock();
+                return -EBUSY;
+        }
+        if (val)
+                set_bit(CGRP_ISOLATION_ROOT, &cgrp->flags);
+        else
+                clear_bit(CGRP_ISOLATION_ROOT, &cgrp->flags);
+        cgroup_unlock();
+        return 0;
+}
+> Arguably we need  to take a lock in these two functions, both to guard
+> against racing with a creation of a child cgroup or moving in a task
+> while trying to set its isolation root flag, and to synchronize
+> readers and writers of the flag. But to be honest I think we can say
+> that this is one of those cases where we can say that the sysadmin is
+> dumb enough to have races between his container setup code and his
+> container population code the result is undefined, as long as we don't
+> actually crash or leak :-)
+I guess that fixes that problem?
+-- 
+WK
 
--- Sebastian
-
---J/dobhs11T7y2rNN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOoBqhAAoJENju1/PIO/qasiUQAIKofyjaxeTtyEKsYj0CmWaz
-IsbBMl7laPxhGYsoR60nq0QrUyyFMnZ/LLboLbdla0dmiraaCo/ajKJR9lG931Oh
-6bFw44igbJDaXXLVH6JgamNMCQfD+k5vUu8TFvO4OOvR3SFVbGHIaHbC8pl7dVHP
-0TwRg/ipSy3ZDWLClevfAODyaMUpSwsvdKd4yazn42lVp9bhPPeVxSgBx1wZEBLw
-+yH7fG7Ew+sO7OgEIHehmM9kEBJQN7RxHA3qvGO0culFkDdCSS27nfxQvBbEx8Xu
-mjxSkK0CycBOnDguAhrGH5LmB6Elce2Zm7N5Xgq4ZZQyZr/W6J6rnyc0c5GSefZQ
-dwoyRE9L7GMr5al3v8gdoxOm8yL4XpY6ntENoI+z81Lp+JwcunOxcJRkgyA2hJCw
-imbYZDcsGkGNnEmduWS/C4GDu0wNw3OU3TmmeFWFvLSvzmvT/tIm8kVPfaGUv/YZ
-AH0hgYBR5XAB8to0r3mmEkMS4M9Fr+JqPl8Ph2EZoEtaV7D/2zVqfU+ojyH3sM9N
-SBKXv1CrhmJ2M9RBZp7dFV4Uh73pZWUxoNiOh+2Ov16k4J2e5fX//+TmQjyITlKE
-E0yduMGTxfVXWxZ5blkWDr8MJGqOFxrxI8rtVUxoUOI5TlhRX7AC31xvH1jIGkdN
-I0Wrvv4c1cEka+60Tydg
-=8564
------END PGP SIGNATURE-----
-
---J/dobhs11T7y2rNN--
