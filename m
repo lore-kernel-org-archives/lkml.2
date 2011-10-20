@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab1JTLCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 07:02:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38327 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab1JTLCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 07:02:17 -0400
-Date: Thu, 20 Oct 2011 13:02:14 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Zeng Zhaoming <zhaoming.zeng@freescale.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: Use SGTL5000_LINREG_VDDD_MASK instead of
- hardcoded mask value
-Message-ID: <20111020110214.GC2379@pengutronix.de>
-References: <1319107769.8866.3.camel@phoenix>
+	id S1754217Ab1JTLGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 07:06:00 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53856 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab1JTLF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 07:05:58 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+In-Reply-To: <20111020091946.GA23773@infradead.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019222021.GB1874@fieldses.org> <87k4805alx.fsf@linux.vnet.ibm.com> <20111020091434.GC5444@fieldses.org> <20111020091946.GA23773@infradead.org>
+User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 20 Oct 2011 16:32:04 +0530
+Message-ID: <87aa8w53kj.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4ZLFUWh1odzi/v6L"
-Content-Disposition: inline
-In-Reply-To: <1319107769.8866.3.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11102011-3534-0000-0000-000000C7324F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Oct 2011 05:19:46 -0400, Christoph Hellwig <hch@infradead.org> wrote:
+> On Thu, Oct 20, 2011 at 05:14:34AM -0400, J. Bruce Fields wrote:
+> > > > Does it really make sense to use a string here just to pick between the
+> > > > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
+> > > > integer?  Is the goal to expand this somehow eventually?
+> > > 
+> 
+> > > I guess Andreas wanted the disk layout to be able to store user@domain
+> > > format if needed.
+> > 
+> > Is that likely?  For that to be useful, tasks would need to be able to
+> > run as user@domain strings.  And we'd probably want owners and groups to
+> > also be user@domain strings.
+> > 
+> > The container people seem to eventually want to add some kind of
+> > namespace identifier everywhere:
+> > 
+> > 	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
+> > 
+> > in which case I guess we'd likely end up with (uid, user namespace id)
+> > instead of user@domain?
+> 
+> 
+> Storing strings is an extremly stupid idea.  The only thing that would
+> make sense would be storing a windows-style 128-bit GUID.
+> 
 
---4ZLFUWh1odzi/v6L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+How about updating the richacl_xattr as below 
 
-On Thu, Oct 20, 2011 at 06:49:29PM +0800, Axel Lin wrote:
-> We have defined SGTL5000_LINREG_VDDD_MASK in sgtl5000.h,
-> use it instead of hardcoded (0x1 << 4) - 1 for the mask.
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+struct richace_xattr {
+	__le16		e_type;
+	__le16		e_flags;
+	__le32		e_mask;
+	__le32		e_size;
+	u8		e_id[0];
+};
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+now e_flags can contain ACE4_SPECIAL_WHO to indicate value in e_id
+indicate special who values (which could be 1 byte value indicating
+OWNER@, GROUP@ or EVERYONE@), ACE4_UNIXID_WHO, to indicate value
+in e_id is the little endian value of unix id. ACE_WINSID_WHO to
+indicate e_id is the 128 bit array containing SID value. ?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+-aneesh
 
---4ZLFUWh1odzi/v6L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk6f/7YACgkQD27XaX1/VRujkQCgvbBT+W0D/cvxeU1/RwizmSRl
-TN4AniW36F+60OJpzwudfi4Q0q56H6+J
-=A16E
------END PGP SIGNATURE-----
-
---4ZLFUWh1odzi/v6L--
