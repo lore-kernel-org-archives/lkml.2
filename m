@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab1JTJAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:00:52 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56906 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab1JTJAu (ORCPT
+	id S1756066Ab1JTJB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:01:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:32805 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab1JTJBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:00:50 -0400
-Date: Thu, 20 Oct 2011 04:59:33 -0400 (EDT)
-Message-Id: <20111020.045933.1246070642138310107.davem@davemloft.net>
-To: Ian.Campbell@citrix.com
-Cc: akpm@linux-foundation.org, rientjes@google.com,
-        linux-kernel@vger.kernel.org, hch@infradead.org, jaxboe@fusionio.com,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: add a "struct page_frag" type containing a page,
- offset and length
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1318927778.16132.52.camel@zakaz.uk.xensource.com>
-References: <20111013142201.355f9afc.akpm@linux-foundation.org>
-	<1318575363.11016.8.camel@dagon.hellion.org.uk>
-	<1318927778.16132.52.camel@zakaz.uk.xensource.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 01:59:35 -0700 (PDT)
+	Thu, 20 Oct 2011 05:01:54 -0400
+X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
+   d="scan'208";a="167568447"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Miller <davem@davemloft.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] mm: add a "struct page_frag" type containing a page, offset and length
+Date: Thu, 20 Oct 2011 10:01:44 +0100
+Message-ID: <1319101309-28431-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1319101275.3385.129.camel@zakaz.uk.xensource.com>
+References: <1319101275.3385.129.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
-Date: Tue, 18 Oct 2011 09:49:38 +0100
+A few network drivers currently use skb_frag_struct for this purpose but I have
+patches which add additional fields and semantics there which these other uses
+do not want.
 
-> Subject: [PATCH] mm: add a "struct page_frag" type containing a page, offset and length
-> 
-> A few network drivers currently use skb_frag_struct for this purpose but I have
-> patches which add additional fields and semantics there which these other uses
-> do not want.
-> 
-> A structure for reference sub-page regions seems like a generally useful thing
-> so do so instead of adding a network subsystem specific structure.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Acked-by: Jens Axboe <jaxboe@fusionio.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+A structure for reference sub-page regions seems like a generally useful thing
+so do so instead of adding a network subsystem specific structure.
 
-Applied, thanks Ian.
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Jens Axboe <jaxboe@fusionio.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+[since v1: s/struct subpage/struct page_frag/ on advice from Christoph]
+[since v2: s/page_offset/offset/ on advice from Andrew]
+---
+ include/linux/mm_types.h |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-Please respin your skbfrag patches.
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 774b895..29971a5 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -135,6 +135,17 @@ struct page {
+ #endif
+ ;
+ 
++struct page_frag {
++	struct page *page;
++#if (BITS_PER_LONG > 32) || (PAGE_SIZE >= 65536)
++	__u32 offset;
++	__u32 size;
++#else
++	__u16 offset;
++	__u16 size;
++#endif
++};
++
+ typedef unsigned long __nocast vm_flags_t;
+ 
+ /*
+-- 
+1.7.2.5
 
-Thanks again.
