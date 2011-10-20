@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab1JTKjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:39:18 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45862 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635Ab1JTKjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:39:17 -0400
+	id S1756565Ab1JTKpu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:45:50 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:44130 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300Ab1JTKpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:45:49 -0400
+X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
+   d="scan'208";a="18393781"
+From: David Vrabel <david.vrabel@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/4] xen: map foreign pages for shared rings by updating the PTEs directly
+Date: Thu, 20 Oct 2011 11:45:15 +0100
+Message-ID: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-In-Reply-To: <201110201225.59627.wpk@culm.net>
-References: <1317382585-12172-1-git-send-email-wpk@culm.net>
- <CALdu-PDCxS49_GBBUQUskotKb_46O31YM8Tx+cniGfBa5X169g@mail.gmail.com> <201110201225.59627.wpk@culm.net>
-From: Paul Menage <paul@paulmenage.org>
-Date: Thu, 20 Oct 2011 03:38:57 -0700
-X-Google-Sender-Auth: IW2YKvAYoheTP04czGwjv1ig1fw
-Message-ID: <CALdu-PD59bHDBP5Tbni9y9FYvWxjvbs0Orizv8RSSZmsbcJumg@mail.gmail.com>
-Subject: Re: [PATCH 0/6] cgroup: add isolation_root flag, poor man's
- namespaces for cgroups
-To: Witold Krecicki <wpk@culm.net>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Matt Helsley <matthltc@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 3:25 AM, Witold Krecicki <wpk@culm.net> wrote:
-> I tried to make it as simple as possible - and this approach (looking at patch
-> length) seemed to be the simplest (we really don't care about 'other' cgroups
-> that might appear).
+This series of patches allows the vmalloc_sync_all() to be removed
+from alloc_vm_area() by getting the hypervisor to update the PTEs (in
+init_mm) directly rather than having the hypervisor look in the
+current page tables to find the PTEs.
 
-Right, this is a nicely simple approach that gets rid of some nasty
-incompatibilities between containers and cgroups, so it's a great
-first step. But it still limits what containers can do with cgroups
-(in terms of combining subsystems in hierarchies), hence the idea that
-we plan what we might want to do later, and at least make the API
-something that could also accommodate the possible future. (In the
-same sense that the cgroups mount API has always supported the
-possibility of mounting a subsystem on multiple hierarchies at once,
-even if the patches to implement it didn't appear for another year or
-so and are still languishing and bit-rotting).
+Once the hypervisor has updated the PTEs, the normal mechanism of
+syncing the page tables after a fault works as expected.
 
-> Other approaches would probably require major rewrites of cgroups code.
+This mechanism doesn't currently work on the ia64 port as that does
+not support the GNTMAP_contains_pte flag.
 
-Not major rewrites, really, but definitely some fiddly replumbing.
+Andrew, patch 4 (xen: map foreign pages for shared rings by updating
+the PTEs directly) depends on patch 1 so it's probably best to go via
+Konrad's Xen tree with your acked-by.
 
-Paul
+David
+
+David Vrabel (4):
+  xen: use generic functions instead of xen_{alloc,free}_vm_area()
+  block: xen-blkback: use API provided by xenbus module to map rings
+  net: xen-netback: use API provided by xenbus module to map rings
+  xen: map foreign pages for shared rings by updating the PTEs directly
+
+ arch/ia64/include/asm/xen/grant_table.h |   29 -----------
+ arch/ia64/xen/grant-table.c             |   62 ------------------------
+ arch/x86/include/asm/xen/grant_table.h  |    7 ---
+ arch/x86/xen/grant-table.c              |    2 +-
+ drivers/block/xen-blkback/common.h      |    5 +--
+ drivers/block/xen-blkback/xenbus.c      |   54 +++------------------
+ drivers/net/xen-netback/common.h        |   11 ++--
+ drivers/net/xen-netback/netback.c       |   80 +++++++------------------------
+ drivers/xen/xenbus/xenbus_client.c      |   15 ++++--
+ include/linux/vmalloc.h                 |    2 +-
+ include/xen/grant_table.h               |    1 -
+ mm/vmalloc.c                            |   27 +++++-----
+ 12 files changed, 55 insertions(+), 240 deletions(-)
+ delete mode 100644 arch/ia64/include/asm/xen/grant_table.h
+ delete mode 100644 arch/x86/include/asm/xen/grant_table.h
+
+-- 
+1.7.2.5
+
