@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab1JTFUC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 01:20:02 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23180 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab1JTFUA (ORCPT
+	id S1753637Ab1JTFU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 01:20:29 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:42503 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753607Ab1JTFU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 01:20:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=xRsLhKrPdyDHllNZW1av2gS0bItrKjUAbh8R19mD+mBVZlFgtv+GiFX2/bRAmBcRX
-	IDWYGY3mosH5KjwlSzmyw==
-Date: Wed, 19 Oct 2011 22:19:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mel Gorman <mgorman@suse.de>
-cc: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        nfont@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly reserved
- on a per-section basis
-In-Reply-To: <20111017143820.GA7626@suse.de>
-Message-ID: <alpine.DEB.2.00.1110192219390.4618@chino.kir.corp.google.com>
-References: <20111010071119.GE6418@suse.de> <20111010150038.ac161977.akpm@linux-foundation.org> <20111010232403.GA30513@kroah.com> <20111010162813.7a470ae4.akpm@linux-foundation.org> <20111011072406.GA2503@suse.de> <20111017143820.GA7626@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 20 Oct 2011 01:20:26 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 08/26] vfs: Add new file and directory create permission flags
+In-Reply-To: <20111019164216.GC30864@fieldses.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019164216.GC30864@fieldses.org>
+User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 20 Oct 2011 10:50:08 +0530
+Message-ID: <87r5285jef.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11102005-6148-0000-0000-000000742CA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Oct 2011, Mel Gorman wrote:
+On Wed, 19 Oct 2011 12:42:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Tue, Oct 18, 2011 at 09:02:43PM +0530, Aneesh Kumar K.V wrote:
+> > From: Andreas Gruenbacher <agruen@kernel.org>
+> > 
+> > Some permission models distinguish between the permission to create a
+> > non-directory and a directory.  Pass this information down to
+> > inode_permission() as mask flags
+> ...
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index f3ebf86..60361c6 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -67,6 +67,8 @@ struct inodes_stat_t {
+> >  #define MAY_CHDIR		0x00000040
+> >  /* called from RCU mode, don't block */
+> >  #define MAY_NOT_BLOCK		0x00000080
+> > +#define MAY_CREATE_FILE		0x00000100
+> > +#define MAY_CREATE_DIR		0x00000200
+> 
+> Hm, are the flags in fs/nfsd/vfs.h going to need fixing up?
+> 
+> Looking at the nfsd code....  No, I guess it's OK, nfsd does
+> 
+> 	err = inode_permission(inode, acc & (MAY_READ|MAY_WRITE|MAY_EXEC));
+> 
 
-> (Resending as I am not seeing it in -next so maybe it got lost)
-> 
-> mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
-> 
-> It is expected that memory being brought online is PageReserved
-> similar to what happens when the page allocator is being brought up.
-> Memory is onlined in "memory blocks" which consist of one or more
-> sections. Unfortunately, the code that verifies PageReserved is
-> currently assuming that the memmap backing all these pages is virtually
-> contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
-> As a result, memory hot-add is failing on those configurations with
-> the message;
-> 
-> kernel: section number XXX page number 256 not reserved, was it already online?
-> 
-> This patch updates the PageReserved check to lookup struct page once
-> per section to guarantee the correct struct page is being checked.
-> 
-> [Check pages within sections properly: rientjes@google.com]
-> [original patch by: nfont@linux.vnet.ibm.com]
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+nfsd bits need fixing once nfs starts doing richacl permission check.
+The changes I did can be found at
+https://github.com/kvaneesh/linux/commits/richacl-fullset/
 
-Acked-by: David Rientjes <rientjes@google.com>
+
+> So we can wait to fix up any collisions until we need to pass these
+> extra bits.
+> 
+
+Yes. And that we will do once we get the VFS and local file system
+changes upstream.
+
+-aneesh
+
