@@ -1,268 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab1JTR1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 13:27:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44453 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab1JTR1t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 13:27:49 -0400
-From: Naohiro Aota <naota@elisp.net>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: Naohiro Aota <naota@elisp.net>, masami.hiramatsu.pt@hitachi.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH][RFC] ipconfig: Add new kernel parameter to force MAC address
-Date: Fri, 21 Oct 2011 02:27:30 +0900
-Message-ID: <878vofr2t9.fsf@elisp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756892Ab1JTR3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 13:29:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59420 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754196Ab1JTR3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 13:29:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,380,1315206000"; 
+   d="scan'208";a="75869872"
+Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
+ idle load balancing scalability
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Oct 2011 10:31:40 -0700
+In-Reply-To: <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
+References: <1319060737.2604.38.camel@schen9-DESK>
+	 <m2wrc0xpbg.fsf@firstfloor.org>
+	 <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1319131900.5622.25.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some boards (such as Pandaboard) that doesn't have
-persistent MAC address and so the kernel generate random MAC for
-it. Usually you can configure the device to use some static MAC
-address with userland tools. However it's not possible when you are
-using NFS root since the kernel already set the random MAC address and
-you cannot change it after system boot up process.
+On Thu, 2011-10-20 at 05:26 -0700, Venki Pallipadi wrote:
+> On Wed, Oct 19, 2011 at 9:24 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> > Tim Chen <tim.c.chen@linux.intel.com> writes:
+> >>   */
+> >>  static struct {
+> >> -     atomic_t load_balancer;
+> >> -     atomic_t first_pick_cpu;
+> >> -     atomic_t second_pick_cpu;
+> >> -     cpumask_var_t idle_cpus_mask;
+> >> +     atomic_t load_balancer ____cacheline_aligned;
+> >> +     atomic_t first_pick_cpu ____cacheline_aligned;
+> >> +     atomic_t second_pick_cpu ____cacheline_aligned;
+> >> +     cpumask_var_t idle_cpus_mask ____cacheline_aligned;
+> >
+> > On large configs idle_cpu_masks may be allocated.  May need
+> > more changes to tell the allocator to cache align/pad too?
+> >
+> 
+> An alternate approach is to split this struct per node/socket and do
+> the nohz idle balancing logic at that level. That should be more
+> scalable in terms of nohz balancing (ensure one CPU wont be doing nohz
+> balancing for huge number of idle CPUs). I had looked at that approach
+> couple of years earlier and couldn't measure that much of a gain. May
+> be it is time to revisit that with increased core count.
 
-This patch add new kernel parameter "mac". When this parameter is
-used, the kernel auto configuration routine force the network device
-to use the specified MAC address.
+I am actually looking at it. This is a quick fix for the meantime.
 
-Signed-off-by: Naohiro Aota <naota@elisp.net>
----
+Even with this cacheline aligned, the first_pick_cpu and second_pick_cpu
+cacheline bouncing is still causing ~8% more performance impact on this
+synthetic lat_ctx heavy workload. For this experiment to measure the
+potential scope we have here, We left the cacheline bouncing associated
+with the  nohz.idle_cpus_mask update in place.
 
-Here is Pandaboard block diagram. http://pandaboard.org/node/223/
-
-As you can see, the ethernet device is connected via USB so that the
-kernel use smsc95xx to configure this device. Since the device lacks
-EEPROM, it doesn't have its own MAC and the kernel specify some random
-MAC for it.
-
-I've also considered a way to force random_ether_addr() to use kernel
-parameter specified MAC. However there are two problems with it.
-
-1. There are much use of the function among Linux kernel tree so that it
-   should be difficult and hard way to take.
-
-2. If there are more than one ethernet device available, one cannot
-   distinguish which device get the MAC address.
-
- Documentation/filesystems/nfs/nfsroot.txt |    8 +++
- Documentation/kernel-parameters.txt       |    3 +
- net/ipv4/Kconfig                          |   13 ++++
- net/ipv4/ipconfig.c                       |   91 +++++++++++++++++++++++++++++
- 4 files changed, 115 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/filesystems/nfs/nfsroot.txt b/Documentation/filesystems/nfs/nfsroot.txt
-index ffdd9d8..fa2bea3 100644
---- a/Documentation/filesystems/nfs/nfsroot.txt
-+++ b/Documentation/filesystems/nfs/nfsroot.txt
-@@ -159,6 +159,14 @@ ip=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>
-                 Default: any
- 
- 
-+mac=<mac-address>
-+
-+  This parameter tells the kernel to try using the specified MAC
-+  address. This is useful when your network device does not have its
-+  own MAC address and so the kernel select some random address for the
-+  device.
-+
-+
- nfsrootdebug
- 
-   This parameter enables debugging messages to appear in the kernel
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index d6e6724..4bc7d84 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1333,6 +1333,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	ltpc=		[NET]
- 			Format: <io>,<irq>,<dma>
- 
-+	mac=		[IP_PNP]
-+			See Documentation/filesystems/nfs/nfsroot.txt.
-+
- 	machvec=	[IA-64] Force the use of a particular machine-vector
- 			(machvec) in a generic kernel.
- 			Example: machvec=hpzx1_swiotlb
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index cbb505b..ac4da23 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -163,6 +163,19 @@ config IP_PNP_RARP
- 	  operating on your network. Read
- 	  <file:Documentation/filesystems/nfs/nfsroot.txt> for details.
- 
-+config IP_PNP_SPECIFIC_MAC
-+       bool "IP: Specific MAC address support"
-+       depends on IP_PNP
-+       help
-+	 If you want your Linux box to mount its whole root file system (the
-+	 one containing the directory /) from some other computer over the net
-+	 via NFS and you want the IP address of your computer to be discovered
-+	 automatically at boot time using some protocols like DHCP, BOOTP or
-+	 RARP but your network device does not have static MAC address, you may
-+	 want to say Y here. This option add kernel boot parameter mac= to
-+	 specify the MAC address to be used for automatic IP address
-+	 configuration.
-+
- # not yet ready..
- #   bool '    IP: ARP support' CONFIG_IP_PNP_ARP
- config NET_IPIP
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index 472a8c4..9075abc 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -82,6 +82,9 @@
- #if defined(CONFIG_IP_PNP_RARP)
- #define IPCONFIG_RARP
- #endif
-+#if defined(CONFIG_IP_PNP_SPECIFIC_MAC)
-+#define IPCONFIG_MAC
-+#endif
- #if defined(IPCONFIG_BOOTP) || defined(IPCONFIG_RARP)
- #define IPCONFIG_DYNAMIC
- #endif
-@@ -145,6 +148,11 @@ u32 ic_dev_xid;		/* Device under configuration */
- /* vendor class identifier */
- static char vendor_class_identifier[253] __initdata;
- 
-+#ifdef IPCONFIG_MAC
-+static int ic_mac_addr_set __initdata;
-+static u8 ic_mac[ETH_ALEN] __initdata;
-+#endif
-+
- /* Persistent data: */
- 
- static int ic_proto_used;			/* Protocol used, if any */
-@@ -1120,6 +1128,26 @@ drop:
- 
- #ifdef IPCONFIG_DYNAMIC
- 
-+#ifdef IPCONFIG_MAC
-+static int __init change_mac(struct ic_device *d, u8 *new_mac)
-+{
-+	struct sockaddr s_addr;
-+	int err;
-+
-+	memcpy(s_addr.sa_data, new_mac, ETH_ALEN);
-+	s_addr.sa_family = d->dev->type;
-+
-+	rtnl_lock();
-+	dev_change_flags(d->dev, d->flags);
-+	err = dev_set_mac_address(d->dev, &s_addr);
-+	dev_change_flags(d->dev, d->flags | IFF_UP);
-+	rtnl_unlock();
-+	msleep(CONF_POST_OPEN);
-+
-+	return err;
-+}
-+#endif
-+
- static int __init ic_dynamic(void)
- {
- 	int retries;
-@@ -1127,6 +1155,10 @@ static int __init ic_dynamic(void)
- 	unsigned long start_jiffies, timeout, jiff;
- 	int do_bootp = ic_proto_have_if & IC_BOOTP;
- 	int do_rarp = ic_proto_have_if & IC_RARP;
-+#ifdef IPCONFIG_MAC
-+	u8 mac_before[ETH_ALEN];
-+	struct ic_device *mac_changed_dev = NULL;
-+#endif
- 
- 	/*
- 	 * If none of DHCP/BOOTP/RARP was selected, return with an error.
-@@ -1183,6 +1215,31 @@ static int __init ic_dynamic(void)
- 	get_random_bytes(&timeout, sizeof(timeout));
- 	timeout = CONF_BASE_TIMEOUT + (timeout % (unsigned) CONF_TIMEOUT_RANDOM);
- 	for (;;) {
-+#ifdef IPCONFIG_MAC
-+		if (ic_mac_addr_set && d != mac_changed_dev) {
-+			/* restore MAC */
-+			if (mac_changed_dev) {
-+				if (change_mac(mac_changed_dev,
-+					       mac_before) == 0) {
-+					printk(KERN_INFO "MAC address on %s restored to %pM\n",
-+					       mac_changed_dev->dev->name,
-+					       mac_before);
-+				}
-+			}
-+
-+			/* backup MAC */
-+			memcpy(mac_before, d->dev->dev_addr, ETH_ALEN);
-+
-+			mac_changed_dev = NULL;
-+			/* set MAC address to specified one */
-+			if (change_mac(d, ic_mac) == 0) {
-+				printk(KERN_INFO "MAC address on %s changed to %pM\n",
-+				       d->dev->name, ic_mac);
-+				mac_changed_dev = d;
-+			}
-+		}
-+#endif
-+
- 		/* Track the device we are configuring */
- 		ic_dev_xid = d->xid;
- 
-@@ -1242,6 +1299,15 @@ static int __init ic_dynamic(void)
- 
- 	if (!ic_got_reply) {
- 		ic_myaddr = NONE;
-+#ifdef IPCONFIG_MAC
-+		/* restore MAC */
-+		if (mac_changed_dev) {
-+			if (change_mac(mac_changed_dev, mac_before) == 0) {
-+				printk(KERN_INFO "MAC address on %s restored to %pM\n",
-+				       mac_changed_dev->dev->name, mac_before);
-+			}
-+		}
-+#endif
- 		return -1;
- 	}
- 
-@@ -1630,6 +1696,32 @@ static int __init vendor_class_identifier_setup(char *addrs)
- 	return 1;
- }
- 
-+#ifdef IPCONFIG_MAC
-+static int __init mac_config_setup(char *addrs)
-+{
-+	char buf[ETH_ALEN*3];
-+	if (strlcpy(buf, addrs, sizeof(buf)) >= sizeof(buf))
-+		goto fail;
-+
-+	buf[sizeof(buf)-1] = '\0';
-+	if (mac_pton(buf, ic_mac) == 0)
-+		goto fail;
-+
-+	printk(KERN_INFO "Using specified MAC address %s to set Auto-IP\n",
-+	       addrs);
-+
-+	ic_mac_addr_set = 1;
-+	return 1;
-+fail:
-+	printk(KERN_WARNING "Invalid MAC address\n");
-+	return 1;
-+}
-+#endif
-+
- __setup("ip=", ip_auto_config_setup);
- __setup("nfsaddrs=", nfsaddrs_config_setup);
- __setup("dhcpclass=", vendor_class_identifier_setup);
-+#ifdef IPCONFIG_MAC
-+__setup("mac=", mac_config_setup);
-+#endif
-+
--- 
-1.7.6.1
+thanks,
+suresh
 
