@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab1JTGWD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:22:03 -0400
+	id S932519Ab1JTGWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:22:14 -0400
 Received: from mail-gy0-f174.google.com ([209.85.160.174]:64400 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab1JTGV7 (ORCPT
+	with ESMTP id S932477Ab1JTGWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:21:59 -0400
+	Thu, 20 Oct 2011 02:22:11 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 19/24] Staging: comedi: fix warning issue in contec_pci_dio.c
-Date: Thu, 20 Oct 2011 11:49:05 +0530
-Message-Id: <1319091550-2558-19-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 21/24] Staging: comedi: fix warning issue in cb_das16_cs.c
+Date: Thu, 20 Oct 2011 11:49:07 +0530
+Message-Id: <1319091550-2558-21-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,20 +23,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed code bracing style and line over 80 character warning issue.
-Converted printks to dev_printk.
+Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
+converted printks to dev_printk.
 Removed unnecessary printk statements.
+Fixed line over 80 character and NULL initilization issue.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/das16m1.c |   71 +++++++++++++++--------------
- 1 files changed, 37 insertions(+), 34 deletions(-)
+ drivers/staging/comedi/drivers/cb_das16_cs.c |   26 ++++++++++++--------------
+ 1 files changed, 12 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
-index a5ce3b2..19a655a 100644
---- a/drivers/staging/comedi/drivers/das16m1.c
-+++ b/drivers/staging/comedi/drivers/das16m1.c
-@@ -250,7 +250,9 @@ static int das16m1_cmd_test(struct comedi_device *dev,
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 8a1b8a7..71676d8 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -31,6 +31,8 @@ Status: experimental
+ 
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
+ #include "../comedidev.h"
+@@ -99,7 +101,7 @@ static struct comedi_driver driver_das16cs = {
+ 	.detach = das16cs_detach,
+ };
+ 
+-static struct pcmcia_device *cur_dev = NULL;
++static struct pcmcia_device *cur_dev;
+ 
+ static const struct comedi_lrange das16cs_ai_range = { 4, {
+ 							   RANGE(-10, 10),
+@@ -150,7 +152,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
+ 			return das16cs_boards + i;
+ 	}
+ 
+-	printk("unknown board!\n");
++	dev_dbg(dev->hw_dev, "unknown board!\n");
+ 
+ 	return NULL;
+ }
+@@ -163,20 +165,17 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	int ret;
+ 	int i;
+ 
+-	printk("comedi%d: cb_das16_cs: ", dev->minor);
+ 
+ 	link = cur_dev;		/* XXX hack */
+ 	if (!link)
+ 		return -EIO;
+ 
+ 	dev->iobase = link->resource[0]->start;
+-	printk("I/O base=0x%04lx ", dev->iobase);
++	dev_dbg(dev->hw_dev, "I/O base=0x%04lx\n", dev->iobase);
+ 
+-	printk("fingerprint:\n");
++	dev_dbg(dev->hw_dev, "fingerprint:\n");
+ 	for (i = 0; i < 48; i += 2)
+-		printk("%04x ", inw(dev->iobase + i));
+-
+-	printk("\n");
++		dev_dbg(dev->hw_dev, "%04x\n", inw(dev->iobase + i));
+ 
+ 	ret = request_irq(link->irq, das16cs_interrupt,
+ 			  IRQF_SHARED, "cb_das16_cs", dev);
+@@ -185,7 +184,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 
+ 	dev->irq = link->irq;
+ 
+-	printk("irq=%u ", dev->irq);
++	dev_dbg(dev->hw_dev, "irq=%u\n", dev->irq);
+ 
+ 	dev->board_ptr = das16cs_probe(dev, link);
+ 	if (!dev->board_ptr)
+@@ -252,14 +251,11 @@ static int das16cs_attach(struct comedi_device *dev,
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("attached\n");
+-
+ 	return 1;
+ }
+ 
+ static int das16cs_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: das16cs: remove\n", dev->minor);
+ 
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+@@ -312,7 +308,7 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
+ 				break;
+ 		}
+ 		if (to == TIMEOUT) {
+-			printk("cb_das16_cs: ai timeout\n");
++			dev_err(dev->hw_dev, "ai timeout\n");
+ 			return -ETIME;
+ 		}
+ 		data[i] = (unsigned short)inw(dev->iobase + 0);
+@@ -370,7 +366,9 @@ static int das16cs_ai_cmdtest(struct comedi_device *dev,
  	if (err)
  		return 1;
  
@@ -44,164 +129,9 @@ index a5ce3b2..19a655a 100644
 +	/*
 +	 * step 2: make sure trigger sources are unique and mutually compatible
 +	 */
- 	if (cmd->stop_src != TRIG_COUNT && cmd->stop_src != TRIG_NONE)
- 		err++;
- 	if (cmd->start_src != TRIG_NOW && cmd->start_src != TRIG_EXT)
-@@ -320,7 +322,10 @@ static int das16m1_cmd_test(struct comedi_device *dev,
- 	/*  check chanlist against board's peculiarities */
- 	if (cmd->chanlist && cmd->chanlist_len > 1) {
- 		for (i = 0; i < cmd->chanlist_len; i++) {
--			/*  even/odd channels must go into even/odd queue addresses */
-+			/*
-+			 * even/odd channels must go into even/odd queue
-+			 * addresses
-+			 */
- 			if ((i % 2) != (CR_CHAN(cmd->chanlist[i]) % 2)) {
- 				comedi_error(dev, "bad chanlist:\n"
- 					     " even/odd channels must go have even/odd chanlist indices");
-@@ -384,20 +389,18 @@ static int das16m1_cmd_exec(struct comedi_device *dev,
- 	byte = 0;
- 	/* if we are using external start trigger (also board dislikes having
- 	 * both start and conversion triggers external simultaneously) */
--	if (cmd->start_src == TRIG_EXT && cmd->convert_src != TRIG_EXT) {
-+	if (cmd->start_src == TRIG_EXT && cmd->convert_src != TRIG_EXT)
- 		byte |= EXT_TRIG_BIT;
--	}
- 	outb(byte, dev->iobase + DAS16M1_CS);
- 	/* clear interrupt bit */
- 	outb(0, dev->iobase + DAS16M1_CLEAR_INTR);
  
- 	/* enable interrupts and internal pacer */
- 	devpriv->control_state &= ~PACER_MASK;
--	if (cmd->convert_src == TRIG_TIMER) {
-+	if (cmd->convert_src == TRIG_TIMER)
- 		devpriv->control_state |= INT_PACER;
--	} else {
-+	else
- 		devpriv->control_state |= EXT_PACER;
--	}
- 	devpriv->control_state |= INTE;
- 	outb(devpriv->control_state, dev->iobase + DAS16M1_INTR_CONTROL);
- 
-@@ -531,9 +534,8 @@ static void munge_sample_array(short *array, unsigned int num_elements)
- {
- 	unsigned int i;
- 
--	for (i = 0; i < num_elements; i++) {
-+	for (i = 0; i < num_elements; i++)
- 		array[i] = munge_sample(array[i]);
--	}
- }
- 
- static void das16m1_handler(struct comedi_device *dev, unsigned int status)
-@@ -556,12 +558,16 @@ static void das16m1_handler(struct comedi_device *dev, unsigned int status)
- 	if (devpriv->adc_count == 0 && hw_counter == devpriv->initial_hw_count) {
- 		num_samples = 0;
- 	} else {
--		/* The calculation of num_samples looks odd, but it uses the following facts.
--		 * 16 bit hardware counter is initialized with value of zero (which really
--		 * means 0x1000).  The counter decrements by one on each conversion
--		 * (when the counter decrements from zero it goes to 0xffff).  num_samples
--		 * is a 16 bit variable, so it will roll over in a similar fashion to the
--		 * hardware counter.  Work it out, and this is what you get. */
-+		/*
-+		 * The calculation of num_samples looks odd, but it uses the
-+		 * following facts. 16 bit hardware counter is initialized
-+		 * with value of zero (which really means 0x1000).  The
-+		 * counter decrements by one on each conversion (when the
-+		 * counter decrements from zero it goes to 0xffff).
-+		 * num_samples is a 16 bit variable, so it will roll over
-+		 * in a similar fashion to the hardware counter. Work it
-+		 * out, and this is what you get.
-+		 */
- 		num_samples = -hw_counter - devpriv->adc_count;
- 	}
- 	/*  check if we only need some of the points */
-@@ -579,7 +585,8 @@ static void das16m1_handler(struct comedi_device *dev, unsigned int status)
- 	devpriv->adc_count += num_samples;
- 
- 	if (cmd->stop_src == TRIG_COUNT) {
--		if (devpriv->adc_count >= cmd->stop_arg * cmd->chanlist_len) {	/* end of acquisition */
-+		/* end of acquisition */
-+		if (devpriv->adc_count >= cmd->stop_arg * cmd->chanlist_len) {
- 			das16m1_cancel(dev, s);
- 			async->events |= COMEDI_CB_EOA;
- 		}
-@@ -668,25 +675,23 @@ static int das16m1_attach(struct comedi_device *dev,
- 
- 	iobase = it->options[0];
- 
--	printk("comedi%d: das16m1:", dev->minor);
--
- 	ret = alloc_private(dev, sizeof(struct das16m1_private_struct));
- 	if (ret < 0)
- 		return ret;
- 
- 	dev->board_name = thisboard->name;
- 
--	printk(" io 0x%lx-0x%lx 0x%lx-0x%lx",
--	       iobase, iobase + DAS16M1_SIZE,
--	       iobase + DAS16M1_82C55, iobase + DAS16M1_82C55 + DAS16M1_SIZE2);
-+	dev_dbg(dev->hw_dev, "io 0x%lx-0x%lx 0x%lx-0x%lx\n",
-+		iobase, iobase + DAS16M1_SIZE,
-+		iobase + DAS16M1_82C55, iobase + DAS16M1_82C55 + DAS16M1_SIZE2);
- 	if (!request_region(iobase, DAS16M1_SIZE, driver_das16m1.driver_name)) {
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
- 			    driver_das16m1.driver_name)) {
- 		release_region(iobase, DAS16M1_SIZE);
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -696,18 +701,14 @@ static int das16m1_attach(struct comedi_device *dev,
- 	/*  make sure it is valid */
- 	if (das16m1_irq_bits(irq) >= 0) {
- 		ret = request_irq(irq, das16m1_interrupt, 0,
--				  driver_das16m1.driver_name, dev);
--		if (ret < 0) {
--			printk(", irq unavailable\n");
-+				driver_das16m1.driver_name, dev);
-+		if (ret < 0)
- 			return ret;
--		}
- 		dev->irq = irq;
--		printk(", irq %u\n", irq);
-+		dev_dbg(dev->hw_dev, "irq %u\n", irq);
- 	} else if (irq == 0) {
--		printk(", no irq\n");
--	} else {
--		printk(", invalid irq\n"
--		       " valid irqs are 2, 3, 5, 7, 10, 11, 12, or 15\n");
-+		dev_err(dev->hw_dev, "invalid irq\n"
-+			" valid irqs are 2, 3, 5, 7, 10, 11, 12, or 15\n");
- 		return -EINVAL;
- 	}
- 
-@@ -753,7 +754,10 @@ static int das16m1_attach(struct comedi_device *dev,
- 	/* 8255 */
- 	subdev_8255_init(dev, s, NULL, dev->iobase + DAS16M1_82C55);
- 
--	/*  disable upper half of hardware conversion counter so it doesn't mess with us */
-+	/*
-+	 * disable upper half of hardware conversion counter so it doesn't
-+	 * mess with us
-+	 */
- 	outb(TOTAL_CLEAR, dev->iobase + DAS16M1_8254_FIRST_CNTRL);
- 
- 	/*  initialize digital output lines */
-@@ -771,7 +775,6 @@ static int das16m1_attach(struct comedi_device *dev,
- 
- static int das16m1_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: das16m1: remove\n", dev->minor);
- 
- /* das16m1_reset(dev); */
- 
+ 	/* note that mutual compatibility is not an issue here */
+ 	if (cmd->scan_begin_src != TRIG_TIMER &&
 -- 
 1.7.6.4
 
