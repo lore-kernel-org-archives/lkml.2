@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab1JTLGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 07:06:00 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:53856 "EHLO e4.ny.us.ibm.com"
+	id S1754570Ab1JTLGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 07:06:42 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:48694 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab1JTLF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 07:05:58 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
-In-Reply-To: <20111020091946.GA23773@infradead.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019222021.GB1874@fieldses.org> <87k4805alx.fsf@linux.vnet.ibm.com> <20111020091434.GC5444@fieldses.org> <20111020091946.GA23773@infradead.org>
-User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 20 Oct 2011 16:32:04 +0530
-Message-ID: <87aa8w53kj.fsf@linux.vnet.ibm.com>
+	id S1750947Ab1JTLGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 07:06:41 -0400
+Message-ID: <4EA000C6.1040502@parallels.com>
+Date: Thu, 20 Oct 2011 15:06:46 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11102011-3534-0000-0000-000000C7324F
+To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [RFC PATCH 0/5] SUNRPC: "RPC pipefs per network namespace"	preparations
+References: <20111017120629.4541.67395.stgit@localhost6.localdomain6>
+In-Reply-To: <20111017120629.4541.67395.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Oct 2011 05:19:46 -0400, Christoph Hellwig <hch@infradead.org> wrote:
-> On Thu, Oct 20, 2011 at 05:14:34AM -0400, J. Bruce Fields wrote:
-> > > > Does it really make sense to use a string here just to pick between the
-> > > > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
-> > > > integer?  Is the goal to expand this somehow eventually?
-> > > 
-> 
-> > > I guess Andreas wanted the disk layout to be able to store user@domain
-> > > format if needed.
-> > 
-> > Is that likely?  For that to be useful, tasks would need to be able to
-> > run as user@domain strings.  And we'd probably want owners and groups to
-> > also be user@domain strings.
-> > 
-> > The container people seem to eventually want to add some kind of
-> > namespace identifier everywhere:
-> > 
-> > 	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
-> > 
-> > in which case I guess we'd likely end up with (uid, user namespace id)
-> > instead of user@domain?
-> 
-> 
-> Storing strings is an extremly stupid idea.  The only thing that would
-> make sense would be storing a windows-style 128-bit GUID.
-> 
+Guys, please, spend some of your expensive time to review this patch-set briefly.
+This is not for commit, but just an idea representation.
+I really need some opinions about it, since all my further work aroud RPC pipefs 
+depends on it.
+IOW I need to now, does anyone has something against this idea.
+Trond, please, respond, does this idea suits you in general or not?
 
-How about updating the richacl_xattr as below 
+17.10.2011 17:10, Stanislav Kinsbursky пишет:
+> Hello to everyone.
+> RPC pipefs file system have to work per network namespace context is required
+> prior to any NFS modifications.
+> This is a way how to do it. I'll really appreciate for any comments.
+>
+> There are several statements about how to make RPC pipefs working per network
+> namespace context.
+> Here they are:
+> 1) RPC pipefs should be mounted per network namespace context.
+> 2) RPC pipefs superblock should holds network namespace while active.
+> 3) RPC pipefs lookup and readir should be perfomed in network namespace context
+> it was mounted. IOW, user-space process, working in another network namespace
+> context, should see RPC pipefs dentries from network namespace context this
+> mount-point was created (like it was done for sysfs).
+>
+> These statement leads to some restrictions which we must follow during
+> implementation. Here are they:
+> 1) RPC pipefs mount can't be performed in kernel context since new super block
+> will holds networks namespace reference and it's impossible to recognize, when
+> and how we have to release this mount point. IOW rpc_get_mount() and
+> rpc_put_mount() have to be removed.
+> 2) RPC pipefs should provide some new helpers to lookup directory dentry for
+> those modules which creates pipes, because without RPC pipefs mount point
+> general lookup can't be performed.
+> 3) These methods must garantee, that pipefs superblock will be active during
+> pipes creation and destruction.
+>
+> So, here is the idea of making RPC pipefs works per network namespace context:
+> 1) RPC pipefs superblock should holds network namespcae context while active.
+> 2) RPC pipefs should send notification events on superblock creation and
+> destruction.
+> 3) RPC pipefs should provide "lookup dentry by name" method for notification
+> subscribers.
+> 4) RPC pipefs should place superblock reference on current network namespace
+> context on creation and remove it on destruction.
+> 5) RPC pipefs should provide safe "lookup dentry by name" method for per-net
+> operations, which garantees, that superblock is active, while
+> per-net-operations are performing.
+> 6) Client and cache directories creation and destruction should be performed
+> also on superblock creation and destruction notification events. Note: generic
+> creation (like now) can fail (if no superblock is not created yet).
+> 7) Pipes creation and destruction should be performed on superblock creation
+> and destruction events. Also pipes operations should be performed during
+> per-net operation and in this case they could fail (due to the same reason as
+> in statement above).
+>
+> This patch-set implements first 5 points and thus doesn't affects current RPC
+> pipefs logic.
+>
+> The only problem about I'm not sure how to solve properly yet, is auth gss
+> pipes creations operations. Hoping for some help with it.
+>
+>
+> The following series consists of:
+>
+> ---
+>
+> Stanislav Kinsbursky (5):
+>        SUNRPC: hold current network namespace while pipefs superblock is active
+>        SUNRPC: send notification events on pipefs sb creation and destruction
+>        SUNRPC: pipefs dentry lookup helper introduced
+>        SUNRPC: put pipefs superblock link on network namespace
+>        SUNRPC: pipefs per-net operations helper introduced
+>
+>
+>   include/linux/sunrpc/rpc_pipe_fs.h |   16 ++++++
+>   net/sunrpc/netns.h                 |    3 +
+>   net/sunrpc/rpc_pipe.c              |  103 ++++++++++++++++++++++++++++++++++++
+>   net/sunrpc/sunrpc_syms.c           |    1
+>   4 files changed, 122 insertions(+), 1 deletions(-)
+>
 
-struct richace_xattr {
-	__le16		e_type;
-	__le16		e_flags;
-	__le32		e_mask;
-	__le32		e_size;
-	u8		e_id[0];
-};
 
-now e_flags can contain ACE4_SPECIAL_WHO to indicate value in e_id
-indicate special who values (which could be 1 byte value indicating
-OWNER@, GROUP@ or EVERYONE@), ACE4_UNIXID_WHO, to indicate value
-in e_id is the little endian value of unix id. ACE_WINSID_WHO to
-indicate e_id is the 128 bit array containing SID value. ?
-
--aneesh
-
+-- 
+Best regards,
+Stanislav Kinsbursky
