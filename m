@@ -1,309 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab1JTOAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 10:00:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752035Ab1JTOAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 10:00:15 -0400
-Date: Thu, 20 Oct 2011 15:59:43 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org
-Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, nhorman@tuxdriver.com,
-        eric.dumazet@gmail.com
-Subject: [PATCHv4] perf tools: Fix tracing info recording
-Message-ID: <20111020135943.GD2092@jolsa.brq.redhat.com>
-References: <1317028312-5156-1-git-send-email-jolsa@redhat.com>
- <1317308709-9474-1-git-send-email-jolsa@redhat.com>
- <1317308709-9474-3-git-send-email-jolsa@redhat.com>
- <20111013140040.GD4125@jolsa.brq.redhat.com>
+	id S1755241Ab1JTOBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 10:01:48 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51537 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab1JTOBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 10:01:47 -0400
+X-AuditID: b753bd60-a2688ba000000655-7f-4ea029c8f1de
+X-AuditID: b753bd60-a2688ba000000655-7f-4ea029c8f1de
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [RFC PATCH v2 1/2] x86: Add a sanity test of x86 decoder
+To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, robert.richter@amd.com, ravitillo@lbl.gov,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Date: Thu, 20 Oct 2011 23:01:09 +0900
+Message-ID: <20111020140109.20938.92572.stgit@localhost.localdomain>
+In-Reply-To: <20111019064401.GA2075@elte.hu>
+References: <20111019064401.GA2075@elte.hu>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111013140040.GD4125@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-sending version updated to the latest tip tree code.
+Add a sanity test of x86 insn decoder against the random
+input. This test is also able to reproduce the bug by
+passing random-seed and iteration-number, or by passing
+input while which has invalid byte code.
 
-wbr,
-jirka
+Changes in V2:
+ - Code cleanup.
+ - Show how to reproduce the error by insn_sanity test.
 
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
 ---
-Fixing the way the tracing information is stored within record command.
-The current implementation is causing issues for pipe output.
 
-Following commands fail currently:
-	perf script syscall-counts ls
-	perf record -e syscalls:sys_exit_read ls | ./perf report -i -
+ arch/x86/include/asm/insn.h  |    7 +
+ arch/x86/tools/Makefile      |   10 +-
+ arch/x86/tools/insn_sanity.c |  275 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 291 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/tools/insn_sanity.c
 
-The tracing information is part of the perf data file. It contains
-several files from within the tracing debugfs and procs directories.
-
-Beside some static header files, for each tracing event the format
-file is added. The /proc/kallsyms file is also added.
-
-The tracing data are stored with preceeding size. This is causing some
-dificulties for pipe output, since there's no way to tell debugfs/proc
-file size before reading it. So, for pipe output, all the debugfs files
-were read twice. Once to get the overall size and once to store the
-content itself. This can cause problem in case any of these file
-changed, within the storage time.
-
-To fix this behaviour and ensure the integrity of the tracing data, we:
-    - read debugfs/proc file into the temp file
-    - get temp file size and dump it to the pipe
-    - dump the temp file contents to the pipe
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/header.c           |   27 +++++++-
- tools/perf/util/trace-event-info.c |  112 ++++++++++++++++++++++++++++--------
- tools/perf/util/trace-event.h      |   13 ++++-
- 3 files changed, 123 insertions(+), 29 deletions(-)
-
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 6a9c041..76c0b2c 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2218,15 +2218,29 @@ int perf_event__synthesize_tracing_data(int fd, struct perf_evlist *evlist,
- 				   struct perf_session *session __unused)
- {
- 	union perf_event ev;
-+	struct tracing_data *tdata;
- 	ssize_t size = 0, aligned_size = 0, padding;
- 	int err __used = 0;
- 
-+	/*
-+	 * We are going to store the size of the data followed
-+	 * by the data contents. Since the fd descriptor is a pipe,
-+	 * we cannot seek back to store the size of the data once
-+	 * we know it. Instead we:
-+	 *
-+	 * - write the tracing data to the temp file
-+	 * - get/write the data size to pipe
-+	 * - write the tracing data from the temp file
-+	 *   to the pipe
-+	 */
-+	tdata = tracing_data_get(&evlist->entries, fd, true);
-+	if (!tdata)
-+		return -1;
-+
- 	memset(&ev, 0, sizeof(ev));
- 
- 	ev.tracing_data.header.type = PERF_RECORD_HEADER_TRACING_DATA;
--	size = read_tracing_data_size(fd, &evlist->entries);
--	if (size <= 0)
--		return size;
-+	size = tdata->size;
- 	aligned_size = ALIGN(size, sizeof(u64));
- 	padding = aligned_size - size;
- 	ev.tracing_data.header.size = sizeof(ev.tracing_data);
-@@ -2234,7 +2248,12 @@ int perf_event__synthesize_tracing_data(int fd, struct perf_evlist *evlist,
- 
- 	process(&ev, NULL, session);
- 
--	err = read_tracing_data(fd, &evlist->entries);
-+	/*
-+	 * The put function will copy all the tracing data
-+	 * stored in temp file to the pipe.
-+	 */
-+	tracing_data_put(tdata);
-+
- 	write_padded(fd, NULL, 0, padding);
- 
- 	return aligned_size;
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 3403f81..2d530cf 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -196,7 +196,8 @@ static void record_file(const char *file, size_t hdr_sz)
- 		die("Can't read '%s'", file);
- 
- 	/* put in zeros for file size, then fill true size later */
--	write_or_die(&size, hdr_sz);
-+	if (hdr_sz)
-+		write_or_die(&size, hdr_sz);
- 
- 	do {
- 		r = read(fd, buf, BUFSIZ);
-@@ -212,7 +213,7 @@ static void record_file(const char *file, size_t hdr_sz)
- 	if (bigendian())
- 		sizep += sizeof(u64) - hdr_sz;
- 
--	if (pwrite(output_fd, sizep, hdr_sz, hdr_pos) < 0)
-+	if (hdr_sz && pwrite(output_fd, sizep, hdr_sz, hdr_pos) < 0)
- 		die("writing to %s", output_file);
+diff --git a/arch/x86/include/asm/insn.h b/arch/x86/include/asm/insn.h
+index 88c765e..74df3f1 100644
+--- a/arch/x86/include/asm/insn.h
++++ b/arch/x86/include/asm/insn.h
+@@ -137,6 +137,13 @@ static inline int insn_is_avx(struct insn *insn)
+ 	return (insn->vex_prefix.value != 0);
  }
  
-@@ -428,6 +429,19 @@ get_tracepoints_path(struct list_head *pattrs)
- 	return nr_tracepoints > 0 ? path.next : NULL;
- }
- 
-+static void
-+put_tracepoints_path(struct tracepoint_path *tps)
++/* Ensure this instruction is decoded completely */
++static inline int insn_complete(struct insn *insn)
 +{
-+	while (tps) {
-+		struct tracepoint_path *t = tps;
++	return insn->opcode.got && insn->modrm.got && insn->sib.got &&
++		insn->displacement.got && insn->immediate.got;
++}
 +
-+		tps = tps->next;
-+		free(t->name);
-+		free(t->system);
-+		free(t);
+ static inline insn_byte_t insn_vex_m_bits(struct insn *insn)
+ {
+ 	if (insn->vex_prefix.nbytes == 2)	/* 2 bytes VEX */
+diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
+index f820826..3255c3d 100644
+--- a/arch/x86/tools/Makefile
++++ b/arch/x86/tools/Makefile
+@@ -18,14 +18,22 @@ chkobjdump = $(srctree)/arch/x86/tools/chkobjdump.awk
+ quiet_cmd_posttest = TEST    $@
+       cmd_posttest = ($(OBJDUMP) -v | $(AWK) -f $(chkobjdump)) || $(OBJDUMP) -d -j .text $(objtree)/vmlinux | $(AWK) -f $(distill_awk) | $(obj)/test_get_len $(posttest_64bit) $(posttest_verbose)
+ 
+-posttest: $(obj)/test_get_len vmlinux
++quiet_cmd_sanitytest = TEST    $@
++      cmd_sanitytest = $(obj)/insn_sanity $(posttest_64bit) -m 1000000
++
++posttest: $(obj)/test_get_len vmlinux $(obj)/insn_sanity
+ 	$(call cmd,posttest)
++	$(call cmd,sanitytest)
+ 
+ hostprogs-y	:= test_get_len
++hostprogs-y	:= insn_sanity
+ 
+ # -I needed for generated C source and C source which in the kernel tree.
+ HOSTCFLAGS_test_get_len.o := -Wall -I$(objtree)/arch/x86/lib/ -I$(srctree)/arch/x86/include/ -I$(srctree)/arch/x86/lib/ -I$(srctree)/include/
+ 
++HOSTCFLAGS_insn_sanity.o := -Wall -I$(objtree)/arch/x86/lib/ -I$(srctree)/arch/x86/include/ -I$(srctree)/arch/x86/lib/ -I$(srctree)/include/
++
+ # Dependencies are also needed.
+ $(obj)/test_get_len.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
+ 
++$(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
+diff --git a/arch/x86/tools/insn_sanity.c b/arch/x86/tools/insn_sanity.c
+new file mode 100644
+index 0000000..478b35a
+--- /dev/null
++++ b/arch/x86/tools/insn_sanity.c
+@@ -0,0 +1,275 @@
++/*
++ * x86 decoder sanity test - based on test_get_insn.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2009
++ * Copyright (C) Hitachi, Ltd., 2011
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <string.h>
++#include <assert.h>
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++
++#define unlikely(cond) (cond)
++#define ARRAY_SIZE(a)	(sizeof(a)/sizeof(a[0]))
++
++#include <asm/insn.h>
++#include <inat.c>
++#include <insn.c>
++
++/*
++ * Test of instruction analysis against tampering.
++ * Feed random binary to instruction decoder and ensure not to
++ * access out-of-instruction-buffer.
++ */
++
++#define DEFAULT_MAX_ITER	10000
++#define INSN_NOP 0x90
++
++static const char 	*prog;		/* Program name */
++static int		verbose;	/* Verbosity */
++static int		x86_64;		/* x86-64 bit mode flag */
++static unsigned int	seed;		/* Random seed */
++static unsigned long	iter_start;	/* Start of iteration number */
++static unsigned long	iter_end = DEFAULT_MAX_ITER;	/* End of iteration number */
++static FILE		*input_file;	/* Input file name */
++
++static void usage(const char *err)
++{
++	if (err)
++		fprintf(stderr, "Error: %s\n\n", err);
++	fprintf(stderr, "Usage: %s [-y|-n|-v] [-s seed[,no]] [-m max] [-i input]\n", prog);
++	fprintf(stderr, "\t-y	64bit mode\n");
++	fprintf(stderr, "\t-n	32bit mode\n");
++	fprintf(stderr, "\t-v	Verbose mode\n");
++	fprintf(stderr, "\t-s	Give a random seed (and iteration number)\n");
++	fprintf(stderr, "\t-m	Give a maximum iteration number\n");
++	fprintf(stderr, "\t-i	Give an input file with decoded binary\n");
++	exit(1);
++}
++
++static void dump_field(FILE *fp, const char *name, const char *indent,
++		       struct insn_field *field)
++{
++	fprintf(fp, "%s.%s = {\n", indent, name);
++	fprintf(fp, "%s\t.value = %d, bytes[] = {%x, %x, %x, %x},\n",
++		indent, field->value, field->bytes[0], field->bytes[1],
++		field->bytes[2], field->bytes[3]);
++	fprintf(fp, "%s\t.got = %d, .nbytes = %d},\n", indent,
++		field->got, field->nbytes);
++}
++
++static void dump_insn(FILE *fp, struct insn *insn)
++{
++	fprintf(fp, "Instruction = {\n");
++	dump_field(fp, "prefixes", "\t",	&insn->prefixes);
++	dump_field(fp, "rex_prefix", "\t",	&insn->rex_prefix);
++	dump_field(fp, "vex_prefix", "\t",	&insn->vex_prefix);
++	dump_field(fp, "opcode", "\t",		&insn->opcode);
++	dump_field(fp, "modrm", "\t",		&insn->modrm);
++	dump_field(fp, "sib", "\t",		&insn->sib);
++	dump_field(fp, "displacement", "\t",	&insn->displacement);
++	dump_field(fp, "immediate1", "\t",	&insn->immediate1);
++	dump_field(fp, "immediate2", "\t",	&insn->immediate2);
++	fprintf(fp, "\t.attr = %x, .opnd_bytes = %d, .addr_bytes = %d,\n",
++		insn->attr, insn->opnd_bytes, insn->addr_bytes);
++	fprintf(fp, "\t.length = %d, .x86_64 = %d, .kaddr = %p}\n",
++		insn->length, insn->x86_64, insn->kaddr);
++}
++
++static void dump_stream(FILE *fp, const char *msg, unsigned long nr_iter,
++			unsigned char *insn_buf, struct insn *insn)
++{
++	int i;
++
++	fprintf(fp, "%s:\n", msg);
++
++	dump_insn(stderr, insn);
++
++	fprintf(fp, "You can reproduce this with below command(s);\n");
++
++	/* Input a decoded instruction sequence directly */
++	fprintf(fp, " $ echo ");
++	for (i = 0; i < MAX_INSN_SIZE; i++)
++		fprintf(fp, " %02x", insn_buf[i]);
++	fprintf(fp, " | %s -i -\n", prog);
++
++	if (!input_file) {
++		fprintf(fp, "Or \n");
++		/* Give a seed and iteration number */
++		fprintf(fp, " $ %s -s 0x%x,%lu\n", prog, seed, nr_iter);
 +	}
 +}
 +
- bool have_tracepoints(struct list_head *pattrs)
- {
- 	struct perf_evsel *pos;
-@@ -439,19 +453,11 @@ bool have_tracepoints(struct list_head *pattrs)
- 	return false;
- }
- 
--int read_tracing_data(int fd, struct list_head *pattrs)
-+static void tracing_data_header(void)
- {
--	char buf[BUFSIZ];
--	struct tracepoint_path *tps = get_tracepoints_path(pattrs);
--
--	/*
--	 * What? No tracepoints? No sense writing anything here, bail out.
--	 */
--	if (tps == NULL)
--		return -1;
--
--	output_fd = fd;
-+	char buf[20];
- 
-+	/* just guessing this is someone's birthday.. ;) */
- 	buf[0] = 23;
- 	buf[1] = 8;
- 	buf[2] = 68;
-@@ -476,28 +482,86 @@ int read_tracing_data(int fd, struct list_head *pattrs)
- 	/* save page_size */
- 	page_size = sysconf(_SC_PAGESIZE);
- 	write_or_die(&page_size, 4);
++static void init_random_seed(void)
++{
++	int fd;
++
++	fd = open("/dev/urandom", O_RDONLY);
++	if (fd < 0)
++		goto fail;
++
++	if (read(fd, &seed, sizeof(seed)) != sizeof(seed))
++		goto fail;
++
++	close(fd);
++	return;
++fail:
++	usage("Failed to open /dev/urandom");
 +}
 +
-+struct tracing_data *tracing_data_get(struct list_head *pattrs,
-+				      int fd, bool temp)
++/* Read given instruction sequence from the input file */
++static int read_next_insn(unsigned char *insn_buf)
 +{
-+	struct tracepoint_path *tps;
-+	struct tracing_data *tdata;
++	char buf[256]  = "", *tmp;
++	int i;
 +
-+	output_fd = fd;
++	tmp = fgets(buf, ARRAY_SIZE(buf), input_file);
++	if (tmp == NULL || feof(input_file))
++		return 0;
 +
-+	tps = get_tracepoints_path(pattrs);
-+	if (!tps)
-+		return NULL;
- 
-+	tdata = malloc_or_die(sizeof(*tdata));
-+	tdata->temp = temp;
-+	tdata->size = 0;
-+
-+	if (temp) {
-+		int temp_fd;
-+
-+		snprintf(tdata->temp_file, sizeof(tdata->temp_file),
-+			 "/tmp/perf-XXXXXX");
-+		if (!mkstemp(tdata->temp_file))
-+			die("Can't make temp file");
-+
-+		temp_fd = open(tdata->temp_file, O_RDWR);
-+		if (temp_fd < 0)
-+			die("Can't read '%s'", tdata->temp_file);
-+
-+		/*
-+		 * Set the temp file the default output, so all the
-+		 * tracing data are stored into it.
-+		 */
-+		output_fd = temp_fd;
++	for (i = 0; i < MAX_INSN_SIZE; i++) {
++		insn_buf[i] = (unsigned char)strtoul(tmp, &tmp, 16);
++		if (*tmp != ' ')
++			break;
 +	}
 +
-+	tracing_data_header();
- 	read_header_files();
- 	read_ftrace_files(tps);
- 	read_event_files(tps);
- 	read_proc_kallsyms();
- 	read_ftrace_printk();
- 
--	return 0;
-+	/*
-+	 * All tracing data are stored by now, we can restore
-+	 * the default output file in case we used temp file.
-+	 */
-+	if (temp) {
-+		tdata->size = lseek(output_fd, 0, SEEK_CUR);
-+		close(output_fd);
-+		output_fd = fd;
-+	}
-+
-+	put_tracepoints_path(tps);
-+	return tdata;
- }
- 
--ssize_t read_tracing_data_size(int fd, struct list_head *pattrs)
-+void tracing_data_put(struct tracing_data *tdata)
- {
--	ssize_t size;
--	int err = 0;
-+	if (tdata->temp) {
-+		record_file(tdata->temp_file, 0);
-+		unlink(tdata->temp_file);
-+	}
- 
--	calc_data_size = 1;
--	err = read_tracing_data(fd, pattrs);
--	size = calc_data_size - 1;
--	calc_data_size = 0;
-+	free(tdata);
++	return i;
 +}
- 
--	if (err < 0)
--		return err;
-+int read_tracing_data(int fd, struct list_head *pattrs)
++
++static int generate_insn(unsigned char *insn_buf)
 +{
-+	struct tracing_data *tdata;
- 
--	return size;
-+	/*
-+	 * We work over the real file, so we can write data
-+	 * directly, no temp file is needed.
-+	 */
-+	tdata = tracing_data_get(pattrs, fd, false);
-+	if (!tdata)
-+		return -ENOMEM;
++	int i;
 +
-+	tracing_data_put(tdata);
-+	return 0;
- }
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index f674dda..a841008 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -263,7 +263,18 @@ void *raw_field_ptr(struct event *event, const char *name, void *data);
- unsigned long long eval_flag(const char *flag);
- 
- int read_tracing_data(int fd, struct list_head *pattrs);
--ssize_t read_tracing_data_size(int fd, struct list_head *pattrs);
++	if (input_file)
++		return read_next_insn(insn_buf);
 +
-+struct tracing_data {
-+	/* size is only valid if temp is 'true' */
-+	ssize_t size;
-+	bool temp;
-+	char temp_file[50];
-+};
++	/* Fills buffer with random binary up to MAX_INSN_SIZE */
++	for (i = 0; i < MAX_INSN_SIZE - 1; i += 2)
++		*(unsigned short *)(&insn_buf[i]) = random() & 0xffff;
 +
-+struct tracing_data *tracing_data_get(struct list_head *pattrs,
-+				      int fd, bool temp);
-+void tracing_data_put(struct tracing_data *tdata);
++	while (i < MAX_INSN_SIZE)
++		insn_buf[i++] = random() & 0xff;
 +
- 
- /* taken from kernel/trace/trace.h */
- enum trace_flag_type {
--- 
-1.7.4
++	return i;
++}
++
++static void parse_args(int argc, char **argv)
++{
++	int c;
++	char *tmp = NULL;
++	int set_seed = 0;
++
++	prog = argv[0];
++	while ((c = getopt(argc, argv, "ynvs:m:i:")) != -1) {
++		switch (c) {
++		case 'y':
++			x86_64 = 1;
++			break;
++		case 'n':
++			x86_64 = 0;
++			break;
++		case 'v':
++			verbose = 1;
++			break;
++		case 'i':
++			if (strcmp("-", optarg) == 0)
++				input_file = stdin;
++			else
++				input_file = fopen(optarg, "r");
++			if (!input_file)
++				usage("Failed to open input file");
++			break;
++		case 's':
++			seed = (unsigned int)strtoul(optarg, &tmp, 0);
++			if (*tmp == ',') {
++				optarg = tmp + 1;
++				iter_start = strtoul(optarg, &tmp, 0);
++			}
++			if (*tmp != '\0' || tmp == optarg)
++				usage("Failed to parse seed");
++			set_seed = 1;
++			break;
++		case 'm':
++			iter_end = strtoul(optarg, &tmp, 0);
++			if (*tmp != '\0' || tmp == optarg)
++				usage("Failed to parse max_iter");
++			break;
++		default:
++			usage(NULL);
++		}
++	}
++
++	/* Check errors */
++	if (iter_end < iter_start)
++		usage("Max iteration number must be bigger than iter-num");
++
++	if (set_seed && input_file)
++		usage("Don't use input file (-i) with random seed (-s)");
++
++	/* Initialize random seed */
++	if (!input_file) {
++		if (!set_seed)	/* No seed is given */
++			init_random_seed();
++		srand(seed);
++	}
++}
++
++int main(int argc, char **argv)
++{
++	struct insn insn;
++	int insns = 0;
++	int errors = 0;
++	unsigned long i;
++	unsigned char insn_buf[MAX_INSN_SIZE * 2];
++
++	parse_args(argc, argv);
++
++	/* Prepare stop bytes with NOPs */
++	memset(insn_buf + MAX_INSN_SIZE, INSN_NOP, MAX_INSN_SIZE);
++
++	for (i = 0; i < iter_end; i++) {
++		if (generate_insn(insn_buf) <= 0)
++			break;
++
++		if (i < iter_start)	/* Skip to given iteration number */
++			continue;
++
++		/* Decode an instruction */
++		insn_init(&insn, insn_buf, x86_64);
++		insn_get_length(&insn);
++
++		if (verbose && !insn_complete(&insn))
++			dump_stream(stdout, "Info: Found an undecodable input", i, insn_buf, &insn);
++
++		if (insn.next_byte <= insn.kaddr ||
++		    insn.kaddr + MAX_INSN_SIZE < insn.next_byte) {
++			/* Access out-of-range memory */
++			dump_stream(stdout, "Error: Found an access violation", i, insn_buf, &insn);
++			errors++;
++		}
++		insns++;
++	}
++
++	fprintf(stdout, "%s: decoded and checked %d %s instructions with %d errors (seed:0x%x)\n", (errors) ? "Failure" : "Success", insns, (input_file) ? "given" : "random", errors, seed);
++
++	return errors ? 1 : 0;
++}
 
