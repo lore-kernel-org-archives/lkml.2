@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1JTVMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:12:31 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:35583 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab1JTVMa (ORCPT
+	id S1753316Ab1JTVNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:13:24 -0400
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35668
+	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751749Ab1JTVNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:12:30 -0400
-Date: Thu, 20 Oct 2011 17:12:20 -0400 (EDT)
-Message-Id: <20111020.171220.590110051530207341.davem@davemloft.net>
-To: ricardo.ribalda@gmail.com
-Cc: ian.campbell@citrix.com, jeffrey.t.kirsher@intel.com,
-        grant.likely@secretlab.ca, jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] ll_temac: Add support for ethtool
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1319009725-7869-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1319009725-7869-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 20 Oct 2011 14:12:24 -0700 (PDT)
+	Thu, 20 Oct 2011 17:13:21 -0400
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        "David S. Miller" <davem@conan.davemloft.net>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: [RFC PATCH 04/17] phy/icplus: Fix read_status/config_aneg error handling
+Date: Thu, 20 Oct 2011 17:00:11 -0400
+Message-Id: <1319144425-15547-5-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 19 Oct 2011 09:35:25 +0200
+Fixes the icplus PHY driver to propagate the return values of the
+functions genphy_read_status() and genphy_config_aneg() instead of
+ignoring them.
 
-> This patch enables the ethtool interface. The implementation is done
-> using the libphy helper functions.
+NOTE: Completely untested. Needs somebody with hardware to try it out.
 
-Applied, thanks.
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ drivers/net/phy/icplus.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-In the future, please put the reviewed-by and signoffs before the "---"
-otherwise automated tools will omit it from the final commit message.
+diff --git a/drivers/net/phy/icplus.c b/drivers/net/phy/icplus.c
+index d4cbc29..2969dac 100644
+--- a/drivers/net/phy/icplus.c
++++ b/drivers/net/phy/icplus.c
+@@ -115,19 +115,19 @@ static int ip1001_config_init(struct phy_device *phydev)
+ static int ip175c_read_status(struct phy_device *phydev)
+ {
+ 	if (phydev->addr == 4) /* WAN port */
+-		genphy_read_status(phydev);
+-	else
+-		/* Don't need to read status for switch ports */
+-		phydev->irq = PHY_IGNORE_INTERRUPT;
++		return genphy_read_status(phydev);
+ 
++	/* Don't need to read status for switch ports */
++	phydev->irq = PHY_IGNORE_INTERRUPT;
+ 	return 0;
+ }
+ 
+ static int ip175c_config_aneg(struct phy_device *phydev)
+ {
+ 	if (phydev->addr == 4) /* WAN port */
+-		genphy_config_aneg(phydev);
++		return genphy_config_aneg(phydev);
+ 
++	/* Don't need to do anything for switch ports */
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.5
+
