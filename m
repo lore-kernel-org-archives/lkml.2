@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab1JTVRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 17:17:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12127 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab1JTVRg (ORCPT
+	id S1753781Ab1JTVRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 17:17:31 -0400
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:35675
+	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753161Ab1JTVNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 17:17:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type;
-	b=bkv4doMKtEQlCVPPFe1uStomjOSYZVcODUkY/sSmShB+egutahGM5IJ5GVtFtezB9
-	HeKLz+dDXqql0QBUs0Xsw==
-Date: Thu, 20 Oct 2011 14:17:29 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-        Tejun Heo <htejun@gmail.com>
-cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-In-Reply-To: <20111020190701.GB3586@swordfish.minsk.epam.com>
-Message-ID: <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
-References: <20111015201239.GA3475@swordfish> <alpine.DEB.2.00.1110151436420.15894@chino.kir.corp.google.com> <20111015222324.GA16432@liondog.tnic> <alpine.DEB.2.00.1110151529570.25063@chino.kir.corp.google.com> <20111020183913.GA21918@liondog.tnic>
- <20111020185329.GA3586@swordfish.minsk.epam.com> <20111020190701.GB3586@swordfish.minsk.epam.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 20 Oct 2011 17:13:22 -0400
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Decotigny <decot@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: [RFC PATCH 15/17] phy_device: Add "port" and "transciever" fields
+Date: Thu, 20 Oct 2011 17:00:22 -0400
+Message-Id: <1319144425-15547-16-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Oct 2011, Sergey Senozhatsky wrote:
+Some PHYs have multiple software-selectable inputs and outputs,
+including RGMII, SGMII, SerDes, etc.  New fields are added to the
+"struct phy_device" for "port" and "transciever" to allow "ethtool" to
+switch outputs at runtime.  The defaults for the new fields are
+identical to the hardcoded values used previously.
 
-> > > FWIW,
-> > > 
-> > > the box has been running here with f59de8992aa6 reverted for a couple of
-> > > days now and no sign of the warning. I'll keep watching it but it looks
-> > > ok so far, so David, you could've nailed it.
-> > > 
-> > 
-> > Hello,
-> > Well, the same with me. My laptop has been running with reverted f59de8992aa6 without any
-> > problems so far. Yet, I'm not sure I understand how memset() and loop could
-> > produce different results.
-> > 
-> 
-> Oh, well, nevermind I think I get it. 
-> 
-> Reverting opens https://bugzilla.kernel.org/show_bug.cgi?id=35532 again.  
-> 
+This should make no functional changes to the PHY layer behavior, but
+it will allow later PHY/ethernet drivers to override those fields.
 
-I don't know what that is since bugzilla.kernel.org is down :)  The 
-problem is that the memset(), in addition to all the other fields in 
-lockdep_map, clears the "name" field, which is what the scheduler uses 
-via lock_set_sublcass() to prevent this lockdep warning.  My initial 
-speculation seems to be confirmed since either you or Borislav have been 
-able to reproduce the warning since removing the memset().
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ drivers/net/phy/phy.c        |    4 ++--
+ drivers/net/phy/phy_device.c |    2 ++
+ include/linux/phy.h          |    4 ++++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-Tejun, would you like to revert f59de8992aa6 ("lockdep: Clear whole 
-lockdep_map on initialization") since it fixes this lockdep warning?
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index c378f91..5f72055 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -290,9 +290,9 @@ int phy_ethtool_gset(struct phy_device *phydev, struct ethtool_cmd *cmd)
+ 
+ 	ethtool_cmd_speed_set(cmd, phydev->speed);
+ 	cmd->duplex = phydev->duplex;
+-	cmd->port = PORT_MII;
++	cmd->port = phydev->port;
+ 	cmd->phy_address = phydev->addr;
+-	cmd->transceiver = XCVR_EXTERNAL;
++	cmd->transceiver = phydev->transciever;
+ 	cmd->autoneg = phydev->autoneg;
+ 
+ 	return 0;
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index fc0f315..d01b272 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -141,6 +141,8 @@ static struct phy_device* phy_device_create(struct mii_bus *bus,
+ 
+ 	dev->speed = 0;
+ 	dev->duplex = -1;
++	dev->port = PORT_MII;
++	dev->transceiver = XCVR_EXTERNAL;
+ 	dev->pause = dev->asym_pause = 0;
+ 	dev->link = 1;
+ 	dev->interface = PHY_INTERFACE_MODE_GMII;
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index f07fc1c..0cb300d 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -308,6 +308,10 @@ struct phy_device {
+ 	u32 supported;
+ 	u32 advertising;
+ 
++	/* The current port/xcvr info (Copper, Fibre, MII, Direct-Attach) */
++	u8 port;
++	u8 transceiver;
++
+ 	int autoneg;
+ 
+ 	int link_timeout;
+-- 
+1.7.2.5
+
