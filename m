@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab1JTGWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 02:22:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:65381 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab1JTGWG (ORCPT
+	id S932533Ab1JTGWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 02:22:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44102 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932477Ab1JTGWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 02:22:06 -0400
+	Thu, 20 Oct 2011 02:22:17 -0400
 From: Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar Karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 20/24] Staging: comedi: fix printk issue in cb_pcidas.c
-Date: Thu, 20 Oct 2011 11:49:06 +0530
-Message-Id: <1319091550-2558-20-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 22/24] Staging: comedi: fix printk issue in das1800.c
+Date: Thu, 20 Oct 2011 11:49:08 +0530
+Message-Id: <1319091550-2558-22-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1319091550-2558-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,159 +23,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidas.c file that fixes up a printk
+This is a patch to the das1800.c file that fixes up a printk
 warning found by the checkpatch.pl tool
-converted printks to dev_printk.
+Converted printks to dev_printk.
 Removed unnecessary printk statements.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcidas.c |   49 ++++++++++------------------
- 1 files changed, 17 insertions(+), 32 deletions(-)
+ drivers/staging/comedi/drivers/das1800.c |   90 +++++++++++++-----------------
+ 1 files changed, 39 insertions(+), 51 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 9dec153..a0ce1ae 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -565,8 +565,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 	int index;
- 	int i;
+diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
+index a6df30b..354ddc7 100644
+--- a/drivers/staging/comedi/drivers/das1800.c
++++ b/drivers/staging/comedi/drivers/das1800.c
+@@ -573,22 +573,23 @@ static int das1800_init_dma(struct comedi_device *dev, unsigned int dma0,
+ 			devpriv->dma_bits |= DMA_CH7_CH5;
+ 			break;
+ 		default:
+-			printk(" only supports dma channels 5 through 7\n"
+-			       " Dual dma only allows the following combinations:\n"
+-			       " dma 5,6 / 6,7 / or 7,5\n");
++			dev_err(dev->hw_dev, " only supports dma channels 5 through 7\n"
++				" Dual dma only allows the following combinations:\n"
++				" dma 5,6 / 6,7 / or 7,5\n");
+ 			return -EINVAL;
+ 			break;
+ 		}
+ 		if (request_dma(dma0, driver_das1800.driver_name)) {
+-			printk(" failed to allocate dma channel %i\n", dma0);
++			dev_err(dev->hw_dev, "failed to allocate dma channel %i\n",
++				dma0);
+ 			return -EINVAL;
+ 		}
+ 		devpriv->dma0 = dma0;
+ 		devpriv->dma_current = dma0;
+ 		if (dma1) {
+ 			if (request_dma(dma1, driver_das1800.driver_name)) {
+-				printk(" failed to allocate dma channel %i\n",
+-				       dma1);
++				dev_err(dev->hw_dev, "failed to allocate dma channel %i\n",
++					dma1);
+ 				return -EINVAL;
+ 			}
+ 			devpriv->dma1 = dma1;
+@@ -631,35 +632,31 @@ static int das1800_attach(struct comedi_device *dev,
+ 	if (alloc_private(dev, sizeof(struct das1800_private)) < 0)
+ 		return -ENOMEM;
  
--	pr_info("comedi%d: cb_pcidas: ", dev->minor);
--
- /*
-  * Allocate the private structure area.
-  */
-@@ -576,7 +574,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- /*
-  * Probe the device to determine what device in the series it is.
-  */
+-	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_das1800.driver_name,
+-	       iobase);
+ 	if (irq) {
+-		printk(", irq %u", irq);
++		dev_dbg(dev->hw_dev, "irq %u\n", irq);
+ 		if (dma0) {
+-			printk(", dma %u", dma0);
++			dev_dbg(dev->hw_dev, "dma %u\n", dma0);
+ 			if (dma1)
+-				printk(" and %u", dma1);
++				dev_dbg(dev->hw_dev, "and %u\n", dma1);
+ 		}
+ 	}
 -	printk("\n");
  
- 	for_each_pci_dev(pcidev) {
- 		/*  is it not a computer boards card? */
-@@ -600,20 +597,17 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 		}
+ 	if (iobase == 0) {
+-		printk(" io base address required\n");
++		dev_err(dev->hw_dev, "io base address required\n");
+ 		return -EINVAL;
  	}
  
--	printk("No supported ComputerBoards/MeasurementComputing card found on "
--	       "requested position\n");
-+	dev_err(dev->hw_dev,
-+		"No supported ComputerBoards/MeasurementComputing card found on requested position\n");
- 	return -EIO;
- 
- found:
- 
--	printk("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
--
- 	/*
- 	 * Enable PCI device and reserve I/O ports.
- 	 */
- 	if (comedi_pci_enable(pcidev, "cb_pcidas")) {
--		printk(" Failed to enable PCI device and request regions\n");
-+		dev_err(dev->hw_dev, "Failed to enable PCI device and request regions\n");
+ 	/* check if io addresses are available */
+ 	if (!request_region(iobase, DAS1800_SIZE, driver_das1800.driver_name)) {
+-		printk
+-		    (" I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
+-		     iobase, iobase + DAS1800_SIZE - 1);
++		dev_err(dev->hw_dev, "I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
++			iobase, iobase + DAS1800_SIZE - 1);
  		return -EIO;
  	}
- 	/*
-@@ -639,7 +633,8 @@ found:
- 	/*  get irq */
- 	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
- 			IRQF_SHARED, "cb_pcidas", dev)) {
--		printk(" unable to allocate irq %d\n", devpriv->pci_dev->irq);
-+		dev_err(dev->hw_dev, "unable to allocate irq %d\n",
-+			devpriv->pci_dev->irq);
- 		return -EINVAL;
+ 	dev->iobase = iobase;
+ 
+ 	board = das1800_probe(dev);
+ 	if (board < 0) {
+-		printk(" unable to determine board type\n");
++		dev_err(dev->hw_dev, "unable to determine board type\n");
+ 		return -ENODEV;
  	}
- 	dev->irq = devpriv->pci_dev->irq;
-@@ -768,17 +763,13 @@ found:
-  */
- static int cb_pcidas_detach(struct comedi_device *dev)
- {
--	pr_info("comedi%d: cb_pcidas: remove\n", dev->minor);
--
- 	if (devpriv) {
- 		if (devpriv->s5933_config) {
- 			/*  disable and clear interrupts on amcc s5933 */
- 			outl(INTCSR_INBOX_INTR_STATUS,
- 			     devpriv->s5933_config + AMCC_OP_REG_INTCSR);
--#ifdef CB_PCIDAS_DEBUG
--			printk("detaching, incsr is 0x%x\n",
--			       inl(devpriv->s5933_config + AMCC_OP_REG_INTCSR));
--#endif
-+			dev_dbg(dev->hw_dev, "detaching, incsr is 0x%x\n",
-+				inl(devpriv->s5933_config + AMCC_OP_REG_INTCSR));
+ 
+@@ -671,9 +668,8 @@ static int das1800_attach(struct comedi_device *dev,
+ 		iobase2 = iobase + IOBASE2;
+ 		if (!request_region(iobase2, DAS1800_SIZE,
+ 				    driver_das1800.driver_name)) {
+-			printk
+-			    (" I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
+-			     iobase2, iobase2 + DAS1800_SIZE - 1);
++			dev_err(dev->hw_dev, "I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
++				iobase2, iobase2 + DAS1800_SIZE - 1);
+ 			return -EIO;
+ 		}
+ 		devpriv->iobase2 = iobase2;
+@@ -683,7 +679,8 @@ static int das1800_attach(struct comedi_device *dev,
+ 	if (irq) {
+ 		if (request_irq(irq, das1800_interrupt, 0,
+ 				driver_das1800.driver_name, dev)) {
+-			printk(" unable to allocate irq %u\n", irq);
++			dev_err(dev->hw_dev, "unable to allocate irq %u\n",
++				irq);
+ 			return -EINVAL;
  		}
  	}
- 	if (dev->irq)
-@@ -858,7 +849,8 @@ static int ai_config_calibration_source(struct comedi_device *dev,
- 	unsigned int source = data[1];
- 
- 	if (source >= num_calibration_sources) {
--		printk("invalid calibration source: %i\n", source);
-+		dev_err(dev->hw_dev, "invalid calibration source: %i\n",
-+			source);
+@@ -712,7 +709,7 @@ static int das1800_attach(struct comedi_device *dev,
+ 		devpriv->irq_dma_bits |= 0x38;
+ 		break;
+ 	default:
+-		printk(" irq out of range\n");
++		dev_err(dev->hw_dev, "irq out of range\n");
  		return -EINVAL;
+ 		break;
+ 	}
+@@ -813,9 +810,6 @@ static int das1800_detach(struct comedi_device *dev)
+ 		kfree(devpriv->ai_buf1);
  	}
  
-@@ -1278,9 +1270,7 @@ static int cb_pcidas_ai_cmd(struct comedi_device *dev,
- 		bits |= PACER_INT;
- 	outw(bits, devpriv->control_status + ADCMUX_CONT);
- 
--#ifdef CB_PCIDAS_DEBUG
--	printk("comedi: sent 0x%x to adcmux control\n", bits);
--#endif
-+	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to adcmux control\n", bits);
- 
- 	/*  load counters */
- 	if (cmd->convert_src == TRIG_TIMER)
-@@ -1305,9 +1295,8 @@ static int cb_pcidas_ai_cmd(struct comedi_device *dev,
- 	} else {
- 		devpriv->adc_fifo_bits |= INT_FHF;	/* interrupt fifo half full */
- 	}
--#ifdef CB_PCIDAS_DEBUG
--	printk("comedi: adc_fifo_bits are 0x%x\n", devpriv->adc_fifo_bits);
--#endif
-+	dev_dbg(dev->hw_dev, "comedi: adc_fifo_bits are 0x%x\n",
-+		devpriv->adc_fifo_bits);
- 	/*  enable (and clear) interrupts */
- 	outw(devpriv->adc_fifo_bits | EOAI | INT | LADFUL,
- 	     devpriv->control_status + INT_ADCFIFO);
-@@ -1331,9 +1320,7 @@ static int cb_pcidas_ai_cmd(struct comedi_device *dev,
- 	if (cmd->convert_src == TRIG_NOW && cmd->chanlist_len > 1)
- 		bits |= BURSTE;
- 	outw(bits, devpriv->control_status + TRIG_CONTSTAT);
--#ifdef CB_PCIDAS_DEBUG
--	printk("comedi: sent 0x%x to trig control\n", bits);
--#endif
-+	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to trig control\n", bits);
- 
+-	printk("comedi%d: %s: remove\n", dev->minor,
+-	       driver_das1800.driver_name);
+-
  	return 0;
- }
-@@ -1548,9 +1535,8 @@ static int cb_pcidas_ao_inttrig(struct comedi_device *dev,
- 	/*  enable dac half-full and empty interrupts */
- 	spin_lock_irqsave(&dev->spinlock, flags);
- 	devpriv->adc_fifo_bits |= DAEMIE | DAHFIE;
--#ifdef CB_PCIDAS_DEBUG
--	printk("comedi: adc_fifo_bits are 0x%x\n", devpriv->adc_fifo_bits);
--#endif
-+	dev_dbg(dev->hw_dev, "comedi: adc_fifo_bits are 0x%x\n",
-+		devpriv->adc_fifo_bits);
- 	/*  enable and clear interrupts */
- 	outw(devpriv->adc_fifo_bits | DAEMI | DAHFI,
- 	     devpriv->control_status + INT_ADCFIFO);
-@@ -1558,9 +1544,8 @@ static int cb_pcidas_ao_inttrig(struct comedi_device *dev,
- 	/*  start dac */
- 	devpriv->ao_control_bits |= DAC_START | DACEN | DAC_EMPTY;
- 	outw(devpriv->ao_control_bits, devpriv->control_status + DAC_CSR);
--#ifdef CB_PCIDAS_DEBUG
--	printk("comedi: sent 0x%x to dac control\n", devpriv->ao_control_bits);
--#endif
-+	dev_dbg(dev->hw_dev, "comedi: sent 0x%x to dac control\n",
-+		devpriv->ao_control_bits);
- 	spin_unlock_irqrestore(&dev->spinlock, flags);
+ };
  
- 	async->inttrig = NULL;
+@@ -833,69 +827,63 @@ static int das1800_probe(struct comedi_device *dev)
+ 	case 0x3:
+ 		if (board == das1801st_da || board == das1802st_da ||
+ 		    board == das1701st_da || board == das1702st_da) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			dev_dbg(dev->hw_dev, "Board model: %s\n",
++				das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800st-da series\n");
++		dev_dbg(dev->hw_dev, "Board model (probed, not recommended): das-1800st-da series\n");
+ 		return das1801st;
+ 		break;
+ 	case 0x4:
+ 		if (board == das1802hr_da || board == das1702hr_da) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			dev_dbg(dev->hw_dev, "Board model: %s\n",
++				das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1802hr-da\n");
++		dev_dbg(dev->hw_dev, "Board model (probed, not recommended): das-1802hr-da\n");
+ 		return das1802hr;
+ 		break;
+ 	case 0x5:
+ 		if (board == das1801ao || board == das1802ao ||
+ 		    board == das1701ao || board == das1702ao) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			dev_dbg(dev->hw_dev, "Board model: %s\n",
++				das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800ao series\n");
++		dev_dbg(dev->hw_dev, "Board model (probed, not recommended): das-1800ao series\n");
+ 		return das1801ao;
+ 		break;
+ 	case 0x6:
+ 		if (board == das1802hr || board == das1702hr) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			dev_dbg(dev->hw_dev, "Board model: %s\n",
++				das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk(" Board model (probed, not recommended): das-1802hr\n");
++		dev_dbg(dev->hw_dev, "Board model (probed, not recommended): das-1802hr\n");
+ 		return das1802hr;
+ 		break;
+ 	case 0x7:
+ 		if (board == das1801st || board == das1802st ||
+ 		    board == das1701st || board == das1702st) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			dev_dbg(dev->hw_dev, "Board model: %s\n",
++				das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800st series\n");
++		dev_dbg(dev->hw_dev, "Board model (probed, not recommended): das-1800st series\n");
+ 		return das1801st;
+ 		break;
+ 	case 0x8:
+ 		if (board == das1801hc || board == das1802hc) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			dev_dbg(dev->hw_dev, "Board model: %s\n",
++				das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800hc series\n");
++		dev_dbg(dev->hw_dev, "Board model (probed, not recommended): das-1800hc series\n");
+ 		return das1801hc;
+ 		break;
+ 	default:
+-		printk
+-		    (" Board model: probe returned 0x%x (unknown, please report)\n",
+-		     id);
++		dev_dbg(dev->hw_dev, "Board model: probe returned 0x%x (unknown, please report)\n",
++			id);
+ 		return board;
+ 		break;
+ 	}
 -- 
 1.7.6.4
 
