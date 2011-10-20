@@ -1,37 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab1JTMLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 08:11:05 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:38267 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751043Ab1JTMLE (ORCPT
+	id S1752356Ab1JTMLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 08:11:25 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:42729 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab1JTMLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 08:11:04 -0400
-Message-ID: <4EA00FCE.4010807@ti.com>
-Date: Thu, 20 Oct 2011 17:40:54 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Thu, 20 Oct 2011 08:11:24 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Borislav Petkov <petkovbb@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH ] ide-{cd,floppy,tape}: Do not include <linux/irq.h>
+Date: Thu, 20 Oct 2011 14:11:15 +0200
+Message-Id: <1319112675-27523-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: patches@linaro.org, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        lrg@ti.com, Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
-References: <1318263578-7407-4-git-send-email-rnayak@ti.com> <20111016145536.GA29885@S2100-06.ap.freescale.net> <4E9BAC4D.3010402@ti.com> <20111018115836.GC30703@S2100-06.ap.freescale.net> <20111018160046.GD28501@opensource.wolfsonmicro.com> <20111019053354.GB31162@S2100-06.ap.freescale.net> <20111019144734.GI18713@sirena.org.uk> <20111019150448.GB32007@S2100-06.ap.freescale.net> <20111019151031.GA4275@opensource.wolfsonmicro.com> <4E9F9892.9070007@ti.com> <20111020094140.GK18713@sirena.org.uk>
-In-Reply-To: <20111020094140.GK18713@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> We can always start off just completely omitting the data and then see
-> how we go from there.  If we only cover 50% of users that's still 50%
-> more than are currently covered with device tree right now and it means
-> we can then spin round and look at the bits that are hard again without
-> review fatigue on the bits that are easy.
+The top of <linux/irq.h> has this comment:
 
-Ok, will drop the problematic bindings for now and repost.
+ * Please do not include this file in generic code.  There is currently
+ * no requirement for any architecture to implement anything held
+ * within this file.
+ *
+ * Thanks. --rmk
+
+Remove inclusion of <linux/irq.h>, to prevent the following compile error
+from happening soon:
+
+| include/linux/irq.h:132: error: redefinition of ‘struct irq_data’
+| include/linux/irq.h:286: error: redefinition of ‘struct irq_chip’
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-ide@vger.kernel.org
+---
+RESEND: Fixed typo in commit message, as pointed out by Sergei Shtylyov
+        <sshtylyov@mvista.com>
+
+ drivers/ide/ide-cd.c     |    1 -
+ drivers/ide/ide-floppy.c |    1 -
+ drivers/ide/ide-tape.c   |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/ide/ide-cd.c b/drivers/ide/ide-cd.c
+index 04b0956..8126824 100644
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -43,7 +43,6 @@
+ /* For SCSI -> ATAPI command conversion */
+ #include <scsi/scsi.h>
+ 
+-#include <linux/irq.h>
+ #include <linux/io.h>
+ #include <asm/byteorder.h>
+ #include <linux/uaccess.h>
+diff --git a/drivers/ide/ide-floppy.c b/drivers/ide/ide-floppy.c
+index 61fdf54..3d42043 100644
+--- a/drivers/ide/ide-floppy.c
++++ b/drivers/ide/ide-floppy.c
+@@ -35,7 +35,6 @@
+ #include <scsi/scsi_ioctl.h>
+ 
+ #include <asm/byteorder.h>
+-#include <linux/irq.h>
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
+ #include <asm/unaligned.h>
+diff --git a/drivers/ide/ide-tape.c b/drivers/ide/ide-tape.c
+index 7ecb1ad..ce8237d 100644
+--- a/drivers/ide/ide-tape.c
++++ b/drivers/ide/ide-tape.c
+@@ -41,7 +41,6 @@
+ #include <scsi/scsi.h>
+ 
+ #include <asm/byteorder.h>
+-#include <linux/irq.h>
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
+ #include <asm/unaligned.h>
+-- 
+1.7.0.4
 
