@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1JTCBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 22:01:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54534 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab1JTCBC (ORCPT
+	id S1755265Ab1JTCCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 22:02:36 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:56828 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab1JTCCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 22:01:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 20 Oct 2011 10:59:50 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
-        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [RFD] Isolated memory cgroups again
-Message-Id: <20111020105950.fd04f58f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111020013305.GD21703@tiehlicka.suse.cz>
-References: <20111020013305.GD21703@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Oct 2011 22:02:35 -0400
+Date: Thu, 20 Oct 2011 11:02:25 +0900
+From: Norbert Preining <preining@logic.at>
+To: wwguy <wey-yi.w.guy@intel.com>
+Cc: David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: iwlagn is getting very shaky
+Message-ID: <20111020020225.GO11060@gamma.logic.tuwien.ac.at>
+References: <20111019064818.GB14817@gamma.logic.tuwien.ac.at> <1319004938.31823.59.camel@wwguy-huron> <20111019060108.GA11588@gamma.logic.tuwien.ac.at> <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com> <20111019062517.GC11588@gamma.logic.tuwien.ac.at> <1319003304.31823.46.camel@wwguy-huron> <20111019064628.GA14817@gamma.logic.tuwien.ac.at> <1319004836.31823.57.camel@wwguy-huron> <20111019124931.GC3963@gamma.logic.tuwien.ac.at> <1319038282.25023.21.camel@wwguy-ubuntu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319038282.25023.21.camel@wwguy-ubuntu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Oct 2011 18:33:09 -0700
-Michal Hocko <mhocko@suse.cz> wrote:
+On Mi, 19 Okt 2011, wwguy wrote:
+> instead of having you to revert the patch I ask you to do, could you
+> please just apply the patch I attach here and see if it make any
+> differences? it is also for debugging purpose, so please check the dmesg
+> log.
 
-> Hi all,
-> this is a request for discussion (I hope we can touch this during memcg
-> meeting during the upcoming KS). I have brought this up earlier this
-> year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
-> The patch got much smaller since then due to excellent Johannes' memcg
-> naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
-> which this is based on.
+Do you mean the patch you send with a strange date:
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-agn-tx.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Yes, Johannes' work will make isolation smarter.
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
+b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
+index 863c43f..5a87071 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
+@@ -812,8 +812,13 @@ int iwlagn_rx_reply_tx(struct iwl_priv *priv, struct
+iwl_rx_mem_buffer *rxb,
+                        if (status == TX_STATUS_FAIL_PASSIVE_NO_RX &&
+                            iwl_is_associated_ctx(ctx) && ctx->vif &&
+                            ctx->vif->type == NL80211_IFTYPE_STATION) {
++#if 0
+                                ctx->last_tx_rejected = true;
+                                iwl_trans_stop_queue(trans(priv), txq_id);
++#endif
++IWL_ERR(priv,
++       "Encounter TX_STATUS_FAIL_PASSIVE_NO_RX, am I on 5.2G band? (%d)\n",
++       txq_id);
 
+                                IWL_DEBUG_TX_REPLY(priv,
+                                           "TXQ %d status %s (0x%08x) "
+--
+1.7.0.4
 
-> I realize that this will be controversial but I would like to hear
-> whether this is strictly no-go or whether we can go that direction (the
-> implementation might differ of course).
-> 
-> The patch is still half baked but I guess it should be sufficient to
-> show what I am trying to achieve.
-> The basic idea is that memcgs would get a new attribute (isolated) which
-> would control whether that group should be considered during global
-> reclaim.
-> This means that we could achieve a certain memory isolation for
-> processes in the group from the rest of the system activity which has
-> been traditionally done by mlocking the important parts of memory.
-> This approach, however, has some advantages. First of all, it is a kind
-> of all or nothing type of approach. Either the memory is important and
-> mlocked or you have no guarantee that it keeps resident. 
-> Secondly it is much more prone to OOM situation.
-> Let's consider a case where a memory is evictable in theory but you
-> would pay quite much if you have to get it back resident (pre calculated
-> data from database - e.g. reports). The memory wouldn't be used very
-> often so it would be a number one candidate to evict after some time.
-> We would want to have something like a clever mlock in such a case which
-> would evict that memory only if the cgroup itself gets under memory
-> pressure (e.g. peak workload). This is not hard to do if we are not
-> over committing the memory but things get tricky otherwise.
-> With the isolated memcgs we get exactly such a guarantee because we would
-> reclaim such a memory only from the hard limit reclaim paths or if the
-> soft limit reclaim if it is set up.
-> 
-> Any thoughts comments?
-> 
+It does not apply at all, I cannot even find
+	rejected
+in iwl-agn-tx.c.
 
-I can only say
- - it can be implemented in a clean way.
- - maybe customers wants it.
- - This kinds of "mlock" can be harmful and make system admin difficult.
- - I'm not sure there will be a chance for security issue, DOS attack.
+On which tree is that based, can you provide a patch against main
+git branch of Linus.
 
-Hmm...if the number of isolated pages can be shown in /proc/meminfo,
-I'll not have strong NACK.
+Thanks.
 
-But I personally think we should make softlimit better rather than
-adding new interface. If this feature can be archieved when setting
-softlimit=UNLIMITED, it's simple. And Johannes' work will make this
-easy to be implemented.
-(total rewrite of softlimit should be required...I think.)
+Best wishes
 
-Thanks,
--Kame
-
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+BROMPTON
+A bromton is that which is said to have been committed when you are
+convinced you are about to blow off with a resounding trumpeting noise
+in a public place and all that actually slips out is a tiny 'pfpt'.
+			--- Douglas Adams, The Meaning of Liff
