@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab1JTKZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:25:48 -0400
-Received: from fieldses.org ([174.143.236.118]:56807 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751Ab1JTKZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:25:47 -0400
-Date: Thu, 20 Oct 2011 06:25:38 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
-Message-ID: <20111020102538.GG5444@fieldses.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20111019222021.GB1874@fieldses.org>
- <87k4805alx.fsf@linux.vnet.ibm.com>
- <20111020091434.GC5444@fieldses.org>
- <20111020091946.GA23773@infradead.org>
+	id S1756561Ab1JTK0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:26:20 -0400
+Received: from mx.kernel.net.pl ([217.73.31.3]:54554 "EHLO an2.kernel.pl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750751Ab1JTK0T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:26:19 -0400
+From: Witold Krecicki <wpk@culm.net>
+To: Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 0/6] cgroup: add isolation_root flag, poor man's namespaces for cgroups
+Date: Thu, 20 Oct 2011 12:25:59 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.6.2; x86_64; ; )
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Matt Helsley <matthltc@us.ibm.com>
+References: <1317382585-12172-1-git-send-email-wpk@culm.net> <CALdu-PDCxS49_GBBUQUskotKb_46O31YM8Tx+cniGfBa5X169g@mail.gmail.com>
+In-Reply-To: <CALdu-PDCxS49_GBBUQUskotKb_46O31YM8Tx+cniGfBa5X169g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111020091946.GA23773@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110201225.59627.wpk@culm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 05:19:46AM -0400, Christoph Hellwig wrote:
-> On Thu, Oct 20, 2011 at 05:14:34AM -0400, J. Bruce Fields wrote:
-> > > > Does it really make sense to use a string here just to pick between the
-> > > > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
-> > > > integer?  Is the goal to expand this somehow eventually?
-> > > 
+Dnia czwartek, 20 października 2011 o 12:11:54 Paul Menage napisał(a):
+> After talking with Eric Biederman at LPC about the virtualizability of
+> containers, I was wondering whether we could go even further, and say
+> that a hierarchy (in the sense of a tree of cgroups with a bound set
+> of subsystems) could be broken at the point of an isolation root. The
+> container could then construct its own hierarchies with potentially
+> different combinations of subsystems.
+I tried to make it as simple as possible - and this approach (looking at patch 
+length) seemed to be the simplest (we really don't care about 'other' cgroups 
+that might appear). Other approaches would probably require major rewrites of 
+cgroups code.
+
+> > I'm really not sure if the 'mount' part (patch 5) is done correctly,
+> > please review carefully.
 > 
-> > > I guess Andreas wanted the disk layout to be able to store user@domain
-> > > format if needed.
-> > 
-> > Is that likely?  For that to be useful, tasks would need to be able to
-> > run as user@domain strings.  And we'd probably want owners and groups to
-> > also be user@domain strings.
-> > 
-> > The container people seem to eventually want to add some kind of
-> > namespace identifier everywhere:
-> > 
-> > 	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
-> > 
-> > in which case I guess we'd likely end up with (uid, user namespace id)
-> > instead of user@domain?
-> 
-> 
-> Storing strings is an extremly stupid idea.  The only thing that would
-> make sense would be storing a windows-style 128-bit GUID.
-> 
+> It looks simple, I agree, and as though it *ought* to work. My first
+> worry with this was that if the parent system unmount the hierarchy,
+> and all the tasks in the child container died (so its namespace was
+> cleaned up), what would keep the root or the parent-created hierarchy
+> alive? But I think that since the super-block also has a reference on
+> the root dentry itself, it should be OK.
+I've tested it and 'it works' so no problem there :)
+I'm currently testing this setup with several containers launched under 
+modified LXC (creating 'container_name' cgroup, then 'container_name/rootfs', 
+then setting them both to desired values and putting init in 
+'container_name/rootfs') - no problems so far.
 
-So if we want to do this without strings:
+-- 
+Witold Krecicki
 
-> > > +struct richace_xattr {
-> > > + __le16          e_type;
-> > > + __le16          e_flags;
-> > > + __le32          e_mask;
-> > > + __le32          e_id;
-> > > + char            e_who[0];
 
-We could drop that last field and use some predefined values for e_id to
-represent owner/group/everyone in the e_type == ACE4_SPECIAL_WHO case.
-
-Then I'm not sure how you'd extend it if you later decided to add
-Windows GUID's or whatever.
-
-But maybe it's not realistic to expect to be able to do that without a
-new interface and on-disk format: how could old software be expected to
-deal with acls that didn't use uid's?
-
---b.
