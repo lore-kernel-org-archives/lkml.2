@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab1JTUFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 16:05:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38434 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab1JTUFb (ORCPT
+	id S1751504Ab1JTULE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 16:11:04 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23909 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab1JTULB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 16:05:31 -0400
-Message-ID: <1319141125.2854.14.camel@edumazet-laptop>
-Subject: Re: Kernel panic from tg3 net driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: ari.m.savolainen@gmail.com, richardcochran@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 20 Oct 2011 22:05:25 +0200
-In-Reply-To: <20111020.155659.486754557434415381.davem@davemloft.net>
-References: <CAEbykaXz+J8abVzU3yjqZG2+yhHNrQWsQy2c8wNyoERWPpxWKQ@mail.gmail.com>
-	 <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-	 <20111020.155659.486754557434415381.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 20 Oct 2011 16:11:01 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+YhrHlm3zrBGkU61FA53mk
+Date: Thu, 20 Oct 2011 13:10:55 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111020201054.GN3842@atomide.com>
+References: <20111019144734.GI18713@sirena.org.uk>
+ <20111019150448.GB32007@S2100-06.ap.freescale.net>
+ <20111019151031.GA4275@opensource.wolfsonmicro.com>
+ <4E9F9892.9070007@ti.com>
+ <20111020094140.GK18713@sirena.org.uk>
+ <20111020162743.GB31337@atomide.com>
+ <20111020164006.GA10155@sirena.org.uk>
+ <20111020170534.GC31337@atomide.com>
+ <20111020172218.GE31337@atomide.com>
+ <20111020195734.GB17384@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020195734.GB17384@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 octobre 2011 à 15:56 -0400, David Miller a écrit :
-> From: Ari Savolainen <ari.m.savolainen@gmail.com>
-> Date: Thu, 20 Oct 2011 22:30:44 +0300
+* Mark Brown <broonie@opensource.wolfsonmicro.com> [111020 12:23]:
+> On Thu, Oct 20, 2011 at 10:22:19AM -0700, Tony Lindgren wrote:
 > 
-> > I finally got time to continue bisecting. The commit that causes the
-> > kernel panic is:  2669069aacc9 "tg3: enable transmit time stamping."
+> > Hmm, actually, can't we just pass the board specific configuration in
+> > the board specific .dts file and then it gets merged in with the
+> > arch independent DT node?
 > 
-> I thought initially that the issue might be that we have to do the
-> skb_tx_timestamp() call before we advance the mailbox transmit
-> descriptor pointer.
-> 
-> But that shouldn't matter, we run with a lock held, and TX reclaim takes
-> that same lock.
-> 
-> So I'm sort of stumped at the moment.
+> I don't understand what an "arch independent DT node" would be?
 
-But its not a panic, its a RCU splat ?
+Well that's the standard non-Linux specific parts. Basically what's
+in the $Subject patch minus what you commented on earlier:
 
-> [  105.612129]  [<ffffffff810ccdcb>] lockdep_rcu_dereference+0xbb/0xc0
-> [  105.612132]  [<ffffffff815dc5a9>] neigh_update+0x4f9/0x5f0
-> [  105.612135]  [<ffffffff815da001>] ? neigh_lookup+0xe1/0x220
-> [  105.612139]  [<ffffffff81639298>] arp_req_set+0xb8/0x230
-> [  105.612142]  [<ffffffff8163a59f>] arp_ioctl+0x1bf/0x310
-> [  105.612146]  [<ffffffff810baa40>] ? lock_hrtimer_base.isra.26+0x30/0x60
-> [  105.612150]  [<ffffffff8163fb75>] inet_ioctl+0x85/0x90
-> [  105.612154]  [<ffffffff815b5520>] sock_do_ioctl+0x30/0x70
-> [  105.612157]  [<ffffffff815b55d3>] sock_ioctl+0x73/0x280
-> [  105.612162]  [<ffffffff811b7698>] do_vfs_ioctl+0x98/0x570
-> [  105.612165]  [<ffffffff811a5c40>] ? fget_light+0x340/0x3a0
-> [  105.612168]  [<ffffffff811b7bbf>] sys_ioctl+0x4f/0x80
-> [  105.612172]  [<ffffffff816fdcab>] system_call_fastpath+0x16/0x1b
+> +- regulator-change-voltage: boolean, Output voltage can be changed by software
+> +- regulator-change-current: boolean, Output current can be chnaged by software
+> +- regulator-change-mode: boolean, Operating mode can be changed by software
+> +- regulator-change-status: boolean, Enable/Disable control for regulator exists
+> +- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
+> +- regulator-mode-fast: boolean, allow/set fast mode for the regulator
+> +- regulator-mode-normal: boolean, allow/set normal mode for the regulator
+> +- regulator-mode-idle: boolean, allow/set idle mode for the regulator
+> +- regulator-mode-standby: boolean, allow/set standby mode for the regulator
+> +- regulator-input-uV: Input voltage for regulator when supplied by another regulator
+> +- regulator-always-on: boolean, regulator should never be disabled
 
-And I think this was fixed yesterday ?
+We still need to figure out how to get the above board specific
+data to the device driver probe in a way where we can avoid having
+platform glue code. Any thoughts on that?
 
-De: 	roy.qing.li@gmail.com
-À: 	ari.m.savolainen@gmail.com, netdev@vger.kernel.org
-Sujet: 	[PATCH net-next] neigh: fix rcu splat in neigh_update()
-Date: 	Tue, 18 Oct 2011 16:32:42 +0800 (18/10/2011 10:32:42)
-
-
+Tony
