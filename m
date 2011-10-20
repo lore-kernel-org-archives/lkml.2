@@ -1,250 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab1JTBdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 21:33:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46189 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754537Ab1JTBdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 21:33:21 -0400
-Date: Wed, 19 Oct 2011 18:33:09 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
-        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [RFD] Isolated memory cgroups again
-Message-ID: <20111020013305.GD21703@tiehlicka.suse.cz>
+	id S1755899Ab1JTBiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 21:38:50 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16927 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754333Ab1JTBit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 21:38:49 -0400
+Date: Wed, 19 Oct 2011 21:38:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        thellstrom@vmware.com, thomas@shipmail.org, airlied@redhat.com
+Cc: xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com
+Subject: Re: [PATCH] TTM DMA pool v2.1
+Message-ID: <20111020013801.GA6319@phenom.dumpdata.com>
+References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4E9F7B84.0039:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is a request for discussion (I hope we can touch this during memcg
-meeting during the upcoming KS). I have brought this up earlier this
-year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
-The patch got much smaller since then due to excellent Johannes' memcg
-naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
-which this is based on.
-I realize that this will be controversial but I would like to hear
-whether this is strictly no-go or whether we can go that direction (the
-implementation might differ of course).
+On Wed, Oct 19, 2011 at 06:19:21PM -0400, Konrad Rzeszutek Wilk wrote:
 
-The patch is still half baked but I guess it should be sufficient to
-show what I am trying to achieve.
-The basic idea is that memcgs would get a new attribute (isolated) which
-would control whether that group should be considered during global
-reclaim.
-This means that we could achieve a certain memory isolation for
-processes in the group from the rest of the system activity which has
-been traditionally done by mlocking the important parts of memory.
-This approach, however, has some advantages. First of all, it is a kind
-of all or nothing type of approach. Either the memory is important and
-mlocked or you have no guarantee that it keeps resident. 
-Secondly it is much more prone to OOM situation.
-Let's consider a case where a memory is evictable in theory but you
-would pay quite much if you have to get it back resident (pre calculated
-data from database - e.g. reports). The memory wouldn't be used very
-often so it would be a number one candidate to evict after some time.
-We would want to have something like a clever mlock in such a case which
-would evict that memory only if the cgroup itself gets under memory
-pressure (e.g. peak workload). This is not hard to do if we are not
-over committing the memory but things get tricky otherwise.
-With the isolated memcgs we get exactly such a guarantee because we would
-reclaim such a memory only from the hard limit reclaim paths or if the
-soft limit reclaim if it is set up.
+Hmm, seems a part of this got eaten by the Internet monsters.
 
-Any thoughts comments?
+Since v2.0: [not posted]
+ - Redid the registration/override to be tightly integrated with the
+   'struct ttm_backend_func' per Thomas's suggestion.
+Since v1.9: [not posted]
+ - Performance improvements - it was doing O(n^2) instead of O(n) on certain
+   workloads.
+Since v1.8: [lwn.net/Articles/458724/]
+ - Removed swiotlb_enabled and used swiotlb_nr_tbl.
+ - Added callback for changing cache types.
+Since v1.7: [https://lkml.org/lkml/2011/8/30/460]
+ - Fixed checking the DMA address in radeon/nouveau code.
+Since v1: [http://lwn.net/Articles/456246/]
+ - Ran it through the gauntlet of SubmitChecklist and fixed issues
+ - Made radeon/nouveau driver set coherent_dma (which is required for dmapool)
 
----
-From: Michal Hocko <mhocko@suse.cz>
-Subject: Implement isolated cgroups
-
-This patch adds a new per-cgroup knob (isolated) which controls whether
-pages charged for the group should be considered for the global reclaim
-or they are reclaimed only during soft reclaim and under per-cgroup
-memory pressure.
-
-The value can be modified by GROUP/memory.isolated knob.
-
-The primary idea behind isolated cgroups is in a better isolation of a group
-from the global system activity. At the moment, memory cgroups are mainly
-used to throttle processes in a group by placing a cap on their memory
-usage. However, mem. cgroups don't protect their (charged) memory from being
-evicted by the global reclaim as groups are considered during global
-reclaim.
-
-The feature will provide an easy way to setup a mission critical workload in
-the memory isolated environment without necessity of mlock. Due to
-per-cgroup reclaim we can even handle memory usage spikes much more
-gracefully because a part of the working set can get reclaimed (unlike OOM
-killed as if mlock has been used). So we can look at the feature as an
-intelligent mlock (protect from external memory pressure and reclaim on
-internal pressure).
-
-The implementation ignores isolated group status for the soft reclaim which
-means that every isolated group can configure how much memory it can
-sacrifice under global memory pressure. Soft unlimited groups are isolated
-from the global memory pressure completely.
-
-Please note that the feature has to be used with caution because isolated
-groups will make a bigger reclaim pressure to non-isolated cgroups.
-
-Implementation is really simple because we just have to hook into shrink_zone
-and exclude isolated groups if we are doing the global reclaiming.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-
-TODO
-- consider hierarchies - I am not sure whether we want to have
-  non-consistent isolated status in the hierarchy - probably not
-- handle root cgroup
-- Do we want some checks whether the current setting is safe?
-- is bool sufficient. Don't we rather want something like priority
-  instead?
-
-
- include/linux/memcontrol.h |    7 +++++++
- mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
- mm/vmscan.c                |    8 +++++++-
- 3 files changed, 58 insertions(+), 1 deletion(-)
-
-Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/memcontrol.c
-===================================================================
---- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/mm/memcontrol.c
-+++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/memcontrol.c
-@@ -258,6 +258,9 @@ struct mem_cgroup {
- 	/* set when res.limit == memsw.limit */
- 	bool		memsw_is_minimum;
- 
-+	/* is the group isolated from the global memory pressure? */
-+	bool		isolated;
-+
- 	/* protect arrays of thresholds */
- 	struct mutex thresholds_lock;
- 
-@@ -287,6 +290,11 @@ struct mem_cgroup {
- 	spinlock_t pcp_counter_lock;
- };
- 
-+bool mem_cgroup_isolated(struct mem_cgroup *mem)
-+{
-+	return mem->isolated;
-+}
-+
- /* Stuffs for move charges at task migration. */
- /*
-  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
-@@ -4561,6 +4569,37 @@ static int mem_control_numa_stat_open(st
- }
- #endif /* CONFIG_NUMA */
- 
-+static int mem_cgroup_isolated_write(struct cgroup *cgrp, struct cftype *cft,
-+		const char *buffer)
-+{
-+	int ret = -EINVAL;
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	if (mem_cgroup_is_root(mem))
-+		goto out;
-+
-+	if (!strcasecmp(buffer, "true"))
-+		mem->isolated = true;
-+	else if (!strcasecmp(buffer, "false"))
-+		mem->isolated = false;
-+	else
-+		goto out;
-+
-+	ret = 0;
-+out:
-+	return ret;
-+}
-+
-+static int mem_cgroup_isolated_read(struct cgroup *cgrp, struct cftype *cft,
-+		struct seq_file *seq)
-+{
-+	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
-+
-+	seq_puts(seq, (mem->isolated)?"true":"false");
-+
-+	return 0;
-+}
-+
- static struct cftype mem_cgroup_files[] = {
- 	{
- 		.name = "usage_in_bytes",
-@@ -4624,6 +4663,11 @@ static struct cftype mem_cgroup_files[]
- 		.unregister_event = mem_cgroup_oom_unregister_event,
- 		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
- 	},
-+	{
-+		.name = "isolated",
-+		.write_string = mem_cgroup_isolated_write,
-+		.read_seq_string = mem_cgroup_isolated_read,
-+	},
- #ifdef CONFIG_NUMA
- 	{
- 		.name = "numa_stat",
-Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/include/linux/memcontrol.h
-===================================================================
---- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/include/linux/memcontrol.h
-+++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/include/linux/memcontrol.h
-@@ -165,6 +165,9 @@ void mem_cgroup_split_huge_fixup(struct
- bool mem_cgroup_bad_page_check(struct page *page);
- void mem_cgroup_print_bad_page(struct page *page);
- #endif
-+
-+bool mem_cgroup_isolated(struct mem_cgroup *mem);
-+
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct mem_cgroup;
- 
-@@ -382,6 +385,10 @@ static inline
- void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
- {
- }
-+bool mem_cgroup_isolated(struct mem_cgroup *mem)
-+{
-+	return false;
-+}
- #endif /* CONFIG_CGROUP_MEM_CONT */
- 
- #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
-Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/vmscan.c
-===================================================================
---- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/mm/vmscan.c
-+++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/vmscan.c
-@@ -2109,7 +2109,13 @@ static void shrink_zone(int priority, st
- 			.zone = zone,
- 		};
- 
--		shrink_mem_cgroup_zone(priority, &mz, sc);
-+		/*
-+		 * Do not reclaim from an isolated group if we are in
-+		 * the global reclaim.
-+		 */
-+		if (!(mem_cgroup_isolated(mem) && global_reclaim(sc)))
-+			shrink_mem_cgroup_zone(priority, &mz, sc);
-+
- 		/*
- 		 * Limit reclaim has historically picked one memcg and
- 		 * scanned it with decreasing priority levels until
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> [.. and this is what I said in v1 post]:
+> 
+> Way back in January this patchset:
+> http://lists.freedesktop.org/archives/dri-devel/2011-January/006905.html
+> was merged in, but pieces of it had to be reverted b/c they did not
+> work properly under PowerPC, ARM, and when swapping out pages to disk.
+> 
+> After a bit of discussion on the mailing list
+> http://marc.info/?i=4D769726.2030307@shipmail.org I started working on it, but
+> got waylaid by other things .. and finally I am able to post the RFC patches.
+> 
+> There was a lot of discussion about it and I am not sure if I captured
+> everybody's thoughts - if I did not - that is _not_ intentional - it has just
+> been quite some time..
+> 
+> Anyhow .. the patches explore what the "lib/dmapool.c" does - which is to have a
+> DMA pool that the device has associated with. I kind of married that code
+> along with drivers/gpu/drm/ttm/ttm_page_alloc.c to create a TTM DMA pool code.
+> The end result is DMA pool with extra features: can do write-combine, uncached,
+> writeback (and tracks them and sets back to WB when freed); tracks "cached"
+> pages that don't really need to be returned to a pool; and hooks up to
+> the shrinker code so that the pools can be shrunk.
+> 
+> If you guys think this set of patches make sense  - my future plans were
+>  1) Get this in large crowd of testing .. and if it works for a kernel release
+>  2) to move a bulk of this in the lib/dmapool.c (I spoke with Matthew Wilcox
+>     about it and he is OK as long as I don't introduce performance regressions).
+> 
+> But before I do any of that a second set of eyes taking a look at these
+> patches would be most welcome.
+> 
+> In regards to testing, I've been running them non-stop for the last month.
+> (and found some issues which I've fixed up) - and been quite happy with how
+> they work.
+> 
+> Michel (thanks!) took a spin of the patches on his PowerPC and they did not
+> cause any regressions (wheew).
+> 
+> The patches are also located in a git tree:
+> 
+>  git://oss.oracle.com/git/kwilk/xen.git devel/ttm.dma_pool.v2.1
+> 
+> 
+> Konrad Rzeszutek Wilk (11):
+>       swiotlb: Expose swiotlb_nr_tlb function to modules
+>       nouveau/radeon: Set coherent DMA mask
+>       ttm/radeon/nouveau: Check the DMA address from TTM against known value.
+>       ttm: Wrap ttm_[put|get]_pages and extract GFP_* and caching states from 'struct ttm_tt'
+>       ttm: Get rid of temporary scaffolding
+>       ttm/driver: Expand ttm_backend_func to include two overrides for TTM page pool.
+>       ttm: Do not set the ttm->be to NULL before calling the TTM page pool to free pages.
+>       ttm: Provide DMA aware TTM page pool code.
+>       ttm: Add 'no_dma' parameter to turn the TTM DMA pool off during runtime.
+>       nouveau/ttm/dma: Enable the TTM DMA pool if device can only do 32-bit DMA.
+>       radeon/ttm/dma: Enable the TTM DMA pool if the device can only do 32-bit.
+> 
+>  drivers/gpu/drm/nouveau/nouveau_debugfs.c |    1 +
+>  drivers/gpu/drm/nouveau/nouveau_mem.c     |    5 +
+>  drivers/gpu/drm/nouveau/nouveau_sgdma.c   |    8 +-
+>  drivers/gpu/drm/radeon/radeon_device.c    |    6 +
+>  drivers/gpu/drm/radeon/radeon_gart.c      |    4 +-
+>  drivers/gpu/drm/radeon/radeon_ttm.c       |   19 +-
+>  drivers/gpu/drm/ttm/Makefile              |    3 +
+>  drivers/gpu/drm/ttm/ttm_memory.c          |    5 +
+>  drivers/gpu/drm/ttm/ttm_page_alloc.c      |  108 ++-
+>  drivers/gpu/drm/ttm/ttm_page_alloc_dma.c  | 1446 +++++++++++++++++++++++++++++
+>  drivers/gpu/drm/ttm/ttm_tt.c              |   21 +-
+>  drivers/xen/swiotlb-xen.c                 |    2 +-
+>  include/drm/ttm/ttm_bo_driver.h           |   31 +
+>  include/drm/ttm/ttm_page_alloc.h          |   53 +-
+>  include/linux/swiotlb.h                   |    2 +-
+>  lib/swiotlb.c                             |    5 +-
+>  16 files changed, 1637 insertions(+), 82 deletions(-)
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
