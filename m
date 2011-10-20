@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab1JTRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 13:49:26 -0400
-Received: from fieldses.org ([174.143.236.118]:43115 "EHLO fieldses.org"
+	id S1756913Ab1JTRwM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 13:52:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab1JTRtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 13:49:25 -0400
-Date: Thu, 20 Oct 2011 13:49:15 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>, agruen@kernel.org,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
-Message-ID: <20111020174915.GA9987@fieldses.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20111019222021.GB1874@fieldses.org>
- <87k4805alx.fsf@linux.vnet.ibm.com>
- <20111020091434.GC5444@fieldses.org>
- <20111020091946.GA23773@infradead.org>
- <87aa8w53kj.fsf@linux.vnet.ibm.com>
+	id S1756141Ab1JTRwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 13:52:11 -0400
+Date: Thu, 20 Oct 2011 13:50:22 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 02/10] block: fix genhd refcounting in
+ blkio_policy_parse_and_set()
+Message-ID: <20111020175022.GD13685@redhat.com>
+References: <1318998384-22525-3-git-send-email-tj@kernel.org>
+ <20111019132657.GA1140@redhat.com>
+ <20111019162902.GA25124@google.com>
+ <20111019165932.GH1140@redhat.com>
+ <20111019220553.GQ25124@google.com>
+ <20111019220717.GR25124@google.com>
+ <20111019235146.GS25124@google.com>
+ <20111020134137.GA13685@redhat.com>
+ <20111020161123.GW25124@google.com>
+ <CAPXgP12hvveG8y31Q77BQAzrdaeaux=Eoonu8RinGmP3DfTsbQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87aa8w53kj.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP12hvveG8y31Q77BQAzrdaeaux=Eoonu8RinGmP3DfTsbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 04:32:04PM +0530, Aneesh Kumar K.V wrote:
-> On Thu, 20 Oct 2011 05:19:46 -0400, Christoph Hellwig <hch@infradead.org> wrote:
-> > On Thu, Oct 20, 2011 at 05:14:34AM -0400, J. Bruce Fields wrote:
-> > > > > Does it really make sense to use a string here just to pick between the
-> > > > > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
-> > > > > integer?  Is the goal to expand this somehow eventually?
-> > > > 
-> > 
-> > > > I guess Andreas wanted the disk layout to be able to store user@domain
-> > > > format if needed.
-> > > 
-> > > Is that likely?  For that to be useful, tasks would need to be able to
-> > > run as user@domain strings.  And we'd probably want owners and groups to
-> > > also be user@domain strings.
-> > > 
-> > > The container people seem to eventually want to add some kind of
-> > > namespace identifier everywhere:
-> > > 
-> > > 	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
-> > > 
-> > > in which case I guess we'd likely end up with (uid, user namespace id)
-> > > instead of user@domain?
-> > 
-> > 
-> > Storing strings is an extremly stupid idea.  The only thing that would
-> > make sense would be storing a windows-style 128-bit GUID.
-> > 
+On Thu, Oct 20, 2011 at 06:16:04PM +0200, Kay Sievers wrote:
+> On Thu, Oct 20, 2011 at 18:11, Tejun Heo <tj@kernel.org> wrote:
+> > I think this is essentially a bug.  If you have something like "dev =
+> > find_and_get(); put(dev); return dev != NULL;", it's a pretty good
+> > indication something is pretty screwed there, so unless someone
+> > screams really loud, I think I'm gonna push for removal of the
+> > feature.
 > 
-> How about updating the richacl_xattr as below 
+> Matching on unpredictable dev_t inside the kernel or in userspace is a
+> serious bug. We can't do anything like that ever on a modern system,
+> these times are long over.
 > 
-> struct richace_xattr {
-> 	__le16		e_type;
-> 	__le16		e_flags;
-> 	__le32		e_mask;
-> 	__le32		e_size;
-> 	u8		e_id[0];
-> };
-> 
-> now e_flags can contain ACE4_SPECIAL_WHO to indicate value in e_id
-> indicate special who values (which could be 1 byte value indicating
-> OWNER@, GROUP@ or EVERYONE@), ACE4_UNIXID_WHO, to indicate value
-> in e_id is the little endian value of unix id. ACE_WINSID_WHO to
-> indicate e_id is the 128 bit array containing SID value. ?
+> Yes, please get rid of this misguided logic, nobody should get the
+> impression that this can ever work.
 
-That's effectively still a string.
+Kay,
 
-Would it be so bad to have to introduce another xattr type if we needed
-a new id type?  You'll have to modify the filesystem and the userspace
-tools and everything anyway, won't you?
+So are you suggesting don't use device major/minor number for specifying
+the rules in cgroup or you are suggesting the same thing as Tejun that
+automatically get rid of rule when device goes away. 
 
-But if we decide we don't need strings, then at a minimum let's make
-these some fixed small size.
+If it is former, then what else one can use for specifying the rule.
 
-You could do something like:
-
-	struct richace_xattr {
-		__le16		e_type;
-		__le16		e_flags;
-		__le32		e_mask;
-		__le32		e_id[4];
-	}
-
-and just use e_id[0] for now.  That would still leave room for a 128-bit
-id, or for a 32-bit uid + some-size namespace-id.
-
-Cc'ing Eric Biederman in hopes of finding out whether that would satifsy
-whatever wacky future ideas might be expected for user namespaces.
-
---b.
+Thanks
+Vivek
