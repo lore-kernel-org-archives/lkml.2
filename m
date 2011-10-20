@@ -1,189 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab1JTKqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:46:43 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:52448 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab1JTKql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:46:41 -0400
-X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
-   d="scan'208";a="18393843"
-From: David Vrabel <david.vrabel@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH 4/4] xen: map foreign pages for shared rings by updating the PTEs directly
-Date: Thu, 20 Oct 2011 11:45:19 +0100
-Message-ID: <1319107519-2253-5-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
-References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932369Ab1JTKti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:49:38 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38954 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755205Ab1JTKth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:49:37 -0400
+Message-ID: <1319107769.8866.3.camel@phoenix>
+Subject: [PATCH] ASoC: Use SGTL5000_LINREG_VDDD_MASK instead of hardcoded
+ mask value
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Zeng Zhaoming <zhaoming.zeng@freescale.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Date: Thu, 20 Oct 2011 18:49:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When mapping a foreign page with xenbus_map_ring_valloc() with the
-GNTTABOP_map_grant_ref hypercall, set the GNTMAP_contains_pte flag and
-pass a pointer to the PTE (in init_mm).
+We have defined SGTL5000_LINREG_VDDD_MASK in sgtl5000.h,
+use it instead of hardcoded (0x1 << 4) - 1 for the mask.
 
-After the page is mapped, the usual fault mechanism can be used to
-update additional MMs.  This allows the vmalloc_sync_all() to be
-removed from alloc_vm_area().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/x86/xen/grant-table.c         |    2 +-
- drivers/xen/xenbus/xenbus_client.c |   11 ++++++++---
- include/linux/vmalloc.h            |    2 +-
- mm/vmalloc.c                       |   27 +++++++++++++--------------
- 4 files changed, 23 insertions(+), 19 deletions(-)
+ sound/soc/codecs/sgtl5000.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 6bbfd7a..5a40d24 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index 8395002..32b5bbd 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -754,7 +754,7 @@ static int ldo_regulator_enable(struct regulator_dev *dev)
  
- 	if (shared == NULL) {
- 		struct vm_struct *area =
--			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-+			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
- 		BUG_ON(area == NULL);
- 		shared = area->addr;
- 		*__shared = shared;
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index 229d3ad..52bc57f 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -34,6 +34,7 @@
- #include <linux/types.h>
- #include <linux/vmalloc.h>
- #include <asm/xen/hypervisor.h>
-+#include <asm/xen/page.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/event_channel.h>
- #include <xen/events.h>
-@@ -435,19 +436,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
- int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
- {
- 	struct gnttab_map_grant_ref op = {
--		.flags = GNTMAP_host_map,
-+		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
- 		.ref   = gnt_ref,
- 		.dom   = dev->otherend_id,
- 	};
- 	struct vm_struct *area;
-+	pte_t *pte;
+ 	/* set voltage to register */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_LINREG_CTRL,
+-				(0x1 << 4) - 1, reg);
++				SGTL5000_LINREG_VDDD_MASK, reg);
  
- 	*vaddr = NULL;
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
+ 				SGTL5000_LINEREG_D_POWERUP,
+@@ -780,7 +780,7 @@ static int ldo_regulator_disable(struct regulator_dev *dev)
  
--	area = alloc_vm_area(PAGE_SIZE);
-+	area = alloc_vm_area(PAGE_SIZE, &pte);
- 	if (!area)
- 		return -ENOMEM;
+ 	/* clear voltage info */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_LINREG_CTRL,
+-				(0x1 << 4) - 1, 0);
++				SGTL5000_LINREG_VDDD_MASK, 0);
  
--	op.host_addr = (unsigned long)area->addr;
-+	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
+ 	ldo->enabled = 0;
  
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
- 		BUG();
-@@ -526,6 +528,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 	struct gnttab_unmap_grant_ref op = {
- 		.host_addr = (unsigned long)vaddr,
- 	};
-+	unsigned int level;
+@@ -1115,7 +1115,7 @@ static int sgtl5000_set_power_regs(struct snd_soc_codec *codec)
  
- 	/* It'd be nice if linux/vmalloc.h provided a find_vm_area(void *addr)
- 	 * method so that we don't have to muck with vmalloc internals here.
-@@ -547,6 +550,8 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 	}
+ 	/* set voltage to register */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_LINREG_CTRL,
+-				(0x1 << 4) - 1, 0x8);
++				SGTL5000_LINREG_VDDD_MASK, 0x8);
  
- 	op.handle = (grant_handle_t)area->phys_addr;
-+	op.host_addr = arbitrary_virt_to_machine(
-+		lookup_address((unsigned long)vaddr, &level)).maddr;
- 
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
- 		BUG();
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 9332e52..1a77252 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -118,7 +118,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
- #endif
- 
- /* Allocate/destroy a 'vmalloc' VM area. */
--extern struct vm_struct *alloc_vm_area(size_t size);
-+extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
- extern void free_vm_area(struct vm_struct *area);
- 
- /* for /dev/kmem */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 5016f19..b5deec6 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2105,23 +2105,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
- 
- static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
- {
--	/* apply_to_page_range() does all the hard work. */
-+	pte_t ***p = data;
-+
-+	if (p) {
-+		*(*p) = pte;
-+		(*p)++;
-+	}
- 	return 0;
- }
- 
- /**
-  *	alloc_vm_area - allocate a range of kernel address space
-  *	@size:		size of the area
-+ *	@ptes:		returns the PTEs for the address space
-  *
-  *	Returns:	NULL on failure, vm_struct on success
-  *
-  *	This function reserves a range of kernel address space, and
-  *	allocates pagetables to map that range.  No actual mappings
-- *	are created.  If the kernel address space is not shared
-- *	between processes, it syncs the pagetable across all
-- *	processes.
-+ *	are created.
-+ *
-+ *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
-+ *	allocated for the VM area are returned.
-  */
--struct vm_struct *alloc_vm_area(size_t size)
-+struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
- {
- 	struct vm_struct *area;
- 
-@@ -2135,19 +2142,11 @@ struct vm_struct *alloc_vm_area(size_t size)
- 	 * of kernel virtual address space and mapped into init_mm.
- 	 */
- 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
--				area->size, f, NULL)) {
-+				size, f, ptes ? &ptes : NULL)) {
- 		free_vm_area(area);
- 		return NULL;
- 	}
- 
--	/*
--	 * If the allocated address space is passed to a hypercall
--	 * before being used then we cannot rely on a page fault to
--	 * trigger an update of the page tables.  So sync all the page
--	 * tables here.
--	 */
--	vmalloc_sync_all();
--
- 	return area;
- }
- EXPORT_SYMBOL_GPL(alloc_vm_area);
+ 	/*
+ 	 * if vddd linear reg has been enabled,
 -- 
-1.7.2.5
+1.7.5.4
+
+
 
