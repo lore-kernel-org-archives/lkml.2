@@ -1,104 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab1JTOnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 10:43:32 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61736 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab1JTOnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 10:43:31 -0400
+	id S1755968Ab1JTOnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 10:43:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36156 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755886Ab1JTOnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 10:43:45 -0400
+Message-ID: <4EA03399.6080309@ti.com>
+Date: Thu, 20 Oct 2011 16:43:37 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20111020141827.GB6100@sirena.org.uk>
-References: <1319041274-18723-1-git-send-email-linus.walleij@stericsson.com>
-	<20111020023140.GC32007@S2100-06.ap.freescale.net>
-	<CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
-	<CACRpkdYCgY9w8UgMKLgxSsu=Veo01-YSKBWndqU_uCTE-GjZuQ@mail.gmail.com>
-	<20111020141827.GB6100@sirena.org.uk>
-Date: Thu, 20 Oct 2011 16:43:30 +0200
-Message-ID: <CACRpkdaaUmze+W1n4NkApTX0Se1VJAmD+AJSm36QbsKVDzdnRA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinctrl: add a generic control interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Walmsley <paul@pwsan.com>
+CC: "Kristo, Tero" <t-kristo@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv9 03/18] TEMP: OMAP3xxx: hwmod data: add PRM hwmod
+References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-4-git-send-email-t-kristo@ti.com> <alpine.DEB.2.00.1110101320180.5205@utopia.booyaka.com> <4E934D79.4080000@ti.com> <alpine.DEB.2.00.1110101416530.5205@utopia.booyaka.com> <4E936F0E.9050203@ti.com> <alpine.DEB.2.00.1110101725140.5205@utopia.booyaka.com> <4E954CDA.10107@ti.com> <alpine.DEB.2.00.1110131033410.24155@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1110131033410.24155@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 4:18 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Oct 20, 2011 at 04:04:47PM +0200, Linus Walleij wrote:
+Hi Paul,
 
->> I think (and of course this may be completely wrong, but it's my
->> working hypthesis) that the things that software wants to do to
->> pins are:
+Sorry, I kind of forgot to answer that email.
+
+On 10/13/2011 6:38 PM, Paul Walmsley wrote:
+> On Wed, 12 Oct 2011, Cousson, Benoit wrote:
 >
-> The other question is if it's worth bouncing through too much of an
-> abstraction layer when both ends of the API are fixed.
-
-If drivers doing pinctrl are used in more than one SoC
-both ends aren't fixed. But maybe I'm wrong in assuming that
-such things exist?
-
-I bet someone made a claim about regulators in its
-infancy, "I just want to communicate to the regulator to set
-voltage number 0x14, the framework shouldn't care what
-voltage that actually is." The selectors is a good compromise
-that unify expressing voltages and currents with fixed
-discrete steps actually, that is why I like it so much.
-
-And the same could probably be said about why the clock
-framework insist on expressing frequencies in Hz
-including all the trouble with using clk_round_rate() if all my
-SoC drivers doing clk_get_rate() and clk_set_rate() already know
-very well that rate 0x54 is the frequency it wants to set.
-
-So there is some lesson abou abstraction to be learned
-here, and the question is, whatever it is that pin control
-is passing around, should the core or anyone else really
-care, or should it be opaque in difference from regulators
-and clocks?
-
->> Yet again, can I have some examples of what
->> PIN_CONFIG_USER may *actually* be, which would be
->> absolutely impossible to express in some neutral way, and
->> ridiculous to have in the generic enum?
+>> On 10/11/2011 1:26 AM, Paul Walmsley wrote:
+>>> On Tue, 11 Oct 2011, Cousson, Benoit wrote:
+>>>
+>>>> In fact the device name does not have to match the hwmod name. So we
+>>>> can just create an "omap2_prm" omap_device for OMAP2, "omap3_prm"
+>>>> omap_device for OMAP3... That will allow the relevant PRM driver to
+>>>> be bound to the proper device.
+>>>
+>>> Incidentally, given that we would be using the hwmod name and the version
+>>> number to determine the appropriate omap_device name, what IP version
+>>> numbers should we assign to these PRM IP blocks for different SoCs?
+>>
+>> It can just be 1, 2 and 3... The idea is just to differentiate the IP for each
+>> OMAP.
 >
-> One fun example is that we have some devices with pins which have
-> runtime controllable voltage domains, there's no obvious SI unit mapping
-> for those.
+> So those are basically arbitrary?  Something is not clear here.
 
-If you mean they can only be switched on or off yes,
-they rather need some ON vs OFF parameter setting without
-any unit argument. The unit argument is already optional for a few
-parameters.
+Yeah, for me too, I think I did not get your concern...
 
-(If you mean you can control the voltage I guess Volt is a nice
-derived SI unit, but I guess you can't since you put the claim
-that way.)
+> In the current hwmod design, IP blocks with different interfaces were
+> intended to be uniquely identified by the hwmod name alone.  That is why
+> omap_hwmod_lookup() only takes a 'name' parameter.
+>
+> If I understand what you want to do, you wish to change this to uniquely
+> identify them by a (name, interface version number) tuple.
 
-In Ux500 we model our power domain switches as regulators,
-does such a property even belong in pin control? Is there
-one power domain switch per pin you mean, or a power switch
-for a whole group of pins?
+No, not for the same OMAP. The version is different for different OMAP 
+version. So far the only IP with 2 different hwmod name for the same 
+functionality is the timer. We have timer and timer_1ms, and that's for 
+that kind of IP that we introduced the class to still be able to 
+identify the functionality for the driver.
 
-On a related key we have the part that gpiolib is handling already,
-setting a pin to input or output and driving it low or high -
-I have no plans to model that through the pinconfig API by
-exposing some PIN_CONFIG_SET_OUTPUT,
-PIN_CONFIG_SET_INPUT, PIN_CONFIG_DRIVE_HIGH,
-PIN_CONFIG_DRIVE_LOW, that would be madness, what we
-do is of course expose a struct gpio_chip interface for that
-stuff and register to gpiolib.
+> I don't have a problem with this in theory, but it implies some changes to
+> the existing model.  Specifically:
+>
+> - we'll need to add an interface version number to the struct omap_hwmod
+>
+> - we'll need to modify omap_hwmod_lookup() to take an interface version
+> number
+>
+> - the "ti,hwmod" DT binding that you proposed earlier will need to include
+> an interface version number
 
-Thus it might be that pins should express their voltage domain
-switches as a regulator rather than trying to do it in pin control?
+I still do not understand why we need that for the PRM.
+AFAIK, we do have only one version of the PRM at the time. It is not 
+similar to the timer case.
 
-Yours,
-Linus Walleij
+I'm still a little bit confused by your usecase.
+
+You have only one PRM instance per OMAP. So you just have to do 
+omap_hwmod_lookup("prm") to retrieve the relevant hwmod for the SoC.
+
+If you need to build a different device per SoC to allow different 
+driver to be bound to it, you can just append the version number to the 
+hwmod name to build the device name.
+
+Am I still missing something?
+
+Regards,
+Benoit
+
