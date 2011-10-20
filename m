@@ -1,167 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1JTDpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Oct 2011 23:45:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64643 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1JTDpR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Oct 2011 23:45:17 -0400
+	id S1753358Ab1JTD7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Oct 2011 23:59:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17418 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab1JTD7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Oct 2011 23:59:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,376,1315206000"; 
+   d="scan'208";a="75658378"
+Date: Thu, 20 Oct 2011 11:59:18 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/2] nfs: writeback pages wait queue
+Message-ID: <20111020035918.GA26746@localhost>
+References: <20111003134228.090592370@intel.com>
+ <1318248846.14400.21.camel@laptop>
+ <20111010130722.GA11387@localhost>
+ <20111010131051.GA16847@localhost>
+ <20111018085147.GA27805@localhost>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1110171055570.3240@ionos>
-References: <1318817327-4589-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
- <1318817327-4589-2-git-send-email-nobuhiro.iwamatsu.yj@renesas.com> <alpine.LFD.2.02.1110171055570.3240@ionos>
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Date: Thu, 20 Oct 2011 12:44:55 +0900
-X-Google-Sender-Auth: N0DKWr-ik6QMi2TzXZmq3ryaXYw
-Message-ID: <CABMQnVKpFnRwy1ujwQ5aeDn8M3iKYTgWTMK13iUY-_0V_Jw1WQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] irq: Add function pointer table for generic-chip
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111018085147.GA27805@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> @@ -424,6 +419,10 @@ int nfs_writepages(struct address_space 
+>  	err = write_cache_pages(mapping, wbc, nfs_writepages_callback, &pgio);
+>  	nfs_pageio_complete(&pgio);
+>  
+> +	nfs_wait_congested(wbc->sync_mode == WB_SYNC_ALL,
+> +			   &nfss->backing_dev_info,
+> +			   nfss->writeback_wait);
+> +
+>  	clear_bit_unlock(NFS_INO_FLUSHING, bitlock);
+>  	smp_mb__after_clear_bit();
+>  	wake_up_bit(bitlock, NFS_INO_FLUSHING);
 
-2011/10/17 Thomas Gleixner <tglx@linutronix.de>:
-> On Mon, 17 Oct 2011, Nobuhiro Iwamatsu wrote:
->
->> This adds the function table to access it with function pointer
->> by some functions providedd in generic-chip.
->> The driver who uses the function offered in generic-chip can use
->> this via this function table.
->>
->> -/* Generic chip callback functions */
->> -void irq_gc_noop(struct irq_data *d);
->> -void irq_gc_mask_disable_reg(struct irq_data *d);
->> -void irq_gc_mask_set_bit(struct irq_data *d);
->> -void irq_gc_mask_clr_bit(struct irq_data *d);
->> -void irq_gc_unmask_enable_reg(struct irq_data *d);
->> -void irq_gc_ack_set_bit(struct irq_data *d);
->> -void irq_gc_ack_clr_bit(struct irq_data *d);
->> -void irq_gc_mask_disable_reg_and_ack(struct irq_data *d);
->> -void irq_gc_eoi(struct irq_data *d);
->> -int irq_gc_set_wake(struct irq_data *d, unsigned int on);
->
-> This breaks the world and some more. We have code which references
-> those functions directly.
->
->> +             gc->functions.gc_noop = irq_gc_noop;
->> +             gc->functions.gc_mask_disable_reg = irq_gc_mask_disable_reg;
->> +             gc->functions.gc_mask_set_bit = irq_gc_mask_set_bit;
->> +             gc->functions.gc_mask_clr_bit = irq_gc_mask_clr_bit;
->> +             gc->functions.gc_unmask_enable_reg = irq_gc_unmask_enable_reg;
->> +             gc->functions.gc_ack_set_bit = irq_gc_ack_set_bit;
->> +             gc->functions.gc_ack_clr_bit = irq_gc_ack_clr_bit;
->> +             gc->functions.gc_mask_disable_reg_and_ack = irq_gc_mask_disable_reg_and_ack;
->> +             gc->functions.gc_eoi = irq_gc_eoi;
->> +             gc->functions.gc_set_wake = irq_gc_set_wake;
->
-> Why do you want to add that to every instance of generic irq chip?
-> What I asked for is:
->
-> struct bla {
->       .noop = irq_gc_noop,
->       ...
-> };
-> EXPORT_SYMBOL_GPL(bla);
->
-> Now when we have this, we can run a coccinelle script over the tree
-> and convert all current users to use bla.fun instead of the direct
-> functions and then make those static.
->
+The "wakeup NFS_INO_FLUSHING after congestion wait" logic looks
+strange, so I tried moving the nfs_wait_congested() _after_
+wake_up_bit()...and got write_bw regressions.
 
-OK, I misled about your point.
-You do not make many symbols by EXPORT_SYMBOL,
-genetic_chip makes the object with the function pointer, and you
-suggest that each
-driver uses the function defined in the object.
-Is it correct?
+OK, not knowing what's going on underneath, I'll just stick to the current form.
 
-I created new patch. could you check this?
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+  
+------------------------  ------------------------  
+                  417.26        -5.5%       394.24  TOTAL write_bw
+                 5179.00       -12.6%      4529.00  TOTAL nfs_nr_commits
+               340466.00       -37.2%    213939.00  TOTAL nfs_nr_writes
+                  722.54       +17.6%       849.42  TOTAL nfs_commit_size
+                    3.75        +6.3%         3.99  TOTAL nfs_write_size
+                15477.38       -14.5%     13235.34  TOTAL nfs_write_queue_time
+                  517.54       +13.0%       585.00  TOTAL nfs_write_rtt_time
+                16011.09       -13.5%     13848.09  TOTAL nfs_write_execute_time
+                  714.65       -43.4%       404.65  TOTAL nfs_commit_queue_time
+                12787.93        +9.2%     13960.35  TOTAL nfs_commit_rtt_time
+                13519.94        +6.4%     14387.44  TOTAL nfs_commit_execute_time
 
------
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                   44.42        -0.8%        44.05  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                   78.49        -8.0%        72.22  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                   69.96        -2.4%        68.30  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                   70.59        -3.8%        67.88  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                   76.76        -8.7%        70.09  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                   77.04        -6.9%        71.70  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                  417.26        -5.5%       394.24  TOTAL write_bw
 
->From c8b422d8bf3d1575a48d62ac6f785e86b36a8709 Mon Sep 17 00:00:00 2001
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Date: Wed, 19 Oct 2011 12:23:19 +0900
-Subject: [PATCH] irq: Add function pointer table for generic-chip
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                 2683.00        -1.8%      2634.00  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                  811.00       -43.8%       456.00  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                 1049.00       -16.7%       874.00  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                  474.00        -8.4%       434.00  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                   56.00       -23.2%        43.00  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                  106.00       -17.0%        88.00  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                 5179.00       -12.6%      4529.00  TOTAL nfs_nr_commits
 
-This adds the function table to access it with function pointer
-by some functions providedd in generic-chip.
-The driver who uses the function offered in generic-chip can use
-this via this function table.
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                17641.00        -2.2%     17257.00  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+               177296.00       -54.1%     81335.00  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                26346.00       +41.6%     37309.00  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                22279.00       +12.7%     25107.00  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                67612.00       -59.7%     27271.00  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                29292.00       -12.4%     25660.00  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+               340466.00       -37.2%    213939.00  TOTAL nfs_nr_writes
 
-For example, driver is used as follows.
-...
-chip.irq_ack = &irq_gc_function_tbl.ack_set_bit;
-chip.irq_mask = &irq_gc_function_tbl.mask_clr_bit;
-...
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                    4.97        +1.1%         5.03  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                   29.00       +63.5%        47.43  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                   19.99       +17.0%        23.40  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                   44.66        +5.3%        47.03  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                  408.94       +18.6%       485.03  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                  214.96       +12.3%       241.50  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                  722.54       +17.6%       849.42  TOTAL nfs_commit_size
 
-Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
----
- include/linux/irq.h       |   16 ++++++++++++++++
- kernel/irq/generic-chip.c |   18 ++++++++++++++++++
- 2 files changed, 34 insertions(+), 0 deletions(-)
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                    0.76        +1.5%         0.77  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                    0.13      +100.4%         0.27  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                    0.80       -31.1%         0.55  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                    0.95       -14.4%         0.81  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                    0.34      +125.8%         0.76  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                    0.78        +6.5%         0.83  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                    3.75        +6.3%         3.99  TOTAL nfs_write_size
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index bff29c5..8b271cc 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -700,6 +700,22 @@ void irq_gc_mask_disable_reg_and_ack(struct irq_data *d);
- void irq_gc_eoi(struct irq_data *d);
- int irq_gc_set_wake(struct irq_data *d, unsigned int on);
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                  460.14       -29.9%       322.63  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                  718.69       +68.2%      1208.67  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                 5203.60       -26.1%      3843.39  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                  427.40       +93.4%       826.64  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                 7369.68       -18.0%      6041.98  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                 1297.87       -23.6%       992.02  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                15477.38       -14.5%     13235.34  TOTAL nfs_write_queue_time
 
-+/* Generic chip callback function table */
-+struct irq_gc_functions {
-+	void (* noop)(struct irq_data *d);
-+	void (* mask_disable_reg)(struct irq_data *d);
-+	void (* mask_set_bit)(struct irq_data *d);
-+	void (* mask_clr_bit)(struct irq_data *d);
-+	void (* unmask_enable_reg)(struct irq_data *d);
-+	void (* ack_set_bit)(struct irq_data *d);
-+	void (* ack_clr_bit)(struct irq_data *d);
-+	void (* mask_disable_reg_and_ack)(struct irq_data *d);
-+	void (* eoi)(struct irq_data *d);
-+	int (* set_wake)(struct irq_data *d, unsigned int on);
-+};
-+
-+extern struct irq_gc_functions irq_gc_function_tbl;
-+
- /* Setup functions for irq_chip_generic */
- struct irq_chip_generic *
- irq_alloc_generic_chip(const char *name, int nr_ct, unsigned int irq_base,
-diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 6cb7613..03df526 100644
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -183,6 +183,24 @@ int irq_gc_set_wake(struct irq_data *d, unsigned int on)
- }
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                  134.58        -8.9%       122.60  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                   33.24       +48.8%        49.46  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                   89.69       -19.4%        72.31  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                  129.86       -35.3%        84.03  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                   48.33      +239.4%       164.05  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                   81.84       +13.1%        92.55  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                  517.54       +13.0%       585.00  TOTAL nfs_write_rtt_time
 
- /**
-+ * irq generic chip user needs to access irq_gc_XXX function using
-+ * irq_gc_function_tbl.
-+ */
-+struct irq_gc_functions irq_gc_function_tbl ={
-+	.noop = irq_gc_noop,
-+	.mask_disable_reg = irq_gc_mask_disable_reg,
-+	.mask_set_bit = irq_gc_mask_set_bit,
-+	.mask_clr_bit = irq_gc_mask_clr_bit,
-+	.unmask_enable_reg = irq_gc_unmask_enable_reg,
-+	.ack_set_bit = irq_gc_ack_set_bit,
-+	.ack_clr_bit = irq_gc_ack_clr_bit,
-+	.mask_disable_reg_and_ack = irq_gc_mask_disable_reg_and_ack,
-+	.eoi = irq_gc_eoi,
-+	.set_wake = irq_gc_set_wake,
-+};
-+EXPORT_SYMBOL_GPL(irq_gc_function_tbl);
-+
-+/**
-  * irq_alloc_generic_chip - Allocate a generic chip and initialize it
-  * @name:	Name of the irq chip
-  * @num_ct:	Number of irq_chip_type instances associated with this
--- 
-1.7.7
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                  595.23       -25.1%       445.75  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                  753.68       +67.4%      1261.46  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                 5294.55       -26.0%      3917.11  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                  559.44       +63.1%       912.46  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                 7424.41       -16.2%      6221.64  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                 1383.78       -21.3%      1089.67  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                16011.09       -13.5%     13848.09  TOTAL nfs_write_execute_time
+
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                    2.34        +2.5%         2.40  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                    1.59      +488.4%         9.37  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                    2.63       +47.0%         3.86  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                   68.22        -6.5%        63.78  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                  618.34       -52.9%       291.44  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                   21.54       +56.9%        33.80  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                  714.65       -43.4%       404.65  TOTAL nfs_commit_queue_time
+
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                  766.76        +1.7%       779.63  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                  344.34       +49.3%       514.10  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                  431.90       +15.0%       496.81  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                 3743.78        +5.6%      3954.60  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                 3699.59       +14.0%      4216.05  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                 3801.55        +5.2%      3999.17  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                12787.93        +9.2%     13960.35  TOTAL nfs_commit_rtt_time
+
+3.1.0-rc9-ioless-full-nfs-ino-flushing-next-20111014+  3.1.0-rc9-ioless-full-nfs-wakeup-wait-next-20111014+
+------------------------  ------------------------
+                  769.38        +1.7%       782.27  NFS-thresh=100M/nfs-10dd-4k-32p-32768M-100M:10-X
+                  346.06       +51.3%       523.52  NFS-thresh=100M/nfs-1dd-4k-32p-32768M-100M:10-X
+                  434.96       +15.2%       501.07  NFS-thresh=100M/nfs-2dd-4k-32p-32768M-100M:10-X
+                 3813.17        +5.4%      4020.45  NFS-thresh=1G/nfs-10dd-4k-32p-32768M-1024M:10-X
+                 4318.75        +4.4%      4507.51  NFS-thresh=1G/nfs-1dd-4k-32p-32768M-1024M:10-X
+                 3837.62        +5.6%      4052.61  NFS-thresh=1G/nfs-2dd-4k-32p-32768M-1024M:10-X
+                13519.94        +6.4%     14387.44  TOTAL nfs_commit_execute_time
+
+Thanks,
+Fengguang
