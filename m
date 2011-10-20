@@ -1,214 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1JTHgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 03:36:00 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:47004 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752617Ab1JTHf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 03:35:58 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 09/26] vfs: Add delete child and delete self permission flags
-In-Reply-To: <20111019220915.GA1874@fieldses.org>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019220915.GA1874@fieldses.org>
-User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 20 Oct 2011 13:05:26 +0530
-Message-ID: <87mxcw5d4x.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11102007-3534-0000-0000-000000C6778E
+	id S1754840Ab1JTHk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 03:40:28 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:43597 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab1JTHk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 03:40:27 -0400
+Subject: Re: iwlagn is getting very shaky
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Norbert Preining <preining@logic.at>
+Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+In-Reply-To: <20111020045927.GB23044@gamma.logic.tuwien.ac.at> (sfid-20111020_065949_480246_E6D70D7B)
+References: <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
+	 <1319004836.31823.57.camel@wwguy-huron>
+	 <20111019124931.GC3963@gamma.logic.tuwien.ac.at>
+	 <1319038282.25023.21.camel@wwguy-ubuntu>
+	 <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
+	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
+	 <20111019062517.GC11588@gamma.logic.tuwien.ac.at>
+	 <1319003304.31823.46.camel@wwguy-huron>
+	 <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
+	 <1319004836.31823.57.camel@wwguy-huron>
+	 <20111020045927.GB23044@gamma.logic.tuwien.ac.at>
+	 (sfid-20111020_065949_480246_E6D70D7B)
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Oct 2011 09:40:18 +0200
+Message-ID: <1319096418.3959.1.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Oct 2011 18:09:15 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> Maybe I'm dense, but that big if-else-if is still giving me a headache.
-> 
-> The point is just to delay the ns_capable() check to avoid setting
-> PF_SUPERPRIV in cases where we weren't before?
-> 
-> How about putting using a helper function for the richacl check, and
-> calling it from check_sticky instead? That makes the above:
-> 
-> 	error = inode_permission(dir, mask | replace_mask);
-> 	if (error && !richacl_may_delete(dir, inode, replace_mask))
-> 		return error;
-> 	if (check_sticky(dir, inode, replace_mask))
-> 		return -EPERM;
-> 
-> (As in the following--totally untested and possibly wrong.)
-> 
-> Also: the comment before may_delete() needs updating.
-> 
+On Thu, 2011-10-20 at 13:59 +0900, Norbert Preining wrote:
 
-Thanks for the suggestion. That made the code simpler. Updated patch
-below.
+> so I am now at the university, and it seems your last patch
+> did wonder. Here a log after waking up from suspend at university...
 
-commit 3c92363ce2dee22aa174327c21726f8f02cbcd6e
-Author: Andreas Gruenbacher <agruen@kernel.org>
-Date:   Tue Oct 18 15:17:50 2011 +0530
+For some value of wonder ...
 
-    vfs: Add delete child and delete self permission flags
-    
-    Normally, deleting a file requires write access to the parent directory.
-    Some permission models use a different permission on the parent
-    directory to indicate delete access.  In addition, a process can have
-    per-file delete access even without delete access on the parent
-    directory.
-    
-    Introduce two new inode_permission() mask flags and use them in
-    may_delete()
-    
-    Acked-by: David Howells <dhowells@redhat.com>
-    Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> [17394.896199] wlan0: associated
+> [17394.974620] iwlagn 0000:06:00.0: Encounter TX_STATUS_FAIL_PASSIVE_NO_RX, am I on 5.2G band? (2)
+> [17394.976930] iwlagn 0000:06:00.0: Encounter TX_STATUS_FAIL_PASSIVE_NO_RX, am I on 5.2G band? (2)
+> [17409.608674] iwlagn 0000:06:00.0: Tx aggregation enabled on ra = 00:24:c4:ab:bd:ef tid = 0
+> [17409.616748] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
+> [17409.816093] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
+> [17410.016083] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
+> [17410.216086] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
+> [17419.285141] iwlagn 0000:06:00.0: Encounter TX_STATUS_FAIL_PASSIVE_NO_RX, am I on 5.2G band? (0)
+> [17419.285315] iwlagn 0000:06:00.0: Encounter TX_STATUS_FAIL_PASSIVE_NO_RX, am I on 5.2G band? (0)
+> [17419.286583] wlan0: deauthenticating from 00:24:c4:ab:bd:ef by local choice (reason=2)
+> [17419.300296] cfg80211: Calling CRDA for country: JP
+> [17419.309278] wlan0: authenticate with 00:24:c4:ab:bd:ef (try 1)
+> [17419.310105] wlan0: authenticated
+> [17419.317900] wlan0: associate with 00:24:c4:ab:bd:ef (try 1)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index f6184b8..044b6d1 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -337,7 +337,7 @@ static inline int do_inode_permission(struct inode *inode, int mask)
-  * are used for other things.
-  *
-  * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
-- * MAY_WRITE must also be set in @mask.
-+ * MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_WRITE must also be set in @mask.
-  */
- int inode_permission(struct inode *inode, int mask)
- {
-@@ -1835,11 +1835,25 @@ static int user_path_parent(int dfd, const char __user *path,
- 	return error;
- }
- 
-+
-+/*
-+ * We should have exec permission on directory and MAY_DELETE_SELF
-+ * on the object being deleted.
-+ */
-+static int richacl_may_selfdelete(struct inode *dir,
-+				  struct inode *inode, int replace_mask)
-+{
-+	return (IS_RICHACL(inode) &&
-+		(inode_permission(dir, MAY_EXEC | replace_mask) == 0) &&
-+		(inode_permission(inode, MAY_DELETE_SELF) == 0));
-+}
-+
- /*
-  * It's inline, so penalty for filesystems that don't use sticky bit is
-  * minimal.
-  */
--static inline int check_sticky(struct inode *dir, struct inode *inode)
-+static inline int check_sticky(struct inode *dir,
-+			       struct inode *inode, int replace_mask)
- {
- 	uid_t fsuid = current_fsuid();
- 
-@@ -1851,7 +1865,8 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
- 		return 0;
- 	if (dir->i_uid == fsuid)
- 		return 0;
--
-+	if (richacl_may_selfdelete(dir, inode, replace_mask))
-+		return 0;
- other_userns:
- 	return !ns_capable(inode_userns(inode), CAP_FOWNER);
- }
-@@ -1875,30 +1890,38 @@ other_userns:
-  * 10. We don't allow removal of NFS sillyrenamed files; it's handled by
-  *     nfs_async_unlink().
-  */
--static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
-+static int may_delete(struct inode *dir, struct dentry *victim,
-+		      int isdir, int replace)
- {
--	int error;
-+	int mask, replace_mask = 0, error;
-+	struct inode *inode = victim->d_inode;
- 
--	if (!victim->d_inode)
-+	if (!inode)
- 		return -ENOENT;
- 
- 	BUG_ON(victim->d_parent->d_inode != dir);
- 	audit_inode_child(victim, dir);
- 
--	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
-+	mask = MAY_WRITE | MAY_EXEC | MAY_DELETE_CHILD;
-+	if (replace)
-+		replace_mask = S_ISDIR(inode->i_mode) ?
-+				MAY_CREATE_DIR : MAY_CREATE_FILE;
-+	error = inode_permission(dir, mask | replace_mask);
-+	if (error && richacl_may_selfdelete(dir, inode, replace_mask))
-+		error = 0;
- 	if (error)
- 		return error;
- 	if (IS_APPEND(dir))
- 		return -EPERM;
--	if (check_sticky(dir, victim->d_inode)||IS_APPEND(victim->d_inode)||
--	    IS_IMMUTABLE(victim->d_inode) || IS_SWAPFILE(victim->d_inode))
-+	if (check_sticky(dir, inode, replace_mask) || IS_APPEND(inode) ||
-+	    IS_IMMUTABLE(inode) || IS_SWAPFILE(inode))
- 		return -EPERM;
- 	if (isdir) {
--		if (!S_ISDIR(victim->d_inode->i_mode))
-+		if (!S_ISDIR(inode->i_mode))
- 			return -ENOTDIR;
- 		if (IS_ROOT(victim))
- 			return -EBUSY;
--	} else if (S_ISDIR(victim->d_inode->i_mode))
-+	} else if (S_ISDIR(inode->i_mode))
- 		return -EISDIR;
- 	if (IS_DEADDIR(dir))
- 		return -ENOENT;
-@@ -2605,7 +2628,7 @@ void dentry_unhash(struct dentry *dentry)
- 
- int vfs_rmdir(struct inode *dir, struct dentry *dentry)
- {
--	int error = may_delete(dir, dentry, 1);
-+	int error = may_delete(dir, dentry, 1, 0);
- 
- 	if (error)
- 		return error;
-@@ -2700,7 +2723,7 @@ SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
- 
- int vfs_unlink(struct inode *dir, struct dentry *dentry)
- {
--	int error = may_delete(dir, dentry, 0);
-+	int error = may_delete(dir, dentry, 0, 0);
- 
- 	if (error)
- 		return error;
-@@ -3096,14 +3119,14 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	if (old_dentry->d_inode == new_dentry->d_inode)
-  		return 0;
-  
--	error = may_delete(old_dir, old_dentry, is_dir);
-+	error = may_delete(old_dir, old_dentry, is_dir, 0);
- 	if (error)
- 		return error;
- 
- 	if (!new_dentry->d_inode)
- 		error = may_create(new_dir, new_dentry, is_dir);
- 	else
--		error = may_delete(new_dir, new_dentry, is_dir);
-+		error = may_delete(new_dir, new_dentry, is_dir, 1);
- 	if (error)
- 		return error;
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 60361c6..ccece40 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -69,6 +69,8 @@ struct inodes_stat_t {
- #define MAY_NOT_BLOCK		0x00000080
- #define MAY_CREATE_FILE		0x00000100
- #define MAY_CREATE_DIR		0x00000200
-+#define MAY_DELETE_CHILD	0x00000400
-+#define MAY_DELETE_SELF		0x00000800
- 
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+It seems a bit like the 5 GHz AP (:e0) just fails, and wpa_supplicant
+selects a 2.4 GHz AP (:ef) now? Pure conjecture, I guess the AP could
+also be on the same channel -- did you have scan information for these
+APs?
+
+johannes
 
