@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab1JTJOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 05:14:08 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46351 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab1JTJOH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 05:14:07 -0400
+	id S1756163Ab1JTJOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 05:14:44 -0400
+Received: from fieldses.org ([174.143.236.118]:39671 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268Ab1JTJOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 05:14:43 -0400
+Date: Thu, 20 Oct 2011 05:14:34 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+Message-ID: <20111020091434.GC5444@fieldses.org>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20111019222021.GB1874@fieldses.org>
+ <87k4805alx.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPybu_3kqqtfv1XyhruS3AMiRbd=wdMUr4rJL1UmDG_+z2m9jA@mail.gmail.com>
-References: <1319096606-11568-1-git-send-email-ricardo.ribalda@gmail.com>
-	<CAOJsxLGZLx-Wybi=BM41pN5X5Xw=qw4dEC_q=Qy903GpKj6Nzw@mail.gmail.com>
-	<20111020081451.GC14464@moon>
-	<CAPybu_3kqqtfv1XyhruS3AMiRbd=wdMUr4rJL1UmDG_+z2m9jA@mail.gmail.com>
-Date: Thu, 20 Oct 2011 12:14:06 +0300
-X-Google-Sender-Auth: P9WgWXU8hm-JlmQcjKudRVSquKM
-Message-ID: <CAOJsxLEY2YJv5G7nRKzM4UowVpPQrXKzmzP6eVShaXFYDySZ2A@mail.gmail.com>
-Subject: Re: [PATCH] tools/perf: Increase symbol KSYM_NAME_LEN size
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
-        anton@samba.org, daahern@cisco.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k4805alx.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 11:45 AM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> That is 4gb size :S..... I have tried making a dummy program
->
-> int tttttt......ttttt (int a, int b){
-> return a+b;
-> }
->
-> int main(int arg, char *[]argv){
->    return tttt....tttt(1,2);
-> }
->
-> and it has worked at least until t^16384 both in gcc and in gdb, and I
-> guess it would have continue working until much more.
->
-> Right now, I think we can increase it until 512, to be on the safe
-> side, and keep it simple. What do you think?
+On Thu, Oct 20, 2011 at 02:00:02PM +0530, Aneesh Kumar K.V wrote:
+> On Wed, 19 Oct 2011 18:20:21 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > On Tue, Oct 18, 2011 at 09:02:56PM +0530, Aneesh Kumar K.V wrote:
+> > > +#define RICHACL_XATTR "system.richacl"
+> > > +
+> > > +struct richace_xattr {
+> > > +	__le16		e_type;
+> > > +	__le16		e_flags;
+> > > +	__le32		e_mask;
+> > > +	__le32		e_id;
+> > > +	char		e_who[0];
+> > > +};
+> > 
+> > Does it really make sense to use a string here just to pick between the
+> > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
+> > integer?  Is the goal to expand this somehow eventually?
+> 
+> I guess Andreas wanted the disk layout to be able to store user@domain
+> format if needed.
 
-If the limit is really 4G, I'm fine with whatever is the smallest
-practical size. If 256 bytes works for you:
+Is that likely?  For that to be useful, tasks would need to be able to
+run as user@domain strings.  And we'd probably want owners and groups to
+also be user@domain strings.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+The container people seem to eventually want to add some kind of
+namespace identifier everywhere:
+
+	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
+
+in which case I guess we'd likely end up with (uid, user namespace id)
+instead of user@domain?
+
+I suppose the variable-length string field could store that too.
+
+I don't hate the idea, it would make life easier for the NFS server.
+
+--b.
+
+> That should make the layout flexible enough so that
+> we won't have to add another xattr later.
