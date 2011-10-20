@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab1JTKp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 06:45:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21057 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609Ab1JTKpz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 06:45:55 -0400
+	id S1756646Ab1JTKqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 06:46:15 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:37231 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756445Ab1JTKqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Oct 2011 06:46:12 -0400
 X-IronPort-AV: E=Sophos;i="4.69,378,1315195200"; 
-   d="scan'208";a="167577550"
+   d="scan'208";a="18393808"
 From: David Vrabel <david.vrabel@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
         David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 1/4] xen: use generic functions instead of xen_{alloc,free}_vm_area()
-Date: Thu, 20 Oct 2011 11:45:16 +0100
-Message-ID: <1319107519-2253-2-git-send-email-david.vrabel@citrix.com>
+Subject: [PATCH 2/4] block: xen-blkback: use API provided by xenbus module to map rings
+Date: Thu, 20 Oct 2011 11:45:17 +0100
+Message-ID: <1319107519-2253-3-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
 References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
@@ -25,201 +24,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace calls to the Xen-specific xen_alloc_vm_area() and
-xen_free_vm_area() functions with the generic equivalent
-(alloc_vm_area() and free_vm_area()).
-
-On x86, these were identical already.
+The xenbus module provides xenbus_map_ring_valloc() and
+xenbus_map_ring_vfree().  Use these to map the ring pages granted by
+the frontend.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 ---
- arch/ia64/include/asm/xen/grant_table.h |   29 --------------
- arch/ia64/xen/grant-table.c             |   62 -------------------------------
- arch/x86/include/asm/xen/grant_table.h  |    7 ---
- arch/x86/xen/grant-table.c              |    2 +-
- drivers/xen/xenbus/xenbus_client.c      |    6 +-
- include/xen/grant_table.h               |    1 -
- 6 files changed, 4 insertions(+), 103 deletions(-)
- delete mode 100644 arch/ia64/include/asm/xen/grant_table.h
- delete mode 100644 arch/x86/include/asm/xen/grant_table.h
+ drivers/block/xen-blkback/common.h |    5 +--
+ drivers/block/xen-blkback/xenbus.c |   54 ++++-------------------------------
+ 2 files changed, 8 insertions(+), 51 deletions(-)
 
-diff --git a/arch/ia64/include/asm/xen/grant_table.h b/arch/ia64/include/asm/xen/grant_table.h
-deleted file mode 100644
-index 2b1fae0..0000000
---- a/arch/ia64/include/asm/xen/grant_table.h
-+++ /dev/null
-@@ -1,29 +0,0 @@
--/******************************************************************************
-- * arch/ia64/include/asm/xen/grant_table.h
-- *
-- * Copyright (c) 2008 Isaku Yamahata <yamahata at valinux co jp>
-- *                    VA Linux Systems Japan K.K.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-- *
-- */
--
--#ifndef _ASM_IA64_XEN_GRANT_TABLE_H
--#define _ASM_IA64_XEN_GRANT_TABLE_H
--
--struct vm_struct *xen_alloc_vm_area(unsigned long size);
--void xen_free_vm_area(struct vm_struct *area);
--
--#endif /* _ASM_IA64_XEN_GRANT_TABLE_H */
-diff --git a/arch/ia64/xen/grant-table.c b/arch/ia64/xen/grant-table.c
-index 48cca37..c182813 100644
---- a/arch/ia64/xen/grant-table.c
-+++ b/arch/ia64/xen/grant-table.c
-@@ -31,68 +31,6 @@
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 00c57c9..7ec0e88 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -139,7 +139,7 @@ struct xen_blkif {
+ 	/* Comms information. */
+ 	enum blkif_protocol	blk_protocol;
+ 	union blkif_back_rings	blk_rings;
+-	struct vm_struct	*blk_ring_area;
++	void			*blk_ring;
+ 	/* The VBD attached to this interface. */
+ 	struct xen_vbd		vbd;
+ 	/* Back pointer to the backend_info. */
+@@ -163,9 +163,6 @@ struct xen_blkif {
+ 	int			st_wr_sect;
  
- #include <asm/xen/hypervisor.h>
+ 	wait_queue_head_t	waiting_to_free;
+-
+-	grant_handle_t		shmem_handle;
+-	grant_ref_t		shmem_ref;
+ };
  
--struct vm_struct *xen_alloc_vm_area(unsigned long size)
+ 
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 5fd2010..69233dd 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -120,38 +120,6 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+ 	return blkif;
+ }
+ 
+-static int map_frontend_page(struct xen_blkif *blkif, unsigned long shared_page)
 -{
--	int order;
--	unsigned long virt;
--	unsigned long nr_pages;
--	struct vm_struct *area;
+-	struct gnttab_map_grant_ref op;
 -
--	order = get_order(size);
--	virt = __get_free_pages(GFP_KERNEL, order);
--	if (virt == 0)
--		goto err0;
--	nr_pages = 1 << order;
--	scrub_pages(virt, nr_pages);
+-	gnttab_set_map_op(&op, (unsigned long)blkif->blk_ring_area->addr,
+-			  GNTMAP_host_map, shared_page, blkif->domid);
 -
--	area = kmalloc(sizeof(*area), GFP_KERNEL);
--	if (area == NULL)
--		goto err1;
+-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
+-		BUG();
 -
--	area->flags = VM_IOREMAP;
--	area->addr = (void *)virt;
--	area->size = size;
--	area->pages = NULL;
--	area->nr_pages = nr_pages;
--	area->phys_addr = 0;	/* xenbus_map_ring_valloc uses this field!  */
--
--	return area;
--
--err1:
--	free_pages(virt, order);
--err0:
--	return NULL;
--}
--EXPORT_SYMBOL_GPL(xen_alloc_vm_area);
--
--void xen_free_vm_area(struct vm_struct *area)
--{
--	unsigned int order = get_order(area->size);
--	unsigned long i;
--	unsigned long phys_addr = __pa(area->addr);
--
--	/* This area is used for foreign page mappping.
--	 * So underlying machine page may not be assigned. */
--	for (i = 0; i < (1 << order); i++) {
--		unsigned long ret;
--		unsigned long gpfn = (phys_addr >> PAGE_SHIFT) + i;
--		struct xen_memory_reservation reservation = {
--			.nr_extents   = 1,
--			.address_bits = 0,
--			.extent_order = 0,
--			.domid        = DOMID_SELF
--		};
--		set_xen_guest_handle(reservation.extent_start, &gpfn);
--		ret = HYPERVISOR_memory_op(XENMEM_populate_physmap,
--					   &reservation);
--		BUG_ON(ret != 1);
+-	if (op.status) {
+-		DPRINTK("Grant table operation failure !\n");
+-		return op.status;
 -	}
--	free_pages((unsigned long)area->addr, order);
--	kfree(area);
+-
+-	blkif->shmem_ref = shared_page;
+-	blkif->shmem_handle = op.handle;
+-
+-	return 0;
 -}
--EXPORT_SYMBOL_GPL(xen_free_vm_area);
 -
+-static void unmap_frontend_page(struct xen_blkif *blkif)
+-{
+-	struct gnttab_unmap_grant_ref op;
 -
- /****************************************************************************
-  * grant table hack
-  * cmd: GNTTABOP_xxx
-diff --git a/arch/x86/include/asm/xen/grant_table.h b/arch/x86/include/asm/xen/grant_table.h
-deleted file mode 100644
-index fdbbb45..0000000
---- a/arch/x86/include/asm/xen/grant_table.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef _ASM_X86_XEN_GRANT_TABLE_H
--#define _ASM_X86_XEN_GRANT_TABLE_H
+-	gnttab_set_unmap_op(&op, (unsigned long)blkif->blk_ring_area->addr,
+-			    GNTMAP_host_map, blkif->shmem_handle);
 -
--#define xen_alloc_vm_area(size)	alloc_vm_area(size)
--#define xen_free_vm_area(area)	free_vm_area(area)
+-	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
+-		BUG();
+-}
 -
--#endif /* _ASM_X86_XEN_GRANT_TABLE_H */
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 49ba9b5..6bbfd7a 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+ 			 unsigned int evtchn)
+ {
+@@ -161,35 +129,29 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+ 	if (blkif->irq)
+ 		return 0;
  
- 	if (shared == NULL) {
- 		struct vm_struct *area =
--			xen_alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-+			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
- 		BUG_ON(area == NULL);
- 		shared = area->addr;
- 		*__shared = shared;
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index cdacf92..229d3ad 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -443,7 +443,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
+-	blkif->blk_ring_area = alloc_vm_area(PAGE_SIZE);
+-	if (!blkif->blk_ring_area)
+-		return -ENOMEM;
+-
+-	err = map_frontend_page(blkif, shared_page);
+-	if (err) {
+-		free_vm_area(blkif->blk_ring_area);
++	err = xenbus_map_ring_valloc(blkif->be->dev, shared_page, &blkif->blk_ring);
++	if (err < 0)
+ 		return err;
+-	}
  
- 	*vaddr = NULL;
+ 	switch (blkif->blk_protocol) {
+ 	case BLKIF_PROTOCOL_NATIVE:
+ 	{
+ 		struct blkif_sring *sring;
+-		sring = (struct blkif_sring *)blkif->blk_ring_area->addr;
++		sring = (struct blkif_sring *)blkif->blk_ring;
+ 		BACK_RING_INIT(&blkif->blk_rings.native, sring, PAGE_SIZE);
+ 		break;
+ 	}
+ 	case BLKIF_PROTOCOL_X86_32:
+ 	{
+ 		struct blkif_x86_32_sring *sring_x86_32;
+-		sring_x86_32 = (struct blkif_x86_32_sring *)blkif->blk_ring_area->addr;
++		sring_x86_32 = (struct blkif_x86_32_sring *)blkif->blk_ring;
+ 		BACK_RING_INIT(&blkif->blk_rings.x86_32, sring_x86_32, PAGE_SIZE);
+ 		break;
+ 	}
+ 	case BLKIF_PROTOCOL_X86_64:
+ 	{
+ 		struct blkif_x86_64_sring *sring_x86_64;
+-		sring_x86_64 = (struct blkif_x86_64_sring *)blkif->blk_ring_area->addr;
++		sring_x86_64 = (struct blkif_x86_64_sring *)blkif->blk_ring;
+ 		BACK_RING_INIT(&blkif->blk_rings.x86_64, sring_x86_64, PAGE_SIZE);
+ 		break;
+ 	}
+@@ -201,8 +163,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+ 						    xen_blkif_be_int, 0,
+ 						    "blkif-backend", blkif);
+ 	if (err < 0) {
+-		unmap_frontend_page(blkif);
+-		free_vm_area(blkif->blk_ring_area);
++		xenbus_unmap_ring_vfree(blkif->be->dev, blkif->blk_ring);
+ 		blkif->blk_rings.common.sring = NULL;
+ 		return err;
+ 	}
+@@ -228,8 +189,7 @@ static void xen_blkif_disconnect(struct xen_blkif *blkif)
+ 	}
  
--	area = xen_alloc_vm_area(PAGE_SIZE);
-+	area = alloc_vm_area(PAGE_SIZE);
- 	if (!area)
- 		return -ENOMEM;
- 
-@@ -453,7 +453,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
- 		BUG();
- 
- 	if (op.status != GNTST_okay) {
--		xen_free_vm_area(area);
-+		free_vm_area(area);
- 		xenbus_dev_fatal(dev, op.status,
- 				 "mapping in shared page %d from domain %d",
- 				 gnt_ref, dev->otherend_id);
-@@ -552,7 +552,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 		BUG();
- 
- 	if (op.status == GNTST_okay)
--		xen_free_vm_area(area);
-+		free_vm_area(area);
- 	else
- 		xenbus_dev_error(dev, op.status,
- 				 "unmapping page at handle %d error %d",
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index b1fab6b..8a8bb76 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -43,7 +43,6 @@
- #include <xen/interface/grant_table.h>
- 
- #include <asm/xen/hypervisor.h>
--#include <asm/xen/grant_table.h>
- 
- #include <xen/features.h>
- 
+ 	if (blkif->blk_rings.common.sring) {
+-		unmap_frontend_page(blkif);
+-		free_vm_area(blkif->blk_ring_area);
++		xenbus_unmap_ring_vfree(blkif->be->dev, blkif->blk_ring);
+ 		blkif->blk_rings.common.sring = NULL;
+ 	}
+ }
 -- 
 1.7.2.5
 
