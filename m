@@ -1,51 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1JUTPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 15:15:39 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:34693 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab1JUTPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 15:15:37 -0400
-Date: Fri, 21 Oct 2011 21:15:14 +0200
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        David Miller <davem@davemloft.net>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/4] crc32: Bolt on crc32c
-Message-ID: <20111021191514.GA3997@gondor.apana.org.au>
-References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au> <20111021165703.GS12447@tux1.beaverton.ibm.com>
+	id S1752061Ab1JUTyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 15:54:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751530Ab1JUTyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 15:54:52 -0400
+Date: Fri, 21 Oct 2011 21:54:48 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] writeback: avoid touching dirtied_when on blocked
+ inodes
+Message-ID: <20111021195448.GA10166@quack.suse.cz>
+References: <20111020152240.751936131@intel.com>
+ <20111020232116.GB20542@quack.suse.cz>
+ <20111021104049.GA3784@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111021165703.GS12447@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111021104049.GA3784@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 09:57:03AM -0700, Darrick J. Wong wrote:
+On Fri 21-10-11 18:40:49, Wu Fengguang wrote:
+> Hi Jan,
 > 
-> My patchset builds upon Bob Pearson's crc32 patchset from early September.  Do
-> my patches fail to apply after applying his patchset?
+> >   How about adding the attached patch to the series? With it applied we
+> > would have all busyloop prevention done in the same way.
 > 
-> Or, to speed things along, should I simply repost both Bob's and my patches as
-> one big series?
-> 
-> Bob, have you sent out a new iteration of your patches since September 6th?
+> Sure. It looks good.
+  Thanks.
 
-I'm fine with you pushing this through whichever tree that Bob's
-patches are going through.
+> > +		pr_warn_ratelimited("mm: Possible busyloop in data writeback "
+> > +			"(bdi %s nr_pages %ld sync_mode %d kupdate %d "
+> > +			"background %d)\n",
+> > +			wb->bdi->name, work->nr_pages, work->sync_mode,
+> > +			work->for_kupdate, work->for_background);
+> 
+> I'll change the last two fields to the newly introduced writeback "reason":
+> 
+>                 pr_warn_ratelimited("mm: Possible busyloop in data writeback "
+>                         "(bdi %s nr_pages %ld sync_mode %d reason %s)\n",
+>                         wb->bdi->name, work->nr_pages, work->sync_mode,
+>                         wb_reason_name[work->reason]);
+  Makes sense. Thanks.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> btw, with the I_SYNC case converted, it's actually no longer necessary
+> to keep a standalone b_more_io_wait. It should still be better to keep
+> the list and the above error check for catching possible errors and
+> the flexibility of adding policies like "don't retry possible blocked
+> inodes in N seconds as long as there are other inodes to work with".
+> 
+> The below diff only intends to show the _possibility_ to remove
+> b_more_io_wait:
+  Good observation. So should we introduce b_more_io_wait in the end? We
+could always introduce it when the need for some more complicated policy
+comes...
+
+								Honza
+
+> 
+> --- linux-next.orig/fs/fs-writeback.c	2011-10-21 18:25:25.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2011-10-21 18:27:41.000000000 +0800
+> @@ -235,20 +235,7 @@ static void requeue_io(struct inode *ino
+>  	list_move(&inode->i_wb_list, &wb->b_more_io);
+>  }
+>  
+> -/*
+> - * The inode should be retried in an opportunistic way.
+> - *
+> - * The only difference between b_more_io and b_more_io_wait is:
+> - * wb_writeback() won't quit as long as b_more_io is not empty.  When
+> - * wb_writeback() quit on empty b_more_io and non-empty b_more_io_wait,
+> - * the kupdate work will wakeup more frequently to retry the inodes in
+> - * b_more_io_wait.
+> - */
+> -static void requeue_io_wait(struct inode *inode, struct bdi_writeback *wb)
+> -{
+> -	assert_spin_locked(&wb->list_lock);
+> -	list_move(&inode->i_wb_list, &wb->b_more_io_wait);
+> -}
+> +#define requeue_io_wait(inode, wb) requeue_io(inode, wb)
+>  
+>  static void inode_sync_complete(struct inode *inode)
+>  {
+> @@ -798,21 +785,8 @@ static long wb_writeback(struct bdi_writ
+>  		 * mean the overall work is done. So we keep looping as long
+>  		 * as made some progress on cleaning pages or inodes.
+>  		 */
+> -		if (progress)
+> -			continue;
+> -		/*
+> -		 * No more inodes for IO, bail
+> -		 */
+> -		if (list_empty(&wb->b_more_io))
+> +		if (!progress)
+>  			break;
+> -		/*
+> -		 * Nothing written but some inodes were moved to b_more_io.
+> -		 * This should not happen as we can easily busyloop.
+> -		 */
+> -		pr_warn_ratelimited("mm: Possible busyloop in data writeback "
+> -			"(bdi %s nr_pages %ld sync_mode %d reason %s)\n",
+> -			wb->bdi->name, work->nr_pages, work->sync_mode,
+> -			wb_reason_name[work->reason]);
+>  	}
+>  	spin_unlock(&wb->list_lock);
+> 
+> Thanks,
+> Fengguang
