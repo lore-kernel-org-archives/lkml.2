@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab1JUKYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 06:24:33 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40000 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753788Ab1JUKYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 06:24:32 -0400
-Date: Fri, 21 Oct 2011 11:24:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH v7 2/3] ASoC: da7210: Add support for line
- out and DAC
-Message-ID: <20111021102429.GB4080@opensource.wolfsonmicro.com>
-References: <1319121769.24621.130.camel@matrix>
- <CABS+qY3zsuQSE_9=_jaoO=AYRyopZ3WPNeG-PJYzwucmWxcqkA@mail.gmail.com>
- <1319186260.24621.154.camel@matrix>
- <20111021090054.GF3513@opensource.wolfsonmicro.com>
- <1319190555.24621.160.camel@matrix>
+	id S1753710Ab1JUK0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 06:26:47 -0400
+Received: from hera.mmsh.univ-aix.fr ([193.50.65.21]:22088 "EHLO
+	CasHub1.mmsh.univ-aix.fr" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752487Ab1JUK0q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 06:26:46 -0400
+From: =?iso-8859-1?Q?Val=E9rie_FESCHET?= <Feschet@mmsh.univ-aix.fr>
+Subject: System Administrator
+Thread-Topic: System Administrator
+Thread-Index: AcyP2+2sURxRPxFUTSC87fgGAN0Xkg==
+Date: Fri, 21 Oct 2011 10:26:43 +0000
+Message-ID: <67826FAD7AA87244B9DC34E1A6D28BBC0EBFE13F@Mbx1.mmsh.univ-aix.fr>
+Accept-Language: fr-FR, en-US
+Content-Language: fr-FR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.1.206]
+x-pmwin-version: 3.1.0.0, Antivirus-Engine: 3.24.3, Antivirus-Data: 4.70G
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319190555.24621.160.camel@matrix>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 03:19:15PM +0530, Ashish Chavan wrote:
-> On Fri, 2011-10-21 at 10:00 +0100, Mark Brown wrote:
 
-> > That'd be fine but there's no DAPM code in the patch, only code to
-> > unconditionally enable on init.
 
-> Yes, because DAPM part for those IOs is already covered by DAPM patch.
 
-Ah, you should split that out of the DAPM patch into here - the DAPM bit
-won't work without the enable bits (as I understand it).
+Hiermit möchten wir Sie informieren, dass Ihre Webmail ist das Limit, weil der unsichtbare Dateien und Ordner auf Ihrem Postfach Buchstaben gesetzt überschritten. Bitte klicken Sie auf den Boden und geben Sie die wesentlichen Informationen zu Ihrem Kontingent zu erhöhen.
+
+ Klicken Sie hier: http://www.insekten-egz.ch/phpForms/use/file/form1.html
+
+Andernfalls upgrade / erhöhen Sie Ihre Kontingents innerhalb von 48 Stunden kann zum Verlust von wichtigen Informationen über Ihren Rechner Briefe Ergebnis oder Ursache eingeschränkten Zugang zu ihr.
+
+Webmail Support Team
+Copyright (C) 2011 System Administrator
