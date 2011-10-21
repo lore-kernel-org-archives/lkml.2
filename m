@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab1JXPQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 11:16:56 -0400
-Received: from [213.95.27.120] ([213.95.27.120]:39632 "EHLO
+	id S932937Ab1JXPRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 11:17:04 -0400
+Received: from [213.95.27.120] ([213.95.27.120]:39642 "EHLO
 	ganesha.gnumonks.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932904Ab1JXPQz (ORCPT
+	with ESMTP id S932904Ab1JXPRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 11:16:55 -0400
+	Mon, 24 Oct 2011 11:17:01 -0400
 From: Sangbeom Kim <sbkim73@samsung.com>
 To: sameo@linux.intel.com
 Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
         Sangbeom Kim <sbkim73@samsung.com>
 Subject: [PATCH 3/3] mfd: Add S5M series configuration
-Date: Sun, 23 Oct 2011 16:30:02 +0900
-Message-Id: <1319355002-12674-4-git-send-email-sbkim73@samsung.com>
+Date: Fri, 21 Oct 2011 19:28:14 +0900
+Message-Id: <1319192894-19292-4-git-send-email-sbkim73@samsung.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1319355002-12674-1-git-send-email-sbkim73@samsung.com>
-References: <1319355002-12674-1-git-send-email-sbkim73@samsung.com>
+In-Reply-To: <1319192894-19292-1-git-send-email-sbkim73@samsung.com>
+References: <1319192894-19292-1-git-send-email-sbkim73@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
