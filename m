@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab1JUMWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:22:21 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:22445
+	id S1754649Ab1JUMWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:22:39 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:32488
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753776Ab1JUMWR (ORCPT
+	by vger.kernel.org with ESMTP id S1751281Ab1JUMWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:22:17 -0400
+	Fri, 21 Oct 2011 08:22:19 -0400
 X-SpamScore: 1
 X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LTF10Z-02-1UF-02
+X-WSS-ID: 0LTF10Z-02-1UI-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
@@ -19,9 +18,9 @@ To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>
 CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 3/3] mmu_notifier: Call invalidate_range_free_pages() notifier
-Date: Fri, 21 Oct 2011 14:21:48 +0200
-Message-ID: <1319199708-17777-4-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 2/3] mmu_notifier: Add invalidate_range_free_pages() notifier
+Date: Fri, 21 Oct 2011 14:21:47 +0200
+Message-ID: <1319199708-17777-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319199708-17777-1-git-send-email-joerg.roedel@amd.com>
 References: <1319199708-17777-1-git-send-email-joerg.roedel@amd.com>
@@ -32,55 +31,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary calls to the new notifier.
+This notifier closes an important gap in the current
+invalidate_range_start()/end() notifiers. The _start() part
+is called when all pages are still mapped while the _end()
+notifier is called when all pages are potentially unmapped
+and already freed.
+
+This does not allow to manage external (non-CPU) hardware
+TLBs with MMU-notifiers because there is no way to prevent
+that hardware will esablish new TLB entries between the
+calls of these two functions. But this is a requirement to
+the subsytem that implements these existing notifiers.
+
+To allow managing external TLBs the MMU-notifiers need to
+catch the moment when pages are unmapped but not yet freed.
+This new notifier catches that moment and notifies the
+interested subsytem when pages that were unmapped are about
+to be freed. The new notifier will only be called between
+invalidate_range_start()/end().
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- mm/hugetlb.c |    1 +
- mm/memory.c  |   11 +++++++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+ include/linux/mmu_notifier.h |   32 +++++++++++++++++++++++++++-----
+ mm/mmu_notifier.c            |   13 +++++++++++++
+ 2 files changed, 40 insertions(+), 5 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index dae27ba..d08998d 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2278,6 +2278,7 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 	}
- 	spin_unlock(&mm->page_table_lock);
- 	flush_tlb_range(vma, start, end);
-+	mmu_notifier_invalidate_range_free_pages(mm);
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	list_for_each_entry_safe(page, tmp, &page_list, lru) {
- 		page_remove_rmap(page);
-diff --git a/mm/memory.c b/mm/memory.c
-index b31f9e0..a5cc335 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1207,6 +1207,7 @@ again:
- 	 * and page-free while holding it.
- 	 */
- 	if (force_flush) {
-+		mmu_notifier_invalidate_range_free_pages(mm);
- 		force_flush = 0;
- 		tlb_flush_mmu(tlb);
- 		if (addr != end)
-@@ -1359,6 +1360,16 @@ unsigned long unmap_vmas(struct mmu_gather *tlb,
- 		}
- 	}
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+index b9469d6..199813f 100644
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -94,11 +94,17 @@ struct mmu_notifier_ops {
+ 	/*
+ 	 * invalidate_range_start() and invalidate_range_end() must be
+ 	 * paired and are called only when the mmap_sem and/or the
+-	 * locks protecting the reverse maps are held. The subsystem
+-	 * must guarantee that no additional references are taken to
+-	 * the pages in the range established between the call to
+-	 * invalidate_range_start() and the matching call to
+-	 * invalidate_range_end().
++	 * locks protecting the reverse maps are held.
++	 * invalidate_range_free_pages() is called between the two
++	 * functions every time when the VM has unmapped pages that are
++	 * about to be freed.
++	 * The subsystem must guarantee that no additional references
++	 * are taken to the pages in the range established between the
++	 * call to invalidate_range_start() and the matching call to
++	 * invalidate_range_end(). If this guarantee can not be given
++	 * by the subsystem it has to make sure that additional
++	 * references are dropped again in the
++	 * invalidate_range_free_pages() notifier.
+ 	 *
+ 	 * Invalidation of multiple concurrent ranges may be
+ 	 * optionally permitted by the driver. Either way the
+@@ -109,6 +115,9 @@ struct mmu_notifier_ops {
+ 	 * invalidate_range_start() is called when all pages in the
+ 	 * range are still mapped and have at least a refcount of one.
+ 	 *
++	 * invalidate_range_free_pages() is called when a bunch of pages
++	 * are unmapped but not yet freed by the VM.
++	 *
+ 	 * invalidate_range_end() is called when all pages in the
+ 	 * range have been unmapped and the pages have been freed by
+ 	 * the VM.
+@@ -137,6 +146,8 @@ struct mmu_notifier_ops {
+ 	void (*invalidate_range_start)(struct mmu_notifier *mn,
+ 				       struct mm_struct *mm,
+ 				       unsigned long start, unsigned long end);
++	void (*invalidate_range_free_pages)(struct mmu_notifier *mn,
++					    struct mm_struct *mm);
+ 	void (*invalidate_range_end)(struct mmu_notifier *mn,
+ 				     struct mm_struct *mm,
+ 				     unsigned long start, unsigned long end);
+@@ -181,6 +192,7 @@ extern void __mmu_notifier_invalidate_page(struct mm_struct *mm,
+ 					  unsigned long address);
+ extern void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+ 				  unsigned long start, unsigned long end);
++extern void __mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm);
+ extern void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
+ 				  unsigned long start, unsigned long end);
  
-+	/*
-+	 * In theory it would be sufficient to do the final flush for the last
-+	 * bunch of pages queued by mmu_gather in mn_invalidate_range_end().
-+	 * But that would break the API definition because in the _end notifier
-+	 * the called subsystem has to assume that the pages are alread freed.
-+	 * So call mn_invalidate_range_free_pages() explicitly here for the
-+	 * final bunch of pages.
-+	 */
-+	mmu_notifier_invalidate_range_free_pages(mm);
-+
- 	mmu_notifier_invalidate_range_end(mm, start_addr, end_addr);
- 	return start;	/* which is now the end (or restart) address */
+@@ -227,6 +239,12 @@ static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+ 		__mmu_notifier_invalidate_range_start(mm, start, end);
  }
+ 
++static inline void mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm)
++{
++	if (mm_has_notifiers(mm))
++		__mmu_notifier_invalidate_range_free_pages(mm);
++}
++
+ static inline void mmu_notifier_invalidate_range_end(struct mm_struct *mm,
+ 				  unsigned long start, unsigned long end)
+ {
+@@ -354,6 +372,10 @@ static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+ {
+ }
+ 
++static inline void mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm)
++{
++}
++
+ static inline void mmu_notifier_invalidate_range_end(struct mm_struct *mm,
+ 				  unsigned long start, unsigned long end)
+ {
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 8d032de..ec6b11b 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -168,6 +168,19 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+ 	rcu_read_unlock();
+ }
+ 
++void __mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm)
++{
++	struct mmu_notifier *mn;
++	struct hlist_node *n;
++
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
++		if (mn->ops->invalidate_range_free_pages)
++			mn->ops->invalidate_range_free_pages(mn, mm);
++	}
++	rcu_read_unlock();
++}
++
+ void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
+ 				  unsigned long start, unsigned long end)
+ {
 -- 
 1.7.5.4
 
