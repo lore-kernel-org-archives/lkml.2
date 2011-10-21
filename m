@@ -1,229 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab1JXNHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:07:37 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:63865 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932520Ab1JXNHf (ORCPT
+	id S932575Ab1JXNIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:08:45 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:63722 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab1JXNIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:07:35 -0400
-Date: Thu, 20 Oct 2011 19:45:32 -0400
+	Mon, 24 Oct 2011 09:08:43 -0400
+Date: Thu, 20 Oct 2011 20:40:31 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] xen: use generic functions instead of
- xen_{alloc,free}_vm_area()
-Message-ID: <20111020234532.GG19558@phenom.dumpdata.com>
-References: <1319107519-2253-1-git-send-email-david.vrabel@citrix.com>
- <1319107519-2253-2-git-send-email-david.vrabel@citrix.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>, fujita.tomonori@lab.ntt.co.jp
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86 swiotlb: Verify we can perform the remapping
+ requested.
+Message-ID: <20111021004031.GB13687@phenom.dumpdata.com>
+References: <m1lisj48q1.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319107519-2253-2-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <m1lisj48q1.fsf@fess.ebiederm.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4EA56313.01BF,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4EA56319.019D:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 11:45:16AM +0100, David Vrabel wrote:
-> Replace calls to the Xen-specific xen_alloc_vm_area() and
-> xen_free_vm_area() functions with the generic equivalent
-> (alloc_vm_area() and free_vm_area()).
+On Mon, Oct 17, 2011 at 02:19:18PM -0700, Eric W. Biederman wrote:
 > 
-> On x86, these were identical already.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> Recently I had a driver try with a peculiar 2G dma memory limit.
+> It failed in weird and strange ways because my bounce buffers were
+> being allocated above 2G where the driver could not reach, and
+> no error was reported when the mappings were setup.
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/ia64/include/asm/xen/grant_table.h |   29 --------------
->  arch/ia64/xen/grant-table.c             |   62 -------------------------------
->  arch/x86/include/asm/xen/grant_table.h  |    7 ---
->  arch/x86/xen/grant-table.c              |    2 +-
->  drivers/xen/xenbus/xenbus_client.c      |    6 +-
->  include/xen/grant_table.h               |    1 -
->  6 files changed, 4 insertions(+), 103 deletions(-)
->  delete mode 100644 arch/ia64/include/asm/xen/grant_table.h
->  delete mode 100644 arch/x86/include/asm/xen/grant_table.h
+OK, so the overflow buffer was used instead.. which presumarily
+also was allocated above the 2G? That seems to point that
+alloc_bootmem_low_pages is not doing its job?
+
 > 
-> diff --git a/arch/ia64/include/asm/xen/grant_table.h b/arch/ia64/include/asm/xen/grant_table.h
-> deleted file mode 100644
-> index 2b1fae0..0000000
-> --- a/arch/ia64/include/asm/xen/grant_table.h
-> +++ /dev/null
-> @@ -1,29 +0,0 @@
-> -/******************************************************************************
-> - * arch/ia64/include/asm/xen/grant_table.h
-> - *
-> - * Copyright (c) 2008 Isaku Yamahata <yamahata at valinux co jp>
-> - *                    VA Linux Systems Japan K.K.
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License as published by
-> - * the Free Software Foundation; either version 2 of the License, or
-> - * (at your option) any later version.
-> - *
-> - * This program is distributed in the hope that it will be useful,
-> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> - * GNU General Public License for more details.
-> - *
-> - * You should have received a copy of the GNU General Public License
-> - * along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> - *
-> - */
-> -
-> -#ifndef _ASM_IA64_XEN_GRANT_TABLE_H
-> -#define _ASM_IA64_XEN_GRANT_TABLE_H
-> -
-> -struct vm_struct *xen_alloc_vm_area(unsigned long size);
-> -void xen_free_vm_area(struct vm_struct *area);
-> -
-> -#endif /* _ASM_IA64_XEN_GRANT_TABLE_H */
-> diff --git a/arch/ia64/xen/grant-table.c b/arch/ia64/xen/grant-table.c
-> index 48cca37..c182813 100644
-> --- a/arch/ia64/xen/grant-table.c
-> +++ b/arch/ia64/xen/grant-table.c
-> @@ -31,68 +31,6 @@
+> Use the swiotlb_dma_supported to avoid silent problems like this
+> in the future.
+
+Which driver was it that had this limit?
+
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+
+I also CC-ed Fujita on this as he is the swiotlb maintainer.
+
+> ---
+>  arch/x86/kernel/pci-swiotlb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
+> index 8f972cb..6a802fa 100644
+> --- a/arch/x86/kernel/pci-swiotlb.c
+> +++ b/arch/x86/kernel/pci-swiotlb.c
+> @@ -38,7 +38,7 @@ static struct dma_map_ops swiotlb_dma_ops = {
+>  	.unmap_sg = swiotlb_unmap_sg_attrs,
+>  	.map_page = swiotlb_map_page,
+>  	.unmap_page = swiotlb_unmap_page,
+> -	.dma_supported = NULL,
+> +	.dma_supported = swiotlb_dma_supported,
+>  };
 >  
->  #include <asm/xen/hypervisor.h>
->  
-> -struct vm_struct *xen_alloc_vm_area(unsigned long size)
-> -{
-> -	int order;
-> -	unsigned long virt;
-> -	unsigned long nr_pages;
-> -	struct vm_struct *area;
-> -
-> -	order = get_order(size);
-> -	virt = __get_free_pages(GFP_KERNEL, order);
-> -	if (virt == 0)
-> -		goto err0;
-> -	nr_pages = 1 << order;
-> -	scrub_pages(virt, nr_pages);
-> -
-> -	area = kmalloc(sizeof(*area), GFP_KERNEL);
-> -	if (area == NULL)
-> -		goto err1;
-> -
-> -	area->flags = VM_IOREMAP;
-> -	area->addr = (void *)virt;
-> -	area->size = size;
-> -	area->pages = NULL;
-> -	area->nr_pages = nr_pages;
-> -	area->phys_addr = 0;	/* xenbus_map_ring_valloc uses this field!  */
-> -
-> -	return area;
-> -
-> -err1:
-> -	free_pages(virt, order);
-> -err0:
-> -	return NULL;
-> -}
-> -EXPORT_SYMBOL_GPL(xen_alloc_vm_area);
-> -
-> -void xen_free_vm_area(struct vm_struct *area)
-> -{
-> -	unsigned int order = get_order(area->size);
-> -	unsigned long i;
-> -	unsigned long phys_addr = __pa(area->addr);
-> -
-> -	/* This area is used for foreign page mappping.
-> -	 * So underlying machine page may not be assigned. */
-> -	for (i = 0; i < (1 << order); i++) {
-> -		unsigned long ret;
-> -		unsigned long gpfn = (phys_addr >> PAGE_SHIFT) + i;
-> -		struct xen_memory_reservation reservation = {
-> -			.nr_extents   = 1,
-> -			.address_bits = 0,
-> -			.extent_order = 0,
-> -			.domid        = DOMID_SELF
-> -		};
-> -		set_xen_guest_handle(reservation.extent_start, &gpfn);
-> -		ret = HYPERVISOR_memory_op(XENMEM_populate_physmap,
-> -					   &reservation);
-> -		BUG_ON(ret != 1);
-> -	}
-> -	free_pages((unsigned long)area->addr, order);
-> -	kfree(area);
-> -}
-> -EXPORT_SYMBOL_GPL(xen_free_vm_area);
-> -
-> -
->  /****************************************************************************
->   * grant table hack
->   * cmd: GNTTABOP_xxx
-> diff --git a/arch/x86/include/asm/xen/grant_table.h b/arch/x86/include/asm/xen/grant_table.h
-> deleted file mode 100644
-> index fdbbb45..0000000
-> --- a/arch/x86/include/asm/xen/grant_table.h
-> +++ /dev/null
-> @@ -1,7 +0,0 @@
-> -#ifndef _ASM_X86_XEN_GRANT_TABLE_H
-> -#define _ASM_X86_XEN_GRANT_TABLE_H
-> -
-> -#define xen_alloc_vm_area(size)	alloc_vm_area(size)
-> -#define xen_free_vm_area(area)	free_vm_area(area)
-> -
-> -#endif /* _ASM_X86_XEN_GRANT_TABLE_H */
-> diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-> index 49ba9b5..6bbfd7a 100644
-> --- a/arch/x86/xen/grant-table.c
-> +++ b/arch/x86/xen/grant-table.c
-> @@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
->  
->  	if (shared == NULL) {
->  		struct vm_struct *area =
-> -			xen_alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-> +			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
->  		BUG_ON(area == NULL);
->  		shared = area->addr;
->  		*__shared = shared;
-> diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-> index cdacf92..229d3ad 100644
-> --- a/drivers/xen/xenbus/xenbus_client.c
-> +++ b/drivers/xen/xenbus/xenbus_client.c
-> @@ -443,7 +443,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
->  
->  	*vaddr = NULL;
->  
-> -	area = xen_alloc_vm_area(PAGE_SIZE);
-> +	area = alloc_vm_area(PAGE_SIZE);
->  	if (!area)
->  		return -ENOMEM;
->  
-> @@ -453,7 +453,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
->  		BUG();
->  
->  	if (op.status != GNTST_okay) {
-> -		xen_free_vm_area(area);
-> +		free_vm_area(area);
->  		xenbus_dev_fatal(dev, op.status,
->  				 "mapping in shared page %d from domain %d",
->  				 gnt_ref, dev->otherend_id);
-> @@ -552,7 +552,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
->  		BUG();
->  
->  	if (op.status == GNTST_okay)
-> -		xen_free_vm_area(area);
-> +		free_vm_area(area);
->  	else
->  		xenbus_dev_error(dev, op.status,
->  				 "unmapping page at handle %d error %d",
-> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-> index b1fab6b..8a8bb76 100644
-> --- a/include/xen/grant_table.h
-> +++ b/include/xen/grant_table.h
-> @@ -43,7 +43,6 @@
->  #include <xen/interface/grant_table.h>
->  
->  #include <asm/xen/hypervisor.h>
-> -#include <asm/xen/grant_table.h>
->  
->  #include <xen/features.h>
->  
+>  /*
 > -- 
 > 1.7.2.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
