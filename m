@@ -1,96 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab1JXPRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 11:17:23 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:48926 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932904Ab1JXPRT (ORCPT
+	id S932956Ab1JXPRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 11:17:43 -0400
+Received: from [213.95.27.120] ([213.95.27.120]:39629 "EHLO
+	ganesha.gnumonks.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S932897Ab1JXPQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 11:17:19 -0400
-Date: Mon, 24 Oct 2011 20:46:14 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/X] uprobes: introduce UTASK_SSTEP_TRAPPED logic
-Message-ID: <20111024151614.GA6034@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215344.GG16395@redhat.com> <20111022072030.GB24475@in.ibm.com> <20111024144127.GA14975@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024144127.GA14975@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-x-cbid: 11102415-2398-0000-0000-0000014A7D8D
+	Mon, 24 Oct 2011 11:16:54 -0400
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
+        Sangbeom Kim <sbkim73@samsung.com>
+Subject: [PATCH 2/3] mfd: Add s5m series irq support
+Date: Fri, 21 Oct 2011 19:28:13 +0900
+Message-Id: <1319192894-19292-3-git-send-email-sbkim73@samsung.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1319192894-19292-1-git-send-email-sbkim73@samsung.com>
+References: <1319192894-19292-1-git-send-email-sbkim73@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 04:41:27PM +0200, Oleg Nesterov wrote:
-> On 10/22, Ananth N Mavinakayanahalli wrote:
-> >
-> > On Wed, Oct 19, 2011 at 11:53:44PM +0200, Oleg Nesterov wrote:
-> > > Finally, add UTASK_SSTEP_TRAPPED state/code to handle the case when
-> > > xol insn itself triggers the signal.
-> > >
-> > > In this case we should restart the original insn even if the task is
-> > > already SIGKILL'ed (say, the coredump should report the correct ip).
-> > > This is even more important if the task has a handler for SIGSEGV/etc,
-> > > The _same_ instruction should be repeated again after return from the
-> > > signal handler, and SSTEP can never finish in this case.
-> >
-> > Oleg,
-> >
-> > Not sure I understand this completely...
-> 
-> I hope you do not think I do ;)
+This patch support irq for s5m series.
+Basically, S5M8767 and S5M8763 irq can be handled by this patch.
 
-I think you understand it better than you think you do :-)
+Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
+---
+ drivers/mfd/s5m-irq.c |  486 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 486 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/s5m-irq.c
 
-> > When you say 'correct ip' you mean the original vaddr where we now have
-> > a uprobe breakpoint and not the xol copy, right?
-> 
-> Yes,
-> 
-> > Coredump needs to report the correct ip, but should it also not report
-> > correctly the instruction that caused the signal? Ergo, shouldn't we
-> > put the original instruction back at the uprobed vaddr?
-> 
-> OK, now I see what you mean. I was confused by the "restore the original
-> instruction before _restart_" suggestion.
-> 
-> Agreed! it would be nice to "hide" these int3's if we dump the core, but
-> I think this is a bit off-topic. It makes sense to do this in any case,
-> even if the core-dumping was triggered by another thread/insn. It makes
-> sense to remove all int3's, not only at regs->ip location. But how can
-> we do this? This is nontrivial.
-
-I don't think that is a problem.. see below...
-
-> And. Even worse. Suppose that you do "gdb probed_application". Now you
-> see int3's in the disassemble output. What can we do?
-
-In this case, nothing.
-
-> I think we can do nothing, at least currently. This just reflects the
-> fact that uprobe connects to inode, not to process/mm/etc.
-> 
-> What do you think?
-
-Thinking further on this, in the normal 'running gdb on a core' case, we
-won't have this problem, as the binary that we point gdb to, will be a
-pristine one, without the uprobe int3s, right?
-
-Ananth
+diff --git a/drivers/mfd/s5m-irq.c b/drivers/mfd/s5m-irq.c
+new file mode 100644
+index 0000000..6a4a71a
+--- /dev/null
++++ b/drivers/mfd/s5m-irq.c
+@@ -0,0 +1,486 @@
++/*
++ * s5m-irq.c
++ *
++ * Copyright (c) 2011 Samsung Electronics Co., Ltd
++ *              http://www.samsung.com
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/device.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/mfd/s5m87xx/s5m-core.h>
++
++struct s5m_irq_data {
++	int reg;
++	int mask;
++};
++
++static struct s5m_irq_data s5m8767_irqs[] = {
++	[S5M8767_IRQ_PWRR] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_PWRR_MASK,
++	},
++	[S5M8767_IRQ_PWRF] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_PWRF_MASK,
++	},
++	[S5M8767_IRQ_PWR1S] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_PWR1S_MASK,
++	},
++	[S5M8767_IRQ_JIGR] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_JIGR_MASK,
++	},
++	[S5M8767_IRQ_JIGF] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_JIGF_MASK,
++	},
++	[S5M8767_IRQ_LOWBAT2] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_LOWBAT2_MASK,
++	},
++	[S5M8767_IRQ_LOWBAT1] = {
++		.reg = 2,
++		.mask = S5M8767_IRQ_LOWBAT1_MASK,
++	},
++	[S5M8767_IRQ_MRB] = {
++		.reg = 3,
++		.mask = S5M8767_IRQ_MRB_MASK,
++	},
++	[S5M8767_IRQ_DVSOK2] = {
++		.reg = 3,
++		.mask = S5M8767_IRQ_DVSOK2_MASK,
++	},
++	[S5M8767_IRQ_DVSOK3] = {
++		.reg = 3,
++		.mask = S5M8767_IRQ_DVSOK3_MASK,
++	},
++	[S5M8767_IRQ_DVSOK4] = {
++		.reg = 3,
++		.mask = S5M8767_IRQ_DVSOK4_MASK,
++	},
++	[S5M8767_IRQ_RTC60S] = {
++		.reg = 4,
++		.mask = S5M8767_IRQ_RTC60S_MASK,
++	},
++	[S5M8767_IRQ_RTCA1] = {
++		.reg = 4,
++		.mask = S5M8767_IRQ_RTCA1_MASK,
++	},
++	[S5M8767_IRQ_RTCA2] = {
++		.reg = 4,
++		.mask = S5M8767_IRQ_RTCA2_MASK,
++	},
++	[S5M8767_IRQ_SMPL] = {
++		.reg = 4,
++		.mask = S5M8767_IRQ_SMPL_MASK,
++	},
++	[S5M8767_IRQ_RTC1S] = {
++		.reg = 4,
++		.mask = S5M8767_IRQ_RTC1S_MASK,
++	},
++	[S5M8767_IRQ_WTSR] = {
++		.reg = 4,
++		.mask = S5M8767_IRQ_WTSR_MASK,
++	},
++};
++
++static struct s5m_irq_data s5m8763_irqs[] = {
++	[S5M8763_IRQ_VDCINF] = {
++		.reg = 1,
++		.mask = S5M8763_IRQ_VDCINF_MASK,
++	},
++	[S5M8763_IRQ_VDCINR] = {
++		.reg = 1,
++		.mask = S5M8763_IRQ_VDCINR_MASK,
++	},
++	[S5M8763_IRQ_JIGF] = {
++		.reg = 1,
++		.mask = S5M8763_IRQ_JIGF_MASK,
++	},
++	[S5M8763_IRQ_JIGR] = {
++		.reg = 1,
++		.mask = S5M8763_IRQ_JIGR_MASK,
++	},
++	[S5M8763_IRQ_PWRONF] = {
++		.reg = 1,
++		.mask = S5M8763_IRQ_PWRONF_MASK,
++	},
++	[S5M8763_IRQ_PWRONR] = {
++		.reg = 1,
++		.mask = S5M8763_IRQ_PWRONR_MASK,
++	},
++	[S5M8763_IRQ_WTSREVNT] = {
++		.reg = 2,
++		.mask = S5M8763_IRQ_WTSREVNT_MASK,
++	},
++	[S5M8763_IRQ_SMPLEVNT] = {
++		.reg = 2,
++		.mask = S5M8763_IRQ_SMPLEVNT_MASK,
++	},
++	[S5M8763_IRQ_ALARM1] = {
++		.reg = 2,
++		.mask = S5M8763_IRQ_ALARM1_MASK,
++	},
++	[S5M8763_IRQ_ALARM0] = {
++		.reg = 2,
++		.mask = S5M8763_IRQ_ALARM0_MASK,
++	},
++	[S5M8763_IRQ_ONKEY1S] = {
++		.reg = 3,
++		.mask = S5M8763_IRQ_ONKEY1S_MASK,
++	},
++	[S5M8763_IRQ_TOPOFFR] = {
++		.reg = 3,
++		.mask = S5M8763_IRQ_TOPOFFR_MASK,
++	},
++	[S5M8763_IRQ_VDCINOVPR] = {
++		.reg = 3,
++		.mask = S5M8763_IRQ_VDCINOVPR_MASK,
++	},
++	[S5M8763_IRQ_CHGRSTF] = {
++		.reg = 3,
++		.mask = S5M8763_IRQ_CHGRSTF_MASK,
++	},
++	[S5M8763_IRQ_DONER] = {
++		.reg = 3,
++		.mask = S5M8763_IRQ_DONER_MASK,
++	},
++	[S5M8763_IRQ_CHGFAULT] = {
++		.reg = 3,
++		.mask = S5M8763_IRQ_CHGFAULT_MASK,
++	},
++	[S5M8763_IRQ_LOBAT1] = {
++		.reg = 4,
++		.mask = S5M8763_IRQ_LOBAT1_MASK,
++	},
++	[S5M8763_IRQ_LOBAT2] = {
++		.reg = 4,
++		.mask = S5M8763_IRQ_LOBAT2_MASK,
++	},
++};
++
++static inline struct s5m_irq_data *
++irq_to_s5m8767_irq(struct s5m87xx_dev *s5m87xx, int irq)
++{
++	return &s5m8767_irqs[irq - s5m87xx->irq_base];
++}
++
++static void s5m8767_irq_lock(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++
++	mutex_lock(&s5m87xx->irqlock);
++}
++
++static void s5m8767_irq_sync_unlock(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(s5m87xx->irq_masks_cur); i++) {
++		if (s5m87xx->irq_masks_cur[i] != s5m87xx->irq_masks_cache[i]) {
++			s5m87xx->irq_masks_cache[i] = s5m87xx->irq_masks_cur[i];
++			s5m_reg_write(s5m87xx, S5M8767_REG_INT1M + i,
++					s5m87xx->irq_masks_cur[i]);
++		}
++	}
++
++	mutex_unlock(&s5m87xx->irqlock);
++}
++
++static void s5m8767_irq_unmask(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct s5m_irq_data *irq_data = irq_to_s5m8767_irq(s5m87xx,
++							       data->irq);
++
++	s5m87xx->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
++}
++
++static void s5m8767_irq_mask(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct s5m_irq_data *irq_data = irq_to_s5m8767_irq(s5m87xx,
++							       data->irq);
++
++	s5m87xx->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
++}
++
++static struct irq_chip s5m8767_irq_chip = {
++	.name = "s5m8767",
++	.irq_bus_lock = s5m8767_irq_lock,
++	.irq_bus_sync_unlock = s5m8767_irq_sync_unlock,
++	.irq_mask = s5m8767_irq_mask,
++	.irq_unmask = s5m8767_irq_unmask,
++};
++
++static inline struct s5m_irq_data *
++irq_to_s5m8763_irq(struct s5m87xx_dev *s5m87xx, int irq)
++{
++	return &s5m8763_irqs[irq - s5m87xx->irq_base];
++}
++
++static void s5m8763_irq_lock(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++
++	mutex_lock(&s5m87xx->irqlock);
++}
++
++static void s5m8763_irq_sync_unlock(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(s5m87xx->irq_masks_cur); i++) {
++		if (s5m87xx->irq_masks_cur[i] != s5m87xx->irq_masks_cache[i]) {
++			s5m87xx->irq_masks_cache[i] = s5m87xx->irq_masks_cur[i];
++			s5m_reg_write(s5m87xx, S5M8763_REG_IRQM1 + i,
++					s5m87xx->irq_masks_cur[i]);
++		}
++	}
++
++	mutex_unlock(&s5m87xx->irqlock);
++}
++
++static void s5m8763_irq_unmask(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct s5m_irq_data *irq_data = irq_to_s5m8763_irq(s5m87xx,
++							       data->irq);
++
++	s5m87xx->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
++}
++
++static void s5m8763_irq_mask(struct irq_data *data)
++{
++	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct s5m_irq_data *irq_data = irq_to_s5m8763_irq(s5m87xx,
++							       data->irq);
++
++	s5m87xx->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
++}
++
++static struct irq_chip s5m8763_irq_chip = {
++	.name = "s5m8763",
++	.irq_bus_lock = s5m8763_irq_lock,
++	.irq_bus_sync_unlock = s5m8763_irq_sync_unlock,
++	.irq_mask = s5m8763_irq_mask,
++	.irq_unmask = s5m8763_irq_unmask,
++};
++
++static irqreturn_t s5m8767_irq_thread(int irq, void *data)
++{
++	struct s5m87xx_dev *s5m87xx = data;
++	u8 irq_reg[NUM_IRQ_REGS-1];
++	int ret;
++	int i;
++
++	ret = s5m_bulk_read(s5m87xx, S5M8767_REG_INT1,
++				NUM_IRQ_REGS - 1, irq_reg);
++	if (ret < 0) {
++		dev_err(s5m87xx->dev, "Failed to read interrupt register: %d\n",
++				ret);
++		return IRQ_NONE;
++	}
++
++	for (i = 0; i < NUM_IRQ_REGS - 1; i++)
++		irq_reg[i] &= ~s5m87xx->irq_masks_cur[i];
++
++	for (i = 0; i < S5M8767_IRQ_NR; i++) {
++		if (irq_reg[s5m8767_irqs[i].reg - 1] & s5m8767_irqs[i].mask)
++			handle_nested_irq(s5m87xx->irq_base + i);
++	}
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t s5m8763_irq_thread(int irq, void *data)
++{
++	struct s5m87xx_dev *s5m87xx = data;
++	u8 irq_reg[NUM_IRQ_REGS];
++	int ret;
++	int i;
++
++	ret = s5m_bulk_read(s5m87xx, S5M8763_REG_IRQ1,
++				NUM_IRQ_REGS, irq_reg);
++	if (ret < 0) {
++		dev_err(s5m87xx->dev, "Failed to read interrupt register: %d\n",
++				ret);
++		return IRQ_NONE;
++	}
++
++	for (i = 0; i < NUM_IRQ_REGS; i++)
++		irq_reg[i] &= ~s5m87xx->irq_masks_cur[i];
++
++	for (i = 0; i < S5M8763_IRQ_NR; i++) {
++		if (irq_reg[s5m8763_irqs[i].reg - 1] & s5m8763_irqs[i].mask)
++			handle_nested_irq(s5m87xx->irq_base + i);
++	}
++
++	return IRQ_HANDLED;
++}
++
++int s5m_irq_resume(struct s5m87xx_dev *s5m87xx)
++{
++	if (s5m87xx->irq && s5m87xx->irq_base){
++		switch (s5m87xx->device_type) {
++		case S5M8763X:
++			s5m8763_irq_thread(s5m87xx->irq_base, s5m87xx);
++			break;
++		case S5M8767X:
++			s5m8767_irq_thread(s5m87xx->irq_base, s5m87xx);
++			break;
++		default:
++			break;
++
++		}
++	}
++	return 0;
++}
++
++int s5m_irq_init(struct s5m87xx_dev *s5m87xx)
++{
++	int i;
++	int cur_irq;
++	int ret = 0;
++	int type = s5m87xx->device_type;
++
++	if (!s5m87xx->irq) {
++		dev_warn(s5m87xx->dev,
++			 "No interrupt specified, no interrupts\n");
++		s5m87xx->irq_base = 0;
++		return 0;
++	}
++
++	if (!s5m87xx->irq_base) {
++		dev_err(s5m87xx->dev,
++			"No interrupt base specified, no interrupts\n");
++		return 0;
++	}
++
++	mutex_init(&s5m87xx->irqlock);
++
++	switch (type) {
++	case S5M8763X:
++		for (i = 0; i < NUM_IRQ_REGS; i++) {
++			s5m87xx->irq_masks_cur[i] = 0xff;
++			s5m87xx->irq_masks_cache[i] = 0xff;
++			s5m_reg_write(s5m87xx, S5M8763_REG_IRQM1 + i,
++						0xff);
++		}
++
++		s5m_reg_write(s5m87xx, S5M8763_REG_STATUSM1, 0xff);
++		s5m_reg_write(s5m87xx, S5M8763_REG_STATUSM2, 0xff);
++
++		for (i = 0; i < S5M8763_IRQ_NR; i++) {
++			cur_irq = i + s5m87xx->irq_base;
++			irq_set_chip_data(cur_irq, s5m87xx);
++			irq_set_chip_and_handler(cur_irq, &s5m8763_irq_chip,
++						 handle_edge_irq);
++			irq_set_nested_thread(cur_irq, 1);
++#ifdef CONFIG_ARM
++			set_irq_flags(cur_irq, IRQF_VALID);
++#else
++			irq_set_noprobe(cur_irq);
++#endif
++		}
++
++		ret = request_threaded_irq(s5m87xx->irq, NULL,
++					s5m8763_irq_thread,
++					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					"s5m87xx-irq", s5m87xx);
++		if (ret) {
++			dev_err(s5m87xx->dev, "Failed to request IRQ %d: %d\n",
++				s5m87xx->irq, ret);
++			return ret;
++		}
++		break;
++	case S5M8767X:
++		for (i = 0; i < NUM_IRQ_REGS - 1; i++) {
++			s5m87xx->irq_masks_cur[i] = 0xff;
++			s5m87xx->irq_masks_cache[i] = 0xff;
++			s5m_reg_write(s5m87xx, S5M8767_REG_INT1M + i,
++						0xff);
++		}
++
++		for (i = 0; i < S5M8767_IRQ_NR; i++) {
++			cur_irq = i + s5m87xx->irq_base;
++			irq_set_chip_data(cur_irq, s5m87xx);
++			if (ret) {
++				dev_err(s5m87xx->dev,
++					"Failed to irq_set_chip_data %d: %d\n",
++					s5m87xx->irq, ret);
++				return ret;
++			}
++
++			irq_set_chip_and_handler(cur_irq, &s5m8767_irq_chip,
++						 handle_edge_irq);
++			irq_set_nested_thread(cur_irq, 1);
++#ifdef CONFIG_ARM
++			set_irq_flags(cur_irq, IRQF_VALID);
++#else
++			irq_set_noprobe(cur_irq);
++#endif
++		}
++
++		ret = request_threaded_irq(s5m87xx->irq, NULL,
++					   s5m8767_irq_thread,
++					   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					   "s5m87xx-irq", s5m87xx);
++		if (ret) {
++			dev_err(s5m87xx->dev, "Failed to request IRQ %d: %d\n",
++				s5m87xx->irq, ret);
++			return ret;
++		}
++		break;
++	default:
++		break;
++	}
++
++	if (!s5m87xx->ono)
++		return 0;
++
++	switch (type) {
++	case S5M8763X:
++		ret = request_threaded_irq(s5m87xx->ono, NULL,
++						s5m8763_irq_thread,
++						IRQF_TRIGGER_FALLING |
++						IRQF_TRIGGER_RISING |
++						IRQF_ONESHOT, "s5m87xx-ono",
++						s5m87xx);
++		break;
++	case S5M8767X:
++		ret = request_threaded_irq(s5m87xx->ono, NULL,
++					s5m8767_irq_thread,
++					IRQF_TRIGGER_FALLING |
++					IRQF_TRIGGER_RISING |
++					IRQF_ONESHOT, "s5m87xx-ono", s5m87xx);
++		break;
++	default:
++		break;
++	}
++
++	if (ret)
++		dev_err(s5m87xx->dev, "Failed to request IRQ %d: %d\n",
++			s5m87xx->ono, ret);
++
++	return 0;
++}
++
++void s5m_irq_exit(struct s5m87xx_dev *s5m87xx)
++{
++	if (s5m87xx->ono)
++		free_irq(s5m87xx->ono, s5m87xx);
++
++	if (s5m87xx->irq)
++		free_irq(s5m87xx->irq, s5m87xx);
++}
+-- 
+1.7.1
 
