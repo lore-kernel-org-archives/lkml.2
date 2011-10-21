@@ -1,289 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1JUIkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 04:40:06 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55174 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753468Ab1JUIkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 04:40:03 -0400
-Message-ID: <4EA12FBA.7090700@parallels.com>
-Date: Fri, 21 Oct 2011 12:39:22 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753924Ab1JUImI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 04:42:08 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:35972 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753818Ab1JUImG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 04:42:06 -0400
+Message-ID: <4EA13053.7080306@ti.com>
+Date: Fri, 21 Oct 2011 14:11:55 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-To: Ying Han <yinghan@google.com>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
-        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [RFD] Isolated memory cgroups again
-References: <20111020013305.GD21703@tiehlicka.suse.cz> <CALWz4ixxeFveibvqYa4cQR1a4fEBrTrTUFwm2iajk9mV0MEiTw@mail.gmail.com>
-In-Reply-To: <CALWz4ixxeFveibvqYa4cQR1a4fEBrTrTUFwm2iajk9mV0MEiTw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        patches@linaro.org, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-4-git-send-email-rnayak@ti.com> <20111018132032.GD30703@S2100-06.ap.freescale.net> <4E9EB61C.1040207@ti.com> <20111019144215.GA32007@S2100-06.ap.freescale.net> <4E9FAF42.5060200@ti.com> <20111020061408.GE32007@S2100-06.ap.freescale.net> <4EA00F7C.1080005@ti.com> <20111021082309.GA337@S2100-06.ap.freescale.net>
+In-Reply-To: <20111021082309.GA337@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2011 03:41 AM, Ying Han wrote:
-> On Wed, Oct 19, 2011 at 6:33 PM, Michal Hocko<mhocko@suse.cz>  wrote:
->> Hi all,
->> this is a request for discussion (I hope we can touch this during memcg
->> meeting during the upcoming KS). I have brought this up earlier this
->> year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
->> The patch got much smaller since then due to excellent Johannes' memcg
->> naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
->> which this is based on.
->> I realize that this will be controversial but I would like to hear
->> whether this is strictly no-go or whether we can go that direction (the
->> implementation might differ of course).
 >>
->> The patch is still half baked but I guess it should be sufficient to
->> show what I am trying to achieve.
->> The basic idea is that memcgs would get a new attribute (isolated) which
->> would control whether that group should be considered during global
->> reclaim.
->> This means that we could achieve a certain memory isolation for
->> processes in the group from the rest of the system activity which has
->> been traditionally done by mlocking the important parts of memory.
->> This approach, however, has some advantages. First of all, it is a kind
->> of all or nothing type of approach. Either the memory is important and
->> mlocked or you have no guarantee that it keeps resident.
->> Secondly it is much more prone to OOM situation.
->> Let's consider a case where a memory is evictable in theory but you
->> would pay quite much if you have to get it back resident (pre calculated
->> data from database - e.g. reports). The memory wouldn't be used very
->> often so it would be a number one candidate to evict after some time.
->> We would want to have something like a clever mlock in such a case which
->> would evict that memory only if the cgroup itself gets under memory
->> pressure (e.g. peak workload). This is not hard to do if we are not
->> over committing the memory but things get tricky otherwise.
->> With the isolated memcgs we get exactly such a guarantee because we would
->> reclaim such a memory only from the hard limit reclaim paths or if the
->> soft limit reclaim if it is set up.
->>
->> Any thoughts comments?
->>
->> ---
->> From: Michal Hocko<mhocko@suse.cz>
->> Subject: Implement isolated cgroups
->>
->> This patch adds a new per-cgroup knob (isolated) which controls whether
->> pages charged for the group should be considered for the global reclaim
->> or they are reclaimed only during soft reclaim and under per-cgroup
->> memory pressure.
->>
->> The value can be modified by GROUP/memory.isolated knob.
->>
->> The primary idea behind isolated cgroups is in a better isolation of a group
->> from the global system activity. At the moment, memory cgroups are mainly
->> used to throttle processes in a group by placing a cap on their memory
->> usage. However, mem. cgroups don't protect their (charged) memory from being
->> evicted by the global reclaim as groups are considered during global
->> reclaim.
->>
->> The feature will provide an easy way to setup a mission critical workload in
->> the memory isolated environment without necessity of mlock. Due to
->> per-cgroup reclaim we can even handle memory usage spikes much more
->> gracefully because a part of the working set can get reclaimed (unlike OOM
->> killed as if mlock has been used). So we can look at the feature as an
->> intelligent mlock (protect from external memory pressure and reclaim on
->> internal pressure).
->>
->> The implementation ignores isolated group status for the soft reclaim which
->> means that every isolated group can configure how much memory it can
->> sacrifice under global memory pressure. Soft unlimited groups are isolated
->> from the global memory pressure completely.
->>
->> Please note that the feature has to be used with caution because isolated
->> groups will make a bigger reclaim pressure to non-isolated cgroups.
->>
->> Implementation is really simple because we just have to hook into shrink_zone
->> and exclude isolated groups if we are doing the global reclaiming.
->>
->> Signed-off-by: Michal Hocko<mhocko@suse.cz>
->>
->> TODO
->> - consider hierarchies - I am not sure whether we want to have
->>   non-consistent isolated status in the hierarchy - probably not
->> - handle root cgroup
->> - Do we want some checks whether the current setting is safe?
->> - is bool sufficient. Don't we rather want something like priority
->>   instead?
->>
->>
->>   include/linux/memcontrol.h |    7 +++++++
->>   mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
->>   mm/vmscan.c                |    8 +++++++-
->>   3 files changed, 58 insertions(+), 1 deletion(-)
->>
->> Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/memcontrol.c
->> ===================================================================
->> --- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/mm/memcontrol.c
->> +++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/memcontrol.c
->> @@ -258,6 +258,9 @@ struct mem_cgroup {
->>         /* set when res.limit == memsw.limit */
->>         bool            memsw_is_minimum;
->>
->> +       /* is the group isolated from the global memory pressure? */
->> +       bool            isolated;
->> +
->>         /* protect arrays of thresholds */
->>         struct mutex thresholds_lock;
->>
->> @@ -287,6 +290,11 @@ struct mem_cgroup {
->>         spinlock_t pcp_counter_lock;
->>   };
->>
->> +bool mem_cgroup_isolated(struct mem_cgroup *mem)
->> +{
->> +       return mem->isolated;
->> +}
->> +
->>   /* Stuffs for move charges at task migration. */
->>   /*
->>   * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
->> @@ -4561,6 +4569,37 @@ static int mem_control_numa_stat_open(st
->>   }
->>   #endif /* CONFIG_NUMA */
->>
->> +static int mem_cgroup_isolated_write(struct cgroup *cgrp, struct cftype *cft,
->> +               const char *buffer)
->> +{
->> +       int ret = -EINVAL;
->> +       struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
->> +
->> +       if (mem_cgroup_is_root(mem))
->> +               goto out;
->> +
->> +       if (!strcasecmp(buffer, "true"))
->> +               mem->isolated = true;
->> +       else if (!strcasecmp(buffer, "false"))
->> +               mem->isolated = false;
->> +       else
->> +               goto out;
->> +
->> +       ret = 0;
->> +out:
->> +       return ret;
->> +}
->> +
->> +static int mem_cgroup_isolated_read(struct cgroup *cgrp, struct cftype *cft,
->> +               struct seq_file *seq)
->> +{
->> +       struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
->> +
->> +       seq_puts(seq, (mem->isolated)?"true":"false");
->> +
->> +       return 0;
->> +}
->> +
->>   static struct cftype mem_cgroup_files[] = {
->>         {
->>                 .name = "usage_in_bytes",
->> @@ -4624,6 +4663,11 @@ static struct cftype mem_cgroup_files[]
->>                 .unregister_event = mem_cgroup_oom_unregister_event,
->>                 .private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
->>         },
->> +       {
->> +               .name = "isolated",
->> +               .write_string = mem_cgroup_isolated_write,
->> +               .read_seq_string = mem_cgroup_isolated_read,
->> +       },
->>   #ifdef CONFIG_NUMA
->>         {
->>                 .name = "numa_stat",
->> Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/include/linux/memcontrol.h
->> ===================================================================
->> --- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/include/linux/memcontrol.h
->> +++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/include/linux/memcontrol.h
->> @@ -165,6 +165,9 @@ void mem_cgroup_split_huge_fixup(struct
->>   bool mem_cgroup_bad_page_check(struct page *page);
->>   void mem_cgroup_print_bad_page(struct page *page);
->>   #endif
->> +
->> +bool mem_cgroup_isolated(struct mem_cgroup *mem);
->> +
->>   #else /* CONFIG_CGROUP_MEM_RES_CTLR */
->>   struct mem_cgroup;
->>
->> @@ -382,6 +385,10 @@ static inline
->>   void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
->>   {
->>   }
->> +bool mem_cgroup_isolated(struct mem_cgroup *mem)
->> +{
->> +       return false;
->> +}
->>   #endif /* CONFIG_CGROUP_MEM_CONT */
->>
->>   #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
->> Index: linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/vmscan.c
->> ===================================================================
->> --- linux-3.1-rc4-next-20110831-mmotm-isolated-memcg.orig/mm/vmscan.c
->> +++ linux-3.1-rc4-next-20110831-mmotm-isolated-memcg/mm/vmscan.c
->> @@ -2109,7 +2109,13 @@ static void shrink_zone(int priority, st
->>                         .zone = zone,
->>                 };
->>
->> -               shrink_mem_cgroup_zone(priority,&mz, sc);
->> +               /*
->> +                * Do not reclaim from an isolated group if we are in
->> +                * the global reclaim.
->> +                */
->> +               if (!(mem_cgroup_isolated(mem)&&  global_reclaim(sc)))
->> +                       shrink_mem_cgroup_zone(priority,&mz, sc);
->> +
->>                 /*
->>                  * Limit reclaim has historically picked one memcg and
->>                  * scanned it with decreasing priority levels until
->> --
->> Michal Hocko
->> SUSE Labs
->> SUSE LINUX s.r.o.
->> Lihovarska 1060/12
->> 190 00 Praha 9
->> Czech Republic
->>
+>> Do you have any RFC patch/code which could explain better what you are
+>> suggesting we do here?
+>>>
+> Here is what I changed based on your patches.  It only changes
+> drivers/regulator/core.c.
 >
-> Hi Michal:
+> ---8<-------
+> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> index 9a5ebbe..8fe132d 100644
+> --- a/drivers/regulator/core.c
+> +++ b/drivers/regulator/core.c
+> @@ -1211,7 +1211,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+>                  node = of_get_regulator(dev, id);
+>                  if (node)
+>                          list_for_each_entry(rdev,&regulator_list, list)
+> -                               if (node == rdev->dev.parent->of_node)
+> +                               if (node == rdev->dev.of_node)
+>                                          goto found;
+>          }
+>          list_for_each_entry(map,&regulator_map_list, list) {
+> @@ -2642,9 +2642,6 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+>              regulator_desc->type != REGULATOR_CURRENT)
+>                  return ERR_PTR(-EINVAL);
 >
-> I didn't read through the patch itself but only the description. If we
-> wanna protect a memcg being reclaimed from under global memory
-> pressure, I think we can approach it by making change on soft_limit
-> reclaim.
+> -       if (!init_data)
+> -               return ERR_PTR(-EINVAL);
+> -
+>          /* Only one of each should be implemented */
+>          WARN_ON(regulator_desc->ops->get_voltage&&
+>                  regulator_desc->ops->get_voltage_sel);
+> @@ -2675,12 +2672,8 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+>          INIT_LIST_HEAD(&rdev->list);
+>          BLOCKING_INIT_NOTIFIER_HEAD(&rdev->notifier);
 >
-> I have a soft_limit change built on top of Johannes's patchset, which
-> does basically soft_limit aware reclaim under global memory pressure.
-> The implementation is simple, and I am looking forward to discuss more
-> with you guys in the conference.
->
-> --Ying
-I don't think soft limits will help his case, if I know understand it 
-correctly. Global reclaim can be triggered regardless of any soft limits 
-we may set.
+> -       /* preform any regulator specific init */
+> -       if (init_data->regulator_init) {
+> -               ret = init_data->regulator_init(rdev->reg_data);
+> -               if (ret<  0)
+> -                       goto clean;
+> -       }
+> +       /* find device_node and attach it */
+> +       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
 
-Now, there are two things I still don't like about it:
-* The definition of a "main workload", "main cgroup", or anything like 
-that. I'd prefer to rank them according to some parameter, something 
-akin to swapiness. This would allow for other people to use it in a 
-different way, while still making you capable of reaching your goals 
-through parameter settings (i.e. one cgroup has a high value of reclaim, 
-all others, a much lower one)
+so would this do a complete dt search for every regulator?
+we would also need the driver names and dt names to match for this to
+work, right?
 
-* The fact that you seem to want to *skip* reclaim altogether for a 
-cgroup. That's a dangerous condition, IMHO. What I think we should try 
-to achieve, is "skip it for practical purposes on sane workloads". 
-Again, a parameter that when set to a very high mark, has the effect of 
-disallowing reclaim for a cgroup under most sane circumstances.
+The approach otherwise looks fine to me and should work for both cases
+of one device per regulator and one device for all regulators.
 
-What do you think of the above, Michal ?
+>
+>          /* register with sysfs */
+>          rdev->dev.class =&regulator_class;
+> @@ -2693,6 +2686,20 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+>                  goto clean;
+>          }
+>
+> +       if (!init_data) {
+> +               /* try to get init_data from device tree */
+> +               init_data = of_get_regulator_init_data(&rdev->dev);
+> +               if (!init_data)
+> +                       return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       /* preform any regulator specific init */
+> +       if (init_data->regulator_init) {
+> +               ret = init_data->regulator_init(rdev->reg_data);
+> +               if (ret<  0)
+> +                       goto clean;
+> +       }
+> +
+>          dev_set_drvdata(&rdev->dev, rdev);
+>
+>          /* set regulator constraints */
+> @@ -2719,7 +2726,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+>                          node = of_get_regulator(dev, supply);
+>                          if (node)
+>                                  list_for_each_entry(r,&regulator_list, list)
+> -                                       if (node == r->dev.parent->of_node)
+> +                                       if (node == r->dev.of_node)
+>                                                  goto found;
+>                  }
+>
+> ------->8---
+>
+> And my dts file looks like something below.
+>
+> 	ecspi@70010000 { /* ECSPI1 */
+> 		fsl,spi-num-chipselects =<2>;
+> 		cs-gpios =<&gpio3 24 0>, /* GPIO4_24 */
+> 			<&gpio3 25 0>; /* GPIO4_25 */
+> 		status = "okay";
+>
+> 		pmic: mc13892@0 {
+> 			#address-cells =<1>;
+> 			#size-cells =<0>;
+> 			compatible = "fsl,mc13892";
+> 			spi-max-frequency =<6000000>;
+> 			reg =<0>;
+> 			mc13xxx-irq-gpios =<&gpio0 8 0>; /* GPIO1_8 */
+>
+> 			regulators {
+> 				sw1reg: mc13892_sw1 {
+> 					regulator-min-uV =<600000>;
+> 					regulator-max-uV =<1375000>;
+> 					regulator-change-voltage;
+> 					regulator-boot-on;
+> 					regulator-always-on;
+> 				};
+>
+> 				sw2reg: mc13892_sw2 {
+> 					regulator-min-uV =<900000>;
+> 					regulator-max-uV =<1850000>;
+> 					regulator-change-voltage;
+> 					regulator-boot-on;
+> 					regulator-always-on;
+> 				};
+>
+> 				......
+> 			};
+>
+> 			leds {
+> 				......
+> 			};
+>
+> 			buttons {
+> 				......
+> 			};
+> 		};
+>
+> 		flash: at45db321d@1 {
+> 			......
+> 		};
+> 	};
+> };
+>
+
