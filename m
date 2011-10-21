@@ -1,74 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab1JUR0Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 13:26:24 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:57007 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475Ab1JUR0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 13:26:23 -0400
-Date: Fri, 21 Oct 2011 10:24:38 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.1
-Message-ID: <20111021172438.GA10764@ericsson.com>
+	id S1754366Ab1JURdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 13:33:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52457 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab1JURda convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 13:33:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2fHTh5uZTiUOsy+g"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
+References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
+	<1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
+Date: Sat, 22 Oct 2011 01:33:29 +0800
+Message-ID: <CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
+Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
+From: Wu Zhangjin <wuzhangjin@gmail.com>
+To: keguang.zhang@gmail.com
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, r0bertz@gentoo.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2fHTh5uZTiUOsy+g
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Fri, Oct 21, 2011 at 6:28 PM,  <keguang.zhang@gmail.com> wrote:
+> From: Kelvin Cheung <keguang.zhang@gmail.com>
+>
+> This patch adds basic platform support for Loongson1B
+> including serial port, ethernet, and interrupt handler.
+>
+> Loongson1B UART is compatible with NS16550A.
+> Loongson1B GMAC is built around Synopsys IP Core.
+>
 
-Hi Linus,
+Perhaps you'd better split out the GMAC support to its own patch and
+send it to the net/ maintainer and the authors of the original files.
 
-Please pull hwmon subsystem fixes for Linux 3.1 from:
+> diff --git a/drivers/net/stmmac/descs.h b/drivers/net/stmmac/descs.h
+> index 63a03e2..4db27d0 100644
+> --- a/drivers/net/stmmac/descs.h
+> +++ b/drivers/net/stmmac/descs.h
+> @@ -53,6 +53,38 @@ struct dma_desc {
+>                        u32 reserved3:5;
+>                        u32 disable_ic:1;
+>                } rx;
+> +#ifdef CONFIG_MACH_LOONGSON1
+> +               struct {
+> +                       /* RDES0 */
+> +                       u32 payload_csum_error:1;
+> +                       u32 crc_error:1;
+> +                       u32 dribbling:1;
+> +                       u32 error_gmii:1;
+> +                       u32 receive_watchdog:1;
+> +                       u32 frame_type:1;
+> +                       u32 late_collision:1;
+> +                       u32 ipc_csum_error:1;
+> +                       u32 last_descriptor:1;
+> +                       u32 first_descriptor:1;
+> +                       u32 vlan_tag:1;
+> +                       u32 overflow_error:1;
+> +                       u32 length_error:1;
+> +                       u32 sa_filter_fail:1;
+> +                       u32 descriptor_error:1;
+> +                       u32 error_summary:1;
+> +                       u32 frame_length:14;
+> +                       u32 da_filter_fail:1;
+> +                       u32 own:1;
+> +                       /* RDES1 */
+> +                       u32 buffer1_size:11;
+> +                       u32 buffer2_size:11;
+> +                       u32 reserved1:2;
+> +                       u32 second_address_chained:1;
+> +                       u32 end_ring:1;
+> +                       u32 reserved2:5;
+> +                       u32 disable_ic:1;
+> +               } erx;          /* -- enhanced -- */
+> +#else
+>                struct {
+>                        /* RDES0 */
+>                        u32 payload_csum_error:1;
+> @@ -83,6 +115,7 @@ struct dma_desc {
+>                        u32 reserved2:2;
+>                        u32 disable_ic:1;
+>                } erx;          /* -- enhanced -- */
+> +#endif
+>
+>                /* Transmit descriptor */
+>                struct {
+> @@ -113,6 +146,40 @@ struct dma_desc {
+>                        u32 last_segment:1;
+>                        u32 interrupt:1;
+>                } tx;
+> +#ifdef CONFIG_MACH_LOONGSON1
+> +               struct {
+> +                       /* TDES0 */
+> +                       u32 deferred:1;
+> +                       u32 underflow_error:1;
+> +                       u32 excessive_deferral:1;
+> +                       u32 collision_count:4;
+> +                       u32 vlan_frame:1;
+> +                       u32 excessive_collisions:1;
+> +                       u32 late_collision:1;
+> +                       u32 no_carrier:1;
+> +                       u32 loss_carrier:1;
+> +                       u32 payload_error:1;
+> +                       u32 frame_flushed:1;
+> +                       u32 jabber_timeout:1;
+> +                       u32 error_summary:1;
+> +                       u32 ip_header_error:1;
+> +                       u32 time_stamp_status:1;
+> +                       u32 reserved1:13;
+> +                       u32 own:1;
+> +                       /* TDES1 */
+> +                       u32 buffer1_size:11;
+> +                       u32 buffer2_size:11;
+> +                       u32 time_stamp_enable:1;
+> +                       u32 disable_padding:1;
+> +                       u32 second_address_chained:1;
+> +                       u32 end_ring:1;
+> +                       u32 crc_disable:1;
+> +                       u32 checksum_insertion:2;
+> +                       u32 first_segment:1;
+> +                       u32 last_segment:1;
+> +                       u32 interrupt:1;
+> +               } etx;          /* -- enhanced -- */
+> +#else
+>                struct {
+>                        /* TDES0 */
+>                        u32 deferred:1;
+> @@ -148,6 +215,7 @@ struct dma_desc {
+>                        u32 buffer2_size:13;
+>                        u32 reserved4:3;
+>                } etx;          /* -- enhanced -- */
+> +#endif
+>        } des01;
+>        unsigned int des2;
+>        unsigned int des3;
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-Thanks,
-Guenter Roeck
+If the difference is very much, perhaps a new dma_desc struct can be
+defined instead.
 
-------
+> diff --git a/drivers/net/stmmac/enh_desc.c b/drivers/net/stmmac/enh_desc.c
+> index e5dfb6a..3b5e4f1 100644
+> --- a/drivers/net/stmmac/enh_desc.c
+> +++ b/drivers/net/stmmac/enh_desc.c
+> @@ -108,6 +108,7 @@ static int enh_desc_get_tx_len(struct dma_desc *p)
+>  static int enh_desc_coe_rdes0(int ipc_err, int type, int payload_err)
+>  {
+>        int ret = good_frame;
+> +#ifndef CONFIG_MACH_LOONGSON1
+>        u32 status = (type << 2 | ipc_err << 1 | payload_err) & 0x7;
+>
+>        /* bits 5 7 0 | Frame status
+> @@ -145,6 +146,7 @@ static int enh_desc_coe_rdes0(int ipc_err, int type, int payload_err)
+>                CHIP_DBG(KERN_ERR "RX Des0 status: No IPv4, IPv6 frame.\n");
+>                ret = discard_frame;
+>        }
+> +#endif
+>        return ret;
+>  }
 
-The following changes since commit 899e3ee404961a90b828ad527573aaaac39f0ab1:
+>
+> @@ -232,9 +234,17 @@ static void enh_desc_init_rx_desc(struct dma_desc *p, unsigned int ring_size,
+>        int i;
+>        for (i = 0; i < ring_size; i++) {
+>                p->des01.erx.own = 1;
+> +#ifdef CONFIG_MACH_LOONGSON1
+> +               p->des01.erx.buffer1_size = BUF_SIZE_2KiB - 1;
+> +#else
+>                p->des01.erx.buffer1_size = BUF_SIZE_8KiB - 1;
+> +#endif
+>                /* To support jumbo frames */
+> +#ifdef CONFIG_MACH_LOONGSON1
+> +               p->des01.erx.buffer2_size = BUF_SIZE_2KiB - 1;
+> +#else
+>                p->des01.erx.buffer2_size = BUF_SIZE_8KiB - 1;
+> +#endif
+>                if (i == ring_size - 1)
+>                        p->des01.erx.end_ring = 1;
+>                if (disable_rx_ic)
+> @@ -292,9 +302,15 @@ static void enh_desc_prepare_tx_desc(struct dma_desc *p, int is_fs, int len,
+>                                     int csum_flag)
+>  {
+>        p->des01.etx.first_segment = is_fs;
+> +#ifdef CONFIG_MACH_LOONGSON1
+> +       if (unlikely(len > BUF_SIZE_2KiB)) {
+> +               p->des01.etx.buffer1_size = BUF_SIZE_2KiB - 1;
+> +               p->des01.etx.buffer2_size = len - BUF_SIZE_2KiB + 1;
+> +#else
+>        if (unlikely(len > BUF_SIZE_4KiB)) {
+>                p->des01.etx.buffer1_size = BUF_SIZE_4KiB;
+>                p->des01.etx.buffer2_size = len - BUF_SIZE_4KiB;
+> +#endif
+>        } else {
+>                p->des01.etx.buffer1_size = len;
+>        }
 
-  Linux 3.1-rc10 (2011-10-17 21:06:23 -0700)
+Is it possible to add two new macros RX_BUF_SIZE and TX_BUF_SIZE to .h
+instead? which may reduce code duplication.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+Regards,
+Wu Zhangjin
 
-Jean Delvare (1):
-      hwmon: (w83627ehf) Fix negative 8-bit temperature values
-
- drivers/hwmon/w83627ehf.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
---2fHTh5uZTiUOsy+g
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOoarWAAoJEMsfJm/On5mBQR8P/1GAlo2YJx7596NKXjoOPODT
-I0FKtXMk4RRrmln8JUyjBSwEXTx6S/9392D1YoRKHgqU7+MBk0ny04XHMId5p3N1
-SfcfBn/QkNM5gIh04aQ1/ST0O0Aa79cPWCakw0xuMgGIfpFi+BtpBcS8VpINlPP1
-GnvVV6sjJTHHYzE8ZJVXoB3HOVBV8M2P86FjNTETKLESg1o3oFslAfXLt1KYrmTg
-huzeiEAslptIUMszC9Hp+cXv4tKTzqDMyMpEyaDvvAVsKxc2ddrrzJAZxTRrZD5U
-kC7gS17Ek+lQ668UNsSruxeG1FhISXXepzPXLSRzYWnxLyUe7c0fQV1mVAgWjTI6
-GjJln9bmR/USv3QiMU6K5/HzIjh15G+1APGyK/QGLS1U52Uk7BInnsFzW076pOzv
-4tgQzB5O3HnXM7U79oxKZf6UrD0oyh19ZS7THXhMGLJ3o7Z1Ao88UEjrNfQ3im3l
-I4JdbqbI0RZX+WkoH6sYz7v4R/gnb2j9YWNheS6Rxm8HYiUK7Obv+W34ik+8bSrn
-Jhm1MbUdj7bW4t17DKsIe+MuhxN7Wl6T1OC8UQzRpXjIBqmNHBRgtYxT3274KOzn
-sYKDcC30jt0Eb8Iinq0b9B85egD1DFrbykGN1CKk8eMT481xGFeRCywUH5wMr/Lw
-j+swQYwsGH9L/IFdARJ7
-=XtXO
------END PGP SIGNATURE-----
-
---2fHTh5uZTiUOsy+g--
+> --
+> 1.7.1
+>
+>
