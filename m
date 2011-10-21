@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1JUByz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 21:54:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44413 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab1JUByy (ORCPT
+	id S1752842Ab1JUCWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 22:22:14 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:37304 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab1JUCWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 21:54:54 -0400
-Message-ID: <1319162083.4352.2.camel@phoenix>
-Subject: [PATCH] ASoC: sgtl5000: Fix wrong mask in some snd_soc_update_bits
- calls
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dong Aisheng <B29396@freescale.com>, Wolfram Sang <w.sang@pengutronix.de>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Date: Fri, 21 Oct 2011 09:54:43 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 20 Oct 2011 22:22:12 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6505"; a="129617086"
+X-IronPort-AV: E=Sophos;i="4.69,383,1315206000"; 
+   d="scan'208";a="147065909"
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+CC: David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
+ Ethernet driver
+Thread-Topic: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
+ Ethernet driver
+Thread-Index: AQHMjvQO9EGPKqVzTkOxaT8937sMf5WFYLyA//+Sl8CAAHhsAP//jNYAgAEuCoD//+F0gA==
+Date: Fri, 21 Oct 2011 02:21:44 +0000
+Message-ID: <6349D7A510622448B1BA0967850A8438011CC7CA@nasanexd02d.na.qualcomm.com>
+References: <1319093184-19696-1-git-send-email-cloud.ren@Atheros.com>
+ <20111020.044541.970282389722164761.davem@davemloft.net>
+ <6349D7A510622448B1BA0967850A8438011CC21D@nasanexd02d.na.qualcomm.com>
+ <20111020.052506.373437241768777548.davem@davemloft.net>
+ <6349D7A510622448B1BA0967850A8438011CC2A0@nasanexd02d.na.qualcomm.com>
+ <CAB=NE6W6Gc+dN3SzX00VwO9iheemNzhRQ34KuvMtZsBqVJQhJQ@mail.gmail.com>
+In-Reply-To: <CAB=NE6W6Gc+dN3SzX00VwO9iheemNzhRQ34KuvMtZsBqVJQhJQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.45.230.6]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9L2MQM3023383
 
-Ensure all mask bits are clear before setting new value.
+>On Thu, Oct 20, 2011 at 2:48 AM, Ren, Cloud <cjren@qca.qualcomm.com>
+>wrote:
+>>
+>>>From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+>>>Date: Thu, 20 Oct 2011 09:23:07 +0000
+>>>
+>>>> As you saw, should I do the two following steps?
+>>>> 1. I firstly try to submit code to linux-staging.git.
+>>>> 2. After the driver have been accepted by Â linux-staging.git, I
+>>>> submit to net-
+>>>next.git again.
+>>>
+>>>You submit and get it into staging so that it can sit there for some
+>>>time and get reviewed and improved by others.
+>>>
+>>>One doesn't submit directly to net-next right after it gets into
+>>>staging, staging is a place where your driver lives while it still
+>>>smelly funky and needs more work.
+>>
+>> The driver will support the next generation NICs of Atheros.
+>> Meanwhile, the driver can also have better optimization for AR8131 and
+>> AR8151 than atl1c. For some reason, we don't plan to patch atl1c
+>> driver to support our new NIC, such as AR8161. So I hope the driver
+>> can stay in net-next in the end. Of course, I will be responsible for modify
+>source code and let it match kernel requirements.
+>
+>Cloud,
+>
+>If you want to skip staging (which I recommend) then you need to address all
+>upstream concerns expressed. Given that you indicate that you will be
+>working on following up with the driver until its acceptable upstream my
+>recommendation is either to clean up the driver very well and review it
+>internally at Atheros prior to a public submission *or* just dump into staging
+>and get the benefit of community cleanup and eventually wait until it is ready
+>for proper upstream. If you want internal private review at Atheros you can
+>use the internal private ath9k-devel list.
+>
+>Also are you going to maintain the older atlx drivers? While at it can you clear
+>up who maintains what as far as Atheros is concerned for Ethernet?
+>
+>  Luis
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I don't have this hardware, I'd appreciate if someone can test this patch.
+Dear Luis
 
-Thanks,
-Axel
- sound/soc/codecs/sgtl5000.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Thanks for your suggestions. I would rather do an internal review than only submit to staging.
+Alx driver is one of the most important drivers for Atheros Ethernet. It's easier to maintain. 
+Because it shares many codes with other drivers on different OSs, it can be convenient to patch
+some issues which are found on different OSs.
 
-diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-index 32b5bbd..d15695d 100644
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -723,7 +723,9 @@ static int sgtl5000_pcm_hw_params(struct snd_pcm_substream *substream,
- 		return -EINVAL;
- 	}
- 
--	snd_soc_update_bits(codec, SGTL5000_CHIP_I2S_CTRL, i2s_ctl, i2s_ctl);
-+	snd_soc_update_bits(codec, SGTL5000_CHIP_I2S_CTRL,
-+			    SGTL5000_I2S_DLEN_MASK | SGTL5000_I2S_SCLKFREQ_MASK,
-+			    i2s_ctl);
- 
- 	return 0;
- }
-@@ -1146,8 +1148,7 @@ static int sgtl5000_set_power_regs(struct snd_soc_codec *codec)
- 		vag = (vag - SGTL5000_ANA_GND_BASE) / SGTL5000_ANA_GND_STP;
- 
- 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
--			vag << SGTL5000_ANA_GND_SHIFT,
--			vag << SGTL5000_ANA_GND_SHIFT);
-+			SGTL5000_ANA_GND_MASK, vag << SGTL5000_ANA_GND_SHIFT);
- 
- 	/* set line out VAG to vddio / 2, in range (0.8v, 1.675v) */
- 	vag = vddio / 2;
-@@ -1161,9 +1162,8 @@ static int sgtl5000_set_power_regs(struct snd_soc_codec *codec)
- 		    SGTL5000_LINE_OUT_GND_STP;
- 
- 	snd_soc_update_bits(codec, SGTL5000_CHIP_LINE_OUT_CTRL,
--			vag << SGTL5000_LINE_OUT_GND_SHIFT |
--			SGTL5000_LINE_OUT_CURRENT_360u <<
--				SGTL5000_LINE_OUT_CURRENT_SHIFT,
-+			SGTL5000_LINE_OUT_CURRENT_MASK |
-+			SGTL5000_LINE_OUT_GND_MASK,
- 			vag << SGTL5000_LINE_OUT_GND_SHIFT |
- 			SGTL5000_LINE_OUT_CURRENT_360u <<
- 				SGTL5000_LINE_OUT_CURRENT_SHIFT);
--- 
-1.7.5.4
+I'm going to maintain alx linux driver. alx linux driver can support all NICs which atl1c linux driver supports.
+So we don't plan to maintain atl1c driver. atl1e and atlx driver are also maintained by me. But maybe I can
+not response requests for those drivers on time, because sometimes I am busy at alx driver.
+
+cloud
 
 
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
