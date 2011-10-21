@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab1JULgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 07:36:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43041 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab1JULge (ORCPT
+	id S1754529Ab1JULka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 07:40:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57403 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754246Ab1JULk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 07:36:34 -0400
-Subject: Re: [Patch] Idle balancer: cache align nohz structure to improve
- idle load balancing scalability
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venki Pallipadi <venki@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-In-Reply-To: <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
-References: <1319060737.2604.38.camel@schen9-DESK>
-	 <m2wrc0xpbg.fsf@firstfloor.org>
-	 <CABeCy1a20npBt=4ee38zLH+6Fi7nfASd0dL3od6pOccV=LJDkA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Oct 2011 19:38:54 +0200
-Message-ID: <1319132334.8653.4.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Fri, 21 Oct 2011 07:40:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hamo <hamo.by@gmail.com>
+Subject: Re: [PATCH] gpio: fix build error in include/asm-generic/gpio.h
+Date: Fri, 21 Oct 2011 13:39:57 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
+In-Reply-To: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201110211339.59280.arnd@arndb.de>
+X-Provags-ID: V02:K0:KCJY/uLtHrC8pRm42ubtN8piTvzRsCTzbVGz3TYbNUI
+ svOfEp4uLD9YGpEGzRS4qZ11ebG5Vg2O5YmRMVlsFrrnU65VZP
+ BaFf7H1IOvDREak0PY2O+bS5ZhJwkLitt/OYz1zWPY7KRq5+gZ
+ YGvtkFH+A1No0x45xl2zNzm7jKQcQwXT1SL/eUqiX5G2F3j/H/
+ 0nxnelnq5RqhJa3Aa7dV2CcP1bWO31p/tgLWY4IOqAIHZuiXXN
+ IRUohIo/KdXjQZPSAyWYkIK6pQdGywqrJESz68eXOZfy/phve0
+ zU1CE5zSEB38t/dCcUl/+oxJTbqsMFsUfxfD56yOPPxT62Xn1o
+ iD3RkFX6AXmEN5fLQdbE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 05:26 -0700, Venki Pallipadi wrote:
-> On Wed, Oct 19, 2011 at 9:24 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> > Tim Chen <tim.c.chen@linux.intel.com> writes:
-> >>   */
-> >>  static struct {
-> >> -     atomic_t load_balancer;
-> >> -     atomic_t first_pick_cpu;
-> >> -     atomic_t second_pick_cpu;
-> >> -     cpumask_var_t idle_cpus_mask;
-> >> +     atomic_t load_balancer ____cacheline_aligned;
-> >> +     atomic_t first_pick_cpu ____cacheline_aligned;
-> >> +     atomic_t second_pick_cpu ____cacheline_aligned;
-> >> +     cpumask_var_t idle_cpus_mask ____cacheline_aligned;
-> >
-> > On large configs idle_cpu_masks may be allocated.  May need
-> > more changes to tell the allocator to cache align/pad too?
-> >
+On Friday 21 October 2011, Hamo wrote:
+> Should call the platform-specific __gpio_{get,set}_value
+> instead of generic gpio_{get,set}_value
 > 
-> An alternate approach is to split this struct per node/socket and do
-> the nohz idle balancing logic at that level. That should be more
-> scalable in terms of nohz balancing (ensure one CPU wont be doing nohz
-> balancing for huge number of idle CPUs). I had looked at that approach
-> couple of years earlier and couldn't measure that much of a gain. May
-> be it is time to revisit that with increased core count.
+> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+> ---
+>  include/asm-generic/gpio.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-Yeah, that would be best, although I remember there was a problem with
-your approach back then, a fully idle node would not balance at all or
-something like that.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Grant, can you put that into the gpio tree?
+
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index d494001..6acff5d 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -220,13 +220,13 @@ static inline int gpio_cansleep(unsigned gpio)
+>  static inline int gpio_get_value_cansleep(unsigned gpio)
+>  {
+>  	might_sleep();
+> -	return gpio_get_value(gpio);
+> +	return __gpio_get_value(gpio);
+>  }
+> 
+>  static inline void gpio_set_value_cansleep(unsigned gpio, int value)
+>  {
+>  	might_sleep();
+> -	gpio_set_value(gpio, value);
+> +	__gpio_set_value(gpio, value);
+>  }
+> 
+>  #endif /* !CONFIG_GPIOLIB */
+> -- 
+> 1.7.1
+> 
 
