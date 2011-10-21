@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab1JULka (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 07:40:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57403 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab1JULk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 07:40:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hamo <hamo.by@gmail.com>
-Subject: Re: [PATCH] gpio: fix build error in include/asm-generic/gpio.h
-Date: Fri, 21 Oct 2011 13:39:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
-In-Reply-To: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754567Ab1JULqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 07:46:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56561 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754285Ab1JULqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 07:46:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="65431679"
+From: John Mathew <john.mathew@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: len.brown@intel.com, pierre.tardy@intel.com, trenn@suse.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        John Mathew <john.mathew@intel.com>
+Subject: [PATCH] cpuidle: Add an addtional trace for demoted c-states
+Date: Fri, 21 Oct 2011 14:46:07 +0300
+Message-Id: <1319197567-8573-1-git-send-email-john.mathew@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110211339.59280.arnd@arndb.de>
-X-Provags-ID: V02:K0:KCJY/uLtHrC8pRm42ubtN8piTvzRsCTzbVGz3TYbNUI
- svOfEp4uLD9YGpEGzRS4qZ11ebG5Vg2O5YmRMVlsFrrnU65VZP
- BaFf7H1IOvDREak0PY2O+bS5ZhJwkLitt/OYz1zWPY7KRq5+gZ
- YGvtkFH+A1No0x45xl2zNzm7jKQcQwXT1SL/eUqiX5G2F3j/H/
- 0nxnelnq5RqhJa3Aa7dV2CcP1bWO31p/tgLWY4IOqAIHZuiXXN
- IRUohIo/KdXjQZPSAyWYkIK6pQdGywqrJESz68eXOZfy/phve0
- zU1CE5zSEB38t/dCcUl/+oxJTbqsMFsUfxfD56yOPPxT62Xn1o
- iD3RkFX6AXmEN5fLQdbE=
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 October 2011, Hamo wrote:
-> Should call the platform-specific __gpio_{get,set}_value
-> instead of generic gpio_{get,set}_value
-> 
-> Signed-off-by: Yang Bai <hamo.by@gmail.com>
-> ---
->  include/asm-generic/gpio.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+This patch enables tracing of c-states that the device
+eventually goes in to, which might be different from what
+the governor had retuned. This scenario occurs in platforms
+like Intel Medfield. Power tools like pytimechart will be
+able to display accurate c-state transitions with the help of
+this trace.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: John Mathew <john.mathew@intel.com>
+---
+ drivers/cpuidle/cpuidle.c    |    3 +++
+ include/trace/events/power.h |   23 +++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-Grant, can you put that into the gpio tree?
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index d4c5423..3d787ef 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -110,6 +110,9 @@ int cpuidle_idle_call(void)
+ 
+ 	dev->last_residency = target_state->enter(dev, target_state);
+ 
++	if (dev->last_state != target_state)
++		trace_power_demoted(POWER_CSTATE, dev->last_state->name, dev->cpu);
++
+ 	trace_power_end(dev->cpu);
+ 	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+ 
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index 1bcc2a8..941dc1a 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -101,6 +101,29 @@ DEFINE_EVENT(power, power_start,
+ 	TP_ARGS(type, state, cpu_id)
+ );
+ 
++TRACE_EVENT(power_demoted,
++
++	TP_PROTO(unsigned int type, char *state, unsigned int cpu_id),
++
++	TP_ARGS(type, state, cpu_id),
++
++	TP_STRUCT__entry(
++		__field(	u64,		type		)
++		__string(	state,		state		)
++		__field(	u64,		cpu_id		)
++	),
++
++	TP_fast_assign(
++		__entry->type = type;
++		__assign_str(state, state);
++		__entry->cpu_id = cpu_id;
++	),
++
++	TP_printk("type=%lu state=%s cpu_id=%lu", (unsigned long)__entry->type,
++		 __get_str(state), (unsigned long)__entry->cpu_id)
++
++);
++
+ DEFINE_EVENT(power, power_frequency,
+ 
+ 	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
+-- 
+1.7.4.1
 
-> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> index d494001..6acff5d 100644
-> --- a/include/asm-generic/gpio.h
-> +++ b/include/asm-generic/gpio.h
-> @@ -220,13 +220,13 @@ static inline int gpio_cansleep(unsigned gpio)
->  static inline int gpio_get_value_cansleep(unsigned gpio)
->  {
->  	might_sleep();
-> -	return gpio_get_value(gpio);
-> +	return __gpio_get_value(gpio);
->  }
-> 
->  static inline void gpio_set_value_cansleep(unsigned gpio, int value)
->  {
->  	might_sleep();
-> -	gpio_set_value(gpio, value);
-> +	__gpio_set_value(gpio, value);
->  }
-> 
->  #endif /* !CONFIG_GPIOLIB */
-> -- 
-> 1.7.1
-> 
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
