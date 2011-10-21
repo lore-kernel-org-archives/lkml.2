@@ -1,255 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab1JUEhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 00:37:25 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:37668 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab1JUEhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 00:37:23 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Fri, 21 Oct 2011 00:37:22 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 2/2] msm: Support DEBUG_LL on MSM8660 and MSM8960
-In-reply-to: <1319171312-21113-3-git-send-email-sboyd@codeaurora.org>
-Message-id: <alpine.LFD.2.02.1110210036470.14454@xanadu.home>
-References: <1319171312-21113-1-git-send-email-sboyd@codeaurora.org>
- <1319171312-21113-3-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752560Ab1JUFGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 01:06:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56547 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab1JUFGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 01:06:07 -0400
+Date: Fri, 21 Oct 2011 16:05:37 +1100
+From: NeilBrown <neilb@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
+ suspend/hibernate interfaces
+Message-ID: <20111021160537.757cbf1d@notabene.brown>
+In-Reply-To: <Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org>
+References: <20111020111743.13b40558@notabene.brown>
+	<Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/.eNXCJVHA6GhLXsi3DVzdjt"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Oct 2011, Stephen Boyd wrote:
+--Sig_/.eNXCJVHA6GhLXsi3DVzdjt
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Add support for DEBUG_LL on the 8660 and 8960 development boards.
-> While we're here, cleanup the uncompress.h code a bit.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
+On Thu, 20 Oct 2011 10:29:33 -0400 (EDT) Alan Stern
+<stern@rowland.harvard.edu> wrote:
 
-Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> On Thu, 20 Oct 2011, NeilBrown wrote:
+>=20
+> > > All a client needs to know is whether or not _it_ is busy, so that it
+> > > can provide correct information to the daemon.  (Some clients may also
+> > > need to be notified each time the system resumes -- that's a separate
+> > > matter.)  As for the rest, a client may as well assume that the system
+> > > is perpetually on the verge of suspending, except when it has
+> > > personally told the daemon to stay awake.
+> >=20
+> > I don't think it is always appropriate to assume the system is on the v=
+erge
+> > of suspending except when explicitly asking for stay-awake.
+>=20
+> For some programs it may not be appropriate, but for wakeup clients I=20
+> believe it is.
+>=20
+> > Consider a daemon tasked with managing the "GSM" interface in a phone.
+> > Any message from the GSM module will wake the phone if it is suspended.
+> >=20
+> > When suspended, the daemon only wants to get "incoming call" and "incom=
+ing
+> > SMS" events.
+> > When not suspended, the daemon also wants "Active cell changed" events =
+so
+> > that it can make this information available to some display widget.
+> >=20
+> > So when it is told that a suspend is imminent it quickly tells the GSM
+> > module to be quieter and then says "OK".  If it had to assume it was al=
+ways
+> > on the verge, it could never allow active-cell-changed events.
+> >=20
+> > You could argue that the GSM daemon should only be reporting CELL chang=
+es -
+> > and so the GSM module should only be asked to report them - when the wi=
+dget
+> > (or some other client) is explicitly asking for them.  So when the scre=
+en
+> > goes blank, the widget stops getting expose events, so it rescinds is r=
+equest
+> > for updates and the GSM daemon passes that on to the GSM module.  So wh=
+en
+> > suspend happens, the GSM module has already stopped reporting.
+> >=20
+> > But I'm not convinced that complexity is always justified.
+> >=20
+> > I could make the situation a little more complex.  There might be a dae=
+mon
+> > which wants to monitor GSM cell locations and so is always asking.
+> > The GSM daemon might have a policy that if anyone wants those updates, =
+then
+> >  - if system is awake for some other reason, report them as they arrive
+> >  - if system is otherwise suspended, wake up every 10 minutes to poll a=
+nd
+> >    report.
+> >=20
+> > In that case the suspend-client (the GSM daemon) really does care about=
+ the
+> > difference between an explicit stay-awake and a late reply to a
+> > suspend-imminent message.
+> >=20
+> > So I'm still inclined to think that the two cases need to be treated
+> > separately.
+>=20
+> The way I see it, your GSM daemon needs to know when the system is=20
+> about to go into suspend.  That's a separate matter from communicating=20
+> information about wakeup activity to/from the PM daemon.
+
+I agree that it is conceptually distinct.
+However I think that in practice it ends up looking very similar.
+Maybe that is just the way I practice.
+
+>=20
+> What should happen is this: When the PM daemon is ready to start a
+> suspend (none of its clients need to keep the system awake), it should
+> broadcast the fact that a suspend is about to begin.  This broadcast
+> could take various forms, the simplest of which is to run a shell
+> script.
+
+I would call it 'publish' rather than 'broadcast' as I expect clients to
+subscribe first, but it is a small matter.
+Certainly having different protocols for different uses could be appropriat=
+e.
 
 
-> ---
->  arch/arm/Kconfig.debug                          |   16 +++++++++++
->  arch/arm/mach-msm/Kconfig                       |    3 ++
->  arch/arm/mach-msm/include/mach/debug-macro.S    |   32 ++++++++++++++++++++--
->  arch/arm/mach-msm/include/mach/msm_iomap-8960.h |    5 +++
->  arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    5 +++
->  arch/arm/mach-msm/include/mach/uncompress.h     |   31 ++++++++++++++++-----
->  arch/arm/mach-msm/io.c                          |    6 ++++
->  7 files changed, 87 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index c2db187..07d0e74 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -149,6 +149,22 @@ choice
->  		  Say Y here if you want the debug print routines to direct
->  		  their output to the third serial port on MSM devices.
->  
-> +	config DEBUG_MSM8660_UART
-> +		bool "Kernel low-level debugging messages via MSM 8660 UART"
-> +		depends on ARCH_MSM8X60
-> +		select MSM_HAS_DEBUG_UART_HS
-> +		help
-> +		  Say Y here if you want the debug print routines to direct
-> +		  their output to the serial port on MSM 8960 devices.
-> +
-> +	config DEBUG_MSM8960_UART
-> +		bool "Kernel low-level debugging messages via MSM 8960 UART"
-> +		depends on ARCH_MSM8960
-> +		select MSM_HAS_DEBUG_UART_HS
-> +		help
-> +		  Say Y here if you want the debug print routines to direct
-> +		  their output to the serial port on MSM 8960 devices.
-> +
->  endchoice
->  
->  config EARLY_PRINTK
-> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-> index 5b07b61..000ddf0 100644
-> --- a/arch/arm/mach-msm/Kconfig
-> +++ b/arch/arm/mach-msm/Kconfig
-> @@ -60,6 +60,9 @@ config ARCH_MSM8960
->  
->  endchoice
->  
-> +config MSM_HAS_DEBUG_UART_HS
-> +	bool
-> +
->  config MSM_SOC_REV_A
->  	bool
->  config  ARCH_MSM_SCORPIONMP
-> diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/mach-msm/include/mach/debug-macro.S
-> index 43d62c6..2a9f1df 100644
-> --- a/arch/arm/mach-msm/include/mach/debug-macro.S
-> +++ b/arch/arm/mach-msm/include/mach/debug-macro.S
-> @@ -1,6 +1,7 @@
->  /*
->   *
->   * Copyright (C) 2007 Google, Inc.
-> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
->   * Author: Brian Swetland <swetland@google.com>
->   *
->   * This software is licensed under the terms of the GNU General Public
-> @@ -24,17 +25,42 @@
->  #endif
->  	.endm
->  
-> -	.macro	senduart,rd,rx
-> +	.macro	senduart, rd, rx
-> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-> +	@ Write the 1 character to UARTDM_TF
-> +	str	\rd, [\rx, #0x70]
-> +#else
->  	teq	\rx, #0
->  	strne	\rd, [\rx, #0x0C]
-> +#endif
->  	.endm
->  
-> -	.macro	waituart,rd,rx
-> +	.macro	waituart, rd, rx
-> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-> +	@ check for TX_EMT in UARTDM_SR
-> +	ldr	\rd, [\rx, #0x08]
-> +	tst	\rd, #0x08
-> +	bne	1002f
-> +	@ wait for TXREADY in UARTDM_ISR
-> +1001:	ldr	\rd, [\rx, #0x14]
-> +	tst	\rd, #0x80
-> +	beq 	1001b
-> +1002:
-> +	@ Clear TX_READY by writing to the UARTDM_CR register
-> +	mov	\rd, #0x300
-> +	str	\rd, [\rx, #0x10]
-> +	@ Write 0x1 to NCF register
-> +	mov 	\rd, #0x1
-> +	str	\rd, [\rx, #0x40]
-> +	@ UARTDM reg. Read to induce delay
-> +	ldr	\rd, [\rx, #0x08]
-> +#else
->  	@ wait for TX_READY
->  1001:	ldr	\rd, [\rx, #0x08]
->  	tst	\rd, #0x04
->  	beq	1001b
-> +#endif
->  	.endm
->  
-> -	.macro	busyuart,rd,rx
-> +	.macro	busyuart, rd, rx
->  	.endm
-> diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-> index 3c9d960..800b557 100644
-> --- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-> +++ b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-> @@ -45,4 +45,9 @@
->  #define MSM8960_TMR0_PHYS	0x0208A000
->  #define MSM8960_TMR0_SIZE	SZ_4K
->  
-> +#ifdef CONFIG_DEBUG_MSM8960_UART
-> +#define MSM_DEBUG_UART_BASE	0xE1040000
-> +#define MSM_DEBUG_UART_PHYS	0x16440000
-> +#endif
-> +
->  #endif
-> diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-> index 3b19b8f..54e12ca 100644
-> --- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-> +++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-> @@ -62,4 +62,9 @@
->  #define MSM8X60_TMR0_PHYS	0x02040000
->  #define MSM8X60_TMR0_SIZE	SZ_4K
->  
-> +#ifdef CONFIG_DEBUG_MSM8660_UART
-> +#define MSM_DEBUG_UART_BASE	0xE1040000
-> +#define MSM_DEBUG_UART_PHYS	0x19C40000
-> +#endif
-> +
->  #endif
-> diff --git a/arch/arm/mach-msm/include/mach/uncompress.h b/arch/arm/mach-msm/include/mach/uncompress.h
-> index d94292c..ee906e4 100644
-> --- a/arch/arm/mach-msm/include/mach/uncompress.h
-> +++ b/arch/arm/mach-msm/include/mach/uncompress.h
-> @@ -1,6 +1,6 @@
-> -/* arch/arm/mach-msm/include/mach/uncompress.h
-> - *
-> +/*
->   * Copyright (C) 2007 Google, Inc.
-> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
->   *
->   * This software is licensed under the terms of the GNU General Public
->   * License version 2, as published by the Free Software Foundation, and
-> @@ -14,17 +14,32 @@
->   */
->  
->  #ifndef __ASM_ARCH_MSM_UNCOMPRESS_H
-> +#define __ASM_ARCH_MSM_UNCOMPRESS_H
->  
-> -#include "hardware.h"
-> -#include "linux/io.h"
-> -#include "mach/msm_iomap.h"
-> +#include <linux/io.h>
-> +#include <asm/processor.h>
-> +#include <mach/msm_iomap.h>
->  
->  static void putc(int c)
->  {
->  #if defined(MSM_DEBUG_UART_PHYS)
-> -	unsigned base = MSM_DEBUG_UART_PHYS;
-> -	while (!(readl(base + 0x08) & 0x04)) ;
-> -	writel(c, base + 0x0c);
-> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-> +	/*
-> +	 * Wait for TX_READY to be set; but skip it if we have a
-> +	 * TX underrun.
-> +	 */
-> +	if (readl_relaxed(MSM_DEBUG_UART_PHYS + 0x08) & 0x08)
-> +		while (!(readl_relaxed(MSM_DEBUG_UART_PHYS + 0x14) & 0x80))
-> +			cpu_relax();
-> +
-> +	writel_relaxed(0x300, MSM_DEBUG_UART_PHYS + 0x10);
-> +	writel_relaxed(0x1, MSM_DEBUG_UART_PHYS + 0x40);
-> +	writel_relaxed(c, MSM_DEBUG_UART_PHYS + 0x70);
-> +#else
-> +	while (!(readl_relaxed(MSM_DEBUG_UART_PHYS + 0x08) & 0x04))
-> +		cpu_relax();
-> +	writel_relaxed(c, MSM_DEBUG_UART_PHYS + 0x0c);
-> +#endif
->  #endif
->  }
->  
-> diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-> index 0bf9502..524d927 100644
-> --- a/arch/arm/mach-msm/io.c
-> +++ b/arch/arm/mach-msm/io.c
-> @@ -110,6 +110,9 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
->  	MSM_CHIP_DEVICE(TMR0, MSM8X60),
->  	MSM_DEVICE(ACC),
->  	MSM_DEVICE(GCC),
-> +#ifdef CONFIG_DEBUG_MSM8660_UART
-> +	MSM_DEVICE(DEBUG_UART),
-> +#endif
->  };
->  
->  void __init msm_map_msm8x60_io(void)
-> @@ -124,6 +127,9 @@ static struct map_desc msm8960_io_desc[] __initdata = {
->  	MSM_CHIP_DEVICE(QGIC_CPU, MSM8960),
->  	MSM_CHIP_DEVICE(TMR, MSM8960),
->  	MSM_CHIP_DEVICE(TMR0, MSM8960),
-> +#ifdef CONFIG_DEBUG_MSM8960_UART
-> +	MSM_DEVICE(DEBUG_UART),
-> +#endif
->  };
->  
->  void __init msm_map_msm8960_io(void)
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
+>=20
+> In fact, we may want to integrate the PM daemon into pm-utils at a=20
+> level above where the various suspend scripts get run.
+>=20
+
+Probably - yes.
+
+Thanks,
+NeilBrown
+
+
+--Sig_/.eNXCJVHA6GhLXsi3DVzdjt
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTqD9tjnsnt1WYoG5AQJTZxAAsOqAvXEgA6csmTKqwn3bOAiEbe/r9xUv
+u0fWQWIEM5E/GAoB4u5G4YrOXg5gJdwyarGLUpXIjUwD1G7cTeCy5nhvlIpPDx/y
+WPpPfm1uQye2gzkZJ62kNC0ooE5aAn1YuPZoLFXFsAnUepQuF85VNvtPe5VZPXwS
+Bd+4h3x49NydoewWrXsGmFMVt/v+z5zp6u6odPTDa4ktFIJl7FzXozvOU37AAwyY
+6j1d14bacTHWyrOgVcQhTSlASqAk/t4IazYa9gK9A0+jL6OnYF4XLpnu3d6xIMB6
+fJxx9WETpH5jB80HkXrY9YDXbMj9twpOuNyIGSyQ/UETkLXkn0+e+vU44DyoNIm5
+wq2iwHOq+yJmbvd9AKP1HA4aAy4FIHfe8Tk1GZEia5syvpixHhq6pydC4RESItV+
+ooKgWyQ8ArErpEUAqiHYkB0/JaadPz4Rc4dEl8t8WKRXctVzFlQf/08eg/ETjW+P
+i3WHvG7GdsKlWT8mUlraPKkHghGlHixnc4+TQ6lcTef0NoU184xDBnge8nruBiRz
+F2W+IOss62Ra3bqoeGn0otenAFefRmIKFDjN5n1aOpWETtmPtAddLXfcijAiPSyK
+lVLCIBTo/MV1flnj+n5xiQlfob0Pxy3mN7TFj6K7n/E9abONYt62D6Uu39/xFFdc
+5R+eKi2KELA=
+=4Psb
+-----END PGP SIGNATURE-----
+
+--Sig_/.eNXCJVHA6GhLXsi3DVzdjt--
