@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab1JUQzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 12:55:40 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:48951 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752959Ab1JUQzj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 12:55:39 -0400
+	id S1754161Ab1JUQ5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 12:57:13 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48222 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab1JUQ5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 12:57:11 -0400
+Date: Fri, 21 Oct 2011 09:57:03 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        David Miller <davem@davemloft.net>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/4] crc32: Bolt on crc32c
+Message-ID: <20111021165703.GS12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1319204183.24621.265.camel@matrix>
-References: <1319204183.24621.265.camel@matrix>
-Date: Fri, 21 Oct 2011 17:55:38 +0100
-Message-ID: <CABS+qY2HAee8BPc0+h9ShwasAO4YkBWpRQ34UYUyyksgOWxVQw@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH v8 2/3] ASoC: da7210: Add support for line
- out and DAC
-From: "Girdwood, Liam" <lrg@ti.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111021122803.GA15803@gondor.apana.org.au>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11102116-5806-0000-0000-00000042677A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 October 2011 14:36, Ashish Chavan <ashish.chavan@kpitcummins.com> wrote:
-> DA7210 has three line outputs. OUT1 Left, OUT1 Right and OUT2 (mono).
-> This patch adds support for gain controls for these three line outs.
-> It also adds support for overall DAC gain control.
->
-> Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> ---
-> Changes since v7:
-> - Added DAPM support for OUT1 and OUT2 (Moved here from DAPM patch)
-> - Added comment explaining rational behind usage of STANDBY bits
->
-> Changes since v1:
-> - Removed explicit setting of default gains
-> - Renamed "DAC Playback" to "Digital Playback"
-> ---
->  sound/soc/codecs/da7210.c |   96 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 96 insertions(+), 0 deletions(-)
->
+On Fri, Oct 21, 2011 at 02:28:03PM +0200, Herbert Xu wrote:
+> On Tue, Oct 04, 2011 at 04:54:03PM -0700, Darrick J. Wong wrote:
+> > Reuse the existing crc32 code to stamp out a crc32c implementation.
+> > 
+> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> 
+> Did you want this to go through my tree? If so then there is a
+> problem since it doesn't apply at all.
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+My patchset builds upon Bob Pearson's crc32 patchset from early September.  Do
+my patches fail to apply after applying his patchset?
+
+Or, to speed things along, should I simply repost both Bob's and my patches as
+one big series?
+
+Bob, have you sent out a new iteration of your patches since September 6th?
+
+--D
+> 
+> Cheers,
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
