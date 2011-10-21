@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab1JUG0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 02:26:49 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:48325 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab1JUG0r convert rfc822-to-8bit (ORCPT
+	id S1752030Ab1JUGgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 02:36:40 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:54692 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750933Ab1JUGgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 02:26:47 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: =?us-ascii?Q?=3D=3FUTF-8=3FQ=3FAm=3DC3=3DA9rico=5FWang=3F=3D?= 
-	<xiyou.wangcong@gmail.com>
-cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH net -v2] [BUGFIX] bonding: use flush_delayed_work_sync in bond_close
-In-reply-to: <CAM_iQpV8089aU8gfeo8KotTNXQbx4ficMeBX69Nin_yXzqcEKg@mail.gmail.com>
-References: <20111019081757.12455.24788.stgit@ltc219.sdl.hitachi.co.jp> <27007.1319047262@death> <20111019114129.162d895a@nehalam.linuxnetplumber.net> <29731.1319051397@death> <CAM_iQpV8089aU8gfeo8KotTNXQbx4ficMeBX69Nin_yXzqcEKg@mail.gmail.com>
-Comments: In-reply-to =?us-ascii?Q?=3D=3FUTF-8=3FQ=3FAm=3DC3=3DA9rico=5FWa?=
- =?us-ascii?Q?ng=3F=3D?= <xiyou.wangcong@gmail.com>
-   message dated "Fri, 21 Oct 2011 13:45:32 +0800."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
+	Fri, 21 Oct 2011 02:36:39 -0400
+Message-ID: <4EA112F4.3040708@profihost.ag>
+Date: Fri, 21 Oct 2011 08:36:36 +0200
+From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+Reply-To: p.herz@profihost.ag
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 Oct 2011 23:26:36 -0700
-Message-ID: <17144.1319178396@death>
-x-cbid: 11102106-3534-0000-0000-000000CB0CE7
+To: Valdis.Kletnieks@vt.edu
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+References: <4E9D53FF.7090609@profihost.ag>            <m2ipnmz49x.fsf@firstfloor.org> <16605.1319145104@turing-police.cc.vt.edu>
+In-Reply-To: <16605.1319145104@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Américo Wang <xiyou.wangcong@gmail.com> wrote:
-
->On Thu, Oct 20, 2011 at 3:09 AM, Jay Vosburgh <fubar@us.ibm.com> wrote:
->> Stephen Hemminger <shemminger@vyatta.com> wrote:
+> On Tue, 18 Oct 2011 08:51:54 PDT, Andi Kleen said:
+>> Philipp Herz - Profihost AG<p.herz@profihost.ag>  writes:
 >>
->>>On Wed, 19 Oct 2011 11:01:02 -0700
->>>Jay Vosburgh <fubar@us.ibm.com> wrote:
+>>> After updating kernel (x86_64) to stable version 3 there are a few
+>>> messages appearing in the kernel log such as
 >>>
->>>> Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com> wrote:
->>>>
->>>> >The bond_close() calls cancel_delayed_work() to cancel delayed works.
->>>> >It, however, cannot cancel works that were already queued in workqueue.
->>>> >The bond_open() initializes work->data, and proccess_one_work() refers
->>>> >get_work_cwq(work)->wq->flags. The get_work_cwq() returns NULL when
->>>> >work->data has been initialized. Thus, a panic occurs.
->>>> >
->>>> >This patch uses flush_delayed_work_sync() instead of cancel_delayed_work()
->>>> >in bond_close(). It cancels delayed timer and waits for work to finish
->>>> >execution. So, it can avoid the null pointer dereference due to the
->>>> >parallel executions of proccess_one_work() and initializing proccess
->>>> >of bond_open().
->>>>
->>>>      I'm setting up to test this.  I have a dim recollection that we
->>>> tried this some years ago, and there was a different deadlock that
->>>> manifested through the flush path.  Perhaps changes since then have
->>>> removed that problem.
->>>>
->>>>      -J
->>>
->>>Won't this deadlock on RTNL.  The problem is that:
->>>
->>>   CPU0                            CPU1
->>>  rtnl_lock
->>>      bond_close
->>>                                 delayed_work
->>>                                   mii_work
->>>                                     read_lock(bond->lock);
->>>                                     read_unlock(bond->lock);
->>>                                     rtnl_lock... waiting for CPU0
->>>      flush_delayed_work_sync
->>>          waiting for delayed_work to finish...
+>>> kworker/0:1: page allocation failure: order:1, mode:0x20
+>>> mysql: page allocation failure: order:1, mode:0x20
+>>> php5: page allocation failure: order:1, mode:0x20
 >>
->>        Yah, that was it.  We discussed this a couple of years ago in
->> regards to a similar patch:
->>
->> http://lists.openwall.net/netdev/2009/12/17/3
->>
->>        The short version is that we could rework the rtnl_lock inside
->> the montiors to be conditional and retry on failure (where "retry" means
->> "reschedule the work and try again later," not "spin retrying on rtnl").
->> That should permit the use of flush or cancel to terminate the work
->> items.
+>> You just ran out of memory.
 >
->Yes? Even if we use rtnl_trylock(), doesn't flush_delayed_work_sync()
->still queue the pending delayed work and wait for it to be finished?
+> I read it as "Why is this happening when the previous kernel didn't have
+> this issue?", which is a *much* more complicated question...
 
-	Yes, it does.  The original patch wants to use flush instead of
-cancel to wait for the work to finish, because there's evidently a
-possibility of getting back into bond_open before the work item
-executes, and bond_open would reinitialize the work queue and corrupt
-the queued work item.
+Exactly, that was the intention of my post.
 
-	The original patch series, and recipe for destruction, is here:
+It would me nice to know, if these messages do require to focus on 
+memory statitics?
 
-	http://www.spinics.net/lists/netdev/msg176382.html
+Looking at our monitoring data, the system does have enough memory 
+available.
 
-	I've been unable to reproduce the work queue panic locally,
-although it sounds plausible.
+How do processes get effected, when they are running into situations 
+where kernel memory manager tells them about "page allocation failure"?
 
-	Mitsuo: can you provide the precise bonding configuration you're
-using to induce the problem?  Driver options, number and type of slaves,
-etc.
+Is it just meant to be a warning/debugging message new to current kernel 
+version 3?
 
->Maybe I am too blind, why do we need rtnl_lock for cancel_delayed_work()
->inside bond_close()?
+How can we solve the situation? Getting rid of these message, by
 
-	We don't need RTNL for cancel/flush.  However, bond_close is an
-ndo_stop operation, and is called in the dev_close path, which always
-occurs under RTNL.  The mii / arp monitor work functions separately
-acquire RTNL if they need to perform various failover related
-operations.
+- just suppressing
+- increasing system's memory
+- change kernel and/or kernel runtime config
 
-	I'm working on a patch that should resolve the mii / arp monitor
-RTNL problem as I described above (if rtnl_trylock fails, punt and
-reschedule the work).  I need to rearrange the netdev_bonding_change
-stuff a bit as well, since it acquires RTNL separately.
+?
 
-	Once these changes are made to mii / arp monitor, then
-bond_close can call flush instead of cancel, which should eliminate the
-original problem described at the top.
-
-	-J
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
-
+Kind regards,
+Philipp
