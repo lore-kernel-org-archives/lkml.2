@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab1JUQxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 12:53:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:65457 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab1JUQxD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 12:53:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Tim Bird <tim.bird@am.sony.com>, Joe Perches <joe@perches.com>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Russell King <rmk@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
-Date: Wed, 19 Oct 2011 12:51:44 +0200
-Message-ID: <1500345.YeXPhIIHc5@wuerfel>
-User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <4E9E1944.80601@am.sony.com>
-References: <4E9E0B71.9020708@am.sony.com> <1318983248.7569.5.camel@Joe-Laptop> <4E9E1944.80601@am.sony.com>
+	id S1754074Ab1JUQzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 12:55:40 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:48951 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752959Ab1JUQzj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 12:55:39 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:kJji6QFJACsKtNj1K0fUL/GJWtqMIav2+l9CddG14T9
- +z7THVKiouRCsI23ZyHTXQco7FRt7+vZ+C9ctTsGXfezureOqv
- 9sUBTOspndGYjDes7qsbgSjlo7TPtzCruCZPlvWf7ZpbR+IgmL
- ccquG2jvmikpiDITPMqrION1ESHH8z2Z1f/ShFwbyhuq8qlUd6
- Cy8S2oACdlew1ePWekNkdD4OeFUC0VMd6w6rrhCy+AUHKwX7qa
- 40gSOizq0pqwE7qiCj6eiF/Vy7O7/VsIMo6NsZYX/hcw6FR/4B
- FKEKcCNoxi7y+8E4vguo5azN/Nq4SLYTxWZtb4GwGx6vYY+0ot
- Eh9oB5hbqy2E1eCRb3tQ=
+In-Reply-To: <1319204183.24621.265.camel@matrix>
+References: <1319204183.24621.265.camel@matrix>
+Date: Fri, 21 Oct 2011 17:55:38 +0100
+Message-ID: <CABS+qY2HAee8BPc0+h9ShwasAO4YkBWpRQ34UYUyyksgOWxVQw@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH v8 2/3] ASoC: da7210: Add support for line
+ out and DAC
+From: "Girdwood, Liam" <lrg@ti.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 October 2011 17:26:44 Tim Bird wrote:
-> Even inside Sony, usage of 4K stacks is limited
-> to some very special cases, where memory is exceedingly
-> tight (we have one system with 4M of RAM).  And we
-> don't mind lopping off features or coding around
-> problem areas to support our special case.
+On 21 October 2011 14:36, Ashish Chavan <ashish.chavan@kpitcummins.com> wrote:
+> DA7210 has three line outputs. OUT1 Left, OUT1 Right and OUT2 (mono).
+> This patch adds support for gain controls for these three line outs.
+> It also adds support for overall DAC gain control.
+>
+> Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> ---
+> Changes since v7:
+> - Added DAPM support for OUT1 and OUT2 (Moved here from DAPM patch)
+> - Added comment explaining rational behind usage of STANDBY bits
+>
+> Changes since v1:
+> - Removed explicit setting of default gains
+> - Renamed "DAC Playback" to "Digital Playback"
+> ---
+>  sound/soc/codecs/da7210.c |   96 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 96 insertions(+), 0 deletions(-)
+>
 
-I would imagine that in those cases, you can gain more by reducing the
-number of threads in the system. What is the highest number of
-concurrent threads that you expect in a limited use case with no
-networking or block devices?
-
-	Arnd
+Acked-by: Liam Girdwood <lrg@ti.com>
