@@ -1,81 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab1JUHf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 03:35:59 -0400
-Received: from krak.alatek.krakow.pl ([46.170.108.42]:8947 "EHLO
-	krak.alatek.krakow.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab1JUHf5 convert rfc822-to-8bit (ORCPT
+	id S1753582Ab1JUHgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 03:36:19 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:40139
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753378Ab1JUHgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 03:35:57 -0400
-From: Pawel Sikora <pluto@agmk.net>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Date: Fri, 21 Oct 2011 09:35:46 +0200
-Message-ID: <2082417.IAMpsykX5y@pawels>
-User-Agent: KMail/4.7.2 (Linux/3.0.6-2; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <CAPQyPG5c1ADteP_rA2JRqLz88s7ZP_vWAKV-dp2hCSM9bRCpmg@mail.gmail.com>
-References: <201110122012.33767.pluto@agmk.net> <201110200830.22062.pluto@agmk.net> <CAPQyPG5c1ADteP_rA2JRqLz88s7ZP_vWAKV-dp2hCSM9bRCpmg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Oct 2011 03:36:16 -0400
+X-SpamScore: -23
+X-BigFish: VS-23(zz9371K4015Lc3f2M542M1432Nzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: RE: [PATCH] ASoC: sgtl5000: Fix wrong mask in some
+ snd_soc_update_bits calls
+Thread-Topic: [PATCH] ASoC: sgtl5000: Fix wrong mask in some
+ snd_soc_update_bits calls
+Thread-Index: AQHMj5R0HB7ZtiNhCUCrkRhY5/nTIJWGUeQg
+Date: Fri, 21 Oct 2011 07:36:11 +0000
+Message-ID: <65EE16ACC360FA4D99C96DC085B3F7722AE773@039-SN1MPN1-003.039d.mgd.msft.net>
+References: <1319162083.4352.2.camel@phoenix>
+In-Reply-To: <1319162083.4352.2.camel@phoenix>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.89]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9L7aeW1024340
 
-On Friday 21 of October 2011 14:54:29 Nai Xia wrote:
-> 2011/10/20 PaweÅ‚ Sikora <pluto@agmk.net>:
-> > On Wednesday 19 of October 2011 21:42:15 Hugh Dickins wrote:
-> >> On Wed, 19 Oct 2011, Linus Torvalds wrote:
-> >> > On Wed, Oct 19, 2011 at 12:43 AM, Mel Gorman <mgorman@suse.de> wrote:
-> >> > >
-> >> > > My vote is with the migration change. While there are occasionally
-> >> > > patches to make migration go faster, I don't consider it a hot path.
-> >> > > mremap may be used intensively by JVMs so I'd loathe to hurt it.
-> >> >
-> >> > Ok, everybody seems to like that more, and it removes code rather than
-> >> > adds it, so I certainly prefer it too. Pawel, can you test that other
-> >> > patch (to mm/migrate.c) that Hugh posted? Instead of the mremap vma
-> >> > locking patch that you already verified for your setup?
-> >> >
-> >> > Hugh - that one didn't have a changelog/sign-off, so if you could
-> >> > write that up, and Pawel's testing is successful, I can apply it...
-> >> > Looks like we have acks from both Andrea and Mel.
-> >>
-> >> Yes, I'm glad to have that input from Andrea and Mel, thank you.
-> >>
-> >> Here we go.  I can't add a Tested-by since Pawel was reporting on the
-> >> alternative patch, but perhaps you'll be able to add that in later.
-> >>
-> >> I may have read too much into Pawel's mail, but it sounded like he
-> >> would have expected an eponymous find_get_pages() lockup by now,
-> >> and was pleased that this patch appeared to have cured that.
-> >>
-> >> I've spent quite a while trying to explain find_get_pages() lockup by
-> >> a missed migration entry, but I just don't see it: I don't expect this
-> >> (or the alternative) patch to do anything to fix that problem.  I won't
-> >> mind if it magically goes away, but I expect we'll need more info from
-> >> the debug patch I sent Justin a couple of days ago.
-> >
-> > the latest patch (mm/migrate.c) applied on 3.0.4 also survives points
-> > 1) and 2) described previously (https://lkml.org/lkml/2011/10/18/427),
-> > so please apply it to the upstream/stable git tree.
-> >
-> > from the other side, both patches don't help for 3.0.4+vserver host soft-lock
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Axel Lin
+> Sent: Friday, October 21, 2011 9:55 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Dong Aisheng-B29396; Wolfram Sang; Liam Girdwood; Mark Brown; alsa-
+> devel@alsa-project.org
+> Subject: [PATCH] ASoC: sgtl5000: Fix wrong mask in some
+> snd_soc_update_bits calls
 > 
-> Hi PaweÅ‚,
+> Ensure all mask bits are clear before setting new value.
 > 
-> Did your "both" mean that you applied each patch and run the tests separately,
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> I don't have this hardware, I'd appreciate if someone can test this patch.
+> 
+> Thanks,
+> Axel
+>  sound/soc/codecs/sgtl5000.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
 
-yes, i've tested Hugh's patches separately.
+It runs ok at my side.
+Acked-by: Dong Aisheng <b29396@freescale.com>
 
-> Maybe there were more than one bugs dancing but having a same effect,
-> not fixing all of them wouldn't help at all.
+> diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+> index 32b5bbd..d15695d 100644
+> --- a/sound/soc/codecs/sgtl5000.c
+> +++ b/sound/soc/codecs/sgtl5000.c
+> @@ -723,7 +723,9 @@ static int sgtl5000_pcm_hw_params(struct
+> snd_pcm_substream *substream,
+>  		return -EINVAL;
+>  	}
+> 
+> -	snd_soc_update_bits(codec, SGTL5000_CHIP_I2S_CTRL, i2s_ctl,
+> i2s_ctl);
+> +	snd_soc_update_bits(codec, SGTL5000_CHIP_I2S_CTRL,
+> +			    SGTL5000_I2S_DLEN_MASK | SGTL5000_I2S_SCLKFREQ_MASK,
+> +			    i2s_ctl);
+> 
+>  	return 0;
+>  }
+> @@ -1146,8 +1148,7 @@ static int sgtl5000_set_power_regs(struct
+> snd_soc_codec *codec)
+>  		vag = (vag - SGTL5000_ANA_GND_BASE) / SGTL5000_ANA_GND_STP;
+> 
+>  	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+> -			vag << SGTL5000_ANA_GND_SHIFT,
+> -			vag << SGTL5000_ANA_GND_SHIFT);
+> +			SGTL5000_ANA_GND_MASK, vag << SGTL5000_ANA_GND_SHIFT);
+> 
+>  	/* set line out VAG to vddio / 2, in range (0.8v, 1.675v) */
+>  	vag = vddio / 2;
+> @@ -1161,9 +1162,8 @@ static int sgtl5000_set_power_regs(struct
+> snd_soc_codec *codec)
+>  		    SGTL5000_LINE_OUT_GND_STP;
+> 
+>  	snd_soc_update_bits(codec, SGTL5000_CHIP_LINE_OUT_CTRL,
+> -			vag << SGTL5000_LINE_OUT_GND_SHIFT |
+> -			SGTL5000_LINE_OUT_CURRENT_360u <<
+> -				SGTL5000_LINE_OUT_CURRENT_SHIFT,
+> +			SGTL5000_LINE_OUT_CURRENT_MASK |
+> +			SGTL5000_LINE_OUT_GND_MASK,
+>  			vag << SGTL5000_LINE_OUT_GND_SHIFT |
+>  			SGTL5000_LINE_OUT_CURRENT_360u <<
+>  				SGTL5000_LINE_OUT_CURRENT_SHIFT);
+> --
+> 1.7.5.4
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-i suppose that vserver patch only exposes some tricky bug introduced in 2.6.38.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
