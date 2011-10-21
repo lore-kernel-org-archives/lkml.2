@@ -1,114 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1JUMQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:16:57 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33483 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab1JUMQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:16:56 -0400
-Date: Fri, 21 Oct 2011 08:16:24 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kir Kolyshkin <kir@parallels.com>,
-        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
-        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [RFD] Isolated memory cgroups again
-Message-ID: <20111021114430.GA1317@cmpxchg.org>
-References: <20111020013305.GD21703@tiehlicka.suse.cz>
- <CALWz4ixxeFveibvqYa4cQR1a4fEBrTrTUFwm2iajk9mV0MEiTw@mail.gmail.com>
- <4EA12FBA.7090700@parallels.com>
+	id S1754091Ab1JUMT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:19:57 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38157 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab1JUMT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 08:19:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA12FBA.7090700@parallels.com>
+In-Reply-To: <1319192913.2702.38.camel@groo>
+References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
+	<20111020125705.GA2121@earth.universe>
+	<CACRpkdYBFGp4+oFUZvXn-wpUk0fmLiKixchQKcFo9XTDW=51+g@mail.gmail.com>
+	<1319192913.2702.38.camel@groo>
+Date: Fri, 21 Oct 2011 14:19:55 +0200
+Message-ID: <CACRpkdb6sm-Xq=NSj2Qp8Lx0=hurEVtr91OLt0VtDLjEtn3_XA@mail.gmail.com>
+Subject: Re: [RFC PATCHv5 0/7] HSI framework and drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: Sebastian Reichel <sre@debian.org>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, govindraj.ti@gmail.com,
+        pawel.szyszuk@stericsson.com, sjur.brandeland@stericsson.com,
+        peter_henn@gmx.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 12:39:22PM +0400, Glauber Costa wrote:
-> On 10/21/2011 03:41 AM, Ying Han wrote:
-> >On Wed, Oct 19, 2011 at 6:33 PM, Michal Hocko<mhocko@suse.cz>  wrote:
-> >>Hi all,
-> >>this is a request for discussion (I hope we can touch this during memcg
-> >>meeting during the upcoming KS). I have brought this up earlier this
-> >>year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
-> >>The patch got much smaller since then due to excellent Johannes' memcg
-> >>naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
-> >>which this is based on.
-> >>I realize that this will be controversial but I would like to hear
-> >>whether this is strictly no-go or whether we can go that direction (the
-> >>implementation might differ of course).
-> >>
-> >>The patch is still half baked but I guess it should be sufficient to
-> >>show what I am trying to achieve.
-> >>The basic idea is that memcgs would get a new attribute (isolated) which
-> >>would control whether that group should be considered during global
-> >>reclaim.
-> >>This means that we could achieve a certain memory isolation for
-> >>processes in the group from the rest of the system activity which has
-> >>been traditionally done by mlocking the important parts of memory.
-> >>This approach, however, has some advantages. First of all, it is a kind
-> >>of all or nothing type of approach. Either the memory is important and
-> >>mlocked or you have no guarantee that it keeps resident.
-> >>Secondly it is much more prone to OOM situation.
-> >>Let's consider a case where a memory is evictable in theory but you
-> >>would pay quite much if you have to get it back resident (pre calculated
-> >>data from database - e.g. reports). The memory wouldn't be used very
-> >>often so it would be a number one candidate to evict after some time.
-> >>We would want to have something like a clever mlock in such a case which
-> >>would evict that memory only if the cgroup itself gets under memory
-> >>pressure (e.g. peak workload). This is not hard to do if we are not
-> >>over committing the memory but things get tricky otherwise.
-> >>With the isolated memcgs we get exactly such a guarantee because we would
-> >>reclaim such a memory only from the hard limit reclaim paths or if the
-> >>soft limit reclaim if it is set up.
-> >>
-> >>Any thoughts comments?
-> >
-> >I didn't read through the patch itself but only the description. If we
-> >wanna protect a memcg being reclaimed from under global memory
-> >pressure, I think we can approach it by making change on soft_limit
-> >reclaim.
-> >
-> >I have a soft_limit change built on top of Johannes's patchset, which
-> >does basically soft_limit aware reclaim under global memory pressure.
-> >The implementation is simple, and I am looking forward to discuss more
-> >with you guys in the conference.
-> 
-> I don't think soft limits will help his case, if I know understand
-> it correctly. Global reclaim can be triggered regardless of any soft
-> limits we may set.
-> 
-> Now, there are two things I still don't like about it:
-> * The definition of a "main workload", "main cgroup", or anything
-> like that. I'd prefer to rank them according to some parameter,
-> something akin to swapiness. This would allow for other people to
-> use it in a different way, while still making you capable of
-> reaching your goals through parameter settings (i.e. one cgroup has
-> a high value of reclaim, all others, a much lower one)
+On Fri, Oct 21, 2011 at 12:28 PM, Carlos Chinea <carlos.chinea@nokia.com> wrote:
 
-This is essentially what I wanted to convert soft limit reclaim to: if
-a cgroup is considered for reclaim and its exceeding its soft limit,
-the amount of scanning force applied to it is doubled compared to its
-buddies that are scanned in the same cycle.
+(...)
+> Basically, we have 2 alternatives for that:
+>
+> A. I create the branch with just the hsi_char and the hsi framework
+> B. The same as A but with STE or another hsi/ssi controller driver.
 
-> * The fact that you seem to want to *skip* reclaim altogether for a
-> cgroup. That's a dangerous condition, IMHO. What I think we should
-> try to achieve, is "skip it for practical purposes on sane
-> workloads". Again, a parameter that when set to a very high mark,
-> has the effect of disallowing reclaim for a cgroup under most sane
-> circumstances.
+I'd say (A) and then when someone (like me) fixes up the
+STE HSI controller you can just git am that on top of the
+framework. Possibly you can also stack the needed OMAP
+changes in the same HSI tree provided you get an ACK
+from the subsystem maintainer.
 
-Yes.  I think it would be better to have a minimum guarantee setting
-rather than a wholesale cgroup isolation.  If the cgroup's memory
-usage is below that guarantee, reclaim skips it.  If you insist, you
-can still set this to ULONG_MAX.
+Yours,
+Linus Walleij
