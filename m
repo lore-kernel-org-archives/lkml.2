@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab1JUPYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 11:24:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57226 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751691Ab1JUPYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 11:24:36 -0400
-Date: Fri, 21 Oct 2011 16:24:34 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] pinctrl: add a generic control interface
-Message-ID: <20111021152434.GG4080@opensource.wolfsonmicro.com>
-References: <CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
- <CACRpkdYCgY9w8UgMKLgxSsu=Veo01-YSKBWndqU_uCTE-GjZuQ@mail.gmail.com>
- <20111020141827.GB6100@sirena.org.uk>
- <CACRpkdaaUmze+W1n4NkApTX0Se1VJAmD+AJSm36QbsKVDzdnRA@mail.gmail.com>
- <20111020154244.GA26083@opensource.wolfsonmicro.com>
- <CACRpkdbJbUefH+Q0GMp+_4FhV5RqQ+KHrGnJLR6jZSNR16NbSw@mail.gmail.com>
- <20111021123041.GE4080@opensource.wolfsonmicro.com>
- <CACRpkdaZQ12W2M9m=vvQ=w6vRppgsZdphm4ftmx6uFAX2HDkog@mail.gmail.com>
- <20111021125544.GF4080@opensource.wolfsonmicro.com>
- <CACRpkdbQYcMaK50EJ6n0UXGFfWWw_9YD_abTNDmqBxWxycC6NQ@mail.gmail.com>
+	id S1752423Ab1JUPZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 11:25:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48771 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751847Ab1JUPZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 11:25:25 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <spi-devel-general@lists.sourceforge.net>
+CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH RFC] OMAP: SPI: Use a workqueue per omap2_mcspi controller
+Date: Fri, 21 Oct 2011 20:55:05 +0530
+Message-ID: <1319210705-18677-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbQYcMaK50EJ6n0UXGFfWWw_9YD_abTNDmqBxWxycC6NQ@mail.gmail.com>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 02:57:19PM +0200, Linus Walleij wrote:
-> On Fri, Oct 21, 2011 at 2:55 PM, Mark Brown
+Currently all the spi controllers share the work queue.
+This patch allocates a work queue per controller.
 
-> > No, like I keep saying it's nothing to do with enabling or disabling
-> > power.  It's about selecting between multiple reference domains.  For
-> > example, choosing between the DBVDD1 and DBVDD2 domains.
+Signed-off-by: Steve Wilkins <steve.wilkins@raymarine.com> 
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-> OK I think I get it now.
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index fde3a2d..62173ec 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -121,6 +121,7 @@ struct omap2_mcspi {
+ 	/* SPI1 has 4 channels, while SPI2 has 2 */
+ 	struct omap2_mcspi_dma	*dma_channels;
+ 	struct  device		*dev;
++	struct workqueue_struct *wq;
+ };
+ 
+ struct omap2_mcspi_cs {
+@@ -143,8 +144,6 @@ struct omap2_mcspi_regs {
+ 
+ static struct omap2_mcspi_regs omap2_mcspi_ctx[OMAP2_MCSPI_MAX_CTRL];
+ 
+-static struct workqueue_struct *omap2_mcspi_wq;
+-
+ #define MOD_REG_BIT(val, mask, set) do { \
+ 	if (set) \
+ 		val |= mask; \
+@@ -1043,7 +1042,7 @@ static int omap2_mcspi_transfer(struct spi_device *spi, struct spi_message *m)
+ 
+ 	spin_lock_irqsave(&mcspi->lock, flags);
+ 	list_add_tail(&m->queue, &mcspi->msg_queue);
+-	queue_work(omap2_mcspi_wq, &mcspi->work);
++	queue_work(mcspi->wq, &mcspi->work);
+ 	spin_unlock_irqrestore(&mcspi->lock, flags);
+ 
+ 	return 0;
+@@ -1088,6 +1087,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+ 	struct omap2_mcspi	*mcspi;
+ 	struct resource		*r;
+ 	int			status = 0, i;
++	char			wq_name[20];
+ 
+ 	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
+ 	if (master == NULL) {
+@@ -1111,6 +1111,13 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+ 	mcspi = spi_master_get_devdata(master);
+ 	mcspi->master = master;
+ 
++	sprintf(wq_name, "omap2_mcspi/%d", master->bus_num);
++	mcspi->wq = alloc_workqueue(wq_name, WQ_MEM_RECLAIM, 1);
++	if (mcspi->wq == NULL) {
++		status = -ENOMEM;
++		goto err1;
++	}
++
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (r == NULL) {
+ 		status = -ENODEV;
+@@ -1216,6 +1223,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
+ 	spi_unregister_master(master);
+ 	iounmap(base);
+ 	kfree(dma_channels);
++	destroy_workqueue(mcspi->wq);
+ 
+ 	return 0;
+ }
+@@ -1274,10 +1282,6 @@ static struct platform_driver omap2_mcspi_driver = {
+ 
+ static int __init omap2_mcspi_init(void)
+ {
+-	omap2_mcspi_wq = create_singlethread_workqueue(
+-				omap2_mcspi_driver.driver.name);
+-	if (omap2_mcspi_wq == NULL)
+-		return -1;
+ 	return platform_driver_probe(&omap2_mcspi_driver, omap2_mcspi_probe);
+ }
+ subsys_initcall(omap2_mcspi_init);
+@@ -1286,7 +1290,6 @@ static void __exit omap2_mcspi_exit(void)
+ {
+ 	platform_driver_unregister(&omap2_mcspi_driver);
+ 
+-	destroy_workqueue(omap2_mcspi_wq);
+ }
+ module_exit(omap2_mcspi_exit);
+ 
+-- 
+1.7.1
 
-> So PIN_CONFIG_POWER_SOURCE and then the argument to
-> that is definately custom...
-
-I'd probably go with _DOMAIN rather than _SOURCE but yes.
