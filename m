@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1JUMYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:24:46 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47386 "EHLO
+	id S1754634Ab1JUMZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:25:07 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47440 "EHLO
 	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab1JUMYo (ORCPT
+	with ESMTP id S1754055Ab1JUMZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:24:44 -0400
+	Fri, 21 Oct 2011 08:25:04 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 0/3] CPU hotplug, Freezer: Fix bugs in CPU hotplug call path
+Subject: [PATCH v3 1/3] CPU hotplug,
+ Freezer: Don't hardcode 'tasks_frozen' argument in _cpu_*()
 To: a.p.zijlstra@chello.nl
 Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
         akpm@linux-foundation.org, suresh.b.siddha@intel.com,
@@ -16,8 +17,10 @@ Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
         rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
         linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
         rdunlap@xenotime.net
-Date: Fri, 21 Oct 2011 17:54:35 +0530
-Message-ID: <20111021122401.14321.45857.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 21 Oct 2011 17:54:57 +0530
+Message-ID: <20111021122444.14321.57691.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111021122401.14321.45857.stgit@srivatsabhat.in.ibm.com>
+References: <20111021122401.14321.45857.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,58 +29,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the CPU hotplug infrastructure to offline/online CPUs, the cpu_up()
-and cpu_down() functions are used, which internally call _cpu_up() and
-_cpu_down() with the second argument *always* set to 0. The second argument
-is "tasks_frozen", which should be correctly set to 1 when tasks have been
-frozen, even when the freezing of tasks may be due to an event unrelated
-to CPU hotplug, such as a suspend operation in progress, in which case the
-freezer subsystem freezes all the freezable tasks.
+This patch introduces a 'tasks_frozen' flag that is set whenever tasks are
+frozen by the freezer and reset whenever the tasks are thawed. The value of
+this flag is then checked by the CPU hotplug code in order to pass the
+correct argument to the _cpu_up() and _cpu_down() functions, thereby
+reflecting the correct state of the system.
 
-Not giving the correct value for the 'tasks_frozen' argument can potentially
-lead to a lot of issues since this will send wrong notifications via the
-notifier mechanism leading to the execution of inappropriate code by the
-callbacks registered for the notifiers. That is, instead of CPU_ONLINE_FROZEN
-and CPU_DEAD_FROZEN notifications, it results in CPU_ONLINE and CPU_DEAD
-notifications to be sent all the time, irrespective of the actual state of
-the system (i.e., whether tasks are frozen or not).
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-This patch introduces a flag to indicate whether the tasks are frozen are not
-(by any event) and modifies cpu_up() and cpu_down() functions to check the
-value of this flag and accordingly call _cpu_up() and _cpu_down() respectively
-by supplying the correct value as the second argument based on the state of
-the system. This in turn means that the correct notifications are sent, thus
-ensuring that all the registered callbacks do the right thing.
+ include/linux/freezer.h |    2 ++
+ kernel/cpu.c            |    5 +++--
+ kernel/power/process.c  |   22 +++++++++++++++++++++-
+ 3 files changed, 26 insertions(+), 3 deletions(-)
 
-Additionally, to ensure that the tasks are not frozen or thawed by the freezer
-subsystem while the registered callbacks are running, this patch adds a few
-notifications in the freezer which is then hooked onto by the CPU hotplug
-code, to avoid this race.
-
-v3: * Added synchronization between CPU hotplug and the freezer subsystem
-      without introducing any new locks in the CPU hotplug call path.
-
-v2: * Removed the atomic_t declaration of tasks_frozen flag and the
-      atomic_[set|read] functions since they were unnecessary.
-    * Updated the changelog to give an example scenario where things could go
-      wrong due to the bug in the CPU hotplug call path.
-
-References:
-v1 -> http://thread.gmane.org/gmane.linux.kernel/1198312/
-v2 -> http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087
-
---
-Srivatsa S. Bhat (3):
-      CPU hotplug, Freezer: Don't hardcode 'tasks_frozen' argument in _cpu_*()
-      CPU hotplug, Freezer: Synchronize CPU hotplug and freezer
-      PM, Freezer, Docs: Update documentation about the new freezer notifiers
-
-
- Documentation/power/notifiers.txt |    8 ++++
- include/linux/freezer.h           |    2 +
- include/linux/suspend.h           |    6 ++-
- kernel/cpu.c                      |   76 ++++++++++++++++++++++++++++++++++++-
- kernel/power/process.c            |   32 +++++++++++++++-
- 5 files changed, 120 insertions(+), 4 deletions(-)
-
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 1effc8b..a5283ce 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -50,6 +50,7 @@ extern int thaw_process(struct task_struct *p);
+ extern void refrigerator(void);
+ extern int freeze_processes(void);
+ extern void thaw_processes(void);
++extern int tasks_are_frozen(void);
+ 
+ static inline int try_to_freeze(void)
+ {
+@@ -173,6 +174,7 @@ static inline int thaw_process(struct task_struct *p) { return 1; }
+ static inline void refrigerator(void) {}
+ static inline int freeze_processes(void) { BUG(); return 0; }
+ static inline void thaw_processes(void) {}
++static inline int tasks_are_frozen(void) { return 0; }
+ 
+ static inline int try_to_freeze(void) { return 0; }
+ 
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 12b7458..e889ffd 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -15,6 +15,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
++#include <linux/freezer.h>
+ 
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+@@ -280,7 +281,7 @@ int __ref cpu_down(unsigned int cpu)
+ 		goto out;
+ 	}
+ 
+-	err = _cpu_down(cpu, 0);
++	err = _cpu_down(cpu, tasks_are_frozen());
+ 
+ out:
+ 	cpu_maps_update_done();
+@@ -373,7 +374,7 @@ int __cpuinit cpu_up(unsigned int cpu)
+ 		goto out;
+ 	}
+ 
+-	err = _cpu_up(cpu, 0);
++	err = _cpu_up(cpu, tasks_are_frozen());
+ 
+ out:
+ 	cpu_maps_update_done();
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 0cf3a27..230bf96 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -17,11 +17,28 @@
+ #include <linux/delay.h>
+ #include <linux/workqueue.h>
+ 
+-/* 
++/*
+  * Timeout for stopping processes
+  */
+ #define TIMEOUT	(20 * HZ)
+ 
++static int tasks_frozen;
++
++static void set_tasks_frozen_flag(void)
++{
++	tasks_frozen = 1;
++}
++
++static void clear_tasks_frozen_flag(void)
++{
++	tasks_frozen = 0;
++}
++
++int tasks_are_frozen(void)
++{
++	return tasks_frozen;
++}
++
+ static inline int freezable(struct task_struct * p)
+ {
+ 	if ((p == current) ||
+@@ -151,6 +168,8 @@ int freeze_processes(void)
+ 	error = try_to_freeze_tasks(false);
+ 	if (error)
+ 		goto Exit;
++
++	set_tasks_frozen_flag();
+ 	printk("done.");
+ 
+ 	oom_killer_disable();
+@@ -189,6 +208,7 @@ void thaw_processes(void)
+ 	thaw_workqueues();
+ 	thaw_tasks(true);
+ 	thaw_tasks(false);
++	clear_tasks_frozen_flag();
+ 	schedule();
+ 	printk("done.\n");
+ }
 
