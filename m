@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab1JUPZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 11:25:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48771 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab1JUPZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 11:25:25 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH RFC] OMAP: SPI: Use a workqueue per omap2_mcspi controller
-Date: Fri, 21 Oct 2011 20:55:05 +0530
-Message-ID: <1319210705-18677-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752660Ab1JUPkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 11:40:14 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51896 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab1JUPkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 11:40:11 -0400
+Message-ID: <4EA1924A.9060403@linux.vnet.ibm.com>
+Date: Fri, 21 Oct 2011 21:09:54 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: a.p.zijlstra@chello.nl, rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com,
+        mingo@elte.hu, akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        rdunlap@xenotime.net
+Subject: Re: [PATCH v3 0/3] CPU hotplug, Freezer: Fix bugs in CPU hotplug
+ call path
+References: <Pine.LNX.4.44L0.1110211038050.2131-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1110211038050.2131-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11102115-2000-0000-0000-0000009E0047
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all the spi controllers share the work queue.
-This patch allocates a work queue per controller.
+Hi Alan,
 
-Signed-off-by: Steve Wilkins <steve.wilkins@raymarine.com> 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+On 10/21/2011 08:12 PM, Alan Stern wrote:
+> On Fri, 21 Oct 2011, Srivatsa S. Bhat wrote:
+> 
+>> When using the CPU hotplug infrastructure to offline/online CPUs, the cpu_up()
+>> and cpu_down() functions are used, which internally call _cpu_up() and
+>> _cpu_down() with the second argument *always* set to 0. The second argument
+>> is "tasks_frozen", which should be correctly set to 1 when tasks have been
+>> frozen, even when the freezing of tasks may be due to an event unrelated
+>> to CPU hotplug, such as a suspend operation in progress, in which case the
+>> freezer subsystem freezes all the freezable tasks.
+>>
+>> Not giving the correct value for the 'tasks_frozen' argument can potentially
+>> lead to a lot of issues since this will send wrong notifications via the
+>> notifier mechanism leading to the execution of inappropriate code by the
+>> callbacks registered for the notifiers. That is, instead of CPU_ONLINE_FROZEN
+>> and CPU_DEAD_FROZEN notifications, it results in CPU_ONLINE and CPU_DEAD
+>> notifications to be sent all the time, irrespective of the actual state of
+>> the system (i.e., whether tasks are frozen or not).
+>>
+>> This patch introduces a flag to indicate whether the tasks are frozen are not
+>> (by any event) and modifies cpu_up() and cpu_down() functions to check the
+>> value of this flag and accordingly call _cpu_up() and _cpu_down() respectively
+>> by supplying the correct value as the second argument based on the state of
+>> the system. This in turn means that the correct notifications are sent, thus
+>> ensuring that all the registered callbacks do the right thing.
+> 
+> That doesn't make any sense.  If tasks were frozen then the task 
+> calling _cpu_up() or _cpu_down() would be frozen too, and therefore 
+> wouldn't be able to make the call.
+>
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index fde3a2d..62173ec 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -121,6 +121,7 @@ struct omap2_mcspi {
- 	/* SPI1 has 4 channels, while SPI2 has 2 */
- 	struct omap2_mcspi_dma	*dma_channels;
- 	struct  device		*dev;
-+	struct workqueue_struct *wq;
- };
+I can't believe I missed such an obvious thing!
+I must have been carried away while thinking about the race between freezer
+and CPU hotplug. Thanks for pointing this out.
  
- struct omap2_mcspi_cs {
-@@ -143,8 +144,6 @@ struct omap2_mcspi_regs {
- 
- static struct omap2_mcspi_regs omap2_mcspi_ctx[OMAP2_MCSPI_MAX_CTRL];
- 
--static struct workqueue_struct *omap2_mcspi_wq;
--
- #define MOD_REG_BIT(val, mask, set) do { \
- 	if (set) \
- 		val |= mask; \
-@@ -1043,7 +1042,7 @@ static int omap2_mcspi_transfer(struct spi_device *spi, struct spi_message *m)
- 
- 	spin_lock_irqsave(&mcspi->lock, flags);
- 	list_add_tail(&m->queue, &mcspi->msg_queue);
--	queue_work(omap2_mcspi_wq, &mcspi->work);
-+	queue_work(mcspi->wq, &mcspi->work);
- 	spin_unlock_irqrestore(&mcspi->lock, flags);
- 
- 	return 0;
-@@ -1088,6 +1087,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
- 	struct omap2_mcspi	*mcspi;
- 	struct resource		*r;
- 	int			status = 0, i;
-+	char			wq_name[20];
- 
- 	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
- 	if (master == NULL) {
-@@ -1111,6 +1111,13 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
- 	mcspi = spi_master_get_devdata(master);
- 	mcspi->master = master;
- 
-+	sprintf(wq_name, "omap2_mcspi/%d", master->bus_num);
-+	mcspi->wq = alloc_workqueue(wq_name, WQ_MEM_RECLAIM, 1);
-+	if (mcspi->wq == NULL) {
-+		status = -ENOMEM;
-+		goto err1;
-+	}
-+
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
- 		status = -ENODEV;
-@@ -1216,6 +1223,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
- 	spi_unregister_master(master);
- 	iounmap(base);
- 	kfree(dma_channels);
-+	destroy_workqueue(mcspi->wq);
- 
- 	return 0;
- }
-@@ -1274,10 +1282,6 @@ static struct platform_driver omap2_mcspi_driver = {
- 
- static int __init omap2_mcspi_init(void)
- {
--	omap2_mcspi_wq = create_singlethread_workqueue(
--				omap2_mcspi_driver.driver.name);
--	if (omap2_mcspi_wq == NULL)
--		return -1;
- 	return platform_driver_probe(&omap2_mcspi_driver, omap2_mcspi_probe);
- }
- subsys_initcall(omap2_mcspi_init);
-@@ -1286,7 +1290,6 @@ static void __exit omap2_mcspi_exit(void)
- {
- 	platform_driver_unregister(&omap2_mcspi_driver);
- 
--	destroy_workqueue(omap2_mcspi_wq);
- }
- module_exit(omap2_mcspi_exit);
- 
+>> Additionally, to ensure that the tasks are not frozen or thawed by the freezer
+>> subsystem while the registered callbacks are running, this patch adds a few
+>> notifications in the freezer which is then hooked onto by the CPU hotplug
+>> code, to avoid this race.
+> 
+> That's more sensible.  Freezing or thawing tasks isn't instantaneous.  
+> It's possible that _cpu_up() or _cpu_down() could be called while some 
+> tasks were frozen and others were still running.
+> 
+> If you're careful to prevent this from happening then there's no reason 
+> to change the tasks_frozen argument.  It should never be anything but 
+> 0 in this situation.
+> 
+
+Agreed. So patch 1 becomes unnecessary. Patch 2 implements the needed
+synchronization.
+I'll fix the code (also incorporating your point that PM_POST_FREEZE and
+PM_THAW_PREPARE are unnecessary) and repost.
+
+Thank you for the review.
+
 -- 
-1.7.1
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
 
