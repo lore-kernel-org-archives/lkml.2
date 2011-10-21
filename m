@@ -1,73 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab1JUR5d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 13:57:33 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:56408 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab1JUR5c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 13:57:32 -0400
-Subject: Re: [PATCH v3] virtio: Add platform bus driver for memory mapped
- virtio device
-From: Pawel Moll <pawel.moll@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>
-In-Reply-To: <87ty75adtb.fsf@rustcorp.com.au>
-References: <1317841030-17758-1-git-send-email-pawel.moll@arm.com>
-	 <1317919843-8343-1-git-send-email-pawel.moll@arm.com>
-	 <1317921230.28696.102.camel@hornet.cambridge.arm.com>
-	 <87lisjq6tu.fsf@rustcorp.com.au>
-	 <1318931075.3146.285.camel@hornet.cambridge.arm.com>
-	 <87ty75adtb.fsf@rustcorp.com.au>
-Date: Fri, 21 Oct 2011 18:57:24 +0100
-Message-ID: <1319219844.5094.16.camel@hornet.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 21 Oct 2011 17:57:24.0651 (UTC) FILETIME=[E3746FB0:01CC901A]
-X-MC-Unique: 111102118572800201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754696Ab1JUSDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 14:03:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53738 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751840Ab1JUSDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 14:03:54 -0400
+Date: Fri, 21 Oct 2011 19:59:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: test-case (Was: [PATCH 12/X] uprobes: x86: introduce abort_xol())
+Message-ID: <20111021175915.GA1705@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215326.GF16395@redhat.com> <20111021144207.GN11831@linux.vnet.ibm.com> <20111021162631.GB2552@in.ibm.com> <20111021164221.GA30770@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111021164221.GA30770@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-19 at 03:57 +0100, Rusty Russell wrote:
-> > Oh, really? My host-side implementation is just doing that:
-> > 
-> >         addr += align - 1;
-> >         addr &= ~(align - 1);
-> 
-> OK, so you're assuming power of 2.  Make sure you kill the guest or at
-> least the device if it's not though.
+On 10/21, Oleg Nesterov wrote:
+>
+> On 10/21, Ananth N Mavinakayanahalli wrote:
+> >
+> > On Fri, Oct 21, 2011 at 08:12:07PM +0530, Srikar Dronamraju wrote:
+> >
+> > > > +void abort_xol(struct pt_regs *regs)
+> > > > +{
+> > > > +	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+> > > > +	// !!! Dear Srikar and Ananth, please implement me !!!
+> > > > +	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+> > > > +	struct uprobe_task *utask = current->utask;
+> > > > +	regs->ip = utask->vaddr;
+> > >
+> > > nit:
+> > > Shouldnt we be setting the ip to the next instruction after this
+> > > instruction?
+> >
+> > No, since we should re-execute the original instruction
+>
+> Yes,
 
-Yep, I have assertions all around such places :-) (it's a non-production
-code yet so I can do that)
+In case it was not clear, I meant "agree with your 'No'".
 
-> > \item The dynamic configuration changes, as described in p. 2.4.3
-> > ``Dealing With Configuration Changes'' are not permitted.
-> 
-> This means some devices simply won't work, at least in theory.  Why
-> don't you support this?
+> > after removing
+> > the breakpoint.
+>
+> No? we should not remove this uprobe?
+>
+> > Also, wrt ip being set to the next instruction on a breakpoint hit,
+> > that's arch specific.
+>
+> Probably yes, I am not sure. But:
+>
+> > For instance, on x86, it points to the next
+> > instruction,
+>
+> No?
+>
+> 	/**
+> 	 * get_uprobe_bkpt_addr - compute address of bkpt given post-bkpt regs
+> 	 * @regs: Reflects the saved state of the task after it has hit a breakpoint
+> 	 * instruction.
+> 	 * Return the address of the breakpoint instruction.
+> 	 */
+> 	unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs)
+> 	{
+> 		return instruction_pointer(regs) - UPROBES_BKPT_INSN_SIZE;
+> 	}
+>
+> Yes, initially regs->ip points to the next insn after int3, but
+> utask->vaddr == get_uprobe_bkpt_addr() == addr of int3.
 
-Uh. I simply forgot about it - my Host block device doesn't do that, so
-I ignored that feature initially and then it slipped through cracks. And
-till now I didn't realize that most of the drivers actually use this :-O
-My fault.
+Ananth, Srikar, I'd suggest this test-case:
 
-Simple to fix anyway - I'll just add InterruptStatus register and use
-second bit (same with InterruptACK) to get this through. Will be done on
-Monday.
+	#include <stdio.h>
+	#include <signal.h>
+	#include <ucontext.h>
 
-Any other final complaints regarding the interface while I'm on it? ;-)
+	void *fault_insn;
 
-Cheers!
+	static inline void *uc_ip(struct ucontext *ctxt)
+	{
+		return (void*)ctxt->uc_mcontext.gregs[16];
+	}
 
-Paweł
+	void segv(int sig, siginfo_t *info, void *ctxt)
+	{
+		static int cnt;
 
+		printf("SIGSEGV! ip=%p addr=%p\n", uc_ip(ctxt), info->si_addr);
+
+		if (uc_ip(ctxt) != fault_insn)
+			printf("ERR!! wrong ip\n");
+		if (info->si_addr != (void*)0x12345678)
+			printf("ERR!! wrong addr\n");
+
+		if (++cnt == 3)
+			signal(SIGSEGV, SIG_DFL);
+	}
+
+	int main(void)
+	{
+		struct sigaction sa = {
+			.sa_sigaction	= segv,
+			.sa_flags	= SA_SIGINFO,
+		};
+
+		sigaction(SIGSEGV, &sa, NULL);
+
+		fault_insn = &&label;
+
+	label:
+		asm volatile ("movl $0x0,0x12345678");
+
+		return 0;
+	}
+
+result:
+
+	$ ulimit -c unlimited
+
+	$ ./segv
+	SIGSEGV! ip=0x4006eb addr=0x12345678
+	SIGSEGV! ip=0x4006eb addr=0x12345678
+	SIGSEGV! ip=0x4006eb addr=0x12345678
+	Segmentation fault (core dumped)
+
+	$ gdb -c ./core.1826
+	...
+	Program terminated with signal 11, Segmentation fault.
+	#0  0x00000000004006eb in ?? ()
+
+Now. If you insert uprobe at asm("movl") insn, result should be the same
+or the patches I sent are wrong. In particular, the addr in the coredump
+should be correct too. And consumer->handler() should be called 3 times
+too. This insn is really executed 3 times.
+
+I have no idea how can I test this.
+
+Oleg.
 
