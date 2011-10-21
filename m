@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1JUUP4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 16:15:56 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:36687 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab1JUUPz (ORCPT
+	id S1752379Ab1JUU3A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 16:29:00 -0400
+Received: from peace.netnation.com ([204.174.223.2]:45757 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab1JUU27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 16:15:55 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.1-rc10
-In-Reply-To: Your message of "Mon, 17 Oct 2011 21:19:35 PDT."
-             <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1319228151_2718P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 21 Oct 2011 16:15:51 -0400
-Message-ID: <12633.1319228151@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4EA1D2F8.0016,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 21 Oct 2011 16:28:59 -0400
+Date: Fri, 21 Oct 2011 13:28:57 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: XFS read hangs in 3.1-rc10
+Message-ID: <20111021202857.GB30100@hostway.ca>
+References: <20111020224214.GC22772@hostway.ca> <20111021132240.GA24136@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111021132240.GA24136@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1319228151_2718P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Oct 21, 2011 at 09:22:40AM -0400, Christoph Hellwig wrote:
 
-On Mon, 17 Oct 2011 21:19:35 PDT, Linus Torvalds said:
-> The shortlog is about as informative as it gets. There's still some
-> discussion about a couple of minor things we would like to get
-> resolved, but on the whole 3.1 is long over-due and by the KS I think
-> everybody will be relieved to have it out, and ready to open the merge
-> window.
+> On Thu, Oct 20, 2011 at 03:42:14PM -0700, Simon Kirby wrote:
+> > 
+> > [<ffffffff8126f205>] xfs_reclaim_inode+0x85/0x2b0
+> > [<ffffffff8126f5b0>] xfs_reclaim_inodes_ag+0x180/0x2f0
+> > [<ffffffff8126f74e>] xfs_reclaim_inodes_nr+0x2e/0x40
+> > [<ffffffff8126ccf0>] xfs_fs_free_cached_objects+0x10/0x20
+> > [<ffffffff81119a70>] prune_super+0x110/0x1b0
+> > [<ffffffff810e4fa5>] shrink_slab+0x1e5/0x2a0
+> > [<ffffffff810e5821>] kswapd+0x7c1/0xba0
+> > [<ffffffff8107ada6>] kthread+0x96/0xb0
+> > [<ffffffff816c0474>] kernel_thread_helper+0x4/0x10
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> We're stuck in synchronous inode reclaim.
+> 
+> > All of the other processes that get stuck have this stack:
+> > 
+> > [<ffffffff81080587>] down+0x47/0x50
+> > [<ffffffff8125e816>] xfs_buf_lock+0x66/0xd0
+> > [<ffffffff812603ad>] _xfs_buf_find+0x16d/0x270
+> > [<ffffffff81260517>] xfs_buf_get+0x67/0x1a0
+> > [<ffffffff8126067a>] xfs_buf_read+0x2a/0x120
+> > [<ffffffff812b876f>] xfs_trans_read_buf+0x28f/0x3f0
+> > [<ffffffff8129e161>] xfs_read_agi+0x71/0x100
+> 
+> They are waiting for the AGI buffer to become unlocked.  The only reason
+> it is held locked for longer time is when it is under I/O.
+> 
+> > 
+> > By the way, xfs_reclaim_inode+0x85 (133) disassembles as:
+> 
+> > 
+> > ...So the next function is wait_for_completion(), which is marked
+> > __sched and thus doesn't show up in the trace.
+> 
+> So we're waiting for the inode to be flushed, aka I/O again.
 
-Are there plans to extend the merge window because everybody will be busy at
-KS, or is the plan to do KS during the day, do merges at night, and resume
-sleeping after -rc1 gets out?
+But I don't seem to see any queued I/O, hmm.
 
+> What is interesting here is that we're always blocking on the AGI
+> buffer - which is used during unlinks of inodes, and thus gets hit
+> fairly heavily for a workload that does a lot of unlinks.
 
---==_Exmh_1319228151_2718P
-Content-Type: application/pgp-signature
+I don't think we do too many unlinks, but there are quite a bit of
+renames over existing files (dovecot-2.0 w/mdbox).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> > When the clog happens, "iostat -x -k 1" shows no reads from the XFS
+> > devices, though writes keep happening. "vmstat 1" matches. I tried
+> > switching schedulers from CFQ to deadline -- no difference. Queue depth
+> > is empty on the devices and nothing is actually clogged up at the device
+> > -- it's not actually plugged at the controller or disk. I did a sysreq-w
+> > while this was happening. About 10 seconds later, everything unclogs and
+> > continues. Sysreq-W output below. I poked around at the various XFS
+> > tracepoints in /sys/kernel/debug/tracing/events/xfs, but I'm not sure
+> > which tracepoints to use and many of them scroll too fast to see
+> > anything. Any suggestions?
+> 
+> Given that you are doing a lot of unlinks I wonder if it is related
+> to the recent ail pushing issues in that area.  While your symptoms
+> looks completely different we could be blocking on the flush completion
+> for an inode that gets stuck in the AIL.
+> 
+> Can you run with latest 3.0-stable plus the patches at:
+> 
+> 	http://oss.sgi.com/pipermail/xfs/2011-October/053464.html
+> 
+> If this doesn't help I'll probably need to come up with some tracing
+> patches for you.
 
-iD8DBQFOodL3cC3lWbTT17ARAic6AKCKz4XeVuY2X4vk5IgEYyCVT6pElQCfVzJq
-C8+gRZXtRVQpfs3y3K6WjDM=
-=TH6k
------END PGP SIGNATURE-----
+It seemes 3.0.7+gregkh's stable-queue queue-3.0 patches seems to be
+running fine without blocking at all on this SSD box, so that should
+narrow it down significantly.
 
---==_Exmh_1319228151_2718P--
+Hmm, looking at git diff --stat v3.0.7..v3.1-rc10 fs/xfs , maybe not.. :)
 
+Maybe 3.1 fs/xfs would transplant into 3.0 or vice-versa?
+
+Simon-
