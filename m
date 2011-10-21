@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab1JULVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 07:21:52 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39789 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab1JULVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 07:21:52 -0400
-Message-ID: <4EA155A8.8010802@parallels.com>
-Date: Fri, 21 Oct 2011 15:21:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754493Ab1JULa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 07:30:26 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57704 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab1JULaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 07:30:25 -0400
+Message-ID: <4EA157C9.30500@linux.vnet.ibm.com>
+Date: Fri, 21 Oct 2011 17:00:17 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Vagin <avagin@parallels.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [patch 5/5] elf: Add support for loading ET_CKPT files
-References: <20111014110416.552685686@openvz.org> <20111014110511.670174429@openvz.org> <20111014171033.GC4294@google.com> <4EA15224.10102@parallels.com> <20111021112031.GO14464@moon>
-In-Reply-To: <20111021112031.GO14464@moon>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, len.brown@intel.com,
+        mingo@elte.hu, akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi,
+        "linux-pm@vger.kernel.org >> Linux PM mailing list" 
+	<linux-pm@vger.kernel.org>,
+        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] CPU hotplug, freezer: Fix bugs in CPU hotplug call
+ path
+References: <4E88BF33.10407@linux.vnet.ibm.com> <1317636215.12973.16.camel@twins> <4E8B07EA.4020307@linux.vnet.ibm.com> <4E8B09F3.4080800@linux.vnet.ibm.com> <1317735440.32543.4.camel@twins> <4E8F6785.2010104@linux.vnet.ibm.com> <1318243739.14400.10.camel@laptop>
+In-Reply-To: <1318243739.14400.10.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2011 03:20 PM, Cyrill Gorcunov wrote:
-> On Fri, Oct 21, 2011 at 03:06:12PM +0400, Glauber Costa wrote:
-> ...
->> exec() is a fundamental interface to the kernel, and the change
->> proposed here is too disruptive. Not only that, it is rather
->> unannounced: since not always one knows kind of fmt file is being
->> exec'd, it gets hard to infer which behavior to expect.
+On 10/10/2011 04:18 PM, Peter Zijlstra wrote:
+> On Sat, 2011-10-08 at 02:26 +0530, Srivatsa S. Bhat wrote:
 >>
->
-> This missed snipped in changelog indeed my very fault, sorry for that.
->
->> I am wondering, though: if exec is a problem, but the binary handler
->> is not, maybe we can exec a process using this handler, and then
->> have the handler itself to create the thread hierarchy. This way we
->> avoid changing exec() behavior at all, yet achieving the same
->> results.
->>
->> What do you think?
->>
->>
->
-> Glauber, could you please elaborate, you mean to call for forks inside
-> elf-chkpt handler, right? Or you mean something else?
+>> So, we should mutually exclude cpu hotplugging and freezing/thawing to
+>> ensure that during the entire duration that the callbacks for the notified
+>> event are running, the state introduced by that event holds good. 
+> 
+> Yes we should, but I'd rather see that done on a more fundamental level,
+> and not frob yet another mutex in the already complex hotplug system.
+> 
 
-not fork(), clone().
+Sure, thank you for the feedback. I have now come up with another version
+that doesn't introduce any new mutex. I'll post it out in a while.
 
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
