@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab1JUUFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 16:05:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40579 "EHLO mx2.suse.de"
+	id S1752165Ab1JUUKc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 16:10:32 -0400
+Received: from mail.lang.hm ([64.81.33.126]:39447 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab1JUUFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 16:05:16 -0400
-Date: Fri, 21 Oct 2011 22:02:57 +0200
-From: Greg KH <gregkh@suse.de>
-To: Stefan Priebe <s.priebe@profihost.ag>
-Cc: LKML <linux-kernel@vger.kernel.org>, Stable Tree <stable@kernel.org>
-Subject: Re: Kernel hard LOCKUP with v3.0.7
-Message-ID: <20111021200257.GA31198@suse.de>
-References: <4EA1536E.6090001@profihost.ag>
- <20111021130752.GC8219@suse.de>
- <AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag>
+	id S1751999Ab1JUUKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 16:10:31 -0400
+Date: Fri, 21 Oct 2011 13:10:10 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: NeilBrown <neilb@suse.de>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lsusd - The Linux SUSpend Daemon
+In-Reply-To: <20111021162340.669742c0@notabene.brown>
+Message-ID: <alpine.DEB.2.02.1110211308130.13493@asgard.lang.hm>
+References: <20111020111743.13b40558@notabene.brown> <Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org> <20111021162340.669742c0@notabene.brown>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 09:59:30PM +0200, Stefan Priebe wrote:
-> > On Fri, Oct 21, 2011 at 01:11:42PM +0200, Stefan Priebe - Profihost AG wrote:
-> >> Hello list,
-> >> 
-> >> today i've seen the following crash using v3.0.7 (renamed to 2.6.40.7).
-> >> 
-> >> http://pastebin.com/raw.php?i=sRq7T4Y0
-> >> 
-> >> I haven't seen this with 3.0.6 but i also changed some kernel config
-> >> options (activated ipv6, changed from SLAB to SLUB).
-> > 
-> > Any way to reproduce it?
-> > 
-> > greg k-h
-> No idea the systrm is just crashing every 2-6 hours. I've now also
-> tried to use slab. No difference. So i will revert to 3.0.6 which is
-> running fine.
+On Fri, 21 Oct 2011, NeilBrown wrote:
 
-Can you run 'git bisect' to try to find the problem patch?  Oh, there is
-one bugfix that I know of, bcd5cff7216f9b2de0a148cc355eac199dc6f1cf in
-Linus's tree, can you try that to see if it solves the problem for you?
+> Hi,
+>
+> I wasn't going to do this... but then I did.  I think that sometimes coding is
+> a bit like chocolate.
+>
+> At:
+>    git://neil.brown.name/lsusd
+> or
+>    http://neil.brown.name/git/lsusd
+>
+> you can find a bunch of proof-of-concept sample code that implements a
+> "Linux SUSpend Daemon" with client support library and test programs.
+>
+> I haven't actually tested it as root and had it actually suspend and resume
+> and definitely haven't had it even close to a race condition, but the
+> various bits seem to work with each other properly when I run them under
+> strace and watch.
+>
+> It didn't turn out quite the way I imagined, but then cold harsh reality has
+> a way of destroying our dreams, doesn't it :-)
+>
+>
+> Below is the README file.  Comment welcome as always.
+> I'm happy for patches too, but I'm equally happy for someone to re-write it
+> completely and make something really useful and maintainable.
 
-thanks,
+have you put any thought into the idea of extending this slightly to 
+handle the userspace wakelock interface to potentially allow this to run 
+android userspace on a stock kernel?
 
-greg k-h
+I realize that there are other things that would be needed as well, but 
+the wakelock interface is a biggie.
+
+David Lang
