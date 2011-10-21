@@ -1,162 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1JUGWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 02:22:40 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64970 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab1JUGWj convert rfc822-to-8bit (ORCPT
+	id S1753319Ab1JUG0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 02:26:49 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:48325 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753093Ab1JUG0r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 02:22:39 -0400
+	Fri, 21 Oct 2011 02:26:47 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: =?us-ascii?Q?=3D=3FUTF-8=3FQ=3FAm=3DC3=3DA9rico=5FWang=3F=3D?= 
+	<xiyou.wangcong@gmail.com>
+cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH net -v2] [BUGFIX] bonding: use flush_delayed_work_sync in bond_close
+In-reply-to: <CAM_iQpV8089aU8gfeo8KotTNXQbx4ficMeBX69Nin_yXzqcEKg@mail.gmail.com>
+References: <20111019081757.12455.24788.stgit@ltc219.sdl.hitachi.co.jp> <27007.1319047262@death> <20111019114129.162d895a@nehalam.linuxnetplumber.net> <29731.1319051397@death> <CAM_iQpV8089aU8gfeo8KotTNXQbx4ficMeBX69Nin_yXzqcEKg@mail.gmail.com>
+Comments: In-reply-to =?us-ascii?Q?=3D=3FUTF-8=3FQ=3FAm=3DC3=3DA9rico=5FWa?=
+ =?us-ascii?Q?ng=3F=3D?= <xiyou.wangcong@gmail.com>
+   message dated "Fri, 21 Oct 2011 13:45:32 +0800."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
 MIME-Version: 1.0
-In-Reply-To: <CANsGZ6a6_q8+88FRV2froBsVEq7GhtKd9fRnB-0M2MD3a7tnSw@mail.gmail.com>
-References: <201110122012.33767.pluto@agmk.net>
-	<CA+55aFwf75oJ3JJ2aCR8TJJm_oLireD6SDO+43GveVVb8vGw1w@mail.gmail.com>
-	<alpine.LSU.2.00.1110191234570.6900@sister.anvils>
-	<201110202051.33288.nai.xia@gmail.com>
-	<CANsGZ6a6_q8+88FRV2froBsVEq7GhtKd9fRnB-0M2MD3a7tnSw@mail.gmail.com>
-Date: Fri, 21 Oct 2011 14:22:37 +0800
-Message-ID: <CAPQyPG6d3Sv26SiR6Xj4S5xOOy2DmrwQYO2wAwzrcg=2A0EcMQ@mail.gmail.com>
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-From: Nai Xia <nai.xia@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: arekm@pld-linux.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        jpiszcz@lucidpixels.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Sikora <pluto@agmk.net>, Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 20 Oct 2011 23:26:36 -0700
+Message-ID: <17144.1319178396@death>
+x-cbid: 11102106-3534-0000-0000-000000CB0CE7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 2:36 AM, Hugh Dickins <hughd@google.com> wrote:
-> I'm travelling at the moment, my brain is not in gear, the source is not in
-> front of me, and I'm not used to typing on my phone much!� Excuses, excuses
+Américo Wang <xiyou.wangcong@gmail.com> wrote:
+
+>On Thu, Oct 20, 2011 at 3:09 AM, Jay Vosburgh <fubar@us.ibm.com> wrote:
+>> Stephen Hemminger <shemminger@vyatta.com> wrote:
+>>
+>>>On Wed, 19 Oct 2011 11:01:02 -0700
+>>>Jay Vosburgh <fubar@us.ibm.com> wrote:
+>>>
+>>>> Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com> wrote:
+>>>>
+>>>> >The bond_close() calls cancel_delayed_work() to cancel delayed works.
+>>>> >It, however, cannot cancel works that were already queued in workqueue.
+>>>> >The bond_open() initializes work->data, and proccess_one_work() refers
+>>>> >get_work_cwq(work)->wq->flags. The get_work_cwq() returns NULL when
+>>>> >work->data has been initialized. Thus, a panic occurs.
+>>>> >
+>>>> >This patch uses flush_delayed_work_sync() instead of cancel_delayed_work()
+>>>> >in bond_close(). It cancels delayed timer and waits for work to finish
+>>>> >execution. So, it can avoid the null pointer dereference due to the
+>>>> >parallel executions of proccess_one_work() and initializing proccess
+>>>> >of bond_open().
+>>>>
+>>>>      I'm setting up to test this.  I have a dim recollection that we
+>>>> tried this some years ago, and there was a different deadlock that
+>>>> manifested through the flush path.  Perhaps changes since then have
+>>>> removed that problem.
+>>>>
+>>>>      -J
+>>>
+>>>Won't this deadlock on RTNL.  The problem is that:
+>>>
+>>>   CPU0                            CPU1
+>>>  rtnl_lock
+>>>      bond_close
+>>>                                 delayed_work
+>>>                                   mii_work
+>>>                                     read_lock(bond->lock);
+>>>                                     read_unlock(bond->lock);
+>>>                                     rtnl_lock... waiting for CPU0
+>>>      flush_delayed_work_sync
+>>>          waiting for delayed_work to finish...
+>>
+>>        Yah, that was it.  We discussed this a couple of years ago in
+>> regards to a similar patch:
+>>
+>> http://lists.openwall.net/netdev/2009/12/17/3
+>>
+>>        The short version is that we could rework the rtnl_lock inside
+>> the montiors to be conditional and retry on failure (where "retry" means
+>> "reschedule the work and try again later," not "spin retrying on rtnl").
+>> That should permit the use of flush or cancel to terminate the work
+>> items.
 >
-> I flip between thinking you are right, and I'm a fool, and thinking you are
-> wrong, and I'm still a fool.
+>Yes? Even if we use rtnl_trylock(), doesn't flush_delayed_work_sync()
+>still queue the pending delayed work and wait for it to be finished?
 
-Ha, well, human brains are all weak in thoroughly searching racing state space,
-while automated model checking is still far from applicable to complex
-real world
-like kernel source. Maybe some day someone will give out a human guided
-computer aided tool to help us search the combination of all involved code paths
-to valid a specific high level logic assertion.
+	Yes, it does.  The original patch wants to use flush instead of
+cancel to wait for the work to finish, because there's evidently a
+possibility of getting back into bond_open before the work item
+executes, and bond_open would reinitialize the work queue and corrupt
+the queued work item.
 
+	The original patch series, and recipe for destruction, is here:
 
->
-> Please work it out with Linus, Andrea and Mel: I may not be able to reply
-> for a couple of days - thanks.
+	http://www.spinics.net/lists/netdev/msg176382.html
 
-OK.
+	I've been unable to reproduce the work queue panic locally,
+although it sounds plausible.
 
-And as a side note. Since I notice that Pawel's workload may include OOM,
-I'd like to give an imaginary series of events that may trigger such an bug.
+	Mitsuo: can you provide the precise bonding configuration you're
+using to induce the problem?  Driver options, number and type of slaves,
+etc.
 
-1.  do_brk() want to expand a vma, but vma_merge  failed because of
-transient  ENOMEM,  but succeeded in creating a new vmas at the boundary.
+>Maybe I am too blind, why do we need rtnl_lock for cancel_delayed_work()
+>inside bond_close()?
 
-    vma_a           vma_b
-|----------------|---------------------|
+	We don't need RTNL for cancel/flush.  However, bond_close is an
+ndo_stop operation, and is called in the dev_close path, which always
+occurs under RTNL.  The mii / arp monitor work functions separately
+acquire RTNL if they need to perform various failover related
+operations.
 
-2.  page fault in vma_b, gives it a anon_vma, then page fault in vma_a,
-it reuses the anon_vma of  vma_b.
+	I'm working on a patch that should resolve the mii / arp monitor
+RTNL problem as I described above (if rtnl_trylock fails, punt and
+reschedule the work).  I need to rearrange the netdev_bonding_change
+stuff a bit as well, since it acquires RTNL separately.
 
+	Once these changes are made to mii / arp monitor, then
+bond_close can call flush instead of cancel, which should eliminate the
+original problem described at the top.
 
-3.   vma_a remaps to somewhere irrelevant, a new vma_c is created
-and linked by anon_vma_clone(). In the anon_vma chain of vma_b,
-vma_c is linked after  vma_b:
+	-J
 
-    vma_a           vma_b                   vma_c
-|----------------|---------------------|   |==============|
+---
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
 
-           vma_b                   vma_c
-|---------------------|   |==============|
-
-
-
-4.  vma_c remaps back to its original place where vma_a was.
-Ok,  vma_merge() in copy_vma() says that this request can be merged
-to vma_b, and it returns with vma_b.
-
-5. move_page_tables moves from vma_c to vma_b,  and races with rmap_walk.
-The reverse ordering of vma_b and vma_c in anon_vma chain makes
-rmap_walk miss an entry in the way I explained.
-
-Well, it seems a very tricky construction, but also seems a possible
-thing to me.
-
-Will Linus, Andrea and Mel or any other one please look into my construction
-and judge if it's valid?
-
-Thanks
-
-Nai Xia
-
->
-> Hugh
->
-> On Oct 20, 2011 5:51 AM, "Nai Xia" <nai.xia@gmail.com> wrote:
->>
->> On Thursday 20 October 2011 03:42:15 Hugh Dickins wrote:
->> > On Wed, 19 Oct 2011, Linus Torvalds wrote:
->> > > On Wed, Oct 19, 2011 at 12:43 AM, Mel Gorman <mgorman@suse.de> wrote:
->> > > >
->> > > > My vote is with the migration change. While there are occasionally
->> > > > patches to make migration go faster, I don't consider it a hot path.
->> > > > mremap may be used intensively by JVMs so I'd loathe to hurt it.
->> > >
->> > > Ok, everybody seems to like that more, and it removes code rather than
->> > > adds it, so I certainly prefer it too. Pawel, can you test that other
->> > > patch (to mm/migrate.c) that Hugh posted? Instead of the mremap vma
->> > > locking patch that you already verified for your setup?
->> > >
->> > > Hugh - that one didn't have a changelog/sign-off, so if you could
->> > > write that up, and Pawel's testing is successful, I can apply it...
->> > > Looks like we have acks from both Andrea and Mel.
->> >
->> > Yes, I'm glad to have that input from Andrea and Mel, thank you.
->> >
->> > Here we go. �I can't add a Tested-by since Pawel was reporting on the
->> > alternative patch, but perhaps you'll be able to add that in later.
->> >
->> > I may have read too much into Pawel's mail, but it sounded like he
->> > would have expected an eponymous find_get_pages() lockup by now,
->> > and was pleased that this patch appeared to have cured that.
->> >
->> > I've spent quite a while trying to explain find_get_pages() lockup by
->> > a missed migration entry, but I just don't see it: I don't expect this
->> > (or the alternative) patch to do anything to fix that problem. �I won't
->> > mind if it magically goes away, but I expect we'll need more info from
->> > the debug patch I sent Justin a couple of days ago.
->>
->> Hi Hugh,
->>
->> Will you please look into my explanation in my reply to Andrea in this
->> thread
->> and see if it's what you are seeking?
->>
->>
->> Thanks,
->>
->> Nai Xia
->>
->>
->> >
->> > Ah, I'd better send the patch separately as
->> > "[PATCH] mm: fix race between mremap and removing migration entry":
->> > Pawel's "l" makes my old alpine setup choose quoted printable when
->> > I reply to your mail.
->> >
->> > Hugh
->> >
->> > --
->> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> > the body to majordomo@kvack.org. �For more info on Linux MM,
->> > see: http://www.linux-mm.org/ .
->> > Fight unfair telecom internet charges in Canada: sign
->> > http://stopthemeter.ca/
->> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->> >
->
