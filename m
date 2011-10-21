@@ -1,319 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab1JUE3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 00:29:13 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23033 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab1JUE2n (ORCPT
+	id S1752980Ab1JUEhZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 00:37:25 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:37668 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab1JUEhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 00:28:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6505"; a="129636101"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv2 1/2] msm: Consolidate and move DEBUG_LL to generic ARM Kconfig
-Date: Thu, 20 Oct 2011 21:28:31 -0700
-Message-Id: <1319171312-21113-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.7.138.g7f41b6
-In-Reply-To: <1319171312-21113-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 21 Oct 2011 00:37:23 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Fri, 21 Oct 2011 00:37:22 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 2/2] msm: Support DEBUG_LL on MSM8660 and MSM8960
+In-reply-to: <1319171312-21113-3-git-send-email-sboyd@codeaurora.org>
+Message-id: <alpine.LFD.2.02.1110210036470.14454@xanadu.home>
 References: <1319171312-21113-1-git-send-email-sboyd@codeaurora.org>
+ <1319171312-21113-3-git-send-email-sboyd@codeaurora.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that DEBUG_LL is a choice, we can move MSM's homegrown choice
-menu to DEBUG_LL.
+On Thu, 20 Oct 2011, Stephen Boyd wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig.debug                          |   21 +++++++++++++++
- arch/arm/mach-msm/Kconfig                       |   32 -----------------------
- arch/arm/mach-msm/include/mach/debug-macro.S    |   19 ++-----------
- arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |   12 --------
- arch/arm/mach-msm/include/mach/msm_iomap-7x30.h |   12 --------
- arch/arm/mach-msm/include/mach/msm_iomap-8x50.h |   12 --------
- arch/arm/mach-msm/include/mach/msm_iomap.h      |   12 ++++++++
- arch/arm/mach-msm/io.c                          |    9 ++++--
- 8 files changed, 42 insertions(+), 87 deletions(-)
+> Add support for DEBUG_LL on the 8660 and 8960 development boards.
+> While we're here, cleanup the uncompress.h code a bit.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Nicolas Pitre <nico@fluxnic.net>
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b3dc1fa..c2db187 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -128,6 +128,27 @@ choice
- 		  Say Y here if you want the debug print routines to direct
- 		  their output to the second serial port on these devices.
- 
-+	config DEBUG_MSM_UART1
-+		bool "Kernel low-level debugging messages via MSM UART1"
-+		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to the first serial port on MSM devices.
-+
-+	config DEBUG_MSM_UART2
-+		bool "Kernel low-level debugging messages via MSM UART2"
-+		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to the second serial port on MSM devices.
-+
-+	config DEBUG_MSM_UART3
-+		bool "Kernel low-level debugging messages via MSM UART3"
-+		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to the third serial port on MSM devices.
-+
- endchoice
- 
- config EARLY_PRINTK
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index ebde97f..5b07b61 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -13,7 +13,6 @@ config ARCH_MSM7X00A
- 	select CPU_V6
- 	select GPIO_MSM_V1
- 	select MSM_PROC_COMM
--	select HAS_MSM_DEBUG_UART_PHYS
- 
- config ARCH_MSM7X30
- 	bool "MSM7x30"
-@@ -25,7 +24,6 @@ config ARCH_MSM7X30
- 	select MSM_GPIOMUX
- 	select GPIO_MSM_V1
- 	select MSM_PROC_COMM
--	select HAS_MSM_DEBUG_UART_PHYS
- 
- config ARCH_QSD8X50
- 	bool "QSD8X50"
-@@ -37,7 +35,6 @@ config ARCH_QSD8X50
- 	select MSM_GPIOMUX
- 	select GPIO_MSM_V1
- 	select MSM_PROC_COMM
--	select HAS_MSM_DEBUG_UART_PHYS
- 
- config ARCH_MSM8X60
- 	bool "MSM8X60"
-@@ -73,9 +70,6 @@ config  ARCH_MSM_ARM11
- config  ARCH_MSM_SCORPION
- 	bool
- 
--config HAS_MSM_DEBUG_UART_PHYS
--	bool
--
- config  MSM_VIC
- 	bool
- 
-@@ -152,32 +146,6 @@ config MACH_MSM8960_RUMI3
- 
- endmenu
- 
--config MSM_DEBUG_UART
--	int
--	default 1 if MSM_DEBUG_UART1
--	default 2 if MSM_DEBUG_UART2
--	default 3 if MSM_DEBUG_UART3
--
--if HAS_MSM_DEBUG_UART_PHYS
--choice
--	prompt "Debug UART"
--
--	default MSM_DEBUG_UART_NONE
--
--	config MSM_DEBUG_UART_NONE
--		bool "None"
--
--	config MSM_DEBUG_UART1
--		bool "UART1"
--
--	config MSM_DEBUG_UART2
--		bool "UART2"
--
--	config MSM_DEBUG_UART3
--		bool "UART3"
--endchoice
--endif
--
- config MSM_SMD_PKG3
- 	bool
- 
-diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/mach-msm/include/mach/debug-macro.S
-index 646b99e..43d62c6 100644
---- a/arch/arm/mach-msm/include/mach/debug-macro.S
-+++ b/arch/arm/mach-msm/include/mach/debug-macro.S
-@@ -1,4 +1,4 @@
--/* arch/arm/mach-msm7200/include/mach/debug-macro.S
-+/*
-  *
-  * Copyright (C) 2007 Google, Inc.
-  * Author: Brian Swetland <swetland@google.com>
-@@ -14,15 +14,14 @@
-  *
-  */
- 
--
--
- #include <mach/hardware.h>
- #include <mach/msm_iomap.h>
- 
--#if defined(CONFIG_HAS_MSM_DEBUG_UART_PHYS) && !defined(CONFIG_MSM_DEBUG_UART_NONE)
- 	.macro	addruart, rp, rv
-+#ifdef MSM_DEBUG_UART_PHYS
- 	ldr	\rp, =MSM_DEBUG_UART_PHYS
- 	ldr	\rv, =MSM_DEBUG_UART_BASE
-+#endif
- 	.endm
- 
- 	.macro	senduart,rd,rx
-@@ -36,18 +35,6 @@
- 	tst	\rd, #0x04
- 	beq	1001b
- 	.endm
--#else
--	.macro  addruart, rp, rv
--	mov	\rv, #0xff000000
--	orr	\rv, \rv, #0x00f00000
--	.endm
--
--	.macro	senduart,rd,rx
--	.endm
--
--	.macro	waituart,rd,rx
--	.endm
--#endif
- 
- 	.macro	busyuart,rd,rx
- 	.endm
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h b/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
-index 94fe9fe..8af4612 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
-@@ -78,18 +78,6 @@
- #define MSM_UART3_PHYS        0xA9C00000
- #define MSM_UART3_SIZE        SZ_4K
- 
--#ifdef CONFIG_MSM_DEBUG_UART
--#define MSM_DEBUG_UART_BASE   0xE1000000
--#if CONFIG_MSM_DEBUG_UART == 1
--#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
--#elif CONFIG_MSM_DEBUG_UART == 2
--#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
--#elif CONFIG_MSM_DEBUG_UART == 3
--#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
--#endif
--#define MSM_DEBUG_UART_SIZE   SZ_4K
--#endif
--
- #define MSM_SDC1_PHYS         0xA0400000
- #define MSM_SDC1_SIZE         SZ_4K
- 
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h b/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
-index 3769444..198202c 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
-@@ -89,18 +89,6 @@
- #define MSM_UART3_PHYS        0xACC00000
- #define MSM_UART3_SIZE        SZ_4K
- 
--#ifdef CONFIG_MSM_DEBUG_UART
--#define MSM_DEBUG_UART_BASE   0xE1000000
--#if CONFIG_MSM_DEBUG_UART == 1
--#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
--#elif CONFIG_MSM_DEBUG_UART == 2
--#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
--#elif CONFIG_MSM_DEBUG_UART == 3
--#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
--#endif
--#define MSM_DEBUG_UART_SIZE   SZ_4K
--#endif
--
- #define MSM_MDC_BASE	      IOMEM(0xE0200000)
- #define MSM_MDC_PHYS	      0xAA500000
- #define MSM_MDC_SIZE	      SZ_1M
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
-index d67cd73..0faa894 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
-@@ -83,18 +83,6 @@
- #define MSM_UART3_PHYS        0xA9C00000
- #define MSM_UART3_SIZE        SZ_4K
- 
--#ifdef CONFIG_MSM_DEBUG_UART
--#define MSM_DEBUG_UART_BASE   0xE1000000
--#if CONFIG_MSM_DEBUG_UART == 1
--#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
--#elif CONFIG_MSM_DEBUG_UART == 2
--#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
--#elif CONFIG_MSM_DEBUG_UART == 3
--#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
--#endif
--#define MSM_DEBUG_UART_SIZE   SZ_4K
--#endif
--
- #define MSM_MDC_BASE	      IOMEM(0xE0200000)
- #define MSM_MDC_PHYS	      0xAA500000
- #define MSM_MDC_SIZE	      SZ_1M
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
-index 4ded152..90682f4 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
-@@ -55,6 +55,18 @@
- 
- #include "msm_iomap-8960.h"
- 
-+#define MSM_DEBUG_UART_SIZE	SZ_4K
-+#if defined(CONFIG_DEBUG_MSM_UART1)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
-+#elif defined(CONFIG_DEBUG_MSM_UART2)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
-+#elif defined(CONFIG_DEBUG_MSM_UART3)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
-+#endif
-+
- /* Virtual addresses shared across all MSM targets. */
- #define MSM_CSR_BASE		IOMEM(0xE0001000)
- #define MSM_QGIC_DIST_BASE	IOMEM(0xF0000000)
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 140ddbb..0bf9502 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -46,7 +46,8 @@ static struct map_desc msm_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
- 	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
- 	MSM_DEVICE(CLK_CTL),
--#ifdef CONFIG_MSM_DEBUG_UART
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+	defined(CONFIG_DEBUG_MSM_UART3)
- 	MSM_DEVICE(DEBUG_UART),
- #endif
- #ifdef CONFIG_ARCH_MSM7X30
-@@ -83,7 +84,8 @@ static struct map_desc qsd8x50_io_desc[] __initdata = {
- 	MSM_DEVICE(SCPLL),
- 	MSM_DEVICE(AD5),
- 	MSM_DEVICE(MDC),
--#ifdef CONFIG_MSM_DEBUG_UART
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+	defined(CONFIG_DEBUG_MSM_UART3)
- 	MSM_DEVICE(DEBUG_UART),
- #endif
- 	{
-@@ -145,7 +147,8 @@ static struct map_desc msm7x30_io_desc[] __initdata = {
- 	MSM_DEVICE(SAW),
- 	MSM_DEVICE(GCC),
- 	MSM_DEVICE(TCSR),
--#ifdef CONFIG_MSM_DEBUG_UART
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+	defined(CONFIG_DEBUG_MSM_UART3)
- 	MSM_DEVICE(DEBUG_UART),
- #endif
- 	{
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
+
+> ---
+>  arch/arm/Kconfig.debug                          |   16 +++++++++++
+>  arch/arm/mach-msm/Kconfig                       |    3 ++
+>  arch/arm/mach-msm/include/mach/debug-macro.S    |   32 ++++++++++++++++++++--
+>  arch/arm/mach-msm/include/mach/msm_iomap-8960.h |    5 +++
+>  arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    5 +++
+>  arch/arm/mach-msm/include/mach/uncompress.h     |   31 ++++++++++++++++-----
+>  arch/arm/mach-msm/io.c                          |    6 ++++
+>  7 files changed, 87 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index c2db187..07d0e74 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -149,6 +149,22 @@ choice
+>  		  Say Y here if you want the debug print routines to direct
+>  		  their output to the third serial port on MSM devices.
+>  
+> +	config DEBUG_MSM8660_UART
+> +		bool "Kernel low-level debugging messages via MSM 8660 UART"
+> +		depends on ARCH_MSM8X60
+> +		select MSM_HAS_DEBUG_UART_HS
+> +		help
+> +		  Say Y here if you want the debug print routines to direct
+> +		  their output to the serial port on MSM 8960 devices.
+> +
+> +	config DEBUG_MSM8960_UART
+> +		bool "Kernel low-level debugging messages via MSM 8960 UART"
+> +		depends on ARCH_MSM8960
+> +		select MSM_HAS_DEBUG_UART_HS
+> +		help
+> +		  Say Y here if you want the debug print routines to direct
+> +		  their output to the serial port on MSM 8960 devices.
+> +
+>  endchoice
+>  
+>  config EARLY_PRINTK
+> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> index 5b07b61..000ddf0 100644
+> --- a/arch/arm/mach-msm/Kconfig
+> +++ b/arch/arm/mach-msm/Kconfig
+> @@ -60,6 +60,9 @@ config ARCH_MSM8960
+>  
+>  endchoice
+>  
+> +config MSM_HAS_DEBUG_UART_HS
+> +	bool
+> +
+>  config MSM_SOC_REV_A
+>  	bool
+>  config  ARCH_MSM_SCORPIONMP
+> diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/mach-msm/include/mach/debug-macro.S
+> index 43d62c6..2a9f1df 100644
+> --- a/arch/arm/mach-msm/include/mach/debug-macro.S
+> +++ b/arch/arm/mach-msm/include/mach/debug-macro.S
+> @@ -1,6 +1,7 @@
+>  /*
+>   *
+>   * Copyright (C) 2007 Google, Inc.
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+>   * Author: Brian Swetland <swetland@google.com>
+>   *
+>   * This software is licensed under the terms of the GNU General Public
+> @@ -24,17 +25,42 @@
+>  #endif
+>  	.endm
+>  
+> -	.macro	senduart,rd,rx
+> +	.macro	senduart, rd, rx
+> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
+> +	@ Write the 1 character to UARTDM_TF
+> +	str	\rd, [\rx, #0x70]
+> +#else
+>  	teq	\rx, #0
+>  	strne	\rd, [\rx, #0x0C]
+> +#endif
+>  	.endm
+>  
+> -	.macro	waituart,rd,rx
+> +	.macro	waituart, rd, rx
+> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
+> +	@ check for TX_EMT in UARTDM_SR
+> +	ldr	\rd, [\rx, #0x08]
+> +	tst	\rd, #0x08
+> +	bne	1002f
+> +	@ wait for TXREADY in UARTDM_ISR
+> +1001:	ldr	\rd, [\rx, #0x14]
+> +	tst	\rd, #0x80
+> +	beq 	1001b
+> +1002:
+> +	@ Clear TX_READY by writing to the UARTDM_CR register
+> +	mov	\rd, #0x300
+> +	str	\rd, [\rx, #0x10]
+> +	@ Write 0x1 to NCF register
+> +	mov 	\rd, #0x1
+> +	str	\rd, [\rx, #0x40]
+> +	@ UARTDM reg. Read to induce delay
+> +	ldr	\rd, [\rx, #0x08]
+> +#else
+>  	@ wait for TX_READY
+>  1001:	ldr	\rd, [\rx, #0x08]
+>  	tst	\rd, #0x04
+>  	beq	1001b
+> +#endif
+>  	.endm
+>  
+> -	.macro	busyuart,rd,rx
+> +	.macro	busyuart, rd, rx
+>  	.endm
+> diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+> index 3c9d960..800b557 100644
+> --- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+> +++ b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+> @@ -45,4 +45,9 @@
+>  #define MSM8960_TMR0_PHYS	0x0208A000
+>  #define MSM8960_TMR0_SIZE	SZ_4K
+>  
+> +#ifdef CONFIG_DEBUG_MSM8960_UART
+> +#define MSM_DEBUG_UART_BASE	0xE1040000
+> +#define MSM_DEBUG_UART_PHYS	0x16440000
+> +#endif
+> +
+>  #endif
+> diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+> index 3b19b8f..54e12ca 100644
+> --- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+> +++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+> @@ -62,4 +62,9 @@
+>  #define MSM8X60_TMR0_PHYS	0x02040000
+>  #define MSM8X60_TMR0_SIZE	SZ_4K
+>  
+> +#ifdef CONFIG_DEBUG_MSM8660_UART
+> +#define MSM_DEBUG_UART_BASE	0xE1040000
+> +#define MSM_DEBUG_UART_PHYS	0x19C40000
+> +#endif
+> +
+>  #endif
+> diff --git a/arch/arm/mach-msm/include/mach/uncompress.h b/arch/arm/mach-msm/include/mach/uncompress.h
+> index d94292c..ee906e4 100644
+> --- a/arch/arm/mach-msm/include/mach/uncompress.h
+> +++ b/arch/arm/mach-msm/include/mach/uncompress.h
+> @@ -1,6 +1,6 @@
+> -/* arch/arm/mach-msm/include/mach/uncompress.h
+> - *
+> +/*
+>   * Copyright (C) 2007 Google, Inc.
+> + * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+>   *
+>   * This software is licensed under the terms of the GNU General Public
+>   * License version 2, as published by the Free Software Foundation, and
+> @@ -14,17 +14,32 @@
+>   */
+>  
+>  #ifndef __ASM_ARCH_MSM_UNCOMPRESS_H
+> +#define __ASM_ARCH_MSM_UNCOMPRESS_H
+>  
+> -#include "hardware.h"
+> -#include "linux/io.h"
+> -#include "mach/msm_iomap.h"
+> +#include <linux/io.h>
+> +#include <asm/processor.h>
+> +#include <mach/msm_iomap.h>
+>  
+>  static void putc(int c)
+>  {
+>  #if defined(MSM_DEBUG_UART_PHYS)
+> -	unsigned base = MSM_DEBUG_UART_PHYS;
+> -	while (!(readl(base + 0x08) & 0x04)) ;
+> -	writel(c, base + 0x0c);
+> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
+> +	/*
+> +	 * Wait for TX_READY to be set; but skip it if we have a
+> +	 * TX underrun.
+> +	 */
+> +	if (readl_relaxed(MSM_DEBUG_UART_PHYS + 0x08) & 0x08)
+> +		while (!(readl_relaxed(MSM_DEBUG_UART_PHYS + 0x14) & 0x80))
+> +			cpu_relax();
+> +
+> +	writel_relaxed(0x300, MSM_DEBUG_UART_PHYS + 0x10);
+> +	writel_relaxed(0x1, MSM_DEBUG_UART_PHYS + 0x40);
+> +	writel_relaxed(c, MSM_DEBUG_UART_PHYS + 0x70);
+> +#else
+> +	while (!(readl_relaxed(MSM_DEBUG_UART_PHYS + 0x08) & 0x04))
+> +		cpu_relax();
+> +	writel_relaxed(c, MSM_DEBUG_UART_PHYS + 0x0c);
+> +#endif
+>  #endif
+>  }
+>  
+> diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+> index 0bf9502..524d927 100644
+> --- a/arch/arm/mach-msm/io.c
+> +++ b/arch/arm/mach-msm/io.c
+> @@ -110,6 +110,9 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
+>  	MSM_CHIP_DEVICE(TMR0, MSM8X60),
+>  	MSM_DEVICE(ACC),
+>  	MSM_DEVICE(GCC),
+> +#ifdef CONFIG_DEBUG_MSM8660_UART
+> +	MSM_DEVICE(DEBUG_UART),
+> +#endif
+>  };
+>  
+>  void __init msm_map_msm8x60_io(void)
+> @@ -124,6 +127,9 @@ static struct map_desc msm8960_io_desc[] __initdata = {
+>  	MSM_CHIP_DEVICE(QGIC_CPU, MSM8960),
+>  	MSM_CHIP_DEVICE(TMR, MSM8960),
+>  	MSM_CHIP_DEVICE(TMR0, MSM8960),
+> +#ifdef CONFIG_DEBUG_MSM8960_UART
+> +	MSM_DEVICE(DEBUG_UART),
+> +#endif
+>  };
+>  
+>  void __init msm_map_msm8960_io(void)
+> -- 
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
