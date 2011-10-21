@@ -1,157 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1JUKGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 06:06:30 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:46479 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab1JUKG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 06:06:28 -0400
-Date: Fri, 21 Oct 2011 12:06:24 +0200
-From: Mel Gorman <mel@csn.ul.ie>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-Message-ID: <20111021100624.GB4029@csn.ul.ie>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
- <20111018122109.GB6660@csn.ul.ie>
- <op.v3j5ent03l0zgt@mpn-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <op.v3j5ent03l0zgt@mpn-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754220Ab1JUKIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 06:08:17 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:58794 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab1JUKIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 06:08:16 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: linux-kernel@vger.kernel.org
+Cc: rmallon@gmail.com, cbou@mail.ru, dwmw2@infradead.org,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH] power:ds2782 use swapped varient of i2c_smbus_read_word_data
+Date: Fri, 21 Oct 2011 11:08:18 +0100
+Message-Id: <1319191698-23745-1-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 10:26:37AM -0700, Michal Nazarewicz wrote:
-> On Tue, 18 Oct 2011 05:21:09 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> >At this point, I'm going to apologise for not reviewing this a long long
-> >time ago.
-> >
-> >On Thu, Oct 06, 2011 at 03:54:42PM +0200, Marek Szyprowski wrote:
-> >>From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >>
-> >>This commit introduces alloc_contig_freed_pages() function
-> >>which allocates (ie. removes from buddy system) free pages
-> >>in range. Caller has to guarantee that all pages in range
-> >>are in buddy system.
-> >>
-> >
-> >Straight away, I'm wondering why you didn't use
-> >
-> >mm/compaction.c#isolate_freepages()
-> >
-> >It knows how to isolate pages within ranges. All its control information
-> >is passed via struct compact_control() which I recognise may be awkward
-> >for CMA but compaction.c know how to manage all the isolated pages and
-> >pass them to migrate.c appropriately.
-> 
-> It is something to consider.  At first glance, I see that isolate_freepages
-> seem to operate on pageblocks which is not desired for CMA.
-> 
+Relies on: i2c: boilerplate function for byte swapped smbus_write/read_word_data
 
-isolate_freepages_block operates on a range of pages that happens to be
-hard-coded to be a pageblock because that was the requirements. It calculates
-end_pfn and it is possible to make that a function parameter.
+Ensures the error isn't mangled as a side effect.
 
-> >I haven't read all the patches yet but isolate_freepages() does break
-> >everything up into order-0 pages. This may not be to your liking but it
-> >would not be possible to change.
-> 
-> Splitting everything into order-0 pages is desired behaviour.
-> 
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+Note the patch introducing this fucntion is working its way through
+the i2c tree.
 
-Great.
+ drivers/power/ds2782_battery.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> >>Along with this function, a free_contig_pages() function is
-> >>provided which frees all (or a subset of) pages allocated
-> >>with alloc_contig_free_pages().
-> 
-> >mm/compaction.c#release_freepages()
-> 
-> It sort of does the same thing but release_freepages() assumes that pages
-> that are being freed are not-continuous and they need to be on the lru list.
-> With free_contig_pages(), we can assume all pages are continuous.
-> 
-
-Ok, I jumped the gun here. release_freepages() may not be a perfect fit.
-release_freepages() is also used when finishing compaction where as it
-is a real free function that is required here.
-
-> >You can do this in a more general fashion by checking the
-> >zone boundaries and resolving the pfn->page every MAX_ORDER_NR_PAGES.
-> >That will not be SPARSEMEM specific.
-> 
-> I've tried doing stuff that way but it ended up with much more code.
-> 
-> Dave suggested the above function to check if pointer arithmetic is valid.
-> 
-> Please see also <https://lkml.org/lkml/2011/9/21/220>.
-> 
-
-Ok, I'm still not fully convinced but I confess I'm not thinking about this
-particular function too deeply because I am expecting the problem would
-go away if compaction and CMA shared common code for freeing contiguous
-regions via page migration.
-
-> >> <SNIP>
-> >>+		if (zone_pfn_same_memmap(pfn - count, pfn))
-> >>+			page += count;
-> >>+		else
-> >>+			page = pfn_to_page(pfn);
-> >>+	}
-> >>+
-> >>+	spin_unlock_irq(&zone->lock);
-> >>+
-> >>+	/* After this, pages in the range can be freed one be one */
-> >>+	count = pfn - start;
-> >>+	pfn = start;
-> >>+	for (page = pfn_to_page(pfn); count; --count) {
-> >>+		prep_new_page(page, 0, flag);
-> >>+		++pfn;
-> >>+		if (likely(zone_pfn_same_memmap(pfn - 1, pfn)))
-> >>+			++page;
-> >>+		else
-> >>+			page = pfn_to_page(pfn);
-> >>+	}
-> >>+
-> >
-> >Here it looks like you have implemented something like split_free_page().
-> 
-> split_free_page() takes a single page, removes it from buddy system, and finally
-> splits it. 
-
-I'm referring to just this chunk.
-
-split_free_page takes a page, checks the watermarks and performs similar
-operations to prep_new_page(). There should be no need to introduce a
-new similar function. split_free_page() does affect hte pageblock
-migratetype and that is undesirable but that part could be taken out and
-moved to compaction.c if necessary.
-
-On the watermarks thing, CMA does not pay much attention to them. I have
-a strong feeling that it is easy to deadlock a system by using CMA while
-under memory pressure. Compaction had the same problem early in its
-development FWIW. This is partially why I'd prefer to see CMA and
-compaction sharing as much code as possible because compaction gets
-continual testing.
-
+diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+index bfbce5d..a616954 100644
+--- a/drivers/power/ds2782_battery.c
++++ b/drivers/power/ds2782_battery.c
+@@ -17,7 +17,6 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+-#include <linux/swab.h>
+ #include <linux/i2c.h>
+ #include <linux/idr.h>
+ #include <linux/power_supply.h>
+@@ -80,7 +79,7 @@ static inline int ds278x_read_reg16(struct ds278x_info *info, int reg_msb,
+ {
+ 	int ret;
+ 
+-	ret = swab16(i2c_smbus_read_word_data(info->client, reg_msb));
++	ret = i2c_smbus_read_word_data_swapped(info->client, reg_msb);
+ 	if (ret < 0) {
+ 		dev_err(&info->client->dev, "register read failed\n");
+ 		return ret;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7
+
