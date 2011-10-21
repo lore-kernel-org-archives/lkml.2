@@ -1,98 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1JUWlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 18:41:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54871 "EHLO ogre.sisk.pl"
+	id S1753336Ab1JUWu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 18:50:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37124 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab1JUWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 18:41:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH] PCI / ACPI: Make acpiphp ignore root bridges using PCIe native hotplug
-Date: Sat, 22 Oct 2011 00:43:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
+	id S1752393Ab1JUWu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 18:50:56 -0400
+Date: Sat, 22 Oct 2011 00:50:08 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Nai Xia <nai.xia@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Message-ID: <20111021225008.GK608@redhat.com>
+References: <201110122012.33767.pluto@agmk.net>
+ <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+ <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+ <20111016235442.GB25266@redhat.com>
+ <CAPQyPG69WePwar+k0nhwfdW7vv7FjqJBYwKfYm7n5qaPwS-WgQ@mail.gmail.com>
+ <20111021155632.GD4082@suse.de>
+ <20111021174120.GJ608@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110220043.38635.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111021174120.GJ608@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Fri, Oct 21, 2011 at 07:41:20PM +0200, Andrea Arcangeli wrote:
+> We have two options:
+> 
+> 1) we remove the vma_merge call from copy_vma and we do the vma_merge
+> manually after mremap succeed (so then we're as safe as fork is and we
+> relay on the ordering). No locks but we'll just do 1 more allocation
+> for one addition temporary vma that will be removed after mremap
+> completed.
+> 
+> 2) Hugh's original fix.
 
-If the kernel has requested control of the PCIe native hotplug
-feature for a given root complex, the acpiphp driver should not try
-to handle that root complex and it should leave it to pciehp.
-Failing to do so causes problems to happen if acpiphp is loaded
-before pciehp on such systems.
+3) put the src vma at the tail if vma_merge succeeds and the src vma
+and dst vma aren't the same
 
-To address this issue make find_root_bridges() ignore PCIe root
-complexes with PCIe native hotplug enabled and make add_bridge()
-return error code if PCIe native hotplug is enabled for the given
-root port.  This causes acpiphp to refuse to load if PCIe native
-hotplug is enabled for all complexes and to refuse binding to
-the root complexes with PCIe native hotplug is enabled.
+I tried to implement this but I'm still wondering about the safety of
+this with concurrent processes all calling mremap at the same time on
+the same anon_vma same_anon_vma list, the reasoning I think it may be
+safe is in the comment. I run a few mremap with my benchmark where the
+THP aware mremap in -mm gets a x10 boost and moves 5G and it didn't
+crash but that's about it and not conclusive, if you review please
+comment...
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+I've to pack luggage and prepare to fly to KS tomorrow so I may not be
+responsive in the next few days.
+
+===
+>From f2898ff06b5a9a14b9d957c7696137f42a2438e9 Mon Sep 17 00:00:00 2001
+From: Andrea Arcangeli <aarcange@redhat.com>
+Date: Sat, 22 Oct 2011 00:11:49 +0200
+Subject: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+
+migrate was doing a rmap_walk with speculative lock-less access on
+pagetables. That could lead it to not serialize properly against
+mremap PT locks. But a second problem remains in the order of vmas in
+the same_anon_vma list used by the rmap_walk.
+
+If vma_merge would succeed in copy_vma, the src vma could be placed
+after the dst vma in the same_anon_vma list. That could still lead
+migrate to miss some pte.
+
+This patch adds a anon_vma_order_tail() function to force the dst vma
+at the end of the list before mremap starts to solve the problem.
+
+If the mremap is very large and there are a lots of parents or childs
+sharing the anon_vma root lock, this should still scale better than
+taking the anon_vma root lock around every pte copy practically for
+the whole duration of mremap.
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ include/linux/rmap.h |    1 +
+ mm/mmap.c            |    8 ++++++++
+ mm/rmap.c            |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 0 deletions(-)
 
-Index: linux/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux/drivers/pci/hotplug/acpiphp_glue.c
-@@ -458,8 +458,17 @@ static int add_bridge(acpi_handle handle
- {
- 	acpi_status status;
- 	unsigned long long tmp;
-+	struct acpi_pci_root *root;
- 	acpi_handle dummy_handle;
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 2148b12..45eb098 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -120,6 +120,7 @@ void anon_vma_init(void);	/* create anon_vma_cachep */
+ int  anon_vma_prepare(struct vm_area_struct *);
+ void unlink_anon_vmas(struct vm_area_struct *);
+ int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
++void anon_vma_order_tail(struct vm_area_struct *);
+ int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+ void __anon_vma_link(struct vm_area_struct *);
  
-+	/*
-+	 * We shouldn't use this bridge if PCIe native hotplug control has been
-+	 * granted by the BIOS for it.
-+	 */
-+	root = acpi_pci_find_root(handle);
-+	if (root && (root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-+		return -ENODEV;
-+
- 	/* if the bridge doesn't have _STA, we assume it is always there */
- 	status = acpi_get_handle(handle, "_STA", &dummy_handle);
- 	if (ACPI_SUCCESS(status)) {
-@@ -1297,13 +1306,23 @@ static void handle_hotplug_event_func(ac
- static acpi_status
- find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- {
-+	struct acpi_pci_root *root;
- 	int *count = (int *)context;
- 
--	if (acpi_is_root_bridge(handle)) {
--		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				handle_hotplug_event_bridge, NULL);
--			(*count)++;
--	}
-+	if (!acpi_is_root_bridge(handle))
-+		return AE_OK;
-+
-+	root = acpi_pci_find_root(handle);
-+	if (!root)
-+		return AE_OK;
-+
-+	if (root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
-+		return AE_OK;
-+
-+	(*count)++;
-+	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+				    handle_hotplug_event_bridge, NULL);
-+
- 	return AE_OK ;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index a65efd4..a5858dc 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 		 */
+ 		if (vma_start >= new_vma->vm_start &&
+ 		    vma_start < new_vma->vm_end)
++			/*
++			 * No need to call anon_vma_order_tail() in
++			 * this case because the same PT lock will
++			 * serialize the rmap_walk against both src
++			 * and dst vmas.
++			 */
+ 			*vmap = new_vma;
++		else
++			anon_vma_order_tail(new_vma);
+ 	} else {
+ 		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
+ 		if (new_vma) {
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 8005080..170cece 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -272,6 +272,49 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
  }
  
+ /*
++ * Some rmap walk that needs to find all ptes/hugepmds without false
++ * negatives (like migrate and split_huge_page) running concurrent
++ * with operations that copy or move pagetables (like mremap() and
++ * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
++ * in a certain order: the dst_vma must be placed after the src_vma in
++ * the list. This is always guaranteed by fork() but mremap() needs to
++ * call this function to enforce it in case the dst_vma isn't newly
++ * allocated and chained with the anon_vma_clone() function but just
++ * an extension of a pre-existing vma through vma_merge.
++ *
++ * NOTE: the same_anon_vma list can still changed by other processes
++ * while mremap runs because mremap doesn't hold the anon_vma mutex to
++ * prevent modifications to the list while it runs. All we need to
++ * enforce is that the relative order of this process vmas isn't
++ * changing (we don't care about other vmas order). Each vma
++ * corresponds to an anon_vma_chain structure so there's no risk that
++ * other processes calling anon_vma_order_tail() and changing the
++ * same_anon_vma list under mremap() will screw with the relative
++ * order of this process vmas in the list, because we won't alter the
++ * order of any vma that isn't belonging to this process. And there
++ * can't be another anon_vma_order_tail running concurrently with
++ * mremap() coming from this process because we hold the mmap_sem for
++ * the whole mremap(). fork() ordering dependency also shouldn't be
++ * affected because we only care that the parent vmas are placed in
++ * the list before the child vmas and anon_vma_order_tail won't reorder
++ * vmas from either the fork parent or child.
++ */
++void anon_vma_order_tail(struct vm_area_struct *dst)
++{
++	struct anon_vma_chain *pavc;
++	struct anon_vma *root = NULL;
++
++	list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
++		struct anon_vma *anon_vma = pavc->anon_vma;
++		VM_BUG_ON(pavc->vma != dst);
++		root = lock_anon_vma_root(root, anon_vma);
++		list_del(&pavc->same_anon_vma);
++		list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
++	}
++	unlock_anon_vma_root(root);
++}
++
++/*
+  * Attach vma to its own anon_vma, as well as to the anon_vmas that
+  * the corresponding VMA in the parent process is attached to.
+  * Returns 0 on success, non-zero on failure.
