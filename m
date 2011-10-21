@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab1JUFdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 01:33:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64989 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab1JUFdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 01:33:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,383,1315206000"; 
-   d="scan'208";a="64821623"
-Message-ID: <4EA1040A.8010705@linux.intel.com>
-Date: Fri, 21 Oct 2011 13:32:58 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1753278Ab1JUFpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 01:45:35 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61586 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab1JUFpe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 01:45:34 -0400
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Huang Ying <ying.huang@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add IRQ context simulation in mce-inject
-References: <4E7707DA.6080504@linux.intel.com> <4E77AC54.2080305@linux.intel.com>
-In-Reply-To: <4E77AC54.2080305@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <29731.1319051397@death>
+References: <20111019081757.12455.24788.stgit@ltc219.sdl.hitachi.co.jp>
+	<27007.1319047262@death>
+	<20111019114129.162d895a@nehalam.linuxnetplumber.net>
+	<29731.1319051397@death>
+Date: Fri, 21 Oct 2011 13:45:32 +0800
+Message-ID: <CAM_iQpV8089aU8gfeo8KotTNXQbx4ficMeBX69Nin_yXzqcEKg@mail.gmail.com>
+Subject: Re: [PATCH net -v2] [BUGFIX] bonding: use flush_delayed_work_sync in bond_close
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/9/20 4:55, Andi Kleen 写道:
-> On 9/19/2011 2:14 AM, Chen Gong wrote:
->> From: Chen Gong <gong.chen@linux.intel.com>
+On Thu, Oct 20, 2011 at 3:09 AM, Jay Vosburgh <fubar@us.ibm.com> wrote:
+> Stephen Hemminger <shemminger@vyatta.com> wrote:
+>
+>>On Wed, 19 Oct 2011 11:01:02 -0700
+>>Jay Vosburgh <fubar@us.ibm.com> wrote:
 >>
->> Current mce-inject can simulate some kinds of scenarios, such as
->> one CPU working in process context, and other CPUs working in NMI
->> context. To extend the coverage of test range, a new IRQ context
->> for other CPUs is added.
+>>> Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com> wrote:
+>>>
+>>> >The bond_close() calls cancel_delayed_work() to cancel delayed works.
+>>> >It, however, cannot cancel works that were already queued in workqueue.
+>>> >The bond_open() initializes work->data, and proccess_one_work() refers
+>>> >get_work_cwq(work)->wq->flags. The get_work_cwq() returns NULL when
+>>> >work->data has been initialized. Thus, a panic occurs.
+>>> >
+>>> >This patch uses flush_delayed_work_sync() instead of cancel_delayed_work()
+>>> >in bond_close(). It cancels delayed timer and waits for work to finish
+>>> >execution. So, it can avoid the null pointer dereference due to the
+>>> >parallel executions of proccess_one_work() and initializing proccess
+>>> >of bond_open().
+>>>
+>>>      I'm setting up to test this.  I have a dim recollection that we
+>>> tried this some years ago, and there was a different deadlock that
+>>> manifested through the flush path.  Perhaps changes since then have
+>>> removed that problem.
+>>>
+>>>      -J
+>>
+>>Won't this deadlock on RTNL.  The problem is that:
+>>
+>>   CPU0                            CPU1
+>>  rtnl_lock
+>>      bond_close
+>>                                 delayed_work
+>>                                   mii_work
+>>                                     read_lock(bond->lock);
+>>                                     read_unlock(bond->lock);
+>>                                     rtnl_lock... waiting for CPU0
+>>      flush_delayed_work_sync
+>>          waiting for delayed_work to finish...
 >
-> Looks good to me.
-> -Andi
+>        Yah, that was it.  We discussed this a couple of years ago in
+> regards to a similar patch:
 >
-> --
+> http://lists.openwall.net/netdev/2009/12/17/3
+>
+>        The short version is that we could rework the rtnl_lock inside
+> the montiors to be conditional and retry on failure (where "retry" means
+> "reschedule the work and try again later," not "spin retrying on rtnl").
+> That should permit the use of flush or cancel to terminate the work
+> items.
 
-Hi, Andi
+Yes? Even if we use rtnl_trylock(), doesn't flush_delayed_work_sync()
+still queue the pending delayed work and wait for it to be finished?
 
-I will resend this patch, do you agree I add you as the "Signed-off-By"
-in the next post?
+Maybe I am too blind, why do we need rtnl_lock for cancel_delayed_work()
+inside bond_close()?
 
+Thanks.
