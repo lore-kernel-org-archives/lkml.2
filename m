@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1JUMoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:44:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48215 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab1JUMoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:44:20 -0400
-Date: Fri, 21 Oct 2011 14:44:15 +0200
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Pawel Sikora <pluto@agmk.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@vger.kernel.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Message-ID: <20111021124415.GB4082@suse.de>
-References: <201110122012.33767.pluto@agmk.net>
- <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
- <20111019073036.GA3410@suse.de>
+	id S1754563Ab1JUMvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:51:48 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:56987 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab1JUMvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 08:51:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20111019073036.GA3410@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111021123041.GE4080@opensource.wolfsonmicro.com>
+References: <1319041274-18723-1-git-send-email-linus.walleij@stericsson.com>
+	<20111020023140.GC32007@S2100-06.ap.freescale.net>
+	<CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
+	<CACRpkdYCgY9w8UgMKLgxSsu=Veo01-YSKBWndqU_uCTE-GjZuQ@mail.gmail.com>
+	<20111020141827.GB6100@sirena.org.uk>
+	<CACRpkdaaUmze+W1n4NkApTX0Se1VJAmD+AJSm36QbsKVDzdnRA@mail.gmail.com>
+	<20111020154244.GA26083@opensource.wolfsonmicro.com>
+	<CACRpkdbJbUefH+Q0GMp+_4FhV5RqQ+KHrGnJLR6jZSNR16NbSw@mail.gmail.com>
+	<20111021123041.GE4080@opensource.wolfsonmicro.com>
+Date: Fri, 21 Oct 2011 14:51:46 +0200
+Message-ID: <CACRpkdaZQ12W2M9m=vvQ=w6vRppgsZdphm4ftmx6uFAX2HDkog@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: add a generic control interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 09:30:36AM +0200, Mel Gorman wrote:
-> >  RIP: 0010:[<ffffffff81127b76>]  [<ffffffff81127b76>]
-> >                        migration_entry_wait+0x156/0x160
-> >   [<ffffffff811016a1>] handle_pte_fault+0xae1/0xaf0
-> >   [<ffffffff810feee2>] ? __pte_alloc+0x42/0x120
-> >   [<ffffffff8112c26b>] ? do_huge_pmd_anonymous_page+0xab/0x310
-> >   [<ffffffff81102a31>] handle_mm_fault+0x181/0x310
-> >   [<ffffffff81106097>] ? vma_adjust+0x537/0x570
-> >   [<ffffffff81424bed>] do_page_fault+0x11d/0x4e0
-> >   [<ffffffff81109a05>] ? do_mremap+0x2d5/0x570
-> >   [<ffffffff81421d5f>] page_fault+0x1f/0x30
-> > 
-> > mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
-> > and pagetable locks, were good enough before page migration (with its
-> > requirement that every migration entry be found) came in; and enough
-> > while migration always held mmap_sem.  But not enough nowadays, when
-> > there's memory hotremove and compaction: anon_vma lock is also needed,
-> > to make sure a migration entry is not dodging around behind our back.
-> > 
-> 
-> migration holds the anon_vma lock while it unmaps the pages and keeps holding
-> it until after remove_migration_ptes is called. 
+On Fri, Oct 21, 2011 at 2:30 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Oct 21, 2011 at 02:28:25PM +0200, Linus Walleij wrote:
+>> If this is a binary output pin, I suspect that
+>> I suspect that what you call "off" is actually implemeted as
+>> in this figure:
+>
+> To repeat once more: this is *not* an on/off control, this is a control
+> selecting the voltage domain a pin is referenced to.
 
-I reread this today and realised I was sloppy with my writing. migration
-holds the anon_vma lock while it unmaps the pages. It also holds the
-anon_vma lock during remove_migration_ptes. For the migration operation,
-a reference count is held on anon_vma but not the lock itself.
+Sorry, slow learner. So I'll add:
+PIN_CONFIG_ENABLE_POWER
+PIN_CONFIG_DISABLE_POWER
 
-> There are two anon vmas
-> that should exist during mremap that were created for the move. They
-> should not be able to disappear while migration runs and right now,
+With the semantics of enabling/disabling the power
+supply for the pin logic. Correct now?
 
-And what is preventing them disappearing is not the lock but the
-reference count.
+Yours,
+Linus Walleij
