@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751110Ab1JUEDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 00:03:22 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58186 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab1JUEDV (ORCPT
+	id S1752560Ab1JUE2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 00:28:44 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:23033 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1JUE2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 00:03:21 -0400
-Message-ID: <4EA0EF06.3090508@pobox.com>
-Date: Fri, 21 Oct 2011 00:03:18 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: axboe@kernel.dk, vgoyal@redhat.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 1/6] block, sx8: kill blk_insert_request()
-References: <1319169400-15706-1-git-send-email-tj@kernel.org> <1319169400-15706-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1319169400-15706-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Oct 2011 00:28:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6505"; a="129636100"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv2 0/2] Update MSM DEBUG_LL support
+Date: Thu, 20 Oct 2011 21:28:30 -0700
+Message-Id: <1319171312-21113-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.7.138.g7f41b6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2011 11:56 PM, Tejun Heo wrote:
-> The only user left for blk_insert_request() is sx8 and it can be
-> trivially switched to use blk_execute_rq_nowait() - special requests
-> aren't included in io stat and sx8 doesn't use block layer tagging.
-> Switch sx8 and kill blk_insert_requeset().
->
-> This patch doesn't introduce any functional difference.
->
-> Only compile tested.
->
-> Signed-off-by: Tejun Heo<tj@kernel.org>
-> Cc: Jeff Garzik<jgarzik@pobox.com>
-> Cc: Jens Axboe<axboe@kernel.dk>
+This is a reroll of the MSM DEBUG_LL patches. They incorporate
+feedback from Nico and are rebased on top of rmk's debug branch.
+My understanding is the debug branch is a stable branch to build
+up low-level debug on.
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Stephen Boyd (2):
+  msm: Consolidate and move DEBUG_LL to generic ARM Kconfig
+  msm: Support DEBUG_LL on MSM8660 and MSM8960
 
+ arch/arm/Kconfig.debug                          |   37 ++++++++++++++++
+ arch/arm/mach-msm/Kconfig                       |   35 +--------------
+ arch/arm/mach-msm/include/mach/debug-macro.S    |   51 ++++++++++++++--------
+ arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |   12 -----
+ arch/arm/mach-msm/include/mach/msm_iomap-7x30.h |   12 -----
+ arch/arm/mach-msm/include/mach/msm_iomap-8960.h |    5 ++
+ arch/arm/mach-msm/include/mach/msm_iomap-8x50.h |   12 -----
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    5 ++
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |   12 +++++
+ arch/arm/mach-msm/include/mach/uncompress.h     |   31 ++++++++++----
+ arch/arm/mach-msm/io.c                          |   15 +++++-
+ 11 files changed, 129 insertions(+), 98 deletions(-)
 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
