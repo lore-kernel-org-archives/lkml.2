@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab1JUQq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 12:46:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab1JUQq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 12:46:58 -0400
-Date: Fri, 21 Oct 2011 18:42:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/X] uprobes: x86: introduce abort_xol()
-Message-ID: <20111021164221.GA30770@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215326.GF16395@redhat.com> <20111021144207.GN11831@linux.vnet.ibm.com> <20111021162631.GB2552@in.ibm.com>
+	id S1753752Ab1JUQv0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 12:51:26 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:41760 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752891Ab1JUQvZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 12:51:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111021162631.GB2552@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1319165047.4352.4.camel@phoenix>
+References: <1319165047.4352.4.camel@phoenix>
+Date: Fri, 21 Oct 2011 17:51:24 +0100
+Message-ID: <CABS+qY198r1f2OtTPi7miXNUiL8-eO5Ve0f=5HqPD7dPXXtGVQ@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: wm8996: Fix wrong mask for setting WM8996_AIF_CLOCKING_2
+From: "Girdwood, Liam" <lrg@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21, Ananth N Mavinakayanahalli wrote:
+On 21 October 2011 03:44, Axel Lin <axel.lin@gmail.com> wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/codecs/wm8996.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> On Fri, Oct 21, 2011 at 08:12:07PM +0530, Srikar Dronamraju wrote:
+> diff --git a/sound/soc/codecs/wm8996.c b/sound/soc/codecs/wm8996.c
+> index 1d7b174..645c980 100644
+> --- a/sound/soc/codecs/wm8996.c
+> +++ b/sound/soc/codecs/wm8996.c
+> @@ -1920,7 +1920,7 @@ static int wm8996_hw_params(struct snd_pcm_substream *substream,
+>        snd_soc_update_bits(codec, lrclk_reg, WM8996_AIF1RX_RATE_MASK,
+>                            lrclk);
+>        snd_soc_update_bits(codec, WM8996_AIF_CLOCKING_2,
+> -                           WM8996_DSP1_DIV_SHIFT << dsp_shift, dsp);
+> +                           WM8996_DSP1_DIV_MASK << dsp_shift, dsp);
 >
-> > > +void abort_xol(struct pt_regs *regs)
-> > > +{
-> > > +	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-> > > +	// !!! Dear Srikar and Ananth, please implement me !!!
-> > > +	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-> > > +	struct uprobe_task *utask = current->utask;
-> > > +	regs->ip = utask->vaddr;
-> >
-> > nit:
-> > Shouldnt we be setting the ip to the next instruction after this
-> > instruction?
+>        return 0;
+>  }
+> --
+> 1.7.5.4
 >
-> No, since we should re-execute the original instruction
 
-Yes,
-
-> after removing
-> the breakpoint.
-
-No? we should not remove this uprobe?
-
-> Also, wrt ip being set to the next instruction on a breakpoint hit,
-> that's arch specific.
-
-Probably yes, I am not sure. But:
-
-> For instance, on x86, it points to the next
-> instruction,
-
-No?
-
-	/**
-	 * get_uprobe_bkpt_addr - compute address of bkpt given post-bkpt regs
-	 * @regs: Reflects the saved state of the task after it has hit a breakpoint
-	 * instruction.
-	 * Return the address of the breakpoint instruction.
-	 */
-	unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs)
-	{
-		return instruction_pointer(regs) - UPROBES_BKPT_INSN_SIZE;
-	}
-
-Yes, initially regs->ip points to the next insn after int3, but
-utask->vaddr == get_uprobe_bkpt_addr() == addr of int3.
-
-Right?
-
-> while on powerpc, the nip points to the breakpoint vaddr
-> at the time of exception.
-
-I think get_uprobe_bkpt_addr() should be consistent on every arch.
-That is why (I think) it is __weak.
-
-Anyway, abort_xol() has to be arch-specific.
-
-Oleg.
-
+Acked-by: Liam Girdwood <lrg@ti.com>
