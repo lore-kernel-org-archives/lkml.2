@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab1JUMZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:25:07 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47440 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab1JUMZE (ORCPT
+	id S1754664Ab1JUMZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:25:30 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34772 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab1JUMZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:25:04 -0400
+	Fri, 21 Oct 2011 08:25:27 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 1/3] CPU hotplug,
- Freezer: Don't hardcode 'tasks_frozen' argument in _cpu_*()
+Subject: [PATCH v3 2/3] CPU hotplug,
+ Freezer: Synchronize CPU hotplug and freezer
 To: a.p.zijlstra@chello.nl
 Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
         akpm@linux-foundation.org, suresh.b.siddha@intel.com,
@@ -17,8 +17,8 @@ Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
         rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
         linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
         rdunlap@xenotime.net
-Date: Fri, 21 Oct 2011 17:54:57 +0530
-Message-ID: <20111021122444.14321.57691.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 21 Oct 2011 17:55:20 +0530
+Message-ID: <20111021122506.14321.51970.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20111021122401.14321.45857.stgit@srivatsabhat.in.ibm.com>
 References: <20111021122401.14321.45857.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,119 +29,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a 'tasks_frozen' flag that is set whenever tasks are
-frozen by the freezer and reset whenever the tasks are thawed. The value of
-this flag is then checked by the CPU hotplug code in order to pass the
-correct argument to the _cpu_up() and _cpu_down() functions, thereby
-reflecting the correct state of the system.
+Don't allow the freezer subsystem to race with CPU hotplug to ensure that
+during the entire duration for which the CPU hotplug notifications are run,
+the state of the system (with respect to the tasks being frozen or not)
+remains constant.
+
+This patch introduces four notifications in the freezer subsystem,
+PM_FREEZE_PREPARE, PM_POST_FREEZE, PM_THAW_PREPARE and PM_POST_THAW.
+These help in making other subsystems aware of the freezer's activity.
+The CPU hotplug infrastructure hooks on to these notifications and
+synchronizes with the freezer.
+
+Specifically:
+
+* Upon any freezer notification that indicates a change about to happen to
+  the tasks' frozen/unfrozen state, such as PM_FREEZE_PREPARE or
+  PM_THAW_PREPARE, the CPU hotplug callback for these events disables future
+  (regular) CPU hotplugging and also ensures that any currently running CPU
+  hotplug operation is completed before allowing the freezer to continue.
+
+* Upon freezer notifications that indicate a completion of an action such as
+  freezing or thawing of processes, the CPU hotplug callback handler
+  re-enables regular CPU hotplug.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/freezer.h |    2 ++
- kernel/cpu.c            |    5 +++--
- kernel/power/process.c  |   22 +++++++++++++++++++++-
- 3 files changed, 26 insertions(+), 3 deletions(-)
+ include/linux/suspend.h |    6 +++-
+ kernel/cpu.c            |   71 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/power/process.c  |   10 +++++++
+ 3 files changed, 86 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 1effc8b..a5283ce 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -50,6 +50,7 @@ extern int thaw_process(struct task_struct *p);
- extern void refrigerator(void);
- extern int freeze_processes(void);
- extern void thaw_processes(void);
-+extern int tasks_are_frozen(void);
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index 6bbcef2..e526543 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -268,13 +268,17 @@ static inline int hibernate(void) { return -ENOSYS; }
+ static inline bool system_entering_hibernation(void) { return false; }
+ #endif /* CONFIG_HIBERNATION */
  
- static inline int try_to_freeze(void)
- {
-@@ -173,6 +174,7 @@ static inline int thaw_process(struct task_struct *p) { return 1; }
- static inline void refrigerator(void) {}
- static inline int freeze_processes(void) { BUG(); return 0; }
- static inline void thaw_processes(void) {}
-+static inline int tasks_are_frozen(void) { return 0; }
+-/* Hibernation and suspend events */
++/* Hibernation, suspend and freezer events */
+ #define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
+ #define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
+ #define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
+ #define PM_POST_SUSPEND		0x0004 /* Suspend finished */
+ #define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
+ #define PM_POST_RESTORE		0x0006 /* Restore failed */
++#define PM_FREEZE_PREPARE	0x0007 /* Going to freeze tasks */
++#define PM_POST_FREEZE  	0x0008 /* Freezing of tasks finished */
++#define PM_THAW_PREPARE  	0x0009 /* Going to thaw tasks */
++#define PM_POST_THAW    	0x000A /* Thawing of tasks finished */
  
- static inline int try_to_freeze(void) { return 0; }
- 
+ #ifdef CONFIG_PM_SLEEP
+ void save_processor_state(void);
 diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 12b7458..e889ffd 100644
+index e889ffd..3d14385 100644
 --- a/kernel/cpu.c
 +++ b/kernel/cpu.c
-@@ -15,6 +15,7 @@
- #include <linux/stop_machine.h>
+@@ -16,6 +16,7 @@
  #include <linux/mutex.h>
  #include <linux/gfp.h>
-+#include <linux/freezer.h>
+ #include <linux/freezer.h>
++#include <linux/suspend.h>
  
  #ifdef CONFIG_SMP
  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -280,7 +281,7 @@ int __ref cpu_down(unsigned int cpu)
- 		goto out;
- 	}
+@@ -479,6 +480,76 @@ static int alloc_frozen_cpus(void)
+ core_initcall(alloc_frozen_cpus);
+ #endif /* CONFIG_PM_SLEEP_SMP */
  
--	err = _cpu_down(cpu, 0);
-+	err = _cpu_down(cpu, tasks_are_frozen());
- 
- out:
- 	cpu_maps_update_done();
-@@ -373,7 +374,7 @@ int __cpuinit cpu_up(unsigned int cpu)
- 		goto out;
- 	}
- 
--	err = _cpu_up(cpu, 0);
-+	err = _cpu_up(cpu, tasks_are_frozen());
- 
- out:
- 	cpu_maps_update_done();
++
++#ifdef CONFIG_FREEZER
++
++/*
++ * Avoid CPU hotplug racing with the freezer subsystem, by disabling CPU
++ * hotplug when tasks are about to be frozen or thawed.
++ * Don't allow the freezer subsystem to continue until any currently running
++ * CPU hotplug operation gets completed.
++ */
++static void cpu_hotplug_freezer_block_begin(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
++
++
++/*
++ * When freezing or thawing of tasks is complete, re-enable CPU hotplug (which
++ * was disabled when freezing/thawing had begun).
++ */
++static void cpu_hotplug_freezer_block_done(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
++
++/*
++ * Avoid CPU hotplug and the freezer subsystem from racing with each other,
++ * so that when CPU hotplug notifications are being sent (i.e., the
++ * registered callbacks being executed), the state of the system reported
++ * by the notifier (with respect to the tasks being frozen or not) is
++ * consistent with the actual state of the system, *throughout the duration*
++ * during which the CPU hotplug notifications are active.
++ */
++static int
++cpu_hotplug_freezer_callback(struct notifier_block *nb,
++				unsigned long action, void *ptr)
++{
++	switch (action) {
++
++	case PM_FREEZE_PREPARE:
++	case PM_THAW_PREPARE:
++		cpu_hotplug_freezer_block_begin();
++		break;
++
++	case PM_POST_FREEZE:
++	case PM_POST_THAW:
++		cpu_hotplug_freezer_block_done();
++		break;
++
++	default:
++		return NOTIFY_OK;
++	}
++
++	return NOTIFY_DONE;
++}
++
++
++static void cpu_hotplug_freezer_sync_init(void)
++{
++	pm_notifier(cpu_hotplug_freezer_callback, 0);
++}
++core_initcall(cpu_hotplug_freezer_sync_init);
++
++#endif /* CONFIG_FREEZER */
++
++
+ /**
+  * notify_cpu_starting(cpu) - call the CPU_STARTING notifiers
+  * @cpu: cpu that just started
 diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 0cf3a27..230bf96 100644
+index 230bf96..9b7e07a 100644
 --- a/kernel/power/process.c
 +++ b/kernel/power/process.c
-@@ -17,11 +17,28 @@
+@@ -17,6 +17,8 @@
  #include <linux/delay.h>
  #include <linux/workqueue.h>
  
--/* 
-+/*
++#include "power.h"
++
+ /*
   * Timeout for stopping processes
   */
- #define TIMEOUT	(20 * HZ)
- 
-+static int tasks_frozen;
-+
-+static void set_tasks_frozen_flag(void)
-+{
-+	tasks_frozen = 1;
-+}
-+
-+static void clear_tasks_frozen_flag(void)
-+{
-+	tasks_frozen = 0;
-+}
-+
-+int tasks_are_frozen(void)
-+{
-+	return tasks_frozen;
-+}
-+
- static inline int freezable(struct task_struct * p)
+@@ -158,6 +160,8 @@ int freeze_processes(void)
  {
- 	if ((p == current) ||
-@@ -151,6 +168,8 @@ int freeze_processes(void)
- 	error = try_to_freeze_tasks(false);
- 	if (error)
- 		goto Exit;
-+
-+	set_tasks_frozen_flag();
- 	printk("done.");
+ 	int error;
  
- 	oom_killer_disable();
-@@ -189,6 +208,7 @@ void thaw_processes(void)
- 	thaw_workqueues();
- 	thaw_tasks(true);
- 	thaw_tasks(false);
-+	clear_tasks_frozen_flag();
++	pm_notifier_call_chain(PM_FREEZE_PREPARE);
++
+ 	printk("Freezing user space processes ... ");
+ 	error = try_to_freeze_tasks(true);
+ 	if (error)
+@@ -177,6 +181,8 @@ int freeze_processes(void)
+ 	BUG_ON(in_atomic());
+ 	printk("\n");
+ 
++	pm_notifier_call_chain(PM_POST_FREEZE);
++
+ 	return error;
+ }
+ 
+@@ -202,6 +208,8 @@ static void thaw_tasks(bool nosig_only)
+ 
+ void thaw_processes(void)
+ {
++	pm_notifier_call_chain(PM_THAW_PREPARE);
++
+ 	oom_killer_enable();
+ 
+ 	printk("Restarting tasks ... ");
+@@ -211,5 +219,7 @@ void thaw_processes(void)
+ 	clear_tasks_frozen_flag();
  	schedule();
  	printk("done.\n");
++
++	pm_notifier_call_chain(PM_POST_THAW);
  }
+ 
 
