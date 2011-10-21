@@ -1,210 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab1JURdc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 13:33:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52457 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab1JURda convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 13:33:30 -0400
+	id S1754555Ab1JURmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 13:42:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038Ab1JURmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 13:42:11 -0400
+Date: Fri, 21 Oct 2011 19:41:20 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Nai Xia <nai.xia@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Message-ID: <20111021174120.GJ608@redhat.com>
+References: <201110122012.33767.pluto@agmk.net>
+ <alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+ <alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+ <20111016235442.GB25266@redhat.com>
+ <CAPQyPG69WePwar+k0nhwfdW7vv7FjqJBYwKfYm7n5qaPwS-WgQ@mail.gmail.com>
+ <20111021155632.GD4082@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
-References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
-	<1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
-Date: Sat, 22 Oct 2011 01:33:29 +0800
-Message-ID: <CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
-From: Wu Zhangjin <wuzhangjin@gmail.com>
-To: keguang.zhang@gmail.com
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, r0bertz@gentoo.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111021155632.GD4082@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 6:28 PM,  <keguang.zhang@gmail.com> wrote:
-> From: Kelvin Cheung <keguang.zhang@gmail.com>
->
-> This patch adds basic platform support for Loongson1B
-> including serial port, ethernet, and interrupt handler.
->
-> Loongson1B UART is compatible with NS16550A.
-> Loongson1B GMAC is built around Synopsys IP Core.
->
+On Fri, Oct 21, 2011 at 05:56:32PM +0200, Mel Gorman wrote:
+> On Thu, Oct 20, 2011 at 05:11:28PM +0800, Nai Xia wrote:
+> > On Mon, Oct 17, 2011 at 7:54 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > > On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
+> > >> mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+> > >> and pagetable locks, were good enough before page migration (with its
+> > >> requirement that every migration entry be found) came in; and enough
+> > >> while migration always held mmap_sem.  But not enough nowadays, when
+> > >> there's memory hotremove and compaction: anon_vma lock is also needed,
+> > >> to make sure a migration entry is not dodging around behind our back.
+> > >
+> > > For things like migrate and split_huge_page, the anon_vma layer must
+> > > guarantee the page is reachable by rmap walk at all times regardless
+> > > if it's at the old or new address.
+> > >
+> > > This shall be guaranteed by the copy_vma called by move_vma well
+> > > before move_page_tables/move_ptes can run.
+> > >
+> > > copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
+> > > into the anon_vma chains structures (vma_link does that). That before
+> > > any pte can be moved.
+> > >
+> > > Because we keep two vmas mapped on both src and dst range, with
+> > > different vma->vm_pgoff that is valid for the page (the page doesn't
+> > > change its page->index) the page should always find _all_ its pte at
+> > > any given time.
+> > >
+> > > There may be other variables at play like the order of insertion in
+> > > the anon_vma chain matches our direction of copy and removal of the
+> > > old pte. But I think the double locking of the PT lock should make the
+> > > order in the anon_vma chain absolutely irrelevant (the rmap_walk
+> > > obviously takes the PT lock too), and furthermore likely the
+> > > anon_vma_chain insertion is favorable (the dst vma is inserted last
+> > > and checked last). But it shouldn't matter.
+> > 
+> > I happened to be reading these code last week.
+> > 
+> > And I do think this order matters, the reason is just quite similar why we
+> > need i_mmap_lock in move_ptes():
+> > If rmap_walk goes dst--->src, then when it first look into dst, ok, the
+> 
+> You might be right in that the ordering matters. We do link new VMAs at
 
-Perhaps you'd better split out the GMAC support to its own patch and
-send it to the net/ maintainer and the authors of the original files.
+Yes I also think ordering matters as I mentioned in the previous email
+that Nai answered to.
 
-> diff --git a/drivers/net/stmmac/descs.h b/drivers/net/stmmac/descs.h
-> index 63a03e2..4db27d0 100644
-> --- a/drivers/net/stmmac/descs.h
-> +++ b/drivers/net/stmmac/descs.h
-> @@ -53,6 +53,38 @@ struct dma_desc {
->                        u32 reserved3:5;
->                        u32 disable_ic:1;
->                } rx;
-> +#ifdef CONFIG_MACH_LOONGSON1
-> +               struct {
-> +                       /* RDES0 */
-> +                       u32 payload_csum_error:1;
-> +                       u32 crc_error:1;
-> +                       u32 dribbling:1;
-> +                       u32 error_gmii:1;
-> +                       u32 receive_watchdog:1;
-> +                       u32 frame_type:1;
-> +                       u32 late_collision:1;
-> +                       u32 ipc_csum_error:1;
-> +                       u32 last_descriptor:1;
-> +                       u32 first_descriptor:1;
-> +                       u32 vlan_tag:1;
-> +                       u32 overflow_error:1;
-> +                       u32 length_error:1;
-> +                       u32 sa_filter_fail:1;
-> +                       u32 descriptor_error:1;
-> +                       u32 error_summary:1;
-> +                       u32 frame_length:14;
-> +                       u32 da_filter_fail:1;
-> +                       u32 own:1;
-> +                       /* RDES1 */
-> +                       u32 buffer1_size:11;
-> +                       u32 buffer2_size:11;
-> +                       u32 reserved1:2;
-> +                       u32 second_address_chained:1;
-> +                       u32 end_ring:1;
-> +                       u32 reserved2:5;
-> +                       u32 disable_ic:1;
-> +               } erx;          /* -- enhanced -- */
-> +#else
->                struct {
->                        /* RDES0 */
->                        u32 payload_csum_error:1;
-> @@ -83,6 +115,7 @@ struct dma_desc {
->                        u32 reserved2:2;
->                        u32 disable_ic:1;
->                } erx;          /* -- enhanced -- */
-> +#endif
->
->                /* Transmit descriptor */
->                struct {
-> @@ -113,6 +146,40 @@ struct dma_desc {
->                        u32 last_segment:1;
->                        u32 interrupt:1;
->                } tx;
-> +#ifdef CONFIG_MACH_LOONGSON1
-> +               struct {
-> +                       /* TDES0 */
-> +                       u32 deferred:1;
-> +                       u32 underflow_error:1;
-> +                       u32 excessive_deferral:1;
-> +                       u32 collision_count:4;
-> +                       u32 vlan_frame:1;
-> +                       u32 excessive_collisions:1;
-> +                       u32 late_collision:1;
-> +                       u32 no_carrier:1;
-> +                       u32 loss_carrier:1;
-> +                       u32 payload_error:1;
-> +                       u32 frame_flushed:1;
-> +                       u32 jabber_timeout:1;
-> +                       u32 error_summary:1;
-> +                       u32 ip_header_error:1;
-> +                       u32 time_stamp_status:1;
-> +                       u32 reserved1:13;
-> +                       u32 own:1;
-> +                       /* TDES1 */
-> +                       u32 buffer1_size:11;
-> +                       u32 buffer2_size:11;
-> +                       u32 time_stamp_enable:1;
-> +                       u32 disable_padding:1;
-> +                       u32 second_address_chained:1;
-> +                       u32 end_ring:1;
-> +                       u32 crc_disable:1;
-> +                       u32 checksum_insertion:2;
-> +                       u32 first_segment:1;
-> +                       u32 last_segment:1;
-> +                       u32 interrupt:1;
-> +               } etx;          /* -- enhanced -- */
-> +#else
->                struct {
->                        /* TDES0 */
->                        u32 deferred:1;
-> @@ -148,6 +215,7 @@ struct dma_desc {
->                        u32 buffer2_size:13;
->                        u32 reserved4:3;
->                } etx;          /* -- enhanced -- */
-> +#endif
->        } des01;
->        unsigned int des2;
->        unsigned int des3;
+> the end of the list in anon_vma_chain_list so remove_migrate_ptes should
+> be walking from src->dst.
 
+Correct. Like I mentioned in that previous email that Nai answered,
+that wouldn't be ok only if vma_merge succeeds and I didn't change my mind
+about that...
 
-If the difference is very much, perhaps a new dma_desc struct can be
-defined instead.
+copy_vma is only called by mremap so supposedly that path can
+trigger. Looks like I was wrong about vma_merge being able to succeed
+in copy_vma, and if it does I still think it's a problem as we have no
+ordering guarantee.
 
-> diff --git a/drivers/net/stmmac/enh_desc.c b/drivers/net/stmmac/enh_desc.c
-> index e5dfb6a..3b5e4f1 100644
-> --- a/drivers/net/stmmac/enh_desc.c
-> +++ b/drivers/net/stmmac/enh_desc.c
-> @@ -108,6 +108,7 @@ static int enh_desc_get_tx_len(struct dma_desc *p)
->  static int enh_desc_coe_rdes0(int ipc_err, int type, int payload_err)
->  {
->        int ret = good_frame;
-> +#ifndef CONFIG_MACH_LOONGSON1
->        u32 status = (type << 2 | ipc_err << 1 | payload_err) & 0x7;
->
->        /* bits 5 7 0 | Frame status
-> @@ -145,6 +146,7 @@ static int enh_desc_coe_rdes0(int ipc_err, int type, int payload_err)
->                CHIP_DBG(KERN_ERR "RX Des0 status: No IPv4, IPv6 frame.\n");
->                ret = discard_frame;
->        }
-> +#endif
->        return ret;
->  }
+The only other place that depends on the anon_vma_chain order is fork,
+and there, no vma_merge can happen, so that is safe.
 
->
-> @@ -232,9 +234,17 @@ static void enh_desc_init_rx_desc(struct dma_desc *p, unsigned int ring_size,
->        int i;
->        for (i = 0; i < ring_size; i++) {
->                p->des01.erx.own = 1;
-> +#ifdef CONFIG_MACH_LOONGSON1
-> +               p->des01.erx.buffer1_size = BUF_SIZE_2KiB - 1;
-> +#else
->                p->des01.erx.buffer1_size = BUF_SIZE_8KiB - 1;
-> +#endif
->                /* To support jumbo frames */
-> +#ifdef CONFIG_MACH_LOONGSON1
-> +               p->des01.erx.buffer2_size = BUF_SIZE_2KiB - 1;
-> +#else
->                p->des01.erx.buffer2_size = BUF_SIZE_8KiB - 1;
-> +#endif
->                if (i == ring_size - 1)
->                        p->des01.erx.end_ring = 1;
->                if (disable_rx_ic)
-> @@ -292,9 +302,15 @@ static void enh_desc_prepare_tx_desc(struct dma_desc *p, int is_fs, int len,
->                                     int csum_flag)
->  {
->        p->des01.etx.first_segment = is_fs;
-> +#ifdef CONFIG_MACH_LOONGSON1
-> +       if (unlikely(len > BUF_SIZE_2KiB)) {
-> +               p->des01.etx.buffer1_size = BUF_SIZE_2KiB - 1;
-> +               p->des01.etx.buffer2_size = len - BUF_SIZE_2KiB + 1;
-> +#else
->        if (unlikely(len > BUF_SIZE_4KiB)) {
->                p->des01.etx.buffer1_size = BUF_SIZE_4KiB;
->                p->des01.etx.buffer2_size = len - BUF_SIZE_4KiB;
-> +#endif
->        } else {
->                p->des01.etx.buffer1_size = len;
->        }
+> If remove_migrate_pte finds src first, it will remove the pte and the
+> correct version will get copied. If move_ptes runs between when
+> remove_migrate_ptes moves from src to dst, then the PTE at dst will
+> still be correct.
 
-Is it possible to add two new macros RX_BUF_SIZE and TX_BUF_SIZE to .h
-instead? which may reduce code duplication.
+The problem is rmap_walk will search dst before src. So it will do
+nothing on dst. Then mremap moves the pte from src to dst. When rmap
+walk then checks "src" it finds nothing again.
 
-Regards,
-Wu Zhangjin
+> > pte is not there, and it happily skip it and release the PTL.
+> > Then just before it look into src, move_ptes() comes in, takes the locks
+> > and moves the pte from src to dst. And then when rmap_walk() look
+> > into src,  it will find an empty pte again. The pte is still there,
+> > but rmap_walk() missed it !
+> > 
+> 
+> I believe the ordering is correct though and protects us in this case.
 
-> --
-> 1.7.1
->
->
+Normally it is, the only problem is vma_merge succeeding I think.
+
+> > IMO, this can really happen in case of vma_merge() succeeding.
+> > Imagine that src vma is lately faulted and in anon_vma_prepare()
+> > it got a same anon_vma with an existing vma ( named evil_vma )through
+> > find_mergeable_anon_vma().  This can potentially make the vma_merge() in
+> > copy_vma() return with evil_vma on some new relocation request. But src_vma
+> > is really linked _after_  evil_vma/new_vma/dst_vma.
+> > In this way, the ordering protocol  of anon_vma chain is broken.
+> > This should be a rare case because I think in most cases
+> > if two VMAs can reusable_anon_vma() they were already merged.
+> > 
+> > How do you think  ?
+> > 
+
+I tried to understand the above scenario yesterday but with 12 hour
+of travel on me I just couldn't.
+
+Yesterday however I thought of another simpler case:
+
+part of a vma is moved with mremap elsewhere. Then it is moved back to
+its original place. So then vma_merge will succeed, and the "src" of
+mremap is now queued last in anon_vma_chain, wrong ordering.
+
+Today I read an email from Nai who showed apparently the same scenario
+I was thinking, without evil vmas or stuff.
+
+I have an hard time to imagine a vma_merge succeeding on a vma that
+isn't going back to its original place. The vm_pgoff + vma->anon_vma
+checks should keep some linarity so going back to the original place
+sounds the only way vma_merge can succeed in copy_vma. But still it
+can happen in that case I think (so not sure how the above scenario
+with an evil_vma could ever happen if it has a different anon_vma and
+it's not a part of a vma that is going back to its original place like
+in the second scenario Nai also posted about).
+
+That me and Nai had same scenario hypothesis indipendentely (second
+Nai hypoteisis not the first quoted above), plus copy_vma doing
+vma_merge and being only called by mremap, sounds like it can really
+happen.
+
+> Despite the comments in anon_vma_compatible(), I would expect that VMAs
+> that can share an anon_vma from find_mergeable_anon_vma() will also get
+> merged. When the new VMA is created, it will be linked in the usual
+> manner and the oldest->newest ordering is what is required. That's not
+> that important though.
+> 
+> What is important is if mremap is moving src to a dst that is adjacent
+> to another anon_vma. If src has never been faulted, it's not an issue
+> because there are also no migration PTEs. If src has been faulted, then
+> is_mergeable_anon_vma() should fail as anon_vma1 != anon_vma2 and they
+> are not compatible. The ordering is preserved and we are still ok.
+
+I was thinking along these lines, the only pitfall should be when
+something is moved and put back into its original place. When it is
+moved, a new vma is created and queued last. When it's put back to its
+original location, vma_merge will succeed, and "src" is now the
+previous "dst" so queued last and that breaks.
+
+> All that said, while I don't think there is a problem, I can't convince
+> myself 100% of it. Andrea, can you spot a flaw?
+
+I think Nai's correct, only second hypothesis though.
+
+We have two options:
+
+1) we remove the vma_merge call from copy_vma and we do the vma_merge
+manually after mremap succeed (so then we're as safe as fork is and we
+relay on the ordering). No locks but we'll just do 1 more allocation
+for one addition temporary vma that will be removed after mremap
+completed.
+
+2) Hugh's original fix.
+
+First option probably is faster and prefereable, the vma_merge there
+should only trigger when putting things back to origin I suspect, and
+never with random mremaps, not sure how common it is to put things
+back to origin. If we're in a hurry we can merge Hugh's patch and
+optimize it later. We can still retain the migrate fix if we intend to
+take way number 1 later. I didn't like too much migrate doing
+speculative access on ptes that it can't miss or it'll crash anyway.
+
+Said that the fix merged upstream is 99% certain to fix things in
+practice already so I doubt we're in hurry. And if things go wrong
+these issues don't go unnoticed and they shouldn't corrupt memory even
+if they trigger. 100% certain it can't do damage (other than a BUG_ON)
+for split_huge_page as I count the pmds encountered in the rmap_walk
+when I set the splitting bit, and I compare that count with
+page_mapcount and BUG_ON if they don't match, and later I repeat the
+same comparsion in the second rmap_walk that establishes the pte and
+downgrades the hugepmd to pmd, and BUG_ON again if they don't match
+with the previous rmap_walk count. It may be possible to trigger the
+BUG_ON with some malicious activity but it won't be too easy either
+because it's not an instant thing, still a race had to trigger and
+it's hard to reproduce.
+
+The anon_vma lock is quite a wide lock as it's shared by all parents
+anon_vma_chains too, slab allocation from local cpu may actually be
+faster in some condition (even when the slab allocation is
+superflous). But then I'm not sure. So I'm not against applying Hugh's
+fix even for the long run. I wouldn't git revert the migration change,
+but then if we go with Hugh's fix probably it'd be safe.
