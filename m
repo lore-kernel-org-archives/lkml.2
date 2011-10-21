@@ -1,154 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab1JUFGI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 01:06:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56547 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499Ab1JUFGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 01:06:07 -0400
-Date: Fri, 21 Oct 2011 16:05:37 +1100
-From: NeilBrown <neilb@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
- suspend/hibernate interfaces
-Message-ID: <20111021160537.757cbf1d@notabene.brown>
-In-Reply-To: <Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org>
-References: <20111020111743.13b40558@notabene.brown>
-	<Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/.eNXCJVHA6GhLXsi3DVzdjt"; protocol="application/pgp-signature"
+	id S1753116Ab1JUFNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 01:13:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51977 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab1JUFNv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 01:13:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <201110201714.36533.vapier@gentoo.org>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <1319144425-15547-6-git-send-email-Kyle.D.Moffett@boeing.com>
+ <201110201710.17519.vapier@gentoo.org> <201110201714.36533.vapier@gentoo.org>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Fri, 21 Oct 2011 01:13:30 -0400
+Message-ID: <CAGZ=bqJNRCiiT6KvQBkZ5fs6b=RQG92xtmf1cGe1s9mdcbcDFA@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/17] phy_driver: Make .read_status()/.config_aneg() optional
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Baruch Siach <baruch@tkos.co.il>, Thorsten Schubert <tshu@msc-ge.com>,
+        David Decotigny <decot@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.eNXCJVHA6GhLXsi3DVzdjt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Oops, I just realized that I may have misused
+scripts/get_maintainer.pl... it seems to have added about 20 CCs to
+this email, sorry!
 
-On Thu, 20 Oct 2011 10:29:33 -0400 (EDT) Alan Stern
-<stern@rowland.harvard.edu> wrote:
+On Thu, Oct 20, 2011 at 17:14, Mike Frysinger <vapier@gentoo.org> wrote:
+> On Thursday 20 October 2011 17:10:12 Mike Frysinger wrote:
+>> On Thursday 20 October 2011 17:00:12 Kyle Moffett wrote:
+>> > Approximately 90% of the PHY drivers follow the PHY layer docs and
+>> > simply use &genphy_read_status and &genphy_config_aneg.  There would
+>> > seem to be little point in requiring them all to manually specify those
+>> > functions.
+>>
+>> well, it does make sense if you think about the compile vs build time
+>> overhead.  yes, your patch does make things much nicer to read, and a
+>> little easier to maintain the source.  however, it adds runtime overhead
+>> (checking the func pointers) while the func pointer storage is unchanged
+>> (it's now a NULL pointer instead of pointing to the genphy funcs).
+>> personally, i think the savings in runtime and smaller compiled code is
+>> more important.  so i'm going to NAK this.  sorry.
+>
+> ah, sorry, i was thinking this was u-boot since we were just having
+> conversations there.
+>
+> since this is Linux, and i don't have real standing in the general netdev
+> community, i can't really NAK here.  but i think my comment still stands in
+> that this patch makes things much worse than the minor code style improvement.
 
-> On Thu, 20 Oct 2011, NeilBrown wrote:
->=20
-> > > All a client needs to know is whether or not _it_ is busy, so that it
-> > > can provide correct information to the daemon.  (Some clients may also
-> > > need to be notified each time the system resumes -- that's a separate
-> > > matter.)  As for the rest, a client may as well assume that the system
-> > > is perpetually on the verge of suspending, except when it has
-> > > personally told the daemon to stay awake.
-> >=20
-> > I don't think it is always appropriate to assume the system is on the v=
-erge
-> > of suspending except when explicitly asking for stay-awake.
->=20
-> For some programs it may not be appropriate, but for wakeup clients I=20
-> believe it is.
->=20
-> > Consider a daemon tasked with managing the "GSM" interface in a phone.
-> > Any message from the GSM module will wake the phone if it is suspended.
-> >=20
-> > When suspended, the daemon only wants to get "incoming call" and "incom=
-ing
-> > SMS" events.
-> > When not suspended, the daemon also wants "Active cell changed" events =
-so
-> > that it can make this information available to some display widget.
-> >=20
-> > So when it is told that a suspend is imminent it quickly tells the GSM
-> > module to be quieter and then says "OK".  If it had to assume it was al=
-ways
-> > on the verge, it could never allow active-cell-changed events.
-> >=20
-> > You could argue that the GSM daemon should only be reporting CELL chang=
-es -
-> > and so the GSM module should only be asked to report them - when the wi=
-dget
-> > (or some other client) is explicitly asking for them.  So when the scre=
-en
-> > goes blank, the widget stops getting expose events, so it rescinds is r=
-equest
-> > for updates and the GSM daemon passes that on to the GSM module.  So wh=
-en
-> > suspend happens, the GSM module has already stopped reporting.
-> >=20
-> > But I'm not convinced that complexity is always justified.
-> >=20
-> > I could make the situation a little more complex.  There might be a dae=
-mon
-> > which wants to monitor GSM cell locations and so is always asking.
-> > The GSM daemon might have a policy that if anyone wants those updates, =
-then
-> >  - if system is awake for some other reason, report them as they arrive
-> >  - if system is otherwise suspended, wake up every 10 minutes to poll a=
-nd
-> >    report.
-> >=20
-> > In that case the suspend-client (the GSM daemon) really does care about=
- the
-> > difference between an explicit stay-awake and a late reply to a
-> > suspend-imminent message.
-> >=20
-> > So I'm still inclined to think that the two cases need to be treated
-> > separately.
->=20
-> The way I see it, your GSM daemon needs to know when the system is=20
-> about to go into suspend.  That's a separate matter from communicating=20
-> information about wakeup activity to/from the PM daemon.
+I would argue that the PHY layer itself is not remotely a hot-path,
+especially not to the level of caring about an extra if statement.  A
+single phy_read() is a sleeping call which goes over a slow serial
+bus, so code maintainability is much more important.
 
-I agree that it is conceptually distinct.
-However I think that in practice it ends up looking very similar.
-Maybe that is just the way I practice.
+At the higher level, the reason for this change is that currently
+genphy_config_aneg() is currently responsible both for configuring
+auto-negotiation *AND* counterintuitively for configuring forced-mode
+links.  A lot of PHY drivers need to override just one or the other,
+which results in either a lot of copy-pasted code in individual PHY
+drivers or in a duplicate test for autoneg-vs-fixed-mode before
+calling the primary genphy_config_aneg() function.
 
->=20
-> What should happen is this: When the PM daemon is ready to start a
-> suspend (none of its clients need to keep the system awake), it should
-> broadcast the fact that a suspend is about to begin.  This broadcast
-> could take various forms, the simplest of which is to run a shell
-> script.
+In order to split that up and refactor it, I would like to minimize
+the number of callers and references to config_aneg() to minimize the
+number of places that have to be changed to match.  Since all the rest
+of the PHY functions are already conditionals, making these two also
+conditional didn't seem to be a big deal.
 
-I would call it 'publish' rather than 'broadcast' as I expect clients to
-subscribe first, but it is a small matter.
-Certainly having different protocols for different uses could be appropriat=
-e.
+Cheers,
+Kyle Moffett
 
-
->=20
-> In fact, we may want to integrate the PM daemon into pm-utils at a=20
-> level above where the various suspend scripts get run.
->=20
-
-Probably - yes.
-
-Thanks,
-NeilBrown
-
-
---Sig_/.eNXCJVHA6GhLXsi3DVzdjt
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTqD9tjnsnt1WYoG5AQJTZxAAsOqAvXEgA6csmTKqwn3bOAiEbe/r9xUv
-u0fWQWIEM5E/GAoB4u5G4YrOXg5gJdwyarGLUpXIjUwD1G7cTeCy5nhvlIpPDx/y
-WPpPfm1uQye2gzkZJ62kNC0ooE5aAn1YuPZoLFXFsAnUepQuF85VNvtPe5VZPXwS
-Bd+4h3x49NydoewWrXsGmFMVt/v+z5zp6u6odPTDa4ktFIJl7FzXozvOU37AAwyY
-6j1d14bacTHWyrOgVcQhTSlASqAk/t4IazYa9gK9A0+jL6OnYF4XLpnu3d6xIMB6
-fJxx9WETpH5jB80HkXrY9YDXbMj9twpOuNyIGSyQ/UETkLXkn0+e+vU44DyoNIm5
-wq2iwHOq+yJmbvd9AKP1HA4aAy4FIHfe8Tk1GZEia5syvpixHhq6pydC4RESItV+
-ooKgWyQ8ArErpEUAqiHYkB0/JaadPz4Rc4dEl8t8WKRXctVzFlQf/08eg/ETjW+P
-i3WHvG7GdsKlWT8mUlraPKkHghGlHixnc4+TQ6lcTef0NoU184xDBnge8nruBiRz
-F2W+IOss62Ra3bqoeGn0otenAFefRmIKFDjN5n1aOpWETtmPtAddLXfcijAiPSyK
-lVLCIBTo/MV1flnj+n5xiQlfob0Pxy3mN7TFj6K7n/E9abONYt62D6Uu39/xFFdc
-5R+eKi2KELA=
-=4Psb
------END PGP SIGNATURE-----
-
---Sig_/.eNXCJVHA6GhLXsi3DVzdjt--
+-- 
+Curious about my work on the Debian powerpcspe port?
+I'm keeping a blog here: http://pureperl.blogspot.com/
