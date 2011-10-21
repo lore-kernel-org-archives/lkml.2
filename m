@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab1JUM2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:28:33 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:39945 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab1JUM2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:28:30 -0400
-Date: Fri, 21 Oct 2011 14:28:03 +0200
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        David Miller <davem@davemloft.net>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/4] crc32: Bolt on crc32c
-Message-ID: <20111021122803.GA15803@gondor.apana.org.au>
-References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com>
+	id S1754656Ab1JUMaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:30:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab1JUMaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 08:30:17 -0400
+Date: Fri, 21 Oct 2011 20:31:54 +0800
+From: Dave Young <dyoung@redhat.com>
+To: kexec@lists.infradead.org, iommu@lists.linux-foundation.org,
+        vgoyal@redhat.com, linux-kernel@vger.kernel.org, luyu@redhat.com
+Subject: [PATCH] intel-iommu:make identity_map default for crash dump
+Message-ID: <20111021123154.GA5821@darkstar.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 04:54:03PM -0700, Darrick J. Wong wrote:
-> Reuse the existing crc32 code to stamp out a crc32c implementation.
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+kdump kernel sometimes will get DMAR faults which
+is caused by random in-flight dma from 1st kernel
 
-Did you want this to go through my tree? If so then there is a
-problem since it doesn't apply at all.
+Here make the identity_mapping as default for this case
 
-Cheers,
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ drivers/iommu/intel-iommu.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index c621c98..8ac3895 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -40,6 +40,7 @@
+ #include <linux/tboot.h>
+ #include <linux/dmi.h>
+ #include <linux/pci-ats.h>
++#include <linux/crash_dump.h>
+ #include <asm/cacheflush.h>
+ #include <asm/iommu.h>
+ 
+@@ -2481,7 +2482,7 @@ static int __init init_dmars(void)
+ 		}
+ 	}
+ 
+-	if (iommu_pass_through)
++	if (iommu_pass_through || is_kdump_kernel())
+ 		iommu_identity_mapping |= IDENTMAP_ALL;
+ 
+ #ifdef CONFIG_DMAR_BROKEN_GFX_WA
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.4.4
+
