@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab1JUHSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 03:18:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16919 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab1JUHSw convert rfc822-to-8bit (ORCPT
+	id S1753410Ab1JUH0Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 03:26:24 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:33844 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab1JUH0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 03:18:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,384,1315206000"; 
-   d="scan'208";a="80284631"
-From: "Xu, Anhua" <anhua.xu@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>, "acme@redhat.com" <acme@redhat.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mingo@elte.hu" <mingo@elte.hu>, "paulus@samba.org" <paulus@samba.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Oct 2011 15:18:31 +0800
-Subject: RE: [PATCH] perf tools: Exit recording if events have non matching
- sample type
-Thread-Topic: [PATCH] perf tools: Exit recording if events have non matching
- sample type
-Thread-Index: Acx+wU++EoL6miekS5iQuYTBeiwkAwQ/5tHw
-Message-ID: <1A42CE6F5F474C41B63392A5F80372B212DCA02CB2@shsmsx501.ccr.corp.intel.com>
-References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 21 Oct 2011 03:26:22 -0400
+Subject: Re: iwlagn is getting very shaky
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Norbert Preining <preining@logic.at>
+Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+In-Reply-To: <20111021012354.GA26758@gamma.logic.tuwien.ac.at>
+References: <20111019124931.GC3963@gamma.logic.tuwien.ac.at>
+	 <1319038282.25023.21.camel@wwguy-ubuntu>
+	 <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
+	 <alpine.DEB.2.00.1110182305110.7719@chino.kir.corp.google.com>
+	 <20111019062517.GC11588@gamma.logic.tuwien.ac.at>
+	 <1319003304.31823.46.camel@wwguy-huron>
+	 <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
+	 <1319004836.31823.57.camel@wwguy-huron>
+	 <20111020045927.GB23044@gamma.logic.tuwien.ac.at>
+	 <1319096418.3959.1.camel@jlt3.sipsolutions.net>
+	 <20111021012354.GA26758@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Oct 2011 09:26:13 +0200
+Message-ID: <1319181973.3964.4.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I installed the latest kernel and found without such patch( not sure if other patches were added besides this one). That following command works fine.
-perf record -o perf.data -e ext3:ext3_request_inode -e LLC-loads -- date '+%F'
+On Fri, 2011-10-21 at 10:23 +0900, Norbert Preining wrote:
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Jiri Olsa
-Sent: Friday, September 30, 2011 12:01 AM
-To: acme@redhat.com; a.p.zijlstra@chello.nl; mingo@elte.hu; paulus@samba.org
-Cc: linux-kernel@vger.kernel.org; Jiri Olsa
-Subject: [PATCH] perf tools: Exit recording if events have non matching sample type
+> > > [17419.285141] iwlagn 0000:06:00.0: Encounter TX_STATUS_FAIL_PASSIVE_NO_RX, am I on 5.2G band? (0)
+> > > [17419.286583] wlan0: deauthenticating from 00:24:c4:ab:bd:ef by local choice (reason=2)
+> > > [17419.300296] cfg80211: Calling CRDA for country: JP
+> > > [17419.309278] wlan0: authenticate with 00:24:c4:ab:bd:ef (try 1)
+> > > [17419.310105] wlan0: authenticated
+> > > [17419.317900] wlan0: associate with 00:24:c4:ab:bd:ef (try 1)
+> > 
+> > It seems a bit like the 5 GHz AP (:e0) just fails, and wpa_supplicant
+> > selects a 2.4 GHz AP (:ef) now? Pure conjecture, I guess the AP could
+> > also be on the same channel -- did you have scan information for these
+> > APs?
+> 
+> BSS 00:24:c4:ab:bd:e0 (on wlan0)
+>         freq: 2412
 
-The event processing relies on all events having the same sample_type.
+> And the one I am on:
+> BSS 00:24:c4:ab:bd:ef (on wlan0) -- associated
+>         freq: 5200
 
-This is being checked when the session is being opened read only.
-It also needs to be checked when we do record, since events could be
-read during processing build IDs at the end of the record command.
+> No idea if that helps you.
 
-If we process events with different sample_type the processing might
-skip some events or hang.
+Yes, thanks. So it's actually the other way around I guess.
 
-Following command hangs on my setup:
-  ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
-   -e LLC-loads -- date '+%F'
+I'm wondering if this too is related to the channel mess in mac80211.
 
-because hardware and tracepoint events have different sample type.
+johannes
 
-With the patch applied the record command displays
-"Non matching sample_type" message and exits.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-record.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f4c3fbe..71e2c4e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -832,6 +832,12 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		goto out_symbol_exit;
- 	}
- 
-+	if (!perf_evlist__valid_sample_type(evsel_list)) {
-+		pr_err("Non matching sample_type\n");
-+		err = -EINVAL;
-+		goto out_symbol_exit;
-+	}
-+
- 	if (target_pid != -1)
- 		target_tid = target_pid;
- 
--- 
-1.7.4
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
