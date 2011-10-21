@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1JURJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 13:09:38 -0400
-Received: from vs14.mail.saunalahti.fi ([195.197.172.102]:49286 "EHLO
-	vs14.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab1JURJg (ORCPT
+	id S1754271Ab1JURV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 13:21:27 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:48358 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab1JURV0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 13:09:36 -0400
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Oct 2011 13:09:36 EDT
-Date: Fri, 21 Oct 2011 20:00:54 +0300 (EEST)
-From: Kai Makisara <Kai.Makisara@kolumbus.fi>
-X-X-Sender: makisara@kai.makisara.local
-To: Petr Uzel <petr.uzel@suse.cz>
-cc: linux-kernel@vger.kernel.org, Willem Riede <osst@riede.org>, jack@suse.cz,
-        linux-scsi@vger.kernel.org, juergen.gross@ts.fujitsu.com
-Subject: Re: [PATCH] st: fix race in st_scsi_execute_end
-In-Reply-To: <20111021113108.GA26181@foxbat.suse.cz>
-Message-ID: <alpine.LNX.2.00.1110212000010.5184@kai.makisara.local>
-References: <20111021113108.GA26181@foxbat.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 21 Oct 2011 13:21:26 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811327-168531485-1319216466=:5184"
-X-Antivirus: VAMS
+In-Reply-To: <20111021155632.GD4082@suse.de>
+References: <201110122012.33767.pluto@agmk.net>
+	<alpine.LSU.2.00.1110131547550.1346@sister.anvils>
+	<alpine.LSU.2.00.1110131629530.1410@sister.anvils>
+	<20111016235442.GB25266@redhat.com>
+	<CAPQyPG69WePwar+k0nhwfdW7vv7FjqJBYwKfYm7n5qaPwS-WgQ@mail.gmail.com>
+	<20111021155632.GD4082@suse.de>
+Date: Sat, 22 Oct 2011 01:21:25 +0800
+Message-ID: <CAPQyPG5TWEP+M5PELztKuKXHunipu=MmRTnMsJpyyXvkE32j3Q@mail.gmail.com>
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+From: Nai Xia <nai.xia@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Oct 21, 2011 at 11:56 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Thu, Oct 20, 2011 at 05:11:28PM +0800, Nai Xia wrote:
+>> On Mon, Oct 17, 2011 at 7:54 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>> > On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
+>> >> mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+>> >> and pagetable locks, were good enough before page migration (with its
+>> >> requirement that every migration entry be found) came in; and enough
+>> >> while migration always held mmap_sem.  But not enough nowadays, when
+>> >> there's memory hotremove and compaction: anon_vma lock is also needed,
+>> >> to make sure a migration entry is not dodging around behind our back.
+>> >
+>> > For things like migrate and split_huge_page, the anon_vma layer must
+>> > guarantee the page is reachable by rmap walk at all times regardless
+>> > if it's at the old or new address.
+>> >
+>> > This shall be guaranteed by the copy_vma called by move_vma well
+>> > before move_page_tables/move_ptes can run.
+>> >
+>> > copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
+>> > into the anon_vma chains structures (vma_link does that). That before
+>> > any pte can be moved.
+>> >
+>> > Because we keep two vmas mapped on both src and dst range, with
+>> > different vma->vm_pgoff that is valid for the page (the page doesn't
+>> > change its page->index) the page should always find _all_ its pte at
+>> > any given time.
+>> >
+>> > There may be other variables at play like the order of insertion in
+>> > the anon_vma chain matches our direction of copy and removal of the
+>> > old pte. But I think the double locking of the PT lock should make the
+>> > order in the anon_vma chain absolutely irrelevant (the rmap_walk
+>> > obviously takes the PT lock too), and furthermore likely the
+>> > anon_vma_chain insertion is favorable (the dst vma is inserted last
+>> > and checked last). But it shouldn't matter.
+>>
+>> I happened to be reading these code last week.
+>>
+>> And I do think this order matters, the reason is just quite similar why we
+>> need i_mmap_lock in move_ptes():
+>> If rmap_walk goes dst--->src, then when it first look into dst, ok, the
+>
+> You might be right in that the ordering matters. We do link new VMAs at
+> the end of the list in anon_vma_chain_list so remove_migrate_ptes should
+> be walking from src->dst.
+>
+> If remove_migrate_pte finds src first, it will remove the pte and the
+> correct version will get copied. If move_ptes runs between when
+> remove_migrate_ptes moves from src to dst, then the PTE at dst will
+> still be correct.
+>
+>> pte is not there, and it happily skip it and release the PTL.
+>> Then just before it look into src, move_ptes() comes in, takes the locks
+>> and moves the pte from src to dst. And then when rmap_walk() look
+>> into src,  it will find an empty pte again. The pte is still there,
+>> but rmap_walk() missed it !
+>>
+>
+> I believe the ordering is correct though and protects us in this case.
+>
+>> IMO, this can really happen in case of vma_merge() succeeding.
+>> Imagine that src vma is lately faulted and in anon_vma_prepare()
+>> it got a same anon_vma with an existing vma ( named evil_vma )through
+>> find_mergeable_anon_vma().  This can potentially make the vma_merge() in
+>> copy_vma() return with evil_vma on some new relocation request. But src_vma
+>> is really linked _after_  evil_vma/new_vma/dst_vma.
+>> In this way, the ordering protocol  of anon_vma chain is broken.
+>> This should be a rare case because I think in most cases
+>> if two VMAs can reusable_anon_vma() they were already merged.
+>>
+>> How do you think  ?
+>>
+>
+> Despite the comments in anon_vma_compatible(), I would expect that VMAs
+> that can share an anon_vma from find_mergeable_anon_vma() will also get
+> merged. When the new VMA is created, it will be linked in the usual
+> manner and the oldest->newest ordering is what is required. That's not
+> that important though.
+>
+> What is important is if mremap is moving src to a dst that is adjacent
+> to another anon_vma. If src has never been faulted, it's not an issue
+> because there are also no migration PTEs. If src has been faulted, then
+> is_mergeable_anon_vma() should fail as anon_vma1 != anon_vma2 and they
+> are not compatible. The ordering is preserved and we are still ok.
 
----1463811327-168531485-1319216466=:5184
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Mel,
 
-On Fri, 21 Oct 2011, Petr Uzel wrote:
+Thanks for input. I agree on _almost_ all your reasoning above.
 
-> The call to complete() in st_scsi_execute_end() wakes up sleeping threa=
-d
-> in write_behind_check(), which frees the st_request, thus invalidating
-> the pointer to the associated bio structure, which is then passed to th=
-e
-> blk_rq_unmap_user(). Fix by storing pointer to bio structure into
-> temporary local variable.
->=20
-> This bug is present since at least linux-2.6.32.
->=20
-> CC: stable@kernel.org
-> Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
-> Reported-by: Juergen Gro=C3=9F <juergen.gross@ts.fujitsu.com>
-> Reviewed-by: Jan Kara <jack@suse.cz>
+But there is a tricky series of events I mentioned in
+https://lkml.org/lkml/2011/10/21/14
 
-Acked-by: Kai M=C3=A4kisara <kai.makisara@kolumbus.fi>
+, which, I think, can really lead to anon_vma1 == anon_vma2 in this case.
+These events is led by a failure when do_brk() fails on vma_merge() due to
+ENOMEM, rare it maybe though, And I am still not sure if there exists
+any other corner cases when a "should be merged" VMAs just sit there
+side by side
+for sth reason -- normally, that does not trigger BUGs, so maybe hard to
+ detect in real workload.
 
-> ---
->  drivers/scsi/st.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-> index 1871b8a..9b28f39 100644
-> --- a/drivers/scsi/st.c
-> +++ b/drivers/scsi/st.c
-> @@ -462,14 +462,16 @@ static void st_scsi_execute_end(struct request *r=
-eq, int uptodate)
->  {
->  	struct st_request *SRpnt =3D req->end_io_data;
->  	struct scsi_tape *STp =3D SRpnt->stp;
-> +	struct bio *tmp;
-> =20
->  	STp->buffer->cmdstat.midlevel_result =3D SRpnt->result =3D req->error=
-s;
->  	STp->buffer->cmdstat.residual =3D req->resid_len;
-> =20
-> +	tmp =3D SRpnt->bio;
->  	if (SRpnt->waiting)
->  		complete(SRpnt->waiting);
-> =20
-> -	blk_rq_unmap_user(SRpnt->bio);
-> +	blk_rq_unmap_user(tmp);
->  	__blk_put_request(req->q, req);
->  }
-> =20
->=20
+Please refer to my link and I think the construction was very clear if I had not
+missed sth subtle.
 
-Thanks for the fix.
+Thanks,
 
-Kai
-
----1463811327-168531485-1319216466=:5184--
+Nai Xia
+>
+> All that said, while I don't think there is a problem, I can't convince
+> myself 100% of it. Andrea, can you spot a flaw?
+>
+> --
+> Mel Gorman
+> SUSE Labs
+>
