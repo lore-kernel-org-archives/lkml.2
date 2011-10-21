@@ -1,49 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1JUNZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 09:25:00 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:59357 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab1JUNY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 09:24:58 -0400
-Date: Fri, 21 Oct 2011 15:24:44 +0200
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        chris.mason@oracle.com, linux-crypto@vger.kernel.org,
-        ak@linux.intel.com, dedekind1@gmail.com, adrian.hunter@intel.com
-Subject: Re: [PATCH 3/3] Add snappy interface to crypto API
-Message-ID: <20111021132444.GA1141@gondor.apana.org.au>
+	id S1754749Ab1JUN0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 09:26:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50928 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751325Ab1JUN0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 09:26:52 -0400
+Message-ID: <4EA17317.1020506@suse.de>
+Date: Fri, 21 Oct 2011 15:26:47 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319153941-26234-3-git-send-email-andi@firstfloor.org>
-Organization: Core
-X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Ankit Jain <mail@ankitjain.org>, Jack Wang <jack_wang@usish.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Andi Kleen <andi@firstfloor.org>, axboe@kernel.dk,
+        Dave Jones <davej@redhat.com>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+References: <20110702181146.GM23059@one.firstfloor.org>	 <Pine.LNX.4.44L0.1107021544550.16190-100000@netrider.rowland.org>	 <CAA9_cmcPhkA5myxeR5aJWBQ=-C3VuG_M9Appp5WyrLoU5fnw2w@mail.gmail.com>	 <8E203115BDCF42ACA065296214E5B7A0@usish.com.cn>	 <CAD1RLj1SJBPg0F4Dyu_EL05FVm9c7ZZj7_=oRPAdQU4BDUwu5g@mail.gmail.com> <1318973425.5169.39.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1318973425.5169.39.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Mainly so that ubifs can use it.
-> 
-> Snappy is a better compressor in the same niche as LZO.
-> 
-> Only lightly tested so far. Experiences welcome.
-> 
-> Cc: herbert@gondor.apana.org.au
-> Cc: dedekind1@gmail.com
-> Cc: adrian.hunter@intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On 10/18/2011 11:30 PM, James Bottomley wrote:
+> On Wed, 2011-10-19 at 02:46 +0530, Ankit Jain wrote:
+>> On Wed, Jul 20, 2011 at 3:28 PM, Jack Wang<jack_wang@usish.com>  wrote:
+>>>>
+>> <snip>
+>>>> On Sat, Jul 2, 2011 at 12:59 PM, Alan Stern<stern@rowland.harvard.edu>
+>>> wrote:
+>>>>> On Sat, 2 Jul 2011, Andi Kleen wrote:
+>>>>>
+>>>>>>> The problem is that blk_peek_request() calls scsi_prep_fn(), which
+>>>>>>> does this:
+>>>>>>>
+>>>>>>>      struct scsi_device *sdev = q->queuedata;
+>>>>>>>      int ret = BLKPREP_KILL;
+>>>>>>>
+>>>>>>>      if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+>>>>>>>              ret = scsi_setup_blk_pc_cmnd(sdev, req);
+>>>>>>>      return scsi_prep_return(q, req, ret);
+>>>>>>>
+>>>>>>> It doesn't check to see if sdev is NULL, nor does
+>>>>>>> scsi_setup_blk_pc_cmnd().  That accounts for this error:
+>>>>>>
+>>>>>> I actually added a NULL check in scsi_setup_blk_pc_cmnd early on,
+>>>>>> but that just caused RCU CPU stalls afterwards and then eventually
+>>>>>> a hung system.
+>>>>>
+>>>>> The RCU problem is likely to be a separate issue.  It might even be a
+>>>>> result of the use-after-free problem with the elevator.
+>>>>>
+>>>>> At any rate, it's clear that the crash in the refcounting log you
+>>>>> posted occurred because scsi_setup_blk_pc_cmnd() called
+>>>>> scsi_prep_state_check(), which tried to dereference the NULL pointer.
+>>>>>
+>>>>> Would you like to try this patch to see if it fixes the problem?  As I
+>>>>> said before, I'm not certain it's the best thing to do, but it worked
+>>>>> on my system.
+>>>>>
+>>>>> Alan Stern
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> Index: usb-3.0/drivers/scsi/scsi_lib.c
+>>>>> ===================================================================
+>>>>> --- usb-3.0.orig/drivers/scsi/scsi_lib.c
+>>>>> +++ usb-3.0/drivers/scsi/scsi_lib.c
+>>>>> @@ -1247,6 +1247,8 @@ int scsi_prep_fn(struct request_queue *q
+>>>>>         struct scsi_device *sdev = q->queuedata;
+>>>>>         int ret = BLKPREP_KILL;
+>>>>>
+>>>>> +       if (!sdev)
+>>>>> +               return ret;
+>>>>>         if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+>>>>>                 ret = scsi_setup_blk_pc_cmnd(sdev, req);
+>>>>>         return scsi_prep_return(q, req, ret);
+>>>>> Index: usb-3.0/drivers/scsi/scsi_sysfs.c
+>>>>> ===================================================================
+>>>>> --- usb-3.0.orig/drivers/scsi/scsi_sysfs.c
+>>>>> +++ usb-3.0/drivers/scsi/scsi_sysfs.c
+>>>>> @@ -322,6 +322,8 @@ static void scsi_device_dev_release_user
+>>>>>                 kfree(evt);
+>>>>>         }
+>>>>>
+>>>>> +       /* Freeing the queue signals to block that we're done */
+>>>>> +       scsi_free_queue(sdev->request_queue);
+>>>>>         blk_put_queue(sdev->request_queue);
+>>>>>         /* NULL queue means the device can't be used */
+>>>>>         sdev->request_queue = NULL;
+>>>>> @@ -936,8 +938,6 @@ void __scsi_remove_device(struct scsi_de
+>>>>>         /* cause the request function to reject all I/O requests */
+>>>>>         sdev->request_queue->queuedata = NULL;
+>>>>>
+>>>>> -       /* Freeing the queue signals to block that we're done */
+>>>>> -       scsi_free_queue(sdev->request_queue);
+>>>>>         put_device(dev);
+>>>>>   }
+>>>>
+>>>> This patch seems to resolve the block/scsi null-ptr de-references in
+>>>> our libsas/isci environment, we have yet to try James' alternative
+>>>> [1].  Do we potentially need both?
+>>>>
+>>>> Commit 86cbfb56 moved scsi_free_queue to __scsi_remove_device() but it
+>>>> seems only the "sdev->request_queue->queuedata = NULL" needed to be
+>>>> moved?
+>>>>
+>>>> The conversation appeared to be awaiting test results...
+>>>>
+>>>> [1]: http://marc.info/?l=linux-scsi&m=131007155700831&w=2
+>>>>
+>>>> --
+>>>> Dan
+>>> [Jack Wang]
+>>> This patch fix kernel panic issue when hot-plut disk during I/O, I test it
+>>> using pm8001 with 3.0.0-rc6 with above patch.
+>>
+>> I don't see this patch in scsi-misc-2.6 or linus' tree. Is there a
+>> different patch that fixes the
+>> issue?
+>
+> It should be fixed by
+>
+> commit 777eb1bf15b8532c396821774bf6451e563438f5
+> Author: Hannes Reinecke<hare@suse.de>
+> Date:   Wed Sep 28 08:07:01 2011 -0600
+>
+>      block: Free queue resources at blk_release_queue()
+>
+As much as I've hate to admit it, but it looks as if this is only a 
+fix for the second part of the original patch.
+I've got reports that we still see crashes, which are fixed by the 
+patch to scsi_lib.c.
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+So please include this part.
+Do you need a resend?
 
 Cheers,
+
+Hannes
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
