@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1JUD4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 23:56:48 -0400
+	id S1753266Ab1JUD4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 23:56:51 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:37297 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab1JUD4q (ORCPT
+	with ESMTP id S1753112Ab1JUD4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 23:56:46 -0400
+	Thu, 20 Oct 2011 23:56:49 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com, jgarzik@pobox.com, davem@davemloft.net
 Cc: linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/6] block, sx8: kill blk_insert_request()
-Date: Thu, 20 Oct 2011 20:56:35 -0700
-Message-Id: <1319169400-15706-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/6] block, ide: unexport elv_add_request()
+Date: Thu, 20 Oct 2011 20:56:37 -0700
+Message-Id: <1319169400-15706-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1319169400-15706-1-git-send-email-tj@kernel.org>
 References: <1319169400-15706-1-git-send-email-tj@kernel.org>
@@ -21,125 +21,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only user left for blk_insert_request() is sx8 and it can be
-trivially switched to use blk_execute_rq_nowait() - special requests
-aren't included in io stat and sx8 doesn't use block layer tagging.
-Switch sx8 and kill blk_insert_requeset().
+The only elv_add_request() user outside of block layer proper is
+ide-atapi and ide-park.  Now that blk_execute_rq_nowait() is allowed
+from irq context, they can both be switched to
+blk_execute_rq_nowait().  Switch IDE users, make [__]elv_add_request()
+internal to block and drop the queue_lock grabbing version.
 
-This patch doesn't introduce any functional difference.
-
-Only compile tested.
+IDE changes lightly tested.  Block layer changes doesn't introduce any
+behavior change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jeff Garzik <jgarzik@pobox.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/blk-core.c       |   48 ------------------------------------------------
- drivers/block/sx8.c    |   12 ++++++++----
- include/linux/blkdev.h |    1 -
- 3 files changed, 8 insertions(+), 53 deletions(-)
+ block/blk-core.c         |    6 +++---
+ block/blk-exec.c         |    2 +-
+ block/blk-flush.c        |    2 +-
+ block/blk.h              |    1 +
+ block/elevator.c         |   16 +++-------------
+ drivers/ide/ide-atapi.c  |    7 ++++---
+ drivers/ide/ide-park.c   |    2 +-
+ include/linux/elevator.h |    2 --
+ 8 files changed, 14 insertions(+), 24 deletions(-)
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index 7e15235..0f3baf4 100644
+index 0f3baf4..024cf4a 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -1005,54 +1005,6 @@ static void add_acct_request(struct request_queue *q, struct request *rq,
- 	__elv_add_request(q, rq, where);
+@@ -1002,7 +1002,7 @@ static void add_acct_request(struct request_queue *q, struct request *rq,
+ 			     int where)
+ {
+ 	drive_stat_acct(rq, 1);
+-	__elv_add_request(q, rq, where);
++	elv_add_request(q, rq, where);
  }
  
--/**
-- * blk_insert_request - insert a special request into a request queue
-- * @q:		request queue where request should be inserted
-- * @rq:		request to be inserted
-- * @at_head:	insert request at head or tail of queue
-- * @data:	private data
-- *
-- * Description:
-- *    Many block devices need to execute commands asynchronously, so they don't
-- *    block the whole kernel from preemption during request execution.  This is
-- *    accomplished normally by inserting aritficial requests tagged as
-- *    REQ_TYPE_SPECIAL in to the corresponding request queue, and letting them
-- *    be scheduled for actual execution by the request queue.
-- *
-- *    We have the option of inserting the head or the tail of the queue.
-- *    Typically we use the tail for new ioctls and so forth.  We use the head
-- *    of the queue for things like a QUEUE_FULL message from a device, or a
-- *    host that is unable to accept a particular command.
-- */
--void blk_insert_request(struct request_queue *q, struct request *rq,
--			int at_head, void *data)
+ static void part_round_stats_single(int cpu, struct hd_struct *part,
+@@ -2763,9 +2763,9 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
+ 		 * rq is already accounted, so use raw insert
+ 		 */
+ 		if (rq->cmd_flags & (REQ_FLUSH | REQ_FUA))
+-			__elv_add_request(q, rq, ELEVATOR_INSERT_FLUSH);
++			elv_add_request(q, rq, ELEVATOR_INSERT_FLUSH);
+ 		else
+-			__elv_add_request(q, rq, ELEVATOR_INSERT_SORT_MERGE);
++			elv_add_request(q, rq, ELEVATOR_INSERT_SORT_MERGE);
+ 
+ 		depth++;
+ 	}
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index 056f097..5324501 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -61,7 +61,7 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
+ 	rq->rq_disk = bd_disk;
+ 	rq->end_io = done;
+ 	spin_lock_irqsave(q->queue_lock, flags);
+-	__elv_add_request(q, rq, where);
++	elv_add_request(q, rq, where);
+ 	blk_run_queue_async(q);
+ 	/* the queue is stopped so it won't be run */
+ 	if (rq->cmd_type == REQ_TYPE_PM_RESUME)
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 491eb30..ab01265 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -288,7 +288,7 @@ static void flush_data_end_io(struct request *rq, int error)
+  * blk_insert_flush - insert a new FLUSH/FUA request
+  * @rq: request to insert
+  *
+- * To be called from __elv_add_request() for %ELEVATOR_INSERT_FLUSH insertions.
++ * To be called from elv_add_request() for %ELEVATOR_INSERT_FLUSH insertions.
+  * @rq is being submitted.  Analyze what needs to be done and put it on the
+  * right queue.
+  *
+diff --git a/block/blk.h b/block/blk.h
+index 3f6551b..77ad885 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -52,6 +52,7 @@ static inline void blk_clear_rq_complete(struct request *rq)
+  */
+ #define ELV_ON_HASH(rq)		(!hlist_unhashed(&(rq)->hash))
+ 
++void elv_add_request(struct request_queue *q, struct request *rq, int where);
+ void blk_insert_flush(struct request *rq);
+ void blk_abort_flushes(struct request_queue *q);
+ 
+diff --git a/block/elevator.c b/block/elevator.c
+index 66343d6..51447dd 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -599,7 +599,7 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+ 
+ 	rq->cmd_flags &= ~REQ_STARTED;
+ 
+-	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
++	elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
+ }
+ 
+ void elv_drain_elevator(struct request_queue *q)
+@@ -636,8 +636,9 @@ void elv_quiesce_end(struct request_queue *q)
+ 	spin_unlock_irq(q->queue_lock);
+ }
+ 
+-void __elv_add_request(struct request_queue *q, struct request *rq, int where)
++void elv_add_request(struct request_queue *q, struct request *rq, int where)
+ {
++	lockdep_is_held(q->queue_lock);
+ 	trace_block_rq_insert(q, rq);
+ 
+ 	rq->q = q;
+@@ -715,17 +716,6 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+ 		BUG();
+ 	}
+ }
+-EXPORT_SYMBOL(__elv_add_request);
+-
+-void elv_add_request(struct request_queue *q, struct request *rq, int where)
 -{
--	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
 -	unsigned long flags;
 -
--	/*
--	 * tell I/O scheduler that this isn't a regular read/write (ie it
--	 * must not attempt merges on this) and that it acts as a soft
--	 * barrier
--	 */
--	rq->cmd_type = REQ_TYPE_SPECIAL;
--
--	rq->special = data;
--
 -	spin_lock_irqsave(q->queue_lock, flags);
--
--	/*
--	 * If command is tagged, release the tag
--	 */
--	if (blk_rq_tagged(rq))
--		blk_queue_end_tag(q, rq);
--
--	add_acct_request(q, rq, where);
--	__blk_run_queue(q);
+-	__elv_add_request(q, rq, where);
 -	spin_unlock_irqrestore(q->queue_lock, flags);
 -}
--EXPORT_SYMBOL(blk_insert_request);
--
- static void part_round_stats_single(int cpu, struct hd_struct *part,
- 				    unsigned long now)
+-EXPORT_SYMBOL(elv_add_request);
+ 
+ struct request *elv_latter_request(struct request_queue *q, struct request *rq)
  {
-diff --git a/drivers/block/sx8.c b/drivers/block/sx8.c
-index b70f0fc..e7472f5 100644
---- a/drivers/block/sx8.c
-+++ b/drivers/block/sx8.c
-@@ -619,8 +619,10 @@ static int carm_array_info (struct carm_host *host, unsigned int array_idx)
- 	       host->state == HST_DEV_SCAN);
- 	spin_unlock_irq(&host->lock);
+diff --git a/drivers/ide/ide-atapi.c b/drivers/ide/ide-atapi.c
+index 6f218e01..2f1b474 100644
+--- a/drivers/ide/ide-atapi.c
++++ b/drivers/ide/ide-atapi.c
+@@ -221,6 +221,8 @@ EXPORT_SYMBOL_GPL(ide_prep_sense);
  
--	DPRINTK("blk_insert_request, tag == %u\n", idx);
--	blk_insert_request(host->oob_q, crq->rq, 1, crq);
-+	DPRINTK("blk_execute_rq_nowait, tag == %u\n", idx);
-+	crq->rq->cmd_type = REQ_TYPE_SPECIAL;
-+	crq->rq->special = crq;
-+	blk_execute_rq_nowait(host->oob_q, NULL, crq->rq, true, NULL);
+ int ide_queue_sense_rq(ide_drive_t *drive, void *special)
+ {
++	struct request *rq = &drive->sense_rq;
++
+ 	/* deferred failure from ide_prep_sense() */
+ 	if (!drive->sense_rq_armed) {
+ 		printk(KERN_WARNING PFX "%s: error queuing a sense request\n",
+@@ -228,12 +230,11 @@ int ide_queue_sense_rq(ide_drive_t *drive, void *special)
+ 		return -ENOMEM;
+ 	}
  
- 	return 0;
+-	drive->sense_rq.special = special;
+ 	drive->sense_rq_armed = false;
+-
+ 	drive->hwif->rq = NULL;
  
-@@ -658,8 +660,10 @@ static int carm_send_special (struct carm_host *host, carm_sspc_t func)
- 	BUG_ON(rc < 0);
- 	crq->msg_bucket = (u32) rc;
- 
--	DPRINTK("blk_insert_request, tag == %u\n", idx);
--	blk_insert_request(host->oob_q, crq->rq, 1, crq);
-+	DPRINTK("blk_execute_rq_nowait, tag == %u\n", idx);
-+	crq->rq->cmd_type = REQ_TYPE_SPECIAL;
-+	crq->rq->special = crq;
-+	blk_execute_rq_nowait(host->oob_q, NULL, crq->rq, true, NULL);
- 
+-	elv_add_request(drive->queue, &drive->sense_rq, ELEVATOR_INSERT_FRONT);
++	rq->special = special;
++	blk_execute_rq_nowait(drive->queue, rq->rq_disk, rq, true, NULL);
  	return 0;
  }
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 5267cd2..45563b0 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -660,7 +660,6 @@ extern void __blk_put_request(struct request_queue *, struct request *);
- extern struct request *blk_get_request(struct request_queue *, int, gfp_t);
- extern struct request *blk_make_request(struct request_queue *, struct bio *,
- 					gfp_t);
--extern void blk_insert_request(struct request_queue *, struct request *, int, void *);
- extern void blk_requeue_request(struct request_queue *, struct request *);
- extern void blk_add_request_payload(struct request *rq, struct page *page,
- 		unsigned int len);
+ EXPORT_SYMBOL_GPL(ide_queue_sense_rq);
+diff --git a/drivers/ide/ide-park.c b/drivers/ide/ide-park.c
+index 6ab9ab2..0c64957 100644
+--- a/drivers/ide/ide-park.c
++++ b/drivers/ide/ide-park.c
+@@ -52,7 +52,7 @@ static void issue_park_cmd(ide_drive_t *drive, unsigned long timeout)
+ 	rq->cmd[0] = REQ_UNPARK_HEADS;
+ 	rq->cmd_len = 1;
+ 	rq->cmd_type = REQ_TYPE_SPECIAL;
+-	elv_add_request(q, rq, ELEVATOR_INSERT_FRONT);
++	blk_execute_rq_nowait(q, NULL, rq, true, NULL);
+ 
+ out:
+ 	return;
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index 1d0f7a2..34d71f5 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -105,8 +105,6 @@ struct elevator_queue
+  */
+ extern void elv_dispatch_sort(struct request_queue *, struct request *);
+ extern void elv_dispatch_add_tail(struct request_queue *, struct request *);
+-extern void elv_add_request(struct request_queue *, struct request *, int);
+-extern void __elv_add_request(struct request_queue *, struct request *, int);
+ extern int elv_merge(struct request_queue *, struct request **, struct bio *);
+ extern int elv_try_merge(struct request *, struct bio *);
+ extern void elv_merge_requests(struct request_queue *, struct request *,
 -- 
 1.7.3.1
 
