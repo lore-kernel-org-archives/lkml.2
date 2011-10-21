@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab1JUOnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 10:43:41 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40936 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753662Ab1JUOnj (ORCPT
+	id S1753228Ab1JUOzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 10:55:35 -0400
+Received: from lokagrupo.gerwinski.de ([213.239.212.49]:48726 "EHLO
+	lokagrupo.gerwinski.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab1JUOze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 10:43:39 -0400
-Date: Fri, 21 Oct 2011 10:43:39 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: a.p.zijlstra@chello.nl, <rjw@sisk.pl>, <pavel@ucw.cz>,
-        <len.brown@intel.com>, <mingo@elte.hu>, <akpm@linux-foundation.org>,
-        <suresh.b.siddha@intel.com>, <lucas.demarchi@profusion.mobi>,
-        <linux-pm@vger.kernel.org>, <rusty@rustcorp.com.au>,
-        <vatsa@linux.vnet.ibm.com>, <ashok.raj@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <rdunlap@xenotime.net>
-Subject: Re: [PATCH v3 2/3] CPU hotplug, Freezer: Synchronize CPU hotplug
- and freezer
-In-Reply-To: <20111021122506.14321.51970.stgit@srivatsabhat.in.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1110211042300.2131-100000@iolanthe.rowland.org>
+	Fri, 21 Oct 2011 10:55:34 -0400
+X-Greylist: delayed 1843 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Oct 2011 10:55:34 EDT
+Date: Fri, 21 Oct 2011 16:25:30 +0200
+Message-ID: <1319207130.31815.498615@m31.gerwinski.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Subject: Can I call kthread_should_stop() from
+	user-space tasks?
+To: linux-kernel@vger.kernel.org
+From: Frank Heckenbach <f.heckenbach@fh-soft.de>
+User-Agent: semail 20060101
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Oct 2011, Srivatsa S. Bhat wrote:
+Hi,
 
-> Don't allow the freezer subsystem to race with CPU hotplug to ensure that
-> during the entire duration for which the CPU hotplug notifications are run,
-> the state of the system (with respect to the tasks being frozen or not)
-> remains constant.
-> 
-> This patch introduces four notifications in the freezer subsystem,
-> PM_FREEZE_PREPARE, PM_POST_FREEZE, PM_THAW_PREPARE and PM_POST_THAW.
-> These help in making other subsystems aware of the freezer's activity.
-> The CPU hotplug infrastructure hooks on to these notifications and
-> synchronizes with the freezer.
+is it permissible to call kthread_should_stop() from normal
+user-space tasks (looking at kthread.c I suppose not), and if not,
+is there a way to find out whether the current task is a kthread?
 
-It seems pointless to send out PM_POST_FREEZE and PM_THAW_PREPARE 
-notifications.  No task will be running to be affected by them.
-
-Alan Stern
-
+Reason I'm asking, I have a function that's called from both
+kthreads and user-space tasks which calls
+wait_event_interruptible(). If it's a kthread I want to add
+"|| kthread_should_stop()" to the condition so it can be stopped
+with kthread_stop() while waiting, but of course I don't want to
+break user-space tasks by calling kthread_should_stop() if it's
+invalid.
