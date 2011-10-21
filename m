@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab1JUPYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 11:24:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64127 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab1JUPYE (ORCPT
+	id S1752413Ab1JUPYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 11:24:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57226 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751691Ab1JUPYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 11:24:04 -0400
-Date: Fri, 21 Oct 2011 13:23:57 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@elte.hu, anton@samba.org, daahern@cisco.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tools/perf: Increase symbol KSYM_NAME_LEN size
-Message-ID: <20111021152357.GA2320@ghostprotocols.net>
-References: <1319096606-11568-1-git-send-email-ricardo.ribalda@gmail.com>
- <CAOJsxLGZLx-Wybi=BM41pN5X5Xw=qw4dEC_q=Qy903GpKj6Nzw@mail.gmail.com>
- <20111020081451.GC14464@moon>
- <CAPybu_3kqqtfv1XyhruS3AMiRbd=wdMUr4rJL1UmDG_+z2m9jA@mail.gmail.com>
- <CAOJsxLEY2YJv5G7nRKzM4UowVpPQrXKzmzP6eVShaXFYDySZ2A@mail.gmail.com>
+	Fri, 21 Oct 2011 11:24:36 -0400
+Date: Fri, 21 Oct 2011 16:24:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] pinctrl: add a generic control interface
+Message-ID: <20111021152434.GG4080@opensource.wolfsonmicro.com>
+References: <CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
+ <CACRpkdYCgY9w8UgMKLgxSsu=Veo01-YSKBWndqU_uCTE-GjZuQ@mail.gmail.com>
+ <20111020141827.GB6100@sirena.org.uk>
+ <CACRpkdaaUmze+W1n4NkApTX0Se1VJAmD+AJSm36QbsKVDzdnRA@mail.gmail.com>
+ <20111020154244.GA26083@opensource.wolfsonmicro.com>
+ <CACRpkdbJbUefH+Q0GMp+_4FhV5RqQ+KHrGnJLR6jZSNR16NbSw@mail.gmail.com>
+ <20111021123041.GE4080@opensource.wolfsonmicro.com>
+ <CACRpkdaZQ12W2M9m=vvQ=w6vRppgsZdphm4ftmx6uFAX2HDkog@mail.gmail.com>
+ <20111021125544.GF4080@opensource.wolfsonmicro.com>
+ <CACRpkdbQYcMaK50EJ6n0UXGFfWWw_9YD_abTNDmqBxWxycC6NQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAOJsxLEY2YJv5G7nRKzM4UowVpPQrXKzmzP6eVShaXFYDySZ2A@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbQYcMaK50EJ6n0UXGFfWWw_9YD_abTNDmqBxWxycC6NQ@mail.gmail.com>
+X-Cookie: You will soon forget this.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 20, 2011 at 12:14:06PM +0300, Pekka Enberg escreveu:
-> On Thu, Oct 20, 2011 at 11:45 AM, Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com> wrote:
-> > and it has worked at least until t^16384 both in gcc and in gdb, and I
-> > guess it would have continue working until much more.
-> >
-> > Right now, I think we can increase it until 512, to be on the safe
-> > side, and keep it simple. What do you think?
-> 
-> If the limit is really 4G, I'm fine with whatever is the smallest
-> practical size. If 256 bytes works for you:
-> 
-> Acked-by: Pekka Enberg <penberg@kernel.org>
+On Fri, Oct 21, 2011 at 02:57:19PM +0200, Linus Walleij wrote:
+> On Fri, Oct 21, 2011 at 2:55 PM, Mark Brown
 
-Thanks guys, will apply the first patch, bumping it to 256.
+> > No, like I keep saying it's nothing to do with enabling or disabling
+> > power.  It's about selecting between multiple reference domains.  For
+> > example, choosing between the DBVDD1 and DBVDD2 domains.
 
-- Arnaldo
+> OK I think I get it now.
+
+> So PIN_CONFIG_POWER_SOURCE and then the argument to
+> that is definately custom...
+
+I'd probably go with _DOMAIN rather than _SOURCE but yes.
