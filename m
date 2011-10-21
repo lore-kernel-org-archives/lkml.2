@@ -1,131 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab1JUK3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 06:29:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65510 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab1JUK3o (ORCPT
+	id S1754159Ab1JUKbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 06:31:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33558 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab1JUKbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 06:29:44 -0400
-From: keguang.zhang@gmail.com
-To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Cc: ralf@linux-mips.org, wuzhangjin@gmail.com, r0bertz@gentoo.org,
-        Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V2 4/4] MIPS: Add defconfig for Loongson1B
-Date: Fri, 21 Oct 2011 18:28:08 +0800
-Message-Id: <1319192888-21465-4-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
-References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
+	Fri, 21 Oct 2011 06:31:51 -0400
+Date: Fri, 21 Oct 2011 11:31:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v7 1/3] ASoC: da7210: Add support for DAPM
+Message-ID: <20111021103149.GC4080@opensource.wolfsonmicro.com>
+References: <1319119369.24621.84.camel@matrix>
+ <20111021085838.GE3513@opensource.wolfsonmicro.com>
+ <1319193441.24621.170.camel@matrix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319193441.24621.170.camel@matrix>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kelvin Cheung <keguang.zhang@gmail.com>
+On Fri, Oct 21, 2011 at 04:07:21PM +0530, Ashish Chavan wrote:
 
-This patch adds defconfig for Loongson1B.
+> Is there web interface to your tree? so that I can introspect your
+> version of da7210.c file to find out what is going wrong? Or any other
+> way to get your version of that file?
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
----
- arch/mips/configs/ls1b_defconfig |   89 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/configs/ls1b_defconfig
-
-diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
-new file mode 100644
-index 0000000..9294ea0
---- /dev/null
-+++ b/arch/mips/configs/ls1b_defconfig
-@@ -0,0 +1,89 @@
-+CONFIG_MACH_LOONGSON1=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_PREEMPT=y
-+# CONFIG_SECCOMP is not set
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+CONFIG_TINY_RCU=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_LOG_BUF_SHIFT=16
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_RD_BZIP2=y
-+CONFIG_RD_LZMA=y
-+CONFIG_EXPERT=y
-+CONFIG_KALLSYMS_ALL=y
-+CONFIG_PERF_EVENTS=y
-+# CONFIG_COMPAT_BRK is not set
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODVERSIONS=y
-+# CONFIG_LBDAF is not set
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+# CONFIG_SUSPEND is not set
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_SYN_COOKIES=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_DIAG is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_STANDALONE is not set
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_NETDEVICES=y
-+CONFIG_STMMAC_ETH=y
-+CONFIG_STMMAC_DA=y
-+# CONFIG_NETDEV_10000 is not set
-+# CONFIG_WLAN is not set
-+# CONFIG_INPUT_MOUSEDEV is not set
-+# CONFIG_INPUT_KEYBOARD is not set
-+# CONFIG_INPUT_MOUSE is not set
-+# CONFIG_SERIO is not set
-+CONFIG_VT_HW_CONSOLE_BINDING=y
-+CONFIG_LEGACY_PTY_COUNT=8
-+# CONFIG_DEVKMEM is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_RAMOOPS=y
-+# CONFIG_HWMON is not set
-+# CONFIG_MFD_SUPPORT is not set
-+# CONFIG_VGA_CONSOLE is not set
-+# CONFIG_HID_SUPPORT is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_IOMMU_SUPPORT is not set
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT2_FS_XATTR=y
-+CONFIG_EXT2_FS_POSIX_ACL=y
-+CONFIG_EXT2_FS_SECURITY=y
-+CONFIG_EXT3_FS=y
-+CONFIG_EXT3_FS_POSIX_ACL=y
-+CONFIG_EXT3_FS_SECURITY=y
-+# CONFIG_DNOTIFY is not set
-+CONFIG_PROC_KCORE=y
-+CONFIG_TMPFS=y
-+CONFIG_TMPFS_POSIX_ACL=y
-+# CONFIG_MISC_FILESYSTEMS is not set
-+# CONFIG_NETWORK_FILESYSTEMS is not set
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+CONFIG_MAGIC_SYSRQ=y
-+# CONFIG_SCHED_DEBUG is not set
-+CONFIG_DEBUG_INFO=y
-+CONFIG_DEBUG_MEMORY_INIT=y
-+CONFIG_SYSCTL_SYSCALL_CHECK=y
-+# CONFIG_FTRACE is not set
-+# CONFIG_EARLY_PRINTK is not set
--- 
-1.7.1
-
+http://opensource.wolfsonmicro.com/cgi-bin/gitweb.cgi
