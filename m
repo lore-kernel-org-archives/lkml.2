@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab1JULqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 07:46:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56561 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab1JULqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 07:46:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="65431679"
-From: John Mathew <john.mathew@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: len.brown@intel.com, pierre.tardy@intel.com, trenn@suse.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        John Mathew <john.mathew@intel.com>
-Subject: [PATCH] cpuidle: Add an addtional trace for demoted c-states
-Date: Fri, 21 Oct 2011 14:46:07 +0300
-Message-Id: <1319197567-8573-1-git-send-email-john.mathew@intel.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-Transfer-Encoding: 7bit
+	id S1754577Ab1JULrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 07:47:40 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:1997
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754285Ab1JULri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 07:47:38 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+Date: Fri, 21 Oct 2011 19:58:10 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Rajendra Nayak <rnayak@ti.com>
+CC: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
+        <patches@linaro.org>, <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111021115809.GB337@S2100-06.ap.freescale.net>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
+ <20111018132032.GD30703@S2100-06.ap.freescale.net>
+ <4E9EB61C.1040207@ti.com>
+ <20111019144215.GA32007@S2100-06.ap.freescale.net>
+ <4E9FAF42.5060200@ti.com>
+ <20111020061408.GE32007@S2100-06.ap.freescale.net>
+ <4EA00F7C.1080005@ti.com>
+ <20111021082309.GA337@S2100-06.ap.freescale.net>
+ <4EA13053.7080306@ti.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4EA13053.7080306@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables tracing of c-states that the device
-eventually goes in to, which might be different from what
-the governor had retuned. This scenario occurs in platforms
-like Intel Medfield. Power tools like pytimechart will be
-able to display accurate c-state transitions with the help of
-this trace.
+On Fri, Oct 21, 2011 at 02:11:55PM +0530, Rajendra Nayak wrote:
+[...]
+> >+       /* find device_node and attach it */
+> >+       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
+> 
+> so would this do a complete dt search for every regulator?
 
-Signed-off-by: John Mathew <john.mathew@intel.com>
----
- drivers/cpuidle/cpuidle.c    |    3 +++
- include/trace/events/power.h |   23 +++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+Yes, with the first param being NULL, tthe entire device tree will be
+searched.
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index d4c5423..3d787ef 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -110,6 +110,9 @@ int cpuidle_idle_call(void)
- 
- 	dev->last_residency = target_state->enter(dev, target_state);
- 
-+	if (dev->last_state != target_state)
-+		trace_power_demoted(POWER_CSTATE, dev->last_state->name, dev->cpu);
-+
- 	trace_power_end(dev->cpu);
- 	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
- 
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index 1bcc2a8..941dc1a 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -101,6 +101,29 @@ DEFINE_EVENT(power, power_start,
- 	TP_ARGS(type, state, cpu_id)
- );
- 
-+TRACE_EVENT(power_demoted,
-+
-+	TP_PROTO(unsigned int type, char *state, unsigned int cpu_id),
-+
-+	TP_ARGS(type, state, cpu_id),
-+
-+	TP_STRUCT__entry(
-+		__field(	u64,		type		)
-+		__string(	state,		state		)
-+		__field(	u64,		cpu_id		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->type = type;
-+		__assign_str(state, state);
-+		__entry->cpu_id = cpu_id;
-+	),
-+
-+	TP_printk("type=%lu state=%s cpu_id=%lu", (unsigned long)__entry->type,
-+		 __get_str(state), (unsigned long)__entry->cpu_id)
-+
-+);
-+
- DEFINE_EVENT(power, power_frequency,
- 
- 	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
+> we would also need the driver names and dt names to match for this to
+> work, right?
+> 
+Driver name does not matter.  The key for this search to work is having
+regulator's name (regulator_desc->name) match device tree node's name,
+case ignored.
+
+> The approach otherwise looks fine to me and should work for both cases
+> of one device per regulator and one device for all regulators.
+> 
+
 -- 
-1.7.4.1
-
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+Regards,
+Shawn
 
