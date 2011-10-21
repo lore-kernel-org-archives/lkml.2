@@ -1,127 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1JUJpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 05:45:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64831 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab1JUJph (ORCPT
+	id S1754193Ab1JUJyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 05:54:52 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44853 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab1JUJyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 05:45:37 -0400
-Date: Fri, 21 Oct 2011 17:45:20 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111021094520.GA9884@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <alpine.DEB.2.00.1110151529570.25063@chino.kir.corp.google.com>
- <20111020183913.GA21918@liondog.tnic>
- <20111020185329.GA3586@swordfish.minsk.epam.com>
- <20111020190701.GB3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
- <20111020212353.GZ25124@google.com>
- <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
- <20111020213644.GB25124@google.com>
- <20111020230040.GC3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
+	Fri, 21 Oct 2011 05:54:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111020125705.GA2121@earth.universe>
+References: <1307713124-3946-1-git-send-email-carlos.chinea@nokia.com>
+	<20111020125705.GA2121@earth.universe>
+Date: Fri, 21 Oct 2011 11:54:50 +0200
+Message-ID: <CACRpkdYBFGp4+oFUZvXn-wpUk0fmLiKixchQKcFo9XTDW=51+g@mail.gmail.com>
+Subject: Re: [RFC PATCHv5 0/7] HSI framework and drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Carlos Chinea <carlos.chinea@nokia.com>,
+        Sebastian Reichel <sre@debian.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        govindraj.ti@gmail.com, pawel.szyszuk@stericsson.com,
+        sjur.brandeland@stericsson.com, peter_henn@gmx.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 02:14:34AM -0700, David Rientjes wrote:
-> How does it mask the race condition?  Before the memset(), the ->name 
-> field was never _cleared_ in lockdep_init_map() like it is now, it was 
-> only stored.
+On Thu, Oct 20, 2011 at 2:57 PM, Sebastian Reichel <sre@debian.org> wrote:
 
-A typcal race condition will like this:
+> What's the status of this patch? Are there plans to merge it into
+> 3.2?
 
-	CPU A					CPU B
-lock_set_subclass(lockA);
-  lock_set_class(lockA);
-    lockdep_init_map(lockA);
-      /* lockA->name is cleared */
-      memset(lockA);
-					__lock_acquire(lockA);
-					  /* lockA->class_cache[] is cleared */
-					  register_lock_class(lockA);
-					    look_up_lock_class(lockA);
-					      WARN_ON_ONCE(class->name !=
-							lock->name);
+If there were, it'd be part of linux-next by now wouldn't it?
 
-      lock->name = name;
+Carlos, can you tell us what's happening, this is starting to
+look pretty solid and it sort of hurts to have it out-of-tree.
 
-And a untested patch is below:
-BTW, now the patch could cure (I guess) the very issue reported
-in this thread.
-But it don't cover the case which change the key and the relevant
-lock_class has existed, I don't think out a way how to fix it yet :)
-But the fact is we have no such caller yet, the only call site of
-lock_set_subclass() is double_unlock_balance().
+Can't you create a for-next branch and ask Stephen to pull
+that to linux-next so it can be merged for linux 3.3?
 
-Thanks,
-Yong
-
----
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH] lockdep: On-demand initialization for lock_set_class()
-
-Since commit f59de89 [lockdep: Clear whole lockdep_map on initialization],
-lockdep_init_map() will clear all the struct. But it will break
-lock_set_class()/lock_set_subclass(). A typical race condition
-is like below:
-
-	CPU A					CPU B
-lock_set_subclass(lockA);
-  lock_set_class(lockA);
-    lockdep_init_map(lockA);
-      /* lockA->name is cleared */
-      memset(lockA);
-					__lock_acquire(lockA);
-					  /* lockA->class_cache[] is cleared */
-					  register_lock_class(lockA);
-					    look_up_lock_class(lockA);
-					      WARN_ON_ONCE(class->name !=
-							lock->name);
-
-      lock->name = name;
-
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- kernel/lockdep.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 91d67ce..bc7dd1e 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3160,7 +3160,10 @@ __lock_set_class(struct lockdep_map *lock, const char *name,
- 	return print_unlock_inbalance_bug(curr, lock, ip);
- 
- found_it:
--	lockdep_init_map(lock, name, key, 0);
-+	/* only changing lock->name make no sense */
-+	WARN_ON(lock->key == key && lock->name != name);
-+	if (lock->key != key)
-+		lockdep_init_map(lock, name, key, 0);
- 	class = register_lock_class(lock, subclass, 0);
- 	hlock->class_idx = class - lock_classes + 1;
- 
--- 
-1.7.5.4
-
-
+Yours,
+Linus Walleij
