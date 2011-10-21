@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab1JUQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 12:12:58 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:56142 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab1JUQM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 12:12:57 -0400
-Date: Fri, 21 Oct 2011 19:12:54 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@infradead.org>,
-        Josh Triplett <josh@joshtriplett.org>,
+	id S1753516Ab1JUQ1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 12:27:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752700Ab1JUQ1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 12:27:09 -0400
+Date: Fri, 21 Oct 2011 18:22:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: Please revert "debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options"
-Message-ID: <20111021161254.GA23047@localhost.pp.htv.fi>
-References: <20110930155012.GC9049@localhost.pp.htv.fi>
- <20111010072946.GA29035@elte.hu>
- <20111010084811.GG4586@localhost.pp.htv.fi>
- <20111010102116.GA26901@elte.hu>
- <20111010121340.GA3731@localhost.pp.htv.fi>
- <20111012083801.GA27853@elte.hu>
- <20111020214149.GF9819@localhost.pp.htv.fi>
- <4EA12B11.5090809@suse.cz>
- <20111021092249.GG9819@localhost.pp.htv.fi>
- <4EA16779.7060006@suse.cz>
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/X] uprobes: x86: introduce abort_xol()
+Message-ID: <20111021162219.GA29753@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215326.GF16395@redhat.com> <20111021144207.GN11831@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EA16779.7060006@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111021144207.GN11831@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 02:37:13PM +0200, Michal Marek wrote:
-> On 21.10.2011 11:22, Adrian Bunk wrote:
-> > On Fri, Oct 21, 2011 at 10:19:29AM +0200, Michal Marek wrote:
-> >> On 20.10.2011 23:41, Adrian Bunk wrote:
-> >>> Ingo, would you accept if I would go through the Kconfig files and 
-> >>> monitor future changes to Kconfig files in the kernel (or if Michal does 
-> >>> it, I don't insist that it has to be me if someone else wants to do it)?
-> >>
-> >> What kind of changes do you have in mind? Sorry, I haven't followed the
-> >> whole thread.
-> > 
-> > Checking the correctness and making things more robust.
-> > 
-> > An example:
-> > 
-> > config KVM
-> >         tristate "Kernel-based Virtual Machine (KVM) support"
-> > 	...
-> >         # for TASKSTATS/TASK_DELAY_ACCT:
-> >         depends on NET
-> > 	...
-> >         select TASKSTATS
-> >         select TASK_DELAY_ACCT
-> > 
-> > That breaks if anyone touches the dependencies of TASKSTATS
-> > or TASK_DELAY_ACCT.
-> > 
-> > It should be solved better, my first thought would be introducing
-> > something like a TASK_DELAY_ACCT_AVAILABLE variable.
-> 
-> Right, but that's a deficiency of the kconfig solver. Catalin Marinas
-> has patched it to at least print a warning if a dependency of a
-> select-ed symbol is not set. Ideally, we should get a better solver.
+On 10/21, Srikar Dronamraju wrote:
+>
+> > If it is not clear, abort_xol() is needed when we should
+> > re-execute the original insn (replaced with int3), see the
+> > next patch.
+>
+> We should be removing the breakpoint in abort_xol().
 
-I have heared that claim already 4-5 years ago, but I don't think
-it is true.
+Why? See also below.
 
-Do you have a semantics how a better solver could handle all cases
-100% correctly?
+> Otherwise if we just set the instruction pointer to int3 and signal a
+> sigill, then the user may be confused why a breakpoint is generating
+> SIGILL.
 
-Take these dependencies as an example:
+Which user?
 
-Originally (commit c9aaa895) only the select of TASK_DELAY_ACCT was
-added, let's look at that initial state.
+gdb? Of course it can be confused. But it can be confused in any case.
 
-The select of TASKSTATS and the dependency on NET were later
-discovered by randconfig testings, your solver would have to
-handle that automatically.
+> > +void abort_xol(struct pt_regs *regs)
+> > +{
+> > +	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+> > +	// !!! Dear Srikar and Ananth, please implement me !!!
+> > +	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+> > +	struct uprobe_task *utask = current->utask;
+> > +	regs->ip = utask->vaddr;
+>
+> nit:
+> Shouldnt we be setting the ip to the next instruction after this
+> instruction?
 
-The dependency on NET is outside of people doing randconfig runs of 
-little interest, since NET=y is set basically everywhere.
+Not sure...
 
-The dependency of TASK_DELAY_ACCT on TASKSTATS is more interesting:
+We should restart the same insn. Say, if the probed insn
+was "*(int*)0 = 0", it should be executed again after SIGSEGV. Unless
+the task was killed by this signal.
 
-You can automatically deduct that KVM select's TASK_DELAY_ACCT and 
-TASK_DELAY_ACCT depends on TASKSTATS, and therefore KVM needs to
-automatically get a dependency on TASKSTATS.
-That fixes all build problems.
-For people trying to enable KVM in their kernel that would be a disaster.
+And in this case we should call uprobe_consumer()->handler() again,
+we shouldn't remove "int3".
 
-And you cannot blindly enable all dependencies, think e.g. of some code 
-depending on 64BIT=n.
+> I have applied all your patches and ran tests, the tests are all
+> passing.
+>
+> I will fold them into my patches and send them out.
 
-I came to the conclusion that there is not "a deficiency of the kconfig 
-solver", but that select'ing of options with dependencies is an evil 
-thing that should be avoided whenever possible, and needs manual
-attention when it is unavoidable.
+Great, thanks.
 
-> Michal
-
-cu
-Adrian
-
--- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
+Oleg.
 
