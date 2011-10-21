@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1JUOzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 10:55:35 -0400
-Received: from lokagrupo.gerwinski.de ([213.239.212.49]:48726 "EHLO
-	lokagrupo.gerwinski.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab1JUOze (ORCPT
+	id S1753300Ab1JUO60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 10:58:26 -0400
+Received: from server18.to.cnr.it ([150.145.48.18]:55495 "EHLO
+	server18.to.cnr.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab1JUO6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 10:55:34 -0400
-X-Greylist: delayed 1843 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Oct 2011 10:55:34 EDT
-Date: Fri, 21 Oct 2011 16:25:30 +0200
-Message-ID: <1319207130.31815.498615@m31.gerwinski.de>
+	Fri, 21 Oct 2011 10:58:25 -0400
+X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Oct 2011 10:58:25 EDT
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=us-ascii
-Subject: Can I call kthread_should_stop() from
-	user-space tasks?
-To: linux-kernel@vger.kernel.org
-From: Frank Heckenbach <f.heckenbach@fh-soft.de>
-User-Agent: semail 20060101
+Date: Fri, 21 Oct 2011 15:51:03 +0100
+From: microsoft scheme <info@microsoft.com>
+To: undisclosed-recipients:;
+Subject: OPMERKING!
+Reply-To: <mr.lampardnelson12@hotmail.com>
+Mail-Reply-To: <mr.lampardnelson12@hotmail.com>
+Message-ID: <e9b7b01a44d4f5d8b8720aa20b483bc9@mail.to.cnr.it>
+User-Agent: Roundcube Webmail/0.6
+X-Assp-Whitelisted: Yes ()
+X-Assp-Envelope-From: info@microsoft.com
+X-Assp-Intended-For: lisavanninhuys@msn.com
+X-Assp-Passing: acceptAllMail
+X-Assp-ID: Gateway (id-13192-89234)
+X-Assp-Version: 1.8.5.2(1.0.04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+DIT IS om u te informeren dat u de SOM VAN WON
+  $ 500,000.00 van de Microsoft ® PROMOTIE GEHOUDEN OP 19 oktober 2011. 
+Gelieve onderstaand formulier DE INFORMATIE EN STUUR NAAR 
+(mr.lampardnelson12@hotmail.com)
 
-is it permissible to call kthread_should_stop() from normal
-user-space tasks (looking at kthread.c I suppose not), and if not,
-is there a way to find out whether the current task is a kthread?
+  Naam: Dhr Lampard Nelson
+  E-mail: mr.lampardnelson12@hotmail.com
 
-Reason I'm asking, I have a function that's called from both
-kthreads and user-space tasks which calls
-wait_event_interruptible(). If it's a kthread I want to add
-"|| kthread_should_stop()" to the condition so it can be stopped
-with kthread_stop() while waiting, but of course I don't want to
-break user-space tasks by calling kthread_should_stop() if it's
-invalid.
+  1.Full Naam:
+  2.Full Adres:
+  3.State:
+  4.Occupation:
+  5.Age:
+  6.Sex:
+  7.Country:
+  8.Tel.Number:
+  9.Do Engels verstaan​​? (JA / NEE):
+
+  Gefeliciteerd nogmaals.
