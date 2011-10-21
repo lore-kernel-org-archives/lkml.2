@@ -1,66 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab1JUGgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 02:36:40 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:54692 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750933Ab1JUGgj (ORCPT
+	id S1753116Ab1JUGp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 02:45:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36612 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1JUGp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 02:36:39 -0400
-Message-ID: <4EA112F4.3040708@profihost.ag>
-Date: Fri, 21 Oct 2011 08:36:36 +0200
-From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
-Reply-To: p.herz@profihost.ag
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: Vanilla-Kernel 3 - page allocation failure
-References: <4E9D53FF.7090609@profihost.ag>            <m2ipnmz49x.fsf@firstfloor.org> <16605.1319145104@turing-police.cc.vt.edu>
-In-Reply-To: <16605.1319145104@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
+	Fri, 21 Oct 2011 02:45:27 -0400
+From: Mihai Maruseac <mihai.maruseac@gmail.com>
+To: davem@davemloft.net, shemminger@vyatta.com, eric.dumazet@gmail.com
+Cc: mirq-linux@rere.qmqm.pl, therbert@google.com, jpirko@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dbaluta@ixiacom.com, Mihai Maruseac <mmaruseac@ixiacom.com>
+Subject: [PATCH] dev: use name hash for dev_seq_ops
+Date: Fri, 21 Oct 2011 09:45:10 +0300
+Message-Id: <1319179510-10715-1-git-send-email-mmaruseac@ixiacom.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1319097717-14910-1-git-send-email-mmaruseac@ixiacom.com>
+References: <1319097717-14910-1-git-send-email-mmaruseac@ixiacom.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 18 Oct 2011 08:51:54 PDT, Andi Kleen said:
->> Philipp Herz - Profihost AG<p.herz@profihost.ag>  writes:
->>
->>> After updating kernel (x86_64) to stable version 3 there are a few
->>> messages appearing in the kernel log such as
->>>
->>> kworker/0:1: page allocation failure: order:1, mode:0x20
->>> mysql: page allocation failure: order:1, mode:0x20
->>> php5: page allocation failure: order:1, mode:0x20
->>
->> You just ran out of memory.
->
-> I read it as "Why is this happening when the previous kernel didn't have
-> this issue?", which is a *much* more complicated question...
+Instead of using the dev->next chain and trying to resync at each call to
+dev_seq_start, use the name hash, keeping the bucket and the offset in
+seq->private field.
 
-Exactly, that was the intention of my post.
+Tests revealed the following results for ifconfig > /dev/null
+	* 1000 interfaces:
+		* 0.114s without patch
+		* 0.089s with patch
+	* 3000 interfaces:
+		* 0.489s without patch
+		* 0.110s with patch
+	* 5000 interfaces:
+		* 1.363s without patch
+		* 0.250s with patch
+	* 128000 interfaces (other setup):
+		* ~100s without patch
+		* ~30s with patch
 
-It would me nice to know, if these messages do require to focus on 
-memory statitics?
+Signed-off-by: Mihai Maruseac <mmaruseac@ixiacom.com>
+---
+ net/core/dev.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 69 insertions(+), 15 deletions(-)
 
-Looking at our monitoring data, the system does have enough memory 
-available.
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 70ecb86..6edbcc5 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4041,6 +4041,60 @@ static int dev_ifconf(struct net *net, char __user *arg)
+ }
+ 
+ #ifdef CONFIG_PROC_FS
++
++#define BUCKET_SPACE (32 - NETDEV_HASHBITS)
++
++struct dev_iter_state {
++	struct seq_net_private p;
++	unsigned int pos; /* bucket << BUCKET_SPACE + offset */
++};
++
++#define get_bucket(x) ((x) >> BUCKET_SPACE)
++#define get_offset(x) ((x) & ((1 << BUCKET_SPACE) - 1))
++#define set_bucket_offset(b, o) ((b) << BUCKET_SPACE | (o))
++
++static inline struct net_device *dev_from_same_bucket(struct seq_file *seq)
++{
++	struct dev_iter_state *state = seq->private;
++	struct net *net = seq_file_net(seq);
++	struct net_device *dev;
++	struct hlist_node *p;
++	struct hlist_head *h;
++	unsigned int count, bucket, offset;
++
++	bucket = get_bucket(state->pos);
++	offset = get_offset(state->pos);
++	h = &net->dev_name_head[bucket];
++	count = 0;
++	hlist_for_each_entry_rcu(dev, p, h, name_hlist) {
++		if (count++ == offset) {
++			state->pos = set_bucket_offset(bucket, count);
++			return dev;
++		}
++	}
++
++	return NULL;
++}
++
++static inline struct net_device *dev_from_new_bucket(struct seq_file *seq)
++{
++	struct dev_iter_state *state = seq->private;
++	struct net_device *dev;
++	unsigned int bucket;
++
++	bucket = get_bucket(state->pos);
++	do {
++		dev = dev_from_same_bucket(seq);
++		if (dev)
++			return dev;
++
++		bucket++;
++		state->pos = set_bucket_offset(bucket, 0);
++	} while (bucket < NETDEV_HASHENTRIES);
++
++	return NULL;
++}
++
+ /*
+  *	This is invoked by the /proc filesystem handler to display a device
+  *	in detail.
+@@ -4048,33 +4102,33 @@ static int dev_ifconf(struct net *net, char __user *arg)
+ void *dev_seq_start(struct seq_file *seq, loff_t *pos)
+ 	__acquires(RCU)
+ {
+-	struct net *net = seq_file_net(seq);
+-	loff_t off;
+-	struct net_device *dev;
++	struct dev_iter_state *state = seq->private;
+ 
+ 	rcu_read_lock();
+ 	if (!*pos)
+ 		return SEQ_START_TOKEN;
+ 
+-	off = 1;
+-	for_each_netdev_rcu(net, dev)
+-		if (off++ == *pos)
+-			return dev;
++	/* check for end of the hash */
++	if (state->pos == 0 && *pos > 1)
++		return NULL;
+ 
+-	return NULL;
++	return dev_from_new_bucket(seq);
+ }
+ 
+ void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
+-	struct net_device *dev = v;
++	struct net_device *dev;
++
++	++*pos;
+ 
+ 	if (v == SEQ_START_TOKEN)
+-		dev = first_net_device_rcu(seq_file_net(seq));
+-	else
+-		dev = next_net_device_rcu(dev);
++		return dev_from_new_bucket(seq);
+ 
+-	++*pos;
+-	return dev;
++	dev = dev_from_same_bucket(seq);
++	if (dev)
++		return dev;
++
++	return dev_from_new_bucket(seq);
+ }
+ 
+ void dev_seq_stop(struct seq_file *seq, void *v)
+@@ -4173,7 +4227,7 @@ static const struct seq_operations dev_seq_ops = {
+ static int dev_seq_open(struct inode *inode, struct file *file)
+ {
+ 	return seq_open_net(inode, file, &dev_seq_ops,
+-			    sizeof(struct seq_net_private));
++			    sizeof(struct dev_iter_state));
+ }
+ 
+ static const struct file_operations dev_seq_fops = {
+-- 
+1.7.4.1
 
-How do processes get effected, when they are running into situations 
-where kernel memory manager tells them about "page allocation failure"?
-
-Is it just meant to be a warning/debugging message new to current kernel 
-version 3?
-
-How can we solve the situation? Getting rid of these message, by
-
-- just suppressing
-- increasing system's memory
-- change kernel and/or kernel runtime config
-
-?
-
-Kind regards,
-Philipp
