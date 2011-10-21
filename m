@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab1JUVsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 17:48:10 -0400
-Received: from toast.topped-with-meat.com ([204.197.218.159]:40149 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1JUVsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 17:48:06 -0400
+	id S1753041Ab1JUWHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 18:07:47 -0400
+Received: from mail.agmk.net ([91.192.224.71]:33239 "EHLO mail.agmk.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275Ab1JUWHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 18:07:46 -0400
+From: =?utf-8?q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
+To: Nai Xia <nai.xia@gmail.com>
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Date: Fri, 21 Oct 2011 23:36:46 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00092-g8bc03e8; KDE/4.7.2; x86_64; ; )
+Cc: Hugh Dickins <hughd@google.com>, arekm@pld-linux.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, jpiszcz@lucidpixels.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+References: <201110122012.33767.pluto@agmk.net> <2109011.boM0eZ0ZTE@pawels> <CAPQyPG4SE8DyzuqwG74sE2zuZbDgfDoGDir1xHC3zdED+k=qLA@mail.gmail.com>
+In-Reply-To: <CAPQyPG4SE8DyzuqwG74sE2zuZbDgfDoGDir1xHC3zdED+k=qLA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-X-Fcc: ~/Mail/lkml
-CC: James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, selinux@tycho.nsa.gov,
-        John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] SELinux: Do not apply MMAP_ZERO check to PROT_NONE mappings
-In-Reply-To: Roland McGrath's message of  Friday, 21 October 2011 14:39:16 -0700 <20111021213916.914462C0A5@topped-with-meat.com>
-References: <20111021213916.914462C0A5@topped-with-meat.com>
-Emacs: the answer to the world surplus of CPU cycles.
-Message-Id: <20111021213955.7A46F2C0BF@topped-with-meat.com>
-Date: Fri, 21 Oct 2011 14:39:55 -0700 (PDT)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=fe7WOzsF c=1 sm=1 a=gmN3L6-WT1wA:10
-		a=kj9zAlcOel0A:10 a=hOe2yjtxAAAA:8 a=4cy4ZfLFnbfrfChgsJEA:9
-		a=CjuIK1q_8ugA:10 a=Uzso29ByltnbLLyh:21 a=5lY6_s-9Q76-PHGN:21
-		a=WkljmVdYkabdwxfqvArNOQ==:117
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201110212336.47267.pluto@agmk.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An mmap with PROT_NONE is done specifically to ensure that an address
-will fault.  So doing this on addresses below CONFIG_LSM_MMAP_MIN_ADDR
-is not seeking a "dangerous" operation.  Conversely, it's an attempt
-to ensure robustness in case CONFIG_LSM_MMAP_MIN_ADDR or vm.mmap_min_addr
-is less restrictive than the user wants to be.
+On Friday 21 of October 2011 11:07:56 Nai Xia wrote:
+> On Fri, Oct 21, 2011 at 4:07 PM, Pawel Sikora <pluto@agmk.net> wrote:
+> > On Friday 21 of October 2011 14:22:37 Nai Xia wrote:
+> >
+> >> And as a side note. Since I notice that Pawel's workload may include OOM,
+> >
+> > my last tests on patched (3.0.4 + migrate.c fix + vserver) kernel produce full cpu load
+> > on dual 8-cores opterons like on this htop screenshot -> http://pluto.agmk.net/kernel/screen1.png
+> > afaics all userspace applications usualy don't use more than half of physical memory
+> > and so called "cache" on htop bar doesn't reach the 100%.
+> 
+> OK，did you logged any OOM killing if there was some memory usage burst?
+> But, well my above OOM reasoning is a direct short cut to imagined
+> root cause of "adjacent VMAs which
+> should have been merged but in fact not merged" case.
+> Maybe there are other cases that can lead to this or maybe it's
+> totally another bug....
 
-Since we might let a low mapping exist at all without a check, we
-add another check to prevent mprotect from granting access to such
-a mapping without passing an MMAP_ZERO security check.
+i don't see any OOM killing with my conservative settings
+(vm.overcommit_memory=2, vm.overcommit_ratio=100).
 
-Signed-off-by: Roland McGrath <roland@hack.frob.com>
----
- security/selinux/hooks.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+> But still I think if my reasoning is good, similar bad things will
+> happen again some time in the future,
+> even if it was not your case here...
+> 
+> >
+> > the patched kernel with disabled CONFIG_TRANSPARENT_HUGEPAGE (new thing in 2.6.38)
+> > died at night, so now i'm going to disable also CONFIG_COMPACTION/MIGRATION in next
+> > steps and stress this machine again...
+> 
+> OK, it's smart to narrow down the range first....
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 76e6f04..1e3657b 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3062,7 +3062,8 @@ static int selinux_file_mmap(struct file *file, unsigned long reqprot,
- 	 * at bad behaviour/exploit that we always want to get the AVC, even
- 	 * if DAC would have also denied the operation.
- 	 */
--	if (addr < CONFIG_LSM_MMAP_MIN_ADDR) {
-+	if (addr < CONFIG_LSM_MMAP_MIN_ADDR &&
-+	    (addr_only || prot != PROT_NONE)) {
- 		rc = avc_has_perm(sid, sid, SECCLASS_MEMPROTECT,
- 				  MEMPROTECT__MMAP_ZERO, NULL);
- 		if (rc)
-@@ -3091,6 +3092,20 @@ static int selinux_file_mprotect(struct vm_area_struct *vma,
- 	if (selinux_checkreqprot)
- 		prot = reqprot;
- 
-+	/*
-+	 * Notice that we are intentionally putting the SELinux check before
-+	 * the secondary cap_file_mprotect check.  This is such a likely attempt
-+	 * at bad behaviour/exploit that we always want to get the AVC, even
-+	 * if DAC would have also denied the operation.
-+	 */
-+	if (addr < CONFIG_LSM_MMAP_MIN_ADDR && prot != PROT_NONE) {
-+		u32 sid = current_sid();
-+		rc = avc_has_perm(sid, sid, SECCLASS_MEMPROTECT,
-+				  MEMPROTECT__MMAP_ZERO, NULL);
-+		if (rc)
-+			return rc;
-+	}
-+
- 	/* do DAC check on address space usage */
- 	rc = cap_file_mprotect(vma, reqprot, prot)
- 	if (rc)
+disabling hugepage/compacting didn't help but disabling hugepage/compacting/migration keeps
+opterons stable for ~9h so far. userspace uses ~40GB (from 64) ram, caches reach 100% on htop bar,
+average load ~16. i wonder if it survive weekend...
