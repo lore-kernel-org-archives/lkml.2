@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1JUHNP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 03:13:15 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62130 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1JUHNO convert rfc822-to-8bit (ORCPT
+	id S1753334Ab1JUHSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 03:18:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16919 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab1JUHSw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 03:13:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319153279.2918.16.camel@deadeye>
-References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
- <1319144425-15547-16-git-send-email-Kyle.D.Moffett@boeing.com> <1319153279.2918.16.camel@deadeye>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Fri, 21 Oct 2011 03:12:53 -0400
-Message-ID: <CAGZ=bqKMGnf1SaPHrgaNYTaaq-axA-1bbOWeZfThwZgWUy8weA@mail.gmail.com>
-Subject: Re: [RFC PATCH 15/17] phy_device: Add "port" and "transciever" fields
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        David Decotigny <decot@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Oct 2011 03:18:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,384,1315206000"; 
+   d="scan'208";a="80284631"
+From: "Xu, Anhua" <anhua.xu@intel.com>
+To: Jiri Olsa <jolsa@redhat.com>, "acme@redhat.com" <acme@redhat.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mingo@elte.hu" <mingo@elte.hu>, "paulus@samba.org" <paulus@samba.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Oct 2011 15:18:31 +0800
+Subject: RE: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+Thread-Topic: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+Thread-Index: Acx+wU++EoL6miekS5iQuYTBeiwkAwQ/5tHw
+Message-ID: <1A42CE6F5F474C41B63392A5F80372B212DCA02CB2@shsmsx501.ccr.corp.intel.com>
+References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 19:27, Ben Hutchings <bhutchings@solarflare.com> wrote:
-> On Thu, 2011-10-20 at 17:00 -0400, Kyle Moffett wrote:
->> Some PHYs have multiple software-selectable inputs and outputs,
->> including RGMII, SGMII, SerDes, etc.  New fields are added to the
->> "struct phy_device" for "port" and "transciever" to allow "ethtool" to
->> switch outputs at runtime.  The defaults for the new fields are
->> identical to the hardcoded values used previously.
->>
->> This should make no functional changes to the PHY layer behavior, but
->> it will allow later PHY/ethernet drivers to override those fields.
->>
->> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
->> ---
->>  drivers/net/phy/phy.c        |    4 ++--
->>  drivers/net/phy/phy_device.c |    2 ++
->>  include/linux/phy.h          |    4 ++++
->>  3 files changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
->> index c378f91..5f72055 100644
->> --- a/drivers/net/phy/phy.c
->> +++ b/drivers/net/phy/phy.c
->> @@ -290,9 +290,9 @@ int phy_ethtool_gset(struct phy_device *phydev, struct ethtool_cmd *cmd)
->>
->>       ethtool_cmd_speed_set(cmd, phydev->speed);
->>       cmd->duplex = phydev->duplex;
->> -     cmd->port = PORT_MII;
->> +     cmd->port = phydev->port;
->>       cmd->phy_address = phydev->addr;
->> -     cmd->transceiver = XCVR_EXTERNAL;
->> +     cmd->transceiver = phydev->transciever;
->
-> 'transceiver' is spelt thus.
+I installed the latest kernel and found without such patch( not sure if other patches were added besides this one). That following command works fine.
+perf record -o perf.data -e ext3:ext3_request_inode -e LLC-loads -- date '+%F'
 
-Oh shoot!
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Jiri Olsa
+Sent: Friday, September 30, 2011 12:01 AM
+To: acme@redhat.com; a.p.zijlstra@chello.nl; mingo@elte.hu; paulus@samba.org
+Cc: linux-kernel@vger.kernel.org; Jiri Olsa
+Subject: [PATCH] perf tools: Exit recording if events have non matching sample type
 
-That's what I get for trying to do a last-minute patch edit before
-sending the email; thanks for pointing it out!
+The event processing relies on all events having the same sample_type.
 
-Cheers,
-Kyle Moffett
+This is being checked when the session is being opened read only.
+It also needs to be checked when we do record, since events could be
+read during processing build IDs at the end of the record command.
 
+If we process events with different sample_type the processing might
+skip some events or hang.
+
+Following command hangs on my setup:
+  ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
+   -e LLC-loads -- date '+%F'
+
+because hardware and tracepoint events have different sample type.
+
+With the patch applied the record command displays
+"Non matching sample_type" message and exits.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/builtin-record.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f4c3fbe..71e2c4e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -832,6 +832,12 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		goto out_symbol_exit;
+ 	}
+ 
++	if (!perf_evlist__valid_sample_type(evsel_list)) {
++		pr_err("Non matching sample_type\n");
++		err = -EINVAL;
++		goto out_symbol_exit;
++	}
++
+ 	if (target_pid != -1)
+ 		target_tid = target_pid;
+ 
 -- 
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
+1.7.4
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
