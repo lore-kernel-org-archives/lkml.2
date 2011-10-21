@@ -1,147 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab1JUUeZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 16:34:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48908 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135Ab1JUUeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 16:34:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="p7s'?scan'208";a="65575358"
-From: "Woodhouse, David" <david.woodhouse@intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chrisw@redhat.com" <chrisw@redhat.com>,
-        "agraf@suse.de" <agraf@suse.de>, "dwg@au1.ibm.com" <dwg@au1.ibm.com>,
-        "scottwood@freescale.com" <scottwood@freescale.com>,
-        "B08248@freescale.com" <B08248@freescale.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
-Subject: Re: [PATCH 0/4] iommu: iommu_ops group interface
-Thread-Topic: [PATCH 0/4] iommu: iommu_ops group interface
-Thread-Index: AcyQMM7/5oHTXSi1REOCKqqS0o7o/g==
-Date: Fri, 21 Oct 2011 20:34:19 +0000
-Message-ID: <1319229248.19448.6.camel@shinybook.infradead.org>
-References: <20111021195412.8438.9951.stgit@s20.home>
-In-Reply-To: <20111021195412.8438.9951.stgit@s20.home>
-Accept-Language: en-GB, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-Content-Type: multipart/signed; micalg=sha1;
-	protocol="application/x-pkcs7-signature"; boundary="=-g866i/iemEIvqnXsEpNG"
-MIME-Version: 1.0
+	id S1752518Ab1JUVBn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 17:01:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:50717 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab1JUVBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 17:01:42 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86-64: Set siginfo and context on vsyscall emulation faults
+Date: Fri, 21 Oct 2011 14:01:32 -0700
+Message-Id: <1c0cef7faec24db26e2a6397fa8843089824750f.1319230509.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <CA+55aFx3-F1LzVwN_gSqXcsU7uWda41bHyJxGxHNODWURu0T_g@mail.gmail.com>
+References: <CA+55aFx3-F1LzVwN_gSqXcsU7uWda41bHyJxGxHNODWURu0T_g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-g866i/iemEIvqnXsEpNG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+To make this work, we teach the page fault handler how to send
+signals on failed uaccess.  This only works for user addresses
+(kernel addresses will never hit the page fault handler in the
+first place), so we need to generate signals for those
+separately.
 
-On Fri, 2011-10-21 at 13:55 -0600, Alex Williamson wrote:
-> IOMMUs can't always distiguish transactions from each individual
-> device in a system.  Sometimes this is by design (such as powerpc
-> partitionable endpoints), other times by topology (PCIe-to-PCI
-> bridges masking downstream devices).  We call these sets of
-> indistinguishable devices "groups".=20
+This gets the tricky case right: if the user buffer spans
+multiple pages and only the second page is invalid, we set
+cr2 and si_addr correctly.  UML relies on this behavior to
+"fault in" pages as needed.
 
-Other times it's because a multi-function PCIe device is broken and does
-all its DMA from function zero.... like some Ricoh devices seen in
-laptops. Can you handle quirks to "group" those too?
+We steal a bit from thread_info.uaccess_err to enable this.
+Before this change, uaccess_err was a 32-bit boolean value.
 
---=20
-                   Sent with MeeGo's ActiveSync support.
+This fixes issues with UML when vsyscall=emulate.
 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Reported-by: Adrian Bunk <bunk@stusta.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
+I've tested this briefly on the UML image that used to blow it.  It seems
+to work.  It also passes my little sigcontext test.
 
+ arch/x86/include/asm/thread_info.h |    3 +-
+ arch/x86/include/asm/uaccess.h     |    2 +-
+ arch/x86/kernel/vsyscall_64.c      |   67 +++++++++++++++++++++++++++++++----
+ arch/x86/mm/extable.c              |    2 +-
+ arch/x86/mm/fault.c                |   22 ++++++++---
+ 5 files changed, 79 insertions(+), 17 deletions(-)
 
---=-g866i/iemEIvqnXsEpNG
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index a1fe5c1..25ebd79 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -40,7 +40,8 @@ struct thread_info {
+ 						*/
+ 	__u8			supervisor_stack[0];
+ #endif
+-	int			uaccess_err;
++	int			sig_on_uaccess_error:1;
++	int			uaccess_err:1;	/* uaccess failed */
+ };
+ 
+ #define INIT_THREAD_INFO(tsk)			\
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 36361bf..8be5f54 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -462,7 +462,7 @@ struct __large_struct { unsigned long buf[100]; };
+ 	barrier();
+ 
+ #define uaccess_catch(err)						\
+-	(err) |= current_thread_info()->uaccess_err;			\
++	(err) |= (current_thread_info()->uaccess_err ? -EFAULT : 0);	\
+ 	current_thread_info()->uaccess_err = prev_err;			\
+ } while (0)
+ 
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 18ae83d..c6dd0e6 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -139,11 +139,38 @@ static int addr_to_vsyscall_nr(unsigned long addr)
+ 	return nr;
+ }
+ 
++static bool write_ok_or_segv(unsigned long ptr, size_t size)
++{
++	if (ptr == 0)
++		return true;
++
++	if (!access_ok(VERIFY_WRITE, (void __user *)ptr, size)) {
++		siginfo_t info;
++		struct thread_struct *thread = &current->thread;
++
++		thread->error_code	= 6;  /* user fault, no page, write */
++		thread->cr2		= ptr;
++		thread->trap_no		= 14;
++
++		memset(&info, 0, sizeof(info));
++		info.si_signo		= SIGSEGV;
++		info.si_errno		= 0;
++		info.si_code		= SEGV_MAPERR;
++		info.si_addr		= (void __user *)ptr;
++
++		force_sig_info(SIGSEGV, &info, current);
++		return false;
++	} else {
++		return true;
++	}
++}
++
+ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ {
+ 	struct task_struct *tsk;
+ 	unsigned long caller;
+ 	int vsyscall_nr;
++	int prev_sig_on_uaccess_error;
+ 	long ret;
+ 
+ 	/*
+@@ -179,35 +206,59 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	if (seccomp_mode(&tsk->seccomp))
+ 		do_exit(SIGKILL);
+ 
++	/*
++	 * With a real vsyscall, page faults cause SIGSEGV.  We want to
++	 * preserve that behavior to make writing exploits harder.
++	 */
++	prev_sig_on_uaccess_error = current_thread_info()->sig_on_uaccess_error;
++	current_thread_info()->sig_on_uaccess_error = 1;
++
++	ret = -EFAULT;
+ 	switch (vsyscall_nr) {
+ 	case 0:
++		if (!write_ok_or_segv(regs->di, sizeof(struct timeval)) ||
++		    !write_ok_or_segv(regs->si, sizeof(struct timezone)))
++			break;
++
+ 		ret = sys_gettimeofday(
+ 			(struct timeval __user *)regs->di,
+ 			(struct timezone __user *)regs->si);
+ 		break;
+ 
+ 	case 1:
++		if (!write_ok_or_segv(regs->di, sizeof(time_t)))
++			break;
++
+ 		ret = sys_time((time_t __user *)regs->di);
+ 		break;
+ 
+ 	case 2:
++		if (!write_ok_or_segv(regs->di, sizeof(unsigned)) ||
++		    !write_ok_or_segv(regs->si, sizeof(unsigned)))
++			break;
++
+ 		ret = sys_getcpu((unsigned __user *)regs->di,
+ 				 (unsigned __user *)regs->si,
+ 				 0);
+ 		break;
+ 	}
+ 
++	current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
++
+ 	if (ret == -EFAULT) {
+-		/*
+-		 * Bad news -- userspace fed a bad pointer to a vsyscall.
+-		 *
+-		 * With a real vsyscall, that would have caused SIGSEGV.
+-		 * To make writing reliable exploits using the emulated
+-		 * vsyscalls harder, generate SIGSEGV here as well.
+-		 */
++		/* Bad news -- userspace fed a bad pointer to a vsyscall. */
+ 		warn_bad_vsyscall(KERN_INFO, regs,
+ 				  "vsyscall fault (exploit attempt?)");
+-		goto sigsegv;
++
++		/*
++		 * If we failed to generate a signal for any reason,
++		 * generate one here.  (This should be impossible.)
++		 */
++		if (WARN_ON_ONCE(!sigismember(&tsk->pending.signal, SIGBUS) &&
++				 !sigismember(&tsk->pending.signal, SIGSEGV)))
++			goto sigsegv;
++
++		return true;  /* Don't emulate the ret. */
+ 	}
+ 
+ 	regs->ax = ret;
+diff --git a/arch/x86/mm/extable.c b/arch/x86/mm/extable.c
+index d0474ad..1fb85db 100644
+--- a/arch/x86/mm/extable.c
++++ b/arch/x86/mm/extable.c
+@@ -25,7 +25,7 @@ int fixup_exception(struct pt_regs *regs)
+ 	if (fixup) {
+ 		/* If fixup is less than 16, it means uaccess error */
+ 		if (fixup->fixup < 16) {
+-			current_thread_info()->uaccess_err = -EFAULT;
++			current_thread_info()->uaccess_err = 1;
+ 			regs->ip += fixup->fixup;
+ 			return 1;
+ 		}
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 0d17c8c..85bec26 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -620,7 +620,7 @@ pgtable_bad(struct pt_regs *regs, unsigned long error_code,
+ 
+ static noinline void
+ no_context(struct pt_regs *regs, unsigned long error_code,
+-	   unsigned long address)
++	   unsigned long address, int signal, int si_code)
+ {
+ 	struct task_struct *tsk = current;
+ 	unsigned long *stackend;
+@@ -628,8 +628,17 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+ 	int sig;
+ 
+ 	/* Are we prepared to handle this kernel fault? */
+-	if (fixup_exception(regs))
++	if (fixup_exception(regs)) {
++		if (current_thread_info()->sig_on_uaccess_error && signal) {
++			tsk->thread.trap_no = 14;
++			tsk->thread.error_code = error_code | PF_USER;
++			tsk->thread.cr2 = address;
++
++			/* XXX: hwpoison faults will set the wrong code. */
++			force_sig_info_fault(signal, si_code, address, tsk, 0);
++		}
+ 		return;
++	}
+ 
+ 	/*
+ 	 * 32-bit:
+@@ -749,7 +758,7 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 	if (is_f00f_bug(regs, address))
+ 		return;
+ 
+-	no_context(regs, error_code, address);
++	no_context(regs, error_code, address, SIGSEGV, si_code);
+ }
+ 
+ static noinline void
+@@ -813,7 +822,7 @@ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
+ 
+ 	/* Kernel mode? Handle exceptions or die: */
+ 	if (!(error_code & PF_USER)) {
+-		no_context(regs, error_code, address);
++		no_context(regs, error_code, address, SIGBUS, BUS_ADRERR);
+ 		return;
+ 	}
+ 
+@@ -848,7 +857,7 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 		if (!(fault & VM_FAULT_RETRY))
+ 			up_read(&current->mm->mmap_sem);
+ 		if (!(error_code & PF_USER))
+-			no_context(regs, error_code, address);
++			no_context(regs, error_code, address, 0, 0);
+ 		return 1;
+ 	}
+ 	if (!(fault & VM_FAULT_ERROR))
+@@ -858,7 +867,8 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 		/* Kernel mode? Handle exceptions or die: */
+ 		if (!(error_code & PF_USER)) {
+ 			up_read(&current->mm->mmap_sem);
+-			no_context(regs, error_code, address);
++			no_context(regs, error_code, address,
++				   SIGSEGV, SEGV_MAPERR);
+ 			return 1;
+ 		}
+ 
+-- 
+1.7.6.4
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO6jCCAz0w
-ggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHRXF1
-aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTA2
-MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVs
-IENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kgQ0EwggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATDIsV2xDyt
-30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUjZzTZFq2N
-4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZvuSQ0E11y
-YL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdN
-Zn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJd
-AgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdU
-DDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNh
-LmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0G
-CSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4Sg
-DJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fX
-ZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAAAAAABzAN
-BgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
-JzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI1MTNa
-Fw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlv
-bjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIwDQYJKoZI
-hvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7CrcIQ+FGa2
-KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZEqbDUS+v
-BuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pOgBnnAbZH
-mEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFBWFgiv1QI
-usdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMCAwEAAaOC
-AlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfLUWB+MAsG
-A1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhTx+hdMsKC
-gOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdv
-qNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNv
-bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5j
-cmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
-RXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYI
-KwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0
-cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwl
-MjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCU
-Y/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4Jcyna7fpC
-8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZksnDIlTVUv
-bR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN7Y+3MKEd
-SMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXsaV5NyJzB
-wB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIGFzCCBP+gAwIBAgIKEIhPUAABAABfaTANBgkq
-hkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
-BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0EwHhcNMTEwNDEyMTIzMzQx
-WhcNMTQwMzI3MTIzMzQxWjBFMRkwFwYDVQQDExBXb29kaG91c2UsIERhdmlkMSgwJgYJKoZIhvcN
-AQkBFhlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAvxW1JMLaZUeM6Cg2OVV1nfsZOt9x/CjVJ7SBlapefSjUoNT48n58zLK+Q00YxPkIxnwl
-m57dAxSUf/Dqg+C6DOdLknVQILrGeWNSZdC8GQ8HlHz+D5ldgTDY9L1vDM65p1wbXW4R5QfMbooZ
-IQKlyUivGkggwBUpTeeXDOfz5f4m2UW5aCnyG8yhiBUHISAQyXLwQg+iVhBpTqsVvvojybQY8lGF
-Z7U+kgbgBY0HCqOuEmT7Iz/tm4W3dpfh8mFluZUn1fMBvCaC+cdKVV/1lpeUdtMNREH+jKUU49lt
-BblH1qXmEViOvMT4itbfkUSWeWgeI9umMOK4eL31LLepCQIDAQABo4IC9jCCAvIwCwYDVR0PBAQD
-AgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4HevTmV
-8EMCAWQCAQgwHQYDVR0OBBYEFMcuq9ocKJ7EbWcVlAWTYVXwOsrHMB8GA1UdIwQYMBaAFKoWZq+3
-PVZTYK4Nwu3z7gfLUWB+MIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6Ly93d3cuaW50ZWwu
-Y29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBD
-QSUyMDNBKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9D
-UkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0EoMSkuY3JsMIH1
-BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3Np
-dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
-JTIwM0EoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9y
-ZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5n
-JTIwQ0ElMjAzQSgxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
-BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
-NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
-Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBxLiiAAGnWEDYYtUaje48WjSbMx8O+TsKX2x1sgi/ilnUR
-evhznvvFGx9hRrTtQ4Sz+hU7nWvoxbSLDVx6vDQ7+wyGo6SzE0MYqwB3EzwO/P8MnpgZTlEmgDeP
-GjYX2IFzp5fG7NNvc6byf8pLjXgn+2wqRLUqrh2PZZ5KKIiicVNT+UOlRIbB2T1WuSVHBMQxhQBr
-rzwwYuyoawJCHHo+eKUE51cSSzkT95K+m0Q6XYGC8tQ3i94nBIaLMIg/GM6K2cYKH3vdu/otvGPl
-j9/HEKo+mktp2A2S5sIwCKlw8nYOaYKe1dpmYtXKfVoOIIZ/LaVEB/XEIEC1x/oPbrH/MYIB6jCC
-AeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNV
-BAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ECChCIT1AAAQAAX2kwCQYFKw4D
-AhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTExMTAyMTIw
-MzQwOFowIwYJKoZIhvcNAQkEMRYEFCJG3Co1+3Hnv6YBOKa/pmEt3rnkMA0GCSqGSIb3DQEBAQUA
-BIIBAJAa139RjoE3c/ZE3H5RFJRUwVJAGpQbwn+HBFhHJLV5tupd3PpJbS25FD7t3Vqdu6FiuaRx
-4GhJjFF3UoeCjs6LlShKsRAngh9ZTQ3sOvTobtcv1aLKnH0k6wcx3UeVpDl8R+eOYmgVFdqNQ6Mn
-Daf+/Dz4RZu82hHKGiEa5FVaenICul9GUArrpBGBUS+0cyQf00CVYfMPnY390D7L9lGvllhnsaAQ
-YX9ZJNpMUaKkTQ9ZaxZFDvENUKoeV94jfhjse+gZcoVtQL1DJkk/xQway//xaC5mfH85eSux2k+5
-W76FjvBI6QPE8YoWdjUtX7sVeFcwEc6XY5yS8IWaiKkAAAAAAAA=
-
-
---=-g866i/iemEIvqnXsEpNG--
