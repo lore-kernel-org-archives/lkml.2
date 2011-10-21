@@ -1,116 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1JUJ2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 05:28:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48009 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab1JUJ2p (ORCPT
+	id S1754149Ab1JUJlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 05:41:14 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36560 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab1JUJlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 05:28:45 -0400
-Date: Fri, 21 Oct 2011 12:26:20 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111021092620.GA25694@swordfish>
-References: <alpine.DEB.2.00.1110151529570.25063@chino.kir.corp.google.com>
- <20111020183913.GA21918@liondog.tnic>
- <20111020185329.GA3586@swordfish.minsk.epam.com>
- <20111020190701.GB3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
- <20111020212353.GZ25124@google.com>
- <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
- <20111020213644.GB25124@google.com>
- <20111020230040.GC3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
+	Fri, 21 Oct 2011 05:41:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andreas Gruenbacher <agruen@kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
+In-Reply-To: <1319154390.2270.52.camel@schurl.linbit>
+References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111019222021.GB1874@fieldses.org> <87k4805alx.fsf@linux.vnet.ibm.com> <20111020091434.GC5444@fieldses.org> <20111020091946.GA23773@infradead.org> <20111020102538.GG5444@fieldses.org> <1319154390.2270.52.camel@schurl.linbit>
+User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 21 Oct 2011 15:10:17 +0530
+Message-ID: <874nz265tq.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11102109-1780-0000-0000-000000615C82
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/21/11 02:14), David Rientjes wrote:
-> > I thought I've started understand this, but it was wrong feeling.
-> > 
-> > The error indeed is that class name and lock name are mismatch
-> > 
-> >  689                 if (class->key == key) {                                                                                                                                                                                      
-> >  690                         WARN_ON_ONCE(class->name != lock->name);                                            
-> >  691                         return class;                                                                       
-> >  692                 }  
-> > 
-> > And the problem as far as I understand only shows up when active_load_balance_cpu_stop() gets
-> > called on rq with active_balance.
-> > 
-> > double_unlock_balance() is called with busiest_rq spin lock held and I don't see who
-> > calls lockdep_init_map() on busiest_rq somewhere around. work_struct has its
-> > own lockdep_map touched after __queue_work(cpu, wq, work).
-> > 
-> > I'm not sure that reverting is the best option we have, since it's not fixing
-> > the possible race condition it's just mask it.
-> > 
+On Fri, 21 Oct 2011 01:46:29 +0200, Andreas Gruenbacher <agruen@kernel.org> wrote:
+> On Thu, 2011-10-20 at 06:25 -0400, J. Bruce Fields wrote:
+> > On Thu, Oct 20, 2011 at 05:19:46AM -0400, Christoph Hellwig wrote:
+> > > On Thu, Oct 20, 2011 at 05:14:34AM -0400, J. Bruce Fields wrote:
+> > > > > > Does it really make sense to use a string here just to pick between the
+> > > > > > three choices OWNER@, GROUP@, and EVERYONE@?  Why not just another small
+> > > > > > integer?  Is the goal to expand this somehow eventually?
+> > > > > 
+> > > 
+> > > > > I guess Andreas wanted the disk layout to be able to store user@domain
+> > > > > format if needed.
 > 
-> How does it mask the race condition?  Before the memset(), the ->name 
-> field was never _cleared_ in lockdep_init_map() like it is now, it was 
-> only stored.
->
+> Yep.  On the other hand, none of the code won't actually allow to use
+> user@domain identifiers, it won't help with other identifier types like
+> Windows SIDs, and it doesn't make the code any prettier, so this should
+> probably go away.
+> 
+> > > > Is that likely?  For that to be useful, tasks would need to be able to
+> > > > run as user@domain strings.  And we'd probably want owners and groups to
+> > > > also be user@domain strings.
+> 
+> I really don't see this happen anytime soon, and likely not at all.
+> 
+> > > > The container people seem to eventually want to add some kind of
+> > > > namespace identifier everywhere:
+> > > > 
+> > > > 	http://marc.info/?l=linux-kernel&m=131836778427871&w=2
+> > > > 
+> > > > in which case I guess we'd likely end up with (uid, user namespace id)
+> > > > instead of user@domain?
+> 
+> The filesystem still wouldn't have namespace ids for the owner and
+> owning group, which is a much bigger issue.  I think we're safe not to
+> worry about namespace ids at this point; they also might never happen.
+> 
+> > > Storing strings is an extremly stupid idea.  The only thing that would
+> > > make sense would be storing a windows-style 128-bit GUID.
+> > > 
+> > 
+> > So if we want to do this without strings:
+> > 
+> > > > > +struct richace_xattr {
+> > > > > + __le16          e_type;
+> > > > > + __le16          e_flags;
+> > > > > + __le32          e_mask;
+> > > > > + __le32          e_id;
+> > > > > + char            e_who[0];
+> > 
+> > We could drop that last field and use some predefined values for e_id to
+> > represent owner/group/everyone in the e_type == ACE4_SPECIAL_WHO case.
+> 
+> That makes sense to me.
+> 
+> There seems to be a WELL_KNOWN_SID_TYPE enumeration which maps those
+> kinds of special identifiers to small integers in Windows; maybe it
+> makes sense to use the same numbers for OWNER@, GROUP@, and EVERYONE@.
+> 
+> > Then I'm not sure how you'd extend it if you later decided to add
+> > Windows GUID's or whatever.
+> > 
+> > But maybe it's not realistic to expect to be able to do that without a
+> > new interface and on-disk format: how could old software be expected to
+> > deal with acls that didn't use uid's?
+> 
+> The acl itself has a version field, so new formats could be introduced
+> in the future with a new version.
 
-Well, if we have race condition between `reader' and `writer', then it's our luck that we only hit it
-with ->name modification. It could be `->cpu = raw_smp_processor_id' or while iterating thr' `class_cache'
-to NULL it. Current implementation may only race with `->name' but in theory we have the whole bunch of
-opportunities. Of course I may be wrong.
+How about the below change. This will require richacl tools change
+also. I made the e_flags 32 bit to make sure we don't take the space
+needed NFSv4 ACL related flags.
 
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 9a57039..9179fcd 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -20,19 +20,6 @@
  
-> > I'm not very lucky at reproducing issue, in fact I had only one trace so far.
-> > 
-> > [10172.218213] ------------[ cut here ]------------
-> > [10172.218233] WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-> > [10172.218346]  [<ffffffff8103e7c8>] warn_slowpath_common+0x7e/0x96
-> > [10172.218353]  [<ffffffff8103e7f5>] warn_slowpath_null+0x15/0x17
-> > [10172.218361]  [<ffffffff8106fee5>] __lock_acquire+0x168/0x164b
-> > [10172.218370]  [<ffffffff81034645>] ? find_busiest_group+0x7b6/0x941
-> > [10172.218381]  [<ffffffff8102a5e3>] ? double_rq_lock+0x4d/0x52
-> > [10172.218389]  [<ffffffff8107197e>] lock_acquire+0x138/0x1ac
-> > [10172.218397]  [<ffffffff8102a5e3>] ? double_rq_lock+0x4d/0x52
-> > [10172.218404]  [<ffffffff8102a5c4>] ? double_rq_lock+0x2e/0x52
-> > [10172.218414]  [<ffffffff8148fb49>] _raw_spin_lock_nested+0x3a/0x49
-> > [10172.218421]  [<ffffffff8102a5e3>] ? double_rq_lock+0x4d/0x52
-> > [10172.218428]  [<ffffffff8148fabe>] ? _raw_spin_lock+0x3e/0x45
-> > [10172.218435]  [<ffffffff8102a5c4>] ? double_rq_lock+0x2e/0x52
-> > [10172.218442]  [<ffffffff8102a5e3>] double_rq_lock+0x4d/0x52
-> > [10172.218449]  [<ffffffff810349cc>] load_balance+0x1fc/0x769
-> > [10172.218458]  [<ffffffff810075c5>] ? native_sched_clock+0x38/0x65
-> > [10172.218466]  [<ffffffff8148ca17>] ? __schedule+0x2f5/0xa2d
-> > [10172.218474]  [<ffffffff8148caf5>] __schedule+0x3d3/0xa2d
-> > [10172.218480]  [<ffffffff8148ca17>] ? __schedule+0x2f5/0xa2d
-> > [10172.218490]  [<ffffffff8104db06>] ? add_timer_on+0xd/0x196
-> > [10172.218497]  [<ffffffff8148fc02>] ? _raw_spin_lock_irq+0x4a/0x51
-> > [10172.218505]  [<ffffffff8105907b>] ? process_one_work+0x3ed/0x54c
-> > [10172.218512]  [<ffffffff81059126>] ? process_one_work+0x498/0x54c
-> > [10172.218518]  [<ffffffff81058e1b>] ? process_one_work+0x18d/0x54c
-> > [10172.218526]  [<ffffffff814902d0>] ? _raw_spin_unlock_irq+0x28/0x56
-> > [10172.218533]  [<ffffffff81033950>] ? get_parent_ip+0xe/0x3e
-> > [10172.218540]  [<ffffffff8148d26e>] schedule+0x55/0x57
-> > [10172.218547]  [<ffffffff8105970f>] worker_thread+0x217/0x21c
-> > [10172.218554]  [<ffffffff810594f8>] ? manage_workers.isra.21+0x16c/0x16c
-> > [10172.218564]  [<ffffffff8105d4de>] kthread+0x9a/0xa2
-> > [10172.218573]  [<ffffffff81497984>] kernel_thread_helper+0x4/0x10
-> > [10172.218580]  [<ffffffff8102d6d2>] ? finish_task_switch+0x76/0xf3
-> > [10172.218587]  [<ffffffff81490778>] ? retint_restore_args+0x13/0x13
-> > [10172.218595]  [<ffffffff8105d444>] ? __init_kthread_worker+0x53/0x53
-> > [10172.218602]  [<ffffffff81497980>] ? gs_change+0x13/0x13
-> > [10172.218607] ---[ end trace 9d11d6b5e4b96730 ]---
-> > 
-> 
-> This is with the revert?
-> 
+ MODULE_LICENSE("GPL");
+ 
+-/*
+- * Special e_who identifiers:  ACEs which have ACE4_SPECIAL_WHO set in
+- * ace->e_flags use these constants in ace->u.e_who.
+- *
+- * For efficiency, we compare pointers instead of comparing strings.
+- */
+-const char richace_owner_who[]	  = "OWNER@";
+-EXPORT_SYMBOL_GPL(richace_owner_who);
+-const char richace_group_who[]	  = "GROUP@";
+-EXPORT_SYMBOL_GPL(richace_group_who);
+-const char richace_everyone_who[] = "EVERYONE@";
+-EXPORT_SYMBOL_GPL(richace_everyone_who);
+-
+ /**
+  * richacl_alloc  -  allocate a richacl
+  * @count:	number of entries
+@@ -191,41 +178,14 @@ EXPORT_SYMBOL_GPL(richacl_want_to_mask);
+ int
+ richace_is_same_identifier(const struct richace *a, const struct richace *b)
+ {
+-#define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)
++#define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_UNIXID_WHO | ACE4_IDENTIFIER_GROUP)
+ 	if ((a->e_flags & WHO_FLAGS) != (b->e_flags & WHO_FLAGS))
+ 		return 0;
+-	if (a->e_flags & ACE4_SPECIAL_WHO)
+-		return a->u.e_who == b->u.e_who;
+-	else
+-		return a->u.e_id == b->u.e_id;
++	return a->e_id == b->e_id;
+ #undef WHO_FLAGS
+ }
+ 
+ /**
+- * richacl_set_who  -  set a special who value
+- * @ace:	acl entry
+- * @who:	who value to use
+- */
+-int
+-richace_set_who(struct richace *ace, const char *who)
+-{
+-	if (!strcmp(who, richace_owner_who))
+-		who = richace_owner_who;
+-	else if (!strcmp(who, richace_group_who))
+-		who = richace_group_who;
+-	else if (!strcmp(who, richace_everyone_who))
+-		who = richace_everyone_who;
+-	else
+-		return -EINVAL;
+-
+-	ace->u.e_who = who;
+-	ace->e_flags |= ACE4_SPECIAL_WHO;
+-	ace->e_flags &= ~ACE4_IDENTIFIER_GROUP;
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(richace_set_who);
+-
+-/**
+  * richacl_allowed_to_who  -  mask flags allowed to a specific who value
+  *
+  * Computes the mask values allowed to a specific who value, taking
+@@ -446,10 +406,10 @@ richacl_permission(struct inode *inode, const struct richacl *acl,
+ 				continue;
+ 		} else if (richace_is_unix_id(ace)) {
+ 			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
+-				if (!in_group_p(ace->u.e_id))
++				if (!in_group_p(ace->e_id))
+ 					continue;
+ 			} else {
+-				if (current_fsuid() != ace->u.e_id)
++				if (current_fsuid() != ace->e_id)
+ 					continue;
+ 			}
+ 		} else
+diff --git a/fs/richacl_xattr.c b/fs/richacl_xattr.c
+index 02a7986..3f1f557 100644
+--- a/fs/richacl_xattr.c
++++ b/fs/richacl_xattr.c
+@@ -58,19 +58,14 @@ richacl_from_xattr(const void *value, size_t size)
+ 		goto fail_einval;
+ 
+ 	richacl_for_each_entry(ace, acl) {
+-		const char *who = (void *)(xattr_ace + 1), *end;
+-		ssize_t used = (void *)who - value;
+ 
+-		if (used > size)
+-			goto fail_einval;
+-		end = memchr(who, 0, size - used);
+-		if (!end)
++		if (((void *)xattr_ace + sizeof(*xattr_ace)) > value + size)
+ 			goto fail_einval;
+ 
+-		ace->e_type = le16_to_cpu(xattr_ace->e_type);
+-		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
+-		ace->e_mask = le32_to_cpu(xattr_ace->e_mask);
+-		ace->u.e_id = le32_to_cpu(xattr_ace->e_id);
++		ace->e_type  = le16_to_cpu(xattr_ace->e_type);
++		ace->e_flags = le32_to_cpu(xattr_ace->e_flags);
++		ace->e_mask  = le32_to_cpu(xattr_ace->e_mask);
++		ace->e_id    = le32_to_cpu(xattr_ace->e_id);
+ 
+ 		if (ace->e_flags & ~ACE4_VALID_FLAGS)
+ 			goto fail_einval;
+@@ -78,13 +73,7 @@ richacl_from_xattr(const void *value, size_t size)
+ 		    (ace->e_mask & ~ACE4_VALID_MASK))
+ 			goto fail_einval;
+ 
+-		if (who == end) {
+-			if (ace->u.e_id == -1)
+-				goto fail_einval;  /* uid/gid needed */
+-		} else if (richace_set_who(ace, who))
+-			goto fail_einval;
+-
+-		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
++		xattr_ace = xattr_ace + 1;
+ 	}
+ 
+ 	return acl;
+@@ -102,13 +91,8 @@ size_t
+ richacl_xattr_size(const struct richacl *acl)
+ {
+ 	size_t size = sizeof(struct richacl_xattr);
+-	const struct richace *ace;
+ 
+-	richacl_for_each_entry(ace, acl) {
+-		size += sizeof(struct richace_xattr) +
+-			(richace_is_unix_id(ace) ? 4 :
+-			 ALIGN(strlen(ace->u.e_who) + 1, 4));
+-	}
++	size += sizeof(struct richace_xattr) * acl->a_count;
+ 	return size;
+ }
+ EXPORT_SYMBOL_GPL(richacl_xattr_size);
+@@ -136,21 +120,11 @@ richacl_to_xattr(const struct richacl *acl, void *buffer)
+ 	xattr_ace = (void *)(xattr_acl + 1);
+ 	richacl_for_each_entry(ace, acl) {
+ 		xattr_ace->e_type = cpu_to_le16(ace->e_type);
+-		xattr_ace->e_flags = cpu_to_le16(ace->e_flags &
++		xattr_ace->e_flags = cpu_to_le32(ace->e_flags &
+ 						 ACE4_VALID_FLAGS);
+ 		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
+-		if (richace_is_unix_id(ace)) {
+-			xattr_ace->e_id = cpu_to_le32(ace->u.e_id);
+-			memset(xattr_ace->e_who, 0, 4);
+-			xattr_ace = (void *)xattr_ace->e_who + 4;
+-		} else {
+-			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
+-
+-			xattr_ace->e_id = cpu_to_le32(-1);
+-			memset(xattr_ace->e_who + sz - 4, 0, 4);
+-			strcpy(xattr_ace->e_who, ace->u.e_who);
+-			xattr_ace = (void *)xattr_ace->e_who + sz;
+-		}
++		xattr_ace->e_id = cpu_to_le32(ace->e_id);
++		xattr_ace = xattr_ace + 1;
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(richacl_to_xattr);
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index 4af6d22..e4c5156 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -17,14 +17,15 @@
+ #define __RICHACL_H
+ #include <linux/slab.h>
+ 
++#define ACE_OWNER_ID		130
++#define ACE_GROUP_ID		131
++#define ACE_EVERYONE_ID		110
++
+ struct richace {
+ 	unsigned short	e_type;
+-	unsigned short	e_flags;
++	unsigned int	e_flags;
+ 	unsigned int	e_mask;
+-	union {
+-		unsigned int	e_id;
+-		const char	*e_who;
+-	} u;
++	unsigned int	e_id;
+ };
+ 
+ struct richacl {
+@@ -74,8 +75,10 @@ struct richacl {
+ /*#define ACE4_FAILED_ACCESS_ACE_FLAG	0x0020*/
+ #define ACE4_IDENTIFIER_GROUP		0x0040
+ #define ACE4_INHERITED_ACE		0x0080
+-/* in-memory representation only */
+-#define ACE4_SPECIAL_WHO		0x4000
++/* richacl specific flag values */
++#define ACE4_SPECIAL_WHO		0x80000000
++#define ACE4_UNIXID_WHO			0x40000000
++
+ 
+ #define ACE4_VALID_FLAGS (			\
+ 	ACE4_FILE_INHERIT_ACE |			\
+@@ -83,7 +86,9 @@ struct richacl {
+ 	ACE4_NO_PROPAGATE_INHERIT_ACE |		\
+ 	ACE4_INHERIT_ONLY_ACE |			\
+ 	ACE4_IDENTIFIER_GROUP |			\
+-	ACE4_INHERITED_ACE)
++	ACE4_INHERITED_ACE |			\
++	ACE4_SPECIAL_WHO |			\
++	ACE4_UNIXID_WHO)
+ 
+ /* e_mask bitflags */
+ #define ACE4_READ_DATA			0x00000001
+@@ -254,14 +259,6 @@ richacl_is_protected(const struct richacl *acl)
+ 	return acl->a_flags & ACL4_PROTECTED;
+ }
+ 
+-/*
+- * Special e_who identifiers: we use these pointer values in comparisons
+- * instead of doing a strcmp.
+- */
+-extern const char richace_owner_who[];
+-extern const char richace_group_who[];
+-extern const char richace_everyone_who[];
+-
+ /**
+  * richace_is_owner  -  check if @ace is an OWNER@ entry
+  */
+@@ -269,7 +266,7 @@ static inline int
+ richace_is_owner(const struct richace *ace)
+ {
+ 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+-	       ace->u.e_who == richace_owner_who;
++	       ace->e_id == ACE_OWNER_ID;
+ }
+ 
+ /**
+@@ -279,7 +276,7 @@ static inline int
+ richace_is_group(const struct richace *ace)
+ {
+ 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+-	       ace->u.e_who == richace_group_who;
++	       ace->e_id == ACE_GROUP_ID;
+ }
+ 
+ /**
+@@ -289,7 +286,7 @@ static inline int
+ richace_is_everyone(const struct richace *ace)
+ {
+ 	return (ace->e_flags & ACE4_SPECIAL_WHO) &&
+-	       ace->u.e_who == richace_everyone_who;
++	       ace->e_id == ACE_EVERYONE_ID;
+ }
+ 
+ /**
+@@ -298,7 +295,7 @@ richace_is_everyone(const struct richace *ace)
+ static inline int
+ richace_is_unix_id(const struct richace *ace)
+ {
+-	return !(ace->e_flags & ACE4_SPECIAL_WHO);
++	return (ace->e_flags & ACE4_UNIXID_WHO);
+ }
+ 
+ /**
+@@ -357,7 +354,7 @@ richace_is_deny(const struct richace *ace)
+ extern struct richacl *richacl_alloc(int);
+ extern int richace_is_same_identifier(const struct richace *,
+ 				      const struct richace *);
+-extern int richace_set_who(struct richace *, const char *);
++extern int richace_set_who(struct richace *, const u8*, u_int32_t);
+ extern int richacl_masks_to_mode(const struct richacl *);
+ extern unsigned int richacl_mode_to_mask(mode_t);
+ extern unsigned int richacl_want_to_mask(unsigned int);
+diff --git a/include/linux/richacl_xattr.h b/include/linux/richacl_xattr.h
+index f79ec12..19cb61e 100644
+--- a/include/linux/richacl_xattr.h
++++ b/include/linux/richacl_xattr.h
+@@ -22,10 +22,9 @@
+ 
+ struct richace_xattr {
+ 	__le16		e_type;
+-	__le16		e_flags;
++	__le32		e_flags;
+ 	__le32		e_mask;
+ 	__le32		e_id;
+-	char		e_who[0];
+ };
+ 
+ struct richacl_xattr {
 
-Nope, sorry for being unclear, this is the only trace I got.
-
-	Sergey
