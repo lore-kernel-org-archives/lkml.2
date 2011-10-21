@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1JUHed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 03:34:33 -0400
-Received: from hera.mmsh.univ-aix.fr ([193.50.65.21]:26348 "EHLO
-	CasHub1.mmsh.univ-aix.fr" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752841Ab1JUHec convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 03:34:32 -0400
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Oct 2011 03:34:32 EDT
-From: =?iso-8859-1?Q?Val=E9rie_FESCHET?= <Feschet@mmsh.univ-aix.fr>
-Subject: Technical Support Team
-Thread-Topic: Technical Support Team
-Thread-Index: AcyPwsTv2SePhvbERSaW3wRk7mkRoQ==
-Date: Fri, 21 Oct 2011 07:26:38 +0000
-Message-ID: <67826FAD7AA87244B9DC34E1A6D28BBC0EBF58D2@Mbx1.mmsh.univ-aix.fr>
-Accept-Language: fr-FR, en-US
-Content-Language: fr-FR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.1.206]
-x-pmwin-version: 3.1.0.0, Antivirus-Engine: 3.24.3, Antivirus-Data: 4.70G
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1753505Ab1JUHf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 03:35:59 -0400
+Received: from krak.alatek.krakow.pl ([46.170.108.42]:8947 "EHLO
+	krak.alatek.krakow.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab1JUHf5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 03:35:57 -0400
+From: Pawel Sikora <pluto@agmk.net>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Date: Fri, 21 Oct 2011 09:35:46 +0200
+Message-ID: <2082417.IAMpsykX5y@pawels>
+User-Agent: KMail/4.7.2 (Linux/3.0.6-2; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <CAPQyPG5c1ADteP_rA2JRqLz88s7ZP_vWAKV-dp2hCSM9bRCpmg@mail.gmail.com>
+References: <201110122012.33767.pluto@agmk.net> <201110200830.22062.pluto@agmk.net> <CAPQyPG5c1ADteP_rA2JRqLz88s7ZP_vWAKV-dp2hCSM9bRCpmg@mail.gmail.com>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 21 of October 2011 14:54:29 Nai Xia wrote:
+> 2011/10/20 PaweÅ‚ Sikora <pluto@agmk.net>:
+> > On Wednesday 19 of October 2011 21:42:15 Hugh Dickins wrote:
+> >> On Wed, 19 Oct 2011, Linus Torvalds wrote:
+> >> > On Wed, Oct 19, 2011 at 12:43 AM, Mel Gorman <mgorman@suse.de> wrote:
+> >> > >
+> >> > > My vote is with the migration change. While there are occasionally
+> >> > > patches to make migration go faster, I don't consider it a hot path.
+> >> > > mremap may be used intensively by JVMs so I'd loathe to hurt it.
+> >> >
+> >> > Ok, everybody seems to like that more, and it removes code rather than
+> >> > adds it, so I certainly prefer it too. Pawel, can you test that other
+> >> > patch (to mm/migrate.c) that Hugh posted? Instead of the mremap vma
+> >> > locking patch that you already verified for your setup?
+> >> >
+> >> > Hugh - that one didn't have a changelog/sign-off, so if you could
+> >> > write that up, and Pawel's testing is successful, I can apply it...
+> >> > Looks like we have acks from both Andrea and Mel.
+> >>
+> >> Yes, I'm glad to have that input from Andrea and Mel, thank you.
+> >>
+> >> Here we go.  I can't add a Tested-by since Pawel was reporting on the
+> >> alternative patch, but perhaps you'll be able to add that in later.
+> >>
+> >> I may have read too much into Pawel's mail, but it sounded like he
+> >> would have expected an eponymous find_get_pages() lockup by now,
+> >> and was pleased that this patch appeared to have cured that.
+> >>
+> >> I've spent quite a while trying to explain find_get_pages() lockup by
+> >> a missed migration entry, but I just don't see it: I don't expect this
+> >> (or the alternative) patch to do anything to fix that problem.  I won't
+> >> mind if it magically goes away, but I expect we'll need more info from
+> >> the debug patch I sent Justin a couple of days ago.
+> >
+> > the latest patch (mm/migrate.c) applied on 3.0.4 also survives points
+> > 1) and 2) described previously (https://lkml.org/lkml/2011/10/18/427),
+> > so please apply it to the upstream/stable git tree.
+> >
+> > from the other side, both patches don't help for 3.0.4+vserver host soft-lock
+> 
+> Hi PaweÅ‚,
+> 
+> Did your "both" mean that you applied each patch and run the tests separately,
 
+yes, i've tested Hugh's patches separately.
 
+> Maybe there were more than one bugs dancing but having a same effect,
+> not fixing all of them wouldn't help at all.
 
-Sie haben mehr als die Speicherung Limit für Ihre Mailbox. Sie werden nicht in der Lage zu senden oder zu empfangen neue E-Mail, bis Sie den folgenden Link klicken und das Formular ausfüllen, um Ihr Konto zu aktualisieren
+i suppose that vserver patch only exposes some tricky bug introduced in 2.6.38.
 
-http://www.insekten-egz.ch/phpForms/use/file/form1.html
-
-Technical Support Team
-192.168.0.1
