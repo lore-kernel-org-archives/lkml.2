@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab1JUCg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Oct 2011 22:36:59 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56718 "EHLO
+	id S1752826Ab1JUCoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Oct 2011 22:44:15 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39163 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab1JUCg6 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751869Ab1JUCoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Oct 2011 22:36:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <6349D7A510622448B1BA0967850A8438011CC7CA@nasanexd02d.na.qualcomm.com>
-References: <1319093184-19696-1-git-send-email-cloud.ren@Atheros.com>
- <20111020.044541.970282389722164761.davem@davemloft.net> <6349D7A510622448B1BA0967850A8438011CC21D@nasanexd02d.na.qualcomm.com>
- <20111020.052506.373437241768777548.davem@davemloft.net> <6349D7A510622448B1BA0967850A8438011CC2A0@nasanexd02d.na.qualcomm.com>
- <CAB=NE6W6Gc+dN3SzX00VwO9iheemNzhRQ34KuvMtZsBqVJQhJQ@mail.gmail.com> <6349D7A510622448B1BA0967850A8438011CC7CA@nasanexd02d.na.qualcomm.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Thu, 20 Oct 2011 19:36:37 -0700
-X-Google-Sender-Auth: ojiiNswN1952jpiMOEvRm6j4S84
-Message-ID: <CAB=NE6W4v-SqxQ5uDvREACKH7cWHzpvZu4tNT1zy8iFKsiK96g@mail.gmail.com>
-Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161 Ethernet driver
-To: "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        Xiong Huang <xiong@qca.qualcomm.com>
-Cc: David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Oct 2011 22:44:14 -0400
+Message-ID: <1319165047.4352.4.camel@phoenix>
+Subject: [PATCH] ASoC: wm8996: Fix wrong mask for setting
+ WM8996_AIF_CLOCKING_2
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Date: Fri, 21 Oct 2011 10:44:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 7:21 PM, Ren, Cloud <cjren@qca.qualcomm.com> wrote:
->>On Thu, Oct 20, 2011 at 2:48 AM, Ren, Cloud <cjren@qca.qualcomm.com>
->>wrote:
->>>
->>>>From: "Ren, Cloud" <cjren@qca.qualcomm.com>
->>>>Date: Thu, 20 Oct 2011 09:23:07 +0000
->>>>
->>>>> As you saw, should I do the two following steps?
->>>>> 1. I firstly try to submit code to linux-staging.git.
->>>>> 2. After the driver have been accepted by  linux-staging.git, I
->>>>> submit to net-
->>>>next.git again.
->>>>
->>>>You submit and get it into staging so that it can sit there for some
->>>>time and get reviewed and improved by others.
->>>>
->>>>One doesn't submit directly to net-next right after it gets into
->>>>staging, staging is a place where your driver lives while it still
->>>>smelly funky and needs more work.
->>>
->>> The driver will support the next generation NICs of Atheros.
->>> Meanwhile, the driver can also have better optimization for AR8131 and
->>> AR8151 than atl1c. For some reason, we don't plan to patch atl1c
->>> driver to support our new NIC, such as AR8161. So I hope the driver
->>> can stay in net-next in the end. Of course, I will be responsible for modify
->>source code and let it match kernel requirements.
->>
->>Cloud,
->>
->>If you want to skip staging (which I recommend) then you need to address all
->>upstream concerns expressed. Given that you indicate that you will be
->>working on following up with the driver until its acceptable upstream my
->>recommendation is either to clean up the driver very well and review it
->>internally at Atheros prior to a public submission *or* just dump into staging
->>and get the benefit of community cleanup and eventually wait until it is ready
->>for proper upstream. If you want internal private review at Atheros you can
->>use the internal private ath9k-devel list.
->>
->>Also are you going to maintain the older atlx drivers? While at it can you clear
->>up who maintains what as far as Atheros is concerned for Ethernet?
->>
->>  Luis
->
-> Dear Luis
->
-> Thanks for your suggestions. I would rather do an internal review than only submit to staging.
-> Alx driver is one of the most important drivers for Atheros Ethernet. It's easier to maintain.
-> Because it shares many codes with other drivers on different OSs, it can be convenient to patch
-> some issues which are found on different OSs.
->
-> I'm going to maintain alx linux driver. alx linux driver can support all NICs which atl1c linux driver supports.
-> So we don't plan to maintain atl1c driver. atl1e and atlx driver are also maintained by me. But maybe I can
-> not response requests for those drivers on time, because sometimes I am busy at alx driver.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8996.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Are there issues with the atl1x driver that are fixed in the alx
-driver? How many ? Do we expect to find many more ? If there isn't
-much churn then why not let atl1x rot to death while atx can move
-without atl1x support at all upstream?
+diff --git a/sound/soc/codecs/wm8996.c b/sound/soc/codecs/wm8996.c
+index 1d7b174..645c980 100644
+--- a/sound/soc/codecs/wm8996.c
++++ b/sound/soc/codecs/wm8996.c
+@@ -1920,7 +1920,7 @@ static int wm8996_hw_params(struct snd_pcm_substream *substream,
+ 	snd_soc_update_bits(codec, lrclk_reg, WM8996_AIF1RX_RATE_MASK,
+ 			    lrclk);
+ 	snd_soc_update_bits(codec, WM8996_AIF_CLOCKING_2,
+-			    WM8996_DSP1_DIV_SHIFT << dsp_shift, dsp);
++			    WM8996_DSP1_DIV_MASK << dsp_shift, dsp);
+ 
+ 	return 0;
+ }
+-- 
+1.7.5.4
 
-A driver replacement for atl1x seems fair only if you can ensure there
-will be no regressions Vs the atx driver code. I'd much prefer an atx
-driver that *is* actively maintained by Atheros than only Gigabit
-support for atx, and an orphaned atl1x driver but if we don't expect
-much changes to go for atl1x what is the point?
 
-  Luis
+
