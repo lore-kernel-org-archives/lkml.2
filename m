@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1JUMap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:30:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56715 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751471Ab1JUMao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:30:44 -0400
-Date: Fri, 21 Oct 2011 13:30:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] pinctrl: add a generic control interface
-Message-ID: <20111021123041.GE4080@opensource.wolfsonmicro.com>
-References: <1319041274-18723-1-git-send-email-linus.walleij@stericsson.com>
- <20111020023140.GC32007@S2100-06.ap.freescale.net>
- <CAGsJ_4yvgeX7H_csvVGyN6JDR-VAfB4Yd6tdFFtKeFy5ouBWBg@mail.gmail.com>
- <CACRpkdYCgY9w8UgMKLgxSsu=Veo01-YSKBWndqU_uCTE-GjZuQ@mail.gmail.com>
- <20111020141827.GB6100@sirena.org.uk>
- <CACRpkdaaUmze+W1n4NkApTX0Se1VJAmD+AJSm36QbsKVDzdnRA@mail.gmail.com>
- <20111020154244.GA26083@opensource.wolfsonmicro.com>
- <CACRpkdbJbUefH+Q0GMp+_4FhV5RqQ+KHrGnJLR6jZSNR16NbSw@mail.gmail.com>
+	id S1754441Ab1JUMhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:37:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47933 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249Ab1JUMhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 08:37:15 -0400
+Message-ID: <4EA16779.7060006@suse.cz>
+Date: Fri, 21 Oct 2011 14:37:13 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbJbUefH+Q0GMp+_4FhV5RqQ+KHrGnJLR6jZSNR16NbSw@mail.gmail.com>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Adrian Bunk <bunk@stusta.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@infradead.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: Please revert "debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL
+ to unhide debug options"
+References: <20110930134245.GB21474@localhost.pp.htv.fi> <20110930150519.GA7980@leaf> <20110930155012.GC9049@localhost.pp.htv.fi> <20111010072946.GA29035@elte.hu> <20111010084811.GG4586@localhost.pp.htv.fi> <20111010102116.GA26901@elte.hu> <20111010121340.GA3731@localhost.pp.htv.fi> <20111012083801.GA27853@elte.hu> <20111020214149.GF9819@localhost.pp.htv.fi> <4EA12B11.5090809@suse.cz> <20111021092249.GG9819@localhost.pp.htv.fi>
+In-Reply-To: <20111021092249.GG9819@localhost.pp.htv.fi>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 02:28:25PM +0200, Linus Walleij wrote:
-> On Thu, Oct 20, 2011 at 5:42 PM, Mark Brown
-> > On Thu, Oct 20, 2011 at 04:43:30PM +0200, Linus Walleij wrote:
+On 21.10.2011 11:22, Adrian Bunk wrote:
+> On Fri, Oct 21, 2011 at 10:19:29AM +0200, Michal Marek wrote:
+>> On 20.10.2011 23:41, Adrian Bunk wrote:
+>>> Ingo, would you accept if I would go through the Kconfig files and 
+>>> monitor future changes to Kconfig files in the kernel (or if Michal does 
+>>> it, I don't insist that it has to be me if someone else wants to do it)?
+>>
+>> What kind of changes do you have in mind? Sorry, I haven't followed the
+>> whole thread.
+> 
+> Checking the correctness and making things more robust.
+> 
+> An example:
+> 
+> config KVM
+>         tristate "Kernel-based Virtual Machine (KVM) support"
+> 	...
+>         # for TASKSTATS/TASK_DELAY_ACCT:
+>         depends on NET
+> 	...
+>         select TASKSTATS
+>         select TASK_DELAY_ACCT
+> 
+> That breaks if anyone touches the dependencies of TASKSTATS
+> or TASK_DELAY_ACCT.
+> 
+> It should be solved better, my first thought would be introducing
+> something like a TASK_DELAY_ACCT_AVAILABLE variable.
 
-> >> In Ux500 we model our power domain switches as regulators,
-> >> does such a property even belong in pin control? Is there
-> >> one power domain switch per pin you mean, or a power switch
-> >> for a whole group of pins?
+Right, but that's a deficiency of the kconfig solver. Catalin Marinas
+has patched it to at least print a warning if a dependency of a
+select-ed symbol is not set. Ideally, we should get a better solver.
 
-> > This isn't an on/off control and in this cae it's per pin.
+Michal
 
-> If this is a binary output pin, I suspect that
-> I suspect that what you call "off" is actually implemeted as
-> in this figure:
+Michal
 
-To repeat once more: this is *not* an on/off control, this is a control
-selecting the voltage domain a pin is referenced to.
-
-> http://upload.wikimedia.org/wikipedia/commons/c/c0/Tristate_buffer.svg
-
-No, this is completely orthogonal to voltage domain selection.
