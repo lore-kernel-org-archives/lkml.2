@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab1JUUKc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 16:10:32 -0400
-Received: from mail.lang.hm ([64.81.33.126]:39447 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab1JUUKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 16:10:31 -0400
-Date: Fri, 21 Oct 2011 13:10:10 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: NeilBrown <neilb@suse.de>
-cc: Alan Stern <stern@rowland.harvard.edu>,
-        John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lsusd - The Linux SUSpend Daemon
-In-Reply-To: <20111021162340.669742c0@notabene.brown>
-Message-ID: <alpine.DEB.2.02.1110211308130.13493@asgard.lang.hm>
-References: <20111020111743.13b40558@notabene.brown> <Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org> <20111021162340.669742c0@notabene.brown>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752271Ab1JUUP4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 16:15:56 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:36687 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab1JUUPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 16:15:55 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.1-rc10
+In-Reply-To: Your message of "Mon, 17 Oct 2011 21:19:35 PDT."
+             <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1319228151_2718P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 21 Oct 2011 16:15:51 -0400
+Message-ID: <12633.1319228151@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4EA1D2F8.0016,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Oct 2011, NeilBrown wrote:
+--==_Exmh_1319228151_2718P
+Content-Type: text/plain; charset=us-ascii
 
-> Hi,
->
-> I wasn't going to do this... but then I did.  I think that sometimes coding is
-> a bit like chocolate.
->
-> At:
->    git://neil.brown.name/lsusd
-> or
->    http://neil.brown.name/git/lsusd
->
-> you can find a bunch of proof-of-concept sample code that implements a
-> "Linux SUSpend Daemon" with client support library and test programs.
->
-> I haven't actually tested it as root and had it actually suspend and resume
-> and definitely haven't had it even close to a race condition, but the
-> various bits seem to work with each other properly when I run them under
-> strace and watch.
->
-> It didn't turn out quite the way I imagined, but then cold harsh reality has
-> a way of destroying our dreams, doesn't it :-)
->
->
-> Below is the README file.  Comment welcome as always.
-> I'm happy for patches too, but I'm equally happy for someone to re-write it
-> completely and make something really useful and maintainable.
+On Mon, 17 Oct 2011 21:19:35 PDT, Linus Torvalds said:
+> The shortlog is about as informative as it gets. There's still some
+> discussion about a couple of minor things we would like to get
+> resolved, but on the whole 3.1 is long over-due and by the KS I think
+> everybody will be relieved to have it out, and ready to open the merge
+> window.
 
-have you put any thought into the idea of extending this slightly to 
-handle the userspace wakelock interface to potentially allow this to run 
-android userspace on a stock kernel?
+Are there plans to extend the merge window because everybody will be busy at
+KS, or is the plan to do KS during the day, do merges at night, and resume
+sleeping after -rc1 gets out?
 
-I realize that there are other things that would be needed as well, but 
-the wakelock interface is a biggie.
 
-David Lang
+--==_Exmh_1319228151_2718P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOodL3cC3lWbTT17ARAic6AKCKz4XeVuY2X4vk5IgEYyCVT6pElQCfVzJq
+C8+gRZXtRVQpfs3y3K6WjDM=
+=TH6k
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1319228151_2718P--
+
