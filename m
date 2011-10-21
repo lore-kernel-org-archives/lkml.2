@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1JUMWj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 08:22:39 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:32488
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751281Ab1JUMWT (ORCPT
+	id S1754242Ab1JUMYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 08:24:46 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47386 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab1JUMYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 08:22:19 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LTF10Z-02-1UI-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        <akpm@linux-foundation.org>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 2/3] mmu_notifier: Add invalidate_range_free_pages() notifier
-Date: Fri, 21 Oct 2011 14:21:47 +0200
-Message-ID: <1319199708-17777-3-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1319199708-17777-1-git-send-email-joerg.roedel@amd.com>
-References: <1319199708-17777-1-git-send-email-joerg.roedel@amd.com>
+	Fri, 21 Oct 2011 08:24:44 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3 0/3] CPU hotplug, Freezer: Fix bugs in CPU hotplug call path
+To: a.p.zijlstra@chello.nl
+Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        rdunlap@xenotime.net
+Date: Fri, 21 Oct 2011 17:54:35 +0530
+Message-ID: <20111021122401.14321.45857.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This notifier closes an important gap in the current
-invalidate_range_start()/end() notifiers. The _start() part
-is called when all pages are still mapped while the _end()
-notifier is called when all pages are potentially unmapped
-and already freed.
+When using the CPU hotplug infrastructure to offline/online CPUs, the cpu_up()
+and cpu_down() functions are used, which internally call _cpu_up() and
+_cpu_down() with the second argument *always* set to 0. The second argument
+is "tasks_frozen", which should be correctly set to 1 when tasks have been
+frozen, even when the freezing of tasks may be due to an event unrelated
+to CPU hotplug, such as a suspend operation in progress, in which case the
+freezer subsystem freezes all the freezable tasks.
 
-This does not allow to manage external (non-CPU) hardware
-TLBs with MMU-notifiers because there is no way to prevent
-that hardware will esablish new TLB entries between the
-calls of these two functions. But this is a requirement to
-the subsytem that implements these existing notifiers.
+Not giving the correct value for the 'tasks_frozen' argument can potentially
+lead to a lot of issues since this will send wrong notifications via the
+notifier mechanism leading to the execution of inappropriate code by the
+callbacks registered for the notifiers. That is, instead of CPU_ONLINE_FROZEN
+and CPU_DEAD_FROZEN notifications, it results in CPU_ONLINE and CPU_DEAD
+notifications to be sent all the time, irrespective of the actual state of
+the system (i.e., whether tasks are frozen or not).
 
-To allow managing external TLBs the MMU-notifiers need to
-catch the moment when pages are unmapped but not yet freed.
-This new notifier catches that moment and notifies the
-interested subsytem when pages that were unmapped are about
-to be freed. The new notifier will only be called between
-invalidate_range_start()/end().
+This patch introduces a flag to indicate whether the tasks are frozen are not
+(by any event) and modifies cpu_up() and cpu_down() functions to check the
+value of this flag and accordingly call _cpu_up() and _cpu_down() respectively
+by supplying the correct value as the second argument based on the state of
+the system. This in turn means that the correct notifications are sent, thus
+ensuring that all the registered callbacks do the right thing.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- include/linux/mmu_notifier.h |   32 +++++++++++++++++++++++++++-----
- mm/mmu_notifier.c            |   13 +++++++++++++
- 2 files changed, 40 insertions(+), 5 deletions(-)
+Additionally, to ensure that the tasks are not frozen or thawed by the freezer
+subsystem while the registered callbacks are running, this patch adds a few
+notifications in the freezer which is then hooked onto by the CPU hotplug
+code, to avoid this race.
 
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-index b9469d6..199813f 100644
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -94,11 +94,17 @@ struct mmu_notifier_ops {
- 	/*
- 	 * invalidate_range_start() and invalidate_range_end() must be
- 	 * paired and are called only when the mmap_sem and/or the
--	 * locks protecting the reverse maps are held. The subsystem
--	 * must guarantee that no additional references are taken to
--	 * the pages in the range established between the call to
--	 * invalidate_range_start() and the matching call to
--	 * invalidate_range_end().
-+	 * locks protecting the reverse maps are held.
-+	 * invalidate_range_free_pages() is called between the two
-+	 * functions every time when the VM has unmapped pages that are
-+	 * about to be freed.
-+	 * The subsystem must guarantee that no additional references
-+	 * are taken to the pages in the range established between the
-+	 * call to invalidate_range_start() and the matching call to
-+	 * invalidate_range_end(). If this guarantee can not be given
-+	 * by the subsystem it has to make sure that additional
-+	 * references are dropped again in the
-+	 * invalidate_range_free_pages() notifier.
- 	 *
- 	 * Invalidation of multiple concurrent ranges may be
- 	 * optionally permitted by the driver. Either way the
-@@ -109,6 +115,9 @@ struct mmu_notifier_ops {
- 	 * invalidate_range_start() is called when all pages in the
- 	 * range are still mapped and have at least a refcount of one.
- 	 *
-+	 * invalidate_range_free_pages() is called when a bunch of pages
-+	 * are unmapped but not yet freed by the VM.
-+	 *
- 	 * invalidate_range_end() is called when all pages in the
- 	 * range have been unmapped and the pages have been freed by
- 	 * the VM.
-@@ -137,6 +146,8 @@ struct mmu_notifier_ops {
- 	void (*invalidate_range_start)(struct mmu_notifier *mn,
- 				       struct mm_struct *mm,
- 				       unsigned long start, unsigned long end);
-+	void (*invalidate_range_free_pages)(struct mmu_notifier *mn,
-+					    struct mm_struct *mm);
- 	void (*invalidate_range_end)(struct mmu_notifier *mn,
- 				     struct mm_struct *mm,
- 				     unsigned long start, unsigned long end);
-@@ -181,6 +192,7 @@ extern void __mmu_notifier_invalidate_page(struct mm_struct *mm,
- 					  unsigned long address);
- extern void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
- 				  unsigned long start, unsigned long end);
-+extern void __mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm);
- extern void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
- 				  unsigned long start, unsigned long end);
- 
-@@ -227,6 +239,12 @@ static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
- 		__mmu_notifier_invalidate_range_start(mm, start, end);
- }
- 
-+static inline void mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm)
-+{
-+	if (mm_has_notifiers(mm))
-+		__mmu_notifier_invalidate_range_free_pages(mm);
-+}
-+
- static inline void mmu_notifier_invalidate_range_end(struct mm_struct *mm,
- 				  unsigned long start, unsigned long end)
- {
-@@ -354,6 +372,10 @@ static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
- {
- }
- 
-+static inline void mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm)
-+{
-+}
-+
- static inline void mmu_notifier_invalidate_range_end(struct mm_struct *mm,
- 				  unsigned long start, unsigned long end)
- {
-diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
-index 8d032de..ec6b11b 100644
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -168,6 +168,19 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
- 	rcu_read_unlock();
- }
- 
-+void __mmu_notifier_invalidate_range_free_pages(struct mm_struct *mm)
-+{
-+	struct mmu_notifier *mn;
-+	struct hlist_node *n;
-+
-+	rcu_read_lock();
-+	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
-+		if (mn->ops->invalidate_range_free_pages)
-+			mn->ops->invalidate_range_free_pages(mn, mm);
-+	}
-+	rcu_read_unlock();
-+}
-+
- void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
- 				  unsigned long start, unsigned long end)
- {
--- 
-1.7.5.4
+v3: * Added synchronization between CPU hotplug and the freezer subsystem
+      without introducing any new locks in the CPU hotplug call path.
+
+v2: * Removed the atomic_t declaration of tasks_frozen flag and the
+      atomic_[set|read] functions since they were unnecessary.
+    * Updated the changelog to give an example scenario where things could go
+      wrong due to the bug in the CPU hotplug call path.
+
+References:
+v1 -> http://thread.gmane.org/gmane.linux.kernel/1198312/
+v2 -> http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087
+
+--
+Srivatsa S. Bhat (3):
+      CPU hotplug, Freezer: Don't hardcode 'tasks_frozen' argument in _cpu_*()
+      CPU hotplug, Freezer: Synchronize CPU hotplug and freezer
+      PM, Freezer, Docs: Update documentation about the new freezer notifiers
+
+
+ Documentation/power/notifiers.txt |    8 ++++
+ include/linux/freezer.h           |    2 +
+ include/linux/suspend.h           |    6 ++-
+ kernel/cpu.c                      |   76 ++++++++++++++++++++++++++++++++++++-
+ kernel/power/process.c            |   32 +++++++++++++++-
+ 5 files changed, 120 insertions(+), 4 deletions(-)
 
 
