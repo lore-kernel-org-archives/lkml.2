@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab1JUKwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Oct 2011 06:52:14 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:59949 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab1JUKwM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Oct 2011 06:52:12 -0400
-Subject: Re: [PATCH -V7 21/26] richacl: xattr mapping functions
-From: Andreas Gruenbacher <agruen@kernel.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 21 Oct 2011 12:52:10 +0200
-In-Reply-To: <874nz265tq.fsf@linux.vnet.ibm.com>
-References: <1318951981-5508-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	 <1318951981-5508-22-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	 <20111019222021.GB1874@fieldses.org> <87k4805alx.fsf@linux.vnet.ibm.com>
-	 <20111020091434.GC5444@fieldses.org> <20111020091946.GA23773@infradead.org>
-	 <20111020102538.GG5444@fieldses.org>
-	 <1319154390.2270.52.camel@schurl.linbit>
-	 <874nz265tq.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1319194331.5930.9.camel@schurl.linbit>
-Mime-Version: 1.0
+	id S1754392Ab1JULE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Oct 2011 07:04:26 -0400
+Received: from spaceboyz.net ([87.106.131.203]:52882 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754272Ab1JULEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Oct 2011 07:04:25 -0400
+Date: Fri, 21 Oct 2011 13:04:18 +0200
+From: David Lamparter <equinox@diac24.net>
+To: Naohiro Aota <naota@elisp.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH][RFC] ipconfig: Add new kernel parameter to force MAC
+ address
+Message-ID: <20111021110418.GG651279@jupiter.n2.diac24.net>
+References: <878vofr2t9.fsf@elisp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878vofr2t9.fsf@elisp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-21 at 15:10 +0530, Aneesh Kumar K.V wrote:
-> How about the below change. This will require richacl tools change
-> also.
+On Fri, Oct 21, 2011 at 02:27:30AM +0900, Naohiro Aota wrote:
+> However it's not possible when you are using NFS root since the
+> kernel already set the random MAC address and you cannot change
+> it after system boot up process.
 
->  I made the e_flags 32 bit to make sure we don't take the space
->  needed NFSv4 ACL related flags.
+Is there any particular reason you're not using an initramfs?
+Kernel autoconfiguration & NFS-root are relicts of old times, with an
+initramfs you can start a proper portmap/rpcbind daemon and use full
+regular NFS (v4 even).
 
-But struct richace_xattr has a hole now.  
+... and you can change the MAC before bringing the interface up.
 
-There's ample of space left in the 16-bit field; I don't think there is
-a need to extend it.  If the need should ever arise, we can still define
-a new version of the xattr format.  Also, this change creates a hole in
-struct richace_xattr; we can't do that.
 
-> +#define ACE4_SPECIAL_WHO		0x80000000
-> +#define ACE4_UNIXID_WHO			0x40000000
-
-Can the ACE4_UNIXID_WHO flag please be removed again?  It isn't needed,
-it just creates a mess.
-
-Thanks,
-Andreas
-
+-David
