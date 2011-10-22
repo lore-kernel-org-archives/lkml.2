@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1JVO1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 10:27:24 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33031 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab1JVO1X (ORCPT
+	id S1753116Ab1JVOsl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 10:48:41 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:57992 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab1JVOsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 10:27:23 -0400
-Message-ID: <8d6b949ee16a092a660a7b05fdaf6d6a.squirrel@www.firstfloor.org>
-In-Reply-To: <yw1x1uu5p3sc.fsf@unicorn.mansr.com>
-References: <4E9E0B71.9020708@am.sony.com>
-    <1318983248.7569.5.camel@Joe-Laptop> <4E9E1944.80601@am.sony.com>
-    <1500345.YeXPhIIHc5@wuerfel>
-    <CACVXFVMb9p8PiTYWGTNn-FtQts0sRgmK+BQ6kaJ6-D89CAT=xQ@mail.gmail.com>
-    <yw1x1uu5p3sc.fsf@unicorn.mansr.com>
-Date: Sat, 22 Oct 2011 16:27:18 +0200
-Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
-From: "Andi Kleen" <andi@firstfloor.org>
-To: =?iso-8859-1?Q?=22M=E5ns_Rullg=E5rd=22?= <mans@mansr.com>
-Cc: "Ming Lei" <tom.leiming@gmail.com>, "Arnd Bergmann" <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        "Tim Bird" <tim.bird@am.sony.com>, "Joe Perches" <joe@perches.com>,
-        "linux kernel" <linux-kernel@vger.kernel.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "Russell King" <rmk@arm.linux.org.uk>,
-        "Thomas Gleixner" <tglx@linutronix.de>
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Sat, 22 Oct 2011 10:48:40 -0400
+Message-ID: <1319294907.2678.2.camel@phoenix>
+Subject: [PATCH] ASoC: wm8400: Fix setting Fout clock divider for FLL
+ Control 4
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Date: Sat, 22 Oct 2011 22:48:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+What we want here is to clear the WM8400_FLL_OUTDIV_MASK bits then
+OR with factors.outdiv.
 
->> If system run for some time, sometimes it may be difficult for
->> memory allocator to allocate 2 continuous page frames even  there are
->> many spare page frames in system because of
->> fragment issue, so the patch does make sense. Anyway,
->> it provides one option for user to apply 4k stack to avoid
->> such kind of process creation failure.
->
-> Can't page migration be used in these situations?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8400.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The kernel already uses it of course, assuming the pages are movable.
-So if you are really worried about this, just define a movable zone.
+diff --git a/sound/soc/codecs/wm8400.c b/sound/soc/codecs/wm8400.c
+index dc13be2..f29bc26 100644
+--- a/sound/soc/codecs/wm8400.c
++++ b/sound/soc/codecs/wm8400.c
+@@ -1059,7 +1059,7 @@ static int wm8400_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
+ 	wm8400_write(codec, WM8400_FLL_CONTROL_3, factors.n);
+ 
+ 	reg = wm8400_read(codec, WM8400_FLL_CONTROL_4);
+-	reg &= WM8400_FLL_OUTDIV_MASK;
++	reg &= ~WM8400_FLL_OUTDIV_MASK;
+ 	reg |= factors.outdiv;
+ 	wm8400_write(codec, WM8400_FLL_CONTROL_4, reg);
+ 
+-- 
+1.7.5.4
 
--Andi
+
 
