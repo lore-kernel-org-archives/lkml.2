@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab1JVP2n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 11:28:43 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:38233 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab1JVP2m (ORCPT
+	id S1753841Ab1JVPxT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 11:53:19 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:33420 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab1JVPxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 11:28:42 -0400
-Date: Sat, 22 Oct 2011 17:28:41 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?=
-	=?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111022152841.GA1913@tango.0pointer.de>
-References: <1317943022.1095.25.camel@mop>
- <CALdu-PBLCNXTaZuODyzw_g_FQNyLqK_FsdObC=HjtEp75vkdFQ@mail.gmail.com>
- <20111019230347.GA32295@tango.0pointer.de>
- <CALdu-PCRj4+tL-6MXwsZKuODHRQn_pixdfVLwC6PV2a0q4sw4g@mail.gmail.com>
- <20111019233111.GE32295@tango.0pointer.de>
- <20111022102126.GA2811@somewhere.feld.cvut.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111022102126.GA2811@somewhere.feld.cvut.cz>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Sat, 22 Oct 2011 11:53:18 -0400
+X-Greylist: delayed 3615 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Oct 2011 11:53:18 EDT
+Date: Sat, 22 Oct 2011 10:48:49 -0400 (EDT)
+From: Peter Foley <pefoley2@verizon.net>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        mmarek@suse.cz
+Subject: [PATCH] kbuild: use xfwrite wrapper function to silence warnings
+Message-id: <alpine.LNX.2.00.1110221045310.59156@linux>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22.10.11 12:21, Frederic Weisbecker (fweisbec@gmail.com) wrote:
+Use the xfwrite wrapper function defined in lkc.h to check the return value of
+fwrite and silence these warnings.
 
-> If you really need to stop any forks in a cgroup, then a cgroup core feature
-> handling that very single purpose would be better and more efficient.
+  HOSTCC  scripts/kconfig/zconf.tab.o
+scripts/kconfig/zconf.tab.c: In function 'header_print_comment':
+/usr/src/lto/scripts/kconfig/confdata.c:551:10: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result
+scripts/kconfig/zconf.tab.c: In function 'kconfig_print_comment':
+/usr/src/lto/scripts/kconfig/confdata.c:467:10: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result
 
-We'd be happy with that and this is what we originally suggested actually.
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
+---
+ scripts/kconfig/confdata.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> That said I'm not really sure why you're using cgroups in Systemd.
-
-We want to reliably label processes in a hierarchial way, so that this
-is inherited by all child processes, cannot be overriden by unprivileged
-code (subject to some classic Unix access control handling) and get
-notifications when such a label stops referring to any process. We use
-that for sticking the service name on a process, so that all CGI
-processes of Apache are automatically assigned the same service as
-apache itself. And we want a notification when all of apache's processes
-die. And we also want to be able to kill Apache compeltely by killing
-all its processes.
-
-cgroups provides us with all of that, though the last two items only in
-a suboptimal way: notification of cgroups running empty is ugly, since
-it is done by spawning a usermode helper (we'd prefer a netlink msg or
-so), and the process killing is a bit racy.
-
-Lennart
-
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 59b667c..f90c22f 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -464,7 +464,7 @@ kconfig_print_comment(FILE *fp, const char *value, void *arg)
+ 		fprintf(fp, "#");
+ 		if (l) {
+ 			fprintf(fp, " ");
+-			fwrite(p, l, 1, fp);
++			xfwrite(p, l, 1, fp);
+ 			p += l;
+ 		}
+ 		fprintf(fp, "\n");
+@@ -548,7 +548,7 @@ header_print_comment(FILE *fp, const char *value, void *arg)
+ 		fprintf(fp, " *");
+ 		if (l) {
+ 			fprintf(fp, " ");
+-			fwrite(p, l, 1, fp);
++			xfwrite(p, l, 1, fp);
+ 			p += l;
+ 		}
+ 		fprintf(fp, "\n");
 -- 
-Lennart Poettering - Red Hat, Inc.
+1.7.7
+
