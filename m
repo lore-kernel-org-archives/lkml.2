@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab1JVKTO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:19:14 -0400
+	id S1754824Ab1JVKT2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:19:28 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:61756 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab1JVKTM (ORCPT
+	with ESMTP id S1754192Ab1JVKT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:19:12 -0400
+	Sat, 22 Oct 2011 06:19:26 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>,
-        Jayachandran C <jayachandranc@netlogicmicro.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org
-Subject: [PATCH 48/49] USB: pxa168: xls: irq: Remove IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:57:00 +0800
-Message-Id: <1319277421-9203-49-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org
+Subject: [PATCH 49/49] genirq: Remove IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:57:01 +0800
+Message-Id: <1319277421-9203-50-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
@@ -23,49 +21,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
+There is no stuff which depends on IRQF_DISABLED after we
+made the tree-wide cleanup. Time to remove it completely.
 
-So now this flag is a NOOP and can be removed.
+No too late than 2.6.36 :)
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>
-Cc: Jayachandran C <jayachandranc@netlogicmicro.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/usb/host/ehci-pxa168.c |    2 +-
- drivers/usb/host/ohci-xls.c    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/feature-removal-schedule.txt |    7 -------
+ include/linux/interrupt.h                  |    3 ---
+ 2 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-pxa168.c b/drivers/usb/host/ehci-pxa168.c
-index ac0c16e..f0b776d 100644
---- a/drivers/usb/host/ehci-pxa168.c
-+++ b/drivers/usb/host/ehci-pxa168.c
-@@ -304,7 +304,7 @@ static int __devinit ehci_pxa168_drv_probe(struct platform_device *pdev)
- 	hcd->has_tt = 1;
- 	ehci->sbrn = 0x20;
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 3d84912..ad6aac6 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -400,13 +400,6 @@ Who:	Netfilter developer team <netfilter-devel@vger.kernel.org>
  
--	err = usb_add_hcd(hcd, irq, IRQF_SHARED | IRQF_DISABLED);
-+	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (err)
- 		goto err5;
+ ----------------------------
  
-diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
-index a3a9c6f..38b6bda 100644
---- a/drivers/usb/host/ohci-xls.c
-+++ b/drivers/usb/host/ohci-xls.c
-@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
- 		goto err3;
- 	}
- 
--	retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (retval != 0)
- 		goto err4;
- 	return retval;
+-What:	IRQF_DISABLED
+-When:	2.6.36
+-Why:	The flag is a NOOP as we run interrupt handlers with interrupts disabled
+-Who:	Thomas Gleixner <tglx@linutronix.de>
+-
+-----------------------------
+-
+ What: 	PCI DMA unmap state API
+ When:	August 2012
+ Why:	PCI DMA unmap state API (include/linux/pci-dma.h) was replaced
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 664544f..74970b0 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -42,8 +42,6 @@
+  * These flags used only by the kernel as part of the
+  * irq handling routines.
+  *
+- * IRQF_DISABLED - keep irqs disabled when calling the action handler.
+- *                 DEPRECATED. This flag is a NOOP and scheduled to be removed
+  * IRQF_SAMPLE_RANDOM - irq is used to feed the random generator
+  * IRQF_SHARED - allow sharing the irq among several devices
+  * IRQF_PROBE_SHARED - set by callers when they expect sharing mismatches to occur
+@@ -60,7 +58,6 @@
+  * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
+  * IRQF_NO_THREAD - Interrupt cannot be threaded
+  */
+-#define IRQF_DISABLED		0x00000020
+ #define IRQF_SAMPLE_RANDOM	0x00000040
+ #define IRQF_SHARED		0x00000080
+ #define IRQF_PROBE_SHARED	0x00000100
 -- 
 1.7.1
 
