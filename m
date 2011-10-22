@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab1JVHa1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 03:30:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45214 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab1JVHaX (ORCPT
+	id S1753298Ab1JVHcW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 03:32:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45529 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab1JVHcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 03:30:23 -0400
-Date: Sat, 22 Oct 2011 03:30:20 -0400 (EDT)
-Message-Id: <20111022.033020.2073551679260143993.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: ari.m.savolainen@gmail.com, roy.qing.li@gmail.com,
-        richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tg3: fix tigon3_dma_hwbug_workaround()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1319268338.6180.20.camel@edumazet-laptop>
-References: <CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
-	<1319265470.6180.13.camel@edumazet-laptop>
-	<1319268338.6180.20.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 22 Oct 2011 00:30:22 -0700 (PDT)
+	Sat, 22 Oct 2011 03:32:21 -0400
+MIME-Version: 1.0
+Date: Sat, 22 Oct 2011 16:32:20 +0900
+Message-ID: <CAHFnbA=sz+_8rESX212aRphen5YCC6ikoX2riprCZBh4wp1O9Q@mail.gmail.com>
+Subject: [PATCH] Makefile: Remove duplicate description of "make RECORDMCOUNT_WARN=1"
+From: Jongman Heo <jongman.heo@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sat, 22 Oct 2011 09:25:38 +0200
+Remove duplicate "make RECORDMCOUNT_WARN=1" description from "make help" output
 
-> Ari got kernel panics using tg3 NIC, and bisected to 2669069aacc9 "tg3:
-> enable transmit time stamping."
-> 
-> This is because tigon3_dma_hwbug_workaround() might alloc a new skb and
-> free the original. We panic when skb_tx_timestamp() is called on freed
-> skb.
-> 
-> Reported-by: Ari Savolainen <ari.m.savolainen@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Jongman Heo <jongman.heo@gmail.com>
+---
+ Makefile |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Applied, thanks Eric.
+diff --git a/Makefile b/Makefile
+index 2652089..86437a3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1290,7 +1290,6 @@ help:
+ 	@echo  '  make O=dir [targets] Locate all output files in "dir",
+including .config'
+ 	@echo  '  make C=1   [targets] Check all c source with $$CHECK
+(sparse by default)'
+ 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
+-	@echo  '  make RECORDMCOUNT_WARN=1 [targets] Warn about ignored
+mcount sections'
+ 	@echo  '  make W=n   [targets] Enable extra gcc checks, n=1,2,3 where'
+ 	@echo  '		1: warnings which may be relevant and do not occur too often'
+ 	@echo  '		2: warnings which occur quite often but may still be relevant'
+-- 
+1.7.6.4
