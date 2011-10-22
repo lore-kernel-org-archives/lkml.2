@@ -1,240 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab1JVFHa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 01:07:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63409 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab1JVFH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 01:07:29 -0400
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Date: Sat, 22 Oct 2011 13:07:11 +0800
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic-pae; KDE/4.6.5; i686; ; )
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-References: <201110122012.33767.pluto@agmk.net> <20111021155632.GD4082@suse.de> <20111021174120.GJ608@redhat.com>
-In-Reply-To: <20111021174120.GJ608@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1752679Ab1JVFJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 01:09:27 -0400
+Received: from sh.osrg.net ([192.16.179.4]:59946 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab1JVFJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 01:09:25 -0400
+Date: Sat, 22 Oct 2011 14:08:49 +0900
+To: clemens@ladisch.de
+Cc: arnd@arndb.de, akpm@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp,
+        konrad.wilk@oracle.com, stefanr@s5r6.in-berlin.de,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma-mapping: fix sync_single_range_* DMA debugging
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4E99F69F.1080701@ladisch.de>
+References: <20111015171523.434f47c8@stein>
+	<4E99E92B.6020408@ladisch.de>
+	<4E99F69F.1080701@ladisch.de>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110221307.11615.nai.xia@gmail.com>
+Message-Id: <20111022140751W.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 22 Oct 2011 14:08:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 October 2011 01:41:20 Andrea Arcangeli wrote:
-> On Fri, Oct 21, 2011 at 05:56:32PM +0200, Mel Gorman wrote:
-> > On Thu, Oct 20, 2011 at 05:11:28PM +0800, Nai Xia wrote:
-> > > On Mon, Oct 17, 2011 at 7:54 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> > > > On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
-> > > >> mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
-> > > >> and pagetable locks, were good enough before page migration (with its
-> > > >> requirement that every migration entry be found) came in; and enough
-> > > >> while migration always held mmap_sem.  But not enough nowadays, when
-> > > >> there's memory hotremove and compaction: anon_vma lock is also needed,
-> > > >> to make sure a migration entry is not dodging around behind our back.
-> > > >
-> > > > For things like migrate and split_huge_page, the anon_vma layer must
-> > > > guarantee the page is reachable by rmap walk at all times regardless
-> > > > if it's at the old or new address.
-> > > >
-> > > > This shall be guaranteed by the copy_vma called by move_vma well
-> > > > before move_page_tables/move_ptes can run.
-> > > >
-> > > > copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
-> > > > into the anon_vma chains structures (vma_link does that). That before
-> > > > any pte can be moved.
-> > > >
-> > > > Because we keep two vmas mapped on both src and dst range, with
-> > > > different vma->vm_pgoff that is valid for the page (the page doesn't
-> > > > change its page->index) the page should always find _all_ its pte at
-> > > > any given time.
-> > > >
-> > > > There may be other variables at play like the order of insertion in
-> > > > the anon_vma chain matches our direction of copy and removal of the
-> > > > old pte. But I think the double locking of the PT lock should make the
-> > > > order in the anon_vma chain absolutely irrelevant (the rmap_walk
-> > > > obviously takes the PT lock too), and furthermore likely the
-> > > > anon_vma_chain insertion is favorable (the dst vma is inserted last
-> > > > and checked last). But it shouldn't matter.
-> > > 
-> > > I happened to be reading these code last week.
-> > > 
-> > > And I do think this order matters, the reason is just quite similar why we
-> > > need i_mmap_lock in move_ptes():
-> > > If rmap_walk goes dst--->src, then when it first look into dst, ok, the
-> > 
-> > You might be right in that the ordering matters. We do link new VMAs at
-> 
-> Yes I also think ordering matters as I mentioned in the previous email
-> that Nai answered to.
-> 
-> > the end of the list in anon_vma_chain_list so remove_migrate_ptes should
-> > be walking from src->dst.
-> 
-> Correct. Like I mentioned in that previous email that Nai answered,
-> that wouldn't be ok only if vma_merge succeeds and I didn't change my mind
-> about that...
-> 
-> copy_vma is only called by mremap so supposedly that path can
-> trigger. Looks like I was wrong about vma_merge being able to succeed
-> in copy_vma, and if it does I still think it's a problem as we have no
-> ordering guarantee.
-> 
-> The only other place that depends on the anon_vma_chain order is fork,
-> and there, no vma_merge can happen, so that is safe.
-> 
-> > If remove_migrate_pte finds src first, it will remove the pte and the
-> > correct version will get copied. If move_ptes runs between when
-> > remove_migrate_ptes moves from src to dst, then the PTE at dst will
-> > still be correct.
-> 
-> The problem is rmap_walk will search dst before src. So it will do
-> nothing on dst. Then mremap moves the pte from src to dst. When rmap
-> walk then checks "src" it finds nothing again.
-> 
-> > > pte is not there, and it happily skip it and release the PTL.
-> > > Then just before it look into src, move_ptes() comes in, takes the locks
-> > > and moves the pte from src to dst. And then when rmap_walk() look
-> > > into src,  it will find an empty pte again. The pte is still there,
-> > > but rmap_walk() missed it !
-> > > 
-> > 
-> > I believe the ordering is correct though and protects us in this case.
-> 
-> Normally it is, the only problem is vma_merge succeeding I think.
-> 
-> > > IMO, this can really happen in case of vma_merge() succeeding.
-> > > Imagine that src vma is lately faulted and in anon_vma_prepare()
-> > > it got a same anon_vma with an existing vma ( named evil_vma )through
-> > > find_mergeable_anon_vma().  This can potentially make the vma_merge() in
-> > > copy_vma() return with evil_vma on some new relocation request. But src_vma
-> > > is really linked _after_  evil_vma/new_vma/dst_vma.
-> > > In this way, the ordering protocol  of anon_vma chain is broken.
-> > > This should be a rare case because I think in most cases
-> > > if two VMAs can reusable_anon_vma() they were already merged.
-> > > 
-> > > How do you think  ?
-> > > 
-> 
-> I tried to understand the above scenario yesterday but with 12 hour
-> of travel on me I just couldn't.
+On Sat, 15 Oct 2011 23:09:51 +0200
+Clemens Ladisch <clemens@ladisch.de> wrote:
 
-Oh,yes, the first hypothesis was actually a vague feeling that things
-might go wrong in that direction. The details in it was somewhat 
-missleading. But following that direction, I found the 2nd clear 
-hypothesis that leads to this bug step by step.
+> Commit 5fd75a7850b5 (dma-mapping: remove unnecessary sync_single_range_*
+> in dma_map_ops) unified not only the dma_map_ops but also the
+> corresponding debug_dma_sync_* calls.  This led to spurious WARN()ings
+> like the following because the DMA debug code was no longer able to
+> detect the DMA buffer base address without the separate offset parameter:
+> 
+> WARNING: at lib/dma-debug.c:911 check_sync+0xce/0x446()
+> firewire_ohci 0000:04:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x00000000cedaa400] [size=1024 bytes]
+> Call Trace: ...
+>  [<ffffffff811326a5>] check_sync+0xce/0x446
+>  [<ffffffff81132ad9>] debug_dma_sync_single_for_device+0x39/0x3b
+>  [<ffffffffa01d6e6a>] ohci_queue_iso+0x4f3/0x77d [firewire_ohci]
+>  ...
+> 
+> To fix this, unshare the sync_single_* and sync_single_range_*
+> implementations so that we are able to call the correct debug_dma_sync_*
+> functions.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+> ---
+>  include/asm-generic/dma-mapping-common.h |   14 ++++++++++++--
+>  1 files changed, 12 insertions(+), 2 deletions(-)
 
-> 
-> Yesterday however I thought of another simpler case:
-> 
-> part of a vma is moved with mremap elsewhere. Then it is moved back to
-> its original place. So then vma_merge will succeed, and the "src" of
-> mremap is now queued last in anon_vma_chain, wrong ordering.
-
-Oh, yes, partial mremaping will do the trick. I was too addicted to find
-a case when two VMAs missed a normal merge chance but will merge later
-on. The only thing I can find by now is that ENOMEM is vma_adjust().
-
-Partial mremaping is a simpler case and definitely more likey to happen. 
-
-> 
-> Today I read an email from Nai who showed apparently the same scenario
-> I was thinking, without evil vmas or stuff.
-> 
-> I have an hard time to imagine a vma_merge succeeding on a vma that
-> isn't going back to its original place. The vm_pgoff + vma->anon_vma
-> checks should keep some linarity so going back to the original place
-> sounds the only way vma_merge can succeed in copy_vma. But still it
-> can happen in that case I think (so not sure how the above scenario
-> with an evil_vma could ever happen if it has a different anon_vma and
-> it's not a part of a vma that is going back to its original place like
-> in the second scenario Nai also posted about).
-> 
-> That me and Nai had same scenario hypothesis indipendentely (second
-> Nai hypoteisis not the first quoted above), plus copy_vma doing
-> vma_merge and being only called by mremap, sounds like it can really
-> happen.
-> 
-> > Despite the comments in anon_vma_compatible(), I would expect that VMAs
-> > that can share an anon_vma from find_mergeable_anon_vma() will also get
-> > merged. When the new VMA is created, it will be linked in the usual
-> > manner and the oldest->newest ordering is what is required. That's not
-> > that important though.
-> > 
-> > What is important is if mremap is moving src to a dst that is adjacent
-> > to another anon_vma. If src has never been faulted, it's not an issue
-> > because there are also no migration PTEs. If src has been faulted, then
-> > is_mergeable_anon_vma() should fail as anon_vma1 != anon_vma2 and they
-> > are not compatible. The ordering is preserved and we are still ok.
-> 
-> I was thinking along these lines, the only pitfall should be when
-> something is moved and put back into its original place. When it is
-> moved, a new vma is created and queued last. When it's put back to its
-> original location, vma_merge will succeed, and "src" is now the
-> previous "dst" so queued last and that breaks.
-> 
-> > All that said, while I don't think there is a problem, I can't convince
-> > myself 100% of it. Andrea, can you spot a flaw?
-> 
-> I think Nai's correct, only second hypothesis though.
-> 
-> We have two options:
-> 
-> 1) we remove the vma_merge call from copy_vma and we do the vma_merge
-> manually after mremap succeed (so then we're as safe as fork is and we
-> relay on the ordering). No locks but we'll just do 1 more allocation
-> for one addition temporary vma that will be removed after mremap
-> completed.
-> 
-> 2) Hugh's original fix.
-> 
-> First option probably is faster and prefereable, the vma_merge there
-> should only trigger when putting things back to origin I suspect, and
-> never with random mremaps, not sure how common it is to put things
-> back to origin. If we're in a hurry we can merge Hugh's patch and
-> optimize it later. We can still retain the migrate fix if we intend to
-> take way number 1 later. I didn't like too much migrate doing
-> speculative access on ptes that it can't miss or it'll crash anyway.
-
-Me too, I think it's error-prone or at least we must be very careful
-of its not doing sth evil. If the speculative access does not save
-too much of the time, we need not brother to waste our mind power
-over it.
-
-> 
-> Said that the fix merged upstream is 99% certain to fix things in
-> practice already so I doubt we're in hurry. And if things go wrong
-> these issues don't go unnoticed and they shouldn't corrupt memory even
-> if they trigger. 100% certain it can't do damage (other than a BUG_ON)
-> for split_huge_page as I count the pmds encountered in the rmap_walk
-> when I set the splitting bit, and I compare that count with
-> page_mapcount and BUG_ON if they don't match, and later I repeat the
-> same comparsion in the second rmap_walk that establishes the pte and
-> downgrades the hugepmd to pmd, and BUG_ON again if they don't match
-> with the previous rmap_walk count. It may be possible to trigger the
-> BUG_ON with some malicious activity but it won't be too easy either
-> because it's not an instant thing, still a race had to trigger and
-> it's hard to reproduce.
-> 
-> The anon_vma lock is quite a wide lock as it's shared by all parents
-> anon_vma_chains too, slab allocation from local cpu may actually be
-> faster in some condition (even when the slab allocation is
-> superflous). But then I'm not sure. So I'm not against applying Hugh's
-> fix even for the long run. I wouldn't git revert the migration change,
-> but then if we go with Hugh's fix probably it'd be safe.
-> 
-
-Yeah, anon_vma root lock is a big lock. And JFYI, actually I am doing 
-some very nasty hacking on anon_vma and one of the side effects is 
-breaking the root lock into pieces. But this area is pretty 
-convolved by many racing conditions. I hope some day I will finally make
-my patch work and have your precious review of it. :-)
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
