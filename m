@@ -1,66 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab1JVNhd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 09:37:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44561 "EHLO
+	id S1752356Ab1JVNsG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 09:48:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57919 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841Ab1JVNhb (ORCPT
+	with ESMTP id S1751561Ab1JVNsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 09:37:31 -0400
-Date: Sat, 22 Oct 2011 14:36:48 +0100
+	Sat, 22 Oct 2011 09:48:03 -0400
+Date: Sat, 22 Oct 2011 14:47:26 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Tim Bird <tim.bird@am.sony.com>, Joe Perches <joe@perches.com>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
-Message-ID: <20111022133648.GA21374@n2100.arm.linux.org.uk>
-References: <4E9E0B71.9020708@am.sony.com> <1318983248.7569.5.camel@Joe-Laptop> <4E9E1944.80601@am.sony.com> <1500345.YeXPhIIHc5@wuerfel> <CACVXFVMb9p8PiTYWGTNn-FtQts0sRgmK+BQ6kaJ6-D89CAT=xQ@mail.gmail.com>
+To: Paul Schilling <paul.s.schilling@gmail.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 02/14] ARM : SAMSUNG : Add RS485 support.
+Message-ID: <20111022134726.GD21374@n2100.arm.linux.org.uk>
+References: <samsung_rs485> <1319255194-4799-1-git-send-email-paul.s.schilling@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVMb9p8PiTYWGTNn-FtQts0sRgmK+BQ6kaJ6-D89CAT=xQ@mail.gmail.com>
+In-Reply-To: <1319255194-4799-1-git-send-email-paul.s.schilling@gmail.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 22, 2011 at 04:50:15PM +0800, Ming Lei wrote:
-> On Wed, Oct 19, 2011 at 6:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 18 October 2011 17:26:44 Tim Bird wrote:
-> >> Even inside Sony, usage of 4K stacks is limited
-> >> to some very special cases, where memory is exceedingly
-> >> tight (we have one system with 4M of RAM).  And we
-> >> don't mind lopping off features or coding around
-> >> problem areas to support our special case.
-> >
-> > I would imagine that in those cases, you can gain more by reducing the
-> > number of threads in the system. What is the highest number of
-> > concurrent threads that you expect in a limited use case with no
-> > networking or block devices?
-> 
-> If system run for some time, sometimes it may be difficult for
-> memory allocator to allocate 2 continuous page frames even  there are
-> many spare page frames in system because of
-> fragment issue, so the patch does make sense.
+On Fri, Oct 21, 2011 at 10:46:34PM -0500, Paul Schilling wrote:
+> +config SAMSUNG_HAS_RS485
+> +	bool "Enable RS485 support for Samsung"
+> +	depends on SERIAL_SAMSUNG && (MACH_CONDOR2440 || MACH_CONDOR2416 || MACH_MINI2440)
+> +	default y if (MACH_CONDOR2440 || MACH_CONDOR2416)
+> +	default n if (MACH_MINI2440)
+> +
+> +config SAMSUNG_485_LOW_RES_TIMER
+> +    bool "Samsung RS-485 use low res timer during transmit"
+> +    depends on SERIAL_SAMSUNG && SAMSUNG_HAS_RS485
+> +    default n
 
-If memory fragmentation is an issue for this, it probably means that we
-need to switch to a software page size of 8K (or maybe 16K) rather than
-stick with the hardware 4K size.  That would be a much more reliable
-solution, especially as the L1 page table is 16K (if you're suffering
-from memory fragmentation, the first thing which'd get you is the L1
-page table allocation, not the kernel stack allocation.)
+n is the default, so this doesn't need to be specified.
 
-> Anyway, it provides one option for user to apply 4k stack to avoid
-> such kind of process creation failure.
+> +static void s3c24xx_serial_rx_fifo_enable(
+> +		struct uart_port *port,
+> +		unsigned int en)
+> +{
+> +	unsigned long flags;
+> +	unsigned int ucon;
+> +	static unsigned int last_state = 1;
+> +/* FIXME */
+> +	#if 0
+> +	if (last_state != en) {
+> +
+> +		struct s3c2410_uartcfg *cfg = s3c24xx_port_to_cfg(port);
+> +
+> +		spin_lock_irqsave(&port->lock, flags);
+> +
+> +		ucon = rd_regl(port, S3C2410_UCON);
+> +
+> +		ucon &= ~(S3C2440_UFCON_RXTRIG32 | S3C2410_UCON_RXILEVEL);
+> +
+> +		if (en) {
+> +			ucon |= cfg->ucon;
+> +		}
+> +
+> +		wr_regl(port, S3C2410_UCON, ucon);
+> +
+> +		spin_unlock_irqrestore(&port->lock, flags);
+> +	}
+> +#endif
 
-I refer you to the comments made by people who've tried running with 4K
-stacks on x86, and their _vast_ experience of doing this.  If they say
-that it causes stack overflows, then it's a problem.
+This looks like dead code.
 
-The possibility of a kernel stack overflow is not something that should
-be taken lightly - an overflow of the kernel stack means that the thread
-data will be corrupted, so destroying the ability for debug information
-to be emitted.
+> +		} else {
+> +			/* Set a short timer to toggle RTS */
+> +			mod_timer(
+> +					&(ourport->rs485_tx_timer),
+> +					jiffies + usecs_to_jiffies(
+> +							ourport->char_time_usec
+> +							/ 10));
+
+This could do with being better formatted.  Also, & doesn't need following
+parens.
+
+> +	/* Read UART transmit status register */
+> +	utrstat = rd_regl(&(ourport->port), S3C2410_UTRSTAT);
+
+Doesn't need the parens.
+
+> +/* Callback array*/
+> +enum hrtimer_restart (*callback_list[CONFIG_SERIAL_SAMSUNG_UARTS])(struct hrtimer *) = {
+> +		&rs485_hr_timer_callback_uart0,
+> +		&rs485_hr_timer_callback_uart1,
+> +
+> +#if CONFIG_SERIAL_SAMSUNG_UARTS > 2
+> +		&rs485_hr_timer_callback_uart2,
+> +#endif
+> +
+> +#if CONFIG_SERIAL_SAMSUNG_UARTS > 3
+> +		&rs485_hr_timer_callback_uart3,
+> +#endif
+
+Silly indentation - this doesn't need two tabs.
+
+> +};
+> +
+> +#endif
+> +#endif /* CONFIG_SAMSUNG_HAS_RS485 */
+> +
+> +
+>  static void s3c24xx_serial_stop_tx(struct uart_port *port)
+>  {
+>  	struct s3c24xx_uart_port *ourport = to_ourport(port);
+>  
+>  	if (tx_enabled(port)) {
+> +#ifdef CONFIG_SAMSUNG_HAS_RS485
+> +		if (ourport->rs485.flags & SER_RS485_ENABLED) {
+> +#ifdef CONFIG_SAMSUNG_485_LOW_RES_TIMER
+> +			/* Set a short timer to toggle RTS */
+> +			mod_timer(&(ourport->rs485_tx_timer),
+
+Doesn't need parens.
+
+> +					jiffies + usecs_to_jiffies(ourport->char_time_usec * s3c24xx_serial_tx_getfifocnt(ourport)));
+> +#else
+> +			ktime_t kt;
+> +
+> +			/* Set time struct to one char time. */
+> +			kt = ktime_set(0, ourport->char_time_nanosec);
+> +
+> +			/* Start the high res timer. */
+> +			hrtimer_start(&(ourport->hr_rs485_tx_timer), kt, HRTIMER_MODE_REL);
+
+Doesn't need parens.
+
+> +#endif /* CONFIG_SAMSUNG_485_LOW_RES_TIMER */
+> +
+> +			s3c24xx_serial_rx_fifo_enable(port, 0);
+> +
+> +		}
+> +#endif /* CONFIG_SAMSUNG_HAS_RS485 */
+> +
+>  		disable_irq_nosync(ourport->tx_irq);
+>  		tx_enabled(port) = 0;
+> -		if (port->flags & UPF_CONS_FLOW)
+> +		if (port->flags & UPF_CONS_FLOW) {
+>  			s3c24xx_serial_rx_enable(port);
+> +		}
+
+Why are you reformatting code?
+
+> @@ -785,7 +1177,7 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
+>  	port->ignore_status_mask = 0;
+>  	if (termios->c_iflag & IGNPAR)
+>  		port->ignore_status_mask |= S3C2410_UERSTAT_OVERRUN;
+> -	if (termios->c_iflag & IGNBRK && termios->c_iflag & IGNPAR)
+> +	if ((termios->c_iflag & IGNBRK) && (termios->c_iflag & IGNPAR))
+
+More code reformatting.
+
+> @@ -830,7 +1228,7 @@ static void s3c24xx_serial_config_port(struct uart_port *port, int flags)
+>  {
+>  	struct s3c24xx_uart_info *info = s3c24xx_port_to_info(port);
+>  
+> -	if (flags & UART_CONFIG_TYPE &&
+> +	if ((flags & UART_CONFIG_TYPE) &&
+
+And some more.
+
+> +#if 0
+> +	dev_info(port., "rts: on send = %i, after = %i, enabled = %i",
+
+That can't be correct - and as its #if 0'd out, either remove this or
+fix it to be correct (and use dev_dbg if you want it to be debugging.)
+
+> +static ssize_t s3c24xx_serial_set_485_mode(struct device *dev,
+> +		struct device_attribute *attr,
+> +		const char *buf, size_t count)
+> +
+> +{
+> +	struct uart_port *port = s3c24xx_dev_to_port(dev);
+> +	struct s3c24xx_uart_port *ourport = to_ourport(port);
+> +
+> +	if (!strncmp(buf, "Enabled", 7)) {
+> +		ourport->rs485.flags |= SER_RS485_ENABLED;
+> +	} else if (!strncmp(buf, "Disabled", 8)) {
+
+Do you really require the first character to be capitalized?
+
+> +#ifdef CONFIG_SAMSUNG_HAS_RS485
+> +
+> +	ret = device_create_file(&dev->dev, &dev_attr_485_status);
+> +	if (ret < 0)
+> +		printk(KERN_ERR "%s: failed to add 485 status attr.\n", __func__);
+
+pr_err() ?  dev_err() ?
