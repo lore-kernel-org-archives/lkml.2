@@ -1,81 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1JVN0d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 09:26:33 -0400
-Received: from bsmtp5.bon.at ([195.3.86.187]:39025 "EHLO lbmfmo03.bon.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753527Ab1JVN0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 09:26:32 -0400
-X-Greylist: delayed 1839 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Oct 2011 09:26:31 EDT
-Date: Sat, 22 Oct 2011 14:56:20 +0200
-From: Clemens Buchacher <drizzd@aon.at>
-To: Guo-Fu Tseng <cooldavid@cooldavid.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Adrian Chadd <adrian@freebsd.org>,
-        Mohammed Shafi <shafi.wireless@gmail.com>
-Subject: [PATCH] jme: fix irq storm after suspend/resume
-Message-ID: <20111022125620.GA2256@ecki.lan>
+	id S1754835Ab1JVN2y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 09:28:54 -0400
+Received: from cnxt09253.conexant.com ([198.62.9.253]:24805 "EHLO
+	cnxtsmtp2.conexant.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab1JVN2x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 09:28:53 -0400
+X-Greylist: delayed 2178 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Oct 2011 09:28:53 EDT
+X-WSS-ID: 0LTGX3J-03-36W-03
+X-M-MSG: 
+From: "Palash Bandyopadhyay" <Palash.Bandyopadhyay@conexant.com>
+To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+cc: "Mauro Carvalho Chehab" <mchehab@redhat.com>,
+        "Namhyung Kim" <namhyung@gmail.com>, "Joe Perches" <joe@perches.com>,
+        "Ilia Mirkin" <imirkin@alum.mit.edu>,
+        "Youquan Song" <youquan.song@intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 22 Oct 2011 05:50:14 -0700
+Subject: RE: [PATCH 00/36] Staging: cx25821: Clean up patch series
+Thread-Topic: [PATCH 00/36] Staging: cx25821: Clean up patch series
+Thread-Index: AcyQfdvD4egVaRvIR0ChBLFcOjZ7qQAO0j6C
+Message-ID: <34B38BE41EDBA046A4AFBB591FA311320506CF35B4@NBMBX01.bbnet.ad>
+References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
+In-Reply-To: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Oct 2011 12:52:28.0791 (UTC) FILETIME=[74AF8070:01CC90B9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the device is down during suspend/resume, interrupts are enabled
-without a registered interrupt handler, causing a storm of
-unhandled interrupts until the IRQ is disabled because "nobody
-cared".
+Thanks Leonid!
 
-Instead, check that the device is up before touching it in the
-suspend/resume code.
+  Change in patch #18 is also ok.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=39112
+Regards,
+Palash
 
-Helped-by: Adrian Chadd <adrian@freebsd.org>
-Helped-by: Mohammed Shafi <shafi.wireless@gmail.com>
-Signed-off-by: Clemens Buchacher <drizzd@aon.at>
----
+________________________________________
+From: Leonid V. Fedorenchik [leonidsbox@gmail.com]
+Sent: Friday, October 21, 2011 10:43 PM
+To: Greg Kroah-Hartman
+Cc: Mauro Carvalho Chehab; Namhyung Kim; Palash Bandyopadhyay; Joe Perches; Ilia Mirkin; Youquan Song; Leonid V. Fedorenchik; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
+Subject: [PATCH 00/36] Staging: cx25821: Clean up patch series
 
-Unfortunately, bugzilla.kernel.org is still down. There is at least
-one other person who reported the issue, and I don't have their
-email address. So for now, I am the only one who tested this fix.
+This patch series fixes some style issues in drivers/staging/cx25821
+Mostly I was hoping to improve readability and fix some issues found by
+checkpatch.pl script.
 
-The patch applies to current tip (2efd7c0) of Linus' tree. I also
-tested it based on v3.0 and it worked the same.
+There is one question, however, in patch no. 18:
+I deleted part of the comment that contradicts to the code and in this
+case maybe I should edit the code to match the comment instead. I am not
+sure if in this case it makes sense to check if width > 0.
 
-Many thanks to Adrian and Mohammed for helping me debug this issue.
-See this thread for the history:
- http://mid.gmane.org/20110827113253.GA1444@ecki
+Leonid V. Fedorenchik (36):
+      Staging: cx25821: cx25821-alsa.c: Line up comments
+      Staging: cx25821: cx25821-alsa.c: Add braces to else clause
+      Staging: cx25821: cx25821-alsa.c: Fix indent
+      Staging: cx25821: cx25821-alsa.c: Change line endings
+      Staging: cx25821: cx25821-audio-upstream.c: Fix indent
+      Staging: cx25821: cx25821-audio-upstream.c: Move operators
+      Staging: cx25821: cx25821-audio-upstream.c: Change line endings
+      Staging: cx25821: cx25821-audio.h: Line up defines
+      Staging: cx25821: cx25821-audio.h: Fix multiline defines
+      Staging: cx25821: cx25821-cards.c: Fix indent
+      Staging: cx25821: cx25821-core.c: Delete empty line
+      Staging: cx25821: cx25821-core.c: Fix indent
+      Staging: cx25821: cx25821-core.c: Change line endings
+      Staging: cx25821: cx25821-i2c.c: Change line endings
+      Staging: cx25821: cx25821-medusa-defines.h: Fix typo
+      Staging: cx25821: cx25821-medusa-defines.h: Line up defines
+      Staging: cx25821: cx25821-medusa-reg.h: Line up defines
+      Staging: cx25821: cx25821-medusa-video.c: Fix comment
+      Staging: cx25821: cx25821-medusa-video.c: Move operators
+      Staging: cx25821: cx25821-medusa-video.c: Change line endings
+      Staging: cx25821: cx25821-video-upstream-ch2.c: Line up comments
+      Staging: cx25821: cx25821-video-upstream-ch2.c: Fix indent
+      Staging: cx25821: cx25821-video-upsstream-ch2.c: Move operators
+      Staging: cx25821: cx25821-video-upstream-ch2.c: Remove braces
+      Staging: cx25821: cx25821-video-upstream-ch2.c: Change line endings
+      Staging: cx25821: cx25821-video-upstream.c: Remove braces
+      Staging: cx25821: cx25821-video-upstream.c: Fix indent
+      Staging: cx25821: cx25821-video-upstream.c: Change line endings
+      Staging: cx25821: cx25821-video.c: Delete empty line
+      Staging: cx25821: cx25821-video.c: Change spaces
+      Staging: cx25821: cx25821-video.c: Fix assignment
+      Staging: cx25821: cx25821-video.c: Fix definitions
+      Staging: cx25821: cx25821-video.c: Move operators
+      Staging: cx25821: cx25821-video.c: Fix indent
+      Staging: cx25821: cx25821-video.c: Change line endings
+      Staging: cx25821: cx25821.h: Line up defines
 
- drivers/net/jme.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/staging/cx25821/cx25821-alsa.c             |   73 ++--
+ drivers/staging/cx25821/cx25821-audio-upstream.c   |  102 ++--
+ drivers/staging/cx25821/cx25821-audio.h            |   39 +-
+ drivers/staging/cx25821/cx25821-cards.c            |    2 +-
+ drivers/staging/cx25821/cx25821-core.c             |   57 +--
+ drivers/staging/cx25821/cx25821-i2c.c              |   10 +-
+ drivers/staging/cx25821/cx25821-medusa-defines.h   |    6 +-
+ drivers/staging/cx25821/cx25821-medusa-reg.h       |  518 ++++++++++----------
+ drivers/staging/cx25821/cx25821-medusa-video.c     |  410 ++++++----------
+ .../staging/cx25821/cx25821-video-upstream-ch2.c   |  126 ++---
+ drivers/staging/cx25821/cx25821-video-upstream.c   |  146 +++----
+ drivers/staging/cx25821/cx25821-video.c            |  145 +++---
+ drivers/staging/cx25821/cx25821.h                  |    4 +-
+ 13 files changed, 745 insertions(+), 893 deletions(-)
+Conexant E-mail Firewall (Conexant.Com) made the following annotations
+---------------------------------------------------------------------
+********************** Legal Disclaimer **************************** 
 
-diff --git a/drivers/net/jme.c b/drivers/net/jme.c
-index 3ac262f..7a8a3b6 100644
---- a/drivers/net/jme.c
-+++ b/drivers/net/jme.c
-@@ -3131,6 +3131,9 @@ jme_suspend(struct device *dev)
- 	struct net_device *netdev = pci_get_drvdata(pdev);
- 	struct jme_adapter *jme = netdev_priv(netdev);
- 
-+	if (!netif_running(netdev))
-+		return 0;
-+
- 	atomic_dec(&jme->link_changing);
- 
- 	netif_device_detach(netdev);
-@@ -3171,6 +3174,9 @@ jme_resume(struct device *dev)
- 	struct net_device *netdev = pci_get_drvdata(pdev);
- 	struct jme_adapter *jme = netdev_priv(netdev);
- 
-+	if (!netif_running(netdev))
-+		return 0;
-+
- 	jme_clear_pm(jme);
- 	jme_phy_on(jme);
- 	if (test_bit(JME_FLAG_SSET, &jme->flags))
--- 
-1.7.7
+"This email may contain confidential and privileged material for the sole use of the intended recipient. Any unauthorized review, use or distribution by others is strictly prohibited. If you have received the message in error, please advise the sender by reply email and delete the message. Thank you." 
+
+********************************************************************** 
+
+---------------------------------------------------------------------
 
