@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab1JVEVx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 00:21:53 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62235 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1JVEVw (ORCPT
+	id S1752568Ab1JVEqn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 00:46:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62916 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab1JVEqm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 00:21:52 -0400
-From: Paul Schilling <paul.s.schilling@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
-        Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Paul Schilling <Paul.S.Schilling@gmail.com>,
-        Paul Schilling <paul.s.schilling@gmail.com>
-Subject: [PATCH 06/14] ARM : SAMSUNG : S3C2416 Added io mapping for Static memory controller.
-Date: Fri, 21 Oct 2011 23:21:41 -0500
-Message-Id: <1319257301-5040-1-git-send-email-paul.s.schilling@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <static_memory>
-References: <static_memory>
+	Sat, 22 Oct 2011 00:46:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <1c0cef7faec24db26e2a6397fa8843089824750f.1319230509.git.luto@mit.edu>
+References: <CA+55aFx3-F1LzVwN_gSqXcsU7uWda41bHyJxGxHNODWURu0T_g@mail.gmail.com>
+ <1c0cef7faec24db26e2a6397fa8843089824750f.1319230509.git.luto@mit.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 22 Oct 2011 07:46:21 +0300
+X-Google-Sender-Auth: WCGepP5kEG1d4UUB59ABGJLLbCU
+Message-ID: <CA+55aFxqG0S+ZS0RHgyFLzgg-c_zu+095OhFresCGAuv8MfQ6A@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: Set siginfo and context on vsyscall emulation faults
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added MMU access to the Static Memory Controller.
+On Sat, Oct 22, 2011 at 12:01 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> +static bool write_ok_or_segv(unsigned long ptr, size_t size)
+> +{
+> +       if (ptr == 0)
+> +               return true;
 
-Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
----
- arch/arm/mach-s3c2416/s3c2416.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+Why is ptr==0 special? That makes no sense.
 
-diff --git a/arch/arm/mach-s3c2416/s3c2416.c b/arch/arm/mach-s3c2416/s3c2416.c
-index 494ce91..823a034 100644
---- a/arch/arm/mach-s3c2416/s3c2416.c
-+++ b/arch/arm/mach-s3c2416/s3c2416.c
-@@ -65,6 +65,18 @@ static struct map_desc s3c2416_iodesc[] __initdata = {
- 	IODESC_ENT(WATCHDOG),
- 	IODESC_ENT(CLKPWR),
- 	IODESC_ENT(TIMER),
-+	{
-+		.virtual	= (u32)S3C2412_VA_SSMC,
-+		.pfn		= __phys_to_pfn(S3C2412_PA_SSMC),
-+		.length		= SZ_1M,
-+		.type		= MT_DEVICE,
-+	},
-+	/*{
-+		.virtual	= (u32)S3C2412_VA_EBI,
-+		.pfn		= __phys_to_pfn(S3C2412_PA_EBI),
-+		.length		= SZ_1M,
-+		.type		= MT_DEVICE,
-+	},*/
- };
- 
- struct sysdev_class s3c2416_sysclass = {
--- 
-1.7.6.4
+Also, this whole function makes the notion of setting the "sigsegv on
+fault" flag much less interesting. It would be much better if
+access_ok() (including the cases embedded in get_user/put_user/etc)
+just did it right automatically for everything, rather than
+special-casing it for just this.
 
+I wonder if we could just make access_ok() use a trap instead of just
+the regular compares (and then in the trap handler do the same logic
+as in the page fault handler)? Sadly, the 'bounds' instruction doesn't
+work for this (in 32-bit mode it does a *signed* compare, and in
+64-bit mode it no longer exists), but something like that might.
+
+That said, I think that your patch looks acceptable as a "let's fix
+vsyscalls without doing the bigger change". But I really don't see why
+ptr==0 would be special.
+
+So I think your write_ok_or_segv() function should just be
+
+   static bool write_ok_or_segv(unsigned long ptr, size_t size)
+   {
+      if (access_ok(ptr, size))
+         return true;
+
+       .. send signal ...
+
+      return false;
+   }
+
+instead of that odd thing you have now.
+
+           Linus
