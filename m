@@ -1,183 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1JVRfq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 13:35:46 -0400
-Received: from mail.agmk.net ([91.192.224.71]:47631 "EHLO mail.agmk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103Ab1JVRfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 13:35:44 -0400
-From: =?utf-8?q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
-To: nai.xia@gmail.com
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Date: Sat, 22 Oct 2011 18:42:26 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00092-g8bc03e8; KDE/4.7.2; x86_64; ; )
-Cc: Hugh Dickins <hughd@google.com>, arekm@pld-linux.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, jpiszcz@lucidpixels.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-References: <201110122012.33767.pluto@agmk.net> <201110212336.47267.pluto@agmk.net> <201110221421.23181.nai.xia@gmail.com>
-In-Reply-To: <201110221421.23181.nai.xia@gmail.com>
+	id S1754477Ab1JVRok (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 13:44:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58870 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380Ab1JVRoj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 13:44:39 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201110221842.26940.pluto@agmk.net>
+In-Reply-To: <20111004203520.GK2870@ponder.secretlab.ca>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+ <20110930020754.GK12606@ponder.secretlab.ca> <CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
+ <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
+ <CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com> <20111004203520.GK2870@ponder.secretlab.ca>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sat, 22 Oct 2011 13:44:18 -0400
+Message-ID: <CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
+Subject: Re: [PATCH] drivers: create a pin control subsystem v8
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Stijn Devriendt <highguy@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 of October 2011 08:21:23 Nai Xia wrote:
-> On Saturday 22 October 2011 05:36:46 Paweł Sikora wrote:
-> > On Friday 21 of October 2011 11:07:56 Nai Xia wrote:
-> > > On Fri, Oct 21, 2011 at 4:07 PM, Pawel Sikora <pluto@agmk.net> wrote:
-> > > > On Friday 21 of October 2011 14:22:37 Nai Xia wrote:
-> > > >
-> > > >> And as a side note. Since I notice that Pawel's workload may include OOM,
-> > > >
-> > > > my last tests on patched (3.0.4 + migrate.c fix + vserver) kernel produce full cpu load
-> > > > on dual 8-cores opterons like on this htop screenshot -> http://pluto.agmk.net/kernel/screen1.png
-> > > > afaics all userspace applications usualy don't use more than half of physical memory
-> > > > and so called "cache" on htop bar doesn't reach the 100%.
-> > > 
-> > > OK，did you logged any OOM killing if there was some memory usage burst?
-> > > But, well my above OOM reasoning is a direct short cut to imagined
-> > > root cause of "adjacent VMAs which
-> > > should have been merged but in fact not merged" case.
-> > > Maybe there are other cases that can lead to this or maybe it's
-> > > totally another bug....
-> > 
-> > i don't see any OOM killing with my conservative settings
-> > (vm.overcommit_memory=2, vm.overcommit_ratio=100).
-> 
-> OK, that does not matter now. Andrea showed us a simpler way to goto
-> this bug. 
-> 
-> > 
-> > > But still I think if my reasoning is good, similar bad things will
-> > > happen again some time in the future,
-> > > even if it was not your case here...
-> > > 
-> > > >
-> > > > the patched kernel with disabled CONFIG_TRANSPARENT_HUGEPAGE (new thing in 2.6.38)
-> > > > died at night, so now i'm going to disable also CONFIG_COMPACTION/MIGRATION in next
-> > > > steps and stress this machine again...
-> > > 
-> > > OK, it's smart to narrow down the range first....
-> > 
-> > disabling hugepage/compacting didn't help but disabling hugepage/compacting/migration keeps
-> > opterons stable for ~9h so far. userspace uses ~40GB (from 64) ram, caches reach 100% on htop bar,
-> > average load ~16. i wonder if it survive weekend...
-> > 
-> 
-> Maybe you should give another shot of Andrea's latest anon_vma_order_tail() patch. :)
-> 
+On Tue, Oct 4, 2011 at 16:35, Grant Likely wrote:
+> On Sat, Oct 01, 2011 at 12:39:21PM +0200, Linus Walleij wrote:
+>> 2011/9/30 Grant Likely:
+>> > I'm not convinced that the sysfs approach is
+>> > actually the right interface here (I'm certainly not a fan of the gpio
+>> > sysfs i/f), and I'd rather not be putting in unneeded stuff until the
+>> > userspace i/f is hammered out.
+>>
+>> Actually, thinking about it I cannot see what would be wrong
+>> with /dev/gpio0 & friends in the first place.
+>>
+>> Using sysfs as swiss army knife for custom I/O does not
+>> seem like it would be long-term viable so thanks for this
+>> observation, and I think we need /dev/gpio* put on some
+>> mental roadmap somewhere.
+>
+> Agreed.  I don't want to be in the situation we are now with GPIO,
+> where every time I look at the sysfs interface I shudder.
 
-all my attempts to disabling thp/compaction/migration failed (machine locked).
-now, i'm testing 3.0.7+vserver+Hugh's+Andrea's patches+enabled few kernel debug options.
-
-so far it has logged only something unrelated to memory managment subsystem:
-
-[  258.397014] =======================================================
-[  258.397209] [ INFO: possible circular locking dependency detected ]
-[  258.397311] 3.0.7-vs2.3.1-dirty #1
-[  258.397402] -------------------------------------------------------
-[  258.397503] slave_odra_g_00/19432 is trying to acquire lock:
-[  258.397603]  (&(&sig->cputimer.lock)->rlock){-.....}, at: [<ffffffff8103adfc>] update_curr+0xfc/0x190
-[  258.397912] 
-[  258.397912] but task is already holding lock:
-[  258.398090]  (&rq->lock){-.-.-.}, at: [<ffffffff81041a8e>] scheduler_tick+0x4e/0x280
-[  258.398387] 
-[  258.398388] which lock already depends on the new lock.
-[  258.398389] 
-[  258.398652] 
-[  258.398653] the existing dependency chain (in reverse order) is:
-[  258.398836] 
-[  258.398837] -> #2 (&rq->lock){-.-.-.}:
-[  258.399178]        [<ffffffff810959ee>] lock_acquire+0x8e/0x120
-[  258.399336]        [<ffffffff81466e5c>] _raw_spin_lock+0x2c/0x40
-[  258.399495]        [<ffffffff81040bd7>] wake_up_new_task+0x97/0x1c0
-[  258.399652]        [<ffffffff81047db6>] do_fork+0x176/0x460
-[  258.399807]        [<ffffffff8100999c>] kernel_thread+0x6c/0x70
-[  258.399964]        [<ffffffff8144715d>] rest_init+0x21/0xc4
-[  258.400120]        [<ffffffff818adbd2>] start_kernel+0x3d6/0x3e1
-[  258.400280]        [<ffffffff818ad322>] x86_64_start_reservations+0x132/0x136
-[  258.400336]        [<ffffffff818ad416>] x86_64_start_kernel+0xf0/0xf7
-[  258.400336] 
-[  258.400336] -> #1 (&p->pi_lock){-.-.-.}:
-[  258.400336]        [<ffffffff810959ee>] lock_acquire+0x8e/0x120
-[  258.400336]        [<ffffffff81466f5c>] _raw_spin_lock_irqsave+0x3c/0x60
-[  258.400336]        [<ffffffff8106f328>] thread_group_cputimer+0x38/0x100
-[  258.400336]        [<ffffffff8106f41d>] cpu_timer_sample_group+0x2d/0xa0
-[  258.400336]        [<ffffffff8107080a>] set_process_cpu_timer+0x3a/0x110
-[  258.400336]        [<ffffffff8107091a>] update_rlimit_cpu+0x3a/0x60
-[  258.400336]        [<ffffffff81062c0e>] do_prlimit+0x19e/0x240
-[  258.400336]        [<ffffffff81063008>] sys_setrlimit+0x48/0x60
-[  258.400336]        [<ffffffff8146efbb>] system_call_fastpath+0x16/0x1b
-[  258.400336] 
-[  258.400336] -> #0 (&(&sig->cputimer.lock)->rlock){-.....}:
-[  258.400336]        [<ffffffff810951e7>] __lock_acquire+0x1aa7/0x1cc0
-[  258.400336]        [<ffffffff810959ee>] lock_acquire+0x8e/0x120
-[  258.400336]        [<ffffffff81466e5c>] _raw_spin_lock+0x2c/0x40
-[  258.400336]        [<ffffffff8103adfc>] update_curr+0xfc/0x190
-[  258.400336]        [<ffffffff8103b22d>] task_tick_fair+0x2d/0x140
-[  258.400336]        [<ffffffff81041b0f>] scheduler_tick+0xcf/0x280
-[  258.400336]        [<ffffffff8105a439>] update_process_times+0x69/0x80
-[  258.400336]        [<ffffffff8108e0cf>] tick_sched_timer+0x5f/0xc0
-[  258.400336]        [<ffffffff81071339>] __run_hrtimer+0x79/0x1f0
-[  258.400336]        [<ffffffff81071ce3>] hrtimer_interrupt+0xf3/0x220
-[  258.400336]        [<ffffffff8101daa4>] smp_apic_timer_interrupt+0x64/0xa0
-[  258.400336]        [<ffffffff8146f9d3>] apic_timer_interrupt+0x13/0x20
-[  258.400336]        [<ffffffff8107092d>] update_rlimit_cpu+0x4d/0x60
-[  258.400336]        [<ffffffff81062c0e>] do_prlimit+0x19e/0x240
-[  258.400336]        [<ffffffff81063008>] sys_setrlimit+0x48/0x60
-[  258.400336]        [<ffffffff8146efbb>] system_call_fastpath+0x16/0x1b
-[  258.400336] 
-[  258.400336] other info that might help us debug this:
-[  258.400336] 
-[  258.400336] Chain exists of:
-[  258.400336]   &(&sig->cputimer.lock)->rlock --> &p->pi_lock --> &rq->lock
-[  258.400336] 
-[  258.400336]  Possible unsafe locking scenario:
-[  258.400336] 
-[  258.400336]        CPU0                    CPU1
-[  258.400336]        ----                    ----
-[  258.400336]   lock(&rq->lock);
-[  258.400336]                                lock(&p->pi_lock);
-[  258.400336]                                lock(&rq->lock);
-[  258.400336]   lock(&(&sig->cputimer.lock)->rlock);
-[  258.400336] 
-[  258.400336]  *** DEADLOCK ***
-[  258.400336] 
-[  258.400336] 2 locks held by slave_odra_g_00/19432:
-[  258.400336]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff81062acd>] do_prlimit+0x5d/0x240
-[  258.400336]  #1:  (&rq->lock){-.-.-.}, at: [<ffffffff81041a8e>] scheduler_tick+0x4e/0x280
-[  258.400336] 
-[  258.400336] stack backtrace:
-[  258.400336] Pid: 19432, comm: slave_odra_g_00 Not tainted 3.0.7-vs2.3.1-dirty #1
-[  258.400336] Call Trace:
-[  258.400336]  <IRQ>  [<ffffffff8145e204>] print_circular_bug+0x23d/0x24e
-[  258.400336]  [<ffffffff810951e7>] __lock_acquire+0x1aa7/0x1cc0
-[  258.400336]  [<ffffffff8109264d>] ? mark_lock+0x2dd/0x330
-[  258.400336]  [<ffffffff81093bfd>] ? __lock_acquire+0x4bd/0x1cc0
-[  258.400336]  [<ffffffff8103adfc>] ? update_curr+0xfc/0x190
-[  258.400336]  [<ffffffff810959ee>] lock_acquire+0x8e/0x120
-[  258.400336]  [<ffffffff8103adfc>] ? update_curr+0xfc/0x190
-[  258.400336]  [<ffffffff81466e5c>] _raw_spin_lock+0x2c/0x40
-[  258.400336]  [<ffffffff8103adfc>] ? update_curr+0xfc/0x190
-[  258.400336]  [<ffffffff8103adfc>] update_curr+0xfc/0x190
-[  258.400336]  [<ffffffff8103b22d>] task_tick_fair+0x2d/0x140
-[  258.400336]  [<ffffffff81041b0f>] scheduler_tick+0xcf/0x280
-[  258.400336]  [<ffffffff8105a439>] update_process_times+0x69/0x80
-[  258.400336]  [<ffffffff8108e0cf>] tick_sched_timer+0x5f/0xc0
-[  258.400336]  [<ffffffff81071339>] __run_hrtimer+0x79/0x1f0
-[  258.400336]  [<ffffffff8108e070>] ? tick_nohz_handler+0x100/0x100
-[  258.400336]  [<ffffffff81071ce3>] hrtimer_interrupt+0xf3/0x220
-[  258.400336]  [<ffffffff8101daa4>] smp_apic_timer_interrupt+0x64/0xa0
-[  258.400336]  [<ffffffff8146f9d3>] apic_timer_interrupt+0x13/0x20
-[  258.400336]  <EOI>  [<ffffffff814674e0>] ? _raw_spin_unlock_irq+0x30/0x40
-[  258.400336]  [<ffffffff8107092d>] update_rlimit_cpu+0x4d/0x60
-[  258.400336]  [<ffffffff81062c0e>] do_prlimit+0x19e/0x240
-[  258.400336]  [<ffffffff81063008>] sys_setrlimit+0x48/0x60
-[  258.400336]  [<ffffffff8146efbb>] system_call_fastpath+0x16/0x1b
+the problem with that is it doesn't scale.  if i have a device with
+over 150 GPIOs on the SoC itself (obviously GPIO expanders can make
+that much bigger), i don't want to see 150+ device nodes in /dev/.
+that's a pretty big waste.  sysfs only allocates/frees resources when
+userspace actually wants to utilize a GPIO.
+-mike
