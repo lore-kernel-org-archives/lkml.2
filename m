@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab1JVHyg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 03:54:36 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54322 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab1JVHyf convert rfc822-to-8bit (ORCPT
+	id S1753307Ab1JVILH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 04:11:07 -0400
+Received: from outbound.icp-qv1-irony-out3.iinet.net.au ([203.59.1.148]:35303
+	"EHLO outbound.icp-qv1-irony-out3.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751057Ab1JVILG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 03:54:35 -0400
+	Sat, 22 Oct 2011 04:11:06 -0400
+X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Oct 2011 04:11:05 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAEt3ok7LO9hf/2dsb2JhbABChHWkLIEFghgEUigNAhgOAkkWE6kfkUSBMIV8gRQEiASRUIMeiH8
+X-IronPort-AV: E=Sophos;i="4.69,390,1315152000"; 
+   d="scan'208";a="734556596"
+From: Ian Kent <raven@themaw.net>
+Subject: [PATCH] vfs - fix automount should ignore LOOKUP_FOLLOW
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, David Howells <dhowells@redhat.com>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Date: Sat, 22 Oct 2011 16:01:47 +0800
+Message-ID: <20111022080147.11165.52913.stgit@perseus.themaw.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1319268338.6180.20.camel@edumazet-laptop>
-References: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-	<20111020.155659.486754557434415381.davem@davemloft.net>
-	<1319141125.2854.14.camel@edumazet-laptop>
-	<20111020.161147.33259825921677777.davem@davemloft.net>
-	<1319141867.2854.19.camel@edumazet-laptop>
-	<CAEbykaWhh12pM2jRSzfGig=jeKhVWSdxfwuXHFvLTt14=BYTbA@mail.gmail.com>
-	<CAJFZqHzWUsP7szrjVwmW5+HWRND3R4qxWcnK=bqbsgL6F7XGeA@mail.gmail.com>
-	<CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
-	<1319265470.6180.13.camel@edumazet-laptop>
-	<1319268338.6180.20.camel@edumazet-laptop>
-Date: Sat, 22 Oct 2011 10:54:33 +0300
-Message-ID: <CAEbykaVif3Mi50aDzY5p09iHC3DgtbYFQBGPAWiLa8hhyk5w8A@mail.gmail.com>
-Subject: Re: [PATCH] tg3: fix tigon3_dma_hwbug_workaround()
-From: Ari Savolainen <ari.m.savolainen@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: RongQing Li <roy.qing.li@gmail.com>, David Miller <davem@davemloft.net>,
-        richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried a similar patch earlier and got another panic with that. I was
-quite tired at that time and may have made a mistake. I'll test Eric's
-patch either later today or tomorrow.
+The recent patch by Miklos Szeredi that was meant to restore the original
+behavior of not triggering automounts on stat(2) and other symlink following
+syscalls also eliminated the unconditional triggering of automounts for
+intermediate path components by eliminating the LOOKUP_CONTUNUE flag from
+the check in fs/namei.c:follow_automount().
 
-Ari
+This introduces a regression itself because it alters the original behaviour
+which was to unconditionally automount on intermediate path components.
 
-2011/10/22 Eric Dumazet <eric.dumazet@gmail.com>:
-> Ari got kernel panics using tg3 NIC, and bisected to 2669069aacc9 "tg3:
-> enable transmit time stamping."
->
-> This is because tigon3_dma_hwbug_workaround() might alloc a new skb and
-> free the original. We panic when skb_tx_timestamp() is called on freed
-> skb.
->
-> Reported-by: Ari Savolainen <ari.m.savolainen@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  drivers/net/tg3.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
-> index 4a1374d..6149dc5 100644
-> --- a/drivers/net/tg3.c
-> +++ b/drivers/net/tg3.c
-> @@ -6029,12 +6029,12 @@ static void tg3_tx_skb_unmap(struct tg3_napi *tnapi, u32 entry, int last)
->
->  /* Workaround 4GB and 40-bit hardware DMA bugs. */
->  static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
-> -                                      struct sk_buff *skb,
-> +                                      struct sk_buff **pskb,
->                                       u32 *entry, u32 *budget,
->                                       u32 base_flags, u32 mss, u32 vlan)
->  {
->        struct tg3 *tp = tnapi->tp;
-> -       struct sk_buff *new_skb;
-> +       struct sk_buff *new_skb, *skb = *pskb;
->        dma_addr_t new_addr = 0;
->        int ret = 0;
->
-> @@ -6076,7 +6076,7 @@ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
->        }
->
->        dev_kfree_skb(skb);
-> -
-> +       *pskb = new_skb;
->        return ret;
->  }
->
-> @@ -6305,7 +6305,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
->                 */
->                entry = tnapi->tx_prod;
->                budget = tg3_tx_avail(tnapi);
-> -               if (tigon3_dma_hwbug_workaround(tnapi, skb, &entry, &budget,
-> +               if (tigon3_dma_hwbug_workaround(tnapi, &skb, &entry, &budget,
->                                                base_flags, mss, vlan))
->                        goto out_unlock;
->        }
->
->
->
+Signed-off-by: Ian Kent <raven@themaw.net>
+---
+
+ fs/namei.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 0b3138d..e4eee7c 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -732,7 +732,7 @@ static int follow_automount(struct path *path, unsigned flags,
+ 	 * as being automount points.  These will need the attentions
+ 	 * of the daemon to instantiate them before they can be used.
+ 	 */
+-	if (!(flags & (LOOKUP_PARENT | LOOKUP_DIRECTORY |
++	if (!(flags & (LOOKUP_PARENT | LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
+ 		     LOOKUP_OPEN | LOOKUP_CREATE | LOOKUP_AUTOMOUNT)) &&
+ 	    path->dentry->d_inode)
+ 		return -EISDIR;
+
