@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab1JVGh6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 02:37:58 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51036 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab1JVGh5 (ORCPT
+	id S1752248Ab1JVGlm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 02:41:42 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:5004 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751592Ab1JVGll convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 02:37:57 -0400
-Message-ID: <1319265470.6180.13.camel@edumazet-laptop>
-Subject: Re: Kernel panic from tg3 net driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ari Savolainen <ari.m.savolainen@gmail.com>
-Cc: RongQing Li <roy.qing.li@gmail.com>, David Miller <davem@davemloft.net>,
-        richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 22 Oct 2011 08:37:50 +0200
-In-Reply-To: <CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
-References: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-	 <20111020.155659.486754557434415381.davem@davemloft.net>
-	 <1319141125.2854.14.camel@edumazet-laptop>
-	 <20111020.161147.33259825921677777.davem@davemloft.net>
-	 <1319141867.2854.19.camel@edumazet-laptop>
-	 <CAEbykaWhh12pM2jRSzfGig=jeKhVWSdxfwuXHFvLTt14=BYTbA@mail.gmail.com>
-	 <CAJFZqHzWUsP7szrjVwmW5+HWRND3R4qxWcnK=bqbsgL6F7XGeA@mail.gmail.com>
-	 <CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sat, 22 Oct 2011 02:41:41 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v4 1/3] [media] at91: add code to enable/disable ISI_MCK clock
+Date: Sat, 22 Oct 2011 14:41:08 +0800
+Message-ID: <4C79549CB6F772498162A641D92D5328031B11E0@penmb01.corp.atmel.com>
+In-Reply-To: <Pine.LNX.4.64.1110171702370.18438@axis700.grange>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v4 1/3] [media] at91: add code to enable/disable ISI_MCK clock
+Thread-Index: AcyM3nKBXISZX8QoSjWmc5YVyxtPowDpmAvg
+References: <1318331020-22031-1-git-send-email-josh.wu@atmel.com> <1318331020-22031-2-git-send-email-josh.wu@atmel.com> <Pine.LNX.4.64.1110171702370.18438@axis700.grange>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>
+Cc: <linux-media@vger.kernel.org>, <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>, <s.nawrocki@samsung.com>
+X-OriginalArrivalTime: 22 Oct 2011 06:41:13.0942 (UTC) FILETIME=[97D74760:01CC9085]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 22 octobre 2011 à 09:12 +0300, Ari Savolainen a écrit :
-> 2011/10/21 RongQing Li <roy.qing.li@gmail.com>:
-> > Hi Ari:
-> >
-> > Are you sure the patch is applied correctly and the log is same?
-> > If the log is not same, could you paste it again.
-> >
-> > Thanks
-> 
-> Yes, I'm sure. The panic and the rcu splat are unrelated. The panic
-> occurs when skb_tx_timestamp is being called after skb having been
-> freed by tigon3_dma_hwbug_workaround.
+Hi, Guennadi
 
-OK that makes sense, thanks !
+On Monday, October 17, 2011 11:04 PM, Guennadi Liakhovetski wrote:
 
-Do you plan to submit a patch, now you found the bug ?
+> From: Josh Wu <josh.wu@atmel.com>
+>
+> This patch
+> - add ISI_MCK clock enable/disable code.
+> - change field name in isi_platform_data structure
+>
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> [g.liakhovetski@gmx.de: fix label names]
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
 
+> Josh, I missed a slight hick-up in the previous version of this your 
+> patch, so, I fixed it myself. Please confirm, that this version is ok
+with 
+> you.
 
+> Thanks
+> Guennadi
 
+I confirm that the patch is ok for me. Thank you.
+
+Best Regards,
+Josh Wu
