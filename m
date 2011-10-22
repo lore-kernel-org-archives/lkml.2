@@ -1,39 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab1JVJrM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 05:47:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58303 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751853Ab1JVJrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 05:47:11 -0400
-Date: Sat, 22 Oct 2011 10:47:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Liam Girdwood <lrg@ti.com>, kernel-janitors@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound/soc: keep pointer to resource so it can be freed
-Message-ID: <20111022094708.GB3382@opensource.wolfsonmicro.com>
-References: <1318950399-17201-1-git-send-email-julia@diku.dk>
+	id S1753819Ab1JVJr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 05:47:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab1JVJr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 05:47:26 -0400
+Date: Sat, 22 Oct 2011 11:47:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Ying Han <yinghan@google.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
+        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [RFD] Isolated memory cgroups again
+Message-ID: <20111022094723.GD5497@tiehlicka.suse.cz>
+References: <20111020013305.GD21703@tiehlicka.suse.cz>
+ <CALWz4ixxeFveibvqYa4cQR1a4fEBrTrTUFwm2iajk9mV0MEiTw@mail.gmail.com>
+ <4EA12FBA.7090700@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318950399-17201-1-git-send-email-julia@diku.dk>
-X-Cookie: You are standing on my toes.
+In-Reply-To: <4EA12FBA.7090700@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 05:06:39PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
+On Fri 21-10-11 12:39:22, Glauber Costa wrote:
+> On 10/21/2011 03:41 AM, Ying Han wrote:
+> >On Wed, Oct 19, 2011 at 6:33 PM, Michal Hocko<mhocko@suse.cz>  wrote:
+[...]
+> >>TODO
+[...]
+> >>- is bool sufficient. Don't we rather want something like priority
+> >>  instead?
+[...]
+> >Hi Michal:
+> >
+> >I didn't read through the patch itself but only the description. If we
+> >wanna protect a memcg being reclaimed from under global memory
+> >pressure, I think we can approach it by making change on soft_limit
+> >reclaim.
+> >
+> >I have a soft_limit change built on top of Johannes's patchset, which
+> >does basically soft_limit aware reclaim under global memory pressure.
+> >The implementation is simple, and I am looking forward to discuss more
+> >with you guys in the conference.
+> >
+> >--Ying
+> I don't think soft limits will help his case, if I know understand
+> it correctly. Global reclaim can be triggered regardless of any soft
+> limits we may set.
 > 
-> Add a new variable for storing resources accessed subsequent to the one
-> accessed using request_mem_region, so the one accessed using
-> request_mem_region can be released if needed.
+> Now, there are two things I still don't like about it:
+> * The definition of a "main workload", "main cgroup", or anything
+> like that.
 
-Applied, thanks.
+This was just because I wanted to point out the particular case that I
+am interested in. You can of course setup more cgroups to be isolated
+and balance them by the soft limit.
 
-Please try to match your subject lines with those normally used for the
-subsystem.
+> I'd prefer to rank them according to some parameter,
+> something akin to swapiness. This would allow for other people to
+> use it in a different way, while still making you capable of
+> reaching your goals through parameter settings (i.e. one cgroup has
+> a high value of reclaim, all others, a much lower one)
+
+Yes, this has been mentioned in the patch TODO section (above). I wanted
+the first post to be as easy as possible for the discussion starter. I
+guess that we really need something like priority in fact.
+
+> 
+> * The fact that you seem to want to *skip* reclaim altogether for a
+> cgroup. That's a dangerous condition, IMHO. What I think we should
+> try to achieve, is "skip it for practical purposes on sane
+> workloads". 
+
+Yes the feature might be dangerous (we provide many ways to shoot self
+toes already ;)) but that is what you get if you want to guarantee
+something.
+But I agree, I guess we can be more clever and if it is priority based
+we can map isolation priorities to the reclaim priorities somehow.
+
+> Again, a parameter that when set to a very high mark, has the effect
+> of disallowing reclaim for a cgroup under most sane circumstances.
+> 
+> What do you think of the above, Michal ?
+
+Yes I guess that priority based isolation is the way to go. We should,
+however, start with a consensus in this regard (should we do something
+like that at all?).
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
