@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab1JVQaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 12:30:09 -0400
-Received: from lo.gmane.org ([80.91.229.12]:42467 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753794Ab1JVQaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 12:30:07 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Mantas M." <grawity@gmail.com>
-Subject: Re: [PATCH] jme: fix irq storm after suspend/resume
-Date: Sat, 22 Oct 2011 19:27:09 +0300
-Message-ID: <j7uqst$kpc$1@dough.gmane.org>
-References: <20111022125620.GA2256@ecki.lan>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 78-60-211-195.static.zebra.lt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111005 Thunderbird/8.0
-In-Reply-To: <20111022125620.GA2256@ecki.lan>
-Cc: netdev@vger.kernel.org
+	id S1754074Ab1JVQcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 12:32:00 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:41808 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753794Ab1JVQb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 12:31:58 -0400
+Date: Sat, 22 Oct 2011 12:31:58 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        mark gross <markgross@thegnar.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lsusd - The Linux SUSpend Daemon
+In-Reply-To: <Pine.LNX.4.44L0.1110212125020.8657-100000@netrider.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1110221223480.20346-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/10/11 15:56, Clemens Buchacher wrote:
-> If the device is down during suspend/resume, interrupts are enabled
-> without a registered interrupt handler, causing a storm of
-> unhandled interrupts until the IRQ is disabled because "nobody
-> cared".
->
-> Instead, check that the device is up before touching it in the
-> suspend/resume code.
->
-> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=39112
+On Fri, 21 Oct 2011, Alan Stern wrote:
 
-Just tested the patch, suspend/resume works well.
+> > Maybe we could do something with futexes...
+> 
+> Not easily -- as far as I can tell, futexes enjoy relatively little 
+> support.  In any case, they provide the same service as a mutex, which 
+> means you'd have to build a shared lock on top of them.
 
--- 
-Mantas M.
+It occurred to me that we could create a new type of special file, one
+intended to help with interprocess synchronization.  It would support
+locking (shared or exclusive, blocking or non-blocking) and the poll
+system call -- the file would appear to be ready for reading whenever a
+shared lock wouldn't block and ready for writing whenever an exclusive
+lock wouldn't block.  Actual reads and writes wouldn't have to do 
+anything, although maybe someone could suggest a use for them.
+
+Alan Stern
 
