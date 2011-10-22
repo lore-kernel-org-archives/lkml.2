@@ -1,163 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1JVLmU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 07:42:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37069 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab1JVLmT (ORCPT
+	id S1754092Ab1JVNJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 09:09:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43713 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab1JVNJZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 07:42:19 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Sat, 22 Oct 2011 09:42:11 -0200
-To: linux-kernel@vger.kernel.org
-Cc: "Jiri Kosina" <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Linux USB HID should ignore values outside Logical Minimum/Maximum
- range
+	Sat, 22 Oct 2011 09:09:25 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-From: =?utf-8?Q?Denilson_Figueiredo_de_S=C3=A1?= <denilsonsa@gmail.com>
-Message-ID: <op.v3q34la3dsdv5o@localhost>
-User-Agent: Opera Mail/11.51 (Linux)
+In-Reply-To: <20111022125620.GA2256@ecki.lan>
+References: <20111022125620.GA2256@ecki.lan>
+Date: Sat, 22 Oct 2011 18:39:22 +0530
+Message-ID: <CAD2nsn2pMma4y2RyX_tyxohV3AtNnOa_t8UOR4cJdrABzehMeg@mail.gmail.com>
+Subject: Re: [PATCH] jme: fix irq storm after suspend/resume
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: Clemens Buchacher <drizzd@aon.at>
+Cc: Guo-Fu Tseng <cooldavid@cooldavid.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Adrian Chadd <adrian@freebsd.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Short description:
+On Sat, Oct 22, 2011 at 6:26 PM, Clemens Buchacher <drizzd@aon.at> wrote:
+> If the device is down during suspend/resume, interrupts are enabled
+> without a registered interrupt handler, causing a storm of
+> unhandled interrupts until the IRQ is disabled because "nobody
+> cared".
 
-An absolute pointing device using USB HID defines a LOGICAL_MINIMUM and
-a LOGICAL_MAXIMUM for X, Y axes, and then sends a HID report containing
-values outside that range.
+thank you so much for fixing this. incredible persistence from your side!
 
-Linux kernel should ignore values outside that range, as they are not
-meaningful.
+>
+> Instead, check that the device is up before touching it in the
+> suspend/resume code.
+>
+> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=39112
+>
+> Helped-by: Adrian Chadd <adrian@freebsd.org>
+> Helped-by: Mohammed Shafi <shafi.wireless@gmail.com>
+> Signed-off-by: Clemens Buchacher <drizzd@aon.at>
+> ---
+>
+> Unfortunately, bugzilla.kernel.org is still down. There is at least
+> one other person who reported the issue, and I don't have their
+> email address. So for now, I am the only one who tested this fix.
+>
+> The patch applies to current tip (2efd7c0) of Linus' tree. I also
+> tested it based on v3.0 and it worked the same.
+>
+> Many thanks to Adrian and Mohammed for helping me debug this issue.
+> See this thread for the history:
+>  http://mid.gmane.org/20110827113253.GA1444@ecki
+>
+>  drivers/net/jme.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/jme.c b/drivers/net/jme.c
+> index 3ac262f..7a8a3b6 100644
+> --- a/drivers/net/jme.c
+> +++ b/drivers/net/jme.c
+> @@ -3131,6 +3131,9 @@ jme_suspend(struct device *dev)
+>        struct net_device *netdev = pci_get_drvdata(pdev);
+>        struct jme_adapter *jme = netdev_priv(netdev);
+>
+> +       if (!netif_running(netdev))
+> +               return 0;
+> +
+>        atomic_dec(&jme->link_changing);
+>
+>        netif_device_detach(netdev);
+> @@ -3171,6 +3174,9 @@ jme_resume(struct device *dev)
+>        struct net_device *netdev = pci_get_drvdata(pdev);
+>        struct jme_adapter *jme = netdev_priv(netdev);
+>
+> +       if (!netif_running(netdev))
+> +               return 0;
+> +
+>        jme_clear_pm(jme);
+>        jme_phy_on(jme);
+>        if (test_bit(JME_FLAG_SSET, &jme->flags))
+> --
+> 1.7.7
+>
+>
 
-Just for comparison, Windows ignores such values. (and I hate this kind
-of comparison)
-
-
-Long description:
-
-I'm building a homebrew USB Absolute Pointing Device using an AVR
-ATmega8 and the V-USB firmware. This device will work almost like a
-mouse, with one (obvious) difference: while a mouse sends "relative"
-movements (move the pointer x,y units, relative to its current
-position), an absolute pointing device sends "absolute" positions (move
-the mouse exactly to this x,y location).
-
-This device is using two 16-bit fields to report the X and Y axes, and
-limit the meaningful values to those within the [0..32767] range. This
-is the relevant part of the USB HID Descriptor:
-
-	0x09, 0x30,        //     USAGE (X)
-	0x09, 0x31,        //     USAGE (Y)
-	0x15, 0x00,        //     LOGICAL_MINIMUM (0)
-	0x26, 0xff, 0x7f,  //     LOGICAL_MAXIMUM (32767)
-	0x75, 0x10,        //     REPORT_SIZE (16)
-	0x95, 0x02,        //     REPORT_COUNT (2)
-	0x81, 0x42,        //     INPUT (Data,Var,Abs,Null)
-
-However, Linux kernel is not behaving as expected when receiving
-out-of-range values. Instead of ignoring such coordinates, it moves the
-pointer to the bottom-right corner of the screen.
-
-Each HID report for this device has 1 byte for the Report ID (with value
-02), 2 bytes for the X position, 2 bytes for the Y position, and finally
-1 byte for the button presses. They shows up as "02XXXXYY YYbb" in
-usbmon.
-
-Look at this usbmon output:
-
-ffff88000c9a0600 1465973871 C Ii:5:093:1 0:8 6 = 02ff0fff 0f00
-ffff88000c9a0600 1465973936 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1467317888 C Ii:5:093:1 0:8 6 = 02ff1fff 1f00
-ffff88000c9a0600 1467317950 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1467725888 C Ii:5:093:1 0:8 6 = 02ff2fff 2f00
-ffff88000c9a0600 1467725931 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1468661905 C Ii:5:093:1 0:8 6 = 02ff3fff 3f00
-ffff88000c9a0600 1468661961 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1469429914 C Ii:5:093:1 0:8 6 = 02ff4fff 4f00
-ffff88000c9a0600 1469429969 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1470133907 C Ii:5:093:1 0:8 6 = 02ff5fff 5f00
-ffff88000c9a0600 1470133948 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1470837931 C Ii:5:093:1 0:8 6 = 02ff6fff 6f00
-ffff88000c9a0600 1470837986 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1471445923 C Ii:5:093:1 0:8 6 = 02ff7fff 7f00
-ffff88000c9a0600 1471445981 S Ii:5:093:1 -115:8 6 <
-
-Here, the pointer is moving from 0x0fff, 0x0fff (near the top-left of
-the screen) up to the maximum possible value: 0x7fff, 0x7fff (the
-bottom-right corner). When receiving these reports, the pointer was
-correctly moving diagonally across my screen.
-
-Up until here, no problem yet. The problem starts now:
-
-ffff88000c9a0600 1472261948 C Ii:5:093:1 0:8 6 = 02ff8fff 8f00
-ffff88000c9a0600 1472262007 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1472965956 C Ii:5:093:1 0:8 6 = 02ff9fff 9f00
-ffff88000c9a0600 1472966010 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1473621964 C Ii:5:093:1 0:8 6 = 02ffafff af00
-ffff88000c9a0600 1473622019 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1474285972 C Ii:5:093:1 0:8 6 = 02ffbfff bf00
-ffff88000c9a0600 1474286027 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1474885980 C Ii:5:093:1 0:8 6 = 02ffcfff cf00
-ffff88000c9a0600 1474886034 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1475517975 C Ii:5:093:1 0:8 6 = 02ffdfff df00
-ffff88000c9a0600 1475518040 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1476333997 C Ii:5:093:1 0:8 6 = 02ffefff ef00
-ffff88000c9a0600 1476334055 S Ii:5:093:1 -115:8 6 <
-ffff88000c9a0600 1477366011 C Ii:5:093:1 0:8 6 = 02ffffff ff00
-ffff88000c9a0600 1477366069 S Ii:5:093:1 -115:8 6 <
-
-These reports send values outside the range defined in the HID
-Descriptor. The values here go from 0x8fff up to 0xffff. All of these
-values are invalid and should have been ignored by the Linux kernel.
-Instead, what happened was that the kernel insisted into moving the
-pointer to the bottom-right corner of the screen.
-
-Just to be sure about what I'm saying, I used my touchpad to move the
-pointer away from the corner before each one of those reports, and upon
-receiving them, the pointer went back to the corner.
-
-It is worth noting that changing this:
-
-	0x81, 0x42,        //     INPUT (Data,Var,Abs,Null)
-
-to this:
-
-	0x81, 0x02,        //     INPUT (Data,Var,Abs)
-
-makes no difference at all.
-
-
-I've also tried this device on a Windows XP system, and it works as
-expected there (out-of-range values are ignored and don't move the
-pointer).
-
-
-It's also important to remember that an out-of-range value should be
-ignored, but not the full report. For instance, the device could have
-sent "02 ffff ffff 01", meaning an invalid X,Y position (which should be
-ignored), but a valid button press of the first button (which should be
-processed). In this case, the kernel should send a button_press event,
-but not a motion event.
-
-It may even happen to send an out-of-range value for one axis, but a
-valid value for another axis. The code should be prepared for that
-(ignore one, but keep the other).
-
-
-Found this bug in Linux kernel 2.6.38
-
-
-If someone wants to build the hardware to reproduce this bug, go to the
-revision 662baa542e07 of this project:
-https://bitbucket.org/denilsonsa/atmega8-magnetometer-usb-mouse/
-It will probably need a few tweaks, though. Basically, after removing
-the non-relevant portions of the code (sensor, menu, keyemu), it should
-work using a fairly minimalistic ATmega8 circuit.
 
 
 -- 
-Denilson Figueiredo de SÃ¡
-Rio de Janeiro - Brasil
+shafi
