@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab1JVKMm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:12:42 -0400
+	id S1754647Ab1JVKM7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:12:59 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:32913 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322Ab1JVKMk (ORCPT
+	with ESMTP id S1754354Ab1JVKM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:12:40 -0400
+	Sat, 22 Oct 2011 06:12:58 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Jiri Slaby <jirislaby@gmail.com>
-Subject: [PATCH 33/49] drivers:misc:irq: Remove IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:56:45 +0800
-Message-Id: <1319277421-9203-34-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH 34/49] mtd: irq: Remove IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:56:46 +0800
+Message-Id: <1319277421-9203-35-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
@@ -29,37 +30,53 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- drivers/misc/arm-charlcd.c |    2 +-
- drivers/misc/phantom.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/mxc_nand.c    |    2 +-
+ drivers/mtd/nand/pxa3xx_nand.c |    3 +--
+ drivers/mtd/nand/tmio_nand.c   |    2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index fe8616a..c0688b0 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -297,7 +297,7 @@ static int __init charlcd_probe(struct platform_device *pdev)
- 	lcd->irq = platform_get_irq(pdev, 0);
- 	/* If no IRQ is supplied, we'll survive without it */
- 	if (lcd->irq >= 0) {
--		if (request_irq(lcd->irq, charlcd_interrupt, IRQF_DISABLED,
-+		if (request_irq(lcd->irq, charlcd_interrupt, 0,
- 				DRIVERNAME, lcd)) {
- 			ret = -EIO;
- 			goto out_no_irq;
-diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
-index 21b28fc..7f7c521 100644
---- a/drivers/misc/phantom.c
-+++ b/drivers/misc/phantom.c
-@@ -395,7 +395,7 @@ static int __devinit phantom_probe(struct pci_dev *pdev,
- 	iowrite32(0, pht->caddr + PHN_IRQCTL);
- 	ioread32(pht->caddr + PHN_IRQCTL); /* PCI posting */
- 	retval = request_irq(pdev->irq, phantom_isr,
--			IRQF_SHARED | IRQF_DISABLED, "phantom", pht);
-+			IRQF_SHARED, "phantom", pht);
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index 74a43b8..730ff6b 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -1191,7 +1191,7 @@ static int __init mxcnd_probe(struct platform_device *pdev)
+ 	else
+ 		host->irq_control(host, 0);
+ 
+-	err = request_irq(host->irq, mxc_nfc_irq, IRQF_DISABLED, DRIVER_NAME, host);
++	err = request_irq(host->irq, mxc_nfc_irq, 0, DRIVER_NAME, host);
+ 	if (err)
+ 		goto eirq;
+ 
+diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+index 9eb7f87..fabba5c 100644
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -1132,8 +1132,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
+ 	/* initialize all interrupts to be disabled */
+ 	disable_int(info, NDSR_MASK);
+ 
+-	ret = request_irq(irq, pxa3xx_nand_irq, IRQF_DISABLED,
+-			  pdev->name, info);
++	ret = request_irq(irq, pxa3xx_nand_irq, 0, pdev->name, info);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to request IRQ\n");
+ 		goto fail_free_buf;
+diff --git a/drivers/mtd/nand/tmio_nand.c b/drivers/mtd/nand/tmio_nand.c
+index beebd95..6e5d6ff 100644
+--- a/drivers/mtd/nand/tmio_nand.c
++++ b/drivers/mtd/nand/tmio_nand.c
+@@ -441,7 +441,7 @@ static int tmio_probe(struct platform_device *dev)
+ 	nand_chip->chip_delay = 15;
+ 
+ 	retval = request_irq(irq, &tmio_irq,
+-				IRQF_DISABLED, dev_name(&dev->dev), tmio);
++				0, dev_name(&dev->dev), tmio);
  	if (retval) {
- 		dev_err(&pdev->dev, "can't establish ISR\n");
- 		goto err_unmo;
+ 		dev_err(&dev->dev, "request_irq error %d\n", retval);
+ 		goto err_irq;
 -- 
 1.7.1
 
