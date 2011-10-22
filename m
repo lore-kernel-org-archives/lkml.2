@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab1JVKVh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:21:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42927 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1JVKVf (ORCPT
+	id S1754719Ab1JVKY0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:24:26 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:47370 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab1JVKYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:21:35 -0400
-Date: Sat, 22 Oct 2011 12:21:30 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?= =?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111022102126.GA2811@somewhere.feld.cvut.cz>
-References: <1317943022.1095.25.camel@mop>
- <CALdu-PBLCNXTaZuODyzw_g_FQNyLqK_FsdObC=HjtEp75vkdFQ@mail.gmail.com>
- <20111019230347.GA32295@tango.0pointer.de>
- <CALdu-PCRj4+tL-6MXwsZKuODHRQn_pixdfVLwC6PV2a0q4sw4g@mail.gmail.com>
- <20111019233111.GE32295@tango.0pointer.de>
+	Sat, 22 Oct 2011 06:24:25 -0400
+Date: Sat, 22 Oct 2011 12:24:27 +0200
+From: Nico Schottelius <nico-linux-20111017@schottelius.org>
+To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
+Message-ID: <20111022102427.GB26724@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
+	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+References: <20111017175906.GA3461@schottelius.org>
+ <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
+ <20111017214050.GA1408@schottelius.org>
+ <20111019150122.GA6157@schottelius.org>
+ <alpine.LNX.2.00.1110191702470.3541@pobox.suse.cz>
+ <20111019210742.GA2432@schottelius.org>
+ <20111022020205.GA26724@schottelius.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111019233111.GE32295@tango.0pointer.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111022020205.GA26724@schottelius.org>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.1.0-rc6-g443452b x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 01:31:11AM +0200, Lennart Poettering wrote:
-> On Wed, 19.10.11 16:09, Paul Menage (paul@paulmenage.org) wrote:
-> 
-> > On Wed, Oct 19, 2011 at 4:03 PM, Lennart Poettering
-> > <mzxreary@0pointer.de> wrote:
-> > >
-> > > For our systemd usecase a cgroup.signal file would not be useful. This
-> > > is because we actually kill all members of the service's cgroup plus the
-> > > main process of the service, which is usually also in the service's
-> > > cgroup but sometimes isn't (for example: when the user logs in, the
-> > > whole /sbin/login process ends up in the user's session cgroup, and is
-> > > removed from the original service cgroup). Since we want to avoid
-> > > killing the main service process twice in the case where it isn't in the
-> > > servce cgroup we'd hence prefer to have some fork throttling logic in
-> > > place, so that we can kill members flexibly in accordance with these
-> > > rules.
-> > 
-> > By fork-throttling, do you just mean "0 or unlimited", or would you
-> > actually want some kind of rate-limited throttling? If the former,
-> > than I agree with Frederick that his task counter should solve that
-> > problem.
-> 
-> Given that shutting down some services might involve forking off a few
-> things (think: a shell script handling shutdown which forks off a couple
-> of shell utilities) we'd want something that is between "from now on no
-> forking at all" and "unlimited forking". This could be done in many
-> different ways: we'd be happy if we could do time-based rate limiting,
-> but we'd also be fine with defining a certain budget of additional forks
-> a cgroup can do (i.e. "from now on you can do 50 more forks, then you'll
-> get EPERM).
+I'm making progress in this issue:
 
-Thinking more about it, you shouldn't use the task counter subsystem for
-Systemd. This is a subsystem that may bring some significant overhead
-(ie: walk through the entire hierarchy every fork and exit). Doesn't
-sound like something suitable for an init process.
+I've just grabbed the whole list of manuals for all MacBook Airs from the Apple page
+and had a look at the keyboard layout in the manual:
 
-If you really need to stop any forks in a cgroup, then a cgroup core feature
-handling that very single purpose would be better and more efficient.
+air 2008: new
 
-That said I'm not really sure why you're using cgroups in Systemd.
+13" air late 2010: old
+11" air late 2010: old
+
+11" air mid 2011: new
+13" air mid 2011: new
+
+table_new = with keyboard backlight keys, f5 mapped to backlight down -> apple_fn_keys
+table_old = f5 has no fn-special meaning -> macbookair_fn_keys
+
+Reviewing drivers/hid/hid-apple.c you were absolutely right, the
+apple_fn_keys[] maps correctly.
+
+The missing bit to correct my previous patch: To which device IDs do the devices 
+named above match to? I.e. is USB_DEVICE_ID_APPLE_WELLSPRING6_* the
+MacBook Air 4,2?
+
+Cheers,
+
+Nico
+
+p.s.: sorry for the noise, was a bit confused.
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
