@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab1JVIpE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 04:45:04 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1478 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112Ab1JVIpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 04:45:03 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4EA2827E.1030502@broadcom.com>
-Date: Sat, 22 Oct 2011 10:44:46 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
- Gecko/20110922 Thunderbird/3.1.15
+	id S1753512Ab1JVIuS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 04:50:18 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63329 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab1JVIuR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 04:50:17 -0400
 MIME-Version: 1.0
-To: "Greg KH" <gregkh@suse.de>
-cc: "Nico Schottelius" <nico-linux-20111017@schottelius.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: BUG: All network processes hang (brcmsmac/wpa_supplicant)
-References: <1319028563.8416.1.camel@edumazet-laptop>
- <20111019130749.GD11883@schottelius.org>
- <20111019142837.GA1414@schottelius.org> <4E9EE20F.1030403@broadcom.com>
- <20111019145501.GB1414@schottelius.org> <4E9EFF51.6000104@broadcom.com>
- <20111019214250.GC2432@schottelius.org> <4E9FBFA7.4040502@broadcom.com>
- <20111022015945.GC26186@ethz.ch>
- <400C43189542CE41BC0A5B252FC90136BC0E147BCB@SJEXCHCCR02.corp.ad.broadcom.com>
- <20111022083005.GA6032@suse.de>
-In-Reply-To: <20111022083005.GA6032@suse.de>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=B5E1A116
-X-WSS-ID: 62BC5B8C0EG3497344-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1500345.YeXPhIIHc5@wuerfel>
+References: <4E9E0B71.9020708@am.sony.com>
+	<1318983248.7569.5.camel@Joe-Laptop>
+	<4E9E1944.80601@am.sony.com>
+	<1500345.YeXPhIIHc5@wuerfel>
+Date: Sat, 22 Oct 2011 16:50:15 +0800
+Message-ID: <CACVXFVMb9p8PiTYWGTNn-FtQts0sRgmK+BQ6kaJ6-D89CAT=xQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
+From: Ming Lei <tom.leiming@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Tim Bird <tim.bird@am.sony.com>,
+        Joe Perches <joe@perches.com>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Russell King <rmk@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2011 10:30 AM, Greg KH wrote:
-> On Sat, Oct 22, 2011 at 01:13:34AM -0700, Arend Van Spriel wrote:
->>> From: Nico Schottelius [mailto:nico-linux-20111017@schottelius.org]
->>> Sent: zaterdag 22 oktober 2011 4:00
->>>
->>> Hey Arend,
->>>
->>> it seems that your patch really solves this problem.
->>
->> Great. This fix is in linux-next tree.
->>
->> Greg,
->>
->> This problem causes packets to get dropped on 5GHz. Should I
->> sent a patch for 3.1 (staging-linus) for this? It is already
->> fixed in wireless-next.
-> 
-> No, just wait for it to get into Linus's tree for 3.2-rc1, and then
-> email the git commit id to stable@vger.kernel.org so it will be added to
-> the 3.1-stable releases.
-> 
-> greg k-h
-> 
+On Wed, Oct 19, 2011 at 6:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 18 October 2011 17:26:44 Tim Bird wrote:
+>> Even inside Sony, usage of 4K stacks is limited
+>> to some very special cases, where memory is exceedingly
+>> tight (we have one system with 4M of RAM).  And we
+>> don't mind lopping off features or coding around
+>> problem areas to support our special case.
+>
+> I would imagine that in those cases, you can gain more by reducing the
+> number of threads in the system. What is the highest number of
+> concurrent threads that you expect in a limited use case with no
+> networking or block devices?
 
-Thanks, Greg
+If system run for some time, sometimes it may be difficult for
+memory allocator to allocate 2 continuous page frames even  there are
+many spare page frames in system because of
+fragment issue, so the patch does make sense. Anyway,
+it provides one option for user to apply 4k stack to avoid
+such kind of process creation failure.
 
-Saw you email regarding staging-next so I was not sure about
-staging-linus. Will be patient ;-)
-
-Gr. AvS
-
+thanks,
+-- 
+Ming Lei
