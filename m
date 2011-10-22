@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab1JVFJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 01:09:27 -0400
-Received: from sh.osrg.net ([192.16.179.4]:59946 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab1JVFJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 01:09:25 -0400
-Date: Sat, 22 Oct 2011 14:08:49 +0900
-To: clemens@ladisch.de
-Cc: arnd@arndb.de, akpm@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp,
-        konrad.wilk@oracle.com, stefanr@s5r6.in-berlin.de,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma-mapping: fix sync_single_range_* DMA debugging
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4E99F69F.1080701@ladisch.de>
-References: <20111015171523.434f47c8@stein>
-	<4E99E92B.6020408@ladisch.de>
-	<4E99F69F.1080701@ladisch.de>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20111022140751W.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 22 Oct 2011 14:08:52 +0900 (JST)
+	id S1752751Ab1JVFP3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 01:15:29 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54152 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab1JVFP2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 01:15:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E60B63C.1030101@cam.ac.uk>
+References: <20110902094107.GA2846@maxin>
+	<4E60B63C.1030101@cam.ac.uk>
+Date: Sat, 22 Oct 2011 08:15:27 +0300
+Message-ID: <CAMhs6Yzw3-CARTULhy4s-Re4Q82Ek9gZGUQtABLLs0PSArHCuw@mail.gmail.com>
+Subject: Re: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
+From: Maxin B John <maxin.john@gmail.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Dan Carpenter <error27@gmail.com>, Bryan Freed <bfreed@chromium.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        devel@driverdev.osuosl.org,
+        Amit Kucheria <amit.kucheria@verdurent.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Oct 2011 23:09:51 +0200
-Clemens Ladisch <clemens@ladisch.de> wrote:
+Hi,
 
-> Commit 5fd75a7850b5 (dma-mapping: remove unnecessary sync_single_range_*
-> in dma_map_ops) unified not only the dma_map_ops but also the
-> corresponding debug_dma_sync_* calls.  This led to spurious WARN()ings
-> like the following because the DMA debug code was no longer able to
-> detect the DMA buffer base address without the separate offset parameter:
-> 
-> WARNING: at lib/dma-debug.c:911 check_sync+0xce/0x446()
-> firewire_ohci 0000:04:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x00000000cedaa400] [size=1024 bytes]
-> Call Trace: ...
->  [<ffffffff811326a5>] check_sync+0xce/0x446
->  [<ffffffff81132ad9>] debug_dma_sync_single_for_device+0x39/0x3b
->  [<ffffffffa01d6e6a>] ohci_queue_iso+0x4f3/0x77d [firewire_ohci]
->  ...
-> 
-> To fix this, unshare the sync_single_* and sync_single_range_*
-> implementations so that we are able to call the correct debug_dma_sync_*
-> functions.
-> 
-> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-> ---
->  include/asm-generic/dma-mapping-common.h |   14 ++++++++++++--
->  1 files changed, 12 insertions(+), 2 deletions(-)
+On Fri, Sep 2, 2011 at 1:55 PM, Jonathan Cameron <jic23@cam.ac.uk> wrote:
+> On 09/02/11 10:41, Maxin B. John wrote:
+>>> Don't overwrite the error code.  For example, the lower layers can
+>>> return -EAGAIN and that's more useful than just returning -EIO every
+>>> time.
+>> Ahh.. Thanks a lot for explaining this.
+>>
+>>> Your fix works, but it's not very clean.  Just add a "*id = ret;"
+>>> line before the "return 0;" and that's it.  (It doesn't make sense
+>>> to pass a pointer to "id" and not use it).
+>> Dan, yes, I agree with you. This fix is much much better than what I
+>> had in my mind.
+>>
+>>> Yikes - I wonder why my various compilers don't throw that up.
+>> I guess, in "iio-blue.git" tree, the 'id = 0' suppresses this warning.
+> That'd do it. oops.
+>
+> Ideally keep the white space but doesn't really matter. Either send on
+> to Greg directly or I'll add it to iio-blue and send on with the next fixes
+> series - probably this afternoon.
+>>
+>> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+>
 
-Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Sorry for the delay in replying to this mail. I am curious about the
+status of this patch. I couldn't locate this patch at  iio-blue.git as
+it is not present in kernel.org now
+(http://git.kernel.org/?p=linux/kernel/git/jic23/iio-blue.git;a=summary)
+Please ignore this mail if you have already added this patch to your tree.
 
+>> ---
+>> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+>> index f25243b..55012ff 100644
+>> --- a/drivers/staging/iio/light/tsl2563.c
+>> +++ b/drivers/staging/iio/light/tsl2563.c
+>> @@ -226,7 +226,7 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
+>>       ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
+>>       if (ret < 0)
+>>               return ret;
+>> -
+>> +     *id = ret;
+>>       return 0;
+>>  }
+>>
+>>
+>
+>
+
+Warm Regards,
+Maxin B. John
