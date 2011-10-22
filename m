@@ -1,116 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab1JVKJY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:09:24 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57970 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319Ab1JVKJW (ORCPT
+	id S1754426Ab1JVKJn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:09:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47305 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754060Ab1JVKJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:09:22 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Mike Miller <mike.miller@hp.com>,
-        Chirag Kantharia <chirag.kantharia@hp.com>, iss_storagedev@hp.com
-Subject: [PATCH 25/49] block: irq: Remove IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:56:37 +0800
-Message-Id: <1319277421-9203-26-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
-References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
+	Sat, 22 Oct 2011 06:09:41 -0400
+Date: Sat, 22 Oct 2011 11:09:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Hsiang <peter.hsiang@maxim-ic.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2] ASoC: max98095: Convert codec->hw_write to
+ snd_soc_write
+Message-ID: <20111022100939.GA3727@opensource.wolfsonmicro.com>
+References: <1318650362.6399.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318650362.6399.1.camel@phoenix>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
+On Sat, Oct 15, 2011 at 11:46:02AM +0800, Axel Lin wrote:
+> codec->hw_write is broken now, convert codec->hw_write to snd_soc_write.
+> 
+> The hardware has 2 banks of registers sharing a section in I2C register space.
+> The 1st bank is the primary one and is cached.
+> The 2nd bank is for loading coefficients only and they do not need cache.
+> These coefficients registers are therefore direct writes.
+> Thus we set cache_bypass flag to deal with this before calling snd_soc_write.
 
-So now this flag is a NOOP and can be removed.
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Mike Miller <mike.miller@hp.com>
----
- drivers/block/cciss.c    |    4 ++--
- drivers/block/cpqarray.c |    2 +-
- drivers/block/hd.c       |    7 +------
- drivers/block/mg_disk.c  |    2 +-
- 4 files changed, 5 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 6576179..ea6fccb 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4868,7 +4868,7 @@ static int cciss_request_irq(ctlr_info_t *h,
- {
- 	if (h->msix_vector || h->msi_vector) {
- 		if (!request_irq(h->intr[h->intr_mode], msixhandler,
--				IRQF_DISABLED, h->devname, h))
-+				0, h->devname, h))
- 			return 0;
- 		dev_err(&h->pdev->dev, "Unable to get msi irq %d"
- 			" for %s\n", h->intr[h->intr_mode],
-@@ -4877,7 +4877,7 @@ static int cciss_request_irq(ctlr_info_t *h,
- 	}
- 
- 	if (!request_irq(h->intr[h->intr_mode], intxhandler,
--			IRQF_DISABLED, h->devname, h))
-+			0, h->devname, h))
- 		return 0;
- 	dev_err(&h->pdev->dev, "Unable to get irq %d for %s\n",
- 		h->intr[h->intr_mode], h->devname);
-diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-index 9125bbe..23a9332 100644
---- a/drivers/block/cpqarray.c
-+++ b/drivers/block/cpqarray.c
-@@ -406,7 +406,7 @@ static int __devinit cpqarray_register_ctlr( int i, struct pci_dev *pdev)
- 	}
- 	hba[i]->access.set_intr_mask(hba[i], 0);
- 	if (request_irq(hba[i]->intr, do_ida_intr,
--		IRQF_DISABLED|IRQF_SHARED, hba[i]->devname, hba[i]))
-+		IRQF_SHARED, hba[i]->devname, hba[i]))
- 	{
- 		printk(KERN_ERR "cpqarray: Unable to get irq %d for %s\n",
- 				hba[i]->intr, hba[i]->devname);
-diff --git a/drivers/block/hd.c b/drivers/block/hd.c
-index b52c9ca..c30d1f9 100644
---- a/drivers/block/hd.c
-+++ b/drivers/block/hd.c
-@@ -696,11 +696,6 @@ static const struct block_device_operations hd_fops = {
- };
- 
- /*
-- * This is the hard disk IRQ description. The IRQF_DISABLED in sa_flags
-- * means we run the IRQ-handler with interrupts disabled:  this is bad for
-- * interrupt latency, but anything else has led to problems on some
-- * machines.
-- *
-  * We enable interrupts in some of the routines after making sure it's
-  * safe.
-  */
-@@ -762,7 +757,7 @@ static int __init hd_init(void)
- 			p->cyl, p->head, p->sect);
- 	}
- 
--	if (request_irq(HD_IRQ, hd_interrupt, IRQF_DISABLED, "hd", NULL)) {
-+	if (request_irq(HD_IRQ, hd_interrupt, 0, "hd", NULL)) {
- 		printk("hd: unable to get IRQ%d for the hard disk driver\n",
- 			HD_IRQ);
- 		goto out1;
-diff --git a/drivers/block/mg_disk.c b/drivers/block/mg_disk.c
-index 76fa3de..3c80cba 100644
---- a/drivers/block/mg_disk.c
-+++ b/drivers/block/mg_disk.c
-@@ -930,7 +930,7 @@ static int mg_probe(struct platform_device *plat_dev)
- 			goto probe_err_3b;
- 		}
- 		err = request_irq(host->irq, mg_irq,
--				IRQF_DISABLED | IRQF_TRIGGER_RISING,
-+				IRQF_TRIGGER_RISING,
- 				MG_DEV_NAME, host);
- 		if (err) {
- 			printk(KERN_ERR "%s:%d fail (request_irq err=%d)\n",
--- 
-1.7.1
-
+Applied, thanks.
