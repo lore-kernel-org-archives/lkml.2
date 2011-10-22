@@ -1,230 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab1JVErO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 00:47:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29047 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab1JVErM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 00:47:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,390,1315206000"; 
-   d="scan'208";a="65180473"
-Date: Sat, 22 Oct 2011 12:46:42 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] writeback: avoid touching dirtied_when on blocked
- inodes
-Message-ID: <20111022044642.GA10393@localhost>
-References: <20111020152240.751936131@intel.com>
+	id S1752644Ab1JVFHa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 01:07:30 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63409 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab1JVFH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 01:07:29 -0400
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+To: Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+Date: Sat, 22 Oct 2011 13:07:11 +0800
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic-pae; KDE/4.6.5; i686; ; )
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+References: <201110122012.33767.pluto@agmk.net> <20111021155632.GD4082@suse.de> <20111021174120.GJ608@redhat.com>
+In-Reply-To: <20111021174120.GJ608@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111020152240.751936131@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110221307.11615.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Saturday 22 October 2011 01:41:20 Andrea Arcangeli wrote:
+> On Fri, Oct 21, 2011 at 05:56:32PM +0200, Mel Gorman wrote:
+> > On Thu, Oct 20, 2011 at 05:11:28PM +0800, Nai Xia wrote:
+> > > On Mon, Oct 17, 2011 at 7:54 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > > > On Thu, Oct 13, 2011 at 04:30:09PM -0700, Hugh Dickins wrote:
+> > > >> mremap's down_write of mmap_sem, together with i_mmap_mutex/lock,
+> > > >> and pagetable locks, were good enough before page migration (with its
+> > > >> requirement that every migration entry be found) came in; and enough
+> > > >> while migration always held mmap_sem.  But not enough nowadays, when
+> > > >> there's memory hotremove and compaction: anon_vma lock is also needed,
+> > > >> to make sure a migration entry is not dodging around behind our back.
+> > > >
+> > > > For things like migrate and split_huge_page, the anon_vma layer must
+> > > > guarantee the page is reachable by rmap walk at all times regardless
+> > > > if it's at the old or new address.
+> > > >
+> > > > This shall be guaranteed by the copy_vma called by move_vma well
+> > > > before move_page_tables/move_ptes can run.
+> > > >
+> > > > copy_vma obviously takes the anon_vma lock to insert the new "dst" vma
+> > > > into the anon_vma chains structures (vma_link does that). That before
+> > > > any pte can be moved.
+> > > >
+> > > > Because we keep two vmas mapped on both src and dst range, with
+> > > > different vma->vm_pgoff that is valid for the page (the page doesn't
+> > > > change its page->index) the page should always find _all_ its pte at
+> > > > any given time.
+> > > >
+> > > > There may be other variables at play like the order of insertion in
+> > > > the anon_vma chain matches our direction of copy and removal of the
+> > > > old pte. But I think the double locking of the PT lock should make the
+> > > > order in the anon_vma chain absolutely irrelevant (the rmap_walk
+> > > > obviously takes the PT lock too), and furthermore likely the
+> > > > anon_vma_chain insertion is favorable (the dst vma is inserted last
+> > > > and checked last). But it shouldn't matter.
+> > > 
+> > > I happened to be reading these code last week.
+> > > 
+> > > And I do think this order matters, the reason is just quite similar why we
+> > > need i_mmap_lock in move_ptes():
+> > > If rmap_walk goes dst--->src, then when it first look into dst, ok, the
+> > 
+> > You might be right in that the ordering matters. We do link new VMAs at
+> 
+> Yes I also think ordering matters as I mentioned in the previous email
+> that Nai answered to.
+> 
+> > the end of the list in anon_vma_chain_list so remove_migrate_ptes should
+> > be walking from src->dst.
+> 
+> Correct. Like I mentioned in that previous email that Nai answered,
+> that wouldn't be ok only if vma_merge succeeds and I didn't change my mind
+> about that...
+> 
+> copy_vma is only called by mremap so supposedly that path can
+> trigger. Looks like I was wrong about vma_merge being able to succeed
+> in copy_vma, and if it does I still think it's a problem as we have no
+> ordering guarantee.
+> 
+> The only other place that depends on the anon_vma_chain order is fork,
+> and there, no vma_merge can happen, so that is safe.
+> 
+> > If remove_migrate_pte finds src first, it will remove the pte and the
+> > correct version will get copied. If move_ptes runs between when
+> > remove_migrate_ptes moves from src to dst, then the PTE at dst will
+> > still be correct.
+> 
+> The problem is rmap_walk will search dst before src. So it will do
+> nothing on dst. Then mremap moves the pte from src to dst. When rmap
+> walk then checks "src" it finds nothing again.
+> 
+> > > pte is not there, and it happily skip it and release the PTL.
+> > > Then just before it look into src, move_ptes() comes in, takes the locks
+> > > and moves the pte from src to dst. And then when rmap_walk() look
+> > > into src,  it will find an empty pte again. The pte is still there,
+> > > but rmap_walk() missed it !
+> > > 
+> > 
+> > I believe the ordering is correct though and protects us in this case.
+> 
+> Normally it is, the only problem is vma_merge succeeding I think.
+> 
+> > > IMO, this can really happen in case of vma_merge() succeeding.
+> > > Imagine that src vma is lately faulted and in anon_vma_prepare()
+> > > it got a same anon_vma with an existing vma ( named evil_vma )through
+> > > find_mergeable_anon_vma().  This can potentially make the vma_merge() in
+> > > copy_vma() return with evil_vma on some new relocation request. But src_vma
+> > > is really linked _after_  evil_vma/new_vma/dst_vma.
+> > > In this way, the ordering protocol  of anon_vma chain is broken.
+> > > This should be a rare case because I think in most cases
+> > > if two VMAs can reusable_anon_vma() they were already merged.
+> > > 
+> > > How do you think  ?
+> > > 
+> 
+> I tried to understand the above scenario yesterday but with 12 hour
+> of travel on me I just couldn't.
 
-I get some test results for this patch: basically it's good until
-patch 4. Further more, I got minor regressions when apply several
-combinations of patches 5-7 and Jan's patch for the I_SYNC case.
+Oh,yes, the first hypothesis was actually a vague feeling that things
+might go wrong in that direction. The details in it was somewhat 
+missleading. But following that direction, I found the 2nd clear 
+hypothesis that leads to this bug step by step.
 
-[PATCH 1/7] writeback: introduce queue b_more_io_wait
-[PATCH 2/7] writeback: avoid redirtying when ->write_inode failed to clear I_DIR
-[PATCH 3/7] writeback: update wb->last_active on written pages/inodes
-[PATCH 4/7] writeback: Retry kupdate work early if we need to retry some inode w
+> 
+> Yesterday however I thought of another simpler case:
+> 
+> part of a vma is moved with mremap elsewhere. Then it is moved back to
+> its original place. So then vma_merge will succeed, and the "src" of
+> mremap is now queued last in anon_vma_chain, wrong ordering.
 
-[PATCH 5/7] writeback: requeue_io_wait() on pages_skipped inode
-[PATCH 6/7] writeback: requeue_io_wait() on blocked inode
-[PATCH 7/7] writeback: requeue_io_wait() when failed to grab superblock
+Oh, yes, partial mremaping will do the trick. I was too addicted to find
+a case when two VMAs missed a normal merge chance but will merge later
+on. The only thing I can find by now is that ENOMEM is vma_adjust().
 
-Based on the below results, I'd like to push only patches 1-4 to
-linux-next and hold back the other patches for more investigation.
+Partial mremaping is a simpler case and definitely more likey to happen. 
 
-Overall throughput increases +1.2% if applying only patches 1-4:
+> 
+> Today I read an email from Nai who showed apparently the same scenario
+> I was thinking, without evil vmas or stuff.
+> 
+> I have an hard time to imagine a vma_merge succeeding on a vma that
+> isn't going back to its original place. The vm_pgoff + vma->anon_vma
+> checks should keep some linarity so going back to the original place
+> sounds the only way vma_merge can succeed in copy_vma. But still it
+> can happen in that case I think (so not sure how the above scenario
+> with an evil_vma could ever happen if it has a different anon_vma and
+> it's not a part of a vma that is going back to its original place like
+> in the second scenario Nai also posted about).
+> 
+> That me and Nai had same scenario hypothesis indipendentely (second
+> Nai hypoteisis not the first quoted above), plus copy_vma doing
+> vma_merge and being only called by mremap, sounds like it can really
+> happen.
+> 
+> > Despite the comments in anon_vma_compatible(), I would expect that VMAs
+> > that can share an anon_vma from find_mergeable_anon_vma() will also get
+> > merged. When the new VMA is created, it will be linked in the usual
+> > manner and the oldest->newest ordering is what is required. That's not
+> > that important though.
+> > 
+> > What is important is if mremap is moving src to a dst that is adjacent
+> > to another anon_vma. If src has never been faulted, it's not an issue
+> > because there are also no migration PTEs. If src has been faulted, then
+> > is_mergeable_anon_vma() should fail as anon_vma1 != anon_vma2 and they
+> > are not compatible. The ordering is preserved and we are still ok.
+> 
+> I was thinking along these lines, the only pitfall should be when
+> something is moved and put back into its original place. When it is
+> moved, a new vma is created and queued last. When it's put back to its
+> original location, vma_merge will succeed, and "src" is now the
+> previous "dst" so queued last and that breaks.
+> 
+> > All that said, while I don't think there is a problem, I can't convince
+> > myself 100% of it. Andrea, can you spot a flaw?
+> 
+> I think Nai's correct, only second hypothesis though.
+> 
+> We have two options:
+> 
+> 1) we remove the vma_merge call from copy_vma and we do the vma_merge
+> manually after mremap succeed (so then we're as safe as fork is and we
+> relay on the ordering). No locks but we'll just do 1 more allocation
+> for one addition temporary vma that will be removed after mremap
+> completed.
+> 
+> 2) Hugh's original fix.
+> 
+> First option probably is faster and prefereable, the vma_merge there
+> should only trigger when putting things back to origin I suspect, and
+> never with random mremaps, not sure how common it is to put things
+> back to origin. If we're in a hurry we can merge Hugh's patch and
+> optimize it later. We can still retain the migrate fix if we intend to
+> take way number 1 later. I didn't like too much migrate doing
+> speculative access on ptes that it can't miss or it'll crash anyway.
 
-3.1.0-rc9-ioless-full-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-5-next-20111014+  
-------------------------  ------------------------  
-                   56.47        +3.1%        58.22  thresh=100M/btrfs-10dd-4k-8p-4096M-100M:10-X
-                   56.28        +1.6%        57.20  thresh=100M/btrfs-1dd-4k-8p-4096M-100M:10-X
-                   56.11        +2.6%        57.56  thresh=100M/btrfs-2dd-4k-8p-4096M-100M:10-X
-                   37.86        +3.5%        39.20  thresh=100M/ext3-10dd-4k-8p-4096M-100M:10-X
-                   45.91        +2.2%        46.92  thresh=100M/ext3-1dd-4k-8p-4096M-100M:10-X
-                   41.87        +2.7%        42.98  thresh=100M/ext3-2dd-4k-8p-4096M-100M:10-X
-                   45.68        +1.7%        46.43  thresh=100M/ext4-10dd-4k-8p-4096M-100M:10-X
-                   55.74        +1.2%        56.41  thresh=100M/ext4-1dd-4k-8p-4096M-100M:10-X
-                   53.32        +0.7%        53.71  thresh=100M/ext4-2dd-4k-8p-4096M-100M:10-X
-                   46.20        -2.6%        44.99  thresh=100M/xfs-10dd-4k-8p-4096M-100M:10-X
-                   55.72        +3.9%        57.90  thresh=100M/xfs-1dd-4k-8p-4096M-100M:10-X
-                   54.01        +0.4%        54.21  thresh=100M/xfs-2dd-4k-8p-4096M-100M:10-X
-                   55.08        +2.0%        56.17  thresh=1G/btrfs-100dd-4k-8p-4096M-1024M:10-X
-                   55.49        +1.3%        56.24  thresh=1G/btrfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.38        +1.7%        56.30  thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
-                   36.70        +0.7%        36.96  thresh=1G/ext3-100dd-4k-8p-4096M-1024M:10-X
-                   40.64        +0.3%        40.77  thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
-                   48.65        +1.6%        49.45  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
-                   49.84        -2.6%        48.53  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   56.03        -1.2%        55.34  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   57.42        +0.2%        57.52  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.74        +0.4%        45.92  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   54.19        -0.7%        53.79  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.93        -0.4%        55.72  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                   35.78        -0.0%        35.77  thresh=8M/ext4-10dd-4k-8p-4096M-8M:10-X
-                   55.29        +2.1%        56.43  thresh=8M/ext4-1dd-4k-8p-4096M-8M:10-X
-                   51.12        +1.6%        51.94  thresh=8M/ext4-2dd-4k-8p-4096M-8M:10-X
-                   31.21        +0.9%        31.48  thresh=8M/xfs-10dd-4k-8p-4096M-8M:10-X
-                   54.10        +3.9%        56.22  thresh=8M/xfs-1dd-4k-8p-4096M-8M:10-X
-                   46.97        +3.8%        48.75  thresh=8M/xfs-2dd-4k-8p-4096M-8M:10-X
-                 1490.73        +1.2%      1509.03  TOTAL write_bw
+Me too, I think it's error-prone or at least we must be very careful
+of its not doing sth evil. If the speculative access does not save
+too much of the time, we need not brother to waste our mind power
+over it.
 
-Overall throughput after the patchset increases +1.6% if replacing
-patch 5 with another patch to remove redirty_tail() on pages_skipped:
+> 
+> Said that the fix merged upstream is 99% certain to fix things in
+> practice already so I doubt we're in hurry. And if things go wrong
+> these issues don't go unnoticed and they shouldn't corrupt memory even
+> if they trigger. 100% certain it can't do damage (other than a BUG_ON)
+> for split_huge_page as I count the pmds encountered in the rmap_walk
+> when I set the splitting bit, and I compare that count with
+> page_mapcount and BUG_ON if they don't match, and later I repeat the
+> same comparsion in the second rmap_walk that establishes the pte and
+> downgrades the hugepmd to pmd, and BUG_ON again if they don't match
+> with the previous rmap_walk count. It may be possible to trigger the
+> BUG_ON with some malicious activity but it won't be too easy either
+> because it's not an instant thing, still a race had to trigger and
+> it's hard to reproduce.
+> 
+> The anon_vma lock is quite a wide lock as it's shared by all parents
+> anon_vma_chains too, slab allocation from local cpu may actually be
+> faster in some condition (even when the slab allocation is
+> superflous). But then I'm not sure. So I'm not against applying Hugh's
+> fix even for the long run. I wouldn't git revert the migration change,
+> but then if we go with Hugh's fix probably it'd be safe.
+> 
 
-3.1.0-rc9-ioless-full-more_io_wait-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-7-next-20111014+  
-------------------------  ------------------------  
-                   46.22        +0.8%        46.58  thresh=100M/ext3-1dd-4k-8p-4096M-100M:10-X
-                   42.19        +1.2%        42.68  thresh=100M/ext3-2dd-4k-8p-4096M-100M:10-X
-                   45.50        +1.2%        46.06  thresh=100M/ext4-10dd-4k-8p-4096M-100M:10-X
-                   54.51        +0.9%        54.97  thresh=100M/ext4-1dd-4k-8p-4096M-100M:10-X
-                   53.19        +1.2%        53.83  thresh=100M/ext4-2dd-4k-8p-4096M-100M:10-X
-                   43.98        +0.3%        44.11  thresh=100M/xfs-10dd-4k-8p-4096M-100M:10-X
-                   55.76        +2.7%        57.25  thresh=100M/xfs-1dd-4k-8p-4096M-100M:10-X
-                   52.94        +2.5%        54.29  thresh=100M/xfs-2dd-4k-8p-4096M-100M:10-X
-                   54.52        +1.6%        55.36  thresh=1G/btrfs-100dd-4k-8p-4096M-1024M:10-X
-                   54.94        +0.8%        55.40  thresh=1G/btrfs-10dd-4k-8p-4096M-1024M:10-X
-                   53.91        +1.9%        54.96  thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
-                   36.15        +1.0%        36.53  thresh=1G/ext3-100dd-4k-8p-4096M-1024M:10-X
-                   38.25        +6.7%        40.80  thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
-                   45.30        +8.7%        49.24  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
-                   48.23        +1.5%        48.93  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   54.21        +0.4%        54.41  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   56.07        +1.4%        56.86  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.12        -5.8%        42.52  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   53.94        +1.3%        54.67  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.66        +2.7%        57.15  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                  990.58        +1.6%      1006.59  TOTAL write_bw
+Yeah, anon_vma root lock is a big lock. And JFYI, actually I am doing 
+some very nasty hacking on anon_vma and one of the side effects is 
+breaking the root lock into pieces. But this area is pretty 
+convolved by many racing conditions. I hope some day I will finally make
+my patch work and have your precious review of it. :-)
 
-But in general the performance is slightly worse when doing anything
-more than patches 1-4.
-
-patches 1-4 VS patches 1-4 plus requeue_io_wait() on I_SYNC
-
-3.1.0-rc9-ioless-full-more_io_wait-5-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-9-next-20111014+  
-------------------------  ------------------------  
-                   58.22        -3.2%        56.38  thresh=100M/btrfs-10dd-4k-8p-4096M-100M:10-X
-                   57.20        -1.1%        56.56  thresh=100M/btrfs-1dd-4k-8p-4096M-100M:10-X
-                   57.56        -2.3%        56.26  thresh=100M/btrfs-2dd-4k-8p-4096M-100M:10-X
-                   39.20        -0.8%        38.87  thresh=100M/ext3-10dd-4k-8p-4096M-100M:10-X
-                   46.92        +0.1%        46.98  thresh=100M/ext3-1dd-4k-8p-4096M-100M:10-X
-                   42.98        -0.7%        42.70  thresh=100M/ext3-2dd-4k-8p-4096M-100M:10-X
-                   46.43        -0.6%        46.14  thresh=100M/ext4-10dd-4k-8p-4096M-100M:10-X
-                   56.41        +0.1%        56.47  thresh=100M/ext4-1dd-4k-8p-4096M-100M:10-X
-                   53.71        +1.6%        54.58  thresh=100M/ext4-2dd-4k-8p-4096M-100M:10-X
-                   44.99        +0.4%        45.18  thresh=100M/xfs-10dd-4k-8p-4096M-100M:10-X
-                   57.90        -0.4%        57.66  thresh=100M/xfs-1dd-4k-8p-4096M-100M:10-X
-                   54.21        +1.2%        54.85  thresh=100M/xfs-2dd-4k-8p-4096M-100M:10-X
-                   56.17        -0.6%        55.81  thresh=1G/btrfs-100dd-4k-8p-4096M-1024M:10-X
-                   56.24        -1.8%        55.20  thresh=1G/btrfs-10dd-4k-8p-4096M-1024M:10-X
-                   56.30        -2.1%        55.13  thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
-                   36.96        -2.0%        36.23  thresh=1G/ext3-100dd-4k-8p-4096M-1024M:10-X
-                   40.77        -0.2%        40.68  thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
-                   49.45        -0.6%        49.14  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
-                   48.53        -1.6%        47.77  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   55.34        -0.8%        54.89  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   57.52        -1.5%        56.67  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.92        -7.2%        42.63  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   53.79        -1.0%        53.25  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.72        +2.4%        57.04  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                   56.22        -2.2%        54.96  thresh=8M/xfs-1dd-4k-8p-4096M-8M:10-X
-                 1284.66        -1.0%      1272.05  TOTAL write_bw
-
-patches 1-4 VS patches 1-4,7 and remove redirty_tail() on pages_skipped
-
-3.1.0-rc9-ioless-full-more_io_wait-5-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-8-next-20111014+
-------------------------  ------------------------
-                   58.22        -2.9%        56.55  thresh=100M/btrfs-10dd-4k-8p-4096M-100M:10-X
-                   57.20        -2.0%        56.03  thresh=100M/btrfs-1dd-4k-8p-4096M-100M:10-X
-                   57.56        -2.1%        56.38  thresh=100M/btrfs-2dd-4k-8p-4096M-100M:10-X
-                   39.20        -0.4%        39.06  thresh=100M/ext3-10dd-4k-8p-4096M-100M:10-X
-                   46.92        -0.5%        46.68  thresh=100M/ext3-1dd-4k-8p-4096M-100M:10-X
-                   42.98        -1.2%        42.45  thresh=100M/ext3-2dd-4k-8p-4096M-100M:10-X
-                   46.43        -1.2%        45.89  thresh=100M/ext4-10dd-4k-8p-4096M-100M:10-X
-                   56.41        -2.5%        54.98  thresh=100M/ext4-1dd-4k-8p-4096M-100M:10-X
-                   53.71        -1.4%        52.96  thresh=100M/ext4-2dd-4k-8p-4096M-100M:10-X
-                   44.99        -1.4%        44.36  thresh=100M/xfs-10dd-4k-8p-4096M-100M:10-X
-                   57.90        -0.8%        57.42  thresh=100M/xfs-1dd-4k-8p-4096M-100M:10-X
-                   54.21        -0.7%        53.84  thresh=100M/xfs-2dd-4k-8p-4096M-100M:10-X
-                   56.17        -1.1%        55.57  thresh=1G/btrfs-100dd-4k-8p-4096M-1024M:10-X
-                   56.24        -1.1%        55.61  thresh=1G/btrfs-10dd-4k-8p-4096M-1024M:10-X
-                   56.30        -1.5%        55.47  thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
-                   36.96        -2.0%        36.23  thresh=1G/ext3-100dd-4k-8p-4096M-1024M:10-X
-                   40.77        -0.8%        40.45  thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
-                   49.45        -1.5%        48.71  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
-                   48.53        -2.8%        47.17  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   55.34        -2.3%        54.05  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   57.52        -3.6%        55.47  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.92        +3.0%        47.30  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   53.79        -2.3%        52.54  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.72        +2.3%        57.02  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                   35.77        -0.7%        35.54  thresh=8M/ext4-10dd-4k-8p-4096M-8M:10-X
-                   56.43        -2.8%        54.86  thresh=8M/ext4-1dd-4k-8p-4096M-8M:10-X
-                   51.94        -2.7%        50.52  thresh=8M/ext4-2dd-4k-8p-4096M-8M:10-X
-                   31.48        -0.7%        31.25  thresh=8M/xfs-10dd-4k-8p-4096M-8M:10-X
-                   56.22        -2.2%        55.00  thresh=8M/xfs-1dd-4k-8p-4096M-8M:10-X
-                   48.75        -2.1%        47.73  thresh=8M/xfs-2dd-4k-8p-4096M-8M:10-X
-                 1509.03        -1.5%      1487.08  TOTAL write_bw
-
-patches 1-4 VS patches 1-4,6 and remove redirty_tail() on pages_skipped
-
-3.1.0-rc9-ioless-full-more_io_wait-5-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-6-next-20111014+  
-------------------------  ------------------------  
-                   57.90        -0.7%        57.48  thresh=100M/xfs-1dd-4k-8p-4096M-100M:10-X
-                   54.21        -0.4%        54.01  thresh=100M/xfs-2dd-4k-8p-4096M-100M:10-X
-                   56.17        -1.1%        55.57  thresh=1G/btrfs-100dd-4k-8p-4096M-1024M:10-X
-                   56.24        -1.5%        55.37  thresh=1G/btrfs-10dd-4k-8p-4096M-1024M:10-X
-                   56.30        -1.6%        55.38  thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
-                   36.96        -1.8%        36.28  thresh=1G/ext3-100dd-4k-8p-4096M-1024M:10-X
-                   40.77        -1.0%        40.37  thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
-                   49.45        -0.5%        49.20  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
-                   48.53        +0.3%        48.68  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   55.34        -1.8%        54.34  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   57.52        -0.9%        57.03  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.92        -0.5%        45.68  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   53.79        +3.2%        55.52  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.72        +3.2%        57.51  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                  724.81        -0.3%       722.43  TOTAL write_bw
-
-patches 1-4 VS patches 1-4,6,7 and remove redirty_tail() on pages_skipped
-
-3.1.0-rc9-ioless-full-more_io_wait-5-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-7-next-20111014+  
-------------------------  ------------------------  
-                   46.92        -0.7%        46.58  thresh=100M/ext3-1dd-4k-8p-4096M-100M:10-X
-                   42.98        -0.7%        42.68  thresh=100M/ext3-2dd-4k-8p-4096M-100M:10-X
-                   46.43        -0.8%        46.06  thresh=100M/ext4-10dd-4k-8p-4096M-100M:10-X
-                   56.41        -2.5%        54.97  thresh=100M/ext4-1dd-4k-8p-4096M-100M:10-X
-                   53.71        +0.2%        53.83  thresh=100M/ext4-2dd-4k-8p-4096M-100M:10-X
-                   44.99        -2.0%        44.11  thresh=100M/xfs-10dd-4k-8p-4096M-100M:10-X
-                   57.90        -1.1%        57.25  thresh=100M/xfs-1dd-4k-8p-4096M-100M:10-X
-                   54.21        +0.1%        54.29  thresh=100M/xfs-2dd-4k-8p-4096M-100M:10-X
-                   56.17        -1.4%        55.36  thresh=1G/btrfs-100dd-4k-8p-4096M-1024M:10-X
-                   56.24        -1.5%        55.40  thresh=1G/btrfs-10dd-4k-8p-4096M-1024M:10-X
-                   56.30        -2.4%        54.96  thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
-                   36.96        -1.2%        36.53  thresh=1G/ext3-100dd-4k-8p-4096M-1024M:10-X
-                   40.77        +0.1%        40.80  thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
-                   49.45        -0.4%        49.24  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
-                   48.53        +0.8%        48.93  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   55.34        -1.7%        54.41  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   57.52        -1.2%        56.86  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.92        -7.4%        42.52  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   53.79        +1.6%        54.67  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.72        +2.6%        57.15  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                 1016.26        -1.0%      1006.59  TOTAL write_bw
-
-Thanks,
-Fengguang
