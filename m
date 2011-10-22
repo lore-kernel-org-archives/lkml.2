@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab1JVVnf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 17:43:35 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:60699 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751961Ab1JVVnf (ORCPT
+	id S1754204Ab1JVV6P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 17:58:15 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41537 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab1JVV6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 17:43:35 -0400
-From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
-To: Paul Schilling <paul.s.schilling@gmail.com>
-Subject: Re: [PATCH 06/14] ARM : SAMSUNG : S3C2416 Added io mapping for Static memory controller.
-Date: Sat, 22 Oct 2011 23:43:23 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
-        Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <static_memory> <1319257301-5040-1-git-send-email-paul.s.schilling@gmail.com>
-In-Reply-To: <1319257301-5040-1-git-send-email-paul.s.schilling@gmail.com>
+	Sat, 22 Oct 2011 17:58:13 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110222343.24141.heiko@sntech.de>
+In-Reply-To: <201110220043.38635.rjw@sisk.pl>
+References: <201110220043.38635.rjw@sisk.pl>
+Date: Sat, 22 Oct 2011 14:58:12 -0700
+X-Google-Sender-Auth: -yZSJ7jGEV9pDfivWnJhyPY9UZE
+Message-ID: <CAE9FiQUxuajrqka97M_tvbXoMSzPTBGyjiBib_EG4MjRTuNmFQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI / ACPI: Make acpiphp ignore root bridges using PCIe
+ native hotplug
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag 22 Oktober 2011, 06:21:41 schrieb Paul Schilling:
-> Added MMU access to the Static Memory Controller.
-> 
-> Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
-> ---
->  arch/arm/mach-s3c2416/s3c2416.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2416/s3c2416.c
-> b/arch/arm/mach-s3c2416/s3c2416.c index 494ce91..823a034 100644
-> --- a/arch/arm/mach-s3c2416/s3c2416.c
-> +++ b/arch/arm/mach-s3c2416/s3c2416.c
-> @@ -65,6 +65,18 @@ static struct map_desc s3c2416_iodesc[] __initdata = {
->  	IODESC_ENT(WATCHDOG),
->  	IODESC_ENT(CLKPWR),
->  	IODESC_ENT(TIMER),
-> +	{
-> +		.virtual	= (u32)S3C2412_VA_SSMC,
-> +		.pfn		= __phys_to_pfn(S3C2412_PA_SSMC),
-> +		.length		= SZ_1M,
-> +		.type		= MT_DEVICE,
-> +	},
-> +	/*{
-> +		.virtual	= (u32)S3C2412_VA_EBI,
-> +		.pfn		= __phys_to_pfn(S3C2412_PA_EBI),
-> +		.length		= SZ_1M,
-> +		.type		= MT_DEVICE,
-> +	},*/
->  };
-why are you adding disabled code?
+On Fri, Oct 21, 2011 at 3:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> If the kernel has requested control of the PCIe native hotplug
+> feature for a given root complex, the acpiphp driver should not try
+> to handle that root complex and it should leave it to pciehp.
+> Failing to do so causes problems to happen if acpiphp is loaded
+> before pciehp on such systems.
 
-Btw. it seems your posts got mangled somehow... only your patches 2,5 and 6 of 
-14 made it to linux-kernel and linux-arm-kernel.
+Should pciehp be built-in kernel instead of as a module?
 
-Heiko
+Yinghai
