@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab1JVJHx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 05:07:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35058 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab1JVJHw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 05:07:52 -0400
+	id S1753520Ab1JVJ0a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 05:26:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33818 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795Ab1JVJ03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 05:26:29 -0400
+Date: Sat, 22 Oct 2011 11:26:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hugh Dickins <hughd@google.com>, Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Kir Kolyshkin <kir@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>, GregThelen <gthelen@google.com>,
+        "pjt@google.com" <pjt@google.com>, Tim Hockin <thockin@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [RFD] Isolated memory cgroups again
+Message-ID: <20111022092524.GA5497@tiehlicka.suse.cz>
+References: <20111020013305.GD21703@tiehlicka.suse.cz>
+ <20111020105950.fd04f58f.kamezawa.hiroyu@jp.fujitsu.com>
+ <CAKTCnz=iZp37sBfY++HUU0oscskFF_UWYeFYtAujtQh4_B=vHQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxqG0S+ZS0RHgyFLzgg-c_zu+095OhFresCGAuv8MfQ6A@mail.gmail.com>
-References: <CA+55aFx3-F1LzVwN_gSqXcsU7uWda41bHyJxGxHNODWURu0T_g@mail.gmail.com>
-	<1c0cef7faec24db26e2a6397fa8843089824750f.1319230509.git.luto@mit.edu>
-	<CA+55aFxqG0S+ZS0RHgyFLzgg-c_zu+095OhFresCGAuv8MfQ6A@mail.gmail.com>
-Date: Sat, 22 Oct 2011 02:07:51 -0700
-Message-ID: <CALCETrXAiHs9PyziHBm-gZRiyahYafbxxUSxJUcFh=a-0th0EQ@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: Set siginfo and context on vsyscall emulation faults
-From: Andy Lutomirski <luto@amacapital.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKTCnz=iZp37sBfY++HUU0oscskFF_UWYeFYtAujtQh4_B=vHQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 9:46 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Oct 22, 2011 at 12:01 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> +static bool write_ok_or_segv(unsigned long ptr, size_t size)
->> +{
->> +       if (ptr == 0)
->> +               return true;
->
-> Why is ptr==0 special? That makes no sense.
->
+On Fri 21-10-11 21:34:06, Balbir Singh wrote:
+> On Thu, Oct 20, 2011 at 7:29 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Wed, 19 Oct 2011 18:33:09 -0700
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> >
+> >> Hi all,
+> >> this is a request for discussion (I hope we can touch this during memcg
+> >> meeting during the upcoming KS). I have brought this up earlier this
+> >> year before LSF (http://thread.gmane.org/gmane.linux.kernel.mm/60464).
+> >> The patch got much smaller since then due to excellent Johannes' memcg
+> >> naturalization work (http://thread.gmane.org/gmane.linux.kernel.mm/68724)
+> >> which this is based on.
+> >
+> 
+> Hi, Michal
 
-Pure laziness.  Null pointers to the vsyscalls are valid and mean that
-userspace doesn't care about the result.  I could have put the check
-in the caller just as easily.
+Hi Balbir,
 
-> Also, this whole function makes the notion of setting the "sigsegv on
-> fault" flag much less interesting. It would be much better if
-> access_ok() (including the cases embedded in get_user/put_user/etc)
-> just did it right automatically for everything, rather than
-> special-casing it for just this.
->
+> 
+> I'd like to understand, what the isolation is for?
+> 
+> 1. Is it an alternative to memory guarantees?
 
-Agreed.  If I add an option to let userspace opt in to the
-signal-sending behavior, I'd want to convince myself that all callers
-of access_ok should be affected.
+Not really, it is more about resident working set guarantee and workload
+isolations wrt. memory.
 
-> I wonder if we could just make access_ok() use a trap instead of just
-> the regular compares (and then in the trap handler do the same logic
-> as in the page fault handler)? Sadly, the 'bounds' instruction doesn't
-> work for this (in 32-bit mode it does a *signed* compare, and in
-> 64-bit mode it no longer exists), but something like that might.
->
+> 2. How is this different from doing cpusets (fake NUMA) and isolating them?
 
-I suspect that bounds is considerably slower than a comparison anyway.
+Yes this would work. I have not many experiences in this area but I
+guess the primary stopper for fake NUMA is that it is x86_64 only,
+configuration is static and little bit awkward to use (nodes of the same
+size e.g.).
+I understood that google is moving out of fake NUMA towards memcg for those
+reasons.
 
-FWIW, there's a different optimization that could make a lot of this
-code much nicer: using asm goto for the failure path in get_user, etc.
- The failure path is already a branch, and if gcc could be convinced
-to generate sensible code for:
+> 
+> Just trying to catch up,
+> Balbir
 
-if (put_user(...)) goto out;
-if (put_user(...)) goto out;
-if (put_user(...)) goto out;
-if (put_user(...)) goto out;
-
-then the uaccess_err mechanism and a whole lot of bitwise ors could go away.
-
-Sadly, gcc (at least 4.5 and 4.6) has weird limitations on the kind of
-constraints allowed on asm goto that, IIRC, make get_user impossible
-and put_user a little dicey.  (I could have that backwards.)
-
-> That said, I think that your patch looks acceptable as a "let's fix
-> vsyscalls without doing the bigger change". But I really don't see why
-> ptr==0 would be special.
->
-> So I think your write_ok_or_segv() function should just be
->
->   static bool write_ok_or_segv(unsigned long ptr, size_t size)
->   {
->      if (access_ok(ptr, size))
->         return true;
->
->       .. send signal ...
->
->      return false;
->   }
->
-> instead of that odd thing you have now.
-
-Or a comment to clarify it.  Alternatively I could ignore the issue
-because access to 0 is okay in the access_ok sense anyway.
-
---Andy
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
