@@ -1,124 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1JVVaU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 17:30:20 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:36259 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751961Ab1JVVaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 17:30:19 -0400
-From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
-To: Paul Schilling <paul.s.schilling@gmail.com>
-Subject: Re: [PATCH 05/14] ARM : SAMSUNG : Add GPIO_EXTRA for S3C2416.
-Date: Sat, 22 Oct 2011 23:30:09 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <GPIO_extra> <1319256492-4975-1-git-send-email-paul.s.schilling@gmail.com>
-In-Reply-To: <1319256492-4975-1-git-send-email-paul.s.schilling@gmail.com>
+	id S1753752Ab1JVVdG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 17:33:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55826 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752008Ab1JVVdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 17:33:04 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christoph <cr2005@u-club.de>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
+Date: Sat, 22 Oct 2011 23:35:29 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <4E1C70AD.1010101@u-club.de> <201109260010.50649.rjw@sisk.pl> <4EA2DDD3.8080306@u-club.de>
+In-Reply-To: <4EA2DDD3.8080306@u-club.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110222330.09918.heiko@sntech.de>
+Message-Id: <201110222335.29573.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag 22 Oktober 2011, 06:08:12 schrieb Paul Schilling:
-> The S3C2416 has more GPIO than other S3C24XX processors.
+On Saturday, October 22, 2011, Christoph wrote:
+> > PM / Freezer: Freeze filesystems while freezing processes (v2)
+> > 
+> > On Sunday, August 07, 2011, Dave Chinner wrote:
+> >> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> 
+> >>> Freeze all filesystems during the freezing of tasks by calling 
+> >>> freeze_bdev() for each of them and thaw them during the thawing of
+> >>> tasks with the help of thaw_bdev().
+> >>> 
+> >>> This is needed by hibernation, because some filesystems (e.g. XFS) 
+> >>> deadlock with the preallocation of memory used by it if the memory 
+> >>> pressure caused by it is too heavy.
+> >>> 
+> ...
+> > 
+> > Below is an alternative fix, the changelog pretty much explains the
+> > idea.
+> > 
+> > I've tested it on Toshiba Portege R500, but I don't have an XFS
+> > partition to verify that it really helps, so I'd appreciate it if
+> > someone able to reproduce the original issue could test it and report
+> > back.
 > 
-> Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
-> ---
->  arch/arm/mach-s3c2410/include/mach/gpio.h |   15 ++++++++++-----
->  arch/arm/plat-s3c24xx/gpiolib.c           |   10 ++++++++--
->  2 files changed, 18 insertions(+), 7 deletions(-)
+> Hi Rafael!
 > 
-> diff --git a/arch/arm/mach-s3c2410/include/mach/gpio.h
-> b/arch/arm/mach-s3c2410/include/mach/gpio.h index f7f6b07..65a0bce 100644
-> --- a/arch/arm/mach-s3c2410/include/mach/gpio.h
-> +++ b/arch/arm/mach-s3c2410/include/mach/gpio.h
-> @@ -20,22 +20,27 @@
->   * devices that need GPIO.
->   */
+> Well, the kernel bugtracker is still down and I just like to post my
+> experience with kernel (x64) v3.1-rc8/9 + patches. My machine is a
+> MacBookPro, doomed with 4GB RAM running debian.
 > 
-> +#if defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
-> +#define ARCH_NR_GPIOS	(32 * 12 + CONFIG_S3C24XX_GPIO_EXTRA)
-> +#else
->  #ifdef CONFIG_CPU_S3C244X
->  #define ARCH_NR_GPIOS	(32 * 9 + CONFIG_S3C24XX_GPIO_EXTRA)
-> -#elif defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
-> -#define ARCH_NR_GPIOS	(32 * 12 + CONFIG_S3C24XX_GPIO_EXTRA)
->  #else
->  #define ARCH_NR_GPIOS	(256 + CONFIG_S3C24XX_GPIO_EXTRA)
->  #endif
-> +#endif
-why are you moving these around? I don't see a functional change.
+> Bug #1
+> 
+> on the way to hibernate, machine hangs on
+> 
+> "PM: Preallocating image memory..."
+> 
+> this patch worked for me now for weeks:
+> "[PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)"
+> https://lkml.org/lkml/2011/9/24/77
 
- 
->  #include <asm-generic/gpio.h>
->  #include <mach/gpio-nrs.h>
->  #include <mach/gpio-fns.h>
-> 
-> -#ifdef CONFIG_CPU_S3C244X
-> -#define S3C_GPIO_END	(S3C2410_GPJ(0) + 32)
-> -#elif defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
-> +
-> +#if defined(CONFIG_CPU_S3C2443) || defined(CONFIG_CPU_S3C2416)
->  #define S3C_GPIO_END	(S3C2410_GPM(0) + 32)
->  #else
-> +#ifdef CONFIG_CPU_S3C244X
-> +#define S3C_GPIO_END	(S3C2410_GPJ(0) + 32)
-> +else
->  #define S3C_GPIO_END	(S3C2410_GPH(0) + 32)
->  #endif
-> +#endif
-same as above
+This patch is going to be merged into 3.2.
 
-> diff --git a/arch/arm/plat-s3c24xx/gpiolib.c
-> b/arch/arm/plat-s3c24xx/gpiolib.c index 243b641..93d4734 100644
-> --- a/arch/arm/plat-s3c24xx/gpiolib.c
-> +++ b/arch/arm/plat-s3c24xx/gpiolib.c
-> @@ -34,6 +34,11 @@ static int s3c24xx_gpiolib_banka_input(struct gpio_chip
-> *chip, unsigned offset) return -EINVAL;
->  }
+> I was able to reproduce this bug with virtualbox and tested the patch ~40
+> cycles.
 > 
-> +static int s3c24xx_gpiolib_bankm_output(struct gpio_chip *chip, unsigned
-> offset, int value) +{
-> +	return -EINVAL;
-> +}
-> +
->  static int s3c24xx_gpiolib_banka_output(struct gpio_chip *chip,
->  					unsigned offset, int value)
->  {
-> @@ -93,7 +98,7 @@ struct s3c_gpio_chip s3c24xx_gpios[] = {
->  			.base			= S3C2410_GPA(0),
->  			.owner			= THIS_MODULE,
->  			.label			= "GPIOA",
-> -			.ngpio			= 24,
-> +			.ngpio			= 27,
->  			.direction_input	= s3c24xx_gpiolib_banka_input,
->  			.direction_output	= s3c24xx_gpiolib_banka_output,
->  		},
-> @@ -167,7 +172,7 @@ struct s3c_gpio_chip s3c24xx_gpios[] = {
->  			.base			= S3C2410_GPH(0),
->  			.owner			= THIS_MODULE,
->  			.label			= "GPIOH",
-> -			.ngpio			= 11,
-> +			.ngpio			= 15,
->  		},
->  	},
->  		/* GPIOS for the S3C2443 and later devices. */
-> @@ -206,6 +211,7 @@ struct s3c_gpio_chip s3c24xx_gpios[] = {
->  			.owner			= THIS_MODULE,
->  			.label			= "GPIOM",
->  			.ngpio			= 2,
-> +			.direction_output	= s3c24xx_gpiolib_bankm_output,
->  		},
->  	},
->  };
-looks ok, but you will probably have to coordinate with Kgene as the Samsung 
-gpio support gets consolidated for 3.2 (i.e. in linux-next it currently sits 
-in drivers/gpio/gpio-samsung.c)
+> Bug#2
+> 
+> on resume from hibernate, hard reset (x64 only):
+> http://marc.info/?l=linux-kernel&m=131653513414314&w=2
+> 
+> With this patch I haven't got this issue again the last weeks.
 
-Heiko
+Hmm.  This issue appears to be still under investigation to me, but perhaps
+that's taken too much already.
+
+Takashi, perhaps you can repost the patch as a proper submission?  It would
+be good to have this regression fixed even if we don't know the real source of
+it.
+
+> I wasn't able to reproduce this bug with virtualbox.
+> 
+> 
+> 
+> 
+> 
+> I only got one pm-hibernate issue. Last line:
+> 
+> Disabling non-boot CPUs ...
+> 
+> This time I've enabled debug hung task :)
+> 
+> schedule_timeout
+> ...
+> workqueue_cpu_callback
+> notifier_call_chain
+> ...
+> __cpu_notify
+> _cpu_down
+> printk
+> disable_nonboot_cpus
+> hibernation_snapshot
+> hibernate
+> ...
+> 
+> Any other idea besides the possibility it's caused by evil earth
+> radiation, isn't it?
+
+I'm not exactly sure what happened from your description, care to explain?
+
+Rafael
