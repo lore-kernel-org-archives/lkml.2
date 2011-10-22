@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab1JVSXP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 14:23:15 -0400
-Received: from vms173019pub.verizon.net ([206.46.173.19]:43905 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab1JVSXO (ORCPT
+	id S1754494Ab1JVSZT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 14:25:19 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57632 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab1JVSZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 14:23:14 -0400
-X-Greylist: delayed 3605 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Oct 2011 14:23:14 EDT
-Date: Sat, 22 Oct 2011 13:19:02 -0400 (EDT)
-From: Peter Foley <pefoley2@verizon.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz
-Subject: [PATCH] kbuild: fix warnings by specifing format arguments
-Message-id: <alpine.LNX.2.00.1110221317230.59156@linux>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 22 Oct 2011 14:25:17 -0400
+MIME-Version: 1.0
+Date: Sat, 22 Oct 2011 13:25:16 -0500
+Message-ID: <CAH2r5msd-9GzomOxxpY9GMhd8hw0YjUL2uyYJJgTiG5T3hbuyQ@mail.gmail.com>
+Subject: cifs file copy performance much faster - more results
+From: Steve French <smfrench@gmail.com>
+To: linux-cifs@vger.kernel.org,
+        samba-technical <samba-technical@lists.samba.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify format arguments to fix warnings.
+Did some quick tests to Samba 3.6 from the current cifs git tree which
+includes Jeff's async read performance improvements.   About a 4x
+performance increase on GiGE, maxing the network adapter (slightly
+slower writing to local disk file).
 
-  HOSTCC  scripts/kconfig/gconf.o
-/usr/src/lto/scripts/kconfig/gconf.c: In function 'on_introduction1_activate':
-/usr/src/lto/scripts/kconfig/gconf.c:686:6: warning: format not a string literal and no format arguments
-/usr/src/lto/scripts/kconfig/gconf.c: In function 'on_about1_activate':
-/usr/src/lto/scripts/kconfig/gconf.c:704:6: warning: format not a string literal and no format arguments
-/usr/src/lto/scripts/kconfig/gconf.c: In function 'on_license1_activate':
-/usr/src/lto/scripts/kconfig/gconf.c:723:6: warning: format not a string literal and no format arguments
+/* As expected, running earlier cifs (3.0 kernel), the network
+utilization on single large file copy is 20-25% over GigE */
+[stevef@smfhomegateway ~]$ dd of=/dev/zero
+if=/mnt/target-file-1GB-size bs=8M count=125
+^C85+0 records in
+84+0 records out
+704643072 bytes (705 MB) copied, 29.5827 s, 23.8 MB/s
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- scripts/kconfig/gconf.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+/* try it again to make sure it is not a fluke - current cifs suffers
+from synchronous
+dispatch of read in single file copy case and also small read sizes */
+[stevef@smfhomegateway ~]$ dd of=/dev/null
+if=/mnt/target-file-1GB-size bs=8M count=125
+125+0 records in
+125+0 records out
+1048576000 bytes (1.0 GB) copied, 43.4298 s, 24.1 MB/s
 
-diff --git a/scripts/kconfig/gconf.c b/scripts/kconfig/gconf.c
-index 9f44380..b9e26a5 100644
---- a/scripts/kconfig/gconf.c
-+++ b/scripts/kconfig/gconf.c
-@@ -683,7 +683,7 @@ void on_introduction1_activate(GtkMenuItem * menuitem, gpointer user_data)
- 	dialog = gtk_message_dialog_new(GTK_WINDOW(main_wnd),
- 					GTK_DIALOG_DESTROY_WITH_PARENT,
- 					GTK_MESSAGE_INFO,
--					GTK_BUTTONS_CLOSE, intro_text);
-+					GTK_BUTTONS_CLOSE, "%s", intro_text);
- 	g_signal_connect_swapped(GTK_OBJECT(dialog), "response",
- 				 G_CALLBACK(gtk_widget_destroy),
- 				 GTK_OBJECT(dialog));
-@@ -701,7 +701,7 @@ void on_about1_activate(GtkMenuItem * menuitem, gpointer user_data)
- 	dialog = gtk_message_dialog_new(GTK_WINDOW(main_wnd),
- 					GTK_DIALOG_DESTROY_WITH_PARENT,
- 					GTK_MESSAGE_INFO,
--					GTK_BUTTONS_CLOSE, about_text);
-+					GTK_BUTTONS_CLOSE, "%s", about_text);
- 	g_signal_connect_swapped(GTK_OBJECT(dialog), "response",
- 				 G_CALLBACK(gtk_widget_destroy),
- 				 GTK_OBJECT(dialog));
-@@ -720,7 +720,7 @@ void on_license1_activate(GtkMenuItem * menuitem, gpointer user_data)
- 	dialog = gtk_message_dialog_new(GTK_WINDOW(main_wnd),
- 					GTK_DIALOG_DESTROY_WITH_PARENT,
- 					GTK_MESSAGE_INFO,
--					GTK_BUTTONS_CLOSE, license_text);
-+					GTK_BUTTONS_CLOSE, "%s", license_text);
- 	g_signal_connect_swapped(GTK_OBJECT(dialog), "response",
- 				 G_CALLBACK(gtk_widget_destroy),
- 				 GTK_OBJECT(dialog));
+/* Load the current cifs-2.6.git module - backported to 2.6.40-FC */
+[stevef@smfhomegateway ~]$ dd of=/dev/null
+if=/mnt/target-file-1GB-size bs=8M count=125
+125+0 records in
+125+0 records out
+1048576000 bytes (1.0 GB) copied, 9.06156 s, 116 MB/s
+
+/* Writing to local file on this low end SATA drive instead of
+dev/null slows things down a little but still close to wire speed
+[stevef@smfhomegateway ~]$ dd of=foo if=/mnt/target-file-1GB-size
+bs=8M count=125
+125+0 records in
+125+0 records out
+1048576000 bytes (1.0 GB) copied, 11.4381 s, 91.7 MB/s
+
+
 -- 
-1.7.7
+Thanks,
 
+Steve
