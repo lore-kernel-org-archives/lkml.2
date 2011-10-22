@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1JVNat (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 09:30:49 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42530 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab1JVNas convert rfc822-to-8bit (ORCPT
+	id S1754873Ab1JVNhd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 09:37:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44561 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab1JVNhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 09:30:48 -0400
+	Sat, 22 Oct 2011 09:37:31 -0400
+Date: Sat, 22 Oct 2011 14:36:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Tim Bird <tim.bird@am.sony.com>, Joe Perches <joe@perches.com>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] ARM 4Kstacks: introduction
+Message-ID: <20111022133648.GA21374@n2100.arm.linux.org.uk>
+References: <4E9E0B71.9020708@am.sony.com> <1318983248.7569.5.camel@Joe-Laptop> <4E9E1944.80601@am.sony.com> <1500345.YeXPhIIHc5@wuerfel> <CACVXFVMb9p8PiTYWGTNn-FtQts0sRgmK+BQ6kaJ6-D89CAT=xQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEbykaVif3Mi50aDzY5p09iHC3DgtbYFQBGPAWiLa8hhyk5w8A@mail.gmail.com>
-References: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
-	<20111020.155659.486754557434415381.davem@davemloft.net>
-	<1319141125.2854.14.camel@edumazet-laptop>
-	<20111020.161147.33259825921677777.davem@davemloft.net>
-	<1319141867.2854.19.camel@edumazet-laptop>
-	<CAEbykaWhh12pM2jRSzfGig=jeKhVWSdxfwuXHFvLTt14=BYTbA@mail.gmail.com>
-	<CAJFZqHzWUsP7szrjVwmW5+HWRND3R4qxWcnK=bqbsgL6F7XGeA@mail.gmail.com>
-	<CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
-	<1319265470.6180.13.camel@edumazet-laptop>
-	<1319268338.6180.20.camel@edumazet-laptop>
-	<CAEbykaVif3Mi50aDzY5p09iHC3DgtbYFQBGPAWiLa8hhyk5w8A@mail.gmail.com>
-Date: Sat, 22 Oct 2011 16:30:47 +0300
-Message-ID: <CAEbykaWnLaWHBLhE0gGgLK45t0Y6ykdSjTgrfHMJWFojsWVteA@mail.gmail.com>
-Subject: Re: [PATCH] tg3: fix tigon3_dma_hwbug_workaround()
-From: Ari Savolainen <ari.m.savolainen@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: RongQing Li <roy.qing.li@gmail.com>, David Miller <davem@davemloft.net>,
-        richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACVXFVMb9p8PiTYWGTNn-FtQts0sRgmK+BQ6kaJ6-D89CAT=xQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tested the patch. It works. The panics are gone.
+On Sat, Oct 22, 2011 at 04:50:15PM +0800, Ming Lei wrote:
+> On Wed, Oct 19, 2011 at 6:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 18 October 2011 17:26:44 Tim Bird wrote:
+> >> Even inside Sony, usage of 4K stacks is limited
+> >> to some very special cases, where memory is exceedingly
+> >> tight (we have one system with 4M of RAM).  And we
+> >> don't mind lopping off features or coding around
+> >> problem areas to support our special case.
+> >
+> > I would imagine that in those cases, you can gain more by reducing the
+> > number of threads in the system. What is the highest number of
+> > concurrent threads that you expect in a limited use case with no
+> > networking or block devices?
+> 
+> If system run for some time, sometimes it may be difficult for
+> memory allocator to allocate 2 continuous page frames even  there are
+> many spare page frames in system because of
+> fragment issue, so the patch does make sense.
 
-Thanks,
-Ari
+If memory fragmentation is an issue for this, it probably means that we
+need to switch to a software page size of 8K (or maybe 16K) rather than
+stick with the hardware 4K size.  That would be a much more reliable
+solution, especially as the L1 page table is 16K (if you're suffering
+from memory fragmentation, the first thing which'd get you is the L1
+page table allocation, not the kernel stack allocation.)
 
-2011/10/22 Ari Savolainen <ari.m.savolainen@gmail.com>:
-> I tried a similar patch earlier and got another panic with that. I was
-> quite tired at that time and may have made a mistake. I'll test Eric's
-> patch either later today or tomorrow.
->
-> Ari
->
-> 2011/10/22 Eric Dumazet <eric.dumazet@gmail.com>:
->> Ari got kernel panics using tg3 NIC, and bisected to 2669069aacc9 "tg3:
->> enable transmit time stamping."
->>
->> This is because tigon3_dma_hwbug_workaround() might alloc a new skb and
->> free the original. We panic when skb_tx_timestamp() is called on freed
->> skb.
->>
->> Reported-by: Ari Savolainen <ari.m.savolainen@gmail.com>
->> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->> ---
->>  drivers/net/tg3.c |    8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
->> index 4a1374d..6149dc5 100644
->> --- a/drivers/net/tg3.c
->> +++ b/drivers/net/tg3.c
->> @@ -6029,12 +6029,12 @@ static void tg3_tx_skb_unmap(struct tg3_napi *tnapi, u32 entry, int last)
->>
->>  /* Workaround 4GB and 40-bit hardware DMA bugs. */
->>  static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
->> -                                      struct sk_buff *skb,
->> +                                      struct sk_buff **pskb,
->>                                       u32 *entry, u32 *budget,
->>                                       u32 base_flags, u32 mss, u32 vlan)
->>  {
->>        struct tg3 *tp = tnapi->tp;
->> -       struct sk_buff *new_skb;
->> +       struct sk_buff *new_skb, *skb = *pskb;
->>        dma_addr_t new_addr = 0;
->>        int ret = 0;
->>
->> @@ -6076,7 +6076,7 @@ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
->>        }
->>
->>        dev_kfree_skb(skb);
->> -
->> +       *pskb = new_skb;
->>        return ret;
->>  }
->>
->> @@ -6305,7 +6305,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
->>                 */
->>                entry = tnapi->tx_prod;
->>                budget = tg3_tx_avail(tnapi);
->> -               if (tigon3_dma_hwbug_workaround(tnapi, skb, &entry, &budget,
->> +               if (tigon3_dma_hwbug_workaround(tnapi, &skb, &entry, &budget,
->>                                                base_flags, mss, vlan))
->>                        goto out_unlock;
->>        }
->>
->>
->>
->
+> Anyway, it provides one option for user to apply 4k stack to avoid
+> such kind of process creation failure.
+
+I refer you to the comments made by people who've tried running with 4K
+stacks on x86, and their _vast_ experience of doing this.  If they say
+that it causes stack overflows, then it's a problem.
+
+The possibility of a kernel stack overflow is not something that should
+be taken lightly - an overflow of the kernel stack means that the thread
+data will be corrupted, so destroying the ability for debug information
+to be emitted.
