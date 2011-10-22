@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1JVKSH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:18:07 -0400
+	id S1754564Ab1JVKSV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:18:21 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:61756 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab1JVKSF (ORCPT
+	with ESMTP id S1754059Ab1JVKSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:18:05 -0400
+	Sat, 22 Oct 2011 06:18:18 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 44/49] w1: irq: Remove IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:56:56 +0800
-Message-Id: <1319277421-9203-45-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, Linus Walleij <linus.walleij@stericsson.com>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: [PATCH 45/49] watchdog: irq: Remove IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:56:57 +0800
+Message-Id: <1319277421-9203-46-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
@@ -29,38 +31,119 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/w1/masters/ds1wm.c    |    2 +-
- drivers/w1/masters/omap_hdq.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/watchdog/coh901327_wdt.c   |    2 +-
+ drivers/watchdog/eurotechwdt.c     |    2 +-
+ drivers/watchdog/mpcore_wdt.c      |    3 +--
+ drivers/watchdog/octeon-wdt-main.c |    2 +-
+ drivers/watchdog/sb_wdog.c         |    4 ++--
+ drivers/watchdog/wdt.c             |    2 +-
+ drivers/watchdog/wdt_pci.c         |    2 +-
+ 7 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/w1/masters/ds1wm.c b/drivers/w1/masters/ds1wm.c
-index a0c8965..9fa6844 100644
---- a/drivers/w1/masters/ds1wm.c
-+++ b/drivers/w1/masters/ds1wm.c
-@@ -502,7 +502,7 @@ static int ds1wm_probe(struct platform_device *pdev)
- 		irq_set_irq_type(ds1wm_data->irq, IRQ_TYPE_EDGE_FALLING);
+diff --git a/drivers/watchdog/coh901327_wdt.c b/drivers/watchdog/coh901327_wdt.c
+index 9291506..03f449a 100644
+--- a/drivers/watchdog/coh901327_wdt.c
++++ b/drivers/watchdog/coh901327_wdt.c
+@@ -429,7 +429,7 @@ static int __init coh901327_probe(struct platform_device *pdev)
+ 	writew(U300_WDOG_SR_RESET_STATUS_RESET, virtbase + U300_WDOG_SR);
  
- 	ret = request_irq(ds1wm_data->irq, ds1wm_isr,
--			IRQF_DISABLED | IRQF_SHARED, "ds1wm", ds1wm_data);
-+			IRQF_SHARED, "ds1wm", ds1wm_data);
- 	if (ret)
- 		goto err1;
+ 	irq = platform_get_irq(pdev, 0);
+-	if (request_irq(irq, coh901327_interrupt, IRQF_DISABLED,
++	if (request_irq(irq, coh901327_interrupt, 0,
+ 			DRV_NAME " Bark", pdev)) {
+ 		ret = -EIO;
+ 		goto out_no_irq;
+diff --git a/drivers/watchdog/eurotechwdt.c b/drivers/watchdog/eurotechwdt.c
+index f1d1da6..41018d4 100644
+--- a/drivers/watchdog/eurotechwdt.c
++++ b/drivers/watchdog/eurotechwdt.c
+@@ -427,7 +427,7 @@ static int __init eurwdt_init(void)
+ {
+ 	int ret;
  
-diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
-index 5ef385b..d1ef89d 100644
---- a/drivers/w1/masters/omap_hdq.c
-+++ b/drivers/w1/masters/omap_hdq.c
-@@ -633,7 +633,7 @@ static int __devinit omap_hdq_probe(struct platform_device *pdev)
- 		goto err_irq;
+-	ret = request_irq(irq, eurwdt_interrupt, IRQF_DISABLED, "eurwdt", NULL);
++	ret = request_irq(irq, eurwdt_interrupt, 0, "eurwdt", NULL);
+ 	if (ret) {
+ 		printk(KERN_ERR "eurwdt: IRQ %d is not free.\n", irq);
+ 		goto out;
+diff --git a/drivers/watchdog/mpcore_wdt.c b/drivers/watchdog/mpcore_wdt.c
+index 4dc3102..82ccd36 100644
+--- a/drivers/watchdog/mpcore_wdt.c
++++ b/drivers/watchdog/mpcore_wdt.c
+@@ -367,8 +367,7 @@ static int __devinit mpcore_wdt_probe(struct platform_device *dev)
+ 		goto err_misc;
  	}
  
--	ret = request_irq(irq, hdq_isr, IRQF_DISABLED, "omap_hdq", hdq_data);
-+	ret = request_irq(irq, hdq_isr, 0, "omap_hdq", hdq_data);
- 	if (ret < 0) {
- 		dev_dbg(&pdev->dev, "could not request irq\n");
- 		goto err_irq;
+-	ret = request_irq(wdt->irq, mpcore_wdt_fire, IRQF_DISABLED,
+-							"mpcore_wdt", wdt);
++	ret = request_irq(wdt->irq, mpcore_wdt_fire, 0, "mpcore_wdt", wdt);
+ 	if (ret) {
+ 		dev_printk(KERN_ERR, wdt->dev,
+ 			"cannot register IRQ%d for watchdog\n", wdt->irq);
+diff --git a/drivers/watchdog/octeon-wdt-main.c b/drivers/watchdog/octeon-wdt-main.c
+index 945ee83..6019087 100644
+--- a/drivers/watchdog/octeon-wdt-main.c
++++ b/drivers/watchdog/octeon-wdt-main.c
+@@ -402,7 +402,7 @@ static void octeon_wdt_setup_interrupt(int cpu)
+ 	irq = OCTEON_IRQ_WDOG0 + core;
+ 
+ 	if (request_irq(irq, octeon_wdt_poke_irq,
+-			IRQF_DISABLED, "octeon_wdt", octeon_wdt_poke_irq))
++			0, "octeon_wdt", octeon_wdt_poke_irq))
+ 		panic("octeon_wdt: Couldn't obtain irq %d", irq);
+ 
+ 	cpumask_set_cpu(cpu, &irq_enabled_cpus);
+diff --git a/drivers/watchdog/sb_wdog.c b/drivers/watchdog/sb_wdog.c
+index f31493e..b01a30e 100644
+--- a/drivers/watchdog/sb_wdog.c
++++ b/drivers/watchdog/sb_wdog.c
+@@ -300,7 +300,7 @@ static int __init sbwdog_init(void)
+ 	 * get the resources
+ 	 */
+ 
+-	ret = request_irq(1, sbwdog_interrupt, IRQF_DISABLED | IRQF_SHARED,
++	ret = request_irq(1, sbwdog_interrupt, IRQF_SHARED,
+ 		ident.identity, (void *)user_dog);
+ 	if (ret) {
+ 		printk(KERN_ERR "%s: failed to request irq 1 - %d\n",
+@@ -350,7 +350,7 @@ void platform_wd_setup(void)
+ {
+ 	int ret;
+ 
+-	ret = request_irq(1, sbwdog_interrupt, IRQF_DISABLED | IRQF_SHARED,
++	ret = request_irq(1, sbwdog_interrupt, IRQF_SHARED,
+ 		"Kernel Watchdog", IOADDR(A_SCD_WDOG_CFG_0));
+ 	if (ret) {
+ 		printk(KERN_CRIT
+diff --git a/drivers/watchdog/wdt.c b/drivers/watchdog/wdt.c
+index bb03e15..d2ef002 100644
+--- a/drivers/watchdog/wdt.c
++++ b/drivers/watchdog/wdt.c
+@@ -612,7 +612,7 @@ static int __init wdt_init(void)
+ 		goto out;
+ 	}
+ 
+-	ret = request_irq(irq, wdt_interrupt, IRQF_DISABLED, "wdt501p", NULL);
++	ret = request_irq(irq, wdt_interrupt, 0, "wdt501p", NULL);
+ 	if (ret) {
+ 		printk(KERN_ERR "wdt: IRQ %d is not free.\n", irq);
+ 		goto outreg;
+diff --git a/drivers/watchdog/wdt_pci.c b/drivers/watchdog/wdt_pci.c
+index 172dad6..e0fc3ba 100644
+--- a/drivers/watchdog/wdt_pci.c
++++ b/drivers/watchdog/wdt_pci.c
+@@ -643,7 +643,7 @@ static int __devinit wdtpci_init_one(struct pci_dev *dev,
+ 	irq = dev->irq;
+ 	io = pci_resource_start(dev, 2);
+ 
+-	if (request_irq(irq, wdtpci_interrupt, IRQF_DISABLED | IRQF_SHARED,
++	if (request_irq(irq, wdtpci_interrupt, IRQF_SHARED,
+ 			 "wdt_pci", &wdtpci_miscdev)) {
+ 		printk(KERN_ERR PFX "IRQ %d is not free\n", irq);
+ 		goto out_reg;
 -- 
 1.7.1
 
