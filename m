@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1JVKOO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:14:14 -0400
+	id S1754701Ab1JVKOg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:14:36 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:47030 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622Ab1JVKOM (ORCPT
+	with ESMTP id S1751918Ab1JVKOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:14:12 -0400
+	Sat, 22 Oct 2011 06:14:35 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Kyle McMartin <kyle@mcmartin.ca>,
-        Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH 36/49] dirvers/parisc: irq: Remove IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:56:48 +0800
-Message-Id: <1319277421-9203-37-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, linux-pcmcia@lists.infradead.org
+Subject: [PATCH 37/49] pcmcia: irq: Remove IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:56:49 +0800
+Message-Id: <1319277421-9203-38-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
@@ -32,23 +29,44 @@ genirq: Warn when handler enables interrupts]).
 So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- drivers/parisc/superio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/pcmcia/db1xxx_ss.c  |    4 ++--
+ drivers/pcmcia/soc_common.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/parisc/superio.c b/drivers/parisc/superio.c
-index e3b76d4..5e6fd94 100644
---- a/drivers/parisc/superio.c
-+++ b/drivers/parisc/superio.c
-@@ -274,7 +274,7 @@ superio_init(struct pci_dev *pcidev)
- 	else
- 		printk(KERN_ERR PFX "USB regulator not initialized!\n");
+diff --git a/drivers/pcmcia/db1xxx_ss.c b/drivers/pcmcia/db1xxx_ss.c
+index 3e49df6..6d76a92 100644
+--- a/drivers/pcmcia/db1xxx_ss.c
++++ b/drivers/pcmcia/db1xxx_ss.c
+@@ -162,12 +162,12 @@ static int db1x_pcmcia_setup_irqs(struct db1x_pcmcia_sock *sock)
+ 	 */
+ 	if (sock->board_type == BOARD_TYPE_DB1200) {
+ 		ret = request_irq(sock->insert_irq, db1200_pcmcia_cdirq,
+-				  IRQF_DISABLED, "pcmcia_insert", sock);
++				  0, "pcmcia_insert", sock);
+ 		if (ret)
+ 			goto out1;
  
--	if (request_irq(pdev->irq, superio_interrupt, IRQF_DISABLED,
-+	if (request_irq(pdev->irq, superio_interrupt, 0,
- 			SUPERIO, (void *)sio)) {
- 
- 		printk(KERN_ERR PFX "could not get irq\n");
+ 		ret = request_irq(sock->eject_irq, db1200_pcmcia_cdirq,
+-				  IRQF_DISABLED, "pcmcia_eject", sock);
++				  0, "pcmcia_eject", sock);
+ 		if (ret) {
+ 			free_irq(sock->insert_irq, sock);
+ 			goto out1;
+diff --git a/drivers/pcmcia/soc_common.c b/drivers/pcmcia/soc_common.c
+index a0a9c2a..0493a31 100644
+--- a/drivers/pcmcia/soc_common.c
++++ b/drivers/pcmcia/soc_common.c
+@@ -535,7 +535,7 @@ int soc_pcmcia_request_irqs(struct soc_pcmcia_socket *skt,
+ 		if (irqs[i].sock != skt->nr)
+ 			continue;
+ 		res = request_irq(irqs[i].irq, soc_common_pcmcia_interrupt,
+-				  IRQF_DISABLED, irqs[i].str, skt);
++				  0, irqs[i].str, skt);
+ 		if (res)
+ 			break;
+ 		irq_set_irq_type(irqs[i].irq, IRQ_TYPE_NONE);
 -- 
 1.7.1
 
