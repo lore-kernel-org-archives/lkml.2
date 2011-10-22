@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1JVHVL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 03:21:11 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:40748 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab1JVHVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 03:21:10 -0400
-Date: Sat, 22 Oct 2011 12:50:30 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/X] uprobes: introduce UTASK_SSTEP_TRAPPED logic
-Message-ID: <20111022072030.GB24475@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215344.GG16395@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111019215344.GG16395@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-x-cbid: 11102207-5930-0000-0000-0000007E0B1E
+	id S1753226Ab1JVHZq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 03:25:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59336 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1JVHZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 03:25:45 -0400
+Message-ID: <1319268338.6180.20.camel@edumazet-laptop>
+Subject: [PATCH] tg3: fix tigon3_dma_hwbug_workaround()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ari Savolainen <ari.m.savolainen@gmail.com>
+Cc: RongQing Li <roy.qing.li@gmail.com>, David Miller <davem@davemloft.net>,
+        richardcochran@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 22 Oct 2011 09:25:38 +0200
+In-Reply-To: <1319265470.6180.13.camel@edumazet-laptop>
+References: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
+	 <20111020.155659.486754557434415381.davem@davemloft.net>
+	 <1319141125.2854.14.camel@edumazet-laptop>
+	 <20111020.161147.33259825921677777.davem@davemloft.net>
+	 <1319141867.2854.19.camel@edumazet-laptop>
+	 <CAEbykaWhh12pM2jRSzfGig=jeKhVWSdxfwuXHFvLTt14=BYTbA@mail.gmail.com>
+	 <CAJFZqHzWUsP7szrjVwmW5+HWRND3R4qxWcnK=bqbsgL6F7XGeA@mail.gmail.com>
+	 <CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
+	 <1319265470.6180.13.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 19, 2011 at 11:53:44PM +0200, Oleg Nesterov wrote:
-> Finally, add UTASK_SSTEP_TRAPPED state/code to handle the case when
-> xol insn itself triggers the signal.
-> 
-> In this case we should restart the original insn even if the task is
-> already SIGKILL'ed (say, the coredump should report the correct ip).
-> This is even more important if the task has a handler for SIGSEGV/etc,
-> The _same_ instruction should be repeated again after return from the
-> signal handler, and SSTEP can never finish in this case.
+Ari got kernel panics using tg3 NIC, and bisected to 2669069aacc9 "tg3:
+enable transmit time stamping."
 
-Oleg,
+This is because tigon3_dma_hwbug_workaround() might alloc a new skb and
+free the original. We panic when skb_tx_timestamp() is called on freed
+skb.
 
-Not sure I understand this completely...
+Reported-by: Ari Savolainen <ari.m.savolainen@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ drivers/net/tg3.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-When you say 'correct ip' you mean the original vaddr where we now have
-a uprobe breakpoint and not the xol copy, right?
+diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
+index 4a1374d..6149dc5 100644
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -6029,12 +6029,12 @@ static void tg3_tx_skb_unmap(struct tg3_napi *tnapi, u32 entry, int last)
+ 
+ /* Workaround 4GB and 40-bit hardware DMA bugs. */
+ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
+-				       struct sk_buff *skb,
++				       struct sk_buff **pskb,
+ 				       u32 *entry, u32 *budget,
+ 				       u32 base_flags, u32 mss, u32 vlan)
+ {
+ 	struct tg3 *tp = tnapi->tp;
+-	struct sk_buff *new_skb;
++	struct sk_buff *new_skb, *skb = *pskb;
+ 	dma_addr_t new_addr = 0;
+ 	int ret = 0;
+ 
+@@ -6076,7 +6076,7 @@ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
+ 	}
+ 
+ 	dev_kfree_skb(skb);
+-
++	*pskb = new_skb;
+ 	return ret;
+ }
+ 
+@@ -6305,7 +6305,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		 */
+ 		entry = tnapi->tx_prod;
+ 		budget = tg3_tx_avail(tnapi);
+-		if (tigon3_dma_hwbug_workaround(tnapi, skb, &entry, &budget,
++		if (tigon3_dma_hwbug_workaround(tnapi, &skb, &entry, &budget,
+ 						base_flags, mss, vlan))
+ 			goto out_unlock;
+ 	}
 
-Coredump needs to report the correct ip, but should it also not report
-correctly the instruction that caused the signal? Ergo, shouldn't we
-put the original instruction back at the uprobed vaddr?
-
-Ananth
 
