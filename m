@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1JVKS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:18:56 -0400
+	id S1754814Ab1JVKTO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:19:14 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:61756 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab1JVKSy (ORCPT
+	with ESMTP id S1754675Ab1JVKTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:18:54 -0400
+	Sat, 22 Oct 2011 06:19:12 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-pci@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH 47/49] Documentation: irq: Change documents related to IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:56:59 +0800
-Message-Id: <1319277421-9203-48-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org
+Subject: [PATCH 48/49] USB: pxa168: xls: irq: Remove IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:57:00 +0800
+Message-Id: <1319277421-9203-49-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
@@ -23,78 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IRQF_DISABLED is a NOOP now, place where suggest to use this
-flag also doesn't make sense any more.
+Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
+We run all interrupt handlers with interrupts disabled
+and we even check and yell when an interrupt handler
+returns with interrupts enabled (see commit [b738a50a:
+genirq: Warn when handler enables interrupts]).
+
+So now this flag is a NOOP and can be removed.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>
+Cc: Jayachandran C <jayachandranc@netlogicmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- Documentation/PCI/MSI-HOWTO.txt  |   21 ---------------------
- Documentation/scsi/ncr53c8xx.txt |    3 ++-
- Documentation/scsi/tmscsim.txt   |    4 ++--
- 3 files changed, 4 insertions(+), 24 deletions(-)
+ drivers/usb/host/ehci-pxa168.c |    2 +-
+ drivers/usb/host/ohci-xls.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index 53e6fca..b3f514d 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -255,27 +255,6 @@ as many vectors for MSI as it could for MSI-X.  On some platforms, MSI
- interrupts must all be targeted at the same set of CPUs whereas MSI-X
- interrupts can all be targeted at different CPUs.
+diff --git a/drivers/usb/host/ehci-pxa168.c b/drivers/usb/host/ehci-pxa168.c
+index ac0c16e..f0b776d 100644
+--- a/drivers/usb/host/ehci-pxa168.c
++++ b/drivers/usb/host/ehci-pxa168.c
+@@ -304,7 +304,7 @@ static int __devinit ehci_pxa168_drv_probe(struct platform_device *pdev)
+ 	hcd->has_tt = 1;
+ 	ehci->sbrn = 0x20;
  
--4.5.2 Spinlocks
--
--Most device drivers have a per-device spinlock which is taken in the
--interrupt handler.  With pin-based interrupts or a single MSI, it is not
--necessary to disable interrupts (Linux guarantees the same interrupt will
--not be re-entered).  If a device uses multiple interrupts, the driver
--must disable interrupts while the lock is held.  If the device sends
--a different interrupt, the driver will deadlock trying to recursively
--acquire the spinlock.
--
--There are two solutions.  The first is to take the lock with
--spin_lock_irqsave() or spin_lock_irq() (see
--Documentation/DocBook/kernel-locking).  The second is to specify
--IRQF_DISABLED to request_irq() so that the kernel runs the entire
--interrupt routine with interrupts disabled.
--
--If your MSI interrupt routine does not hold the lock for the whole time
--it is running, the first solution may be best.  The second solution is
--normally preferred as it avoids making two transitions from interrupt
--disabled to enabled and back again.
--
- 4.6 How to tell whether MSI/MSI-X is enabled on a device
+-	err = usb_add_hcd(hcd, irq, IRQF_SHARED | IRQF_DISABLED);
++	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (err)
+ 		goto err5;
  
- Using 'lspci -v' (as root) may show some devices with "MSI", "Message
-diff --git a/Documentation/scsi/ncr53c8xx.txt b/Documentation/scsi/ncr53c8xx.txt
-index cda5f8f..6cb311b 100644
---- a/Documentation/scsi/ncr53c8xx.txt
-+++ b/Documentation/scsi/ncr53c8xx.txt
-@@ -786,7 +786,8 @@ port address 0x1400.
-         irqm:1     same as initial settings (assumed BIOS settings)
-         irqm:2     always totem pole
-         irqm:0x10  driver will not use IRQF_SHARED flag when requesting irq
--        irqm:0x20  driver will not use IRQF_DISABLED flag when requesting irq
-+        irqm:0x20  driver will not use IRQF_DISABLED flag when requesting
-+		   irq (only useful for linux-2.6.34 and earlier)
+diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
+index a3a9c6f..38b6bda 100644
+--- a/drivers/usb/host/ohci-xls.c
++++ b/drivers/usb/host/ohci-xls.c
+@@ -56,7 +56,7 @@ static int ohci_xls_probe_internal(const struct hc_driver *driver,
+ 		goto err3;
+ 	}
  
-     (Bits 0x10 and 0x20 can be combined with hardware irq mode option)
- 
-diff --git a/Documentation/scsi/tmscsim.txt b/Documentation/scsi/tmscsim.txt
-index 61c0531..1dee219 100644
---- a/Documentation/scsi/tmscsim.txt
-+++ b/Documentation/scsi/tmscsim.txt
-@@ -108,8 +108,8 @@ MHz PCI bus works for me, though, but I don't recommend using higher clocks
- than the 33.33 MHz being in the PCI spec.
- 
- If you want to share the IRQ with another device and the driver refuses to
--do so, you might succeed with changing the DC390_IRQ type in tmscsim.c to 
--IRQF_SHARED | IRQF_DISABLED.
-+do so, you should find out what's the mismatch between the shared IRQs,
-+and CONFIG_DEBUG_SHIRQ may give you more help.
- 
- 
- 3.Features
+-	retval = usb_add_hcd(hcd, irq, IRQF_DISABLED | IRQF_SHARED);
++	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (retval != 0)
+ 		goto err4;
+ 	return retval;
 -- 
 1.7.1
 
