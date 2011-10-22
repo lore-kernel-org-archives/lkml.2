@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab1JVVdG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 17:33:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55826 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008Ab1JVVdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 17:33:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Christoph <cr2005@u-club.de>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
-Date: Sat, 22 Oct 2011 23:35:29 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <4E1C70AD.1010101@u-club.de> <201109260010.50649.rjw@sisk.pl> <4EA2DDD3.8080306@u-club.de>
-In-Reply-To: <4EA2DDD3.8080306@u-club.de>
+	id S1753643Ab1JVVnf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 17:43:35 -0400
+Received: from s15407518.onlinehome-server.info ([82.165.136.167]:60699 "EHLO
+	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751961Ab1JVVnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 17:43:35 -0400
+From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
+To: Paul Schilling <paul.s.schilling@gmail.com>
+Subject: Re: [PATCH 06/14] ARM : SAMSUNG : S3C2416 Added io mapping for Static memory controller.
+Date: Sat, 22 Oct 2011 23:43:23 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
+        Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <static_memory> <1319257301-5040-1-git-send-email-paul.s.schilling@gmail.com>
+In-Reply-To: <1319257301-5040-1-git-send-email-paul.s.schilling@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110222335.29573.rjw@sisk.pl>
+Message-Id: <201110222343.24141.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 22, 2011, Christoph wrote:
-> > PM / Freezer: Freeze filesystems while freezing processes (v2)
-> > 
-> > On Sunday, August 07, 2011, Dave Chinner wrote:
-> >> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
-> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>> 
-> >>> Freeze all filesystems during the freezing of tasks by calling 
-> >>> freeze_bdev() for each of them and thaw them during the thawing of
-> >>> tasks with the help of thaw_bdev().
-> >>> 
-> >>> This is needed by hibernation, because some filesystems (e.g. XFS) 
-> >>> deadlock with the preallocation of memory used by it if the memory 
-> >>> pressure caused by it is too heavy.
-> >>> 
-> ...
-> > 
-> > Below is an alternative fix, the changelog pretty much explains the
-> > idea.
-> > 
-> > I've tested it on Toshiba Portege R500, but I don't have an XFS
-> > partition to verify that it really helps, so I'd appreciate it if
-> > someone able to reproduce the original issue could test it and report
-> > back.
+Am Samstag 22 Oktober 2011, 06:21:41 schrieb Paul Schilling:
+> Added MMU access to the Static Memory Controller.
 > 
-> Hi Rafael!
+> Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
+> ---
+>  arch/arm/mach-s3c2416/s3c2416.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
 > 
-> Well, the kernel bugtracker is still down and I just like to post my
-> experience with kernel (x64) v3.1-rc8/9 + patches. My machine is a
-> MacBookPro, doomed with 4GB RAM running debian.
-> 
-> Bug #1
-> 
-> on the way to hibernate, machine hangs on
-> 
-> "PM: Preallocating image memory..."
-> 
-> this patch worked for me now for weeks:
-> "[PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)"
-> https://lkml.org/lkml/2011/9/24/77
+> diff --git a/arch/arm/mach-s3c2416/s3c2416.c
+> b/arch/arm/mach-s3c2416/s3c2416.c index 494ce91..823a034 100644
+> --- a/arch/arm/mach-s3c2416/s3c2416.c
+> +++ b/arch/arm/mach-s3c2416/s3c2416.c
+> @@ -65,6 +65,18 @@ static struct map_desc s3c2416_iodesc[] __initdata = {
+>  	IODESC_ENT(WATCHDOG),
+>  	IODESC_ENT(CLKPWR),
+>  	IODESC_ENT(TIMER),
+> +	{
+> +		.virtual	= (u32)S3C2412_VA_SSMC,
+> +		.pfn		= __phys_to_pfn(S3C2412_PA_SSMC),
+> +		.length		= SZ_1M,
+> +		.type		= MT_DEVICE,
+> +	},
+> +	/*{
+> +		.virtual	= (u32)S3C2412_VA_EBI,
+> +		.pfn		= __phys_to_pfn(S3C2412_PA_EBI),
+> +		.length		= SZ_1M,
+> +		.type		= MT_DEVICE,
+> +	},*/
+>  };
+why are you adding disabled code?
 
-This patch is going to be merged into 3.2.
+Btw. it seems your posts got mangled somehow... only your patches 2,5 and 6 of 
+14 made it to linux-kernel and linux-arm-kernel.
 
-> I was able to reproduce this bug with virtualbox and tested the patch ~40
-> cycles.
-> 
-> Bug#2
-> 
-> on resume from hibernate, hard reset (x64 only):
-> http://marc.info/?l=linux-kernel&m=131653513414314&w=2
-> 
-> With this patch I haven't got this issue again the last weeks.
-
-Hmm.  This issue appears to be still under investigation to me, but perhaps
-that's taken too much already.
-
-Takashi, perhaps you can repost the patch as a proper submission?  It would
-be good to have this regression fixed even if we don't know the real source of
-it.
-
-> I wasn't able to reproduce this bug with virtualbox.
-> 
-> 
-> 
-> 
-> 
-> I only got one pm-hibernate issue. Last line:
-> 
-> Disabling non-boot CPUs ...
-> 
-> This time I've enabled debug hung task :)
-> 
-> schedule_timeout
-> ...
-> workqueue_cpu_callback
-> notifier_call_chain
-> ...
-> __cpu_notify
-> _cpu_down
-> printk
-> disable_nonboot_cpus
-> hibernation_snapshot
-> hibernate
-> ...
-> 
-> Any other idea besides the possibility it's caused by evil earth
-> radiation, isn't it?
-
-I'm not exactly sure what happened from your description, care to explain?
-
-Rafael
+Heiko
