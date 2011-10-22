@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab1JVRYl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 13:24:41 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:61771 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab1JVRYk convert rfc822-to-8bit (ORCPT
+	id S1754324Ab1JVRY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 13:24:56 -0400
+Received: from toast.topped-with-meat.com ([204.197.218.159]:59548 "EHLO
+	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284Ab1JVRYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 13:24:40 -0400
-References: <20111021211759.10784.17257.stgit@elm3c44.beaverton.ibm.com> <20111021211825.10784.97113.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111021211825.10784.97113.stgit@elm3c44.beaverton.ibm.com>
-Mime-Version: 1.0 (iPhone Mail 8L1)
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <67F2A39D-1E28-4660-8758-0B16DED30096@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: Tao Ma <tm@tao.ma>, Theodore Tso <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8L1)
-From: Andreas Dilger <aedilger@gmail.com>
-Subject: Re: [PATCH 5/5] ext4: Fix endian problem in MMP initialization
-Date: Sat, 22 Oct 2011 11:25:31 -0600
-To: "Darrick J. Wong" <djwong@us.ibm.com>
+	Sat, 22 Oct 2011 13:24:52 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@hack.frob.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Fcc: ~/Mail/lkml
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, selinux@tycho.nsa.gov,
+        John Johansen <john.johansen@canonical.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] LSM: Do not apply mmap_min_addr check to PROT_NONE mappings
+In-Reply-To: Linus Torvalds's message of  Saturday, 22 October 2011 06:38:33 +0300 <CA+55aFy3ALC34AyrsHi9yjBgRMwg9G5w2PhDfr_JVti1M8GbNQ@mail.gmail.com>
+References: <20111021213916.914462C0A5@topped-with-meat.com>
+	<CA+55aFy3ALC34AyrsHi9yjBgRMwg9G5w2PhDfr_JVti1M8GbNQ@mail.gmail.com>
+Emacs: you'll understand when you're older, dear.
+Message-Id: <20111022172450.0BCCE2C0A9@topped-with-meat.com>
+Date: Sat, 22 Oct 2011 10:24:50 -0700 (PDT)
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.0 cv=fe7WOzsF c=1 sm=1 a=27hm96M904wA:10
+		a=kj9zAlcOel0A:10 a=Qcz7jFQlpixEKVtGc28A:9 a=CjuIK1q_8ugA:10
+		a=WkljmVdYkabdwxfqvArNOQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can add my
+> So I'm not against this, but I'm wondering what triggers the need for it?
+> 
+> It does make the security checks more complicated, since now
+> mprotect() suddenly has to care about mmap_min_addr. So I don't think
+> it's a security enhancement ("attempt to ensure robustness").
+> 
+> But if there is some actual use-case that is shown to be helped,
+> please document that n the explanations for the changeset.
 
- Acked-by: Andreas Dilger <adilger@dilger.ca>
+It's exactly the case that I did mention: an application's own attempt to
+ensure robustness by doing a PROT_NONE mmap of the [0,0x10000) region.  An
+application cannot presume that this region is already precluded from being
+used by any non-MAP_FIXED mmap across all systems and configurations, so
+it's defensive coding to explicitly block it off with a PROT_NONE mapping.
 
-to this. 
+Since we know mmap_min_addr-type constraints might exist, we start at 0 and
+move up a page as long as mmap fails.  That works fine to cover e.g. the
+[0x1000,0x10000) region when mmap_min_addr is set to 4096, as is common.
+However, under SELinux these harmless attempts are diagnosed as MMAP_ZERO
+avc denials, which percolate up to the user as scare warnings that the
+application was prevented from doing something dangerous and possibly
+malicious, when that's not the case at all.
 
-Cheers, Andreas
 
-On 2011-10-21, at 3:18 PM, "Darrick J. Wong" <djwong@us.ibm.com> wrote:
-
-> As part of startup, the MMP initialization code does this:
-> 
-> mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
-> 
-> Next, mmp->mmp_seq is written out to disk, a delay happens, and then the MMP
-> block is read back in and the sequence value is tested:
-> 
-> if (seq != le32_to_cpu(mmp->mmp_seq)) {
->    /* fail the mount */
-> 
-> On a LE system such as x86, the *le32* functions do nothing and this works.
-> Unfortunately, on a BE system such as ppc64, this comparison becomes:
-> 
-> if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
->    /* fail the mount */
-> 
-> Except for a few palindromic sequence numbers, this test always causes the
-> mount to fail, which makes MMP filesystems generally unmountable on ppc64.  The
-> attached patch fixes this situation.
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
-> fs/ext4/mmp.c |    3 ++-
-> 1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> 
-> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-> index 9bdef3f..a7a4986 100644
-> --- a/fs/ext4/mmp.c
-> +++ b/fs/ext4/mmp.c
-> @@ -295,7 +295,8 @@ skip:
->    /*
->     * write a new random sequence number.
->     */
-> -    mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
-> +    seq = mmp_new_seq();
-> +    mmp->mmp_seq = cpu_to_le32(seq);
-> 
->    retval = write_mmp_block(bh);
->    if (retval)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+Roland
