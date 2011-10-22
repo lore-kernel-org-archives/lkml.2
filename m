@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1JVHqU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 03:46:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:10646 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab1JVHqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 03:46:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,390,1315206000"; 
-   d="scan'208";a="65201709"
-Date: Sat, 22 Oct 2011 15:46:07 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] writeback: avoid touching dirtied_when on blocked
- inodes
-Message-ID: <20111022074607.GA4720@localhost>
-References: <20111020152240.751936131@intel.com>
- <20111020232116.GB20542@quack.suse.cz>
- <20111021104049.GA3784@localhost>
- <20111021195448.GA10166@quack.suse.cz>
- <20111022031135.GA4823@localhost>
- <20111022053851.GA23033@localhost>
+	id S1753152Ab1JVHyg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 03:54:36 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54322 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab1JVHyf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 03:54:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111022053851.GA23033@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1319268338.6180.20.camel@edumazet-laptop>
+References: <CAEbykaX4UPDBxOHmNr=dodaquSPjhPr-pLCcUn5hSu4-xLZy-g@mail.gmail.com>
+	<20111020.155659.486754557434415381.davem@davemloft.net>
+	<1319141125.2854.14.camel@edumazet-laptop>
+	<20111020.161147.33259825921677777.davem@davemloft.net>
+	<1319141867.2854.19.camel@edumazet-laptop>
+	<CAEbykaWhh12pM2jRSzfGig=jeKhVWSdxfwuXHFvLTt14=BYTbA@mail.gmail.com>
+	<CAJFZqHzWUsP7szrjVwmW5+HWRND3R4qxWcnK=bqbsgL6F7XGeA@mail.gmail.com>
+	<CAEbykaVJneQ0ozUvYh2PRn-p_BowL4z4_4Y8EFCdO9mOsNX7OQ@mail.gmail.com>
+	<1319265470.6180.13.camel@edumazet-laptop>
+	<1319268338.6180.20.camel@edumazet-laptop>
+Date: Sat, 22 Oct 2011 10:54:33 +0300
+Message-ID: <CAEbykaVif3Mi50aDzY5p09iHC3DgtbYFQBGPAWiLa8hhyk5w8A@mail.gmail.com>
+Subject: Re: [PATCH] tg3: fix tigon3_dma_hwbug_workaround()
+From: Ari Savolainen <ari.m.savolainen@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: RongQing Li <roy.qing.li@gmail.com>, David Miller <davem@davemloft.net>,
+        richardcochran@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 22, 2011 at 01:38:51PM +0800, Wu Fengguang wrote:
-> On Sat, Oct 22, 2011 at 11:11:35AM +0800, Wu Fengguang wrote:
-> > > > btw, with the I_SYNC case converted, it's actually no longer necessary
-> > > > to keep a standalone b_more_io_wait. It should still be better to keep
-> > > > the list and the above error check for catching possible errors and
-> > > > the flexibility of adding policies like "don't retry possible blocked
-> > > > inodes in N seconds as long as there are other inodes to work with".
-> > > > 
-> > > > The below diff only intends to show the _possibility_ to remove
-> > > > b_more_io_wait:
-> > >   Good observation. So should we introduce b_more_io_wait in the end? We
-> > > could always introduce it when the need for some more complicated policy
-> > > comes...
-> > > 
-> > 
-> > I have no problem removing it if you liked it more. Anyway, let me
-> > test the idea out first (just kicked off the tests).
-> 
-> When removing b_more_io_wait, performance is slightly dropped
-> comparing to the full more_io_wait patchset.
-> 
-> 3.1.0-rc9-ioless-full-more_io_wait-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-x-next-20111014+  
-> ------------------------  ------------------------  
->                    45.30        +6.3%        48.14  thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
->                    48.23        -2.0%        47.27  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
->                    54.21        -2.6%        52.80  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
->                    56.07        -0.3%        55.91  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
->                    45.12        -5.8%        42.49  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
->                    53.94        -1.2%        53.27  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
->                    55.66        -0.1%        55.63  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
->                   358.53        -0.8%       355.51  TOTAL write_bw
-> 
-> I'll try to reduce the changes and retest.
+I tried a similar patch earlier and got another panic with that. I was
+quite tired at that time and may have made a mistake. I'll test Eric's
+patch either later today or tomorrow.
 
-Unfortunately, the reduced patches 1-4 + I_SYNC change + remove
-requeue_more_io_wait combination still performances noticeably worse:
+Ari
 
-3.1.0-rc9-ioless-full-next-20111014+  3.1.0-rc9-ioless-full-more_io_wait-x2-next-20111014+  
-------------------------  ------------------------  
-                   49.84        -7.9%        45.91  thresh=1G/ext4-100dd-4k-8p-4096M-1024M:10-X
-                   56.03        -7.2%        52.01  thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
-                   57.42        -1.7%        56.45  thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
-                   45.74        -2.8%        44.48  thresh=1G/xfs-100dd-4k-8p-4096M-1024M:10-X
-                   54.19        -4.8%        51.57  thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
-                   55.93        -2.2%        54.70  thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
-                  319.14        -4.4%       305.12  TOTAL write_bw
-
-Thanks,
-Fengguang
+2011/10/22 Eric Dumazet <eric.dumazet@gmail.com>:
+> Ari got kernel panics using tg3 NIC, and bisected to 2669069aacc9 "tg3:
+> enable transmit time stamping."
+>
+> This is because tigon3_dma_hwbug_workaround() might alloc a new skb and
+> free the original. We panic when skb_tx_timestamp() is called on freed
+> skb.
+>
+> Reported-by: Ari Savolainen <ari.m.savolainen@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  drivers/net/tg3.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
+> index 4a1374d..6149dc5 100644
+> --- a/drivers/net/tg3.c
+> +++ b/drivers/net/tg3.c
+> @@ -6029,12 +6029,12 @@ static void tg3_tx_skb_unmap(struct tg3_napi *tnapi, u32 entry, int last)
+>
+>  /* Workaround 4GB and 40-bit hardware DMA bugs. */
+>  static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
+> -                                      struct sk_buff *skb,
+> +                                      struct sk_buff **pskb,
+>                                       u32 *entry, u32 *budget,
+>                                       u32 base_flags, u32 mss, u32 vlan)
+>  {
+>        struct tg3 *tp = tnapi->tp;
+> -       struct sk_buff *new_skb;
+> +       struct sk_buff *new_skb, *skb = *pskb;
+>        dma_addr_t new_addr = 0;
+>        int ret = 0;
+>
+> @@ -6076,7 +6076,7 @@ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
+>        }
+>
+>        dev_kfree_skb(skb);
+> -
+> +       *pskb = new_skb;
+>        return ret;
+>  }
+>
+> @@ -6305,7 +6305,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+>                 */
+>                entry = tnapi->tx_prod;
+>                budget = tg3_tx_avail(tnapi);
+> -               if (tigon3_dma_hwbug_workaround(tnapi, skb, &entry, &budget,
+> +               if (tigon3_dma_hwbug_workaround(tnapi, &skb, &entry, &budget,
+>                                                base_flags, mss, vlan))
+>                        goto out_unlock;
+>        }
+>
+>
+>
