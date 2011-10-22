@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1JVROx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 13:14:53 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:63687 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab1JVROw (ORCPT
+	id S1754251Ab1JVRYl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 13:24:41 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:61771 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab1JVRYk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 13:14:52 -0400
-Date: Sat, 22 Oct 2011 13:10:48 -0400 (EDT)
-From: Peter Foley <pefoley2@verizon.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz
-Subject: [PATCH] kbuild: silence moc when V=0
-Message-id: <alpine.LNX.2.00.1110221307010.59156@linux>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 22 Oct 2011 13:24:40 -0400
+References: <20111021211759.10784.17257.stgit@elm3c44.beaverton.ibm.com> <20111021211825.10784.97113.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20111021211825.10784.97113.stgit@elm3c44.beaverton.ibm.com>
+Mime-Version: 1.0 (iPhone Mail 8L1)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <67F2A39D-1E28-4660-8758-0B16DED30096@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Cc: Tao Ma <tm@tao.ma>, Theodore Tso <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (8L1)
+From: Andreas Dilger <aedilger@gmail.com>
+Subject: Re: [PATCH 5/5] ext4: Fix endian problem in MMP initialization
+Date: Sat, 22 Oct 2011 11:25:31 -0600
+To: "Darrick J. Wong" <djwong@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use quiet_cmd to silence moc when V=0
+You can add my
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
- scripts/kconfig/Makefile |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ Acked-by: Andreas Dilger <adilger@dilger.ca>
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 1d99a08..7f1a6cd 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -322,8 +322,11 @@ $(obj)/zconf.tab.o: $(obj)/zconf.lex.c $(obj)/zconf.hash.c
- 
- $(obj)/qconf.o: $(obj)/qconf.moc
- 
--$(obj)/%.moc: $(src)/%.h
--	$(KC_QT_MOC) -i $< -o $@
-+quiet_cmd_moc = MOC     $@
-+cmd_moc = $(KC_QT_MOC) -i $< -o $@
-+
-+$(obj)/qconf.moc: $(src)/qconf.h
-+	$(call if_changed,moc)
- 
- # Extract gconf menu items for I18N support
- $(obj)/gconf.glade.h: $(obj)/gconf.glade
--- 
-1.7.7
+to this. 
 
+Cheers, Andreas
+
+On 2011-10-21, at 3:18 PM, "Darrick J. Wong" <djwong@us.ibm.com> wrote:
+
+> As part of startup, the MMP initialization code does this:
+> 
+> mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
+> 
+> Next, mmp->mmp_seq is written out to disk, a delay happens, and then the MMP
+> block is read back in and the sequence value is tested:
+> 
+> if (seq != le32_to_cpu(mmp->mmp_seq)) {
+>    /* fail the mount */
+> 
+> On a LE system such as x86, the *le32* functions do nothing and this works.
+> Unfortunately, on a BE system such as ppc64, this comparison becomes:
+> 
+> if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
+>    /* fail the mount */
+> 
+> Except for a few palindromic sequence numbers, this test always causes the
+> mount to fail, which makes MMP filesystems generally unmountable on ppc64.  The
+> attached patch fixes this situation.
+> 
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> ---
+> fs/ext4/mmp.c |    3 ++-
+> 1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> 
+> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
+> index 9bdef3f..a7a4986 100644
+> --- a/fs/ext4/mmp.c
+> +++ b/fs/ext4/mmp.c
+> @@ -295,7 +295,8 @@ skip:
+>    /*
+>     * write a new random sequence number.
+>     */
+> -    mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
+> +    seq = mmp_new_seq();
+> +    mmp->mmp_seq = cpu_to_le32(seq);
+> 
+>    retval = write_mmp_block(bh);
+>    if (retval)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
