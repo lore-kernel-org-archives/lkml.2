@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1JVKJn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:09:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47305 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754060Ab1JVKJl (ORCPT
+	id S1754518Ab1JVKJw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:09:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57970 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab1JVKJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:09:41 -0400
-Date: Sat, 22 Oct 2011 11:09:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Hsiang <peter.hsiang@maxim-ic.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH v2] ASoC: max98095: Convert codec->hw_write to
- snd_soc_write
-Message-ID: <20111022100939.GA3727@opensource.wolfsonmicro.com>
-References: <1318650362.6399.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318650362.6399.1.camel@phoenix>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 22 Oct 2011 06:09:49 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de
+Subject: [PATCH 26/49] cdrom: irq: Remove IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:56:38 +0800
+Message-Id: <1319277421-9203-27-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
+References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 15, 2011 at 11:46:02AM +0800, Axel Lin wrote:
-> codec->hw_write is broken now, convert codec->hw_write to snd_soc_write.
-> 
-> The hardware has 2 banks of registers sharing a section in I2C register space.
-> The 1st bank is the primary one and is cached.
-> The 2nd bank is for loading coefficients only and they do not need cache.
-> These coefficients registers are therefore direct writes.
-> Thus we set cache_bypass flag to deal with this before calling snd_soc_write.
+Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
+We run all interrupt handlers with interrupts disabled
+and we even check and yell when an interrupt handler
+returns with interrupts enabled (see commit [b738a50a:
+genirq: Warn when handler enables interrupts]).
 
-Applied, thanks.
+So now this flag is a NOOP and can be removed.
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+ drivers/cdrom/gdrom.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index 3ceaf00..88ae54a 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -562,11 +562,11 @@ static int __devinit gdrom_set_interrupt_handlers(void)
+ 	int err;
+ 
+ 	err = request_irq(HW_EVENT_GDROM_CMD, gdrom_command_interrupt,
+-		IRQF_DISABLED, "gdrom_command", &gd);
++		0, "gdrom_command", &gd);
+ 	if (err)
+ 		return err;
+ 	err = request_irq(HW_EVENT_GDROM_DMA, gdrom_dma_interrupt,
+-		IRQF_DISABLED, "gdrom_dma", &gd);
++		0, "gdrom_dma", &gd);
+ 	if (err)
+ 		free_irq(HW_EVENT_GDROM_CMD, &gd);
+ 	return err;
+-- 
+1.7.1
+
