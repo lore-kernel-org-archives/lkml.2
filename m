@@ -1,52 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116Ab1JVOsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 10:48:41 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:57992 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab1JVOsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 10:48:40 -0400
-Message-ID: <1319294907.2678.2.camel@phoenix>
-Subject: [PATCH] ASoC: wm8400: Fix setting Fout clock divider for FLL
- Control 4
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Date: Sat, 22 Oct 2011 22:48:27 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
+	id S1753482Ab1JVPOe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 11:14:34 -0400
+Received: from mail.uscreen.net ([62.67.233.10]:33775 "EHLO mail.uscreen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753267Ab1JVPOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Oct 2011 11:14:32 -0400
+Message-ID: <4EA2DDD3.8080306@u-club.de>
+Date: Sat, 22 Oct 2011 17:14:27 +0200
+From: Christoph <cr2005@u-club.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Christoph Hellwig <hch@infradead.org>,
+        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
+        linux-fsdevel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes
+ (v2)
+References: <4E1C70AD.1010101@u-club.de> <201109251532.20025.rjw@sisk.pl>	<4E7FA3C7.5050503@u-club.de> <201109260010.50649.rjw@sisk.pl>
+In-Reply-To: <201109260010.50649.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What we want here is to clear the WM8400_FLL_OUTDIV_MASK bits then
-OR with factors.outdiv.
+> PM / Freezer: Freeze filesystems while freezing processes (v2)
+> 
+> On Sunday, August 07, 2011, Dave Chinner wrote:
+>> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+>>> 
+>>> Freeze all filesystems during the freezing of tasks by calling 
+>>> freeze_bdev() for each of them and thaw them during the thawing of
+>>> tasks with the help of thaw_bdev().
+>>> 
+>>> This is needed by hibernation, because some filesystems (e.g. XFS) 
+>>> deadlock with the preallocation of memory used by it if the memory 
+>>> pressure caused by it is too heavy.
+>>> 
+...
+> 
+> Below is an alternative fix, the changelog pretty much explains the
+> idea.
+> 
+> I've tested it on Toshiba Portege R500, but I don't have an XFS
+> partition to verify that it really helps, so I'd appreciate it if
+> someone able to reproduce the original issue could test it and report
+> back.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8400.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi Rafael!
 
-diff --git a/sound/soc/codecs/wm8400.c b/sound/soc/codecs/wm8400.c
-index dc13be2..f29bc26 100644
---- a/sound/soc/codecs/wm8400.c
-+++ b/sound/soc/codecs/wm8400.c
-@@ -1059,7 +1059,7 @@ static int wm8400_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
- 	wm8400_write(codec, WM8400_FLL_CONTROL_3, factors.n);
- 
- 	reg = wm8400_read(codec, WM8400_FLL_CONTROL_4);
--	reg &= WM8400_FLL_OUTDIV_MASK;
-+	reg &= ~WM8400_FLL_OUTDIV_MASK;
- 	reg |= factors.outdiv;
- 	wm8400_write(codec, WM8400_FLL_CONTROL_4, reg);
- 
--- 
-1.7.5.4
+Well, the kernel bugtracker is still down and I just like to post my
+experience with kernel (x64) v3.1-rc8/9 + patches. My machine is a
+MacBookPro, doomed with 4GB RAM running debian.
+
+Bug #1
+
+on the way to hibernate, machine hangs on
+
+"PM: Preallocating image memory..."
+
+this patch worked for me now for weeks:
+"[PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)"
+https://lkml.org/lkml/2011/9/24/77
+
+I was able to reproduce this bug with virtualbox and tested the patch ~40
+cycles.
+
+Bug#2
+
+on resume from hibernate, hard reset (x64 only):
+http://marc.info/?l=linux-kernel&m=131653513414314&w=2
+
+With this patch I haven't got this issue again the last weeks.
+
+I wasn't able to reproduce this bug with virtualbox.
 
 
 
+
+
+I only got one pm-hibernate issue. Last line:
+
+Disabling non-boot CPUs ...
+
+This time I've enabled debug hung task :)
+
+schedule_timeout
+...
+workqueue_cpu_callback
+notifier_call_chain
+...
+__cpu_notify
+_cpu_down
+printk
+disable_nonboot_cpus
+hibernation_snapshot
+hibernate
+...
+
+Any other idea besides the possibility it's caused by evil earth
+radiation, isn't it?
+
+
+Gruss,
+chris
+
+
+
+
+On 26.09.2011 00:10, Rafael J. Wysocki wrote:
+> On Sunday, September 25, 2011, Christoph wrote:
+>> On 25.09.2011 15:32, Rafael J. Wysocki wrote:
+>>> On Sunday, September 25, 2011, Christoph wrote:
+>>>> test results of the patch below:
+>>>>
+>>>> 1. real machine
+>>>>
+>>>> suspends fine but on wakeup, after loading image: hard reset. nvidia
+>>>> gpu => disabled compitz  => wakeup worked two times.
+>>>
+>>> Hmm, so there's a separate bug related to NVidia I guess.
+>>
+>> Maybe.
+>>
+>> Just made another test: the machine (macbook) woke up, loaded image, thaw.
+>> It got stuck at vt#1, displaying console with login. Cursor blinking, but
+>> no (usb) keyboard or network enabled. Bricked?!!
+>>
+>>
+>> On the other hand I've got another box with nvidia gpu:
+>>
+>> debian5 32bit
+>> 2.6.38.2+ #3 SMP Fri Apr 1
+>> nvidia 260.19.36
+>>
+>> It's up since I compiled the kernel: I use it twice a week and I kept it
+>> freezed all the time. It was solid rock until today: hard reset on resume.
+>> WTF? (I remember this version combo was stable on the macbook but the
+>> kernel lacks a solid wireless driver).
+> 
+> If that's an x86_64 system, there is a known bug causing problems like
+> this to happen.  There's a patch fixing it, but not conclusive:
+> http://marc.info/?l=linux-kernel&m=131653513414314&w=2
+> 
+> Thanks,
+> Rafael
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
