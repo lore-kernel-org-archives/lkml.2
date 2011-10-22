@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab1JVKSg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 06:18:36 -0400
+	id S1754636Ab1JVKS4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 06:18:56 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:61756 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab1JVKSf (ORCPT
+	with ESMTP id S1754076Ab1JVKSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 06:18:35 -0400
+	Sat, 22 Oct 2011 06:18:54 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 46/49] xen: irq: Remove IRQF_DISABLED
-Date: Sat, 22 Oct 2011 17:56:58 +0800
-Message-Id: <1319277421-9203-47-git-send-email-yong.zhang0@gmail.com>
+Cc: tglx@linutronix.de, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-pci@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCH 47/49] Documentation: irq: Change documents related to IRQF_DISABLED
+Date: Sat, 22 Oct 2011 17:56:59 +0800
+Message-Id: <1319277421-9203-48-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
 References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
@@ -23,46 +23,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
-We run all interrupt handlers with interrupts disabled
-and we even check and yell when an interrupt handler
-returns with interrupts enabled (see commit [b738a50a:
-genirq: Warn when handler enables interrupts]).
-
-So now this flag is a NOOP and can be removed.
+IRQF_DISABLED is a NOOP now, place where suggest to use this
+flag also doesn't make sense any more.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/xen/evtchn.c       |    2 +-
- drivers/xen/platform-pci.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/PCI/MSI-HOWTO.txt  |   21 ---------------------
+ Documentation/scsi/ncr53c8xx.txt |    3 ++-
+ Documentation/scsi/tmscsim.txt   |    4 ++--
+ 3 files changed, 4 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
-index dbc13e9..95e2507 100644
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -265,7 +265,7 @@ static int evtchn_bind_to_user(struct per_user_data *u, int port)
- 	set_port_user(port, u);
- 	set_port_enabled(port, true); /* start enabled */
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index 53e6fca..b3f514d 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -255,27 +255,6 @@ as many vectors for MSI as it could for MSI-X.  On some platforms, MSI
+ interrupts must all be targeted at the same set of CPUs whereas MSI-X
+ interrupts can all be targeted at different CPUs.
  
--	rc = bind_evtchn_to_irqhandler(port, evtchn_interrupt, IRQF_DISABLED,
-+	rc = bind_evtchn_to_irqhandler(port, evtchn_interrupt, 0,
- 				       u->name, (void *)(unsigned long)port);
- 	if (rc >= 0)
- 		rc = 0;
-diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-index 319dd0a..482beff 100644
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -84,7 +84,7 @@ static irqreturn_t do_hvm_evtchn_intr(int irq, void *dev_id)
- static int xen_allocate_irq(struct pci_dev *pdev)
- {
- 	return request_irq(pdev->irq, do_hvm_evtchn_intr,
--			IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
-+			IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
- 			"xen-platform-pci", pdev);
- }
+-4.5.2 Spinlocks
+-
+-Most device drivers have a per-device spinlock which is taken in the
+-interrupt handler.  With pin-based interrupts or a single MSI, it is not
+-necessary to disable interrupts (Linux guarantees the same interrupt will
+-not be re-entered).  If a device uses multiple interrupts, the driver
+-must disable interrupts while the lock is held.  If the device sends
+-a different interrupt, the driver will deadlock trying to recursively
+-acquire the spinlock.
+-
+-There are two solutions.  The first is to take the lock with
+-spin_lock_irqsave() or spin_lock_irq() (see
+-Documentation/DocBook/kernel-locking).  The second is to specify
+-IRQF_DISABLED to request_irq() so that the kernel runs the entire
+-interrupt routine with interrupts disabled.
+-
+-If your MSI interrupt routine does not hold the lock for the whole time
+-it is running, the first solution may be best.  The second solution is
+-normally preferred as it avoids making two transitions from interrupt
+-disabled to enabled and back again.
+-
+ 4.6 How to tell whether MSI/MSI-X is enabled on a device
  
+ Using 'lspci -v' (as root) may show some devices with "MSI", "Message
+diff --git a/Documentation/scsi/ncr53c8xx.txt b/Documentation/scsi/ncr53c8xx.txt
+index cda5f8f..6cb311b 100644
+--- a/Documentation/scsi/ncr53c8xx.txt
++++ b/Documentation/scsi/ncr53c8xx.txt
+@@ -786,7 +786,8 @@ port address 0x1400.
+         irqm:1     same as initial settings (assumed BIOS settings)
+         irqm:2     always totem pole
+         irqm:0x10  driver will not use IRQF_SHARED flag when requesting irq
+-        irqm:0x20  driver will not use IRQF_DISABLED flag when requesting irq
++        irqm:0x20  driver will not use IRQF_DISABLED flag when requesting
++		   irq (only useful for linux-2.6.34 and earlier)
+ 
+     (Bits 0x10 and 0x20 can be combined with hardware irq mode option)
+ 
+diff --git a/Documentation/scsi/tmscsim.txt b/Documentation/scsi/tmscsim.txt
+index 61c0531..1dee219 100644
+--- a/Documentation/scsi/tmscsim.txt
++++ b/Documentation/scsi/tmscsim.txt
+@@ -108,8 +108,8 @@ MHz PCI bus works for me, though, but I don't recommend using higher clocks
+ than the 33.33 MHz being in the PCI spec.
+ 
+ If you want to share the IRQ with another device and the driver refuses to
+-do so, you might succeed with changing the DC390_IRQ type in tmscsim.c to 
+-IRQF_SHARED | IRQF_DISABLED.
++do so, you should find out what's the mismatch between the shared IRQs,
++and CONFIG_DEBUG_SHIRQ may give you more help.
+ 
+ 
+ 3.Features
 -- 
 1.7.1
 
