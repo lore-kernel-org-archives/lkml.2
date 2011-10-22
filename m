@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1JVILH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 04:11:07 -0400
-Received: from outbound.icp-qv1-irony-out3.iinet.net.au ([203.59.1.148]:35303
-	"EHLO outbound.icp-qv1-irony-out3.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751057Ab1JVILG (ORCPT
+	id S1753374Ab1JVINx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 04:13:53 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4447 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab1JVINw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 04:11:06 -0400
-X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Oct 2011 04:11:05 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAEt3ok7LO9hf/2dsb2JhbABChHWkLIEFghgEUigNAhgOAkkWE6kfkUSBMIV8gRQEiASRUIMeiH8
-X-IronPort-AV: E=Sophos;i="4.69,390,1315152000"; 
-   d="scan'208";a="734556596"
-From: Ian Kent <raven@themaw.net>
-Subject: [PATCH] vfs - fix automount should ignore LOOKUP_FOLLOW
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, David Howells <dhowells@redhat.com>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Date: Sat, 22 Oct 2011 16:01:47 +0800
-Message-ID: <20111022080147.11165.52913.stgit@perseus.themaw.net>
-User-Agent: StGIT/0.14.3
+	Sat, 22 Oct 2011 04:13:52 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Arend Van Spriel" <arend@broadcom.com>
+To: "Nico Schottelius" <nico-linux-20111017@schottelius.org>,
+        "gregkh@suse.de" <gregkh@suse.de>
+cc: "Eric Dumazet" <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Date: Sat, 22 Oct 2011 01:13:34 -0700
+Subject: RE: BUG: All network processes hang (brcmsmac/wpa_supplicant)
+Thread-Topic: BUG: All network processes hang (brcmsmac/wpa_supplicant)
+Thread-Index: AcyQXmpWUYe8DDz0ReSE9VT5bXYpxgAMNtPA
+Message-ID: <400C43189542CE41BC0A5B252FC90136BC0E147BCB@SJEXCHCCR02.corp.ad.broadcom.com>
+References: <20111019123602.GA11883@schottelius.org>
+ <1319028563.8416.1.camel@edumazet-laptop>
+ <20111019130749.GD11883@schottelius.org>
+ <20111019142837.GA1414@schottelius.org> <4E9EE20F.1030403@broadcom.com>
+ <20111019145501.GB1414@schottelius.org> <4E9EFF51.6000104@broadcom.com>
+ <20111019214250.GC2432@schottelius.org> <4E9FBFA7.4040502@broadcom.com>
+ <20111022015945.GC26186@ethz.ch>
+In-Reply-To: <20111022015945.GC26186@ethz.ch>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 62BCA3623JW8254856-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent patch by Miklos Szeredi that was meant to restore the original
-behavior of not triggering automounts on stat(2) and other symlink following
-syscalls also eliminated the unconditional triggering of automounts for
-intermediate path components by eliminating the LOOKUP_CONTUNUE flag from
-the check in fs/namei.c:follow_automount().
+> From: Nico Schottelius [mailto:nico-linux-20111017@schottelius.org]
+> Sent: zaterdag 22 oktober 2011 4:00
+> 
+> Hey Arend,
+> 
+> it seems that your patch really solves this problem.
 
-This introduces a regression itself because it alters the original behaviour
-which was to unconditionally automount on intermediate path components.
+Great. This fix is in linux-next tree.
 
-Signed-off-by: Ian Kent <raven@themaw.net>
----
+Greg,
 
- fs/namei.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This problem causes packets to get dropped on 5GHz. Should I
+sent a patch for 3.1 (staging-linus) for this? It is already
+fixed in wireless-next.
+ 
+> I've got a new one now, though :-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 0b3138d..e4eee7c 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -732,7 +732,7 @@ static int follow_automount(struct path *path, unsigned flags,
- 	 * as being automount points.  These will need the attentions
- 	 * of the daemon to instantiate them before they can be used.
- 	 */
--	if (!(flags & (LOOKUP_PARENT | LOOKUP_DIRECTORY |
-+	if (!(flags & (LOOKUP_PARENT | LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
- 		     LOOKUP_OPEN | LOOKUP_CREATE | LOOKUP_AUTOMOUNT)) &&
- 	    path->dentry->d_inode)
- 		return -EISDIR;
+Ok. Not sure which universal law this is, but let's have a look.
+
+> After several suspend/resume cycles, my card often reconnects to my AP
+> that is only several meters (2) away. If the connection is established,
+> I've a very laggy connection to the AP:
+> 
+> 64 bytes from 192.168.42.1: icmp_req=1154 ttl=64 time=10839 ms
+> 64 bytes from 192.168.42.1: icmp_req=1155 ttl=64 time=9841 ms
+> ...
+> 64 bytes from 192.168.42.1: icmp_req=1164 ttl=64 time=2814 ms
+> 64 bytes from 192.168.42.1: icmp_req=1165 ttl=64 time=16785 ms
+> 64 bytes from 192.168.42.1: icmp_req=1166 ttl=64 time=20767 ms
+> 
+> Attached are the usual suspect outputs.
+> This time I'm on 2.432 Ghz.
+
+I will dig into it.
+
+Gr. AvS
 
