@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab1JWOoa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 10:44:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55970 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab1JWOo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 10:44:29 -0400
-Date: Sun, 23 Oct 2011 22:43:33 +0800
-From: wangyanqing <udknight@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] init:enable usermodehelper as soon as we have a root
- filesystem
-Message-ID: <20111023144333.GA2676@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
+	id S1755669Ab1JWOvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 10:51:47 -0400
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45127 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755173Ab1JWOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 10:51:46 -0400
+X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Oct 2011 10:51:46 EDT
+Message-ID: <4EA427E0.2080601@ilyx.ru>
+Date: Sun, 23 Oct 2011 18:42:40 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] TTY: pty, fix pty counting
+Content-Type: text/plain; charset=windows-1251; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-before we have a root filesystem , it is useless to enable usermodehelper,
-and it may cause bug if we enable usermodehelper too early.This patch
-enable usermodehelper as soon as we have a root filesystem.
----
- init/do_mounts.c |    3 +++
- init/initramfs.c |    2 ++
- init/main.c      |    1 -
- 3 files changed, 5 insertions(+), 1 deletions(-)
+New version for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index c0851a8..9575bdd 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -490,4 +490,7 @@ out:
- 	devtmpfs_mount("dev");
- 	sys_mount(".", "/", NULL, MS_MOVE, NULL);
- 	sys_chroot((const char __user __force *)".");
-+#ifndef CONFIG_BLK_DEV_INITRD
-+	usermodehelper_enable();
-+#endif
- }
-diff --git a/init/initramfs.c b/init/initramfs.c
-index 2531811..881fc4b 100644
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -581,6 +581,7 @@ static int __init populate_rootfs(void)
- 		err = unpack_to_rootfs((char *)initrd_start,
- 			initrd_end - initrd_start);
- 		if (!err) {
-+			usermodehelper_enable();
- 			free_initrd();
- 			return 0;
- 		} else {
-@@ -603,6 +604,7 @@ static int __init populate_rootfs(void)
- 			initrd_end - initrd_start);
- 		if (err)
- 			printk(KERN_EMERG "Initramfs unpacking failed: %s\n", err);
-+		usermodehelper_enable();
- 		free_initrd();
+
+diff -uprN a/drivers/tty/pty.c b/drivers/tty/pty.c
+--- a/drivers/tty/pty.c    2011-05-19 08:06:34.000000000 +0400
++++ b/drivers/tty/pty.c    2011-10-23 18:01:20.000000000 +0400
+@@ -36,13 +36,15 @@
+ static struct tty_driver *ptm_driver;
+ static struct tty_driver *pts_driver;
  #endif
- 	}
-diff --git a/init/main.c b/init/main.c
-index 03b408d..2e232cb 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -730,7 +730,6 @@ static void __init do_basic_setup(void)
- 	driver_init();
- 	init_irq_proc();
- 	do_ctors();
--	usermodehelper_enable();
- 	do_initcalls();
++static int pty_count;
+ 
+ static void pty_close(struct tty_struct *tty, struct file *filp)
+ {
+     BUG_ON(!tty);
+-    if (tty->driver->subtype == PTY_TYPE_MASTER)
++    if (tty->driver->subtype == PTY_TYPE_MASTER) {
+         WARN_ON(tty->count > 1);
+-    else {
++        pty_count--;
++    } else {
+         if (tty->count > 2)
+             return;
+     }
+@@ -446,7 +448,6 @@ static inline void legacy_pty_init(void)
+ int pty_limit = NR_UNIX98_PTY_DEFAULT;
+ static int pty_limit_min;
+ static int pty_limit_max = NR_UNIX98_PTY_MAX;
+-static int pty_count;
+ 
+ static struct cdev ptmx_cdev;
+ 
+@@ -599,15 +600,9 @@ free_mem_out:
+     return -ENOMEM;
  }
  
--- 
-1.7.3.4
+-static void pty_unix98_remove(struct tty_driver *driver, struct 
+tty_struct *tty)
+-{
+-    pty_count--;
+-}
+-
+ static const struct tty_operations ptm_unix98_ops = {
+     .lookup = ptm_unix98_lookup,
+     .install = pty_unix98_install,
+-    .remove = pty_unix98_remove,
+     .open = pty_open,
+     .close = pty_close,
+     .write = pty_write,
+@@ -624,7 +619,6 @@ static const struct tty_operations ptm_u
+ static const struct tty_operations pty_unix98_ops = {
+     .lookup = pts_unix98_lookup,
+     .install = pty_unix98_install,
+-    .remove = pty_unix98_remove,
+     .open = pty_open,
+     .close = pty_close,
+     .write = pty_write,
+
+
 
