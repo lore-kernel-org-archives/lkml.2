@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab1JWGeD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:34:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40008 "EHLO mx2.suse.de"
+	id S1754972Ab1JWGe0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:34:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40162 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab1JWGeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:34:01 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:39 2011
-Message-Id: <20111023062539.025479749@pistachio.kroah.org>
+	id S1754934Ab1JWGeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:23 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:40 2011
+Message-Id: <20111023062540.528834786@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:39 +0200
+Date: Sun, 23 Oct 2011 08:24:49 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [11/27] [media] uvcvideo: Fix crash when linking entities
+        Chris Boot <bootc@bootc.net>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [21/27] firewire: sbp2: fix panic after rmmod with slow targets
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Chris Boot <bootc@bootc.net>
 
-commit 4d9b2ebd335d83044b9e6656d0e604e8e1300334 upstream.
+commit 0278ccd9d53e07c4e699432b2fed9de6c56f506c upstream.
 
-The uvc_mc_register_entity() function wrongfully selects the
-media_entity associated with a UVC entity when creating links. This
-results in access to uninitialized media_entity structures and can hit a
-BUG_ON statement in media_entity_create_link(). Fix it.
+If firewire-sbp2 starts a login to a target that doesn't complete ORBs
+in a timely manner (and has to retry the login), and the module is
+removed before the operation times out, you end up with a null-pointer
+dereference and a kernel panic.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+[SR:  This happens because sbp2_target_get/put() do not maintain
+module references.  scsi_device_get/put() do, but at occasions like
+Chris describes one, nobody holds a reference to an SBP-2 sdev.]
+
+This patch cancels pending work for each unit in sbp2_remove(), which
+hopefully means there are no extra references around that prevent us
+from unloading. This fixes my crash.
+
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_entity.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firewire/sbp2.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/media/video/uvc/uvc_entity.c
-+++ b/drivers/media/video/uvc/uvc_entity.c
-@@ -49,7 +49,7 @@ static int uvc_mc_register_entity(struct
- 		if (remote == NULL)
- 			return -EINVAL;
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1198,6 +1198,10 @@ static int sbp2_remove(struct device *de
+ {
+ 	struct fw_unit *unit = fw_unit(dev);
+ 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
++	struct sbp2_logical_unit *lu;
++
++	list_for_each_entry(lu, &tgt->lu_list, link)
++		cancel_delayed_work_sync(&lu->work);
  
--		source = (UVC_ENTITY_TYPE(remote) != UVC_TT_STREAMING)
-+		source = (UVC_ENTITY_TYPE(remote) == UVC_TT_STREAMING)
- 		       ? (remote->vdev ? &remote->vdev->entity : NULL)
- 		       : &remote->subdev.entity;
- 		if (source == NULL)
+ 	sbp2_target_put(tgt);
+ 	return 0;
 
 
