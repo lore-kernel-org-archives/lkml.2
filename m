@@ -1,132 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab1JWRHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:07:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21733 "EHLO mga02.intel.com"
+	id S1752890Ab1JWRH6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:07:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57089 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab1JWRHI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:07:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="66242098"
-From: "Xu, Anhua" <anhua.xu@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Oct 2011 01:07:02 +0800
-Subject: RE: perf tools: interface for improved PEBS ABI can accept wrong
-	parameter
-Thread-Topic: perf tools: interface for improved PEBS ABI can accept wrong
-	parameter
-Thread-Index: AcyOacaH/6Ru/UwcTYqzZ2i4Y3hs0QDPDghA
-Message-ID: <1A42CE6F5F474C41B63392A5F80372B212DCA0302A@shsmsx501.ccr.corp.intel.com>
-References: <1A42CE6F5F474C41B63392A5F80372B212DC93638A@shsmsx501.ccr.corp.intel.com>
- <20111018181943.GC21666@elte.hu> <1318962501.14880.6.camel@twins>
- <1A42CE6F5F474C41B63392A5F80372B212DC9365C1@shsmsx501.ccr.corp.intel.com>
- <20111019141506.GA8132@ghostprotocols.net>
-In-Reply-To: <20111019141506.GA8132@ghostprotocols.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752312Ab1JWRH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 13:07:57 -0400
+Message-ID: <4EA449DD.1010801@redhat.com>
+Date: Sun, 23 Oct 2011 10:07:41 -0700
+From: Josh Stone <jistone@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH] x86: Fix compilation bug in kprobes' twobyte_is_boostable
+References: <1319229182-32226-1-git-send-email-jistone@redhat.com> <CA+55aFzXHLrcP1idskKJXcxdPfjSCfgmtYzd7r4uA4ni1E+k+A@mail.gmail.com>
+In-Reply-To: <CA+55aFzXHLrcP1idskKJXcxdPfjSCfgmtYzd7r4uA4ni1E+k+A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have update my patch. Hope it is not so horrid :)
+On 10/22/2011 05:25 PM, Linus Torvalds wrote:
+> Hmm. I'd *much* rather do this in arch/x86/include/asm/bitops.h
+> instead, methinks.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c816075..837f416 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -238,6 +238,17 @@ struct perf_event_attr {
- 	};
- };
- 
-+enum perf_sample_ip_constraints {
-+	PERF_SAMPLE_IP_ARBITRARY_SKID,
-+	PERF_SAMPLE_IP_CONSTANT_SKID,
-+	PERF_SAMPLE_IP_REQUEST_NOSKID,
-+
-+	/*
-+	 *  The PEBS implementation now supports up to 2.
-+	 */
-+	PERF_SMAPLE_IP_CONSTRAINT_MAX,
-+};
-+
- /*
-  * Ioctls that can be done on a perf event fd:
-  */
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 928918b..55567ec 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- 	attr->exclude_user   = eu;
- 	attr->exclude_kernel = ek;
- 	attr->exclude_hv     = eh;
--	attr->precise_ip     = precise;
-+	if ( precise < PERF_SMAPLE_IP_CONSTRAINT_MAX )
-+		attr->precise_ip = precise;
-+	else
-+		return -EOPNOTSUPP;
- 
- 	return 0;
- }
+Agreed, that's why I tried that first.
 
------Original Message-----
-From: Arnaldo Carvalho de Melo [mailto:acme@redhat.com] 
-Sent: Wednesday, October 19, 2011 10:15 PM
-To: Xu, Anhua
-Cc: Peter Zijlstra; Ingo Molnar; linux-kernel@vger.kernel.org
-Subject: Re: perf tools: interface for improved PEBS ABI can accept wrong parameter
-
-Em Wed, Oct 19, 2011 at 10:23:12AM +0800, Xu, Anhua escreveu:
-> Thanks Peter:). The key point for this is that the detailed information about "PRECISE_IP" may not be exposed to user space.
-> Error reporting may come from syscall. Anyway, expect acme's suggestions.
-
-
-Well, at least we can do as you did and avoid requests completely
-invalid per the ABI or look the other way, truncate and silently provide
-different behaviour than requested.
-
-Point is how to propagate back from parse_event_modifier so that we
-provide a sensible error message.
-
-One could try to reuse errno and find things like -EINVAL, ELEVEL or
-define some enum.
- 
+> Also, rather than your
 > 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl] 
-> Sent: Wednesday, October 19, 2011 2:28 AM
-> To: Ingo Molnar
-> Cc: Xu, Anhua; Arnaldo Carvalho de Melo; linux-kernel@vger.kernel.org
-> Subject: Re: perf tools: interface for improved PEBS ABI can accept wrong parameter
+>> See also my more general fix, https://lkml.org/lkml/2011/10/6/412
 > 
-> On Tue, 2011-10-18 at 20:19 +0200, Ingo Molnar wrote:
-> > > +#define SAMPLE_IP_MAX        3 
-> > >                               precise_ip     :  2, /* skid constraint       */
-> > >                               mmap_data      :  1, /* non-exec mmap data    */
-> > >                               sample_id_all  :  1, /* sample_type all events */
-> > > diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> > > index 928918b..a2068cc 100644
-> > > --- a/tools/perf/util/parse-events.c
-> > > +++ b/tools/perf/util/parse-events.c
-> > > @@ -775,7 +775,10 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
-> > >       attr->exclude_user   = eu;
-> > >       attr->exclude_kernel = ek;
-> > >       attr->exclude_hv     = eh;
-> > > -     attr->precise_ip     = precise;
-> > > +     if ( precise < SAMPLE_IP_MAX )
-> > > +             attr->precise_ip = precise;
-> > > +     else
-> > > +             return -1; 
-> 
-> That name is horrid, how about PRECISE_IP_MAX? Also, I suspect acme will
-> want a better error return than -1, but I'll leave that up to him.
+> wouldn't the simple fix be just to add the volatile there to the cast
+> we already do, ie something like the appended (cut-and-paste, so it's
+> whitespace-damaged, but you get the idea).
+
+Unfortunately, no.  Whatever const-propagation gcc is doing here
+(somewhat wrongly per PR50571) is not affected by volatile on that cast.
+ I also tried leaving it to the parameter type (no cast), no help.
+
+Another historical note is that the parameter used to be void* until
+commit 5136dea5, which I suppose is why the current cast exists at all.
+ Reverting that still doesn't affect the immediate problem.
+
+It may have gotten lost in the various messages I sent, but note that
+this is only happening on i386, where the source u32 matches the size of
+the casted long.  On x86_64, where long is of course bigger than u32,
+the pointer aliasing seems to prevent the issue.  So yet another fix is
+to make that asm cast something silly that will always alias, like
+(*(char*)addr).  That might be even more magical/fragile though.
+
+> And I don't mind volatile in code nearly as much as I mind volatile on
+> the data structures (it's one of my "C typing was misdesigned" pet
+> peeves: I think "volatile" is about the access, not about the data)
+
+I just tried removing the const from twobyte_is_boostable[], and that
+also does the trick.  Not sure why I didn't try that first -- I guess
+because I saw all the volatiles in bitops.  Is that more palatable, or
+would you still rather try to fix it in bitops.h directly?
+
+>  - Long long ago, we had that "big array" approach for ADDR too. So
+> we've wavered between the volatile and using a block memory op. But
+> we've used the "volatile" for a long time now for the bit change ones,
+> so I don't think we should mix concepts like your patch.
+
+Do you recall why it settled on volatile?  That seems like the less
+descriptive of the two approaches.  But "long long ago" appears to be
+beyond recorded (git) history...
+
+Thanks,
+Josh
