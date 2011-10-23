@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1JWKUq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 06:20:46 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34923 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab1JWKU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753836Ab1JWKU0 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 23 Oct 2011 06:20:26 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34912 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1JWKUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 06:20:23 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH RFC 8/8] tile: implement syscall restart generically
-Date: Sun, 23 Oct 2011 12:20:02 +0200
-Message-Id: <e790f266cc75b291d44726cf6bf8641d1bf7af5d.1319364492.git.jonas@southpole.se>
+Cc: Jonas Bonn <jonas@southpole.se>, uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH RFC 2/8] blackfin: implement syscall restart generically
+Date: Sun, 23 Oct 2011 12:19:56 +0200
+Message-Id: <f33d604e18508d766a224f66f0bc9340af00ee89.1319364492.git.jonas@southpole.se>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <cover.1319364492.git.jonas@southpole.se>
 References: <cover.1319364492.git.jonas@southpole.se>
@@ -20,7 +20,7 @@ In-Reply-To: <cover.1319364492.git.jonas@southpole.se>
 References: <cover.1319364492.git.jonas@southpole.se>
 X-Assp-Version: 2.1.1(11278) on assp.southpole.se
 X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 65224-07159
+X-Assp-ID: assp.southpole.se 65221-13050
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -42,102 +42,130 @@ using the generic syscall restart code by:
 i)  Implementing the register manipulations in asm/syscall.h
 ii) Replacing the restart logic with a call to handle_syscall_restart
 
-Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: uclinux-dist-devel@blackfin.uclinux.org
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- arch/tile/include/asm/syscall.h |   28 ++++++++++++++++++++-
- arch/tile/kernel/signal.c       |   52 +++------------------------------------
- 2 files changed, 31 insertions(+), 49 deletions(-)
+ arch/blackfin/include/asm/syscall.h |   26 ++++++++++++++++++-
+ arch/blackfin/kernel/signal.c       |   47 ++--------------------------------
+ 2 files changed, 27 insertions(+), 46 deletions(-)
 
-diff --git a/arch/tile/include/asm/syscall.h b/arch/tile/include/asm/syscall.h
-index d35e0dc..428e28c 100644
---- a/arch/tile/include/asm/syscall.h
-+++ b/arch/tile/include/asm/syscall.h
-@@ -21,6 +21,7 @@
- #include <linux/sched.h>
+diff --git a/arch/blackfin/include/asm/syscall.h b/arch/blackfin/include/asm/syscall.h
+index 4921a48..87005c4 100644
+--- a/arch/blackfin/include/asm/syscall.h
++++ b/arch/blackfin/include/asm/syscall.h
+@@ -21,17 +21,39 @@
  #include <linux/err.h>
- #include <arch/abi.h>
+ #include <linux/sched.h>
+ #include <asm/ptrace.h>
 +#include <asm/unistd.h>
  
- /*
-  * Only the low 32 bits of orig_r0 are meaningful, so we return int.
-@@ -29,15 +30,40 @@
-  */
- static inline int syscall_get_nr(struct task_struct *t, struct pt_regs *regs)
+ static inline long
+ syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
  {
--	return regs->regs[TREG_SYSCALL_NR];
-+	if (regs->faultnum == INT_SWINT_1)
-+		return regs->regs[TREG_SYSCALL_NR];
-+	else
-+		return -1;
+-	return regs->p0;
++	return regs->orig_p0;
  }
  
- static inline void syscall_rollback(struct task_struct *task,
- 				    struct pt_regs *regs)
+ static inline void
+ syscall_rollback(struct task_struct *task, struct pt_regs *regs)
  {
-+	regs->flags |= PT_FLAGS_CALLER_SAVES;
- 	regs->regs[0] = regs->orig_r0;
- }
- 
+ 	regs->p0 = regs->orig_p0;
++	regs->r0 = regs->orig_r0;
++}
++
 +static inline void
 +syscall_clear(struct task_struct *task, struct pt_regs *regs)
 +{
-+	regs->faultnum = INT_SWINT_1_SIGRETURN;
++	regs->orig_p0 = -1;
 +}
 +
 +static inline void
 +syscall_restart(struct task_struct *task, struct pt_regs *regs)
 +{
 +	syscall_rollback(task, regs);
-+	regs->pc -= 8;
++	regs->pc -= 2;
 +}
 +
 +static inline void
 +syscall_do_restartblock(struct task_struct *task, struct pt_regs *regs)
 +{
-+	regs->flags |= PT_FLAGS_CALLER_SAVES;
-+	regs->gpr[TREG_SYSCALL_NR] = __NR_restart_syscall;
-+	regs->pc -= 8;
-+}
-+
- static inline long syscall_get_error(struct task_struct *task,
- 				     struct pt_regs *regs)
++	regs->p0 = __NR_restart_syscall;
++	regs->pc -= 2;
+ }
+ 
+ static inline long
+@@ -50,7 +72,7 @@ static inline void
+ syscall_set_return_value(struct task_struct *task, struct pt_regs *regs,
+                          int error, long val)
  {
-diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
-index bedaf4e..ab1f4e7 100644
---- a/arch/tile/kernel/signal.c
-+++ b/arch/tile/kernel/signal.c
-@@ -251,29 +251,6 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
+-	regs->r0 = error ? -error : val;
++	regs->r0 = error ? error : val;
+ }
+ 
+ /**
+diff --git a/arch/blackfin/kernel/signal.c b/arch/blackfin/kernel/signal.c
+index d536f35..7fc176a 100644
+--- a/arch/blackfin/kernel/signal.c
++++ b/arch/blackfin/kernel/signal.c
+@@ -219,36 +219,6 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t * info,
+ 	return -EFAULT;
+ }
+ 
+-static inline void
+-handle_restart(struct pt_regs *regs, struct k_sigaction *ka, int has_handler)
+-{
+-	switch (regs->r0) {
+-	case -ERESTARTNOHAND:
+-		if (!has_handler)
+-			goto do_restart;
+-		regs->r0 = -EINTR;
+-		break;
+-
+-	case -ERESTARTSYS:
+-		if (has_handler && !(ka->sa.sa_flags & SA_RESTART)) {
+-			regs->r0 = -EINTR;
+-			break;
+-		}
+-		/* fallthrough */
+-	case -ERESTARTNOINTR:
+- do_restart:
+-		regs->p0 = regs->orig_p0;
+-		regs->r0 = regs->orig_r0;
+-		regs->pc -= 2;
+-		break;
+-
+-	case -ERESTART_RESTARTBLOCK:
+-		regs->p0 = __NR_restart_syscall;
+-		regs->pc -= 2;
+-		break;
+-	}
+-}
+-
+ /*
+  * OK, we're invoking a handler
+  */
+@@ -258,11 +228,6 @@ handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
  {
  	int ret;
  
--	/* Are we from a system call? */
--	if (regs->faultnum == INT_SWINT_1) {
+-	/* are we from a system call? to see pt_regs->orig_p0 */
+-	if (regs->orig_p0 >= 0)
 -		/* If so, check system call restarting.. */
--		switch (regs->regs[0]) {
--		case -ERESTART_RESTARTBLOCK:
--		case -ERESTARTNOHAND:
--			regs->regs[0] = -EINTR;
--			break;
+-		handle_restart(regs, ka, 1);
 -
--		case -ERESTARTSYS:
--			if (!(ka->sa.sa_flags & SA_RESTART)) {
--				regs->regs[0] = -EINTR;
--				break;
--			}
--			/* fallthrough */
--		case -ERESTARTNOINTR:
--			/* Reload caller-saves to restore r0..r5 and r10. */
--			regs->flags |= PT_FLAGS_CALLER_SAVES;
--			regs->regs[0] = regs->orig_r0;
--			regs->pc -= 8;
--		}
--	}
+ 	/* set up the stack frame */
+ 	ret = setup_rt_frame(sig, ka, info, oldset, regs);
+ 
+@@ -296,15 +261,15 @@ asmlinkage void do_signal(struct pt_regs *regs)
+ 
+ 	current->thread.esp0 = (unsigned long)regs;
+ 
+-	if (try_to_freeze())
+-		goto no_signal;
 -
- 	/* Set up the stack frame */
- #ifdef CONFIG_COMPAT
- 	if (is_compat_task())
-@@ -323,6 +300,9 @@ void do_signal(struct pt_regs *regs)
+ 	if (test_thread_flag(TIF_RESTORE_SIGMASK))
+ 		oldset = &current->saved_sigmask;
+ 	else
  		oldset = &current->blocked;
  
  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
@@ -145,48 +173,21 @@ index bedaf4e..ab1f4e7 100644
 +	handle_syscall_restart(regs, &ka, (signr > 0));
 +
  	if (signr > 0) {
- 		/* Whee! Actually deliver the signal.  */
+ 		/* Whee!  Actually deliver the signal.  */
  		if (handle_signal(signr, &info, &ka, oldset, regs) == 0) {
-@@ -335,27 +315,7 @@ void do_signal(struct pt_regs *regs)
- 			current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
- 		}
+@@ -322,12 +287,6 @@ asmlinkage void do_signal(struct pt_regs *regs)
+ 		return;
+ 	}
  
--		goto done;
--	}
--
+- no_signal:
 -	/* Did we come from a system call? */
--	if (regs->faultnum == INT_SWINT_1) {
+-	if (regs->orig_p0 >= 0)
 -		/* Restart the system call - no handlers present */
--		switch (regs->regs[0]) {
--		case -ERESTARTNOHAND:
--		case -ERESTARTSYS:
--		case -ERESTARTNOINTR:
--			regs->flags |= PT_FLAGS_CALLER_SAVES;
--			regs->regs[0] = regs->orig_r0;
--			regs->pc -= 8;
--			break;
+-		handle_restart(regs, NULL, 0);
 -
--		case -ERESTART_RESTARTBLOCK:
--			regs->flags |= PT_FLAGS_CALLER_SAVES;
--			regs->regs[TREG_SYSCALL_NR] = __NR_restart_syscall;
--			regs->pc -= 8;
--			break;
--		}
-+		return;
- 	}
- 
- 	/* If there's no signal to deliver, just put the saved sigmask back. */
-@@ -363,10 +323,6 @@ void do_signal(struct pt_regs *regs)
- 		current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
- 		sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
- 	}
--
--done:
--	/* Avoid double syscall restart if there are nested signals. */
--	regs->faultnum = INT_SWINT_1_SIGRETURN;
- }
- 
- int show_unhandled_signals = 1;
+ 	/* if there's no signal to deliver, we just put the saved sigmask
+ 	 * back */
+ 	if (test_thread_flag(TIF_RESTORE_SIGMASK)) {
 -- 
 1.7.5.4
 
