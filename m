@@ -1,123 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab1JWTE2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 15:04:28 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45130 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab1JWTE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 15:04:27 -0400
-Message-ID: <4EA46535.9010600@ilyx.ru>
-Date: Sun, 23 Oct 2011 23:04:21 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: [PATCH] TTY: tty flip buffer change reserve memory strategy.
-Content-Type: text/plain; charset=windows-1251
-Content-Transfer-Encoding: 7bit
+	id S1751522Ab1JWTF1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 15:05:27 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36426 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab1JWTFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 15:05:25 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Date: Mon, 24 Oct 2011 00:34:59 +0530
+Message-Id: <20111023190459.16364.98151.sendpatchset@oc5400248562.ibm.com>
+In-Reply-To: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
+Subject: [PATCH RFC V2 2/5] debugfs: Renaming of xen functions and change unsigned to u32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, free flip buffer (tty->buf->free) reserve memory for further
-used,
-only if driver send to ldisc less 257 bytes in one time.
-If driver send more, flip buffer reserve(kmalloc()) and then
-free(kfree()) every chunk more 256 bytes every time,
-even we have in free buffer enough space, because we can't
-pass through chunk boundary in free buffer. Also we can't limit reserve
-memory size. In worse case we will have in free buffer:
-(256 * 256 byte chunk) = (256 * 552 ) = 141312 byte unused memory.
-
-This patch allow reserve more than 256 bytes in one time. And have
-self-regulation chunk size ability(very useful for pty).
-Also we can limit reserve memory size, but then,
-we will be use kmalloc()-kree() calls on intensive stream from driver.
-
-diff -uprN last-orig/drivers/tty/tty_buffer.c
-tty_buffer.patched/drivers/tty/tty_buffer.c
---- last-orig/drivers/tty/tty_buffer.c    2011-10-18 13:57:32.000000000
-+0400
-+++ tty_buffer.patched/drivers/tty/tty_buffer.c    2011-10-22
-09:45:09.000000000 +0400
-@@ -58,7 +58,7 @@ static struct tty_buffer *tty_buffer_all
- {
-     struct tty_buffer *p;
+Renaming of xen functions and change unsigned to u32.
+    
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index fc506e6..14a8961 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -286,7 +286,7 @@ static int __init xen_spinlock_debugfs(void)
+ 	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
+ 			   &spinlock_stats.time_blocked);
  
--    if (tty->buf.memory_used + size > 65536)
-+    if (tty->buf.memory_used + size > TTY_BUFFER_MAX)
-         return NULL;
-     p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
-     if (p == NULL)
-@@ -91,10 +91,21 @@ static void tty_buffer_free(struct tty_s
-     tty->buf.memory_used -= b->size;
-     WARN_ON(tty->buf.memory_used < 0);
+-	xen_debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
++	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
+ 				     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
  
--    if (b->size >= 512)
--        kfree(b);
--    else {
--        b->next = tty->buf.free;
-+    tty->buf.memory_reserve += b->size;
-+    b->next = NULL;
-+    if (tty->buf.free != NULL) {
-+        struct tty_buffer *p = tty->buf.free;
-+        while (p->next != NULL)
-+            p = p->next;
-+        p->next = b;
-+        while (tty->buf.memory_reserve > TTY_BUFFER_RESERVE ) {
-+            p = tty->buf.free;
-+            tty->buf.free = p->next;
-+            tty->buf.memory_reserve -= p->size;
-+            WARN_ON(tty->buf.memory_reserve < 0);
-+            kfree(p);
-+        }
-+    } else {
-         tty->buf.free = b;
-     }
- }
-@@ -175,6 +186,8 @@ static struct tty_buffer *tty_buffer_fin
-             t->commit = 0;
-             t->read = 0;
-             tty->buf.memory_used += t->size;
-+            tty->buf.memory_reserve -= t->size;
-+            WARN_ON(tty->buf.memory_reserve < 0);
-             return t;
-         }
-         tbh = &((*tbh)->next);
-@@ -517,6 +530,7 @@ void tty_buffer_init(struct tty_struct *
-     tty->buf.tail = NULL;
-     tty->buf.free = NULL;
-     tty->buf.memory_used = 0;
-+    tty->buf.memory_reserve = 0;
-     INIT_WORK(&tty->buf.work, flush_to_ldisc);
- }
+ 	return 0;
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 9aa12e3..68af40d 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -529,7 +529,7 @@ EXPORT_SYMBOL_GPL(debugfs_create_blob);
  
-diff -uprN last-orig/include/linux/tty.h
-tty_buffer.patched/include/linux/tty.h
---- last-orig/include/linux/tty.h    2011-05-19 08:06:34.000000000 +0400
-+++ tty_buffer.patched/include/linux/tty.h    2011-10-22
-13:48:46.000000000 +0400
-@@ -79,7 +79,8 @@ struct tty_buffer {
-  */
- 
- #define TTY_BUFFER_PAGE    (((PAGE_SIZE - sizeof(struct tty_buffer)) /
-2) & ~0xFF)
--
-+#define TTY_BUFFER_MAX        65536
-+#define TTY_BUFFER_RESERVE    TTY_BUFFER_MAX
- 
- struct tty_bufhead {
-     struct work_struct work;
-@@ -87,8 +88,8 @@ struct tty_bufhead {
-     struct tty_buffer *head;    /* Queue head */
-     struct tty_buffer *tail;    /* Active buffer */
-     struct tty_buffer *free;    /* Free queue head */
--    int memory_used;        /* Buffer space used excluding
--                                free queue */
-+    int memory_used;        /* Buffer space used excluding free queue */
-+    int memory_reserve;        /* Free queue space */
+ struct array_data {
+ 	void *array;
+-	unsigned elements;
++	u32 elements;
  };
- /*
-  * When a break, frame error, or parity error happens, these codes are
-
+ 
+ static int u32_array_open(struct inode *inode, struct file *file)
+@@ -539,10 +539,10 @@ static int u32_array_open(struct inode *inode, struct file *file)
+ }
+ 
+ static size_t format_array(char *buf, size_t bufsize, const char *fmt,
+-			   u32 *array, unsigned array_size)
++			   u32 *array, u32 array_size)
+ {
+ 	size_t ret = 0;
+-	unsigned i;
++	u32 i;
+ 
+ 	for (i = 0; i < array_size; i++) {
+ 		size_t len;
+@@ -566,7 +566,7 @@ static size_t format_array(char *buf, size_t bufsize, const char *fmt,
+ }
+ 
+ static char *format_array_alloc(const char *fmt, u32 *array,
+-						unsigned array_size)
++						u32 array_size)
+ {
+ 	size_t len = format_array(NULL, 0, fmt, array, array_size);
+ 	char *ret;
+@@ -604,7 +604,7 @@ static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
+ 					file->private_data, size);
+ }
+ 
+-static int xen_array_release(struct inode *inode, struct file *file)
++static int u32_array_release(struct inode *inode, struct file *file)
+ {
+ 	kfree(file->private_data);
+ 
+@@ -614,14 +614,14 @@ static int xen_array_release(struct inode *inode, struct file *file)
+ static const struct file_operations u32_array_fops = {
+ 	.owner	 = THIS_MODULE,
+ 	.open	 = u32_array_open,
+-	.release = xen_array_release,
++	.release = u32_array_release,
+ 	.read	 = u32_array_read,
+ 	.llseek  = no_llseek,
+ };
+ 
+-struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
++struct dentry *debugfs_create_u32_array(const char *name, mode_t mode,
+ 					    struct dentry *parent,
+-					    u32 *array, unsigned elements)
++					    u32 *array, u32 elements)
+ {
+ 	struct array_data *data = kmalloc(sizeof(*data), GFP_KERNEL);
+ 
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 8c08636..253e2fb 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -74,9 +74,9 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
+ 				  struct dentry *parent,
+ 				  struct debugfs_blob_wrapper *blob);
+ 
+-struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
+-					    struct dentry *parent,
+-					    u32 *array, unsigned elements);
++struct dentry *debugfs_create_u32_array(const char *name, mode_t mode,
++					struct dentry *parent,
++					u32 *array, u32 elements);
+ 
+ bool debugfs_initialized(void);
+ 
+@@ -197,9 +197,9 @@ static inline bool debugfs_initialized(void)
+ 	return false;
+ }
+ 
+-struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
+-					    struct dentry *parent,
+-					    u32 *array, unsigned elements)
++struct dentry *debugfs_create_u32_array(const char *name, mode_t mode,
++					struct dentry *parent,
++					u32 *array, u32 elements)
+ {
+ 	return ERR_PTR(-ENODEV);
+ }
