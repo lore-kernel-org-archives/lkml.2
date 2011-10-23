@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab1JWP5y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 11:57:54 -0400
+	id S1752783Ab1JWP6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 11:58:03 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:48754 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab1JWP5w (ORCPT
+	with ESMTP id S1752652Ab1JWP6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 11:57:52 -0400
+	Sun, 23 Oct 2011 11:58:01 -0400
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -16,9 +16,9 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Christoph Lameter <cl@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 3/6] tile: Move tile to use generic on_each_cpu_mask
-Date: Sun, 23 Oct 2011 17:56:50 +0200
-Message-Id: <1319385413-29665-4-git-send-email-gilad@benyossef.com>
+Subject: [PATCH v2 6/6] slub: only preallocate cpus_with_slabs if offstack
+Date: Sun, 23 Oct 2011 17:56:53 +0200
+Message-Id: <1319385413-29665-7-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
 References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
@@ -26,8 +26,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API is the same as the tile private one, so just remove
-the private version of the functions
+We need a cpumask to track cpus with per cpu cache pages
+to know which cpu to whack during flush_all. For
+CONFIG_CPUMASK_OFFSTACK=n we allocate the mask on stack.
+For CONFIG_CPUMASK_OFFSTACK=y we don't want to call kmalloc
+on the flush_all path, so we preallocate per kmem_cache
+on cache creation and use it in flush_all.
+
+The result is that for the common CONFIG_CPUMASK_OFFSTACK=n
+case there is no memory overhead for the mask var.
+
+Since systems where CONFIG_CPUMASK_OFFSTACK=y are the systems
+which are most likely to benefit from less IPIs by tracking
+which cpu pas actually has a per cpu cache, we end up paying
+the overhead only in cases we enjoy the upside.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 Acked-by: Chris Metcalf <cmetcalf@tilera.com>
@@ -40,65 +52,148 @@ CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
 CC: Sasha Levin <levinsasha928@gmail.com>
 ---
- arch/tile/include/asm/smp.h |    7 -------
- arch/tile/kernel/smp.c      |   19 -------------------
- 2 files changed, 0 insertions(+), 26 deletions(-)
+ include/linux/slub_def.h |    8 ++++++-
+ mm/slub.c                |   52 +++++++++++++++++++++++++++++++++------------
+ 2 files changed, 45 insertions(+), 15 deletions(-)
 
-diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
-index 532124a..1aa759a 100644
---- a/arch/tile/include/asm/smp.h
-+++ b/arch/tile/include/asm/smp.h
-@@ -43,10 +43,6 @@ void evaluate_message(int tag);
- /* Boot a secondary cpu */
- void online_secondary(void);
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index b130f61..c07f7aa 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -103,8 +103,14 @@ struct kmem_cache {
+ 	int remote_node_defrag_ratio;
+ #endif
  
--/* Call a function on a specified set of CPUs (may include this one). */
--extern void on_each_cpu_mask(const struct cpumask *mask,
--			     void (*func)(void *), void *info, bool wait);
--
- /* Topology of the supervisor tile grid, and coordinates of boot processor */
- extern HV_Topology smp_topology;
+-	/* Which CPUs hold local slabs for this cache. */
++#ifdef CONFIG_CPUMASK_OFFSTACK
++	/*
++	 * Which CPUs hold local slabs for this cache.
++	 * Only updated on calling flush_all().
++	 * Defined on stack for CONFIG_CPUMASK_OFFSTACK=n.
++	 */
+ 	cpumask_var_t cpus_with_slabs;
++#endif
+ 	struct kmem_cache_node *node[MAX_NUMNODES];
+ };
  
-@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
- 
- #else /* !CONFIG_SMP */
- 
--#define on_each_cpu_mask(mask, func, info, wait)		\
--  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
--
- #define smp_master_cpu		0
- #define smp_height		1
- #define smp_width		1
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index c52224d..a44e103 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
- 	send_IPI_many(&mask, tag);
+diff --git a/mm/slub.c b/mm/slub.c
+index f8cbf2d..765be95 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1946,20 +1946,48 @@ static void flush_cpu_slab(void *d)
+ 	__flush_cpu_slab(s, smp_processor_id());
  }
  
--
--/*
-- * Provide smp_call_function_mask, but also run function locally
-- * if specified in the mask.
-- */
--void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
--		      void *info, bool wait)
--{
--	int cpu = get_cpu();
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(cpu, mask)) {
--		local_irq_disable();
--		func(info);
--		local_irq_enable();
--	}
--	put_cpu();
--}
--
--
++/*
++ * We need a cpumask struct to track which cpus have
++ * per cpu caches. For CONFIG_CPUMASK_OFFSTACK=n we
++ * allocate on stack. For CONFIG_CPUMASK_OFFSTACK=y
++ * we don't want to allocate in the flush_all code path
++ * so we allocate a struct for each cache structure
++ * on kmem cache creation and use it here.
++ */
+ static void flush_all(struct kmem_cache *s)
+ {
+ 	struct kmem_cache_cpu *c;
+ 	int cpu;
++	cpumask_var_t cpus;
+ 
++#ifdef CONFIG_CPUMASK_OFFSTACK
++	cpus = s->cpus_with_slabs;
++#endif
+ 	for_each_online_cpu(cpu) {
+ 		c = per_cpu_ptr(s->cpu_slab, cpu);
+ 		if (c && c->page)
+-			cpumask_set_cpu(cpu, s->cpus_with_slabs);
++			cpumask_set_cpu(cpu, cpus);
+ 		else
+-			cpumask_clear_cpu(cpu, s->cpus_with_slabs);
++			cpumask_clear_cpu(cpu, cpus);
+ 	}
+ 
+-	on_each_cpu_mask(s->cpus_with_slabs, flush_cpu_slab, s, 1);
++	on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
++}
++
++static inline int alloc_cpus_mask(struct kmem_cache *s, int flags)
++{
++#ifdef CONFIG_CPUMASK_OFFSTACK
++	return alloc_cpumask_var(&s->cpus_with_slabs, flags);
++#else
++	return 1;
++#endif
++}
++
++static inline void free_cpus_mask(struct kmem_cache *s)
++{
++#ifdef CONFIG_CPUMASK_OFFSTACK
++	free_cpumask_var(s->cpus_with_slabs);
++#endif
+ }
+ 
  /*
-  * Functions related to starting/stopping cpus.
-  */
+@@ -3039,7 +3067,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
+ 		if (s->flags & SLAB_DESTROY_BY_RCU)
+ 			rcu_barrier();
+ 		sysfs_slab_remove(s);
+-		free_cpumask_var(s->cpus_with_slabs);
++		free_cpus_mask(s);
+ 	}
+ 	up_write(&slub_lock);
+ }
+@@ -3655,16 +3683,14 @@ void __init kmem_cache_init(void)
+ 	if (KMALLOC_MIN_SIZE <= 32) {
+ 		kmalloc_caches[1]->name = kstrdup(kmalloc_caches[1]->name, GFP_NOWAIT);
+ 		BUG_ON(!kmalloc_caches[1]->name);
+-		ret = alloc_cpumask_var(&kmalloc_caches[1]->cpus_with_slabs,
+-			GFP_NOWAIT);
++		ret = alloc_cpus_mask(kmalloc_caches[1], GFP_NOWAIT);
+ 		BUG_ON(!ret);
+ 	}
+ 
+ 	if (KMALLOC_MIN_SIZE <= 64) {
+ 		kmalloc_caches[2]->name = kstrdup(kmalloc_caches[2]->name, GFP_NOWAIT);
+ 		BUG_ON(!kmalloc_caches[2]->name);
+-		ret = alloc_cpumask_var(&kmalloc_caches[2]->cpus_with_slabs,
+-				GFP_NOWAIT);
++		ret = alloc_cpus_mask(kmalloc_caches[2], GFP_NOWAIT);
+ 		BUG_ON(!ret);
+ 	}
+ 
+@@ -3673,8 +3699,7 @@ void __init kmem_cache_init(void)
+ 
+ 		BUG_ON(!s);
+ 		kmalloc_caches[i]->name = s;
+-		ret = alloc_cpumask_var(&kmalloc_caches[i]->cpus_with_slabs,
+-				GFP_NOWAIT);
++		ret = alloc_cpus_mask(kmalloc_caches[i], GFP_NOWAIT);
+ 		BUG_ON(!ret);
+ 	}
+ 
+@@ -3693,8 +3718,7 @@ void __init kmem_cache_init(void)
+ 			BUG_ON(!name);
+ 			kmalloc_dma_caches[i] = create_kmalloc_cache(name,
+ 				s->objsize, SLAB_CACHE_DMA);
+-			ret = alloc_cpumask_var(
+-				&kmalloc_dma_caches[i]->cpus_with_slabs,
++			ret = alloc_cpus_mask(kmalloc_dma_caches[i],
+ 				GFP_NOWAIT);
+ 			BUG_ON(!ret);
+ 		}
+@@ -3810,11 +3834,11 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 
+ 		if (kmem_cache_open(s, n,
+ 				size, align, flags, ctor)) {
+-			alloc_cpumask_var(&s->cpus_with_slabs, GFP_KERNEL);
++			alloc_cpus_mask(s, GFP_KERNEL);
+ 			list_add(&s->list, &slab_caches);
+ 			if (sysfs_slab_add(s)) {
+ 				list_del(&s->list);
+-				free_cpumask_var(s->cpus_with_slabs);
++				free_cpus_mask(s);
+ 				kfree(n);
+ 				kfree(s);
+ 				goto err;
 -- 
 1.7.0.4
 
