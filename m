@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab1JWKQj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 06:16:39 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36205 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab1JWKQh convert rfc822-to-8bit (ORCPT
+	id S1755152Ab1JWKU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 06:20:28 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34910 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab1JWKUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 06:16:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1633484.nypxIFiqdQ@pawels>
-References: <1633484.nypxIFiqdQ@pawels>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 23 Oct 2011 13:16:15 +0300
-X-Google-Sender-Auth: xJcHaR1HnXJnjPNIcnw0lAVIlrs
-Message-ID: <CA+55aFzggUcGK_uso0dYb6r5egNtnkzifMzLUywA72JhQ9JSxw@mail.gmail.com>
-Subject: Re: WARNING: at fs/dcache.c:2549 prepend_path+0x164/0x170() [Root
- dentry has weird name <>]
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        David Howells <dhowells@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Pawel Sikora <pluto@agmk.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 23 Oct 2011 06:20:23 -0400
+From: Jonas Bonn <jonas@southpole.se>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: Jonas Bonn <jonas@southpole.se>
+Subject: [PATCH RFC 0/8] Signal: harmonize syscall restart logic
+Date: Sun, 23 Oct 2011 12:19:54 +0200
+Message-Id: <cover.1319364492.git.jonas@southpole.se>
+X-Mailer: git-send-email 1.7.5.4
+X-Assp-Version: 2.1.1(11278) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-ID: assp.southpole.se 65220-02305
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al, any idea on this one?
 
-mnt->mnt_parent should equal mnt only for a root dentry, but detaching
-mount-points and mnt_clone() ends up doing it too, so maybe there is
-some way where that "global_root" test triggers on a dentry that
-hasn't been allocated with d_alloc_root().
+I've been looking into trying to harmonize the architecture specific
+signal handling code.  With a couple of helper functions to mask some
+of the architecture specific bits, the code for do_signal and handle_signal
+(implemented by essentially everybody) start to look identical across
+all arch's and could likely be made generic.
 
-I wonder how useful that warning is at all.
+The big helper is the one in this series.  This one moves the syscall
+restart logic out to a common helper.  The arch specific bit here is
+the register manipulations required to actually effect the restart;
+this patch series moves those manipulations to the asm/syscall.h header
+which already attempts to define a generic syscall interface for several
+arch's today.
 
-                      Linus
+Where this series remains an RFC is due to a couple of open questions:
 
-On Thu, Oct 20, 2011 at 5:49 PM, Pawel Sikora <pluto@agmk.net> wrote:
-> Hi,
->
-> during the 3.0.6 kernel stressing on dual-opteron machine i've noticed warnings in dmesg.
-> bugzilla.kernel.org is down currently, so i'm CCing last fs/dcache.c commiters.
-> i hope that this shortlog will help you.
->
-> BR,
-> Paweł.
->
-> (...)
-> Oct 14 15:52:36 odra kernel: [   18.710510] igb: eth1 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX/TX
-> Oct 14 15:52:36 odra kernel: [   18.713039] ADDRCONF(NETDEV_CHANGE): eth1: link becomes ready
-> Oct 14 15:52:39 odra kernel: [   21.885578] FS-Cache: Loaded
-> Oct 14 15:52:39 odra kernel: [   21.898297] Registering the id_resolver key type
-> Oct 14 15:52:39 odra kernel: [   21.898325] FS-Cache: Netfs 'nfs' registered for caching
-> Oct 14 15:52:59 odra kernel: [   26.110041] eth0: no IPv6 routers present
-> Oct 14 15:53:02 odra kernel: [   29.363344] eth1: no IPv6 routers present
-> Oct 15 11:06:50 odra kernel: [69257.064455] process `sysctl' is using deprecated sysctl (syscall) net.ipv6.neigh.default.retrans_time; Use net.ipv6.neigh.default.retrans_time_ms instead.
-> Oct 18 19:40:36 odra kernel: [359283.045721] ------------[ cut here ]------------
-> Oct 18 19:40:36 odra kernel: [359283.045731] WARNING: at fs/dcache.c:2549 prepend_path+0x164/0x170()
-> Oct 18 19:40:36 odra kernel: [359283.045734] Hardware name: H8DGU
-> Oct 18 19:40:36 odra kernel: [359283.045736] Root dentry has weird name <>
-> Oct 18 19:40:36 odra kernel: [359283.045737] Modules linked in: nfs fscache binfmt_misc nfsd lockd exportfs nfs_acl auth_rpcgss sunrpc ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext4 jbd2 crc16 raid0 dm_mod autofs4 dummy usbhid hid ide_cd_mod cdrom ata_generic pata_acpi ohci_hcd pata_atiixp ide_pci_generic ssb pcmcia sp5100_tco pcmcia_core ehci_hcd amd64_edac_mod pcspkr edac_core evdev mmc_core atiixp igb i2c_piix4 i2c_core ide_core edac_mce_amd processor ghes usbcore psmouse serio_raw button k10temp hed hwmon dca sg sd_mod crc_t10dif raid1 md_mod ext3 jbd mbcache ahci libahci libata scsi_mod [last unloaded: scsi_wait_scan]
-> Oct 18 19:40:36 odra kernel: [359283.045799] Pid: 8349, comm: pidof Not tainted 3.0.6-dirty #2
-> Oct 18 19:40:36 odra kernel: [359283.045802] Call Trace:
-> Oct 18 19:40:36 odra kernel: [359283.045812]  [<ffffffff8104718a>] warn_slowpath_common+0x7a/0xb0
-> Oct 18 19:40:36 odra kernel: [359283.045817]  [<ffffffff81047261>] warn_slowpath_fmt+0x41/0x50
-> Oct 18 19:40:36 odra kernel: [359283.045822]  [<ffffffff81415c74>] ? __slab_free+0xfc/0x105
-> Oct 18 19:40:36 odra kernel: [359283.045825]  [<ffffffff8114bac4>] prepend_path+0x164/0x170
-> Oct 18 19:40:36 odra kernel: [359283.045829]  [<ffffffff8114bb27>] path_with_deleted+0x57/0xa0
-> Oct 18 19:40:36 odra kernel: [359283.045831]  [<ffffffff8114bc21>] d_path+0xb1/0xe0
-> Oct 18 19:40:36 odra kernel: [359283.045837]  [<ffffffff811906db>] proc_pid_readlink+0x8b/0xf0
-> Oct 18 19:40:36 odra kernel: [359283.045841]  [<ffffffff8113baa6>] sys_readlinkat+0xa6/0xb0
-> Oct 18 19:40:36 odra kernel: [359283.045844]  [<ffffffff8113bac6>] sys_readlink+0x16/0x20
-> Oct 18 19:40:36 odra kernel: [359283.045849]  [<ffffffff81421f7b>] system_call_fastpath+0x16/0x1b
-> Oct 18 19:40:36 odra kernel: [359283.045851] ---[ end trace b5522e2b9acb171d ]---
-> (...)
->
->
+i)  ARM (and a few arch's copied from it) does its restart logic in two
+    steps so that a debugger can intervene; is there still value in
+    this approach or would the single step approach in this patch series
+    be sufficient for ARM (and others)?
+
+ii) The syscall.h interface requires that the information needed to do
+    the register manipulations be in the pt_regs struct.  This isn't
+    the case for all arch's today.  Are there any issues with putting that
+    info into pt_regs for those arch's?
+
+With the rest of the cleanups in this series it currently comes to 64
+patches, so I'm just posting a couple of the syscall restart patches
+now for comment in order not to flood the lists.  I'll post the remainder
+of the series later based on the feedback from this series.
+
+/Jonas
+
+Jonas Bonn (8):
+  signal: introduce generic syscall restart logic
+  blackfin: implement syscall restart generically
+  frv: implement syscall restart generically
+  mips: implement syscall restart generically
+  x86: implement syscall restart generically
+  m68k: implement syscall restart generically
+  ia64: implement syscall restart generically
+  tile: implement syscall restart generically
+
+ arch/blackfin/include/asm/syscall.h |   26 +++++++++-
+ arch/blackfin/kernel/signal.c       |   47 +-----------------
+ arch/frv/include/asm/syscall.h      |   23 ++++++++-
+ arch/frv/kernel/signal.c            |   48 +-----------------
+ arch/ia64/include/asm/syscall.h     |   21 ++++++++
+ arch/ia64/kernel/signal.c           |   54 +--------------------
+ arch/m68k/include/asm/syscall.h     |   87 +++++++++++++++++++++++++++++++++
+ arch/m68k/kernel/signal_mm.c        |   45 +----------------
+ arch/m68k/kernel/signal_no.c        |   46 +----------------
+ arch/mips/include/asm/syscall.h     |   91 +++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/signal.c           |   40 +--------------
+ arch/tile/include/asm/syscall.h     |   28 ++++++++++-
+ arch/tile/kernel/signal.c           |   52 ++------------------
+ arch/x86/include/asm/syscall.h      |   21 ++++++++
+ arch/x86/kernel/signal.c            |   43 +---------------
+ include/asm-generic/syscall.h       |   46 +++++++++++++++++-
+ include/linux/signal.h              |    3 +
+ kernel/signal.c                     |   72 +++++++++++++++++++++++++++-
+ 18 files changed, 435 insertions(+), 358 deletions(-)
+ create mode 100644 arch/m68k/include/asm/syscall.h
+ create mode 100644 arch/mips/include/asm/syscall.h
+
+-- 
+1.7.5.4
+
