@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1JWGQo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:16:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64199 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1JWGQn convert rfc822-to-8bit (ORCPT
+	id S1754614Ab1JWG2k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:28:40 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50561 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753199Ab1JWG2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:16:43 -0400
+	Sun, 23 Oct 2011 02:28:39 -0400
+X-Sasl-enc: z5ayq6/2XHBP2KqpnlePr+0aitm7OIJRqVftr/h5cuEu 1319351318
+Date: Sun, 23 Oct 2011 08:28:33 +0200
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/27] 3.0.8-stable review
+Message-ID: <20111023062833.GA8126@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFygxqqz_67c9n2PtwZEWgpRMCdCpUhZK-xvdqW-BJ0LLA@mail.gmail.com>
-References: <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
-	<12633.1319228151@turing-police.cc.vt.edu>
-	<CA+55aFzLTjB+CwB7MQNh+p0pjSrFd=pBFDcA=GxMY4HJhQokUg@mail.gmail.com>
-	<9983.1319261492@turing-police.cc.vt.edu>
-	<CA+55aFygxqqz_67c9n2PtwZEWgpRMCdCpUhZK-xvdqW-BJ0LLA@mail.gmail.com>
-Date: Sun, 23 Oct 2011 07:16:41 +0100
-Message-ID: <CAPM=9tympvK8O3NC20CFG-2TutozHUKZTird7MpNUQi5BY=sww@mail.gmail.com>
-Subject: Re: Linux 3.1-rc10
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Valdis.Kletnieks@vt.edu,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 1:47 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Oct 22, 2011 at 8:31 AM,  <Valdis.Kletnieks@vt.edu> wrote:
->>
->> Actually, the question was "Are there enough Linus cycles to do KS
->> and all the merges in 2 weeks?". ;)
->
-> I think there will be.
->
-> The kernel summit is only two days, and then I have another day of
-> LinuxCon Europe, and basically a day of travel. So it's four days out
-> of the 2 weeks, and I can actually do the time-consuming part of the
-> merges while traveling (ie *looking* at them if I need to: the
-> technical merge action itself is usually never the problem).
->
-> Additionally, the first few days (which is KS/etc), I'll probably be
-> merging mainly from people who have already got k.org accounts because
-> they got into the trust network early, so it's going to be slightly
-> limited by the fact that it will invariably take some time to get the
-> gpg signing and k.org account setup a day or two.
+This is the start of the stable review cycle for the 3.0.8 release.
+There are @num@ patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-Are you going to accept pull requests from non-k.org remotes?
+Responses should be made by Tuesday, Oct 25 07:00:00 UTC 2011
+Anything received after that time might be too late.
 
-Like I'm getting close to can't be arsed wrt getting a k.org a/c
-again, and if freedesktop is good enough for pull reqs I might not
-bother.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.8-rc1.gz
+and the diffstat can be found below.
 
-I am interested in the view that the hacking of k.org has done one
-thing which is you are now more conditions to pulling from misc
-non-k.org places than previously. Maybe thats all the terrorists want
-:)
+thanks,
 
-Dave.
+greg k-h
+
+
+ Makefile                              |    4 +-
+ arch/arm/kernel/perf_event_v7.c       |    4 +-
+ arch/arm/mm/init.c                    |    7 ++
+ crypto/ghash-generic.c                |    6 +
+ drivers/firewire/sbp2.c               |    4 +
+ drivers/gpu/drm/radeon/atom.c         |   15 +++-
+ drivers/gpu/drm/radeon/atom.h         |    1 +
+ drivers/gpu/drm/ttm/ttm_bo.c          |   10 +-
+ drivers/gpu/drm/ttm/ttm_bo_util.c     |    2 +-
+ drivers/hid/hid-ids.h                 |    3 +
+ drivers/hid/hid-magicmouse.c          |   10 ++-
+ drivers/hid/usbhid/hid-quirks.c       |    1 +
+ drivers/hwmon/w83627ehf.c             |   15 ++-
+ drivers/media/video/uvc/uvc_entity.c  |    2 +-
+ drivers/platform/x86/samsung-laptop.c |   10 ++
+ fs/cifs/cifsfs.c                      |   10 +-
+ fs/fuse/dev.c                         |   12 ++-
+ fs/hfsplus/hfsplus_fs.h               |   16 +++-
+ fs/hfsplus/part_tbl.c                 |   32 +++---
+ fs/hfsplus/super.c                    |   12 +-
+ fs/hfsplus/wrapper.c                  |   83 +++++++++++----
+ fs/namei.c                            |   24 +++--
+ fs/xfs/linux-2.6/xfs_linux.h          |    2 +
+ fs/xfs/linux-2.6/xfs_super.c          |   48 +++------
+ fs/xfs/quota/xfs_dquot_item.c         |   10 ++-
+ fs/xfs/xfs_buf_item.c                 |    3 +-
+ fs/xfs/xfs_inode_item.c               |   10 ++-
+ fs/xfs/xfs_trans.c                    |   27 ++++-
+ fs/xfs/xfs_trans.h                    |    2 +-
+ fs/xfs/xfs_trans_ail.c                |  192 +++++++++++++++++++++++----------
+ fs/xfs/xfs_trans_priv.h               |   18 ++--
+ kernel/posix-cpu-timers.c             |    7 +-
+ kernel/sys.c                          |    2 +-
+ mm/migrate.c                          |    8 +-
+ net/x25/af_x25.c                      |    3 +-
+ sound/pci/hda/hda_intel.c             |    1 +
+ sound/pci/hda/patch_conexant.c        |    1 +
+ 37 files changed, 421 insertions(+), 196 deletions(-)
