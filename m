@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab1JWRod (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:44:33 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46598 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab1JWRo3 (ORCPT
+	id S1753914Ab1JWRog (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:44:36 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45532 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763Ab1JWRod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:44:29 -0400
+	Sun, 23 Oct 2011 13:44:33 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V8 04/26] vfs: Add a comment to inode_permission()
-Date: Sun, 23 Oct 2011 23:13:33 +0530
-Message-Id: <1319391835-5829-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 05/26] vfs: Add generic IS_ACL() test for acl support
+Date: Sun, 23 Oct 2011 23:13:34 +0530
+Message-Id: <1319391835-5829-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,45 +24,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
+When IS_POSIXACL() is true, the vfs does not apply the umask.  Other acl
+models will need the same exception, so introduce a separate IS_ACL()
+test.
+
+The IS_POSIX_ACL() test is still needed so that nfsd can determine when
+the underlying file system supports POSIX ACLs (as opposed to some other
+kind).
+
 Acked-by: J. Bruce Fields <bfields@redhat.com>
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ fs/namei.c         |    6 +++---
+ include/linux/fs.h |    8 +++++++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 276cd30..9061157 100644
+index 9061157..cf8b2f0 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -221,7 +221,7 @@ static int check_acl(struct inode *inode, int mask)
- }
+@@ -2166,7 +2166,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	/* Negative dentry, just create the file */
+ 	if (!dentry->d_inode) {
+ 		int mode = op->mode;
+-		if (!IS_POSIXACL(dir->d_inode))
++		if (!IS_ACL(dir->d_inode))
+ 			mode &= ~current_umask();
+ 		/*
+ 		 * This write is needed to ensure that a
+@@ -2484,7 +2484,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, int, mode,
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
  
- /*
-- * This does basic POSIX ACL permission checking
-+ * This does the basic permission checking
-  */
- static int acl_permission_check(struct inode *inode, int mask)
- {
-@@ -271,7 +271,7 @@ int generic_permission(struct inode *inode, int mask)
- 	int ret;
+-	if (!IS_POSIXACL(path.dentry->d_inode))
++	if (!IS_ACL(path.dentry->d_inode))
+ 		mode &= ~current_umask();
+ 	error = may_mknod(mode);
+ 	if (error)
+@@ -2553,7 +2553,7 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, int, mode)
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
  
- 	/*
--	 * Do the basic POSIX ACL permission checks.
-+	 * Do the basic permission checks.
- 	 */
- 	ret = acl_permission_check(inode, mask);
- 	if (ret != -EACCES)
-@@ -335,6 +335,8 @@ static inline int do_inode_permission(struct inode *inode, int mask)
-  * We use "fsuid" for this, letting us set arbitrary permissions
-  * for filesystem access without changing the "normal" uids which
-  * are used for other things.
-+ *
-+ * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
-  */
- int inode_permission(struct inode *inode, int mask)
- {
+-	if (!IS_POSIXACL(path.dentry->d_inode))
++	if (!IS_ACL(path.dentry->d_inode))
+ 		mode &= ~current_umask();
+ 	error = mnt_want_write(path.mnt);
+ 	if (error)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c1884e9..1994b84 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -201,7 +201,7 @@ struct inodes_stat_t {
+ #define MS_VERBOSE	32768	/* War is peace. Verbosity is silence.
+ 				   MS_VERBOSE is deprecated. */
+ #define MS_SILENT	32768
+-#define MS_POSIXACL	(1<<16)	/* VFS does not apply the umask */
++#define MS_POSIXACL	(1<<16) /* Supports POSIX ACLs */
+ #define MS_UNBINDABLE	(1<<17)	/* change to unbindable */
+ #define MS_PRIVATE	(1<<18)	/* change to private */
+ #define MS_SLAVE	(1<<19)	/* change to slave */
+@@ -279,6 +279,12 @@ struct inodes_stat_t {
+ #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
+ #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
+ 
++/*
++ * IS_ACL() tells the VFS to not apply the umask
++ * and use check_acl for acl permission checks when defined.
++ */
++#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
++
+ /* the read-only stuff doesn't really belong here, but any other place is
+    probably as bad and I don't want to create yet another include file. */
+ 
 -- 
 1.7.5.4
 
