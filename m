@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab1JWGi4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:38:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40057 "EHLO mx2.suse.de"
+	id S1755076Ab1JWGjO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:39:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40039 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab1JWGeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:34:08 -0400
+	id S1751651Ab1JWGeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:07 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:40 2011
-Message-Id: <20111023062540.221964043@pistachio.kroah.org>
+Message-Id: <20111023062539.925377953@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:47 +0200
+Date: Sun, 23 Oct 2011 08:24:45 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, greg@kroah.com,
-        Christoph Hellwig <hch@lst.de>
-Subject: [19/27] xfs: force the log if we encounter pinned buffers in .iop_pushbuf
+        Dave Chinner <dchinner@redhat.com>, Alex Elder <aelder@sgi.com>
+Subject: [17/27] xfs: use a cursor for bulk AIL insertion
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,159 +25,305 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
 
-commit 17b38471c3c07a49f0bbc2ecc2e92050c164e226 upstream
+From: Dave Chinner <dchinner@redhat.com>
 
-We need to check for pinned buffers even in .iop_pushbuf given that inode
-items flush into the same buffers that may be pinned directly due operations
-on the unlinked inode list operating directly on buffers.  To do this add a
-return value to .iop_pushbuf that tells the AIL push about this and use
-the existing log force mechanisms to unpin it.
+commit 1d8c95a363bf8cd4d4182dd19c01693b635311c2 upstream
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
-Tested-by: Stefan Priebe <s.priebe@profihost.ag>
+
+xfs: use a cursor for bulk AIL insertion
+
+Delayed logging can insert tens of thousands of log items into the
+AIL at the same LSN. When the committing of log commit records
+occur, we can get insertions occurring at an LSN that is not at the
+end of the AIL. If there are thousands of items in the AIL on the
+tail LSN, each insertion has to walk the AIL to find the correct
+place to insert the new item into the AIL. This can consume large
+amounts of CPU time and block other operations from occurring while
+the traversals are in progress.
+
+To avoid this repeated walk, use a AIL cursor to record
+where we should be inserting the new items into the AIL without
+having to repeat the walk. The cursor infrastructure already
+provides this functionality for push walks, so is a simple extension
+of existing code. While this will not avoid the initial walk, it
+will avoid repeating it tens of thousands of times during a single
+checkpoint commit.
+
+This version includes logic improvements from Christoph Hellwig.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/quota/xfs_dquot_item.c |   10 +++++++---
- fs/xfs/xfs_buf_item.c         |    3 ++-
- fs/xfs/xfs_inode_item.c       |   10 +++++++---
- fs/xfs/xfs_trans.h            |    2 +-
- fs/xfs/xfs_trans_ail.c        |    9 +++++++--
- 5 files changed, 24 insertions(+), 10 deletions(-)
+ fs/xfs/xfs_trans.c      |   27 ++++++++++-
+ fs/xfs/xfs_trans_ail.c  |  109 ++++++++++++++++++++++++++++++++++++++----------
+ fs/xfs/xfs_trans_priv.h |   10 +++-
+ 3 files changed, 118 insertions(+), 28 deletions(-)
 
---- a/fs/xfs/quota/xfs_dquot_item.c
-+++ b/fs/xfs/quota/xfs_dquot_item.c
-@@ -183,13 +183,14 @@ xfs_qm_dqunpin_wait(
-  * search the buffer cache can be a time consuming thing, and AIL lock is a
-  * spinlock.
+--- a/fs/xfs/xfs_trans.c
++++ b/fs/xfs/xfs_trans.c
+@@ -1426,6 +1426,7 @@ xfs_trans_committed(
+ static inline void
+ xfs_log_item_batch_insert(
+ 	struct xfs_ail		*ailp,
++	struct xfs_ail_cursor	*cur,
+ 	struct xfs_log_item	**log_items,
+ 	int			nr_items,
+ 	xfs_lsn_t		commit_lsn)
+@@ -1434,7 +1435,7 @@ xfs_log_item_batch_insert(
+ 
+ 	spin_lock(&ailp->xa_lock);
+ 	/* xfs_trans_ail_update_bulk drops ailp->xa_lock */
+-	xfs_trans_ail_update_bulk(ailp, log_items, nr_items, commit_lsn);
++	xfs_trans_ail_update_bulk(ailp, cur, log_items, nr_items, commit_lsn);
+ 
+ 	for (i = 0; i < nr_items; i++)
+ 		IOP_UNPIN(log_items[i], 0);
+@@ -1452,6 +1453,13 @@ xfs_log_item_batch_insert(
+  * as an iclog write error even though we haven't started any IO yet. Hence in
+  * this case all we need to do is IOP_COMMITTED processing, followed by an
+  * IOP_UNPIN(aborted) call.
++ *
++ * The AIL cursor is used to optimise the insert process. If commit_lsn is not
++ * at the end of the AIL, the insert cursor avoids the need to walk
++ * the AIL to find the insertion point on every xfs_log_item_batch_insert()
++ * call. This saves a lot of needless list walking and is a net win, even
++ * though it slightly increases that amount of AIL lock traffic to set it up
++ * and tear it down.
   */
--STATIC void
-+STATIC bool
- xfs_qm_dquot_logitem_pushbuf(
- 	struct xfs_log_item	*lip)
- {
- 	struct xfs_dq_logitem	*qlip = DQUOT_ITEM(lip);
- 	struct xfs_dquot	*dqp = qlip->qli_dquot;
- 	struct xfs_buf		*bp;
-+	bool			ret = true;
+ void
+ xfs_trans_committed_bulk(
+@@ -1463,8 +1471,13 @@ xfs_trans_committed_bulk(
+ #define LOG_ITEM_BATCH_SIZE	32
+ 	struct xfs_log_item	*log_items[LOG_ITEM_BATCH_SIZE];
+ 	struct xfs_log_vec	*lv;
++	struct xfs_ail_cursor	cur;
+ 	int			i = 0;
  
- 	ASSERT(XFS_DQ_IS_LOCKED(dqp));
++	spin_lock(&ailp->xa_lock);
++	xfs_trans_ail_cursor_last(ailp, &cur, commit_lsn);
++	spin_unlock(&ailp->xa_lock);
++
+ 	/* unpin all the log items */
+ 	for (lv = log_vector; lv; lv = lv->lv_next ) {
+ 		struct xfs_log_item	*lip = lv->lv_item;
+@@ -1493,7 +1506,9 @@ xfs_trans_committed_bulk(
+ 			/*
+ 			 * Not a bulk update option due to unusual item_lsn.
+ 			 * Push into AIL immediately, rechecking the lsn once
+-			 * we have the ail lock. Then unpin the item.
++			 * we have the ail lock. Then unpin the item. This does
++			 * not affect the AIL cursor the bulk insert path is
++			 * using.
+ 			 */
+ 			spin_lock(&ailp->xa_lock);
+ 			if (XFS_LSN_CMP(item_lsn, lip->li_lsn) > 0)
+@@ -1507,7 +1522,7 @@ xfs_trans_committed_bulk(
+ 		/* Item is a candidate for bulk AIL insert.  */
+ 		log_items[i++] = lv->lv_item;
+ 		if (i >= LOG_ITEM_BATCH_SIZE) {
+-			xfs_log_item_batch_insert(ailp, log_items,
++			xfs_log_item_batch_insert(ailp, &cur, log_items,
+ 					LOG_ITEM_BATCH_SIZE, commit_lsn);
+ 			i = 0;
+ 		}
+@@ -1515,7 +1530,11 @@ xfs_trans_committed_bulk(
  
-@@ -201,17 +202,20 @@ xfs_qm_dquot_logitem_pushbuf(
- 	if (completion_done(&dqp->q_flush) ||
- 	    !(lip->li_flags & XFS_LI_IN_AIL)) {
- 		xfs_dqunlock(dqp);
--		return;
-+		return true;
- 	}
- 
- 	bp = xfs_incore(dqp->q_mount->m_ddev_targp, qlip->qli_format.qlf_blkno,
- 			dqp->q_mount->m_quotainfo->qi_dqchunklen, XBF_TRYLOCK);
- 	xfs_dqunlock(dqp);
- 	if (!bp)
--		return;
-+		return true;
- 	if (XFS_BUF_ISDELAYWRITE(bp))
- 		xfs_buf_delwri_promote(bp);
-+	if (XFS_BUF_ISPINNED(bp))
-+		ret = false;
- 	xfs_buf_relse(bp);
-+	return ret;
+ 	/* make sure we insert the remainder! */
+ 	if (i)
+-		xfs_log_item_batch_insert(ailp, log_items, i, commit_lsn);
++		xfs_log_item_batch_insert(ailp, &cur, log_items, i, commit_lsn);
++
++	spin_lock(&ailp->xa_lock);
++	xfs_trans_ail_cursor_done(ailp, &cur);
++	spin_unlock(&ailp->xa_lock);
  }
  
  /*
---- a/fs/xfs/xfs_buf_item.c
-+++ b/fs/xfs/xfs_buf_item.c
-@@ -632,7 +632,7 @@ xfs_buf_item_push(
-  * the xfsbufd to get this buffer written. We have to unlock the buffer
-  * to allow the xfsbufd to write it, too.
-  */
--STATIC void
-+STATIC bool
- xfs_buf_item_pushbuf(
- 	struct xfs_log_item	*lip)
- {
-@@ -646,6 +646,7 @@ xfs_buf_item_pushbuf(
- 
- 	xfs_buf_delwri_promote(bp);
- 	xfs_buf_relse(bp);
-+	return true;
- }
- 
- STATIC void
---- a/fs/xfs/xfs_inode_item.c
-+++ b/fs/xfs/xfs_inode_item.c
-@@ -713,13 +713,14 @@ xfs_inode_item_committed(
-  * marked delayed write. If that's the case, we'll promote it and that will
-  * allow the caller to write the buffer by triggering the xfsbufd to run.
-  */
--STATIC void
-+STATIC bool
- xfs_inode_item_pushbuf(
- 	struct xfs_log_item	*lip)
- {
- 	struct xfs_inode_log_item *iip = INODE_ITEM(lip);
- 	struct xfs_inode	*ip = iip->ili_inode;
- 	struct xfs_buf		*bp;
-+	bool			ret = true;
- 
- 	ASSERT(xfs_isilocked(ip, XFS_ILOCK_SHARED));
- 
-@@ -730,7 +731,7 @@ xfs_inode_item_pushbuf(
- 	if (completion_done(&ip->i_flush) ||
- 	    !(lip->li_flags & XFS_LI_IN_AIL)) {
- 		xfs_iunlock(ip, XFS_ILOCK_SHARED);
--		return;
-+		return true;
- 	}
- 
- 	bp = xfs_incore(ip->i_mount->m_ddev_targp, iip->ili_format.ilf_blkno,
-@@ -738,10 +739,13 @@ xfs_inode_item_pushbuf(
- 
- 	xfs_iunlock(ip, XFS_ILOCK_SHARED);
- 	if (!bp)
--		return;
-+		return true;
- 	if (XFS_BUF_ISDELAYWRITE(bp))
- 		xfs_buf_delwri_promote(bp);
-+	if (XFS_BUF_ISPINNED(bp))
-+		ret = false;
- 	xfs_buf_relse(bp);
-+	return ret;
- }
- 
- /*
---- a/fs/xfs/xfs_trans.h
-+++ b/fs/xfs/xfs_trans.h
-@@ -350,7 +350,7 @@ typedef struct xfs_item_ops {
- 	void (*iop_unlock)(xfs_log_item_t *);
- 	xfs_lsn_t (*iop_committed)(xfs_log_item_t *, xfs_lsn_t);
- 	void (*iop_push)(xfs_log_item_t *);
--	void (*iop_pushbuf)(xfs_log_item_t *);
-+	bool (*iop_pushbuf)(xfs_log_item_t *);
- 	void (*iop_committing)(xfs_log_item_t *, xfs_lsn_t);
- } xfs_item_ops_t;
- 
 --- a/fs/xfs/xfs_trans_ail.c
 +++ b/fs/xfs/xfs_trans_ail.c
-@@ -478,8 +478,13 @@ xfs_ail_worker(
+@@ -272,9 +272,9 @@ xfs_trans_ail_cursor_clear(
+ }
  
- 		case XFS_ITEM_PUSHBUF:
- 			XFS_STATS_INC(xs_push_ail_pushbuf);
--			IOP_PUSHBUF(lip);
--			ailp->xa_last_pushed_lsn = lsn;
+ /*
+- * Return the item in the AIL with the current lsn.
+- * Return the current tree generation number for use
+- * in calls to xfs_trans_next_ail().
++ * Initialise the cursor to the first item in the AIL with the given @lsn.
++ * This searches the list from lowest LSN to highest. Pass a @lsn of zero
++ * to initialise the cursor to the first item in the AIL.
+  */
+ xfs_log_item_t *
+ xfs_trans_ail_cursor_first(
+@@ -300,31 +300,97 @@ out:
+ }
+ 
+ /*
+- * splice the log item list into the AIL at the given LSN.
++ * Initialise the cursor to the last item in the AIL with the given @lsn.
++ * This searches the list from highest LSN to lowest. If there is no item with
++ * the value of @lsn, then it sets the cursor to the last item with an LSN lower
++ * than @lsn.
++ */
++static struct xfs_log_item *
++__xfs_trans_ail_cursor_last(
++	struct xfs_ail		*ailp,
++	xfs_lsn_t		lsn)
++{
++	xfs_log_item_t		*lip;
 +
-+			if (!IOP_PUSHBUF(lip)) {
-+				stuck++;
-+				flush_log = 1;
-+			} else {
-+				ailp->xa_last_pushed_lsn = lsn;
-+			}
- 			push_xfsbufd = 1;
- 			break;
++	list_for_each_entry_reverse(lip, &ailp->xa_ail, li_ail) {
++		if (XFS_LSN_CMP(lip->li_lsn, lsn) <= 0)
++			return lip;
++	}
++	return NULL;
++}
++
++/*
++ * Initialise the cursor to the last item in the AIL with the given @lsn.
++ * This searches the list from highest LSN to lowest.
++ */
++struct xfs_log_item *
++xfs_trans_ail_cursor_last(
++	struct xfs_ail		*ailp,
++	struct xfs_ail_cursor	*cur,
++	xfs_lsn_t		lsn)
++{
++	xfs_trans_ail_cursor_init(ailp, cur);
++	cur->item = __xfs_trans_ail_cursor_last(ailp, lsn);
++	return cur->item;
++}
++
++/*
++ * splice the log item list into the AIL at the given LSN. We splice to the
++ * tail of the given LSN to maintain insert order for push traversals. The
++ * cursor is optional, allowing repeated updates to the same LSN to avoid
++ * repeated traversals.
+  */
+ static void
+ xfs_ail_splice(
+-	struct xfs_ail  *ailp,
+-	struct list_head *list,
+-	xfs_lsn_t       lsn)
++	struct xfs_ail		*ailp,
++	struct xfs_ail_cursor	*cur,
++	struct list_head	*list,
++	xfs_lsn_t		lsn)
+ {
+-	xfs_log_item_t  *next_lip;
++	struct xfs_log_item	*lip = cur ? cur->item : NULL;
++	struct xfs_log_item	*next_lip;
  
+-	/* If the list is empty, just insert the item.  */
+-	if (list_empty(&ailp->xa_ail)) {
+-		list_splice(list, &ailp->xa_ail);
+-		return;
+-	}
++	/*
++	 * Get a new cursor if we don't have a placeholder or the existing one
++	 * has been invalidated.
++	 */
++	if (!lip || (__psint_t)lip & 1) {
++		lip = __xfs_trans_ail_cursor_last(ailp, lsn);
+ 
+-	list_for_each_entry_reverse(next_lip, &ailp->xa_ail, li_ail) {
+-		if (XFS_LSN_CMP(next_lip->li_lsn, lsn) <= 0)
+-			break;
++		if (!lip) {
++			/* The list is empty, so just splice and return.  */
++			if (cur)
++				cur->item = NULL;
++			list_splice(list, &ailp->xa_ail);
++			return;
++		}
+ 	}
+ 
+-	ASSERT(&next_lip->li_ail == &ailp->xa_ail ||
+-	       XFS_LSN_CMP(next_lip->li_lsn, lsn) <= 0);
+-
+-	list_splice_init(list, &next_lip->li_ail);
++	/*
++	 * Our cursor points to the item we want to insert _after_, so we have
++	 * to update the cursor to point to the end of the list we are splicing
++	 * in so that it points to the correct location for the next splice.
++	 * i.e. before the splice
++	 *
++	 *  lsn -> lsn -> lsn + x -> lsn + x ...
++	 *          ^
++	 *          | cursor points here
++	 *
++	 * After the splice we have:
++	 *
++	 *  lsn -> lsn -> lsn -> lsn -> .... -> lsn -> lsn + x -> lsn + x ...
++	 *          ^                            ^
++	 *          | cursor points here         | needs to move here
++	 *
++	 * So we set the cursor to the last item in the list to be spliced
++	 * before we execute the splice, resulting in the cursor pointing to
++	 * the correct item after the splice occurs.
++	 */
++	if (cur) {
++		next_lip = list_entry(list->prev, struct xfs_log_item, li_ail);
++		cur->item = next_lip;
++	}
++	list_splice(list, &lip->li_ail);
+ }
+ 
+ /*
+@@ -645,6 +711,7 @@ xfs_trans_unlocked_item(
+ void
+ xfs_trans_ail_update_bulk(
+ 	struct xfs_ail		*ailp,
++	struct xfs_ail_cursor	*cur,
+ 	struct xfs_log_item	**log_items,
+ 	int			nr_items,
+ 	xfs_lsn_t		lsn) __releases(ailp->xa_lock)
+@@ -674,7 +741,7 @@ xfs_trans_ail_update_bulk(
+ 		list_add(&lip->li_ail, &tmp);
+ 	}
+ 
+-	xfs_ail_splice(ailp, &tmp, lsn);
++	xfs_ail_splice(ailp, cur, &tmp, lsn);
+ 
+ 	if (!mlip_changed) {
+ 		spin_unlock(&ailp->xa_lock);
+--- a/fs/xfs/xfs_trans_priv.h
++++ b/fs/xfs/xfs_trans_priv.h
+@@ -82,6 +82,7 @@ struct xfs_ail {
+ extern struct workqueue_struct	*xfs_ail_wq;	/* AIL workqueue */
+ 
+ void	xfs_trans_ail_update_bulk(struct xfs_ail *ailp,
++				struct xfs_ail_cursor *cur,
+ 				struct xfs_log_item **log_items, int nr_items,
+ 				xfs_lsn_t lsn) __releases(ailp->xa_lock);
+ static inline void
+@@ -90,7 +91,7 @@ xfs_trans_ail_update(
+ 	struct xfs_log_item	*lip,
+ 	xfs_lsn_t		lsn) __releases(ailp->xa_lock)
+ {
+-	xfs_trans_ail_update_bulk(ailp, &lip, 1, lsn);
++	xfs_trans_ail_update_bulk(ailp, NULL, &lip, 1, lsn);
+ }
+ 
+ void	xfs_trans_ail_delete_bulk(struct xfs_ail *ailp,
+@@ -111,10 +112,13 @@ xfs_lsn_t		xfs_ail_min_lsn(struct xfs_ai
+ void			xfs_trans_unlocked_item(struct xfs_ail *,
+ 					xfs_log_item_t *);
+ 
+-struct xfs_log_item	*xfs_trans_ail_cursor_first(struct xfs_ail *ailp,
++struct xfs_log_item *	xfs_trans_ail_cursor_first(struct xfs_ail *ailp,
+ 					struct xfs_ail_cursor *cur,
+ 					xfs_lsn_t lsn);
+-struct xfs_log_item	*xfs_trans_ail_cursor_next(struct xfs_ail *ailp,
++struct xfs_log_item *	xfs_trans_ail_cursor_last(struct xfs_ail *ailp,
++					struct xfs_ail_cursor *cur,
++					xfs_lsn_t lsn);
++struct xfs_log_item *	xfs_trans_ail_cursor_next(struct xfs_ail *ailp,
+ 					struct xfs_ail_cursor *cur);
+ void			xfs_trans_ail_cursor_done(struct xfs_ail *ailp,
+ 					struct xfs_ail_cursor *cur);
 
 
