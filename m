@@ -1,181 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab1JWKWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 06:22:09 -0400
-Received: from mail.southpole.se ([193.12.106.18]:34913 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab1JWKUX (ORCPT
+	id S1754475Ab1JWKjj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 06:39:39 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20023 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab1JWKji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 06:20:23 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>, David Howells <dhowells@redhat.com>
-Subject: [PATCH RFC 3/8] frv: implement syscall restart generically
-Date: Sun, 23 Oct 2011 12:19:57 +0200
-Message-Id: <3abe1f77b13a218d52f43275b7b8269442f27dcb.1319364492.git.jonas@southpole.se>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cover.1319364492.git.jonas@southpole.se>
-References: <cover.1319364492.git.jonas@southpole.se>
-In-Reply-To: <cover.1319364492.git.jonas@southpole.se>
-References: <cover.1319364492.git.jonas@southpole.se>
-X-Assp-Version: 2.1.1(11278) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 65222-13134
+	Sun, 23 Oct 2011 06:39:38 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-d9-4ea3eee8993f
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+References: <009201cc915a$cae8f290$60bad7b0$@com>
+ <20111023083704.GA3135@opensource.wolfsonmicro.com>
+In-reply-to: <20111023083704.GA3135@opensource.wolfsonmicro.com>
+Subject: RE: [PATCH 1/3] mfd: Add S5M core driver
+Date: Sun, 23 Oct 2011 19:39:36 +0900
+Message-id: <009701cc9170$0f2e9ee0$2d8bdca0$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyRXvRj9e99i9aqRdahyqKNphORwQAClD+A
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-Manipulating task state to effect re-execution of an interrupted syscall
-used to be purely architecture specific code.  However, as most arch's
-were essentially just making minor adjustments to almost identical logic,
-this code could be moved to a common implementation.
+On Sun, Oct 23, 2011 at 05:37 PM +0900, Mark Brown wrote:
 
-The generic variant introduces the function handle_syscall_restart() to be
-called after get_signal_to_deliver().  The architecture specific register
-manipulations required to effect the actual restart are now implemented
-in the generic syscall interface found in asm/syscall.h
+> >  drivers/mfd/s5m-core.c               |  235 +++++++++++++++++++++++++
+> >  include/linux/mfd/s5m87xx/s5m-core.h |  313
+> > ++++++++++++++++++++++++++++++++++
+> 
+> Naughty Outlook!
 
-This patch transitions this architecture's signal handling code over to
-using the generic syscall restart code by:
+Sorry, I hope that I can send next version by git send-email.
 
-i)  Implementing the register manipulations in asm/syscall.h
-ii) Replacing the restart logic with a call to handle_syscall_restart
+> Actually, looking at this what I'm thinking is that we should put some
+> inline functions in the regmap header which let you write this as
+> something like
+> 
+> 	int s5m_reg_read(struct s5m87xx_dev *s5m87xx, u8 reg, u8 *dest)
+> 	{
+> 		return regmap_read_u8(s5m87xx->dev, reg, dest);
+> 	}
+> (which might be inline itself) as most of what you're doing here is the
+> type conversion for the arguments.
 
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
----
- arch/frv/include/asm/syscall.h |   23 ++++++++++++++++++-
- arch/frv/kernel/signal.c       |   48 ++-------------------------------------
- 2 files changed, 25 insertions(+), 46 deletions(-)
+OK, I will modify it.
+> 
+> > +EXPORT_SYMBOL(s5m_bulk_read);
+> 
+> All this stuff should be _GPL as the regmap core is _GPL - you shouldn't
+> wrap a _GPL function with a non-GPL one.
 
-diff --git a/arch/frv/include/asm/syscall.h b/arch/frv/include/asm/syscall.h
-index 70689eb..a0493da 100644
---- a/arch/frv/include/asm/syscall.h
-+++ b/arch/frv/include/asm/syscall.h
-@@ -14,6 +14,7 @@
+You mean that EXPORT_SYMBOL should be replace with EXPORT_SYMBOL_GPL?
+
+> > +static struct mfd_cell s5m87xx_devs[] = {
+> > +	{
+> > +		.name = "s5m8763-pmic",
+> > +	}, {
+> > +		.name = "s5m8767-pmic",
+> > +	}, {
+> 
+> It looks a bit odd to have both simultaneously but I guess this will
+> become more obvious later on?  I guess what I'd expect is one of these
+> arrays per device variant.
+
+My intention of this mfd driver is supporting all samsung mfd.
+It is desirable that a core driver handle various driver to prevent produce
+similar code.
+So, If I want to implement like above concept, What kind of approach can be
+advised?
  
- #include <linux/err.h>
- #include <asm/ptrace.h>
-+#include <asm/unistd.h>
- 
- /*
-  * Get the system call number or -1
-@@ -34,6 +35,26 @@ static inline void syscall_rollback(struct task_struct *task,
- 	regs->gr8 = regs->orig_gr8;
- }
- 
-+static inline void
-+syscall_clear(struct task_struct *task, struct pt_regs *regs)
-+{
-+	regs->syscallno = -1;
-+}
-+
-+static inline void
-+syscall_restart(struct task_struct *task, struct pt_regs *regs)
-+{
-+	syscall_rollback(task, regs);
-+	regs->pc -= 4;
-+}
-+
-+static inline void
-+syscall_do_restartblock(struct task_struct *task, struct pt_regs *regs)
-+{
-+	regs->gr7 = __NR_restart_syscall;
-+	regs->pc -= 4;
-+}
-+
- /*
-  * See if the syscall return value is an error, returning it if it is and 0 if
-  * not
-@@ -61,7 +82,7 @@ static inline void syscall_set_return_value(struct task_struct *task,
- 					    int error, long val)
- {
- 	if (error)
--		regs->gr8 = -error;
-+		regs->gr8 = error;
- 	else
- 		regs->gr8 = val;
- }
-diff --git a/arch/frv/kernel/signal.c b/arch/frv/kernel/signal.c
-index bab0129..a8bacdd 100644
---- a/arch/frv/kernel/signal.c
-+++ b/arch/frv/kernel/signal.c
-@@ -445,29 +445,6 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
- {
- 	int ret;
- 
--	/* Are we from a system call? */
--	if (__frame->syscallno != -1) {
--		/* If so, check system call restarting.. */
--		switch (__frame->gr8) {
--		case -ERESTART_RESTARTBLOCK:
--		case -ERESTARTNOHAND:
--			__frame->gr8 = -EINTR;
--			break;
--
--		case -ERESTARTSYS:
--			if (!(ka->sa.sa_flags & SA_RESTART)) {
--				__frame->gr8 = -EINTR;
--				break;
--			}
--
--			/* fallthrough */
--		case -ERESTARTNOINTR:
--			__frame->gr8 = __frame->orig_gr8;
--			__frame->pc -= 4;
--		}
--		__frame->syscallno = -1;
--	}
--
- 	/* Set up the stack frame */
- 	if (ka->sa.sa_flags & SA_SIGINFO)
- 		ret = setup_rt_frame(sig, ka, info, oldset);
-@@ -510,15 +487,15 @@ static void do_signal(void)
- 	if (!user_mode(__frame))
- 		return;
- 
--	if (try_to_freeze())
--		goto no_signal;
--
- 	if (test_thread_flag(TIF_RESTORE_SIGMASK))
- 		oldset = &current->saved_sigmask;
- 	else
- 		oldset = &current->blocked;
- 
- 	signr = get_signal_to_deliver(&info, &ka, __frame, NULL);
-+
-+	handle_syscall_restart(__frame, &ka, (signr > 0));
-+
- 	if (signr > 0) {
- 		if (handle_signal(signr, &info, &ka, oldset) == 0) {
- 			/* a signal was successfully delivered; the saved
-@@ -536,25 +513,6 @@ static void do_signal(void)
- 	}
- 
- no_signal:
--	/* Did we come from a system call? */
--	if (__frame->syscallno != -1) {
--		/* Restart the system call - no handlers present */
--		switch (__frame->gr8) {
--		case -ERESTARTNOHAND:
--		case -ERESTARTSYS:
--		case -ERESTARTNOINTR:
--			__frame->gr8 = __frame->orig_gr8;
--			__frame->pc -= 4;
--			break;
--
--		case -ERESTART_RESTARTBLOCK:
--			__frame->gr7 = __NR_restart_syscall;
--			__frame->pc -= 4;
--			break;
--		}
--		__frame->syscallno = -1;
--	}
--
- 	/* if there's no signal to deliver, we just put the saved sigmask
- 	 * back */
- 	if (test_thread_flag(TIF_RESTORE_SIGMASK)) {
--- 
-1.7.5.4
+> > +	s5m87xx->dev = &i2c->dev;
+> > +	s5m87xx->i2c = i2c;
+> > +	s5m87xx->irq = i2c->irq;
+> 
+> Is SPI supported?
+
+SPI isn't supported by Samsung mfd
+
+> 
+> > +	dev_info(s5m87xx->dev ,"SAMSUNG S5M MFD\n");
+> 
+> Probably best to remove this for mainline, it's not really adding
+> anything.
+
+OK, I will remove it.
+
+> > +static const struct i2c_device_id s5m87xx_i2c_id[] = {
+> > +	{ "s5m87xx", 0 },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, s5m87xx_i2c_id);
+> 
+> It'd be better to have one entry per chip explicitly naming the device,
+> that way boards are describing which they have and the kernel can apply
+> any device specific configuration.
+> 
+As I write above, I want to use a core driver for various mfd.
+What kind of approach can be advised?
+
+I'm very thank for your kindly review.
+Sangbeom.
 
