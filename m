@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1JWVBO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 17:01:14 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45134 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963Ab1JWVBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 17:01:13 -0400
-Message-ID: <4EA48094.8020508@ilyx.ru>
-Date: Mon, 24 Oct 2011 01:01:08 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752055Ab1JWVJS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 17:09:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41631 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab1JWVJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 17:09:17 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, stable-review@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ian Kent <raven@themaw.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Chuck Ebbert <cebbert@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [22/27] VFS: Fix automount for negative autofs dentries
+In-Reply-To: <20111023083636.GA14048@suse.de> (Greg KH's message of "Sun, 23
+	Oct 2011 10:36:36 +0200")
+References: <20111023062833.GA8126@kroah.com>
+	<20111023062540.684446582@pistachio.kroah.org>
+	<CA+55aFxkHr75LZU0udv=A+Bg52fMMOEfp47TTxHGbgf51UouRg@mail.gmail.com>
+	<20111023083636.GA14048@suse.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Date: Sun, 23 Oct 2011 23:09:11 +0200
+Message-ID: <87pqhnifew.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, ilya@ilyx.ru
-Subject: [PATCH] TTY: pty, fix pty counting
-Content-Type: text/plain; charset=windows-1251
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New version for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
+Greg KH <gregkh@suse.de> writes:
 
-diff -uprN a/drivers/tty/pty.c b/drivers/tty/pty.c
---- a/drivers/tty/pty.c	2011-05-19 08:06:34.000000000 +0400
-+++ b/drivers/tty/pty.c	2011-10-23 18:01:20.000000000 +0400
-@@ -36,13 +36,15 @@
- static struct tty_driver *ptm_driver;
- static struct tty_driver *pts_driver;
- #endif
-+static int pty_count;
- 
- static void pty_close(struct tty_struct *tty, struct file *filp)
- {
- 	BUG_ON(!tty);
--	if (tty->driver->subtype == PTY_TYPE_MASTER)
-+	if (tty->driver->subtype == PTY_TYPE_MASTER) {
- 		WARN_ON(tty->count > 1);
--	else {
-+		pty_count--;
-+	} else {
- 		if (tty->count > 2)
- 			return;
- 	}
-@@ -446,7 +448,6 @@ static inline void legacy_pty_init(void)
- int pty_limit = NR_UNIX98_PTY_DEFAULT;
- static int pty_limit_min;
- static int pty_limit_max = NR_UNIX98_PTY_MAX;
--static int pty_count;
- 
- static struct cdev ptmx_cdev;
- 
-@@ -599,15 +600,9 @@ free_mem_out:
- 	return -ENOMEM;
- }
- 
--static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
--{
--	pty_count--;
--}
--
- static const struct tty_operations ptm_unix98_ops = {
- 	.lookup = ptm_unix98_lookup,
- 	.install = pty_unix98_install,
--	.remove = pty_unix98_remove,
- 	.open = pty_open,
- 	.close = pty_close,
- 	.write = pty_write,
-@@ -624,7 +619,6 @@ static const struct tty_operations ptm_u
- static const struct tty_operations pty_unix98_ops = {
- 	.lookup = pts_unix98_lookup,
- 	.install = pty_unix98_install,
--	.remove = pty_unix98_remove,
- 	.open = pty_open,
- 	.close = pty_close,
- 	.write = pty_write,
+> On Sun, Oct 23, 2011 at 10:35:14AM +0300, Linus Torvalds wrote:
+>> This one is debatable.
+>> 
+>> I think it also wants
+>> 
+>>  - commit 0ec26fd0698285b31248e34bf1abb022c00f23d6 (with
+>> LOOKUP_PARENT->LOOKUP_CONTINUE too)
+>
+> Really?  I thought I dropped this one from the last stable release due
+> to problems with it, or does this patch here, and the one you mention
+> below, resolve those issues?
+>
+>>  - commit d94c177beeb4469cd4f6e83354ab0223353e98ed (to get the few
+>> other cases right too)
+>> 
+>> anything else I missed?
+>
+> Ok, that makes a bit more sense, I'll add these if David and Miklos
+> agree that they are ok to add here.  David and Miklos?
+
+IMO they are OK to add as long as they are both added.
+
+Last time the first one had to be backed out because Linus wasn't
+totally comfortable with the other one going into -stable until it got
+some testing in 3.1.  Or at least that's how I understood (or
+misunderstood).
+
+Thanks,
+Miklos
