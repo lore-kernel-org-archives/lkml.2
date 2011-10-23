@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab1JWGhr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:37:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40096 "EHLO mx2.suse.de"
+	id S1755057Ab1JWGiD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:38:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40090 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713Ab1JWGeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753554Ab1JWGeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Oct 2011 02:34:14 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:38 2011
-Message-Id: <20111023062538.102413039@pistachio.kroah.org>
+Message-Id: <20111023062538.403220218@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:33 +0200
+Date: Sun, 23 Oct 2011 08:24:35 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [05/27] Avoid using variable-length arrays in kernel/sys.c
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [07/27] cputimer: Cure lock inversion
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit a84a79e4d369a73c0130b5858199e949432da4c6 upstream.
+commit bcd5cff7216f9b2de0a148cc355eac199dc6f1cf upstream.
 
-The size is always valid, but variable-length arrays generate worse code
-for no good reason (unless the function happens to be inlined and the
-compiler sees the length for the simple constant it is).
+There's a lock inversion between the cputimer->lock and rq->lock;
+notably the two callchains involved are:
 
-Also, there seems to be some code generation problem on POWER, where
-Henrik Bakken reports that register r28 can get corrupted under some
-subtle circumstances (interrupt happening at the wrong time?).  That all
-indicates some seriously broken compiler issues, but since variable
-length arrays are bad regardless, there's little point in trying to
-chase it down.
+ update_rlimit_cpu()
+   sighand->siglock
+   set_process_cpu_timer()
+     cpu_timer_sample_group()
+       thread_group_cputimer()
+         cputimer->lock
+         thread_group_cputime()
+           task_sched_runtime()
+             ->pi_lock
+             rq->lock
 
-"Just don't do that, then".
+ scheduler_tick()
+   rq->lock
+   task_tick_fair()
+     update_curr()
+       account_group_exec()
+         cputimer->lock
 
-Reported-by: Henrik Grindal Bakken <henribak@cisco.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Where the first one is enabling a CLOCK_PROCESS_CPUTIME_ID timer, and
+the second one is keeping up-to-date.
+
+This problem was introduced by e8abccb7193 ("posix-cpu-timers: Cure
+SMP accounting oddities").
+
+Cure the problem by removing the cputimer->lock and rq->lock nesting,
+this leaves concurrent enablers doing duplicate work, but the time
+wasted should be on the same order otherwise wasted spinning on the
+lock and the greater-than assignment filter should ensure we preserve
+monotonicity.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Link: http://lkml.kernel.org/r/1318928713.21167.4.camel@twins
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/posix-cpu-timers.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1135,7 +1135,7 @@ DECLARE_RWSEM(uts_sem);
- static int override_release(char __user *release, int len)
- {
- 	int ret = 0;
--	char buf[len];
-+	char buf[65];
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -274,9 +274,7 @@ void thread_group_cputimer(struct task_s
+ 	struct task_cputime sum;
+ 	unsigned long flags;
  
- 	if (current->personality & UNAME26) {
- 		char *rest = UTS_RELEASE;
+-	spin_lock_irqsave(&cputimer->lock, flags);
+ 	if (!cputimer->running) {
+-		cputimer->running = 1;
+ 		/*
+ 		 * The POSIX timer interface allows for absolute time expiry
+ 		 * values through the TIMER_ABSTIME flag, therefore we have
+@@ -284,8 +282,11 @@ void thread_group_cputimer(struct task_s
+ 		 * it.
+ 		 */
+ 		thread_group_cputime(tsk, &sum);
++		spin_lock_irqsave(&cputimer->lock, flags);
++		cputimer->running = 1;
+ 		update_gt_cputime(&cputimer->cputime, &sum);
+-	}
++	} else
++		spin_lock_irqsave(&cputimer->lock, flags);
+ 	*times = cputimer->cputime;
+ 	spin_unlock_irqrestore(&cputimer->lock, flags);
+ }
 
 
