@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab1JWArj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Oct 2011 20:47:39 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43319 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab1JWAri (ORCPT
+	id S1754489Ab1JWBY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Oct 2011 21:24:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53641 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab1JWBY1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Oct 2011 20:47:38 -0400
+	Sat, 22 Oct 2011 21:24:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <9983.1319261492@turing-police.cc.vt.edu>
-References: <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
- <12633.1319228151@turing-police.cc.vt.edu> <CA+55aFzLTjB+CwB7MQNh+p0pjSrFd=pBFDcA=GxMY4HJhQokUg@mail.gmail.com>
- <9983.1319261492@turing-police.cc.vt.edu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 23 Oct 2011 03:47:16 +0300
-X-Google-Sender-Auth: h-hUiJkxofTvb7WK4T8_L6mRxE0
-Message-ID: <CA+55aFygxqqz_67c9n2PtwZEWgpRMCdCpUhZK-xvdqW-BJ0LLA@mail.gmail.com>
-Subject: Re: Linux 3.1-rc10
-To: Valdis.Kletnieks@vt.edu
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20111020234703.GI20542@quack.suse.cz>
+References: <1319036598-4367-1-git-send-email-linkinjeon@gmail.com>
+	<20111020234703.GI20542@quack.suse.cz>
+Date: Sun, 23 Oct 2011 10:24:25 +0900
+Message-ID: <CAKYAXd-Bi+=ZdXbHG+Rd0C3Yh9+v1PyjarTFdBA5YayP_FVOLQ@mail.gmail.com>
+Subject: Re: [PATCH] udf : skip mirror metadata FE since metadata FE is ok.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ashish Sangwan <ashishsangwan2@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 22, 2011 at 8:31 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+2011/10/21 Jan Kara <jack@suse.cz>:
+> On Thu 20-10-11 00:03:18, Namjae Jeon wrote:
+>> By Jan Kara's suggestion, This patch skip mirror metadata FE since
+>> metadata FE is ok. And try to read it only the first time
+>> udf_get_pblock_meta25() fails to map the block from metadata FE.
+>>
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> Signed-off-by: Ashish Sangwan <ashishsangwan2@gmail.com>
+>> ---
+>>  fs/udf/partition.c |   20 ++++++++++++++++++++
+>>  fs/udf/super.c     |   33 ++++++++++++++++-----------------
+>>  2 files changed, 36 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/fs/udf/partition.c b/fs/udf/partition.c
+>> index f3e472c..8bfc25b 100644
+>> --- a/fs/udf/partition.c
+>> +++ b/fs/udf/partition.c
+>> @@ -311,6 +311,7 @@ uint32_t udf_get_pblock_meta25(struct super_block *sb, uint32_t block,
+>>       struct udf_meta_data *mdata;
+>>       uint32_t retblk;
+>>       struct inode *inode;
+>> +     struct kernel_lb_addr addr;
+>>
+>>       udf_debug("READING from METADATA\n");
+>>
+>> @@ -323,6 +324,25 @@ uint32_t udf_get_pblock_meta25(struct super_block *sb, uint32_t block,
+>>       retblk = udf_try_read_meta(inode, block, partition, offset);
+>>       if (retblk == 0xFFFFFFFF) {
+>>               udf_warn(sb, "error reading from METADATA, trying to read from MIRROR\n");
+>> +             if (mdata->s_mirror_fe == NULL) {
+>  This won't be good because if s_mirror_fe cannot be loaded as well, you'd
+> just try loading it on every block mapping which failed from the primary
+> metadata map. So you should have a flag somewhere whether in mdata, whether
+> you tried loading mirror_fe or not and use that.
 >
-> Actually, the question was "Are there enough Linus cycles to do KS
-> and all the merges in 2 weeks?". ;)
+>> +                     /* mirror file entry */
+>> +                     addr.logicalBlockNum = mdata->s_mirror_file_loc;
+>> +                     addr.partitionReferenceNum = map->s_partition_num;
+>> +                     udf_debug("Mirror metadata file location: block = %d part = %d\n",
+>> +                             addr.logicalBlockNum,
+>> +                             addr.partitionReferenceNum);
+>> +                     mdata->s_mirror_fe = udf_iget(sb, &addr);
+>> +
+>> +                     if (mdata->s_mirror_fe == NULL)
+>> +                             udf_err(sb, "mirror inode efe not found");
+>> +                     else if (UDF_I(mdata->s_mirror_fe)->i_alloc_type !=
+>> +                                     ICBTAG_FLAG_AD_SHORT) {
+>> +                             udf_warn(sb, "mirror inode efe does not have short allocation descriptors!\n");
+>> +                             iput(mdata->s_mirror_fe);
+>> +                             mdata->s_mirror_fe = NULL;
+>> +                     }
+>  Also please create a helper function for loading metadata/mirror metadat
+> FE so that we don't have loading duplicated in three places... Thanks.
+Hi Jan.
+Thanks for your review.
+I will do it.
 
-I think there will be.
-
-The kernel summit is only two days, and then I have another day of
-LinuxCon Europe, and basically a day of travel. So it's four days out
-of the 2 weeks, and I can actually do the time-consuming part of the
-merges while traveling (ie *looking* at them if I need to: the
-technical merge action itself is usually never the problem).
-
-Additionally, the first few days (which is KS/etc), I'll probably be
-merging mainly from people who have already got k.org accounts because
-they got into the trust network early, so it's going to be slightly
-limited by the fact that it will invariably take some time to get the
-gpg signing and k.org account setup a day or two.
-
-So I'm not horribly worried.
-
-What worries me more than the kernel summit is just that the 3.1
-release cycle has dragged out longer than usual, so I'm a bit afraid
-that the 3.2 merge window will just be more chaotic than usual just
-because there might be more stuff there to be merged. But that's
-independent of any KS issues, and I also suspect that the added time
-for development has been largely nullified by the productivity lost
-due to the k.org mess.
-
-linux-next is pretty large, but I don't track historical sizes all
-that well, so I can't say if it's noticeably larger than it usually
-is. Stephen may know, but he's on vacation right now.
-
-So we'll see.
-
-                    Linus
+>
+>                                                                Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+>
