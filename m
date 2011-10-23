@@ -1,188 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab1JWRpw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:45:52 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:41741 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab1JWRpt (ORCPT
+	id S1755706Ab1JWRqE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:46:04 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52043 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab1JWRqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:45:49 -0400
+	Sun, 23 Oct 2011 13:46:00 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V8 24/26] ext4: Use IS_POSIXACL() to check for POSIX ACL support
-Date: Sun, 23 Oct 2011 23:13:53 +0530
-Message-Id: <1319391835-5829-25-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 26/26] ext4: Add Ext4 compat richacl feature flag
+Date: Sun, 23 Oct 2011 23:13:55 +0530
+Message-Id: <1319391835-5829-27-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 11102307-5140-0000-0000-00000019E8B8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Use IS_POSIXACL() instead of a file system specific mount flag since we
-have IS_POSIXACL() in the vfs already, anyway.
+This feature flag can be used to enable richacl on
+the file system. Once enabled the "acl" mount option
+will enable richacl instead of posix acl. The patch also
+removes the richacl mount option.
 
 Acked-by: J. Bruce Fields <bfields@redhat.com>
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 ---
- fs/ext4/acl.c   |   16 ++++++++--------
- fs/ext4/ext4.h  |    1 -
- fs/ext4/super.c |   16 +++++-----------
- 3 files changed, 13 insertions(+), 20 deletions(-)
+ fs/ext4/ext4.h  |    1 +
+ fs/ext4/super.c |   49 +++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 36 insertions(+), 14 deletions(-)
 
-diff --git a/fs/ext4/acl.c b/fs/ext4/acl.c
-index a5c29bb..525bbc3 100644
---- a/fs/ext4/acl.c
-+++ b/fs/ext4/acl.c
-@@ -139,7 +139,7 @@ ext4_get_acl(struct inode *inode, int type)
- 	struct posix_acl *acl;
- 	int retval;
- 
--	if (!test_opt(inode->i_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(inode))
- 		return NULL;
- 
- 	acl = get_cached_acl(inode, type);
-@@ -248,7 +248,7 @@ ext4_init_acl(handle_t *handle, struct inode *inode, struct inode *dir)
- 	int error = 0;
- 
- 	if (!S_ISLNK(inode->i_mode)) {
--		if (test_opt(dir->i_sb, POSIX_ACL)) {
-+		if (IS_POSIXACL(inode)) {
- 			acl = ext4_get_acl(dir, ACL_TYPE_DEFAULT);
- 			if (IS_ERR(acl))
- 				return PTR_ERR(acl);
-@@ -256,7 +256,7 @@ ext4_init_acl(handle_t *handle, struct inode *inode, struct inode *dir)
- 		if (!acl)
- 			inode->i_mode &= ~current_umask();
- 	}
--	if (test_opt(inode->i_sb, POSIX_ACL) && acl) {
-+	if (IS_POSIXACL(inode) && acl) {
- 		if (S_ISDIR(inode->i_mode)) {
- 			error = ext4_set_acl(handle, inode,
- 					     ACL_TYPE_DEFAULT, acl);
-@@ -302,7 +302,7 @@ ext4_acl_chmod(struct inode *inode)
- 
- 	if (S_ISLNK(inode->i_mode))
- 		return -EOPNOTSUPP;
--	if (!test_opt(inode->i_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(inode))
- 		return 0;
- 	acl = ext4_get_acl(inode, ACL_TYPE_ACCESS);
- 	if (IS_ERR(acl) || !acl)
-@@ -337,7 +337,7 @@ ext4_xattr_list_acl_access(struct dentry *dentry, char *list, size_t list_len,
- {
- 	const size_t size = sizeof(POSIX_ACL_XATTR_ACCESS);
- 
--	if (!test_opt(dentry->d_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return 0;
- 	if (list && size <= list_len)
- 		memcpy(list, POSIX_ACL_XATTR_ACCESS, size);
-@@ -350,7 +350,7 @@ ext4_xattr_list_acl_default(struct dentry *dentry, char *list, size_t list_len,
- {
- 	const size_t size = sizeof(POSIX_ACL_XATTR_DEFAULT);
- 
--	if (!test_opt(dentry->d_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return 0;
- 	if (list && size <= list_len)
- 		memcpy(list, POSIX_ACL_XATTR_DEFAULT, size);
-@@ -366,7 +366,7 @@ ext4_xattr_get_acl(struct dentry *dentry, const char *name, void *buffer,
- 
- 	if (strcmp(name, "") != 0)
- 		return -EINVAL;
--	if (!test_opt(dentry->d_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return -EOPNOTSUPP;
- 
- 	acl = ext4_get_acl(dentry->d_inode, type);
-@@ -391,7 +391,7 @@ ext4_xattr_set_acl(struct dentry *dentry, const char *name, const void *value,
- 
- 	if (strcmp(name, "") != 0)
- 		return -EINVAL;
--	if (!test_opt(inode->i_sb, POSIX_ACL))
-+	if (!IS_POSIXACL(dentry->d_inode))
- 		return -EOPNOTSUPP;
- 	if (!inode_owner_or_capable(inode))
- 		return -EPERM;
 diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index b7d7bd0..6627cc8 100644
+index 6627cc8..c71d9fe 100644
 --- a/fs/ext4/ext4.h
 +++ b/fs/ext4/ext4.h
-@@ -901,7 +901,6 @@ struct ext4_inode_info {
- #define EXT4_MOUNT_UPDATE_JOURNAL	0x01000	/* Update the journal format */
- #define EXT4_MOUNT_NO_UID32		0x02000  /* Disable 32-bit UIDs */
- #define EXT4_MOUNT_XATTR_USER		0x04000	/* Extended user attributes */
--#define EXT4_MOUNT_POSIX_ACL		0x08000	/* POSIX Access Control Lists */
- #define EXT4_MOUNT_NO_AUTO_DA_ALLOC	0x10000	/* No auto delalloc mapping */
- #define EXT4_MOUNT_BARRIER		0x20000 /* Use block barriers */
- #define EXT4_MOUNT_QUOTA		0x80000 /* Some quota option set */
+@@ -1350,6 +1350,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_COMPAT_EXT_ATTR		0x0008
+ #define EXT4_FEATURE_COMPAT_RESIZE_INODE	0x0010
+ #define EXT4_FEATURE_COMPAT_DIR_INDEX		0x0020
++#define EXT4_FEATURE_COMPAT_RICHACL		0x0200
+ 
+ #define EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
+ #define EXT4_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
 diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 44d0c8d..99d72cf 100644
+index 99d72cf..4a3f0dd 100644
 --- a/fs/ext4/super.c
 +++ b/fs/ext4/super.c
-@@ -1066,9 +1066,9 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
+@@ -1065,10 +1065,12 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 	if (!test_opt(sb, XATTR_USER))
  		seq_puts(seq, ",nouser_xattr");
  #endif
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
--	if (test_opt(sb, POSIX_ACL) && !(def_mount_opts & EXT4_DEFM_ACL))
-+	if ((sb->s_flags & MS_POSIXACL) && !(def_mount_opts & EXT4_DEFM_ACL))
+-#ifdef CONFIG_EXT4_FS_POSIX_ACL
+-	if ((sb->s_flags & MS_POSIXACL) && !(def_mount_opts & EXT4_DEFM_ACL))
++#if defined(CONFIG_EXT4_FS_POSIX_ACL) || defined(CONFIG_EXT4_FS_RICHACL)
++	if ((sb->s_flags & (MS_POSIXACL|MS_RICHACL)) &&
++	    !(def_mount_opts & EXT4_DEFM_ACL))
  		seq_puts(seq, ",acl");
--	if (!test_opt(sb, POSIX_ACL) && (def_mount_opts & EXT4_DEFM_ACL))
-+	if (!(sb->s_flags & MS_POSIXACL) && (def_mount_opts & EXT4_DEFM_ACL))
+-	if (!(sb->s_flags & MS_POSIXACL) && (def_mount_opts & EXT4_DEFM_ACL))
++	if (!(sb->s_flags & (MS_POSIXACL|MS_RICHACL)) &&
++	    (def_mount_opts & EXT4_DEFM_ACL))
  		seq_puts(seq, ",noacl");
  #endif
  	if (sbi->s_commit_interval != JBD2_DEFAULT_MAX_COMMIT_AGE*HZ) {
-@@ -1587,10 +1587,10 @@ static int parse_options(char *options, struct super_block *sb,
+@@ -1421,6 +1423,32 @@ static ext4_fsblk_t get_sb_block(void **data)
+ 	return sb_block;
+ }
+ 
++static void enable_acl(struct super_block *sb)
++{
++#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
++	ext4_msg(sb, KERN_ERR, "acl options not supported");
++	return;
++#endif
++	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_RICHACL)) {
++		sb->s_flags |= MS_RICHACL;
++		sb->s_flags &= ~MS_POSIXACL;
++	} else {
++		sb->s_flags |= MS_POSIXACL;
++		sb->s_flags &= ~MS_RICHACL;
++	}
++	return;
++}
++
++static void disable_acl(struct super_block *sb)
++{
++#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
++	ext4_msg(sb, KERN_ERR, "acl options not supported");
++	return;
++#endif
++	sb->s_flags &= ~(MS_POSIXACL | MS_RICHACL);
++	return;
++}
++
+ #define DEFAULT_JOURNAL_IOPRIO (IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, 3))
+ static char deprecated_msg[] = "Mount option \"%s\" will be removed by %s\n"
+ 	"Contact linux-ext4@vger.kernel.org if you think we should keep it.\n";
+@@ -1585,19 +1613,12 @@ static int parse_options(char *options, struct super_block *sb,
+ 			ext4_msg(sb, KERN_ERR, "(no)user_xattr options not supported");
+ 			break;
  #endif
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
+-#ifdef CONFIG_EXT4_FS_POSIX_ACL
  		case Opt_acl:
--			set_opt(sb, POSIX_ACL);
-+			sb->s_flags |= MS_POSIXACL;
+-			sb->s_flags |= MS_POSIXACL;
++			enable_acl(sb);
  			break;
  		case Opt_noacl:
--			clear_opt(sb, POSIX_ACL);
-+			sb->s_flags &= ~MS_POSIXACL;
+-			sb->s_flags &= ~MS_POSIXACL;
++			disable_acl(sb);
  			break;
- #else
- 		case Opt_acl:
-@@ -3170,7 +3170,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+-#else
+-		case Opt_acl:
+-		case Opt_noacl:
+-			ext4_msg(sb, KERN_ERR, "(no)acl options not supported");
+-			break;
+-#endif
+ 		case Opt_journal_update:
+ 			/* @@@ FIXME */
+ 			/* Eventually we will want to be able to create
+@@ -3169,8 +3190,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ #ifdef CONFIG_EXT4_FS_XATTR
  	set_opt(sb, XATTR_USER);
  #endif
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
--	set_opt(sb, POSIX_ACL);
-+	sb->s_flags |= MS_POSIXACL;
+-#ifdef CONFIG_EXT4_FS_POSIX_ACL
+-	sb->s_flags |= MS_POSIXACL;
++#if defined(CONFIG_EXT4_FS_POSIX_ACL) || defined(CONFIG_EXT4_FS_RICHACL)
++		enable_acl(sb);
  #endif
  	set_opt(sb, MBLK_IO_SUBMIT);
  	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
-@@ -3224,9 +3224,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 			   &journal_ioprio, NULL, 0))
- 		goto failed_mount;
- 
--	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
--		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
--
- 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
- 	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
- 	     EXT4_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
-@@ -4351,9 +4348,6 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
- 		ext4_abort(sb, "Abort forced by user");
- 
--	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
--		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
--
- 	es = sbi->s_es;
- 
- 	if (sbi->s_journal) {
 -- 
 1.7.5.4
 
