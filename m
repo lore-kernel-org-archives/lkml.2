@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1JWROp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:14:45 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:60824 "EHLO
+	id S1753306Ab1JWRPB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:15:01 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:60829 "EHLO
 	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1JWROn (ORCPT
+	with ESMTP id S1752741Ab1JWRO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:14:43 -0400
-Date: Sun, 23 Oct 2011 19:11:19 +0200
+	Sun, 23 Oct 2011 13:14:59 -0400
+Date: Sun, 23 Oct 2011 19:11:35 +0200
 From: Francois Romieu <romieu@fr.zoreil.com>
 To: Mark Einon <mark.einon@gmail.com>
 Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH staging 2/6] et131x: uintxy_t removal.
-Message-ID: <20111023171119.GB28657@electric-eye.fr.zoreil.com>
+Subject: [PATCH staging 3/6] et131x: fix error paths in et131x_pci_setup.
+Message-ID: <20111023171135.GC28657@electric-eye.fr.zoreil.com>
 References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com> <20111023093651.GA22285@kroah.com> <20111023094231.GA3409@msilap.einon>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,146 +25,235 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Wrong status code and unbalanced phy_connect.
+
 Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
 ---
- drivers/staging/et131x/et131x.c |   53 ++++++++++++++++++++-------------------
- 1 files changed, 27 insertions(+), 26 deletions(-)
+ drivers/staging/et131x/et131x.c |   99 +++++++++++++++------------------------
+ 1 files changed, 38 insertions(+), 61 deletions(-)
 
 diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 06960f3..2ae7819 100644
+index 2ae7819..2b6ca6a 100644
 --- a/drivers/staging/et131x/et131x.c
 +++ b/drivers/staging/et131x/et131x.c
-@@ -303,8 +303,8 @@ struct fbr_lookup {
- 	dma_addr_t	 ring_physaddr;
- 	void		*mem_virtaddrs[MAX_DESC_PER_RING_RX / FBR_CHUNKS];
- 	dma_addr_t	 mem_physaddrs[MAX_DESC_PER_RING_RX / FBR_CHUNKS];
--	uint64_t	 real_physaddr;
--	uint64_t	 offset;
-+	dma_addr_t	 real_physaddr;
-+	u32		 offset;
- 	u32		 local_full;
- 	u32		 num_entries;
- 	u32		 buffsize;
-@@ -1117,12 +1117,10 @@ static int et1310_in_phy_coma(struct et131x_adapter *adapter)
- static void et1310_setup_device_for_multicast(struct et131x_adapter *adapter)
+@@ -4402,6 +4402,7 @@ static void __devexit et131x_pci_remove(struct pci_dev *pdev)
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 
+ 	unregister_netdev(netdev);
++	phy_disconnect(adapter->phydev);
+ 	mdiobus_unregister(adapter->mii_bus);
+ 	kfree(adapter->mii_bus->irq);
+ 	mdiobus_free(adapter->mii_bus);
+@@ -5245,40 +5246,6 @@ static const struct net_device_ops et131x_netdev_ops = {
+ };
+ 
+ /**
+- * et131x_device_alloc
+- *
+- * Returns pointer to the allocated and initialized net_device struct for
+- * this device.
+- *
+- * Create instances of net_device and wl_private for the new adapter and
+- * register the device's entry points in the net_device structure.
+- */
+-struct net_device *et131x_device_alloc(void)
+-{
+-	struct net_device *netdev;
+-
+-	/* Alloc net_device and adapter structs */
+-	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
+-
+-	if (!netdev) {
+-		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
+-		return NULL;
+-	}
+-
+-	/*
+-	 * Setup the function registration table (and other data) for a
+-	 * net_device
+-	 */
+-	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
+-	netdev->netdev_ops     = &et131x_netdev_ops;
+-
+-	/* Poll? */
+-	/* netdev->poll               = &et131x_poll; */
+-	/* netdev->poll_controller    = &et131x_poll_controller; */
+-	return netdev;
+-}
+-
+-/**
+  * et131x_pci_setup - Perform device initialization
+  * @pdev: a pointer to the device's pci_dev structure
+  * @ent: this device's entry in the pci_device_id table
+@@ -5293,24 +5260,26 @@ struct net_device *et131x_device_alloc(void)
+ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
+ 			       const struct pci_device_id *ent)
  {
- 	struct rxmac_regs __iomem *rxmac = &adapter->regs->rxmac;
--	uint32_t nIndex;
--	uint32_t result;
--	uint32_t hash1 = 0;
--	uint32_t hash2 = 0;
--	uint32_t hash3 = 0;
--	uint32_t hash4 = 0;
-+	u32 hash1 = 0;
-+	u32 hash2 = 0;
-+	u32 hash3 = 0;
-+	u32 hash4 = 0;
- 	u32 pm_csr;
+-	int result;
+ 	struct net_device *netdev;
+ 	struct et131x_adapter *adapter;
++	int rc;
+ 	int ii;
  
- 	/* If ET131X_PACKET_TYPE_MULTICAST is specified, then we provision
-@@ -1131,10 +1129,13 @@ static void et1310_setup_device_for_multicast(struct et131x_adapter *adapter)
- 	 * driver.
- 	 */
- 	if (adapter->packet_filter & ET131X_PACKET_TYPE_MULTICAST) {
-+		int i;
-+
- 		/* Loop through our multicast array and set up the device */
--		for (nIndex = 0; nIndex < adapter->multicast_addr_count;
--		     nIndex++) {
--			result = ether_crc(6, adapter->multicast_list[nIndex]);
-+		for (i = 0; i < adapter->multicast_addr_count; i++) {
-+			u32 result;
-+
-+			result = ether_crc(6, adapter->multicast_list[i]);
- 
- 			result = (result & 0x3F800000) >> 23;
- 
-@@ -1925,9 +1926,10 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 	/* Set the address and parameters of Free buffer ring 1 (and 0 if
- 	 * required) into the 1310's registers
- 	 */
--	writel((u32) (rx_local->fbr[0]->real_physaddr >> 32),
-+	writel(((u64) rx_local->fbr[0]->real_physaddr) >> 32,
- 	       &rx_dma->fbr1_base_hi);
--	writel((u32) rx_local->fbr[0]->real_physaddr, &rx_dma->fbr1_base_lo);
-+	writel(((u64) rx_local->fbr[0]->real_physaddr) & DMA_BIT_MASK(32),
-+	       &rx_dma->fbr1_base_lo);
- 	writel(rx_local->fbr[0]->num_entries - 1, &rx_dma->fbr1_num_des);
- 	writel(ET_DMA10_WRAP, &rx_dma->fbr1_full_offset);
- 
-@@ -1949,9 +1951,10 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 		fbr_entry++;
+-	result = pci_enable_device(pdev);
+-	if (result) {
++	rc = pci_enable_device(pdev);
++	if (rc < 0) {
+ 		dev_err(&pdev->dev, "pci_enable_device() failed\n");
+-		goto err_out;
++		goto out;
  	}
  
--	writel((u32) (rx_local->fbr[1]->real_physaddr >> 32),
-+	writel(((u64) rx_local->fbr[1]->real_physaddr) >> 32,
- 	       &rx_dma->fbr0_base_hi);
--	writel((u32) rx_local->fbr[1]->real_physaddr, &rx_dma->fbr0_base_lo);
-+	writel(((u64) rx_local->fbr[1]->real_physaddr) & DMA_BIT_MASK(32),
-+	       &rx_dma->fbr0_base_lo);
- 	writel(rx_local->fbr[1]->num_entries - 1, &rx_dma->fbr0_num_des);
- 	writel(ET_DMA10_WRAP, &rx_dma->fbr0_full_offset);
+ 	/* Perform some basic PCI checks */
+ 	if (!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)) {
+ 		dev_err(&pdev->dev, "Can't find PCI device's base address\n");
++		rc = -ENODEV;
+ 		goto err_disable;
+ 	}
  
-@@ -2298,15 +2301,13 @@ static inline u32 bump_free_buff_ring(u32 *free_buff_ring, u32 limit)
-  * @mask: correct mask
-  */
- static void et131x_align_allocated_memory(struct et131x_adapter *adapter,
--				   uint64_t *phys_addr,
--				   uint64_t *offset, uint64_t mask)
-+					  dma_addr_t *phys_addr, u32 *offset,
-+					  u32 mask)
- {
--	uint64_t new_addr;
-+	dma_addr_t new_addr = *phys_addr & ~mask;
+-	if (pci_request_regions(pdev, DRIVER_NAME)) {
++	rc = pci_request_regions(pdev, DRIVER_NAME);
++	if (rc < 0) {
+ 		dev_err(&pdev->dev, "Can't get PCI resources\n");
+ 		goto err_disable;
+ 	}
+@@ -5319,46 +5288,50 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
  
- 	*offset = 0;
+ 	/* Check the DMA addressing support of this device */
+ 	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
+-		result = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+-		if (result) {
++		rc = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
++		if (rc < 0) {
+ 			dev_err(&pdev->dev,
+ 			  "Unable to obtain 64 bit DMA for consistent allocations\n");
+ 			goto err_release_res;
+ 		}
+ 	} else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
+-		result = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+-		if (result) {
++		rc = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++		if (rc < 0) {
+ 			dev_err(&pdev->dev,
+ 			  "Unable to obtain 32 bit DMA for consistent allocations\n");
+ 			goto err_release_res;
+ 		}
+ 	} else {
+ 		dev_err(&pdev->dev, "No usable DMA addressing method\n");
+-		result = -EIO;
++		rc = -EIO;
+ 		goto err_release_res;
+ 	}
  
--	new_addr = *phys_addr & ~mask;
+ 	/* Allocate netdev and private adapter structs */
+-	netdev = et131x_device_alloc();
++	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
+ 	if (!netdev) {
+ 		dev_err(&pdev->dev, "Couldn't alloc netdev struct\n");
+-		result = -ENOMEM;
++		rc = -ENOMEM;
+ 		goto err_release_res;
+ 	}
+ 
++	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
++	netdev->netdev_ops     = &et131x_netdev_ops;
++
+ 	SET_NETDEV_DEV(netdev, &pdev->dev);
+ 	et131x_set_ethtool_ops(netdev);
+ 
+ 	adapter = et131x_adapter_init(netdev, pdev);
+ 
+-	/* Initialise the PCI setup for the device */
+-	et131x_pci_init(adapter, pdev);
++	rc = et131x_pci_init(adapter, pdev);
++	if (rc < 0)
++		goto err_free_dev;
+ 
+ 	/* Map the bus-relative registers to system virtual memory */
+ 	adapter->regs = pci_ioremap_bar(pdev, 0);
+ 	if (!adapter->regs) {
+ 		dev_err(&pdev->dev, "Cannot map device registers\n");
+-		result = -ENOMEM;
++		rc = -ENOMEM;
+ 		goto err_free_dev;
+ 	}
+ 
+@@ -5372,8 +5345,8 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
+ 	et131x_disable_interrupts(adapter);
+ 
+ 	/* Allocate DMA memory */
+-	result = et131x_adapter_memory_alloc(adapter);
+-	if (result) {
++	rc = et131x_adapter_memory_alloc(adapter);
++	if (rc < 0) {
+ 		dev_err(&pdev->dev, "Could not alloc adapater memory (DMA)\n");
+ 		goto err_iounmap;
+ 	}
+@@ -5391,6 +5364,8 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
+ 	adapter->boot_coma = 0;
+ 	et1310_disable_phy_coma(adapter);
+ 
++	rc = -ENOMEM;
++
+ 	/* Setup the mii_bus struct */
+ 	adapter->mii_bus = mdiobus_alloc();
+ 	if (!adapter->mii_bus) {
+@@ -5414,13 +5389,14 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
+ 	for (ii = 0; ii < PHY_MAX_ADDR; ii++)
+ 		adapter->mii_bus->irq[ii] = PHY_POLL;
+ 
+-	if (mdiobus_register(adapter->mii_bus)) {
++	rc = mdiobus_register(adapter->mii_bus);
++	if (rc < 0) {
+ 		dev_err(&pdev->dev, "failed to register MII bus\n");
+-		mdiobus_free(adapter->mii_bus);
+ 		goto err_mdio_free_irq;
+ 	}
+ 
+-	if (et131x_mii_probe(netdev)) {
++	rc = et131x_mii_probe(netdev);
++	if (rc < 0) {
+ 		dev_err(&pdev->dev, "failed to probe MII bus\n");
+ 		goto err_mdio_unregister;
+ 	}
+@@ -5436,10 +5412,10 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
+ 	 */
+ 
+ 	/* Register the net_device struct with the Linux network layer */
+-	result = register_netdev(netdev);
+-	if (result != 0) {
++	rc = register_netdev(netdev);
++	if (rc < 0) {
+ 		dev_err(&pdev->dev, "register_netdev() failed\n");
+-		goto err_mdio_unregister;
++		goto err_phy_disconnect;
+ 	}
+ 
+ 	/* Register the net_device struct with the PCI subsystem. Save a copy
+@@ -5448,9 +5424,11 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
+ 	 */
+ 	pci_set_drvdata(pdev, netdev);
+ 	pci_save_state(adapter->pdev);
++out:
++	return rc;
+ 
+-	return result;
 -
- 	if (new_addr != *phys_addr) {
- 		/* Move to next aligned block */
- 		new_addr += mask + 1;
-@@ -2455,8 +2456,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 			rx_ring->fbr[1]->offset);
- #endif
- 	for (i = 0; i < (rx_ring->fbr[0]->num_entries / FBR_CHUNKS); i++) {
--		u64 fbr1_offset;
--		u64 fbr1_tmp_physaddr;
-+		dma_addr_t fbr1_tmp_physaddr;
-+		u32 fbr1_offset;
- 		u32 fbr1_align;
++err_phy_disconnect:
++	phy_disconnect(adapter->phydev);
+ err_mdio_unregister:
+ 	mdiobus_unregister(adapter->mii_bus);
+ err_mdio_free_irq:
+@@ -5468,8 +5446,7 @@ err_release_res:
+ 	pci_release_regions(pdev);
+ err_disable:
+ 	pci_disable_device(pdev);
+-err_out:
+-	return result;
++	goto out;
+ }
  
- 		/* This code allocates an area of memory big enough for N
-@@ -2521,8 +2522,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- #ifdef USE_FBR0
- 	/* Same for FBR0 (if in use) */
- 	for (i = 0; i < (rx_ring->fbr[1]->num_entries / FBR_CHUNKS); i++) {
--		u64 fbr0_offset;
--		u64 fbr0_tmp_physaddr;
-+		dma_addr_t fbr0_tmp_physaddr;
-+		u32 fbr0_offset;
- 
- 		fbr_chunksize =
- 		    ((FBR_CHUNKS + 1) * rx_ring->fbr[1]->buffsize) - 1;
-@@ -4900,8 +4901,8 @@ static int et131x_ioctl(struct net_device *netdev, struct ifreq *reqbuf,
-  */
- static int et131x_set_packet_filter(struct et131x_adapter *adapter)
- {
-+	int filter = adapter->packet_filter;
- 	int status = 0;
--	uint32_t filter = adapter->packet_filter;
- 	u32 ctrl;
- 	u32 pf_ctrl;
- 
-@@ -4963,7 +4964,7 @@ static int et131x_set_packet_filter(struct et131x_adapter *adapter)
- static void et131x_multicast(struct net_device *netdev)
- {
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
--	uint32_t packet_filter = 0;
-+	int packet_filter;
- 	unsigned long flags;
- 	struct netdev_hw_addr *ha;
- 	int i;
+ static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
 -- 
 1.7.6.4
 
