@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab1JWGeP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:34:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40077 "EHLO mx2.suse.de"
+	id S1755030Ab1JWGhr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:37:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40096 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754695Ab1JWGeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:34:11 -0400
+	id S1754713Ab1JWGeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:14 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:38 2011
-Message-Id: <20111023062537.951231502@pistachio.kroah.org>
+Message-Id: <20111023062538.102413039@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:32 +0200
+Date: Sun, 23 Oct 2011 08:24:33 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [04/27] hwmon: (w83627ehf) Properly report thermal diode sensors
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [05/27] Avoid using variable-length arrays in kernel/sys.c
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit bf164c58e58328c40ebc597a8ac00cc6840f9703 upstream.
+commit a84a79e4d369a73c0130b5858199e949432da4c6 upstream.
 
-The w83627ehf driver is improperly reporting thermal diode sensors as
-type 2, instead of 3. This caused "sensors" and possibly other
-monitoring tools to report these sensors as "transistor" instead of
-"thermal diode".
+The size is always valid, but variable-length arrays generate worse code
+for no good reason (unless the function happens to be inlined and the
+compiler sees the length for the simple constant it is).
 
-Furthermore, diode subtype selection (CPU vs. external) is only
-supported by the original W83627EHF/EHG. All later models only support
-CPU diode type, and some (NCT6776F) don't even have the register in
-question so we should avoid reading from it.
+Also, there seems to be some code generation problem on POWER, where
+Henrik Bakken reports that register r28 can get corrupted under some
+subtle circumstances (interrupt happening at the wrong time?).  That all
+indicates some seriously broken compiler issues, but since variable
+length arrays are bad regardless, there's little point in trying to
+chase it down.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+"Just don't do that, then".
+
+Reported-by: Henrik Grindal Bakken <henribak@cisco.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/w83627ehf.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1715,7 +1715,8 @@ static void w83627ehf_device_remove_file
- }
- 
- /* Get the monitoring functions started */
--static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data)
-+static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
-+						   enum kinds kind)
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1135,7 +1135,7 @@ DECLARE_RWSEM(uts_sem);
+ static int override_release(char __user *release, int len)
  {
- 	int i;
- 	u8 tmp, diode;
-@@ -1746,10 +1747,16 @@ static inline void __devinit w83627ehf_i
- 		w83627ehf_write_value(data, W83627EHF_REG_VBAT, tmp | 0x01);
+ 	int ret = 0;
+-	char buf[len];
++	char buf[65];
  
- 	/* Get thermal sensor types */
--	diode = w83627ehf_read_value(data, W83627EHF_REG_DIODE);
-+	switch (kind) {
-+	case w83627ehf:
-+		diode = w83627ehf_read_value(data, W83627EHF_REG_DIODE);
-+		break;
-+	default:
-+		diode = 0x70;
-+	}
- 	for (i = 0; i < 3; i++) {
- 		if ((tmp & (0x02 << i)))
--			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 2;
-+			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
- 		else
- 			data->temp_type[i] = 4; /* thermistor */
- 	}
-@@ -2016,7 +2023,7 @@ static int __devinit w83627ehf_probe(str
- 	}
- 
- 	/* Initialize the chip */
--	w83627ehf_init_device(data);
-+	w83627ehf_init_device(data, sio_data->kind);
- 
- 	data->vrm = vid_which_vrm();
- 	superio_enter(sio_data->sioreg);
+ 	if (current->personality & UNAME26) {
+ 		char *rest = UTS_RELEASE;
 
 
