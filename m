@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1JWGhB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:37:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40107 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792Ab1JWGeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754801Ab1JWGeP (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 23 Oct 2011 02:34:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40077 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754695Ab1JWGeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:11 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:38 2011
-Message-Id: <20111023062538.713588404@pistachio.kroah.org>
+Message-Id: <20111023062537.951231502@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:37 +0200
+Date: Sun, 23 Oct 2011 08:24:32 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Courbon <thcourbon@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [09/27] Platform: fix samsung-laptop DMI identification for N150/N210/220/N230
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [04/27] hwmon: (w83627ehf) Properly report thermal diode sensors
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Courbon <thcourbon@gmail.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 78a7539b881eb557494a7c810625c0307b27296c upstream.
+commit bf164c58e58328c40ebc597a8ac00cc6840f9703 upstream.
 
-Some samsung latop of the N150/N2{10,20,30} serie are badly detected by the samsung-laptop platform driver, see bug # 36082.
-It appears that N230 identifies itself as N150/N210/N220/N230 whereas the other identify themselves as N150/N210/220.
-This patch attemtp fix #36082 allowing correct identification for all the said netbook model.
+The w83627ehf driver is improperly reporting thermal diode sensors as
+type 2, instead of 3. This caused "sensors" and possibly other
+monitoring tools to report these sensors as "transistor" instead of
+"thermal diode".
 
-Reported-by: Daniel Eklöf <daniel@ekloef.se>
-Signed-off-by: Thomas Courbon <thcourbon@gmail.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+Furthermore, diode subtype selection (CPU vs. external) is only
+supported by the original W83627EHF/EHG. All later models only support
+CPU diode type, and some (NCT6776F) don't even have the register in
+question so we should avoid reading from it.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/samsung-laptop.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/hwmon/w83627ehf.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -601,6 +601,16 @@ static struct dmi_system_id __initdata s
- 		.callback = dmi_check_cb,
- 	},
- 	{
-+		.ident = "N150/N210/N220",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"SAMSUNG ELECTRONICS CO., LTD."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-+			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-+		},
-+		.callback = dmi_check_cb,
-+	},
-+	{
- 		.ident = "N150/N210/N220/N230",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR,
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -1715,7 +1715,8 @@ static void w83627ehf_device_remove_file
+ }
+ 
+ /* Get the monitoring functions started */
+-static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data)
++static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
++						   enum kinds kind)
+ {
+ 	int i;
+ 	u8 tmp, diode;
+@@ -1746,10 +1747,16 @@ static inline void __devinit w83627ehf_i
+ 		w83627ehf_write_value(data, W83627EHF_REG_VBAT, tmp | 0x01);
+ 
+ 	/* Get thermal sensor types */
+-	diode = w83627ehf_read_value(data, W83627EHF_REG_DIODE);
++	switch (kind) {
++	case w83627ehf:
++		diode = w83627ehf_read_value(data, W83627EHF_REG_DIODE);
++		break;
++	default:
++		diode = 0x70;
++	}
+ 	for (i = 0; i < 3; i++) {
+ 		if ((tmp & (0x02 << i)))
+-			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 2;
++			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
+ 		else
+ 			data->temp_type[i] = 4; /* thermistor */
+ 	}
+@@ -2016,7 +2023,7 @@ static int __devinit w83627ehf_probe(str
+ 	}
+ 
+ 	/* Initialize the chip */
+-	w83627ehf_init_device(data);
++	w83627ehf_init_device(data, sio_data->kind);
+ 
+ 	data->vrm = vid_which_vrm();
+ 	superio_enter(sio_data->sioreg);
 
 
