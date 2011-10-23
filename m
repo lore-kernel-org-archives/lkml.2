@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab1JWRr2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:47:28 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47016 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275Ab1JWRpl (ORCPT
+	id S1755561Ab1JWRry (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:47:54 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39401 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab1JWRpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:45:41 -0400
+	Sun, 23 Oct 2011 13:45:40 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V8 22/26] vfs: Cache richacl in struct inode
-Date: Sun, 23 Oct 2011 23:13:51 +0530
-Message-Id: <1319391835-5829-23-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 03/26] vfs: Pass all mask flags down to iop->check_acl
+Date: Sun, 23 Oct 2011 23:13:32 +0530
+Message-Id: <1319391835-5829-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,165 +24,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-Cache richacls in struct inode so that this doesn't have to be done
-individually in each filesystem.
+Some file permission models differentiate between writing to a file
+(MAY_WRITE) and appending to it (MAY_WRITE | MAY_APPEND).  Pass all the
+mask flags down to iop->check_acl so that filesystems can distinguish
+between writing and appending.
+
+All users of iop->check_acl pass the mask value back into
+posix_acl_permission(); strip off the additional mask flags there.
 
 Acked-by: J. Bruce Fields <bfields@redhat.com>
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/inode.c              |   25 +++++++++++++++++----
- include/linux/fs.h      |   12 ++++++++-
- include/linux/richacl.h |   53 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 83 insertions(+), 7 deletions(-)
+ fs/namei.c     |    2 --
+ fs/posix_acl.c |    2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index ec79246..1b442cf 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -26,6 +26,7 @@
- #include <linux/ima.h>
- #include <linux/cred.h>
- #include <linux/buffer_head.h> /* for inode_has_buffers */
-+#include <linux/richacl.h>
- #include "internal.h"
- 
- /*
-@@ -192,7 +193,12 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
- 	inode->i_private = NULL;
- 	inode->i_mapping = mapping;
- #ifdef CONFIG_FS_POSIX_ACL
--	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
-+	if (IS_POSIXACL(inode))
-+		inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
-+#endif
-+#ifdef CONFIG_FS_RICHACL
-+	if (IS_RICHACL(inode))
-+		inode->i_richacl = ACL_NOT_CACHED;
- #endif
- 
- #ifdef CONFIG_FSNOTIFY
-@@ -242,10 +248,19 @@ void __destroy_inode(struct inode *inode)
- 	security_inode_free(inode);
- 	fsnotify_inode_delete(inode);
- #ifdef CONFIG_FS_POSIX_ACL
--	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
--		posix_acl_release(inode->i_acl);
--	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
--		posix_acl_release(inode->i_default_acl);
-+	if (IS_POSIXACL(inode)) {
-+		if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-+			posix_acl_release(inode->i_acl);
-+		if (inode->i_default_acl &&
-+		    inode->i_default_acl != ACL_NOT_CACHED)
-+			posix_acl_release(inode->i_default_acl);
-+	}
-+#endif
-+#ifdef CONFIG_FS_RICHACL
-+	if (IS_RICHACL(inode)) {
-+		if (inode->i_richacl && inode->i_richacl != ACL_NOT_CACHED)
-+			richacl_put(inode->i_richacl);
-+	}
- #endif
- 	this_cpu_dec(nr_inodes);
- }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index ac1d8e5..771955c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -755,6 +755,7 @@ static inline int mapping_writably_mapped(struct address_space *mapping)
- #endif
- 
- struct posix_acl;
-+struct richacl;
- #define ACL_NOT_CACHED ((void *)(-1))
- 
- #define IOP_FASTPERM	0x0001
-@@ -773,10 +774,17 @@ struct inode {
- 	gid_t			i_gid;
- 	unsigned int		i_flags;
- 
-+	union {
- #ifdef CONFIG_FS_POSIX_ACL
--	struct posix_acl	*i_acl;
--	struct posix_acl	*i_default_acl;
-+		struct {
-+			struct posix_acl *i_acl;
-+			struct posix_acl *i_default_acl;
-+		};
- #endif
-+#ifdef CONFIG_FS_RICHACL
-+		struct richacl	*i_richacl;
-+#endif
-+	};
- 
- 	const struct inode_operations	*i_op;
- 	struct super_block	*i_sb;
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index 88f95d7..a7db341 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -191,6 +191,59 @@ richacl_put(struct richacl *acl)
- 		kfree(acl);
- }
- 
-+#ifdef CONFIG_FS_RICHACL
-+static inline struct richacl *get_cached_richacl(struct inode *inode)
-+{
-+	struct richacl **p, *acl;
-+
-+	p = &inode->i_richacl;
-+	acl = ACCESS_ONCE(*p);
-+	if (acl) {
-+		spin_lock(&inode->i_lock);
-+		acl = *p;
-+		if (acl != ACL_NOT_CACHED)
-+			acl = richacl_get(acl);
-+		spin_unlock(&inode->i_lock);
-+	}
-+	return acl;
-+}
-+
-+static inline void set_cached_richacl(struct inode *inode,
-+				      struct richacl *acl)
-+{
-+	struct richacl *old = NULL;
-+	spin_lock(&inode->i_lock);
-+	old = inode->i_richacl;
-+	inode->i_richacl = richacl_get(acl);
-+	spin_unlock(&inode->i_lock);
-+	if (old != ACL_NOT_CACHED)
-+		richacl_put(old);
-+}
-+
-+static inline void forget_cached_richacl(struct inode *inode)
-+{
-+	struct richacl *old = NULL;
-+	spin_lock(&inode->i_lock);
-+	old = inode->i_richacl;
-+	inode->i_richacl = ACL_NOT_CACHED;
-+	spin_unlock(&inode->i_lock);
-+	if (old != ACL_NOT_CACHED)
-+		richacl_put(old);
-+}
-+
-+static inline int negative_cached_richacl(struct inode *inode)
-+{
-+	struct richacl **p, *acl;
-+
-+	p = &inode->i_richacl;
-+	acl = ACCESS_ONCE(*p);
-+	if (acl)
-+		return 0;
-+	return 1;
-+}
-+
-+#endif
-+
- static inline int
- richacl_is_auto_inherit(const struct richacl *acl)
+diff --git a/fs/namei.c b/fs/namei.c
+index 2a4574f..276cd30 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -227,8 +227,6 @@ static int acl_permission_check(struct inode *inode, int mask)
  {
+ 	unsigned int mode = inode->i_mode;
+ 
+-	mask &= MAY_READ | MAY_WRITE | MAY_EXEC | MAY_NOT_BLOCK;
+-
+ 	if (current_user_ns() != inode_userns(inode))
+ 		goto other_perms;
+ 
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 10027b4..cea4623 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -218,6 +218,8 @@ posix_acl_permission(struct inode *inode, const struct posix_acl *acl, int want)
+ 	const struct posix_acl_entry *pa, *pe, *mask_obj;
+ 	int found = 0;
+ 
++	want &= MAY_READ | MAY_WRITE | MAY_EXEC | MAY_NOT_BLOCK;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+                 switch(pa->e_tag) {
+                         case ACL_USER_OBJ:
 -- 
 1.7.5.4
 
