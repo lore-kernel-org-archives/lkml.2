@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab1JWP1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 11:27:50 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:57437 "EHLO
+	id S1751470Ab1JWP1q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 11:27:46 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:57422 "EHLO
 	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1JWP1s (ORCPT
+	with ESMTP id S1750758Ab1JWP1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 11:27:48 -0400
-Subject: [PATCH] [TRIVIAL] powerpc: 4xx: remove commented out Kconfig
- entries
+	Sun, 23 Oct 2011 11:27:45 -0400
+Subject: [PATCH] [TRIVIAL] remove commented out Kconfig entries
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 23 Oct 2011 17:25:59 +0200
-Message-ID: <1319383559.6286.9.camel@x61.thuisdomein>
+Date: Sun, 23 Oct 2011 17:23:54 +0200
+Message-ID: <1319383434.6286.6.camel@x61.thuisdomein>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -22,107 +21,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These Kconfig entries have been commented out ever since commit f6557331
-("[...] Re-organize Kconfig code for 4xx in arch/powerpc"). There's no
-indication why they're commented out. It looks like they're just "old,
-unused [...] config options" that were not removed, as other entries
-were in that commit, but only commented out. They might as well be
-removed now.
+These Kconfig entries have been commented out since (at least)
+v2.6.12-rc2 (the first commit of the git repository). There's no
+indication why they're commented out. They might as well be removed.
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
 "git grep" tested only.
 
- arch/powerpc/platforms/40x/Kconfig |   38 ------------------------------------
- arch/powerpc/platforms/44x/Kconfig |   16 ---------------
- 2 files changed, 0 insertions(+), 54 deletions(-)
+ arch/frv/Kconfig           |   10 ----------
+ arch/mips/Kconfig          |    4 ----
+ arch/mips/sgi-ip27/Kconfig |    6 ------
+ drivers/parisc/Kconfig     |    7 -------
+ 4 files changed, 0 insertions(+), 27 deletions(-)
 
-diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
-index d733d7c..e568e85 100644
---- a/arch/powerpc/platforms/40x/Kconfig
-+++ b/arch/powerpc/platforms/40x/Kconfig
-@@ -1,19 +1,3 @@
--#config BUBINGA
--#	bool "Bubinga"
--#	depends on 40x
--#	default n
--#	select 405EP
--#	help
--#	  This option enables support for the IBM 405EP evaluation board.
--
--#config CPCI405
--#	bool "CPCI405"
--#	depends on 40x
--#	default n
--#	select 405GP
--#	help
--#	  This option enables support for the CPCI405 board.
--
- config ACADIA
- 	bool "Acadia"
- 	depends on 40x
-@@ -73,14 +57,6 @@ config MAKALU
- 	help
- 	  This option enables support for the AMCC PPC405EX board.
+diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
+index bad27a6..c5e69ab 100644
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -341,16 +341,6 @@ source "drivers/pci/Kconfig"
  
--#config SYCAMORE
--#	bool "Sycamore"
--#	depends on 40x
--#	default n
--#	select 405GPR
+ source "drivers/pcmcia/Kconfig"
+ 
+-#config MATH_EMULATION
+-#	bool "Math emulation support (EXPERIMENTAL)"
+-#	depends on EXPERIMENTAL
 -#	help
--#	  This option enables support for the IBM PPC405GPr evaluation board.
+-#	  At some point in the future, this will cause floating-point math
+-#	  instructions to be emulated by the kernel on machines that lack a
+-#	  floating-point math coprocessor.  Thrill-seekers and chronically
+-#	  sleep-deprived psychotic hacker types can say Y now, everyone else
+-#	  should probably wait a while.
 -
- config WALNUT
- 	bool "Walnut"
- 	depends on 40x
-@@ -185,17 +161,3 @@ config IBM405_ERR77
- # All 40x-based cores, up until the 405GPR and 405EP have this errata.
- config IBM405_ERR51
+ menu "Power management options"
+ 
+ config ARCH_SUSPEND_POSSIBLE
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index b122adc..c616420 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2386,10 +2386,6 @@ config TC
+ 	  Linux driver support status is documented at:
+ 	  <http://www.linux-mips.org/wiki/DECstation>
+ 
+-#config ACCESSBUS
+-#	bool "Access.Bus support"
+-#	depends on TC
+-
+ config MMU
  	bool
+ 	default y
+diff --git a/arch/mips/sgi-ip27/Kconfig b/arch/mips/sgi-ip27/Kconfig
+index bc5e976..4b2ea28 100644
+--- a/arch/mips/sgi-ip27/Kconfig
++++ b/arch/mips/sgi-ip27/Kconfig
+@@ -1,9 +1,3 @@
+-#config SGI_SN0_XXL
+-#	bool "IP27 XXL"
+-#	depends on SGI_IP27
+-#	  This options adds support for userspace processes up to 16TB size.
+-#	  Normally the limit is just .5TB.
 -
--#config BIOS_FIXUP
--#	bool
--#	depends on BUBINGA || EP405 || SYCAMORE || WALNUT
--#	default y
--
--#config PPC4xx_DMA
--#	bool "PPC4xx DMA controller support"
--#	depends on 4xx
--
--#config PPC4xx_EDMA
--#	bool
--#	depends on !STB03xxx && PPC4xx_DMA
--#	default y
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index e958b6f..595e28a 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -197,22 +197,6 @@ config ICON
- 	help
- 	  This option enables support for the AMCC PPC440SPe evaluation board.
+ choice
+ 	prompt "Node addressing mode"
+ 	depends on SGI_IP27
+diff --git a/drivers/parisc/Kconfig b/drivers/parisc/Kconfig
+index 553a990..6202649 100644
+--- a/drivers/parisc/Kconfig
++++ b/drivers/parisc/Kconfig
+@@ -108,13 +108,6 @@ config IOMMU_HELPER
+ 	depends on IOMMU_SBA || IOMMU_CCIO
+ 	default y
  
--#config LUAN
--#	bool "Luan"
--#	depends on 44x
--#	default n
--#	select 440SP
+-#config PCI_EPIC
+-#	bool "EPIC/SAGA PCI support"
+-#	depends on PCI
+-#	default y
 -#	help
--#	  This option enables support for the IBM PPC440SP evaluation board.
+-#	  Say Y here for V-class PCI, DMA/IOMMU, IRQ subsystem support.
 -
--#config OCOTEA
--#	bool "Ocotea"
--#	depends on 44x
--#	default n
--#	select 440GX
--#	help
--#	  This option enables support for the IBM PPC440GX evaluation board.
--
- config XILINX_VIRTEX440_GENERIC_BOARD
- 	bool "Generic Xilinx Virtex 5 FXT board support"
- 	depends on 44x
+ source "drivers/pcmcia/Kconfig"
+ 
+ source "drivers/pci/hotplug/Kconfig"
 -- 
 1.7.4.4
+
 
 
 
