@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab1JWGeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:34:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40127 "EHLO mx2.suse.de"
+	id S1754991Ab1JWGfh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:35:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40144 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754690Ab1JWGeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:34:17 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:40 2011
-Message-Id: <20111023062540.684446582@pistachio.kroah.org>
+	id S1754894Ab1JWGeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:20 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:41 2011
+Message-Id: <20111023062541.179687370@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:50 +0200
+Date: Sun, 23 Oct 2011 08:24:53 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>, Ian Kent <raven@themaw.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [22/27] VFS: Fix automount for negative autofs dentries
+        Nick Bowler <nbowler@elliptictech.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [25/27] crypto: ghash - Avoid null pointer dereference if no key is set
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Nick Bowler <nbowler@elliptictech.com>
 
-commit 5a30d8a2b8ddd5102c440c7e5a7c8e1fd729c818 upstream.
-[ backport for 3.0.x: LOOKUP_PARENT => LOOKUP_CONTINUE by Chuck Ebbert
-<cebbert@redhat.com> ]
+commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
 
-Autofs may set the DCACHE_NEED_AUTOMOUNT flag on negative dentries.  These
-need attention from the automounter daemon regardless of the LOOKUP_FOLLOW flag.
+The ghash_update function passes a pointer to gf128mul_4k_lle which will
+be NULL if ghash_setkey is not called or if the most recent call to
+ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
+up by returning an error code in the null case.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Ian Kent <raven@themaw.net>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Chuck Ebbert <cebbert@redhat.com>
+This is trivially triggered from unprivileged userspace through the
+AF_ALG interface by simply writing to the socket without setting a key.
+
+The ghash_final function has a similar issue, but triggering it requires
+a memory allocation failure in ghash_setkey _after_ at least one
+successful call to ghash_update.
+
+  BUG: unable to handle kernel NULL pointer dereference at 00000670
+  IP: [<d88c92d4>] gf128mul_4k_lle+0x23/0x60 [gf128mul]
+  *pde = 00000000
+  Oops: 0000 [#1] PREEMPT SMP
+  Modules linked in: ghash_generic gf128mul algif_hash af_alg nfs lockd nfs_acl sunrpc bridge ipv6 stp llc
+
+  Pid: 1502, comm: hashatron Tainted: G        W   3.1.0-rc9-00085-ge9308cf #32 Bochs Bochs
+  EIP: 0060:[<d88c92d4>] EFLAGS: 00000202 CPU: 0
+  EIP is at gf128mul_4k_lle+0x23/0x60 [gf128mul]
+  EAX: d69db1f0 EBX: d6b8ddac ECX: 00000004 EDX: 00000000
+  ESI: 00000670 EDI: d6b8ddac EBP: d6b8ddc8 ESP: d6b8dda4
+   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+  Process hashatron (pid: 1502, ti=d6b8c000 task=d6810000 task.ti=d6b8c000)
+  Stack:
+   00000000 d69db1f0 00000163 00000000 d6b8ddc8 c101a520 d69db1f0 d52aa000
+   00000ff0 d6b8dde8 d88d310f d6b8a3f8 d52aa000 00001000 d88d502c d6b8ddfc
+   00001000 d6b8ddf4 c11676ed d69db1e8 d6b8de24 c11679ad d52aa000 00000000
+  Call Trace:
+   [<c101a520>] ? kmap_atomic_prot+0x37/0xa6
+   [<d88d310f>] ghash_update+0x85/0xbe [ghash_generic]
+   [<c11676ed>] crypto_shash_update+0x18/0x1b
+   [<c11679ad>] shash_ahash_update+0x22/0x36
+   [<c11679cc>] shash_async_update+0xb/0xd
+   [<d88ce0ba>] hash_sendpage+0xba/0xf2 [algif_hash]
+   [<c121b24c>] kernel_sendpage+0x39/0x4e
+   [<d88ce000>] ? 0xd88cdfff
+   [<c121b298>] sock_sendpage+0x37/0x3e
+   [<c121b261>] ? kernel_sendpage+0x4e/0x4e
+   [<c10b4dbc>] pipe_to_sendpage+0x56/0x61
+   [<c10b4e1f>] splice_from_pipe_feed+0x58/0xcd
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b51f5>] __splice_from_pipe+0x36/0x55
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b6383>] splice_from_pipe+0x51/0x64
+   [<c10b63c2>] ? default_file_splice_write+0x2c/0x2c
+   [<c10b63d5>] generic_splice_sendpage+0x13/0x15
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b527f>] do_splice_from+0x5d/0x67
+   [<c10b6865>] sys_splice+0x2bf/0x363
+   [<c129373b>] ? sysenter_exit+0xf/0x16
+   [<c104dc1e>] ? trace_hardirqs_on_caller+0x10e/0x13f
+   [<c129370c>] sysenter_do_call+0x12/0x32
+  Code: 83 c4 0c 5b 5e 5f c9 c3 55 b9 04 00 00 00 89 e5 57 8d 7d e4 56 53 8d 5d e4 83 ec 18 89 45 e0 89 55 dc 0f b6 70 0f c1 e6 04 01 d6 <f3> a5 be 0f 00 00 00 4e 89 d8 e8 48 ff ff ff 8b 45 e0 89 da 0f
+  EIP: [<d88c92d4>] gf128mul_4k_lle+0x23/0x60 [gf128mul] SS:ESP 0068:d6b8dda4
+  CR2: 0000000000000670
+  ---[ end trace 4eaa2a86a8e2da24 ]---
+  note: hashatron[1502] exited with preempt_count 1
+  BUG: scheduling while atomic: hashatron/1502/0x10000002
+  INFO: lockdep is turned off.
+  [...]
+
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/namei.c |   24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+ crypto/ghash-generic.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -779,19 +779,25 @@ static int follow_automount(struct path
- 	if ((flags & LOOKUP_NO_AUTOMOUNT) && !(flags & LOOKUP_CONTINUE))
- 		return -EISDIR; /* we actually want to stop here */
+--- a/crypto/ghash-generic.c
++++ b/crypto/ghash-generic.c
+@@ -67,6 +67,9 @@ static int ghash_update(struct shash_des
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+ 	u8 *dst = dctx->buffer;
  
--	/* We want to mount if someone is trying to open/create a file of any
--	 * type under the mountpoint, wants to traverse through the mountpoint
--	 * or wants to open the mounted directory.
--	 *
-+	/*
- 	 * We don't want to mount if someone's just doing a stat and they've
- 	 * set AT_SYMLINK_NOFOLLOW - unless they're stat'ing a directory and
- 	 * appended a '/' to the name.
- 	 */
--	if (!(flags & LOOKUP_FOLLOW) &&
--	    !(flags & (LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
--		       LOOKUP_OPEN | LOOKUP_CREATE)))
--		return -EISDIR;
--
-+	if (!(flags & LOOKUP_FOLLOW)) {
-+		/* We do, however, want to mount if someone wants to open or
-+		 * create a file of any type under the mountpoint, wants to
-+		 * traverse through the mountpoint or wants to open the mounted
-+		 * directory.
-+		 * Also, autofs may mark negative dentries as being automount
-+		 * points.  These will need the attentions of the daemon to
-+		 * instantiate them before they can be used.
-+		 */
-+		if (!(flags & (LOOKUP_PARENT | LOOKUP_DIRECTORY |
-+			     LOOKUP_OPEN | LOOKUP_CREATE)) &&
-+		    path->dentry->d_inode)
-+			return -EISDIR;
-+	}
- 	current->total_link_count++;
- 	if (current->total_link_count >= 40)
- 		return -ELOOP;
++	if (!ctx->gf128)
++		return -ENOKEY;
++
+ 	if (dctx->bytes) {
+ 		int n = min(srclen, dctx->bytes);
+ 		u8 *pos = dst + (GHASH_BLOCK_SIZE - dctx->bytes);
+@@ -119,6 +122,9 @@ static int ghash_final(struct shash_desc
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+ 	u8 *buf = dctx->buffer;
+ 
++	if (!ctx->gf128)
++		return -ENOKEY;
++
+ 	ghash_flush(ctx, dctx);
+ 	memcpy(dst, buf, GHASH_BLOCK_SIZE);
+ 
 
 
