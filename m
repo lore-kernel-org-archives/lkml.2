@@ -1,105 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1JWLrF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 07:47:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755404Ab1JWLrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 07:47:04 -0400
-Date: Sun, 23 Oct 2011 07:46:53 -0400
-From: Jeff Layton <jlayton@redhat.com>
+	id S1755454Ab1JWLs7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 07:48:59 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56192 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755392Ab1JWLs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 07:48:58 -0400
+X-Sasl-enc: RTqulIAZNW5/f8tFLkWZjujU0/U1K0HeJvh1vph6TFMo 1319370537
+Date: Sun, 23 Oct 2011 13:48:51 +0200
+From: Greg KH <greg@kroah.com>
 To: Ian Kent <raven@themaw.net>
-Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] CIFS: fix automount for DFS shares
-Message-ID: <20111023074653.352be663@tlielax.poochiereds.net>
-In-Reply-To: <1319368474.7876.4.camel@perseus.themaw.net>
-References: <1317985771-28876-1-git-send-email-gerlando.falauto@keymile.com>
-	<1317985771-28876-2-git-send-email-gerlando.falauto@keymile.com>
-	<1319368474.7876.4.camel@perseus.themaw.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, stable-review@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, David Howells <dhowells@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Chuck Ebbert <cebbert@redhat.com>
+Subject: Re: [22/27] VFS: Fix automount for negative autofs dentries
+Message-ID: <20111023114851.GA24676@kroah.com>
+References: <20111023062540.684446582@pistachio.kroah.org>
+ <1319370078.7876.8.camel@perseus.themaw.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319370078.7876.8.camel@perseus.themaw.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Oct 2011 19:14:34 +0800
-Ian Kent <raven@themaw.net> wrote:
-
-> On Fri, 2011-10-07 at 13:09 +0200, Gerlando Falauto wrote:
-> > Automounting directories are now invalidated by .d_revalidate()
-> > so to be d_instantiate()d again with the right DCACHE_NEED_AUTOMOUNT
-> > flag
+On Sun, Oct 23, 2011 at 07:41:18PM +0800, Ian Kent wrote:
+> On Sun, 2011-10-23 at 08:24 +0200, Greg KH wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let us know.
 > 
-> But why doesn't CIFS know this is a DFS inode the first time around, it
-> appears to do a truck load of work looking that stuff up?
+> Yes, as others point out, either the patch needs to be correctly
+> backported or the dependent patches need to be pulled in.
 > 
+> I can do either of these, what would you prefer?
 
-This area needs some work...
+I'd prefer to take the dependant patches, as that would make things sync
+up with what is in Linus's tree, I just wanted to get Miklos's and
+David's acks that this is the way to go before I did it.
 
-The readdir codepath in cifs uses the FIND_FIRST/NEXT calls on the
-wire. Those return both filenames and attributes for the particular SMB
-call infolevel. That in turn is used to instantiate dentries and inodes
-for those entries.
+thanks,
 
-Unfortunately though, we have not found a way to determine whether a
-particular inode is a DFS referral from within this codepath. The only
-way to know for sure (AFAIK) is to try an operation on a specific
-pathname and then look for a NT_STATUS_PATH_NOT_COVERED return code.
-
-> > 
-> > Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-> > ---
-> >  fs/cifs/dir.c |    7 ++++++-
-> >  1 files changed, 6 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-> > index 9ea65cf..67f54d3 100644
-> > --- a/fs/cifs/dir.c
-> > +++ b/fs/cifs/dir.c
-> > @@ -637,8 +637,13 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
-> >  	if (direntry->d_inode) {
-> >  		if (cifs_revalidate_dentry(direntry))
-> >  			return 0;
-> > -		else
-> > +		else {
-> > +			/* We want automonting inodes to be
-> > +			 * considered invalid or so */
-> > +			if (IS_AUTOMOUNT(direntry->d_inode))
-> > +				return 0;
-> 
-> I'd be inclined to set DCACHE_NEED_AUTOMOUNT here but are we certain
-> that cifs_revalidate_dentry() will always return 0 for a DFS inode or at
-> least ones that don't yet have DCACHE_NEED_AUTOMOUNT set and why?
-> 
-
-You mean you'd set that in the "return 1" case here? That doesn't sound
-quite right if so. This inode could be entirely unrelated to DFS.
-
-Currently, cifs_revalidate_dentry checks to see if the attributes on
-the inode are "too old" (past the actimeo setting). If they are then it
-will issue a QUERY_PATH_INFO call on the wire to try and update those
-attributes. If it's a DFS inode then you'll get an error back and that
-function should return 0.
-
-It's possible however that the inode has already had its attributes
-updated recently, and was found to be an automount point. That is, it
-got S_AUTOMOUNT set but no referral chasing happened. At that point I'm
-a little fuzzy as to what should happen...
-
-The safest thing would seem to be to return 0 in that case, to force an
-invalidation and lookup on this dentry again, but maybe there's a better
-way to handle that?
-
-> >  			return 1;
-> > +		}
-> >  	}
-> >  
-> >  	/*
-> 
-> 
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
+greg k-h
