@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab1JWRo7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:44:59 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46985 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab1JWRo4 (ORCPT
+	id S1755016Ab1JWRpU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:45:20 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46642 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab1JWRpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:44:56 -0400
+	Sun, 23 Oct 2011 13:45:14 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V8 11/26] vfs: Add permission flags for setting file attributes
-Date: Sun, 23 Oct 2011 23:13:40 +0530
-Message-Id: <1319391835-5829-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 15/26] richacl: Compute maximum file masks from an acl
+Date: Sun, 23 Oct 2011 23:13:44 +0530
+Message-Id: <1319391835-5829-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,156 +24,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-Some permission models can allow processes to take ownership of a file,
-change the file permissions, and set the file timestamps.  Introduce new
-permission mask flags and check for those permissions in
-inode_change_ok().
+Compute upper bound owner, group, and other file masks with as few
+permissions as possible without denying any permissions that the NFSv4
+acl in a richacl grants.
+
+This algorithm is used when a file inherits an acl at create time and
+when an acl is set via a mechanism that does not specify file modes
+(such as via nfsd).  When user-space sets an acl, the file masks are
+passed in as part of the xattr.
+
+When setting a richacl, the file masks determine what the file
+permission bits will be set to; see richacl_masks_to_mode().
 
 Acked-by: J. Bruce Fields <bfields@redhat.com>
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/attr.c          |   70 +++++++++++++++++++++++++++++++++++++++++++--------
- fs/namei.c         |    2 +-
- include/linux/fs.h |    4 +++
- 3 files changed, 64 insertions(+), 12 deletions(-)
+ fs/richacl_base.c       |  128 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/richacl.h |    1 +
+ 2 files changed, 129 insertions(+), 0 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index f15e9e3..00578b9 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -14,6 +14,55 @@
- #include <linux/fcntl.h>
- #include <linux/security.h>
- 
-+static int richacl_change_ok(struct inode *inode, int mask)
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index bca2093..d73f1b0 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -184,3 +184,131 @@ richace_is_same_identifier(const struct richace *a, const struct richace *b)
+ 	return a->e_id == b->e_id;
+ #undef WHO_FLAGS
+ }
++
++/**
++ * richacl_allowed_to_who  -  mask flags allowed to a specific who value
++ *
++ * Computes the mask values allowed to a specific who value, taking
++ * EVERYONE@ entries into account.
++ */
++static unsigned int richacl_allowed_to_who(struct richacl *acl,
++					   struct richace *who)
 +{
-+	if (!IS_RICHACL(inode))
-+		return -EPERM;
++	struct richace *ace;
++	unsigned int allowed = 0;
 +
-+	if (inode->i_op->permission)
-+		return inode->i_op->permission(inode, mask);
-+
-+	return check_acl(inode, mask);
-+}
-+
-+static bool inode_uid_change_ok(struct inode *inode, uid_t ia_uid)
-+{
-+	if (current_fsuid() == inode->i_uid && ia_uid == inode->i_uid)
-+		return true;
-+	if (current_fsuid() == ia_uid &&
-+	    richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-+		return true;
-+	if (capable(CAP_CHOWN))
-+		return true;
-+	return false;
-+}
-+
-+static bool inode_gid_change_ok(struct inode *inode, gid_t ia_gid)
-+{
-+	int in_group = in_group_p(ia_gid);
-+	if (current_fsuid() == inode->i_uid &&
-+	    (in_group || ia_gid == inode->i_gid))
-+		return true;
-+	if (in_group && richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-+		return true;
-+	if (capable(CAP_CHOWN))
-+		return true;
-+	return false;
-+}
-+
-+static bool inode_owner_permitted_or_capable(struct inode *inode, int mask)
-+{
-+	struct user_namespace *ns = inode_userns(inode);
-+
-+	if (current_user_ns() == ns && current_fsuid() == inode->i_uid)
-+		return true;
-+	if (richacl_change_ok(inode, mask) == 0)
-+		return true;
-+	if (ns_capable(ns, CAP_FOWNER))
-+		return true;
-+	return false;
-+}
-+
- /**
-  * inode_change_ok - check if attribute changes to an inode are allowed
-  * @inode:	inode to check
-@@ -45,21 +94,20 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
- 		return 0;
- 
- 	/* Make sure a caller can chown. */
--	if ((ia_valid & ATTR_UID) &&
--	    (current_fsuid() != inode->i_uid ||
--	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
--		return -EPERM;
-+	if (ia_valid & ATTR_UID) {
-+		if (!inode_uid_change_ok(inode, attr->ia_uid))
-+			return -EPERM;
++	richacl_for_each_entry_reverse(ace, acl) {
++		if (richace_is_inherit_only(ace))
++			continue;
++		if (richace_is_same_identifier(ace, who) ||
++		    richace_is_everyone(ace)) {
++			if (richace_is_allow(ace))
++				allowed |= ace->e_mask;
++			else if (richace_is_deny(ace))
++				allowed &= ~ace->e_mask;
++		}
 +	}
- 
- 	/* Make sure caller can chgrp. */
--	if ((ia_valid & ATTR_GID) &&
--	    (current_fsuid() != inode->i_uid ||
--	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
--	    !capable(CAP_CHOWN))
--		return -EPERM;
-+	if (ia_valid & ATTR_GID) {
-+		if (!inode_gid_change_ok(inode, attr->ia_gid))
-+			return -EPERM;
++	return allowed;
++}
++
++/**
++ * richacl_group_class_allowed  -  maximum permissions the group class is allowed
++ *
++ * See richacl_compute_max_masks().
++ */
++static unsigned int richacl_group_class_allowed(struct richacl *acl)
++{
++	struct richace *ace;
++	unsigned int everyone_allowed = 0, group_class_allowed = 0;
++	int had_group_ace = 0;
++
++	richacl_for_each_entry_reverse(ace, acl) {
++		if (richace_is_inherit_only(ace) ||
++		    richace_is_owner(ace))
++			continue;
++
++		if (richace_is_everyone(ace)) {
++			if (richace_is_allow(ace))
++				everyone_allowed |= ace->e_mask;
++			else if (richace_is_deny(ace))
++				everyone_allowed &= ~ace->e_mask;
++		} else {
++			group_class_allowed |=
++				richacl_allowed_to_who(acl, ace);
++
++			if (richace_is_group(ace))
++				had_group_ace = 1;
++		}
 +	}
++	if (!had_group_ace)
++		group_class_allowed |= everyone_allowed;
++	return group_class_allowed;
++}
++
++/**
++ * richacl_compute_max_masks  -  compute upper bound masks
++ *
++ * Computes upper bound owner, group, and other masks so that none of
++ * the mask flags allowed by the acl are disabled (for any choice of the
++ * file owner or group membership).
++ */
++void richacl_compute_max_masks(struct richacl *acl)
++{
++	unsigned int gmask = ~0;
++	struct richace *ace;
++
++	/*
++	 * @gmask contains all permissions which the group class is ever
++	 * allowed.  We use it to avoid adding permissions to the group mask
++	 * from everyone@ allow aces which the group class is always denied
++	 * through other aces.  For example, the following acl would otherwise
++	 * result in a group mask or rw:
++	 *
++	 *	group@:w::deny
++	 *	everyone@:rw::allow
++	 *
++	 * Avoid computing @gmask for acls which do not include any group class
++	 * deny aces: in such acls, the group class is never denied any
++	 * permissions from everyone@ allow aces.
++	 */
++
++restart:
++	acl->a_owner_mask = 0;
++	acl->a_group_mask = 0;
++	acl->a_other_mask = 0;
++
++	richacl_for_each_entry_reverse(ace, acl) {
++		if (richace_is_inherit_only(ace))
++			continue;
++
++		if (richace_is_owner(ace)) {
++			if (richace_is_allow(ace))
++				acl->a_owner_mask |= ace->e_mask;
++			else if (richace_is_deny(ace))
++				acl->a_owner_mask &= ~ace->e_mask;
++		} else if (richace_is_everyone(ace)) {
++			if (richace_is_allow(ace)) {
++				acl->a_owner_mask |= ace->e_mask;
++				acl->a_group_mask |= ace->e_mask & gmask;
++				acl->a_other_mask |= ace->e_mask;
++			} else if (richace_is_deny(ace)) {
++				acl->a_owner_mask &= ~ace->e_mask;
++				acl->a_group_mask &= ~ace->e_mask;
++				acl->a_other_mask &= ~ace->e_mask;
++			}
++		} else {
++			if (richace_is_allow(ace)) {
++				acl->a_owner_mask |= ace->e_mask & gmask;
++				acl->a_group_mask |= ace->e_mask & gmask;
++			} else if (richace_is_deny(ace) && gmask == ~0) {
++				gmask = richacl_group_class_allowed(acl);
++				if (likely(gmask != ~0))
++					/* should always be true */
++					goto restart;
++			}
++		}
++	}
++
++	acl->a_flags &= ~ACL4_MASKED;
++}
++EXPORT_SYMBOL_GPL(richacl_compute_max_masks);
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index fe875fe..14f18b5 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -280,5 +280,6 @@ extern int richace_is_same_identifier(const struct richace *,
+ extern int richacl_masks_to_mode(const struct richacl *);
+ extern unsigned int richacl_mode_to_mask(mode_t);
+ extern unsigned int richacl_want_to_mask(unsigned int);
++extern void richacl_compute_max_masks(struct richacl *);
  
- 	/* Make sure a caller can chmod. */
- 	if (ia_valid & ATTR_MODE) {
--		if (!inode_owner_or_capable(inode))
-+		if (!inode_owner_permitted_or_capable(inode, MAY_CHMOD))
- 			return -EPERM;
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
-@@ -69,7 +117,7 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
- 
- 	/* Check for setting the inode time. */
- 	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET | ATTR_TIMES_SET)) {
--		if (!inode_owner_or_capable(inode))
-+		if (!inode_owner_permitted_or_capable(inode, MAY_SET_TIMES))
- 			return -EPERM;
- 	}
- 
-diff --git a/fs/namei.c b/fs/namei.c
-index 044b6d1..de8c7d3 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -174,7 +174,7 @@ void putname(const char *name)
- EXPORT_SYMBOL(putname);
- #endif
- 
--static int check_acl(struct inode *inode, int mask)
-+int check_acl(struct inode *inode, int mask)
- {
- #ifdef CONFIG_FS_POSIX_ACL
- 	struct posix_acl *acl;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 724a4f4..ac1d8e5 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -71,6 +71,9 @@ struct inodes_stat_t {
- #define MAY_CREATE_DIR		0x00000200
- #define MAY_DELETE_CHILD	0x00000400
- #define MAY_DELETE_SELF		0x00000800
-+#define MAY_TAKE_OWNERSHIP	0x00001000
-+#define MAY_CHMOD		0x00002000
-+#define MAY_SET_TIMES		0x00004000
- 
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
-@@ -2232,6 +2235,7 @@ extern sector_t bmap(struct inode *, sector_t);
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
- extern int generic_permission(struct inode *, int);
-+extern int check_acl(struct inode *, int);
- 
- static inline bool execute_ok(struct inode *inode)
- {
+ #endif /* __RICHACL_H */
 -- 
 1.7.5.4
 
