@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab1JWRom (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:44:42 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51967 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922Ab1JWRoj (ORCPT
+	id S1753179Ab1JWRoV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:44:21 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38583 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab1JWRoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:44:39 -0400
+	Sun, 23 Oct 2011 13:44:19 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V8 06/26] vfs: Add IS_RICHACL() test for richacl support
-Date: Sun, 23 Oct 2011 23:13:35 +0530
-Message-Id: <1319391835-5829-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 01/26] vfs: Indicate that the permission functions take all the MAY_* flags
+Date: Sun, 23 Oct 2011 23:13:30 +0530
+Message-Id: <1319391835-5829-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 11102307-5140-0000-0000-00000019E880
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-Introduce a new MS_RICHACL super-block flag and a new IS_RICHACL() test
-which file systems like nfs can use.  IS_ACL() is true if IS_POSIXACL()
-or IS_RICHACL() is true.
-
 Acked-by: J. Bruce Fields <bfields@redhat.com>
 Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/fs.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ fs/namei.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1994b84..7b4bfe6 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -210,6 +210,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_RICHACL	(1<<25) /* Supports richacls */
- #define MS_NOSEC	(1<<28)
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
-@@ -270,6 +271,7 @@ struct inodes_stat_t {
- #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
- #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
- #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
-+#define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
- 
- #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
-@@ -283,7 +285,7 @@ struct inodes_stat_t {
-  * IS_ACL() tells the VFS to not apply the umask
-  * and use check_acl for acl permission checks when defined.
-  */
--#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
-+#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL | MS_RICHACL)
- 
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
+diff --git a/fs/namei.c b/fs/namei.c
+index 0b3138d..2a4574f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -257,7 +257,7 @@ other_perms:
+ /**
+  * generic_permission -  check for access rights on a Posix-like filesystem
+  * @inode:	inode to check access rights for
+- * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
+  *
+  * Used to check for read/write/execute permissions on a file.
+  * We use "fsuid" for this, letting us set arbitrary permissions
+@@ -331,7 +331,7 @@ static inline int do_inode_permission(struct inode *inode, int mask)
+ /**
+  * inode_permission  -  check for access rights to a given inode
+  * @inode:	inode to check permission on
+- * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
+  *
+  * Used to check for read/write/execute permissions on an inode.
+  * We use "fsuid" for this, letting us set arbitrary permissions
 -- 
 1.7.5.4
 
