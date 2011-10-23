@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab1JWPYf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 11:24:35 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58581 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab1JWPYe (ORCPT
+	id S1751624Ab1JWP1r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 11:27:47 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:57427 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1JWP1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 11:24:34 -0400
-Date: Sun, 23 Oct 2011 23:24:18 +0800
-From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Greg KH <gregkh@suse.de>, Namhyung Kim <namhyung@gmail.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Joe Perches <joe@perches.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        Youquan Song <youquan.song@intel.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/36] Staging: cx25821: Clean up patch series
-Message-ID: <20111023232418.2d79ed12@inspire>
-In-Reply-To: <4EA3A7ED.8090404@redhat.com>
-References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
-	<20111022081941.GA5443@suse.de>
-	<4EA3A7ED.8090404@redhat.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Sun, 23 Oct 2011 11:27:46 -0400
+Subject: [PATCH] [TRIVIAL] snd-aoa: remove commented out Kconfig entry
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 Oct 2011 17:24:31 +0200
+Message-ID: <1319383471.6286.7.camel@x61.thuisdomein>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Oct 2011 07:36:45 +0200
-Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+config SND_AOA_TOPAZ has been commented out since it was added five
+years ago with commit f3d9478b ("[...] add snd-aoa"). There's no
+indication why it's commented out. It might as well be removed.
 
-> Em 22-10-2011 10:19, Greg KH escreveu:
-> > On Sat, Oct 22, 2011 at 01:43:20PM +0800, Leonid V. Fedorenchik wrote:
-> >> This patch series fixes some style issues in drivers/staging/cx25821
-> >> Mostly I was hoping to improve readability and fix some issues found by
-> >> checkpatch.pl script.
-> > 
-> > These are for Mauro to take through his tree.
-> 
-> Yes. I'll put them on my queue.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+"git grep" tested only.
 
-Thank you. Should I send my future patches for this driver directly to you?
+ sound/aoa/codecs/Kconfig |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-> 
-> Thanks,
-> Mauro
+diff --git a/sound/aoa/codecs/Kconfig b/sound/aoa/codecs/Kconfig
+index 808eb11..0c68e32 100644
+--- a/sound/aoa/codecs/Kconfig
++++ b/sound/aoa/codecs/Kconfig
+@@ -7,14 +7,6 @@ config SND_AOA_ONYX
+ 	codec chip found in the latest Apple machines
+ 	(most of those with digital audio output).
+ 
+-#config SND_AOA_TOPAZ
+-#	tristate "support Topaz chips"
+-#	---help---
+-#	This option enables support for the Topaz (CS84xx)
+-#	codec chips found in the latest Apple machines,
+-#	these chips do the digital input and output on
+-#	some PowerMacs.
+-
+ config SND_AOA_TAS
+ 	tristate "support TAS chips"
+ 	select I2C
+-- 
+1.7.4.4
 
-Leonid V. Fedorenchik
+
+
+
