@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1JWVJS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 17:09:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41631 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab1JWVJR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 17:09:17 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Greg KH <gregkh@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, stable-review@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Kent <raven@themaw.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Chuck Ebbert <cebbert@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [22/27] VFS: Fix automount for negative autofs dentries
-In-Reply-To: <20111023083636.GA14048@suse.de> (Greg KH's message of "Sun, 23
-	Oct 2011 10:36:36 +0200")
-References: <20111023062833.GA8126@kroah.com>
-	<20111023062540.684446582@pistachio.kroah.org>
-	<CA+55aFxkHr75LZU0udv=A+Bg52fMMOEfp47TTxHGbgf51UouRg@mail.gmail.com>
-	<20111023083636.GA14048@suse.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Date: Sun, 23 Oct 2011 23:09:11 +0200
-Message-ID: <87pqhnifew.fsf@tucsk.pomaz.szeredi.hu>
+	id S1752066Ab1JWVRq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 17:17:46 -0400
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45138 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751963Ab1JWVRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 17:17:45 -0400
+Message-ID: <4EA48474.4010101@ilyx.ru>
+Date: Mon, 24 Oct 2011 01:17:40 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        ilya@ilyx.ru
+Subject: [PATCH] TTY: tty flip buffer change reserve memory strategy.
+Content-Type: text/plain; charset=windows-1251
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
+Currently, free flip buffer (tty->buf->free) reserve memory for further used,
+only if driver send to ldisc less 257 bytes in one time.
+If driver send more, flip buffer reserve(kmalloc()) and then
+free(kfree()) every chunk more 256 bytes every time,
+even we have in free buffer enough space, because we can't
+pass through chunk boundary in free buffer. Also we can't limit reserve
+memory size. In worse case we will have in free buffer:
+(256 * 256 byte chunk) = (256 * 552 ) = 141312 byte unused memory.
 
-> On Sun, Oct 23, 2011 at 10:35:14AM +0300, Linus Torvalds wrote:
->> This one is debatable.
->> 
->> I think it also wants
->> 
->>  - commit 0ec26fd0698285b31248e34bf1abb022c00f23d6 (with
->> LOOKUP_PARENT->LOOKUP_CONTINUE too)
->
-> Really?  I thought I dropped this one from the last stable release due
-> to problems with it, or does this patch here, and the one you mention
-> below, resolve those issues?
->
->>  - commit d94c177beeb4469cd4f6e83354ab0223353e98ed (to get the few
->> other cases right too)
->> 
->> anything else I missed?
->
-> Ok, that makes a bit more sense, I'll add these if David and Miklos
-> agree that they are ok to add here.  David and Miklos?
+This patch allow reserve more than 256 bytes in one time. And have
+self-regulation chunk size ability(very useful for pty).
+Also we can limit reserve memory size, but then,
+we will be use kmalloc()-kree() calls on intensive stream from the driver.
 
-IMO they are OK to add as long as they are both added.
-
-Last time the first one had to be backed out because Linus wasn't
-totally comfortable with the other one going into -stable until it got
-some testing in 3.1.  Or at least that's how I understood (or
-misunderstood).
-
-Thanks,
-Miklos
+diff -uprN last-orig/drivers/tty/tty_buffer.c tty_buffer.patched/drivers/tty/tty_buffer.c
+--- last-orig/drivers/tty/tty_buffer.c	2011-10-18 13:57:32.000000000 +0400
++++ tty_buffer.patched/drivers/tty/tty_buffer.c	2011-10-22 09:45:09.000000000 +0400
+@@ -58,7 +58,7 @@ static struct tty_buffer *tty_buffer_all
+ {
+ 	struct tty_buffer *p;
+ 
+-	if (tty->buf.memory_used + size > 65536)
++	if (tty->buf.memory_used + size > TTY_BUFFER_MAX)
+ 		return NULL;
+ 	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
+ 	if (p == NULL)
+@@ -91,10 +91,21 @@ static void tty_buffer_free(struct tty_s
+ 	tty->buf.memory_used -= b->size;
+ 	WARN_ON(tty->buf.memory_used < 0);
+ 
+-	if (b->size >= 512)
+-		kfree(b);
+-	else {
+-		b->next = tty->buf.free;
++	tty->buf.memory_reserve += b->size;
++	b->next = NULL;
++	if (tty->buf.free != NULL) {
++		struct tty_buffer *p = tty->buf.free;
++		while (p->next != NULL)
++			p = p->next;
++		p->next = b;
++		while (tty->buf.memory_reserve > TTY_BUFFER_RESERVE ) {
++			p = tty->buf.free;
++			tty->buf.free = p->next;
++			tty->buf.memory_reserve -= p->size;
++			WARN_ON(tty->buf.memory_reserve < 0);
++			kfree(p);
++		}
++	} else {
+ 		tty->buf.free = b;
+ 	}
+ }
+@@ -175,6 +186,8 @@ static struct tty_buffer *tty_buffer_fin
+ 			t->commit = 0;
+ 			t->read = 0;
+ 			tty->buf.memory_used += t->size;
++			tty->buf.memory_reserve -= t->size;
++			WARN_ON(tty->buf.memory_reserve < 0);
+ 			return t;
+ 		}
+ 		tbh = &((*tbh)->next);
+@@ -517,6 +530,7 @@ void tty_buffer_init(struct tty_struct *
+ 	tty->buf.tail = NULL;
+ 	tty->buf.free = NULL;
+ 	tty->buf.memory_used = 0;
++	tty->buf.memory_reserve = 0;
+ 	INIT_WORK(&tty->buf.work, flush_to_ldisc);
+ }
+ 
+diff -uprN last-orig/include/linux/tty.h tty_buffer.patched/include/linux/tty.h
+--- last-orig/include/linux/tty.h	2011-05-19 08:06:34.000000000 +0400
++++ tty_buffer.patched/include/linux/tty.h	2011-10-22 13:48:46.000000000 +0400
+@@ -79,7 +79,8 @@ struct tty_buffer {
+  */
+ 
+ #define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
+-
++#define TTY_BUFFER_MAX		65536
++#define TTY_BUFFER_RESERVE	TTY_BUFFER_MAX
+ 
+ struct tty_bufhead {
+ 	struct work_struct work;
+@@ -87,8 +88,8 @@ struct tty_bufhead {
+ 	struct tty_buffer *head;	/* Queue head */
+ 	struct tty_buffer *tail;	/* Active buffer */
+ 	struct tty_buffer *free;	/* Free queue head */
+-	int memory_used;		/* Buffer space used excluding
+-								free queue */
++	int memory_used;		/* Buffer space used excluding free queue */
++	int memory_reserve;		/* Free queue space */
+ };
+ /*
+  * When a break, frame error, or parity error happens, these codes are
