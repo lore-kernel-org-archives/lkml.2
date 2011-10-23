@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab1JWOvr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 10:51:47 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:45127 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755173Ab1JWOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 10:51:46 -0400
-X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Oct 2011 10:51:46 EDT
-Message-ID: <4EA427E0.2080601@ilyx.ru>
-Date: Sun, 23 Oct 2011 18:42:40 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755699Ab1JWO7O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 10:59:14 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:48407 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289Ab1JWO7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 10:59:12 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Linux\/m68k" <linux-m68k@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        uClinux list <uclinux-dev@uclinux.org>
+Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
+References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
+	<201105050824.34056.arnd@arndb.de>
+	<alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
+	<m2ty70ghk9.fsf@linux-m68k.org>
+	<CAMuHMdVWAcNFeWauj-DoB3btWY9UTOBDNMzRyTvYmYaYb15N4A@mail.gmail.com>
+X-Yow: I LOVE juxtaposing th' splendor of an unpopulated ARROYO with
+ th' SLEEK lines of ``NARCISSUS-X'', my new SPORTS UTILITY VEHICLE!
+Date: Sun, 23 Oct 2011 16:59:07 +0200
+In-Reply-To: <CAMuHMdVWAcNFeWauj-DoB3btWY9UTOBDNMzRyTvYmYaYb15N4A@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Sun, 23 Oct 2011 14:20:27 +0200")
+Message-ID: <m2y5wb7o04.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] TTY: pty, fix pty counting
-Content-Type: text/plain; charset=windows-1251; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New version for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
+> All others seem to be old, obsolete, or i386-only.
 
-diff -uprN a/drivers/tty/pty.c b/drivers/tty/pty.c
---- a/drivers/tty/pty.c    2011-05-19 08:06:34.000000000 +0400
-+++ b/drivers/tty/pty.c    2011-10-23 18:01:20.000000000 +0400
-@@ -36,13 +36,15 @@
- static struct tty_driver *ptm_driver;
- static struct tty_driver *pts_driver;
- #endif
-+static int pty_count;
- 
- static void pty_close(struct tty_struct *tty, struct file *filp)
- {
-     BUG_ON(!tty);
--    if (tty->driver->subtype == PTY_TYPE_MASTER)
-+    if (tty->driver->subtype == PTY_TYPE_MASTER) {
-         WARN_ON(tty->count > 1);
--    else {
-+        pty_count--;
-+    } else {
-         if (tty->count > 2)
-             return;
-     }
-@@ -446,7 +448,6 @@ static inline void legacy_pty_init(void)
- int pty_limit = NR_UNIX98_PTY_DEFAULT;
- static int pty_limit_min;
- static int pty_limit_max = NR_UNIX98_PTY_MAX;
--static int pty_count;
- 
- static struct cdev ptmx_cdev;
- 
-@@ -599,15 +600,9 @@ free_mem_out:
-     return -ENOMEM;
- }
- 
--static void pty_unix98_remove(struct tty_driver *driver, struct 
-tty_struct *tty)
--{
--    pty_count--;
--}
--
- static const struct tty_operations ptm_unix98_ops = {
-     .lookup = ptm_unix98_lookup,
-     .install = pty_unix98_install,
--    .remove = pty_unix98_remove,
-     .open = pty_open,
-     .close = pty_close,
-     .write = pty_write,
-@@ -624,7 +619,6 @@ static const struct tty_operations ptm_u
- static const struct tty_operations pty_unix98_ops = {
-     .lookup = pts_unix98_lookup,
-     .install = pty_unix98_install,
--    .remove = pty_unix98_remove,
-     .open = pty_open,
-     .close = pty_close,
-     .write = pty_write,
+Those are not referenced by glibc anyway.
 
+Andreas.
 
-
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
