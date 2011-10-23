@@ -1,214 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab1JWP56 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 11:57:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48754 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab1JWP5z (ORCPT
+	id S1752157Ab1JWQRo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 12:17:44 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:50943 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751726Ab1JWQRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 11:57:55 -0400
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 4/6] mm: Only IPI CPUs to drain local pages if they exist
-Date: Sun, 23 Oct 2011 17:56:51 +0200
-Message-Id: <1319385413-29665-5-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
-References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
+	Sun, 23 Oct 2011 12:17:43 -0400
+Date: Sun, 23 Oct 2011 12:17:42 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        mark gross <markgross@thegnar.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lsusd - The Linux SUSpend Daemon
+In-Reply-To: <20111023192147.49413485@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1110231212480.5199-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a cpumask to track CPUs with per-cpu pages in any zone
-and only send an IPI requesting CPUs to drain these pages
-to the buddy allocator if they actually have pages.
+On Sun, 23 Oct 2011, NeilBrown wrote:
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-mm@kvack.org
-CC: Christoph Lameter <cl@linux-foundation.org>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Matt Mackall <mpm@selenic.com>
-CC: Sasha Levin <levinsasha928@gmail.com>
----
- mm/page_alloc.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 55 insertions(+), 9 deletions(-)
+> > There shouldn't be any trouble about making wakeup_count pollable.  It
+> > also would need to respect nonblocking reads, which it currently does 
+> > not do.
+> 
+> Hmm.. you are correct.  I wonder why I thought it did support non-blocking
+> reads...
+> I guess it was the code for handling an interrupted system call.
+> 
+> I feel a bit uncomfortable with the idea of sysfs files that block but I
+> don't think I can convincingly argue against it.
+> A non-blocking flag could be passed in, but it would be a very messy change -
+> lots of function call signatures changing needlessly:  we would need a flag
+> to the 'show' method ... or add a 'show_nonblock' method which would also be
+> ugly.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e8ecb6..9551b90 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -57,11 +57,17 @@
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
- #include <linux/prefetch.h>
-+#include <linux/percpu.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-+#include <asm/local.h>
- #include "internal.h"
- 
-+/* Which CPUs have per cpu pages  */
-+cpumask_var_t cpus_with_pcp;
-+static DEFINE_PER_CPU(unsigned long, total_cpu_pcp_count);
-+
- #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
- DEFINE_PER_CPU(int, numa_node);
- EXPORT_PER_CPU_SYMBOL(numa_node);
-@@ -224,6 +230,36 @@ EXPORT_SYMBOL(nr_online_nodes);
- 
- int page_group_by_mobility_disabled __read_mostly;
- 
-+/*
-+ * The following two functions track page counts both per zone/per CPU
-+ * and globaly per CPU.
-+ *
-+ * They must be called with interrupts disabled and either pinned to specific
-+ * CPU or for offline CPUs or under stop_machine.
-+ */
-+
-+static inline void inc_pcp_count(int cpu, struct per_cpu_pages *pcp, int count)
-+{
-+	unsigned long *tot = &per_cpu(total_cpu_pcp_count, cpu);
-+
-+	if (unlikely(!*tot))
-+		cpumask_set_cpu(cpu, cpus_with_pcp);
-+
-+	*tot += count;
-+	pcp->count += count;
-+}
-+
-+static inline void dec_pcp_count(int cpu, struct per_cpu_pages *pcp, int count)
-+{
-+	unsigned long *tot = &per_cpu(total_cpu_pcp_count, cpu);
-+
-+	pcp->count -= count;
-+	*tot -= count;
-+
-+	if (unlikely(!*tot))
-+		cpumask_clear_cpu(cpu, cpus_with_pcp);
-+}
-+
- static void set_pageblock_migratetype(struct page *page, int migratetype)
- {
- 
-@@ -1072,7 +1108,7 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
- 	else
- 		to_drain = pcp->count;
- 	free_pcppages_bulk(zone, to_drain, pcp);
--	pcp->count -= to_drain;
-+	dec_pcp_count(smp_processor_id(), pcp, to_drain);
- 	local_irq_restore(flags);
- }
- #endif
-@@ -1099,7 +1135,7 @@ static void drain_pages(unsigned int cpu)
- 		pcp = &pset->pcp;
- 		if (pcp->count) {
- 			free_pcppages_bulk(zone, pcp->count, pcp);
--			pcp->count = 0;
-+			dec_pcp_count(cpu, pcp, pcp->count);
- 		}
- 		local_irq_restore(flags);
- 	}
-@@ -1118,7 +1154,7 @@ void drain_local_pages(void *arg)
-  */
- void drain_all_pages(void)
- {
--	on_each_cpu(drain_local_pages, NULL, 1);
-+	on_each_cpu_mask(cpus_with_pcp, drain_local_pages, NULL, 1);
- }
- 
- #ifdef CONFIG_HIBERNATION
-@@ -1166,7 +1202,7 @@ void free_hot_cold_page(struct page *page, int cold)
- 	struct zone *zone = page_zone(page);
- 	struct per_cpu_pages *pcp;
- 	unsigned long flags;
--	int migratetype;
-+	int migratetype, cpu;
- 	int wasMlocked = __TestClearPageMlocked(page);
- 
- 	if (!free_pages_prepare(page, 0))
-@@ -1194,15 +1230,16 @@ void free_hot_cold_page(struct page *page, int cold)
- 		migratetype = MIGRATE_MOVABLE;
- 	}
- 
-+	cpu = smp_processor_id();
- 	pcp = &this_cpu_ptr(zone->pageset)->pcp;
- 	if (cold)
- 		list_add_tail(&page->lru, &pcp->lists[migratetype]);
- 	else
- 		list_add(&page->lru, &pcp->lists[migratetype]);
--	pcp->count++;
-+	inc_pcp_count(cpu, pcp, 1);
- 	if (pcp->count >= pcp->high) {
- 		free_pcppages_bulk(zone, pcp->batch, pcp);
--		pcp->count -= pcp->batch;
-+		dec_pcp_count(cpu, pcp, pcp->batch);
- 	}
- 
- out:
-@@ -1305,9 +1342,10 @@ again:
- 		pcp = &this_cpu_ptr(zone->pageset)->pcp;
- 		list = &pcp->lists[migratetype];
- 		if (list_empty(list)) {
--			pcp->count += rmqueue_bulk(zone, 0,
-+			inc_pcp_count(smp_processor_id(), pcp,
-+					rmqueue_bulk(zone, 0,
- 					pcp->batch, list,
--					migratetype, cold);
-+					migratetype, cold));
- 			if (unlikely(list_empty(list)))
- 				goto failed;
- 		}
-@@ -1318,7 +1356,7 @@ again:
- 			page = list_entry(list->next, struct page, lru);
- 
- 		list_del(&page->lru);
--		pcp->count--;
-+		dec_pcp_count(smp_processor_id(), pcp, 1);
- 	} else {
- 		if (unlikely(gfp_flags & __GFP_NOFAIL)) {
- 			/*
-@@ -3553,6 +3591,10 @@ static int zone_batchsize(struct zone *zone)
- #endif
- }
- 
-+/*
-+ * NOTE: If you call this function on a pcp of a populated zone you
-+ * need to worry about syncing cpus_with_pcp state as well.
-+ */
- static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
- {
- 	struct per_cpu_pages *pcp;
-@@ -3673,6 +3715,7 @@ static int __zone_pcp_update(void *data)
- 
- 		local_irq_save(flags);
- 		free_pcppages_bulk(zone, pcp->count, pcp);
-+		dec_pcp_count(cpu, pcp, pcp->count);
- 		setup_pageset(pset, batch);
- 		local_irq_restore(flags);
- 	}
-@@ -5040,6 +5083,9 @@ static int page_alloc_cpu_notify(struct notifier_block *self,
- void __init page_alloc_init(void)
- {
- 	hotcpu_notifier(page_alloc_cpu_notify, 0);
-+
-+	/* Allocate the cpus_with_pcp var if CONFIG_CPUMASK_OFFSTACK */
-+	alloc_bootmem_cpumask_var(&cpus_with_pcp);
- }
- 
- /*
--- 
-1.7.0.4
+Right.  Sysfs is pretty inflexible.
+
+> But I think there is a need to block - if there is an in-progress event then
+> it must be possible to wait for it to complete as it may not be visible to
+> userspace until then.
+> We could easily enable 'poll' for wakeup_count and then make it always
+> non-blocking, but I'm not really sure I want to require programs to use poll,
+> only to allow them.  And without using poll there is no way to wait.
+> 
+> As wakeup_count really has to be single-access we could possibly fudge
+> something by remembering the last value read (like we remember the last value
+> written).
+
+A simpler approach would be to add a nonblocking variant:  
+/sys/power/wakeup_count_nb.  It would make sense to support poll for 
+this file; poll isn't very useful for the wakeup_count file.
+
+Alan Stern
 
