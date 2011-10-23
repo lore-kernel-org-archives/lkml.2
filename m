@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1JWM3k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 08:29:40 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38323 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755437Ab1JWM3i (ORCPT
+	id S1755506Ab1JWMpH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 08:45:07 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:31954
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755441Ab1JWMpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 08:29:38 -0400
-X-Sasl-enc: 0YmyW1YP9TdX2/slju9yU6J04rkJ5iKn8h0cAjNR3u6k 1319372977
-Date: Sun, 23 Oct 2011 14:29:27 +0200
-From: Greg KH <greg@kroah.com>
-To: Piotr Hosowicz <piotr@hosowicz.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        John Hawley <warthog19@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 3.0.7 now on kernel.org
-Message-ID: <20111023122927.GB25711@kroah.com>
-References: <20111023083131.GA13802@kroah.com>
- <4EA40795.3070603@example.com>
+	Sun, 23 Oct 2011 08:45:05 -0400
+X-SpamScore: 4
+X-BigFish: VS4(z1039oz98dKzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Date: Sun, 23 Oct 2011 20:55:56 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Mike Turquette <mturquette@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <jeremy.kerr@canonical.com>, <broonie@opensource.wolfsonmicro.com>,
+        <tglx@linutronix.de>, <linus.walleij@stericsson.com>,
+        <amit.kucheria@linaro.org>, <dsaxena@linaro.org>, <patches@linaro.org>,
+        <linaro-dev@lists.linaro.org>, <paul@pwsan.com>,
+        <grant.likely@secretlab.ca>, <sboyd@quiinc.com>, <skannan@quicinc.com>,
+        <magnus.damm@gmail.com>, <arnd.bergmann@linaro.org>,
+        <linux@arm.linux.org.uk>, <eric.miao@linaro.org>,
+        <richard.zhao@linaro.org>
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Message-ID: <20111023125555.GD1401@S2100-06.ap.freescale.net>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-2-git-send-email-mturquette@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4EA40795.3070603@example.com>
+In-Reply-To: <1316730422-20027-2-git-send-email-mturquette@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 02:24:53PM +0200, Piotr Hosowicz wrote:
-> On 23.10.2011 10:31, Greg KH wrote:
-> 
-> >You will note that the files are signed with my new kernel release
-> >signing key, and that the .tar file is signed, and then compressed, so
-> >there is not signatures for the individual compressed files.
-> 
-> And why is that? It's less handy.
+Hi Mike,
 
-I'll let hpa answer that one, he changed it for a good reason that I
-can't recall at the moment :)
+Some random comments/nits ...
 
-hpa?
+On Thu, Sep 22, 2011 at 03:26:56PM -0700, Mike Turquette wrote:
+> +struct clk *clk_register(const struct clk_hw_ops *ops, struct clk_hw *hw,
+> +		const char *name)
+> +{
+> +	struct clk *clk;
+> +
+> +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
+> +	if (!clk)
+> +		return NULL;
+> +
+> +	INIT_HLIST_HEAD(&clk->children);
+> +	INIT_HLIST_NODE(&clk->child_node);
+> +
+The children and child_node are introduced in patch #2, and should not
+be used in patch #1.
 
-thanks,
+> +	clk->name = name;
+> +	clk->ops = ops;
+> +	clk->hw = hw;
+> +	hw->clk = clk;
+> +
+> +	/* Query the hardware for parent and initial rate */
+> +
+> +	if (clk->ops->get_parent)
+> +		/* We don't to lock against prepare/enable here, as
+> +		 * the clock is not yet accessible from anywhere */
+/*
+ * Multiple line comments
+ */
 
-greg k-h
+> +		clk->parent = clk->ops->get_parent(clk->hw);
+> +
+> +	if (clk->ops->recalc_rate)
+> +		clk->rate = clk->ops->recalc_rate(clk->hw);
+> +
+> +
+One blank line is good enough.
+
+> +	return clk;
+> +}
+
+-- 
+Regards,
+Shawn
+
