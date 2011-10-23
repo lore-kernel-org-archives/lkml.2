@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1JWLKG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 07:10:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58739 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab1JWLKF (ORCPT
+	id S1755394Ab1JWLOm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 07:14:42 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53034 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754586Ab1JWLOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 07:10:05 -0400
-From: Martin <marogge@onlinehome.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PULL] drm-intel-next
-Date: Sun, 23 Oct 2011 13:10:00 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.7-ck1; KDE/4.5.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+	Sun, 23 Oct 2011 07:14:40 -0400
+X-Sasl-enc: RaZry/r8bix7qqp3upagU6lT8/p1SNsyxhmi8r/mh78S 1319368479
+Subject: Re: [PATCH] CIFS: fix automount for DFS shares
+From: Ian Kent <raven@themaw.net>
+To: Gerlando Falauto <gerlando.falauto@keymile.com>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jeffrey Layton <jlayton@redhat.com>
+In-Reply-To: <1317985771-28876-2-git-send-email-gerlando.falauto@keymile.com>
+References: <1317985771-28876-1-git-send-email-gerlando.falauto@keymile.com>
+	 <1317985771-28876-2-git-send-email-gerlando.falauto@keymile.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 Oct 2011 19:14:34 +0800
+Message-ID: <1319368474.7876.4.camel@perseus.themaw.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110231310.00443.marogge@onlinehome.de>
-X-Provags-ID: V02:K0:SHaCKwX6Qw7DJlN6zEUBzHVWDgoRYm0QSeFx6DjHPfo
- kdHdf9J7/2O/nzHwBWOWcNn6rZPxFhrMm1W427wmUEfROFm6aF
- WDH/nXeAFCr7HuOubStF00d4qB1TU22Zsmb+jB+Z5QsLwpLHaI
- H0ZsamBXeVcmsbjBC7pDwZAqICM/xNEwmcPS9XWVKkevk0KFSp
- +lNhKV6zUkEtXdHYRDL2gPN82aFvR1jVMgaumtDvuHt84RddUq
- JFCQkLy+ZQiCnaHbujVPuIk/qiLMM3iCS8kTPVeJCQL1Dq7SQg
- cK32/giL1m3FmJOj3UrM/rCxzuR5DhyZ3O/wHMJkqOvGFRZbgC
- lL7lNxOcOfC0qRXzg+dgamh+jUK1G6blu/6q/mQNB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keith Packard wrote:
+On Fri, 2011-10-07 at 13:09 +0200, Gerlando Falauto wrote:
+> Automounting directories are now invalidated by .d_revalidate()
+> so to be d_instantiate()d again with the right DCACHE_NEED_AUTOMOUNT
+> flag
+
+But why doesn't CIFS know this is a DFS inode the first time around, it
+appears to do a truck load of work looking that stuff up?
 
 > 
-> Here's a pile of new code for the 3.2 series.
-[...]
->       drm/i915: close PM interrupt masking races in the irq handler
->       drm/i915: close PM interrupt masking races in the rps work func
+> Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+> ---
+>  fs/cifs/dir.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+> index 9ea65cf..67f54d3 100644
+> --- a/fs/cifs/dir.c
+> +++ b/fs/cifs/dir.c
+> @@ -637,8 +637,13 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
+>  	if (direntry->d_inode) {
+>  		if (cifs_revalidate_dentry(direntry))
+>  			return 0;
+> -		else
+> +		else {
+> +			/* We want automonting inodes to be
+> +			 * considered invalid or so */
+> +			if (IS_AUTOMOUNT(direntry->d_inode))
+> +				return 0;
 
-I always get my hopes high when I read something like this. Maybe my Clarkdale 
-based workstation will eventually get fully stable and I can close my ancient 
-bugzilla entries.
+I'd be inclined to set DCACHE_NEED_AUTOMOUNT here but are we certain
+that cifs_revalidate_dentry() will always return 0 for a DFS inode or at
+least ones that don't yet have DCACHE_NEED_AUTOMOUNT set and why?
 
-Martin
+>  			return 1;
+> +		}
+>  	}
+>  
+>  	/*
+
+
