@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab1JWLOm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 07:14:42 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53034 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754586Ab1JWLOk (ORCPT
+	id S1755401Ab1JWLZh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 07:25:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41136 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab1JWLZg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 07:14:40 -0400
-X-Sasl-enc: RaZry/r8bix7qqp3upagU6lT8/p1SNsyxhmi8r/mh78S 1319368479
-Subject: Re: [PATCH] CIFS: fix automount for DFS shares
-From: Ian Kent <raven@themaw.net>
-To: Gerlando Falauto <gerlando.falauto@keymile.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jeffrey Layton <jlayton@redhat.com>
-In-Reply-To: <1317985771-28876-2-git-send-email-gerlando.falauto@keymile.com>
-References: <1317985771-28876-1-git-send-email-gerlando.falauto@keymile.com>
-	 <1317985771-28876-2-git-send-email-gerlando.falauto@keymile.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 23 Oct 2011 19:14:34 +0800
-Message-ID: <1319368474.7876.4.camel@perseus.themaw.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Oct 2011 07:25:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EA3E926.80203@zytor.com>
+References: <CALKntY3Xo6R2zLs8oM=+=-VPdFXeLsdGi_YbMiA_1085xhMOQw@mail.gmail.com>
+	<CAM_iQpU+xHww_JCYYA4kAKCXmOZpZeu=+rnCyRL-5dW5Uxk1hQ@mail.gmail.com>
+	<CALKntY0222DBU88W=j0Y2FpN7NRMSxmDk4XKy-m+keri4Gcu_A@mail.gmail.com>
+	<4EA3E926.80203@zytor.com>
+Date: Sun, 23 Oct 2011 07:25:35 -0400
+Message-ID: <CALKntY0fKv=SmuHxMioN9YDbSz6BJV7xqG4jn5yiLkk+9O8-Jg@mail.gmail.com>
+Subject: Re: copy_*_user
+From: Xin Tong <xerox.time.tech@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 13:09 +0200, Gerlando Falauto wrote:
-> Automounting directories are now invalidated by .d_revalidate()
-> so to be d_instantiate()d again with the right DCACHE_NEED_AUTOMOUNT
-> flag
+I do not remember, probably I was under the impression that kernel
+accesses physical memory directly from my os course in college. So ,
+the kernel access memory using the page table of the current process
+here?
 
-But why doesn't CIFS know this is a DFS inode the first time around, it
-appears to do a truck load of work looking that stuff up?
+Thanks
 
-> 
-> Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-> ---
->  fs/cifs/dir.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-> index 9ea65cf..67f54d3 100644
-> --- a/fs/cifs/dir.c
-> +++ b/fs/cifs/dir.c
-> @@ -637,8 +637,13 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
->  	if (direntry->d_inode) {
->  		if (cifs_revalidate_dentry(direntry))
->  			return 0;
-> -		else
-> +		else {
-> +			/* We want automonting inodes to be
-> +			 * considered invalid or so */
-> +			if (IS_AUTOMOUNT(direntry->d_inode))
-> +				return 0;
-
-I'd be inclined to set DCACHE_NEED_AUTOMOUNT here but are we certain
-that cifs_revalidate_dentry() will always return 0 for a DFS inode or at
-least ones that don't yet have DCACHE_NEED_AUTOMOUNT set and why?
-
->  			return 1;
-> +		}
->  	}
->  
->  	/*
+Xin
 
 
+On Sun, Oct 23, 2011 at 6:15 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 10/23/2011 11:23 AM, Xin Tong wrote:
+>> I found that __copy_from_user_ll(void *to, const void __user *from,
+>> unsigned long n) eventually calls some asm which use mov and rep on
+>> the passed-in to & from pointers. This is in kernel mode and to & from
+>> are virtual addresses ? are not the kernel accessing physical RAM
+>> directly ( without pagetable ) ?
+>
+> No.  What gave you that idea?
+>
+>        -hpa
+>
+>
