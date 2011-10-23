@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1JWJxe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 05:53:34 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:48115 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab1JWJxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 05:53:32 -0400
-X-Auth-Info: R8obYwCmvkBQ0rVd01ZgijBudCtud2uDp0PL1+l0zR8=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux/m68k <linux-m68k@vger.kernel.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        uClinux list <uclinux-dev@uclinux.org>
-Subject: Re: [PATCH] m68k: Merge mmu and non-mmu versions of sys_call_table
-References: <alpine.DEB.2.00.1105042033190.9040@ayla.of.borg>
-	<201105050824.34056.arnd@arndb.de>
-	<alpine.DEB.2.00.1105052042590.17077@ayla.of.borg>
-X-Yow: On the other hand, life can be an endless parade of TRANSSEXUAL
- QUILTING BEES aboard a cruise ship to DISNEYWORLD
- if only we let it!!
-Date: Sun, 23 Oct 2011 11:53:26 +0200
-In-Reply-To: <alpine.DEB.2.00.1105052042590.17077@ayla.of.borg> (Geert
-	Uytterhoeven's message of "Thu, 5 May 2011 20:44:20 +0200 (CEST)")
-Message-ID: <m2ty70ghk9.fsf@linux-m68k.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
+	id S1751651Ab1JWKPb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 06:15:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56777 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750802Ab1JWKPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 06:15:30 -0400
+Message-ID: <4EA3E926.80203@zytor.com>
+Date: Sun, 23 Oct 2011 12:15:02 +0200
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Xin Tong <xerox.time.tech@gmail.com>
+CC: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: copy_*_user
+References: <CALKntY3Xo6R2zLs8oM=+=-VPdFXeLsdGi_YbMiA_1085xhMOQw@mail.gmail.com> <CAM_iQpU+xHww_JCYYA4kAKCXmOZpZeu=+rnCyRL-5dW5Uxk1hQ@mail.gmail.com> <CALKntY0222DBU88W=j0Y2FpN7NRMSxmDk4XKy-m+keri4Gcu_A@mail.gmail.com>
+In-Reply-To: <CALKntY0222DBU88W=j0Y2FpN7NRMSxmDk4XKy-m+keri4Gcu_A@mail.gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On 10/23/2011 11:23 AM, Xin Tong wrote:
+> I found that __copy_from_user_ll(void *to, const void __user *from,
+> unsigned long n) eventually calls some asm which use mov and rep on
+> the passed-in to & from pointers. This is in kernel mode and to & from
+> are virtual addresses ? are not the kernel accessing physical RAM
+> directly ( without pagetable ) ?
 
-> From 5739b340b334de21c6da4f65d5194957662a6dd0 Mon Sep 17 00:00:00 2001
-> From: Geert Uytterhoeven <geert@linux-m68k.org>
-> Date: Thu, 5 May 2011 20:33:02 +0200
-> Subject: [PATCH] m68k: unistd - Comment out definitions for unimplemented syscalls
+No.  What gave you that idea?
 
-This is not a good idea at least for the syscalls referenced by glibc.
-It means that a glibc compiled against this <asm/unistd.h> will lose the
-ability to call those syscalls even if the running kernel happens to
-implement them.
+	-hpa
 
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
