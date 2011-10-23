@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab1JWJnx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 05:43:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37099 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab1JWJnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 05:43:52 -0400
-Date: Sun, 23 Oct 2011 10:42:32 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12 RESEND] Mainly checkpatch fixes
-Message-ID: <20111023094231.GA3409@msilap.einon>
-References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
- <20111023093651.GA22285@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111023093651.GA22285@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755271Ab1JWJpY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 05:45:24 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:55343 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753845Ab1JWJpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 05:45:23 -0400
+X-Greylist: delayed 1313 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Oct 2011 05:45:23 EDT
+Date: Sun, 23 Oct 2011 11:21:40 +0200
+From: Michael Leun <ml@newton.leun.net>
+To: LKML <linux-kernel@vger.kernel.org>, dm-devel@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Bisected: Massive memory leak in dm-snapshot in 3.1 development
+ introduced
+Message-ID: <20111023112140.37fd8b3d@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 11:36:51AM +0200, Greg KH wrote:
-> On Sun, Oct 23, 2011 at 10:22:42AM +0100, Mark Einon wrote:
-> > Resending patches. Reduces the number of checkpatch warnings, removing
-> > forward declarations and whitespace changes.
-> > 
-> > Last patch removes some redundant code.
-> 
-> Thanks, now applied, so we should be all synced up now, right?
+Hi,
 
-Yes, fantastic. Thanks very much Greg.
+How to reproduce:
 
-Cheers,
+lvcreate -L30G -n testsnap vg1 # of course substitute VG as appropriate
+dd if=/dev/zero of=/dev/vg1/testsnap bs=2M # to make things clear
+lvcreate -L15G -s /dev/vg1/test -n testsnap
+dd if=/dev/zero of=/dev/vg1/testsnap bs=2M &
+watch free
 
-Mark
+I noticed roughly 1GB memory vanishing from free / -/+ buffers/cache
+per 2GB copied.
+
+Bisecting yielded a6e50b409d3f9e0833e69c3c9cca822e8fa4adbb, reverting
+that from git master cures the memory leak
+
+-- 
+MfG,
+
+Michael Leun
+
