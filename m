@@ -1,320 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab1JWTFp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 15:05:45 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36464 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1JWTFn (ORCPT
+	id S1751650Ab1JWTG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 15:06:28 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53061 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab1JWTG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 15:05:43 -0400
+	Sun, 23 Oct 2011 15:06:26 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
+To: Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>,
         Virtualization <virtualization@lists.linux-foundation.org>,
-        Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
         KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Xen <xen-devel@lists.xensource.com>,
         Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
         Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Cc: Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Date: Mon, 24 Oct 2011 00:34:04 +0530
-Message-Id: <20111023190403.16364.30897.sendpatchset@oc5400248562.ibm.com>
+Date: Mon, 24 Oct 2011 00:35:59 +0530
+Message-Id: <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com>
 In-Reply-To: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
 References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
-Subject: [PATCH RFC V2 1/5] debugfs: Add support to print u32 array in debugfs
+Subject: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to support pv-ticketlock
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add debugfs support to print u32-arrays in debugfs. Move the code from Xen to debugfs
-to make the code common for other users as well.
+Add two hypercalls to KVM hypervisor to support pv-ticketlocks.
+    
+KVM_HC_WAIT_FOR_KICK blocks the calling vcpu until another vcpu kicks it or it
+is woken up because of an event like interrupt.
+   
+KVM_HC_KICK_CPU allows the calling vcpu to kick another vcpu.
+    
+The presence of these hypercalls is indicated to guest via
+KVM_FEATURE_WAIT_FOR_KICK/KVM_CAP_WAIT_FOR_KICK.
 
+Qemu needs a corresponding patch to pass up the presence of this feature to 
+guest via cpuid. Patch to qemu will be sent separately.
+
+There is no Xen/KVM hypercall interface to await kick from.
+    
 Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
-diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
-index 7c0fedd..c8377fb 100644
---- a/arch/x86/xen/debugfs.c
-+++ b/arch/x86/xen/debugfs.c
-@@ -19,107 +19,3 @@ struct dentry * __init xen_init_debugfs(void)
- 	return d_xen_debug;
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 734c376..2874c19 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -16,12 +16,14 @@
+ #define KVM_FEATURE_CLOCKSOURCE		0
+ #define KVM_FEATURE_NOP_IO_DELAY	1
+ #define KVM_FEATURE_MMU_OP		2
++
+ /* This indicates that the new set of kvmclock msrs
+  * are available. The use of 0x11 and 0x12 is deprecated
+  */
+ #define KVM_FEATURE_CLOCKSOURCE2        3
+ #define KVM_FEATURE_ASYNC_PF		4
+ #define KVM_FEATURE_STEAL_TIME		5
++#define KVM_FEATURE_WAIT_FOR_KICK       6
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 84a28ea..b43fd18 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2077,6 +2077,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 	case KVM_CAP_XSAVE:
+ 	case KVM_CAP_ASYNC_PF:
+ 	case KVM_CAP_GET_TSC_KHZ:
++	case KVM_CAP_WAIT_FOR_KICK:
+ 		r = 1;
+ 		break;
+ 	case KVM_CAP_COALESCED_MMIO:
+@@ -2548,7 +2549,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
+ 			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+ 			     (1 << KVM_FEATURE_ASYNC_PF) |
+-			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
++			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
++			     (1 << KVM_FEATURE_WAIT_FOR_KICK);
+ 
+ 		if (sched_info_on())
+ 			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
+@@ -5231,6 +5233,61 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+ 	return 1;
  }
  
--struct array_data
--{
--	void *array;
--	unsigned elements;
--};
--
--static int u32_array_open(struct inode *inode, struct file *file)
--{
--	file->private_data = NULL;
--	return nonseekable_open(inode, file);
--}
--
--static size_t format_array(char *buf, size_t bufsize, const char *fmt,
--			   u32 *array, unsigned array_size)
--{
--	size_t ret = 0;
--	unsigned i;
--
--	for(i = 0; i < array_size; i++) {
--		size_t len;
--
--		len = snprintf(buf, bufsize, fmt, array[i]);
--		len++;	/* ' ' or '\n' */
--		ret += len;
--
--		if (buf) {
--			buf += len;
--			bufsize -= len;
--			buf[-1] = (i == array_size-1) ? '\n' : ' ';
--		}
--	}
--
--	ret++;		/* \0 */
--	if (buf)
--		*buf = '\0';
--
--	return ret;
--}
--
--static char *format_array_alloc(const char *fmt, u32 *array, unsigned array_size)
--{
--	size_t len = format_array(NULL, 0, fmt, array, array_size);
--	char *ret;
--
--	ret = kmalloc(len, GFP_KERNEL);
--	if (ret == NULL)
--		return NULL;
--
--	format_array(ret, len, fmt, array, array_size);
--	return ret;
--}
--
--static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
--			      loff_t *ppos)
--{
--	struct inode *inode = file->f_path.dentry->d_inode;
--	struct array_data *data = inode->i_private;
--	size_t size;
--
--	if (*ppos == 0) {
--		if (file->private_data) {
--			kfree(file->private_data);
--			file->private_data = NULL;
--		}
--
--		file->private_data = format_array_alloc("%u", data->array, data->elements);
--	}
--
--	size = 0;
--	if (file->private_data)
--		size = strlen(file->private_data);
--
--	return simple_read_from_buffer(buf, len, ppos, file->private_data, size);
--}
--
--static int xen_array_release(struct inode *inode, struct file *file)
--{
--	kfree(file->private_data);
--
--	return 0;
--}
--
--static const struct file_operations u32_array_fops = {
--	.owner	= THIS_MODULE,
--	.open	= u32_array_open,
--	.release= xen_array_release,
--	.read	= u32_array_read,
--	.llseek = no_llseek,
--};
--
--struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
--					    struct dentry *parent,
--					    u32 *array, unsigned elements)
--{
--	struct array_data *data = kmalloc(sizeof(*data), GFP_KERNEL);
--
--	if (data == NULL)
--		return NULL;
--
--	data->array = array;
--	data->elements = elements;
--
--	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
--}
-diff --git a/arch/x86/xen/debugfs.h b/arch/x86/xen/debugfs.h
-index e281320..12ebf33 100644
---- a/arch/x86/xen/debugfs.h
-+++ b/arch/x86/xen/debugfs.h
-@@ -3,8 +3,4 @@
- 
- struct dentry * __init xen_init_debugfs(void);
- 
--struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
--					    struct dentry *parent,
--					    u32 *array, unsigned elements);
--
- #endif /* _XEN_DEBUGFS_H */
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 90f7657..9aa12e3 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -18,6 +18,7 @@
- #include <linux/pagemap.h>
- #include <linux/namei.h>
- #include <linux/debugfs.h>
-+#include <linux/slab.h>
- 
- static ssize_t default_read_file(struct file *file, char __user *buf,
- 				 size_t count, loff_t *ppos)
-@@ -525,3 +526,110 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
- 	return debugfs_create_file(name, mode, parent, blob, &fops_blob);
- }
- EXPORT_SYMBOL_GPL(debugfs_create_blob);
-+
-+struct array_data {
-+	void *array;
-+	unsigned elements;
-+};
-+
-+static int u32_array_open(struct inode *inode, struct file *file)
++/*
++ * kvm_pv_wait_for_kick_op : Block until kicked by either a KVM_HC_KICK_CPU
++ * hypercall or a event like interrupt.
++ *
++ * @vcpu : vcpu which is blocking.
++ */
++static void kvm_pv_wait_for_kick_op(struct kvm_vcpu *vcpu)
 +{
-+	file->private_data = NULL;
-+	return nonseekable_open(inode, file);
-+}
++	DEFINE_WAIT(wait);
 +
-+static size_t format_array(char *buf, size_t bufsize, const char *fmt,
-+			   u32 *array, unsigned array_size)
-+{
-+	size_t ret = 0;
-+	unsigned i;
++	/*
++	 * Blocking on vcpu->wq allows us to wake up sooner if required to
++	 * service pending events (like interrupts).
++	 *
++	 * Also set state to TASK_INTERRUPTIBLE before checking vcpu->kicked to
++	 * avoid racing with kvm_pv_kick_cpu_op().
++	 */
++	prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
 +
-+	for (i = 0; i < array_size; i++) {
-+		size_t len;
-+
-+		len = snprintf(buf, bufsize, fmt, array[i]);
-+		len++;	/* ' ' or '\n' */
-+		ret += len;
-+
-+		if (buf) {
-+			buf += len;
-+			bufsize -= len;
-+			buf[-1] = (i == array_size-1) ? '\n' : ' ';
-+		}
++	/*
++	 * Somebody has already tried kicking us. Acknowledge that
++	 * and terminate the wait.
++	 */
++	if (vcpu->kicked) {
++		vcpu->kicked = 0;
++		goto end_wait;
 +	}
 +
-+	ret++;		/* \0 */
-+	if (buf)
-+		*buf = '\0';
++	/* Let's wait for either KVM_HC_KICK_CPU or someother event
++	 * to wake us up.
++	 */
 +
-+	return ret;
++	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
++	schedule();
++	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
++
++end_wait:
++	finish_wait(&vcpu->wq, &wait);
 +}
 +
-+static char *format_array_alloc(const char *fmt, u32 *array,
-+						unsigned array_size)
++/*
++ * kvm_pv_kick_cpu_op:  Kick a vcpu.
++ *
++ * @cpu - vcpu to be kicked.
++ */
++static void kvm_pv_kick_cpu_op(struct kvm *kvm, int cpu)
 +{
-+	size_t len = format_array(NULL, 0, fmt, array, array_size);
-+	char *ret;
++	struct kvm_vcpu *vcpu = kvm_get_vcpu(kvm, cpu);
 +
-+	ret = kmalloc(len, GFP_KERNEL);
-+	if (ret == NULL)
-+		return NULL;
-+
-+	format_array(ret, len, fmt, array, array_size);
-+	return ret;
-+}
-+
-+static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
-+			      loff_t *ppos)
-+{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	struct array_data *data = inode->i_private;
-+	size_t size;
-+
-+	if (*ppos == 0) {
-+		if (file->private_data) {
-+			kfree(file->private_data);
-+			file->private_data = NULL;
-+		}
-+
-+		file->private_data = format_array_alloc("%u", data->array,
-+							      data->elements);
++	if (vcpu) {
++		vcpu->kicked = 1;
++		wake_up_interruptible(&vcpu->wq);
 +	}
-+
-+	size = 0;
-+	if (file->private_data)
-+		size = strlen(file->private_data);
-+
-+	return simple_read_from_buffer(buf, len, ppos,
-+					file->private_data, size);
 +}
 +
-+static int xen_array_release(struct inode *inode, struct file *file)
-+{
-+	kfree(file->private_data);
-+
-+	return 0;
-+}
-+
-+static const struct file_operations u32_array_fops = {
-+	.owner	 = THIS_MODULE,
-+	.open	 = u32_array_open,
-+	.release = xen_array_release,
-+	.read	 = u32_array_read,
-+	.llseek  = no_llseek,
-+};
-+
-+struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
-+					    struct dentry *parent,
-+					    u32 *array, unsigned elements)
-+{
-+	struct array_data *data = kmalloc(sizeof(*data), GFP_KERNEL);
-+
-+	if (data == NULL)
-+		return NULL;
-+
-+	data->array = array;
-+	data->elements = elements;
-+
-+	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
-+}
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index e7d9b20..8c08636 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -74,6 +74,10 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
- 				  struct dentry *parent,
- 				  struct debugfs_blob_wrapper *blob);
+ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ {
+ 	unsigned long nr, a0, a1, a2, a3, ret;
+@@ -5267,6 +5324,14 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ 	case KVM_HC_MMU_OP:
+ 		r = kvm_pv_mmu_op(vcpu, a0, hc_gpa(vcpu, a1, a2), &ret);
+ 		break;
++	case KVM_HC_WAIT_FOR_KICK:
++		kvm_pv_wait_for_kick_op(vcpu);
++		ret = 0;
++		break;
++	case KVM_HC_KICK_CPU:
++		kvm_pv_kick_cpu_op(vcpu->kvm, a0);
++		ret = 0;
++		break;
+ 	default:
+ 		ret = -KVM_ENOSYS;
+ 		break;
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index aace6b8..736acc0 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -553,6 +553,7 @@ struct kvm_ppc_pvinfo {
+ #define KVM_CAP_SPAPR_TCE 63
+ #define KVM_CAP_PPC_SMT 64
+ #define KVM_CAP_PPC_RMA	65
++#define KVM_CAP_WAIT_FOR_KICK 66
+ #define KVM_CAP_S390_GMAP 71
  
-+struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
-+					    struct dentry *parent,
-+					    u32 *array, unsigned elements);
-+
- bool debugfs_initialized(void);
- 
- #else
-@@ -193,6 +197,13 @@ static inline bool debugfs_initialized(void)
- 	return false;
- }
- 
-+struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
-+					    struct dentry *parent,
-+					    u32 *array, unsigned elements)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
+ #ifdef KVM_CAP_IRQ_ROUTING
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index eabb21a..2946563 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -152,6 +152,11 @@ struct kvm_vcpu {
  #endif
  
- #endif
+ 	struct kvm_vcpu_arch arch;
++
++	/*
++	 * blocked vcpu wakes up by checking this flag set by unlocker
++	 */
++	int kicked;
+ };
+ 
+ static inline int kvm_vcpu_exiting_guest_mode(struct kvm_vcpu *vcpu)
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index 47a070b..4efee4d 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -19,6 +19,8 @@
+ #define KVM_HC_MMU_OP			2
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
++#define KVM_HC_WAIT_FOR_KICK            5
++#define KVM_HC_KICK_CPU		        6
+ 
+ /*
+  * hypercalls use architecture specific
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index aefdda3..d09982d 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -224,6 +224,7 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
+ 	vcpu->kvm = kvm;
+ 	vcpu->vcpu_id = id;
+ 	vcpu->pid = NULL;
++	vcpu->kicked = 0;
+ 	init_waitqueue_head(&vcpu->wq);
+ 	kvm_async_pf_vcpu_init(vcpu);
+ 
