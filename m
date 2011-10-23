@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab1JWGe0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:34:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40162 "EHLO mx2.suse.de"
+	id S1754958Ab1JWGeZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:34:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40152 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754934Ab1JWGeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:34:23 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:40 2011
-Message-Id: <20111023062540.528834786@pistachio.kroah.org>
+	id S1754911Ab1JWGeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:20 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:41 2011
+Message-Id: <20111023062541.325386193@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:49 +0200
+Date: Sun, 23 Oct 2011 08:24:54 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Boot <bootc@bootc.net>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [21/27] firewire: sbp2: fix panic after rmmod with slow targets
+        Daniel Suchy <danny@danysek.cz>, Takashi Iwai <tiwai@suse.de>
+Subject: [26/27] ALSA: HDA: conexant support for Lenovo T520/W520
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Daniel Suchy <danny@danysek.cz>
 
-commit 0278ccd9d53e07c4e699432b2fed9de6c56f506c upstream.
+commit ca201c096269ee2d40037fea96a59fd0695888c4 upstream.
 
-If firewire-sbp2 starts a login to a target that doesn't complete ORBs
-in a timely manner (and has to retry the login), and the module is
-removed before the operation times out, you end up with a null-pointer
-dereference and a kernel panic.
+This is patch for Conexant codec of Intel HDA driver, adding new quirk
+for Lenovo Thinkpad T520 and W520. Conexant autodetection works fine for
+T520 (similar subsystem ID is used also in W520 model) and detects more
+mixer features compared to generic (fallback) Lenovo quirk with
+hardcoded options in Conexant codec.
 
-[SR:  This happens because sbp2_target_get/put() do not maintain
-module references.  scsi_device_get/put() do, but at occasions like
-Chris describes one, nobody holds a reference to an SBP-2 sdev.]
+Patch was activelly tested with Linux 3.0.4, 3.0.6 and 3.0.7 without any
+problems.
 
-This patch cancels pending work for each unit in sbp2_remove(), which
-hopefully means there are no extra references around that prevent us
-from unloading. This fixes my crash.
-
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Daniel Suchy <danny@danysek.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/sbp2.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ sound/pci/hda/patch_conexant.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1198,6 +1198,10 @@ static int sbp2_remove(struct device *de
- {
- 	struct fw_unit *unit = fw_unit(dev);
- 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
-+	struct sbp2_logical_unit *lu;
-+
-+	list_for_each_entry(lu, &tgt->lu_list, link)
-+		cancel_delayed_work_sync(&lu->work);
- 
- 	sbp2_target_put(tgt);
- 	return 0;
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3097,6 +3097,7 @@ static const struct snd_pci_quirk cxt506
+ 	SND_PCI_QUIRK(0x17aa, 0x21c5, "Thinkpad Edge 13", CXT5066_THINKPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x21c6, "Thinkpad Edge 13", CXT5066_ASUS),
+  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
++	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520 & W520", CXT5066_AUTO),
+ 	SND_PCI_QUIRK(0x17aa, 0x21da, "Lenovo X220", CXT5066_THINKPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x21db, "Lenovo X220-tablet", CXT5066_THINKPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo U350", CXT5066_ASUS),
 
 
