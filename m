@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1JWLtz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 07:49:55 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35931 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755392Ab1JWLty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 07:49:54 -0400
-Date: Sun, 23 Oct 2011 13:48:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] x86, microcode, AMD: Add microcode revision to
- /proc/cpuinfo
-Message-ID: <20111023114821.GE5156@elte.hu>
-References: <1318865115-9904-1-git-send-email-bp@amd64.org>
- <1318865115-9904-3-git-send-email-bp@amd64.org>
- <20111018062509.GE16304@elte.hu>
- <20111019142057.GA26786@aftab>
+	id S1755474Ab1JWLzQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 07:55:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40421 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755398Ab1JWLzP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 07:55:15 -0400
+Date: Sun, 23 Oct 2011 13:55:13 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mfd: Add S5M core driver
+Message-ID: <20111023115512.GA22871@opensource.wolfsonmicro.com>
+References: <009201cc915a$cae8f290$60bad7b0$@com>
+ <20111023083704.GA3135@opensource.wolfsonmicro.com>
+ <009701cc9170$0f2e9ee0$2d8bdca0$@com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111019142057.GA26786@aftab>
+In-Reply-To: <009701cc9170$0f2e9ee0$2d8bdca0$@com>
+X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 23, 2011 at 07:39:36PM +0900, Sangbeom Kim wrote:
+> On Sun, Oct 23, 2011 at 05:37 PM +0900, Mark Brown wrote:
 
-* Borislav Petkov <bp@amd64.org> wrote:
+> > > +EXPORT_SYMBOL(s5m_bulk_read);
 
-> On Tue, Oct 18, 2011 at 02:25:10AM -0400, Ingo Molnar wrote:
-> > The standard way we mention commits in changelogs is:
-> > 
-> >   Enable microcode revision output for AMD after commit 506ed6b53e00 
-> >   ("x86, intel: Output microcode revision in /proc/cpuinfo") did it 
-> >   for Intel.
-> > 
-> > ... because humans are pretty bad at transforming sha1's to the real 
-> > commit title when reading such text.
-> 
-> Why, I thought transforming sha1's to commit messages is one of the job
-> requirements of serious kernel hackers.
-> 
-> :-)
+> > All this stuff should be _GPL as the regmap core is _GPL - you shouldn't
+> > wrap a _GPL function with a non-GPL one.
 
-But they are not the only ones reading changelogs ;-)
+> You mean that EXPORT_SYMBOL should be replace with EXPORT_SYMBOL_GPL?
 
-> > Please fix the changelog for the first commit as well.
-> 
-> Done, git branch at
-> 
-> git://amd64.org/linux/bp.git tip-ucode
-> 
-> updated.
+Yes.
 
-Pulled, thanks,
+> > > +static struct mfd_cell s5m87xx_devs[] = {
+> > > +	{
+> > > +		.name = "s5m8763-pmic",
+> > > +	}, {
+> > > +		.name = "s5m8767-pmic",
+> > > +	}, {
 
-	Ingo
+> > It looks a bit odd to have both simultaneously but I guess this will
+> > become more obvious later on?  I guess what I'd expect is one of these
+> > arrays per device variant.
+
+> My intention of this mfd driver is supporting all samsung mfd.
+> It is desirable that a core driver handle various driver to prevent produce
+> similar code.
+
+Yes, this is very similar to what the wm831x driver does to handle all
+the different chips we've got with the same register interface.
+
+> So, If I want to implement like above concept, What kind of approach can be
+> advised?
+
+What wm831x does is register a different set of devices depending on the
+device that gets registered - the per-device stuff is mostly just a set
+of tables of devices to register.
+
+> > > +	s5m87xx->dev = &i2c->dev;
+> > > +	s5m87xx->i2c = i2c;
+> > > +	s5m87xx->irq = i2c->irq;
+
+> > Is SPI supported?
+
+> SPI isn't supported by Samsung mfd
+
+In that case it might be as well to just get things like the IRQ from
+the i2c client rather than keeping a copy of the variable.
