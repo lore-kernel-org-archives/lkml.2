@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab1JWLZh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 07:25:37 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41136 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab1JWLZg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 07:25:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <4EA3E926.80203@zytor.com>
-References: <CALKntY3Xo6R2zLs8oM=+=-VPdFXeLsdGi_YbMiA_1085xhMOQw@mail.gmail.com>
-	<CAM_iQpU+xHww_JCYYA4kAKCXmOZpZeu=+rnCyRL-5dW5Uxk1hQ@mail.gmail.com>
-	<CALKntY0222DBU88W=j0Y2FpN7NRMSxmDk4XKy-m+keri4Gcu_A@mail.gmail.com>
-	<4EA3E926.80203@zytor.com>
-Date: Sun, 23 Oct 2011 07:25:35 -0400
-Message-ID: <CALKntY0fKv=SmuHxMioN9YDbSz6BJV7xqG4jn5yiLkk+9O8-Jg@mail.gmail.com>
-Subject: Re: copy_*_user
-From: Xin Tong <xerox.time.tech@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755406Ab1JWL0a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 07:26:30 -0400
+Received: from mailq1.tnnet.fi ([217.112.240.127]:45222 "EHLO mailq1.tnnet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754586Ab1JWL03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 07:26:29 -0400
+X-Greylist: delayed 543 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Oct 2011 07:26:29 EDT
+Message-ID: <4EA3F7C0.24E469C5@users.sourceforge.net>
+Date: Sun, 23 Oct 2011 14:17:20 +0300
+From: Jari Ruusu <jariruusu@users.sourceforge.net>
+To: Greg Kroah-Hartman <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org
+Subject: kernel.org tarball/patch signature files
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I do not remember, probably I was under the impression that kernel
-accesses physical memory directly from my os course in college. So ,
-the kernel access memory using the page table of the current process
-here?
+I noticed that patch-3.0.7.sign is a detached signature file for
+DECOMPRESSED patch-3.0.7.{bz2,gz,xz}. Maybe this is not the best possible
+way to sign compressed tarballs/patches. This is because it places hell of
+lot of trust on quality/security of decompressor implementation.
+Historically decompressor implementations have had bugs and security flaws.
+It is stupid to assume that there won't be any more of them.
 
-Thanks
+Wrong order to verify compressed tarball/patch:
 
-Xin
+(1) Feed potentially maliciously formatted data to decompressor, and exploit
+    any undiscovered/unpatched vulnerability in decompressor implementation.
+(2) Verify decompressed output.
 
+Much better order would be:
 
-On Sun, Oct 23, 2011 at 6:15 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/23/2011 11:23 AM, Xin Tong wrote:
->> I found that __copy_from_user_ll(void *to, const void __user *from,
->> unsigned long n) eventually calls some asm which use mov and rep on
->> the passed-in to & from pointers. This is in kernel mode and to & from
->> are virtual addresses ? are not the kernel accessing physical RAM
->> directly ( without pagetable ) ?
->
-> No.  What gave you that idea?
->
->        -hpa
->
->
+(1) Verify compressed data.
+(2) Feed trusted data to decompressor.
+
+So, would it be possible to have multiple signature files like this? Please.
+
+patch-3.X.Y.bz2
+patch-3.X.Y.bz2.sign
+patch-3.X.Y.gz
+patch-3.X.Y.gz.sign
+patch-3.X.Y.xz
+patch-3.X.Y.xz.sign
+
+-- 
+Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
