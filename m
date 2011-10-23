@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab1JWQjH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 12:39:07 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41718 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1JWQjF (ORCPT
+	id S1752650Ab1JWQpA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 12:45:00 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46973 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab1JWQo6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 12:39:05 -0400
-Message-ID: <4EA4431A.3010104@amacapital.net>
-Date: Sun, 23 Oct 2011 09:38:50 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Sun, 23 Oct 2011 12:44:58 -0400
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        "Darrick J. Wong" <djwong@us.ibm.com>, Theodore Tso <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jeff Layton <jlayton@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        Chris Mason <chris.mason@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCHSET v3.1 0/7] data integrity: Stabilize pages during writeback
- for various fses
-References: <20110509230318.19566.66202.stgit@elm3c44.beaverton.ibm.com> <87tyd31fkc.fsf@devron.myhome.or.jp> <20110510123819.GB4402@quack.suse.cz> <87hb924s2x.fsf@devron.myhome.or.jp> <20110510132953.GE4402@quack.suse.cz> <878vue4qjb.fsf@devron.myhome.or.jp> <87zkmu3b2i.fsf@devron.myhome.or.jp> <20110510145421.GJ4402@quack.suse.cz> <87zkmupmaq.fsf@devron.myhome.or.jp> <20110510162237.GM4402@quack.suse.cz>
-In-Reply-To: <20110510162237.GM4402@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201110222343.24141.heiko@sntech.de>
+References: <1319257301-5040-1-git-send-email-paul.s.schilling@gmail.com>
+	<201110222343.24141.heiko@sntech.de>
+Date: Sun, 23 Oct 2011 11:44:57 -0500
+Message-ID: <CAC=G6szC+S2oTSVf-KEXZHxc9cFHOqQeoOLaKhA6QWwSjQ=7Bg@mail.gmail.com>
+Subject: Re: [PATCH 06/14] ARM : SAMSUNG : S3C2416 Added io mapping for Static
+ memory controller.
+From: Paul Schilling <paul.s.schilling@gmail.com>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
+        Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2011 09:22 AM, Jan Kara wrote:
-> On Wed 11-05-11 01:12:13, OGAWA Hirofumi wrote:
->> Jan Kara<jack@suse.cz>  writes:
+Why did I add disabled code.  I didn't want to enable it if no one is
+using it at the moment.
+But,  I took me long enough to figure out how to enable the Static
+memory Controller in the
+MMU with out any hints to begin with.
+
+Also the EBI portion is present in a vendor kernel version 2.6.21.
+
+The Static Memory Controller peripheral needs to be set when ethernet
+chips like the dm9000 is attached to the
+samsung  ARM S3C2416.  The Boardcon board is a good example.
+
+On Sat, Oct 22, 2011 at 4:43 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Samstag 22 Oktober 2011, 06:21:41 schrieb Paul Schilling:
+>> Added MMU access to the Static Memory Controller.
 >>
->>>> Did you already consider, to copy only if page was writeback (like
->>>> copy-on-write)? I.e. if page is on I/O, copy, then switch the page for
->>>> writing new data.
->>>    Yes, that was considered as well. We'd have to essentially migrate the
->>> page that is under writeback and should be written to. You are going to pay
->>> the cost of page allocation, copy, increased memory&  cache pressure.
->>> Depending on your backing storage and workload this may or may not be better
->>> than waiting for IO...
+>> Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
+>> ---
+>>  arch/arm/mach-s3c2416/s3c2416.c |   12 ++++++++++++
+>>  1 files changed, 12 insertions(+), 0 deletions(-)
 >>
->> Maybe possible, but you really think on usual case just blocking is
->> better?
->    Define usual case... As Christoph noted, we don't currently have a real
-> practical case where blocking would matter (since frequent rewrites are
-> rather rare). So defining what is usual when we don't have a single real
-> case is kind of tough ;)
+>> diff --git a/arch/arm/mach-s3c2416/s3c2416.c
+>> b/arch/arm/mach-s3c2416/s3c2416.c index 494ce91..823a034 100644
+>> --- a/arch/arm/mach-s3c2416/s3c2416.c
+>> +++ b/arch/arm/mach-s3c2416/s3c2416.c
+>> @@ -65,6 +65,18 @@ static struct map_desc s3c2416_iodesc[] __initdata = {
+>>       IODESC_ENT(WATCHDOG),
+>>       IODESC_ENT(CLKPWR),
+>>       IODESC_ENT(TIMER),
+>> +     {
+>> +             .virtual        = (u32)S3C2412_VA_SSMC,
+>> +             .pfn            = __phys_to_pfn(S3C2412_PA_SSMC),
+>> +             .length         = SZ_1M,
+>> +             .type           = MT_DEVICE,
+>> +     },
+>> +     /*{
+>> +             .virtual        = (u32)S3C2412_VA_EBI,
+>> +             .pfn            = __phys_to_pfn(S3C2412_PA_EBI),
+>> +             .length         = SZ_1M,
+>> +             .type           = MT_DEVICE,
+>> +     },*/
+>>  };
+> why are you adding disabled code?
 >
-
-I'm a bit late to the party, but I have such a use case.  I have a 
-real-time program that generates logs.  There's a thread that makes sure 
-that there are always mlocked, MAP_SHARED, writable pages for the logs, 
-and under normal (or even very heavy) load, the mlocked pages always 
-stay far ahead of the logs.  On 2.6.39, it works great [1].  On 3.0, 
-it's unusable -- latencies of 30-100 ms are very common.
-
-In this case, neither throughput nor available memory matter at all -- 
-I'm not stressing either.  So copying the pages (especially if they're 
-mlocked) would be more than a small percentage win -- it would be the 
-difference between great performance and unusability.
-
-I wonder if we want a stronger version of mlock that says "this page 
-must not be swapped out and, in addition, ptes must always be mapped 
-with all appropriate permission bits set".  (This is only possible with 
-hardware dirty and accessed bits, but we could come close even without 
-them.)
-
-
-[1] file_update_time is a problem.  patches coming.
-
---Andy
+> Btw. it seems your posts got mangled somehow... only your patches 2,5 and 6 of
+> 14 made it to linux-kernel and linux-arm-kernel.
+>
+> Heiko
+>
