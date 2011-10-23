@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1JWGga (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:36:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40118 "EHLO mx2.suse.de"
+	id S1755020Ab1JWGgq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:36:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40113 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851Ab1JWGeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754695Ab1JWGeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Oct 2011 02:34:16 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:37 2011
-Message-Id: <20111023062537.509020542@pistachio.kroah.org>
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:39 2011
+Message-Id: <20111023062538.869936744@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:29 +0200
+Date: Sun, 23 Oct 2011 08:24:38 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Johan Palsson <johan.palsson@stericsson.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [01/27] ARM: 7113/1: mm: Align bank start to MAX_ORDER_NR_PAGES
+        Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@redhat.com>
+Subject: [10/27] HID: magicmouse: ignore ivalid report id while switching modes, v2
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,44 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 002ea9eefec98dada56fd5f8e432a4e8570c2a26 upstream.
+commit 35d851df23b093ee027f827fed2213ae5e88fc7a upstream.
 
-The VM subsystem assumes that there are valid memmap entries from
-the bank start aligned to MAX_ORDER_NR_PAGES.
+This is basically a more generic respin of 23746a6 ("HID: magicmouse: ignore
+'ivalid report id' while switching modes") which got reverted later by
+c3a492.
 
-On the Ux500 we have a lot of mem=N arguments on the commandline
-triggering this bug several times over and causing kernel
-oops messages.
+It turns out that on some configurations, this is actually still the case
+and we are not able to detect in runtime.
 
-Cc: Michael Bohan <mbohan@codeaurora.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Signed-off-by: Johan Palsson <johan.palsson@stericsson.com>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The device reponds with 'invalid report id' when feature report switching it
+into multitouch mode is sent to it.
+
+This has been silently ignored before 0825411ade ("HID: bt: Wait for ACK
+on Sent Reports"), but since this commit, it propagates -EIO from the _raw
+callback .
+
+So let the driver ignore -EIO as response to 0xd7,0x01 report, as that's
+how the device reacts in normal mode.
+
+Sad, but following reality.
+
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=35022
+
+Reported-by: Chase Douglas <chase.douglas@canonical.com>
+Reported-by: Jaikumar Ganesh <jaikumarg@android.com>
+Tested-by: Chase Douglas <chase.douglas@canonical.com>
+Tested-by: Jaikumar Ganesh <jaikumarg@android.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/init.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/hid/hid-magicmouse.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -473,6 +473,13 @@ static void __init free_unused_memmap(st
- 		 */
- 		bank_start = min(bank_start,
- 				 ALIGN(prev_bank_end, PAGES_PER_SECTION));
-+#else
-+		/*
-+		 * Align down here since the VM subsystem insists that the
-+		 * memmap entries are valid from the bank start aligned to
-+		 * MAX_ORDER_NR_PAGES.
-+		 */
-+		bank_start = round_down(bank_start, MAX_ORDER_NR_PAGES);
- #endif
- 		/*
- 		 * If we had a previous bank, and there is a space
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -501,9 +501,17 @@ static int magicmouse_probe(struct hid_d
+ 	}
+ 	report->size = 6;
+ 
++	/*
++	 * Some devices repond with 'invalid report id' when feature
++	 * report switching it into multitouch mode is sent to it.
++	 *
++	 * This results in -EIO from the _raw low-level transport callback,
++	 * but there seems to be no other way of switching the mode.
++	 * Thus the super-ugly hacky success check below.
++	 */
+ 	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
+ 			HID_FEATURE_REPORT);
+-	if (ret != sizeof(feature)) {
++	if (ret != -EIO && ret != sizeof(feature)) {
+ 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
+ 		goto err_stop_hw;
+ 	}
 
 
