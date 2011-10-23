@@ -1,51 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab1JWRsl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 13:48:41 -0400
-Received: from 7.mo1.mail-out.ovh.net ([87.98.158.110]:33212 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754950Ab1JWRsj (ORCPT
+	id S1754948Ab1JWRpS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 13:45:18 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51991 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754895Ab1JWRpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 13:48:39 -0400
-X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Oct 2011 13:48:39 EDT
-Message-ID: <4EA40795.3070603@example.com>
-Date: Sun, 23 Oct 2011 14:24:53 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        John Hawley <warthog19@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: Linux 3.0.7 now on kernel.org
-References: <20111023083131.GA13802@kroah.com>
-In-Reply-To: <20111023083131.GA13802@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 546624405139059176
-X-Ovh-Remote: 178.36.184.188 (178-36-184-188.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -230
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrfeeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddmnehlihhnuhiguchinhcushhusghjvggtthculddqfedtmd
+	Sun, 23 Oct 2011 13:45:11 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -V8 14/26] richacl: Permission mapping functions
+Date: Sun, 23 Oct 2011 23:13:43 +0530
+Message-Id: <1319391835-5829-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 11102307-5140-0000-0000-00000019E89B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.10.2011 10:31, Greg KH wrote:
+From: Andreas Gruenbacher <agruen@kernel.org>
 
-> You will note that the files are signed with my new kernel release
-> signing key, and that the .tar file is signed, and then compressed, so
-> there is not signatures for the individual compressed files.
+We need to map from POSIX permissions to NFSv4 permissions when a
+chmod() is done, from NFSv4 permissions to POSIX permissions when an acl
+is set (which implicitly sets the file permission bits), and from the
+MAY_READ/MAY_WRITE/MAY_EXEC/MAY_APPEND flags to NFSv4 permissions when
+doing an access check in a richacl.
 
-And why is that? It's less handy.
+Acked-by: J. Bruce Fields <bfields@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/richacl_base.c       |  117 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/richacl.h |   47 +++++++++++++++++++
+ 2 files changed, 164 insertions(+), 0 deletions(-)
 
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 689e1a6..bca2093 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -56,6 +56,123 @@ richacl_clone(const struct richacl *acl)
+ }
+ 
+ /**
++ * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
++ * @mask:	%ACE4_* permission mask
++ *
++ * See richacl_masks_to_mode().
++ */
++static int
++richacl_mask_to_mode(unsigned int mask)
++{
++	int mode = 0;
++
++	if (mask & ACE4_POSIX_MODE_READ)
++		mode |= MAY_READ;
++	if (mask & ACE4_POSIX_MODE_WRITE)
++		mode |= MAY_WRITE;
++	if (mask & ACE4_POSIX_MODE_EXEC)
++		mode |= MAY_EXEC;
++
++	return mode;
++}
++
++/**
++ * richacl_masks_to_mode  -  compute the file permission bits from the file masks
++ *
++ * When setting a richacl, we set the file permission bits to indicate maximum
++ * permissions: for example, we set the Write permission when a mask contains
++ * ACE4_APPEND_DATA even if it does not also contain ACE4_WRITE_DATA.
++ *
++ * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
++ * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
++ * Such permissions can still be effective, but not for new files or after a
++ * chmod(), and only if they were set explicitly, for example, by setting a
++ * richacl.
++ */
++int
++richacl_masks_to_mode(const struct richacl *acl)
++{
++	return richacl_mask_to_mode(acl->a_owner_mask) << 6 |
++	       richacl_mask_to_mode(acl->a_group_mask) << 3 |
++	       richacl_mask_to_mode(acl->a_other_mask);
++}
++EXPORT_SYMBOL_GPL(richacl_masks_to_mode);
++
++/**
++ * richacl_mode_to_mask  - compute a file mask from the lowest three mode bits
++ *
++ * When the file permission bits of a file are set with chmod(), this specifies
++ * the maximum permissions that processes will get.  All permissions beyond
++ * that will be removed from the file masks, and become ineffective.
++ *
++ * We also add in the permissions which are always allowed no matter what the
++ * acl says.
++ */
++unsigned int
++richacl_mode_to_mask(mode_t mode)
++{
++	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
++
++	if (mode & MAY_READ)
++		mask |= ACE4_POSIX_MODE_READ;
++	if (mode & MAY_WRITE)
++		mask |= ACE4_POSIX_MODE_WRITE;
++	if (mode & MAY_EXEC)
++		mask |= ACE4_POSIX_MODE_EXEC;
++
++	return mask;
++}
++
++/**
++ * richacl_want_to_mask  - convert the iop->permission want argument to a mask
++ * @want:	@want argument of the permission inode operation
++ *
++ * When checking for append, @want is (MAY_WRITE | MAY_APPEND).
++ *
++ * Richacls use the iop->may_create and iop->may_delete hooks which are
++ * used for checking if creating and deleting files is allowed.  These hooks do
++ * not use richacl_want_to_mask(), so we do not have to deal with mapping
++ * MAY_WRITE to ACE4_ADD_FILE, ACE4_ADD_SUBDIRECTORY, and ACE4_DELETE_CHILD
++ * here.
++ */
++unsigned int
++richacl_want_to_mask(unsigned int want)
++{
++	unsigned int mask = 0;
++
++	if (want & MAY_READ)
++		mask |= ACE4_READ_DATA;
++	if (want & MAY_DELETE_SELF)
++		mask |= ACE4_DELETE;
++	if (want & MAY_TAKE_OWNERSHIP)
++		mask |= ACE4_WRITE_OWNER;
++	if (want & MAY_CHMOD)
++		mask |= ACE4_WRITE_ACL;
++	if (want & MAY_SET_TIMES)
++		mask |= ACE4_WRITE_ATTRIBUTES;
++	if (want & MAY_EXEC)
++		mask |= ACE4_EXECUTE;
++	/*
++	 * differentiate MAY_WRITE from these request
++	 */
++	if (want & (MAY_APPEND |
++		    MAY_CREATE_FILE | MAY_CREATE_DIR |
++		    MAY_DELETE_CHILD)) {
++		if (want & MAY_APPEND)
++			mask |= ACE4_APPEND_DATA;
++		if (want & MAY_CREATE_FILE)
++			mask |= ACE4_ADD_FILE;
++		if (want & MAY_CREATE_DIR)
++			mask |= ACE4_ADD_SUBDIRECTORY;
++		if (want & MAY_DELETE_CHILD)
++			mask |= ACE4_DELETE_CHILD;
++	} else if (want & MAY_WRITE)
++		mask |= ACE4_WRITE_DATA;
++	return mask;
++}
++EXPORT_SYMBOL_GPL(richacl_want_to_mask);
++
++/**
+  * richace_is_same_identifier  -  are both identifiers the same?
+  */
+ int
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index 51d6937..fe875fe 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -119,6 +119,49 @@ struct richacl {
+ 	ACE4_WRITE_OWNER |				\
+ 	ACE4_SYNCHRONIZE)
+ 
++/*
++ * The POSIX permissions are supersets of the following NFSv4 permissions:
++ *
++ *  - MAY_READ maps to READ_DATA or LIST_DIRECTORY, depending on the type
++ *    of the file system object.
++ *
++ *  - MAY_WRITE maps to WRITE_DATA or ACE4_APPEND_DATA for files, and to
++ *    ADD_FILE, ACE4_ADD_SUBDIRECTORY, or ACE4_DELETE_CHILD for directories.
++ *
++ *  - MAY_EXECUTE maps to ACE4_EXECUTE.
++ *
++ *  (Some of these NFSv4 permissions have the same bit values.)
++ */
++#define ACE4_POSIX_MODE_READ (			\
++		ACE4_READ_DATA |		\
++		ACE4_LIST_DIRECTORY)
++#define ACE4_POSIX_MODE_WRITE (			\
++		ACE4_WRITE_DATA |		\
++		ACE4_ADD_FILE |			\
++		ACE4_APPEND_DATA |		\
++		ACE4_ADD_SUBDIRECTORY |		\
++		ACE4_DELETE_CHILD)
++#define ACE4_POSIX_MODE_EXEC ACE4_EXECUTE
++#define ACE4_POSIX_MODE_ALL (			\
++		ACE4_POSIX_MODE_READ |		\
++		ACE4_POSIX_MODE_WRITE |		\
++		ACE4_POSIX_MODE_EXEC)
++/*
++ * These permissions are always allowed
++ * no matter what the acl says.
++ */
++#define ACE4_POSIX_ALWAYS_ALLOWED (	\
++		ACE4_SYNCHRONIZE |	\
++		ACE4_READ_ATTRIBUTES |	\
++		ACE4_READ_ACL)
++/*
++ * The owner is implicitly granted
++ * these permissions under POSIX.
++ */
++#define ACE4_POSIX_OWNER_ALLOWED (		\
++		ACE4_WRITE_ATTRIBUTES |		\
++		ACE4_WRITE_OWNER |		\
++		ACE4_WRITE_ACL)
+ /**
+  * richacl_get  -  grab another reference to a richacl handle
+  */
+@@ -234,4 +277,8 @@ richace_is_deny(const struct richace *ace)
+ extern struct richacl *richacl_alloc(int);
+ extern int richace_is_same_identifier(const struct richace *,
+ 				      const struct richace *);
++extern int richacl_masks_to_mode(const struct richacl *);
++extern unsigned int richacl_mode_to_mask(mode_t);
++extern unsigned int richacl_want_to_mask(unsigned int);
++
+ #endif /* __RICHACL_H */
 -- 
-- Jaka jest najwiêksza anomalia fizjologiczno-polityczna?
-- Cz³onek wysuniêty z ramienia na czo³o.
-NP: Caligula's Horse - Equally Flawed
-NB: 3.1.0-rc3
+1.7.5.4
+
