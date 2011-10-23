@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab1JWJYV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 05:24:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33009 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab1JWJYS (ORCPT
+	id S1755254Ab1JWJaX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 05:30:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38898 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755218Ab1JWJaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 05:24:18 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 01/12] staging: et131x: Remove unused rx_ring.recv_buffer_pool
-Date: Sun, 23 Oct 2011 10:22:43 +0100
-Message-Id: <1319361774-3148-2-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
-References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
+	Sun, 23 Oct 2011 05:30:22 -0400
+Date: Sun, 23 Oct 2011 10:30:20 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Add S5M8767 regulator driver
+Message-ID: <20111023093020.GC3135@opensource.wolfsonmicro.com>
+References: <009501cc915b$809ce880$81d6b980$@com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <009501cc915b$809ce880$81d6b980$@com>
+X-Cookie: Do not overtax your powers.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rx_ring.recv_buffer_pool is unused, even in the original driver code.
-Remove from stuct, and also remove some comments regarding it.
+On Sun, Oct 23, 2011 at 05:12:27PM +0900, Sangbeom Kim wrote:
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+This mostly looks good, a few smaller comments below but nothing major.
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 1efa27c..8c557cf 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -329,8 +329,6 @@ struct rx_ring {
- 	struct rx_status_block *rx_status_block;
- 	dma_addr_t rx_status_bus;
- 
--	struct list_head recv_buff_pool;
--
- 	/* RECV */
- 	struct list_head recv_list;
- 	u32 num_ready_recv;
-@@ -2307,10 +2305,6 @@ void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 		rx_ring->rx_status_block = NULL;
- 	}
- 
--	/* Free receive buffer pool */
--
--	/* Free receive packet pool */
--
- 	/* Destroy the lookaside (RFD) pool */
- 	if (adapter->flags & fMP_ADAPTER_RECV_LOOKASIDE) {
- 		kmem_cache_destroy(rx_ring->recv_lookaside);
--- 
-1.7.6.4
+> +static int s5m8767_reg_enable_suspend(struct regulator_dev *rdev)
+> +{
+> +	return 0;
+> +}
 
+> +static int s5m8767_reg_disable_suspend(struct regulator_dev *rdev)
+> +{
+
+I guess you need an implementation for enable_suspend() (otherwise you
+can't do disable->enable).
+
+> +	{
+> +		.name	= "AP 32KHz",
+> +		.id	= S5M8767_32KHZAP_EN,
+> +		.ops	= &s5m8767_others_ops,
+> +		.type	= REGULATOR_VOLTAGE,
+> +		.owner	= THIS_MODULE,
+> +	}, {
+> +		.name	= "CP 32KHz",
+> +		.id	= S5M8767_32KHZAP_EN,
+> +		.ops	= &s5m8767_others_ops,
+> +		.type	= REGULATOR_VOLTAGE,
+> +		.owner	= THIS_MODULE,
+> +	},
+
+Do these actually share anything with the other regulators?  If not then
+I guess it's better to do with the struct clk framework.
+
+> +	if (!pdata) {
+> +		dev_err(pdev->dev.parent, "Platform data not supplied\n");
+> +		return -ENODEV;
+> +	}
+
+It should be possible to register without platform data now (giving
+readback only support).  Older versions of the regulator API required
+constraints.
+
+> +				dev_warn(&pdev->dev, "Duplicated gpio
+> request"
+> +						" for SET3\n");
+
+Please keep the strings on one line (it makes grepping for errors
+easier).
