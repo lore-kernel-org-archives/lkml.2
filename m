@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1JWGKW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:10:22 -0400
-Received: from guarana.org ([59.167.251.209]:55332 "EHLO protos.guarana.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752776Ab1JWGKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:10:20 -0400
-X-Greylist: delayed 1500 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Oct 2011 02:10:20 EDT
-Message-ID: <20111023162159.80444iahzf390vi8@guarana.org>
-Date: Sun, 23 Oct 2011 16:21:59 +1100
-From: Kevin Easton <kevin@guarana.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Roland McGrath <roland@hack.frob.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, selinux@tycho.nsa.gov,
-        John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] LSM: Do not apply mmap_min_addr check to PROT_NONE
- mappings
-References: <20111021213916.914462C0A5@topped-with-meat.com>
- <CA+55aFy3ALC34AyrsHi9yjBgRMwg9G5w2PhDfr_JVti1M8GbNQ@mail.gmail.com>
- <20111022172450.0BCCE2C0A9@topped-with-meat.com>
- <CA+55aFx_9D8jY2sqcZ+Tm305W9d8o+ZhEv8XNWuN4--S2bqRwQ@mail.gmail.com>
- <CA+55aFxNOS7ZTq9wgQEXNue9wZMqymdWSN+zTuXB-gLgX0gRNg@mail.gmail.com>
- <20111023100835.14682pfbxag3lkao@guarana.org>
- <CA+55aFydaGYx2nkeGps2kO2k=eV1m6xcFgH5okeqy1G8H=z+_w@mail.gmail.com>
-In-Reply-To: <CA+55aFydaGYx2nkeGps2kO2k=eV1m6xcFgH5okeqy1G8H=z+_w@mail.gmail.com>
+	id S1753913Ab1JWGQo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:16:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64199 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab1JWGQn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:16:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+In-Reply-To: <CA+55aFygxqqz_67c9n2PtwZEWgpRMCdCpUhZK-xvdqW-BJ0LLA@mail.gmail.com>
+References: <CA+55aFy0BH=XUCP7gHgZEc3nrTNEGeZLn1Q_ekofyEHvJZYNVQ@mail.gmail.com>
+	<12633.1319228151@turing-police.cc.vt.edu>
+	<CA+55aFzLTjB+CwB7MQNh+p0pjSrFd=pBFDcA=GxMY4HJhQokUg@mail.gmail.com>
+	<9983.1319261492@turing-police.cc.vt.edu>
+	<CA+55aFygxqqz_67c9n2PtwZEWgpRMCdCpUhZK-xvdqW-BJ0LLA@mail.gmail.com>
+Date: Sun, 23 Oct 2011 07:16:41 +0100
+Message-ID: <CAPM=9tympvK8O3NC20CFG-2TutozHUKZTird7MpNUQi5BY=sww@mail.gmail.com>
+Subject: Re: Linux 3.1-rc10
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Valdis.Kletnieks@vt.edu,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Linus Torvalds <torvalds@linux-foundation.org>:
-
-> [ Resent, this seems to have gotten dropped by something. Sorry if it
-> shows up twice  ]
-
-My fault, looks like lkml.org trims the CC list to an unreasonably small
-value.
-
-> On Sun, Oct 23, 2011 at 2:08 AM, Kevin Easton <kevin@guarana.org> wrote:
+On Sun, Oct 23, 2011 at 1:47 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Oct 22, 2011 at 8:31 AM,  <Valdis.Kletnieks@vt.edu> wrote:
 >>
->> Won't this still allow silent probing, because the malicious user can
->> just try to create the mapping, then check in /proc/self/maps to see
->> if it really worked?
+>> Actually, the question was "Are there enough Linus cycles to do KS
+>> and all the merges in 2 weeks?". ;)
 >
-> Yup, right you are.
+> I think there will be.
 >
-> So we shouldn't do that either, and probably just leave the current
-> semantics, unless Roland (or others) can convince me that complicating
-> the kernel  mmap security model really is worth it.
+> The kernel summit is only two days, and then I have another day of
+> LinuxCon Europe, and basically a day of travel. So it's four days out
+> of the 2 weeks, and I can actually do the time-consuming part of the
+> merges while traveling (ie *looking* at them if I need to: the
+> technical merge action itself is usually never the problem).
 >
->             Linus
+> Additionally, the first few days (which is KS/etc), I'll probably be
+> merging mainly from people who have already got k.org accounts because
+> they got into the trust network early, so it's going to be slightly
+> limited by the fact that it will invariably take some time to get the
+> gpg signing and k.org account setup a day or two.
 
+Are you going to accept pull requests from non-k.org remotes?
 
+Like I'm getting close to can't be arsed wrt getting a k.org a/c
+again, and if freedesktop is good enough for pull reqs I might not
+bother.
 
+I am interested in the view that the hacking of k.org has done one
+thing which is you are now more conditions to pulling from misc
+non-k.org places than previously. Maybe thats all the terrorists want
+:)
 
+Dave.
