@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab1JWQ0H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 12:26:07 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52576 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab1JWQ0F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 12:26:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1732355.g0uNX7XlKI@donald.sf-tec.de>
-References: <1319346300-18151-1-git-send-email-paul.s.schilling@gmail.com>
-	<1732355.g0uNX7XlKI@donald.sf-tec.de>
-Date: Sun, 23 Oct 2011 11:26:04 -0500
-Message-ID: <CAC=G6szPCgSDB_1te3wZx2GGBiHMXMuQBQznSfjy2n1GtfCPxA@mail.gmail.com>
-Subject: Re: [PATCH 02/15] ATA : vortex86 : fix vortex86dx/sx hardware CRC bug.
-From: Paul Schilling <paul.s.schilling@gmail.com>
-To: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Cc: Jeff Garzik <jgarzik@pobox.com>, "David S. Miller" <davem@davemloft.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752350Ab1JWQeM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 12:34:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35258 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082Ab1JWQeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 12:34:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="66236056"
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH] staging:mei: wd_ops and wd_info should be static
+Date: Sun, 23 Oct 2011 18:30:39 +0200
+Message-Id: <1319387439-5389-1-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, That was a good catch.  I had that extra struct for another
-revision of the RDC peripheral integrated into the
-Vortex86DX.  I removed it when I moved it to the pata_rdc.c driver but
-forgot the struct.  The it821x driver works
-for the RDC drivers when DMA is turned off.  But the RDC driver is the
-more logical choice.
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-I will make the fix and send out the new patch.
+wd_ops and wd_info structures are local to wd.c so mark them static
 
-I accidentally sent this through the gmail interface with html on,
-Some of you may get this email twice.
+Cc: Oren Weil <oren.jer.weil@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/staging/mei/wd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Paul Schilling
+diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
+index ffca7ca..cb3f92d 100644
+--- a/drivers/staging/mei/wd.c
++++ b/drivers/staging/mei/wd.c
+@@ -331,14 +331,14 @@ static int mei_wd_ops_set_timeout(struct watchdog_device *wd_dev, unsigned int t
+ /*
+  * Watchdog Device structs
+  */
+-const struct watchdog_ops wd_ops = {
++static const struct watchdog_ops wd_ops = {
+ 		.owner = THIS_MODULE,
+ 		.start = mei_wd_ops_start,
+ 		.stop = mei_wd_ops_stop,
+ 		.ping = mei_wd_ops_ping,
+ 		.set_timeout = mei_wd_ops_set_timeout,
+ };
+-const struct watchdog_info wd_info = {
++static const struct watchdog_info wd_info = {
+ 		.identity = INTEL_AMT_WATCHDOG_ID,
+ 		.options = WDIOF_KEEPALIVEPING,
+ };
+-- 
+1.7.5.4
 
-On Sun, Oct 23, 2011 at 3:20 AM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
->
-> Paul Schilling wrote:
-> > This fixes a DMA issue related to a CRC bug on
-> > the RDC pata peripherial found on the vortex86sx and vortex86dx.
-> >
-> > Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
-> > ---
-> >  drivers/ata/pata_it821x.c |   22 ++++++++++++++++++----
-> >  drivers/ata/pata_rdc.c    |   29 ++++++++++++++++++++++++-----
-> >  drivers/ide/it821x.c      |    9 +++++++--
-> >  include/linux/pci_ids.h   |    2 ++
-> >  4 files changed, 51 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/drivers/ata/pata_it821x.c b/drivers/ata/pata_it821x.c
-> > index c5532b9..5f8a54a 100644
-> > --- a/drivers/ata/pata_it821x.c
-> > +++ b/drivers/ata/pata_it821x.c
-> > @@ -897,7 +897,16 @@ static int it821x_init_one(struct pci_dev *pdev, const
-> > struct pci_device_id *id) static const struct ata_port_info info_rdc_11 = {
-> >               .flags = ATA_FLAG_SLAVE_POSS,
-> >               .pio_mask = ATA_PIO4,
-> > -             .mwdma_mask = ATA_MWDMA2,
-> > +             .mwdma_mask = 0,
-> > +             .udma_mask = 0,
-> > +             /* No UDMA */
-> > +             .port_ops = &it821x_rdc_port_ops
-> > +     };
-> > +     static const struct ata_port_info info_rdc_01 = {
-> > +             .flags = ATA_FLAG_SLAVE_POSS,
-> > +             .pio_mask = ATA_PIO4,
-> > +             .mwdma_mask = 0,
-> > +             .udma_mask = 0,
-> >               /* No UDMA */
-> >               .port_ops = &it821x_rdc_port_ops
-> >       };
->
-> Why do you define this if it is never used?
->
-> Eike
