@@ -1,205 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab1JWXEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 19:04:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40996 "EHLO mx2.suse.de"
+	id S1752469Ab1JWXor (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 19:44:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42450 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab1JWXEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 19:04:10 -0400
-Date: Mon, 24 Oct 2011 10:04:08 +1100
+	id S1752141Ab1JWXop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 19:44:45 -0400
+Date: Mon, 24 Oct 2011 10:44:44 +1100
 From: NeilBrown <neilb@suse.de>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        John Stultz <john.stultz@linaro.org>,
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
         mark gross <markgross@thegnar.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lsusd - The Linux SUSpend Daemon
-Message-ID: <20111024100408.0627ac02@notabene.brown>
-In-Reply-To: <201110231448.23069.rjw@sisk.pl>
-References: <20111022093436.0742176c@notabene.brown>
-	<Pine.LNX.4.44L0.1110212125020.8657-100000@netrider.rowland.org>
-	<20111023192147.49413485@notabene.brown>
-	<201110231448.23069.rjw@sisk.pl>
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
+ suspend/hibernate interfaces
+Message-ID: <20111024104444.09337fe6@notabene.brown>
+In-Reply-To: <201110231516.36787.rjw@sisk.pl>
+References: <201110132145.42270.rjw@sisk.pl>
+	<201110230007.33683.rjw@sisk.pl>
+	<20111023135745.2bfe1d80@notabene.brown>
+	<201110231516.36787.rjw@sisk.pl>
 X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/vKf+coKbl_.x01psco0Bnfk"; protocol="application/pgp-signature"
+ boundary="Sig_/MxG93GsjyjNYJOKiUZx.6dg"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/vKf+coKbl_.x01psco0Bnfk
+--Sig_/MxG93GsjyjNYJOKiUZx.6dg
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 23 Oct 2011 14:48:22 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Sun, 23 Oct 2011 15:16:36 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
 > On Sunday, October 23, 2011, NeilBrown wrote:
-> > On Fri, 21 Oct 2011 22:00:13 -0400 (EDT) Alan Stern
-> > <stern@rowland.harvard.edu> wrote:
+> > On Sun, 23 Oct 2011 00:07:33 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wr=
+ote:
 > >=20
-> > > On Sat, 22 Oct 2011, NeilBrown wrote:
-> > >=20
-> > > > > >     It uses files in /var/run/suspend for all communication.
+> > > On Tuesday, October 18, 2011, NeilBrown wrote:
+
 > > > > >=20
-> > > > > I'm not so keen on using files for communication.  At best, they =
-are
-> > > > > rather awkward for two-way messaging.  If you really want to use =
-them,
-> > > > > then at least put them on a non-backed filesystem, like something=
- under
-> > > > > /dev.
-> > > >=20
-> > > > Isn't /var/run a tmpfs filesystem?  It should be.
-> > > > Surely /run is, so in the new world order the files should probably=
- go
-> > > > there.   But that is just a detail.
-> > >=20
-> > > On my Fedora-14 systems there is no /run, and /var/run is a regular=20
-> > > directory in a regular filesystem.
-> > >=20
-> > > > I like files...  I particularly like 'flock' to block suspend.   The
-> > > > rest.... whatever..
-> > > > With files, you only need a context switch when there is real commu=
-nication.
-> > > > With sockets, every message sent must be read so there will be a co=
-ntext
-> > > > switch.
-> > > >=20
-> > > > Maybe we could do something with futexes...
-> > >=20
-> > > Not easily -- as far as I can tell, futexes enjoy relatively little=20
-> > > support.  In any case, they provide the same service as a mutex, whic=
-h=20
-> > > means you'd have to build a shared lock on top of them.
-> > >=20
-> > > > > >     lsusd does not try to be event-loop based because:
-> > > > > >       - /sys/power/wakeup_count is not pollable.  This could pr=
-obably be
-> > > > > >         'fixed' but I want code to work with today's kernel.  I=
-t will probably
+> > > > > > With that problem solved, experimenting is much easier in user-=
+space than in
+> > > > > > the kernel.
 > > > > >=20
-> > > > > Why does this matter?
+> > > > > Somehow, I'm not exactly sure if we should throw all kernel-based=
+ solutions away
+> > > > > just yet.
 > > > >=20
-> > > > In my mind an event based program should never block.  Every action=
- should be
-> > > > non-blocking and only taken when 'poll' says it can.
-> > > > Reading /sys/power/wakeup_count can be read non-blocking, but you c=
-annot find
-> > > > out when it is sensible to try to read it again.  So it doesn't fit.
+> > > > My rule-of-thumb is that we should reserve kernel space for when
+> > > >   a/ it cannot be done in user space
+> > > >   b/ it cannot be done efficient in user space
+> > > >   c/ it cannot be done securely in user space
+> > > >=20
+> > > > I don't think any of those have been demonstrated yet.  If/when the=
+y are it
+> > > > would be good to get those kernel-based solutions out of the draw (=
+so yes:
+> > > > keep them out of the rubbish bin).
 > > >=20
-> > > There shouldn't be any trouble about making wakeup_count pollable.  It
-> > > also would need to respect nonblocking reads, which it currently does=
-=20
-> > > not do.
+> > > I have one more rule.  If my would-be user space solution has the fol=
+lowing
+> > > properties:
+> > >=20
+> > > * It is supposed to be used by all of the existing variants of user s=
+pace
+> > >   (i.e. all existing variants of user space are expected to use the v=
+ery same
+> > >   thing).
+> > >=20
+> > > * It requires all of those user space variants to be modified to work=
+ with it
+> > >   correctly.
+> > >=20
+> > > * It includes a daemon process having to be started on boot and run p=
+ermanently.
+> > >=20
+> > > then it likely is better to handle the problem in the kernel.
 > >=20
-> > Hmm.. you are correct.  I wonder why I thought it did support non-block=
-ing
-> > reads...
-> > I guess it was the code for handling an interrupted system call.
-> >=20
-> > I feel a bit uncomfortable with the idea of sysfs files that block but I
-> > don't think I can convincingly argue against it.
-> > A non-blocking flag could be passed in, but it would be a very messy ch=
-ange -
-> > lots of function call signatures changing needlessly:  we would need a =
-flag
-> > to the 'show' method ... or add a 'show_nonblock' method which would al=
-so be
-> > ugly.
-> >=20
-> >=20
-> > But I think there is a need to block - if there is an in-progress event=
- then
-> > it must be possible to wait for it to complete as it may not be visible=
- to
-> > userspace until then.
-> > We could easily enable 'poll' for wakeup_count and then make it always
-> > non-blocking, but I'm not really sure I want to require programs to use=
- poll,
-> > only to allow them.  And without using poll there is no way to wait.
-> >=20
-> > As wakeup_count really has to be single-access we could possibly fudge
-> > something by remembering the last value read (like we remember the last=
- value
-> > written).
-> >=20
-> > - if the current count is different from the last value read, then retu=
-rn
-> >   it even if there are in-progress events.
-> > - if the current count is the same as the last value read, then block u=
-ntil
-> >   there are no in-progress events and return the new value.
-> > - enable sysfs_poll on wakeup_count by calling sysfs_notify_dirent at t=
-he
-> >   end of wakeup_source_deactivated .... or calling something in
-> >   kernel/power/main.c which calls that.  However we would need to make
-> >   sysfs_notify_dirent a lot lighter weight first.  Maybe I should do th=
-at.
-> >=20
-> > Then a process that uses 'poll' could avoid reading wakeup_count except=
- when
-> > it has changed, and then it won't block.  And a process that doesn't us=
-e poll
-> > can block by simply reading twice - either explicitly or by going aroun=
-d a=20
-> >    read then write and it fails
-> > loop a second time.
-> >=20
-> > I'm not sure I'm completely comfortable with that, but it is the best I=
- could
-> > come up with.
+> > By that set or rules, upowerd, dbus, pulse audio, bluez, and probably s=
+ystemd
+> > all need to go in the kernel.  My guess is that you might not find wide
+> > acceptance for these rules.
 >=20
-> Well, you're now considering doing more and more changes to the kernel
-> just to be able to implement something in user space to avoid making
-> some _other_ changes to the kernel.  That doesn't sound right to me.
+> Well, that's not what I thought.  Perhaps I didn't express that precisely
+> enough.  Take systemd, for example.  You still can design and use a Linux=
+-based
+> system without systemd, so there's no requirement that _all_ variants of =
+user
+> space use the given approach.  The choice of whether or not to use systemd
+> is not a choice between a working and non-working system.
+>=20
+> However, this is not the case with the system daemon, becuase it's suppos=
+ed
+> to handle problems that aren't possible to address without it.  So either=
+ you
+> use it, or you end up with a (slightly) broken system.
 
-:-)   I thought I might get challenged on something like that.
+I think you are seeing a distinction that isn't there.
 
-I think the cases are different though.
+Every system needs a process to run as 'init' - as PID =3D=3D 1.
+It might be systemd, it might be sysv-init, it might be /bin/sh, but there
+are tasks that process much perform and there must be exactly one process
+performing those tasks and the test of the systems need to be able to work
+with that task (or ignore if it it is wholely independent).
 
-I'm not presenting this code as a new feature.  I don't need new features -
-I have user-space code which works correctly with the current kernel featur=
-es.
+Similarly every system need one process to manage suspend.  It can be my
+daemon or your daemon or Alan's daemon but it cannot be 2 or more of them
+running at the same time as that doesn't make any more sense than having
+systemd and init running at the same time.
 
-However the precise usage of wakeup_count is a little unusual in that it
-blocks when you read.  That doesn't mean that it cannot be used correctly,
-but it might limit the options available to a user-space program which wants
-to use it.   I was just looking at ways to generalise the existing interface
-so that it matches the rest of the kernel better.  I see it much more as a
-bug fix than as a new feature.
 
-I'm not saying we need this patch, and I'm not even sure I like it.  I just
-presented it as part of exploring exactly how the wakeup_count interface
-really works.  It is an interface that I like and that does allow the
-original suspend-race problem to be solved, but that does not mean it is
-necessarily perfect.
+> =20
+> > > > So I'd respond with "I'm not at all sure that we should throw away =
+an
+> > > > all-userspace solution just yet".  Particularly because many of us =
+seem to
+> > > > still be working to understand what all the issues really are.
+> > >=20
+> > > OK, so perhaps we should try to implement two concurrent solutions, o=
+ne
+> > > kernel-based and one purely in user space and decide which one is bet=
+ter
+> > > afterwards?
+> >=20
+> > Absolutely.
+> >=20
+> > My primary reason for entering this discussion is eloquently presented =
+in
+> >        http://xkcd.com/386/
+> >=20
+> > Someone said "We need to change the kernel to get race-free suspend" an=
+d this
+> > simply is not true.  I wanted to present a way to use the existing
+> > functionality to provide race-free suspend - and now even have code to =
+do it.
+> >=20
+> > If someone else wants to write a different implementation, either in
+> > userspace or kernel that is fine.
+> >=20
+> > They can then present it as "I know this can be implemented in userspac=
+e, but
+> > I don't like that solution for reasons X, Y, Z and so here is my better
+> > kernel-space implementation" then that is cool.  We can examine X, Y, Z=
+ and
+> > the code and see if the argument holds up.  Maybe it will, maybe not.
+> >=20
+> > So far the only arguments I've seen for putting the code in the kernel =
+are:
+> >=20
+> >  1/ it cannot be done in userspace - demonstrably wrong
+>=20
+> I'm not sure if that's correct.  If you meant "it can be done in user spa=
+ce
+> without _any_ kernel modifications", I probably wouldn't agree.
+
+I have code to do it correctly today with no kernel modifications.  It is
+called "lsusd".   Proof by example.  Or can you show that lsusd doesn't work
+correctly?
+
+
+>=20
+> >  2/ it is more efficient in the kernel - not demonstrated or even
+> >     convincingly argued
+>=20
+> I don't agree with that, but let's see.
+
+If you don't agree, then you presumably have a demonstration or a convincing
+argument.  Can you share it?
+
+>=20
+> >  3/ doing it in user-space is too confusing - we would need a clear
+> >     demonstration that a kernel interface is less confusing - and still
+> >     correct.  Also the best way to remove confusion is with clear
+> >     documentation and sample code, not by making up new interfaces.
+>=20
+> The user space solution makes up new interfaces too, although they are
+> confined to user space.
+>=20
+> To me, it all boils down to two factors: (1) the complexity and efficiency
+> of the code needed to implement the feature and (2) the complexity of the
+> resulting framework (be it in the kernel or in user space).
+>=20
+> >  4/ doing it in the kernel makes it more accessible to multiple desktop=
+s.
+> >     The success of freedesktop.org seems to contradict that.
+>=20
+> I don't agree here too.  Is Android a member of freedesktop.org?
+>
+
+This is completely irrelevant.
+
+The "multiple desktops" issue that you brought up is (as I understand it)
+multiple desktops running on the same computer, whether concurrently or
+sequentially.
+Android simply does not face that issue - it is the only "desktop" and is in
+complete control of the machine it runs on.
+So it doesn't need to solve the issue, so it doesn't need to be a member of
+freedesktop.org.
+
+
+> > So if you can do it a "better" way, please do.  But also please make su=
+re
+> > you can quantify "better".   I claim that user-space solutions are "bet=
+ter"
+> > because they are more flexible and easier to experiment with.  The "no
+> > regressions" rule actively discourages experimentation in the kernel so
+> > people should only do it if there is a clear benefit.
+>=20
+> You seem to suppose that every kernel modification necessarily has a pote=
+ntial
+> to lead to some regressions.  I'm not exactly use if that's correct
+> (e.g. adding a new driver usually doesn't affect people who don't need it=
+).
+
+I think that experimenting in the kernel (or at least in the upstream kerne=
+l)
+is likely to result in creating functionality that ultimately will
+not get used - the whole point of experimenting is that you probably get it
+wrong the first time.
+If this happens we either:
+  - remove the unwanted functionality, which could be considered a regressi=
+on
+    and so must be done very carefully
+  - leave the unwanted functionality there thus creating clutter and a
+    maintenance burden.
+
+i.e. the point of the "no-regressions" reference is that it tends to make it
+harder to remove mistakes.  Not impossible of course, but it requires a lot
+more care and time.
+
+So I am against adding code to the kernel until the problem is really well
+understood.  From the sorts of discussion that has been going on both in
+this thread and elsewhere I'm not convinced the problem really is well
+understood at all.
+I think we are very much at the stage where people should be experimenting
+with solutions, sharing the results, and learning.
+
+So please feel free to publish sample code - whether for the kernel or for
+user-space.  But it will only be credible if it is a fairly complete
+proposal - e.g. with sample code demonstrating how the kernel features are
+used.
+
+(my lsusd really needs a 'plugin' for pm_utils to get it to communicate with
+lsusd rather than writing to /sys/power/state ... I should probably add
+that.  Then it would be complete and usable on current desktops).
+
+
+
+>=20
+> > User-space solutions are much easier to introduce and then deprecate.
+>=20
+> That's demonstrably incorrect and the counter example is the hibernation =
+user
+> space interface.  The sheer amount of work needed to implement user
+> space-driven hibernation and maintain that code shows that it's not exact=
+ly
+> easy and it would be more difficult to deprecate than many existing kernel
+> interfaces at this point.
+>=20
+> So, even if you have implemented something in user space, the "no regress=
+ions"
+> rule and deprecation difficulties will apply to it as well as to the kern=
+el as
+> soon as you make a sufficient number of people use it.
+
+Can we agree then that we shouldn't impose any part of a possible solution =
+on
+anyone until it has been sensibly tested and reviewed in a variety of
+different use cases and found to be reliable and usable?
+
+I think that addresses my main concern with kernel-space additions - I fear
+that parts of them will end up unnecessary and unused but we will be stuck
+with them.
 
 Thanks,
 NeilBrown
 
 
---Sig_/vKf+coKbl_.x01psco0Bnfk
+--Sig_/MxG93GsjyjNYJOKiUZx.6dg
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIVAwUBTqSdaDnsnt1WYoG5AQI4GQ/8Ct+cuuG+vvjDru4Lw9JeXoHfYt3krhjS
-KpiQ0SS0xTD21QzYOU1ikGSodW3MlSbBz3YOzLDLyj/DoDS51Y50mrksfcOSO1FK
-ffSzfv0DbRoyqAvygwjygNe6IfmABdXl7HA23W1BjOisDY/4AkkSHi4bAyVdEa8u
-5nXi6TwhFTrP9EfLMXmHjcgGKIoFREUlxsWNpTD4JWdNrT1QAf4T66t3Lpe47acG
-fNV/z5qslptRPYK2ilX25i/3zBioSXQXycAIMZ0uLbdg0Y1FsRnHTl2HIVj9exFK
-SWqjwQPGQBs8XFoKg7910wVPbmExj7Oa1IYOn+SRZrwbuEJrYkjojgl0142n6lwQ
-HzkMlzqO5iXJd1AUlD7oZ5K0fGx7w9tqfZyKmW+1xH3YdcoF+If+n5DZtfU5vsFr
-E8BjA2Wcg05h3dKe4K9CGMv1vEJGKsNy380XA8bTNnxSupNOXWuP1EcqWLsYyRPf
-KEXMQwp/k22Ab3Toa8oVozFA8TmwmuHaZZJhimM7+nyJoX6o+2Y5r2npUheDRQg/
-VJYrFyAUg0bygn2zHxhoRoP7Lt7u+vtAZIwxEdWYgp9c5F8tmwU7rzCg6BLf3mla
-uggeGVxrynPwFKwRcx3tp91hUMd8nkoX5hnXtDaqhWh6qWp9JAckfaQbGjIAi7T8
-FksmaKYUl7M=
-=aBKR
+iQIVAwUBTqSm7Dnsnt1WYoG5AQKmPhAAkyV6nZBLFcYB4xtJJ5N4tZrFQw7NjOsE
+u0VJ9e3qngK2Sx/bmVqiheWD8uwTmBlYnrxDna4ap9gNcm+STjGUIIoa0BwtqcZX
+f6ztnakFo1SA0/J9NBzT5PnFkfv13eWwVzgflgKQklqh0OiwIesRUuCWSNajOSVQ
+jP+qFX0PbJlCDZkRhlcKEBPXP/JMFoZuVS9z/vB8QL90inb5TV22817UD8/2i3ZM
+XqT3VT6VH3XFCoz66Owup73GrWpOJHx3/ENoLN/pl2Uda3HMJcyRMDooc3D07ZJH
+buoSKtL+rNmHgCYmmE5gZRuO6gSkZKr2x73yuSBWsyPKBhZeVhTlwEWKUKaOls9o
+lCvz3hDO1vudgxUeLIc0mYmLlgoEmaCcC7kdcCq6BDBGyLdGO42obB772efAOBg3
+yvz/MVcm/T5epKOO2U8602sYCEk+xmyUNAalZaPGB9gWiUMA/ox9YHMMsffvuqip
+ZZk0nKaoGy84nsTU7fdZc4dHBGiUwrwTf6znWSWh1ioQhc3ESeE4zljJaqF55+Nl
+2NMgL4yJjzsyazVUpr6ai6amep8MOQOEnuJph0MLsaCW8TCSUBRq6v1oFKkHJVsE
+0wwYLHg7ONVm+DgVxhlgOG16Eztf6yYgOczfXVjnq9aspxq5Fs6dmypWUD8/f3oX
+e8JZLriMGV8=
+=rX8a
 -----END PGP SIGNATURE-----
 
---Sig_/vKf+coKbl_.x01psco0Bnfk--
+--Sig_/MxG93GsjyjNYJOKiUZx.6dg--
