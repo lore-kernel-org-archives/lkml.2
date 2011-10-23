@@ -1,88 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab1JWPK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 11:10:58 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43549 "EHLO
+	id S1751409Ab1JWPWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 11:22:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48929 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336Ab1JWPK5 (ORCPT
+	with ESMTP id S1750941Ab1JWPWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 11:10:57 -0400
-Date: Sun, 23 Oct 2011 23:09:57 +0800
-From: wangyanqing <udknight@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] init:enable usermodehelper as soon as we have a root
- filesystem
-Message-ID: <20111023150957.GA2937@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 23 Oct 2011 11:22:07 -0400
+Date: Sun, 23 Oct 2011 23:20:21 +0800
+From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+To: "Palash Bandyopadhyay" <Palash.Bandyopadhyay@conexant.com>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Mauro Carvalho Chehab" <mchehab@redhat.com>,
+        "Namhyung Kim" <namhyung@gmail.com>, "Joe Perches" <joe@perches.com>,
+        "Ilia Mirkin" <imirkin@alum.mit.edu>,
+        "Youquan Song" <youquan.song@intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/36] Staging: cx25821: Clean up patch series
+Message-ID: <20111023232021.59f9c193@inspire>
+In-Reply-To: <34B38BE41EDBA046A4AFBB591FA311320506CF35B4@NBMBX01.bbnet.ad>
+References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
+	<34B38BE41EDBA046A4AFBB591FA311320506CF35B4@NBMBX01.bbnet.ad>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-before we have a filesystem , it is useless to enable usermodehelper,
-and it may cause bug if we enable usermodehelper too early (see commit
-d5767c53535ac79758084773418e0ad186aba4a2 for the reason why linus mv 
-'usermodehelper_enable()' to the end of do_basic_setup, and commit 
-b0f84374b6ab0dc9c47975df0b02d46165d558d4).This patch
-enable usermodehelper as soon as we have a filesystem.
+On Sat, 22 Oct 2011 05:50:14 -0700
+"Palash Bandyopadhyay" <Palash.Bandyopadhyay@conexant.com> wrote:
 
-Signed-off-by: wang yanqing <udknight@gmail.com>
----
- init/do_mounts.c |    3 +++
- init/initramfs.c |    2 ++
- init/main.c      |    1 -
- 3 files changed, 5 insertions(+), 1 deletions(-)
+> Thanks Leonid!
+> 
+>   Change in patch #18 is also ok.
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index c0851a8..9575bdd 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -490,4 +490,7 @@ out:
- 	devtmpfs_mount("dev");
- 	sys_mount(".", "/", NULL, MS_MOVE, NULL);
- 	sys_chroot((const char __user __force *)".");
-+#ifndef CONFIG_BLK_DEV_INITRD
-+	usermodehelper_enable();
-+#endif
- }
-diff --git a/init/initramfs.c b/init/initramfs.c
-index 2531811..881fc4b 100644
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -581,6 +581,7 @@ static int __init populate_rootfs(void)
- 		err = unpack_to_rootfs((char *)initrd_start,
- 			initrd_end - initrd_start);
- 		if (!err) {
-+			usermodehelper_enable();
- 			free_initrd();
- 			return 0;
- 		} else {
-@@ -603,6 +604,7 @@ static int __init populate_rootfs(void)
- 			initrd_end - initrd_start);
- 		if (err)
- 			printk(KERN_EMERG "Initramfs unpacking failed: %s\n", err);
-+		usermodehelper_enable();
- 		free_initrd();
- #endif
- 	}
-diff --git a/init/main.c b/init/main.c
-index 03b408d..2e232cb 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -730,7 +730,6 @@ static void __init do_basic_setup(void)
- 	driver_init();
- 	init_irq_proc();
- 	do_ctors();
--	usermodehelper_enable();
- 	do_initcalls();
- }
- 
--- 
-1.7.3.4
+Thank you for review.
 
+> 
+> Regards,
+> Palash
+> 
+> ________________________________________
+> From: Leonid V. Fedorenchik [leonidsbox@gmail.com]
+> Sent: Friday, October 21, 2011 10:43 PM
+> To: Greg Kroah-Hartman
+> Cc: Mauro Carvalho Chehab; Namhyung Kim; Palash Bandyopadhyay; Joe Perches; Ilia Mirkin; Youquan Song; Leonid V. Fedorenchik; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH 00/36] Staging: cx25821: Clean up patch series
+> 
+> This patch series fixes some style issues in drivers/staging/cx25821
+> Mostly I was hoping to improve readability and fix some issues found by
+> checkpatch.pl script.
+> 
+> There is one question, however, in patch no. 18:
+> I deleted part of the comment that contradicts to the code and in this
+> case maybe I should edit the code to match the comment instead. I am not
+> sure if in this case it makes sense to check if width > 0.
+> 
+> Leonid V. Fedorenchik (36):
+>       Staging: cx25821: cx25821-alsa.c: Line up comments
+>       Staging: cx25821: cx25821-alsa.c: Add braces to else clause
+>       Staging: cx25821: cx25821-alsa.c: Fix indent
+>       Staging: cx25821: cx25821-alsa.c: Change line endings
+>       Staging: cx25821: cx25821-audio-upstream.c: Fix indent
+>       Staging: cx25821: cx25821-audio-upstream.c: Move operators
+>       Staging: cx25821: cx25821-audio-upstream.c: Change line endings
+>       Staging: cx25821: cx25821-audio.h: Line up defines
+>       Staging: cx25821: cx25821-audio.h: Fix multiline defines
+>       Staging: cx25821: cx25821-cards.c: Fix indent
+>       Staging: cx25821: cx25821-core.c: Delete empty line
+>       Staging: cx25821: cx25821-core.c: Fix indent
+>       Staging: cx25821: cx25821-core.c: Change line endings
+>       Staging: cx25821: cx25821-i2c.c: Change line endings
+>       Staging: cx25821: cx25821-medusa-defines.h: Fix typo
+>       Staging: cx25821: cx25821-medusa-defines.h: Line up defines
+>       Staging: cx25821: cx25821-medusa-reg.h: Line up defines
+>       Staging: cx25821: cx25821-medusa-video.c: Fix comment
+>       Staging: cx25821: cx25821-medusa-video.c: Move operators
+>       Staging: cx25821: cx25821-medusa-video.c: Change line endings
+>       Staging: cx25821: cx25821-video-upstream-ch2.c: Line up comments
+>       Staging: cx25821: cx25821-video-upstream-ch2.c: Fix indent
+>       Staging: cx25821: cx25821-video-upsstream-ch2.c: Move operators
+>       Staging: cx25821: cx25821-video-upstream-ch2.c: Remove braces
+>       Staging: cx25821: cx25821-video-upstream-ch2.c: Change line endings
+>       Staging: cx25821: cx25821-video-upstream.c: Remove braces
+>       Staging: cx25821: cx25821-video-upstream.c: Fix indent
+>       Staging: cx25821: cx25821-video-upstream.c: Change line endings
+>       Staging: cx25821: cx25821-video.c: Delete empty line
+>       Staging: cx25821: cx25821-video.c: Change spaces
+>       Staging: cx25821: cx25821-video.c: Fix assignment
+>       Staging: cx25821: cx25821-video.c: Fix definitions
+>       Staging: cx25821: cx25821-video.c: Move operators
+>       Staging: cx25821: cx25821-video.c: Fix indent
+>       Staging: cx25821: cx25821-video.c: Change line endings
+>       Staging: cx25821: cx25821.h: Line up defines
+> 
+>  drivers/staging/cx25821/cx25821-alsa.c             |   73 ++--
+>  drivers/staging/cx25821/cx25821-audio-upstream.c   |  102 ++--
+>  drivers/staging/cx25821/cx25821-audio.h            |   39 +-
+>  drivers/staging/cx25821/cx25821-cards.c            |    2 +-
+>  drivers/staging/cx25821/cx25821-core.c             |   57 +--
+>  drivers/staging/cx25821/cx25821-i2c.c              |   10 +-
+>  drivers/staging/cx25821/cx25821-medusa-defines.h   |    6 +-
+>  drivers/staging/cx25821/cx25821-medusa-reg.h       |  518 ++++++++++----------
+>  drivers/staging/cx25821/cx25821-medusa-video.c     |  410 ++++++----------
+>  .../staging/cx25821/cx25821-video-upstream-ch2.c   |  126 ++---
+>  drivers/staging/cx25821/cx25821-video-upstream.c   |  146 +++----
+>  drivers/staging/cx25821/cx25821-video.c            |  145 +++---
+>  drivers/staging/cx25821/cx25821.h                  |    4 +-
+>  13 files changed, 745 insertions(+), 893 deletions(-)
+> Conexant E-mail Firewall (Conexant.Com) made the following annotations
+> ---------------------------------------------------------------------
+> ********************** Legal Disclaimer **************************** 
+> 
+> "This email may contain confidential and privileged material for the sole use of the intended recipient. Any unauthorized review, use or distribution by others is strictly prohibited. If you have received the message in error, please advise the sender by reply email and delete the message. Thank you." 
+> 
+> ********************************************************************** 
+> 
+> ---------------------------------------------------------------------
+> 
+
+Leonid V. Fedorenchik
