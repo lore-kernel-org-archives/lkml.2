@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab1JWGiD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 02:38:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40090 "EHLO mx2.suse.de"
+	id S1754681Ab1JWGeK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 02:34:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab1JWGeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 02:34:14 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:38 2011
-Message-Id: <20111023062538.403220218@pistachio.kroah.org>
+	id S1751583Ab1JWGeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 02:34:06 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Sun Oct 23 08:25:39 2011
+Message-Id: <20111023062539.781718204@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Sun, 23 Oct 2011 08:24:35 +0200
+Date: Sun, 23 Oct 2011 08:24:44 +0200
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [07/27] cputimer: Cure lock inversion
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, greg@kroah.com,
+        Christoph Hellwig <hch@lst.de>
+Subject: [16/27] xfs: start periodic workers later
 In-Reply-To: <20111023062833.GA8126@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,80 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit bcd5cff7216f9b2de0a148cc355eac199dc6f1cf upstream.
+commit 2bcf6e970f5a88fa05dced5eeb0326e13d93c4a1 upstream
 
-There's a lock inversion between the cputimer->lock and rq->lock;
-notably the two callchains involved are:
+Start the periodic sync workers only after we have finished xfs_mountfs
+and thus fully set up the filesystem structures.  Without this we can
+call into xfs_qm_sync before the quotainfo strucute is set up if the
+mount takes unusually long, and probably hit other incomplete states
+as well.
 
- update_rlimit_cpu()
-   sighand->siglock
-   set_process_cpu_timer()
-     cpu_timer_sample_group()
-       thread_group_cputimer()
-         cputimer->lock
-         thread_group_cputime()
-           task_sched_runtime()
-             ->pi_lock
-             rq->lock
+Also clean up the xfs_fs_fill_super error path by using consistent
+label names, and removing an impossible to reach case.
 
- scheduler_tick()
-   rq->lock
-   task_tick_fair()
-     update_curr()
-       account_group_exec()
-         cputimer->lock
-
-Where the first one is enabling a CLOCK_PROCESS_CPUTIME_ID timer, and
-the second one is keeping up-to-date.
-
-This problem was introduced by e8abccb7193 ("posix-cpu-timers: Cure
-SMP accounting oddities").
-
-Cure the problem by removing the cputimer->lock and rq->lock nesting,
-this leaves concurrent enablers doing duplicate work, but the time
-wasted should be on the same order otherwise wasted spinning on the
-lock and the greater-than assignment filter should ensure we preserve
-monotonicity.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Simon Kirby <sim@hostway.ca>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Link: http://lkml.kernel.org/r/1318928713.21167.4.camel@twins
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Reviewed-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/posix-cpu-timers.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/xfs/linux-2.6/xfs_super.c |   35 ++++++++++++++---------------------
+ 1 file changed, 14 insertions(+), 21 deletions(-)
 
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -274,9 +274,7 @@ void thread_group_cputimer(struct task_s
- 	struct task_cputime sum;
- 	unsigned long flags;
+--- a/fs/xfs/linux-2.6/xfs_super.c
++++ b/fs/xfs/linux-2.6/xfs_super.c
+@@ -1412,37 +1412,35 @@ xfs_fs_fill_super(
+ 	sb->s_time_gran = 1;
+ 	set_posix_acl_flag(sb);
  
--	spin_lock_irqsave(&cputimer->lock, flags);
- 	if (!cputimer->running) {
--		cputimer->running = 1;
- 		/*
- 		 * The POSIX timer interface allows for absolute time expiry
- 		 * values through the TIMER_ABSTIME flag, therefore we have
-@@ -284,8 +282,11 @@ void thread_group_cputimer(struct task_s
- 		 * it.
- 		 */
- 		thread_group_cputime(tsk, &sum);
-+		spin_lock_irqsave(&cputimer->lock, flags);
-+		cputimer->running = 1;
- 		update_gt_cputime(&cputimer->cputime, &sum);
+-	error = xfs_syncd_init(mp);
+-	if (error)
+-		goto out_filestream_unmount;
+-
+ 	xfs_inode_shrinker_register(mp);
+ 
+ 	error = xfs_mountfs(mp);
+ 	if (error)
+-		goto out_syncd_stop;
++		goto out_filestream_unmount;
++
++	error = xfs_syncd_init(mp);
++	if (error)
++		goto out_unmount;
+ 
+ 	root = igrab(VFS_I(mp->m_rootip));
+ 	if (!root) {
+ 		error = ENOENT;
+-		goto fail_unmount;
++		goto out_syncd_stop;
+ 	}
+ 	if (is_bad_inode(root)) {
+ 		error = EINVAL;
+-		goto fail_vnrele;
++		goto out_syncd_stop;
+ 	}
+ 	sb->s_root = d_alloc_root(root);
+ 	if (!sb->s_root) {
+ 		error = ENOMEM;
+-		goto fail_vnrele;
++		goto out_iput;
+ 	}
+ 
+ 	return 0;
+ 
+- out_syncd_stop:
+-	xfs_inode_shrinker_unregister(mp);
+-	xfs_syncd_stop(mp);
+  out_filestream_unmount:
++	xfs_inode_shrinker_unregister(mp);
+ 	xfs_filestream_unmount(mp);
+  out_free_sb:
+ 	xfs_freesb(mp);
+@@ -1456,17 +1454,12 @@ xfs_fs_fill_super(
+  out:
+ 	return -error;
+ 
+- fail_vnrele:
+-	if (sb->s_root) {
+-		dput(sb->s_root);
+-		sb->s_root = NULL;
+-	} else {
+-		iput(root);
 -	}
-+	} else
-+		spin_lock_irqsave(&cputimer->lock, flags);
- 	*times = cputimer->cputime;
- 	spin_unlock_irqrestore(&cputimer->lock, flags);
- }
+-
+- fail_unmount:
+-	xfs_inode_shrinker_unregister(mp);
++ out_iput:
++	iput(root);
++ out_syncd_stop:
+ 	xfs_syncd_stop(mp);
++ out_unmount:
++	xfs_inode_shrinker_unregister(mp);
+ 
+ 	/*
+ 	 * Blow away any referenced inode in the filestreams cache.
 
 
