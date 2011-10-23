@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab1JWQRo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 12:17:44 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:50943 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751726Ab1JWQRn (ORCPT
+	id S1752230Ab1JWQ0H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 12:26:07 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52576 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab1JWQ0F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 12:17:43 -0400
-Date: Sun, 23 Oct 2011 12:17:42 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: NeilBrown <neilb@suse.de>
-cc: John Stultz <john.stultz@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        mark gross <markgross@thegnar.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lsusd - The Linux SUSpend Daemon
-In-Reply-To: <20111023192147.49413485@notabene.brown>
-Message-ID: <Pine.LNX.4.44L0.1110231212480.5199-100000@netrider.rowland.org>
+	Sun, 23 Oct 2011 12:26:05 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1732355.g0uNX7XlKI@donald.sf-tec.de>
+References: <1319346300-18151-1-git-send-email-paul.s.schilling@gmail.com>
+	<1732355.g0uNX7XlKI@donald.sf-tec.de>
+Date: Sun, 23 Oct 2011 11:26:04 -0500
+Message-ID: <CAC=G6szPCgSDB_1te3wZx2GGBiHMXMuQBQznSfjy2n1GtfCPxA@mail.gmail.com>
+Subject: Re: [PATCH 02/15] ATA : vortex86 : fix vortex86dx/sx hardware CRC bug.
+From: Paul Schilling <paul.s.schilling@gmail.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Jeff Garzik <jgarzik@pobox.com>, "David S. Miller" <davem@davemloft.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Oct 2011, NeilBrown wrote:
+Thanks, That was a good catch.  I had that extra struct for another
+revision of the RDC peripheral integrated into the
+Vortex86DX.  I removed it when I moved it to the pata_rdc.c driver but
+forgot the struct.  The it821x driver works
+for the RDC drivers when DMA is turned off.  But the RDC driver is the
+more logical choice.
 
-> > There shouldn't be any trouble about making wakeup_count pollable.  It
-> > also would need to respect nonblocking reads, which it currently does 
-> > not do.
-> 
-> Hmm.. you are correct.  I wonder why I thought it did support non-blocking
-> reads...
-> I guess it was the code for handling an interrupted system call.
-> 
-> I feel a bit uncomfortable with the idea of sysfs files that block but I
-> don't think I can convincingly argue against it.
-> A non-blocking flag could be passed in, but it would be a very messy change -
-> lots of function call signatures changing needlessly:  we would need a flag
-> to the 'show' method ... or add a 'show_nonblock' method which would also be
-> ugly.
+I will make the fix and send out the new patch.
 
-Right.  Sysfs is pretty inflexible.
+I accidentally sent this through the gmail interface with html on,
+Some of you may get this email twice.
 
-> But I think there is a need to block - if there is an in-progress event then
-> it must be possible to wait for it to complete as it may not be visible to
-> userspace until then.
-> We could easily enable 'poll' for wakeup_count and then make it always
-> non-blocking, but I'm not really sure I want to require programs to use poll,
-> only to allow them.  And without using poll there is no way to wait.
-> 
-> As wakeup_count really has to be single-access we could possibly fudge
-> something by remembering the last value read (like we remember the last value
-> written).
+Thanks,
+Paul Schilling
 
-A simpler approach would be to add a nonblocking variant:  
-/sys/power/wakeup_count_nb.  It would make sense to support poll for 
-this file; poll isn't very useful for the wakeup_count file.
-
-Alan Stern
-
+On Sun, Oct 23, 2011 at 3:20 AM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+>
+> Paul Schilling wrote:
+> > This fixes a DMA issue related to a CRC bug on
+> > the RDC pata peripherial found on the vortex86sx and vortex86dx.
+> >
+> > Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
+> > ---
+> >  drivers/ata/pata_it821x.c |   22 ++++++++++++++++++----
+> >  drivers/ata/pata_rdc.c    |   29 ++++++++++++++++++++++++-----
+> >  drivers/ide/it821x.c      |    9 +++++++--
+> >  include/linux/pci_ids.h   |    2 ++
+> >  4 files changed, 51 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/drivers/ata/pata_it821x.c b/drivers/ata/pata_it821x.c
+> > index c5532b9..5f8a54a 100644
+> > --- a/drivers/ata/pata_it821x.c
+> > +++ b/drivers/ata/pata_it821x.c
+> > @@ -897,7 +897,16 @@ static int it821x_init_one(struct pci_dev *pdev, const
+> > struct pci_device_id *id) static const struct ata_port_info info_rdc_11 = {
+> >               .flags = ATA_FLAG_SLAVE_POSS,
+> >               .pio_mask = ATA_PIO4,
+> > -             .mwdma_mask = ATA_MWDMA2,
+> > +             .mwdma_mask = 0,
+> > +             .udma_mask = 0,
+> > +             /* No UDMA */
+> > +             .port_ops = &it821x_rdc_port_ops
+> > +     };
+> > +     static const struct ata_port_info info_rdc_01 = {
+> > +             .flags = ATA_FLAG_SLAVE_POSS,
+> > +             .pio_mask = ATA_PIO4,
+> > +             .mwdma_mask = 0,
+> > +             .udma_mask = 0,
+> >               /* No UDMA */
+> >               .port_ops = &it821x_rdc_port_ops
+> >       };
+>
+> Why do you define this if it is never used?
+>
+> Eike
