@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1JXJZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:25:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56493 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab1JXJZu (ORCPT
+	id S1754390Ab1JXJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:28:24 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48068 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab1JXJ2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:25:50 -0400
-Date: Mon, 24 Oct 2011 11:25:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH -rt 4/5] workqueue: hotplug fix
-In-Reply-To: <20111024022648.GA24581@zhy>
-Message-ID: <alpine.LFD.2.02.1110241124590.2642@ionos>
-References: <1318762607-2261-1-git-send-email-yong.zhang0@gmail.com> <1318762607-2261-5-git-send-email-yong.zhang0@gmail.com> <alpine.LFD.2.02.1110190913320.3240@ionos> <20111024022648.GA24581@zhy>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 24 Oct 2011 05:28:23 -0400
+Message-ID: <4EA52FCF.2090508@linux.vnet.ibm.com>
+Date: Mon, 24 Oct 2011 14:58:47 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Greg KH <gregkh@suse.de>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC V2 2/5] debugfs: Renaming of xen functions and change
+ unsigned to u32
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190459.16364.98151.sendpatchset@oc5400248562.ibm.com> <20111023221920.GA591@suse.de>
+In-Reply-To: <20111023221920.GA591@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Oct 2011, Yong Zhang wrote:
-> On Wed, Oct 19, 2011 at 09:14:28AM +0200, Thomas Gleixner wrote:
-> > > -	spin_unlock_irqrestore(&gcwq->lock, flags);
-> > 
-> > This part of the patch is pretty pointless.
-> 
-> But CPU_STARTING is called with irq disabled, and it will take
-> the lock unconditionally. Thus below warning is triggered:
+On 10/24/2011 03:49 AM, Greg KH wrote:
+> On Mon, Oct 24, 2011 at 12:34:59AM +0530, Raghavendra K T wrote:
+>> Renaming of xen functions and change unsigned to u32.
+>
+> Why not just rename when you move the functions?  Why the extra step?
+>
+Intention was only clarity. Yes, if this patch is an overhead, I 'll 
+combine both the patches.
+> greg k-h
+>
 
-Aarg, yes.
-
-Thanks,
-
-	tglx
