@@ -1,86 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab1JXQNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 12:13:55 -0400
-Received: from mail.fuel7.com ([74.222.0.51]:39184 "EHLO mail.fuel7.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932874Ab1JXQNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 12:13:54 -0400
-Message-ID: <4EA58EC0.7080502@fuel7.com>
-Date: Mon, 24 Oct 2011 11:13:52 -0500
-From: Kyle Manna <kyle.manna@fuel7.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S932986Ab1JXQP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 12:15:56 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:48250 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932285Ab1JXQPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 12:15:55 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4EA58F3B.4050702@cam.ac.uk>
+Date: Mon, 24 Oct 2011 17:15:55 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH 6/6] mfd: TPS65910: Improve regulator init data
-References: <1318962388-26151-1-git-send-email-kyle.manna@fuel7.com> <1318962388-26151-7-git-send-email-kyle.manna@fuel7.com> <20111019140027.GH18713@sirena.org.uk>
-In-Reply-To: <20111019140027.GH18713@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: guenter.roeck@ericsson.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linus.ml.walleij@gmail.com" <linus.ml.walleij@gmail.com>,
+        "zdevai@gmail.com" <zdevai@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 5/6] IIO:hwmon interface client driver.
+References: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>  <1319103187-27791-6-git-send-email-jic23@cam.ac.uk>  <1319123566.3720.297.camel@groeck-laptop> <4EA03E8D.1010303@cam.ac.uk>  <4EA53973.9080102@cam.ac.uk> <1319470784.2583.46.camel@groeck-laptop>  <4EA58B39.8030608@cam.ac.uk> <1319472607.2583.49.camel@groeck-laptop>
+In-Reply-To: <1319472607.2583.49.camel@groeck-laptop>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2011 09:00 AM, Mark Brown wrote:
-> On Tue, Oct 18, 2011 at 01:26:28PM -0500, Kyle Manna wrote:
->> Improve the interface between platform code/board files to the TPS65910
-> Again, *always* CC maintainers on patches.
-
-This was an oversight on my part.
-
->
->> regulators.  The TWL4030/6030 code was used as an example interface.
-> This isn't a good sign...
-
-I've reviewed other PMICs (ie Wolfson Micro ;) ) and will post an 
-updated series with an interface similar to what is used there.  The new 
-approach makes more sense and keeps the code/patch small.
-
->
->> This improved interface will allow use of the regulators without
->> specifying all the constraints. Also gets rid of an assumption that
->> the platform pass in an array of correct size and was unchecked.
-> You've not described the changes between the two interfaces.  Note that
-> empty constraints should be absolutely fine with the API.
->
->> +	if (init_data->constraints.name)
->> +		pmic->desc[i].name = init_data->constraints.name;
->> +	else
->> +		pmic->desc[i].name = info[i].name;
-> No, this is broken.  The name of the regulator is a fixed property of
-> the device and isn't something that ought to be overridden per system.
-
-Understood.
-
->
->> +	/* TPS65910 and TPS65911 Regulators */
->> +	rdev = add_regulator(pmic, info, TPS65910_REG_VRTC,
->> +			pmic_plat_data->vrtc);
->> +	if (IS_ERR(rdev))
->> +		return PTR_ERR(rdev);
->> +	rdev = add_regulator(pmic, info, TPS65910_REG_VIO,
->> +			pmic_plat_data->vio);
->> +
->> +	if (IS_ERR(rdev))
->> +		return PTR_ERR(rdev);
->> +
->> +	rdev = add_regulator(pmic, info, TPS65910_REG_VDD1,
->> +			pmic_plat_data->vdd1);
->> +	if (IS_ERR(rdev))
->> +		return PTR_ERR(rdev);
-> This looks like a regression - we've gone from looping over an array
-> which is nice and simple to explicit code for each individual regulator
-> giving us lots of repetitive code...
-
-Will be revised.
->> -err_unregister_regulator:
->> -	while (--i>= 0)
->> -		regulator_unregister(pmic->rdev[i]);
->> -	kfree(pmic->rdev);
-> ...and loosing all our cleanup if things go wrong which isn't great
-> either.
+On 10/24/11 17:10, Guenter Roeck wrote:
+> On Mon, 2011-10-24 at 11:58 -0400, Jonathan Cameron wrote:
+>> On 10/24/11 16:39, Guenter Roeck wrote:
+>>> On Mon, 2011-10-24 at 06:09 -0400, Jonathan Cameron wrote:
+>>> [ ... ]
+>>>>>>> +/*
+>>>>>>> + * Assumes that IIO and hwmon operate in the same base units.
+>>>>>>> + * This is supposed to be true, but needs verification for
+>>>>>>> + * new channel types.
+>>>>>>> + */
+>>>>>>> +static ssize_t iio_hwmon_read_val(struct device *dev,
+>>>>>>> +				  struct device_attribute *attr,
+>>>>>>> +				  char *buf)
+>>>>>>> +{
+>>>>>>> +	long result;
+>>>>>>> +	int val, ret, scaleint, scalepart;
+>>>>>>> +	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
+>>>>>>> +	struct iio_hwmon_state *state = dev_get_drvdata(dev);
+>>>>>>> +
+>>>>>>> +	/*
+>>>>>>> +	 * No locking between this pair, so theoretically possible
+>>>>>>> +	 * the scale has changed.
+>>>>>>> +	 */
+>>>>>>> +	ret = iio_read_channel_raw(state->channels[sattr->index],
+>>>>>>> +				   &val);
+>>>>>>> +	if (ret < 0)
+>>>>>>> +		return ret;
+>>>>>>> +
+>>>>>>> +	ret = iio_read_channel_scale(state->channels[sattr->index],
+>>>>>>> +				     &scaleint, &scalepart);
+>>>>>>> +	if (ret < 0)
+>>>>>>> +		return ret;
+>>>>>>> +	switch (ret) {
+>>>>>>> +	case IIO_VAL_INT:
+>>>>>>> +		result = val * scaleint;
+>>>>>>> +		break;
+>>>>>>> +	case IIO_VAL_INT_PLUS_MICRO:
+>>>>>>> +		result = (long)val * (long)scaleint +
+>>>>>>> +			(long)val * (long)scalepart / 1000000L;
+>>>>>>> +		break;
+>>>>>>> +	case IIO_VAL_INT_PLUS_NANO:
+>>>>>>> +		result = (long)val * (long)scaleint +
+>>>>>>> +			(long)val * (long)scalepart / 1000000000L;
+>>>>>>> +		break;
+>>>>>>
+>>>>>> Still easy to imagine that val * scalepart gets larger than 2147483647L
+>>>>>> (on machines where sizeof(long) = 4) ... it will already happen if the
+>>>>>> result of (val * scalepart / 1000000000) is larger than 2. 
+>>>>> Good point.  I really ought to have done the calcs.
+>>>>> If we have maximum possible value in here things will be ugly.
+>>>>>
+>>>>> Worst case is scalepart is 9999999999. (could be done as 1 - 0.000000001
+>>>>> which would be nicer, but we don't specify a preference - from this
+>>>>> discussion I am suspecting we should!)
+>>>>>
+>>>>> Looks like 64 bits is going to be a requirement as you say.
+>>>>>>
+>>>>>> What value range do you expect to see here ?
+>>>>>>
+>>>>>> If (val * scaleint) is already the milli-unit, scalepart would possibly
+>>>>>> only address fractions of milli-units. If so, the result of (val *
+>>>>>> scalepart / 1000000000L) might always be smaller than 1, ie 0. 
+>>>>> It certainly should be.
+>>>>>> If so, for the calculation to have any value, you might be better off using
+>>>>>> DIV_ROUND_CLOSEST(val * scalepart, 1000000000L).
+>>>>> Good idea.
+>>>>>>
+>>>>>> I am a bit confused by this anyway. Since hwmon in general reports
+>>>>>> milli-units, VAL_INT appears to reflect milli-units, VAL_INT_PLUS_MICRO
+>>>>>> really means nano-units, and IIO_VAL_INT_PLUS_NANO really means
+>>>>>> pico-units. Is this correct ?
+>>>>> Micro units of the scale factor.
+>>>>>
+>>>>> Take my test part a max1363...
+>>>>> Scale is actually 0.5 so each adc count (e.g. raw value) is 0.5millivolts.
+>>>>>
+>>>>> scale int here is 0,
+>>>>> scale part is 500,000 (so 0.5) and it returns IIO_VAL_INT_PLUS_MICRO.
+>>>>
+>>>> How about the following?  It'll be extremely costly, but this isn't exactly
+>>>> a fast path!
+>>>>
+>>>> 	case IIO_VAL_INT_PLUS_MICRO:
+>>>> 		result = (s64)val * (s64)scaleint +
+>>>> 			div_s64((s64)val * (s64)scalepart, 1000000LL);
+>>>> 		break;
+>>>> 	case IIO_VAL_INT_PLUS_NANO:
+>>>> 		result = (s64)val * (s64)scaleint +
+>>>> 			div_s64((s64)val * (s64)scalepart, 1000000000LL);
+>>>> 		break;
+>>>
+>>> Is div_s64 really necessary, or would
+>>>
+>>> 		result = (long)val * (long)scaleint +
+>>> 			DIV_ROUND_CLOSEST((s64)val * (s64)scalepart,
+>>> 					 1000000000LL);
+>>>
+>>> work as well ?
+>> Not if you want it to compile on arm v5 by the look of it.
+>>
+>> ERROR: "__aeabi_ldivmod" [drivers/staging/iio/iio_hwmon.ko] undefined!
+>>
+> Annoying. Ok, I don't have a better idea than using div_s64. You don't
+> need s64 for the first part of the operation (val * scaleint), though,
+> since the result is a long.
+True enough. Pretty unlikely we are going to have 2 MV hwmon devices any
+time soon.  I'll pop that back down to int * int I think!
 
