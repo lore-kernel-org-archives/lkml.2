@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050Ab1JXQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 12:56:22 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35313 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932979Ab1JXQ4T (ORCPT
+	id S933026Ab1JXRCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 13:02:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37051 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab1JXRCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 12:56:19 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        mmarek@suse.cz
-Subject: Re: [PATCH RFC] try to create KBUILD_OUTPUT automatically
-In-Reply-To: Your message of "Sat, 22 Oct 2011 11:12:29 EDT."
-             <alpine.LNX.2.00.1110221049460.59156@linux>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.LNX.2.00.1110221049460.59156@linux>
+	Mon, 24 Oct 2011 13:02:30 -0400
+Subject: Re: Linux USB HID should ignore values outside Logical
+ Minimum/Maximum range
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Denilson Figueiredo de =?ISO-8859-1?Q?S=E1?= 
+	<denilsonsa@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-usb@vger.kernel.org
+In-Reply-To: <op.v3q34la3dsdv5o@localhost>
+References: <op.v3q34la3dsdv5o@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Oct 2011 19:09:43 +0200
+Message-ID: <1319476183.3210.12.camel@lovely>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1319475304_2592P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 24 Oct 2011 12:55:04 -0400
-Message-ID: <8033.1319475304@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4EA59872.0032,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1319475304_2592P
-Content-Type: text/plain; charset=us-ascii
+Hi Denilson,
 
-On Sat, 22 Oct 2011 11:12:29 EDT, Peter Foley said:
-> This patch makes it possible to execute make O=work instead of
-> mkdir work
-> make O=work
+ please see my comment below.
 
-The case can be made that this is a Bad Idea, because it means you can't catch
-a typo in your O= setting.  This is particularly bad when it silently fails to
-update the stuff in out-dir because you did a 'make O=out-diir'.
+On Sat, 2011-10-22 at 09:42 -0200, Denilson Figueiredo de Sá wrote:
+> Short description:
+> 
+> An absolute pointing device using USB HID defines a LOGICAL_MINIMUM and
+> a LOGICAL_MAXIMUM for X, Y axes, and then sends a HID report containing
+> values outside that range.
+> 
+> Linux kernel should ignore values outside that range, as they are not
+> meaningful.
 
-So NACK on this, if anybody cares what I think... ;)
+To answer with a quote from the comment above input.h:"struct
+input_absinfo":
+
+ *
+ * Note that input core does not clamp reported values to the
+ * [minimum, maximum] limits, such task is left to userspace.
+ *
+
+to do so, use this from input.h:
+
+#define EVIOCGABS(abs)		_IOR('E', 0x40 + (abs), struct input_absinfo)	/* get abs value/limits */
+#define EVIOCSABS(abs)		_IOW('E', 0xc0 + (abs), struct input_absinfo)	/* set abs value/limits */
 
 
---==_Exmh_1319475304_2592P
-Content-Type: application/pgp-signature
+> <SNIP>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Thanks,
+ -- chf
 
-iD8DBQFOpZhocC3lWbTT17ARAl/eAJ97DHrnIkFcivMcLg/HgJbTA6pECwCfehy0
-HCq3iqgo/rN5u7o+XasDpvY=
-=XURA
------END PGP SIGNATURE-----
-
---==_Exmh_1319475304_2592P--
 
