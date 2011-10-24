@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab1JXV7b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 17:59:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43924 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755729Ab1JXV7a (ORCPT
+	id S1756123Ab1JXWEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:04:25 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63945 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab1JXWEX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 17:59:30 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Grant Likely <grant@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] h8300: Move gpio.h to gpio-internal.h
-Date: Mon, 24 Oct 2011 23:59:21 +0200
-Message-Id: <1319493561-4094-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+	Mon, 24 Oct 2011 18:04:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <201110211339.59280.arnd@arndb.de>
+References: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
+ <201110211339.59280.arnd@arndb.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 25 Oct 2011 00:04:02 +0200
+X-Google-Sender-Auth: nbzntvlOjxNi_DNlsAO0cI0TZ-0
+Message-ID: <CACxGe6sFrJh+Y5CJVMTPiWH3m=j+J_YUzLP=MiaBbsvDkeA_Jg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: fix build error in include/asm-generic/gpio.h
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Hamo <hamo.by@gmail.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current h8300 GPIO implementation doesn't provide the standard GPIO
-API, and in fact provides only direction control rather than normal GPIO
-functionality. Currently this is only used by the platform interrupt
-implementation rather than by a range of drivers so in preparation for
-moving over to gpiolib move the header out of the way of the gpiolib
-header, allowing a default GPIO implementation to be provided.
+On Fri, Oct 21, 2011 at 1:39 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 21 October 2011, Hamo wrote:
+>> Should call the platform-specific __gpio_{get,set}_value
+>> instead of generic gpio_{get,set}_value
+>>
+>> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+>> ---
+>>  include/asm-generic/gpio.h |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> Grant, can you put that into the gpio tree?
 
-For actual use of these GPIOs with gpiolib a real driver would still need
-to be written but there appears to be no current need for this.
+I can.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+Hamo, next time make sure you cc: the relevant subsystem maintainer
+(in this case, me) when submitting patches.  You can find the
+maintainer by using ./scripts/get_maintainer.pl, or by looking at the
+MAINTAINERS file.  It is more work for me when I don't receive the
+patch directly in my inbox.
 
-It might be best to merge this via the gpiolib tree, partly because
-there appears to be little other activity on h8300 right now and partly
-to allow further refactoring.
+g.
 
- arch/h8300/include/asm/{gpio.h => gpio-internal.h} |    0
- arch/h8300/platform/h8300h/irq.c                   |    2 +-
- arch/h8300/platform/h8s/irq.c                      |    2 +-
- 3 files changed, 2 insertions(+), 2 deletions(-)
- rename arch/h8300/include/asm/{gpio.h => gpio-internal.h} (100%)
+>
+>> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+>> index d494001..6acff5d 100644
+>> --- a/include/asm-generic/gpio.h
+>> +++ b/include/asm-generic/gpio.h
+>> @@ -220,13 +220,13 @@ static inline int gpio_cansleep(unsigned gpio)
+>>  static inline int gpio_get_value_cansleep(unsigned gpio)
+>>  {
+>>       might_sleep();
+>> -     return gpio_get_value(gpio);
+>> +     return __gpio_get_value(gpio);
+>>  }
+>>
+>>  static inline void gpio_set_value_cansleep(unsigned gpio, int value)
+>>  {
+>>       might_sleep();
+>> -     gpio_set_value(gpio, value);
+>> +     __gpio_set_value(gpio, value);
+>>  }
+>>
+>>  #endif /* !CONFIG_GPIOLIB */
+>> --
+>> 1.7.1
+>>
+>
+>
 
-diff --git a/arch/h8300/include/asm/gpio.h b/arch/h8300/include/asm/gpio-internal.h
-similarity index 100%
-rename from arch/h8300/include/asm/gpio.h
-rename to arch/h8300/include/asm/gpio-internal.h
-diff --git a/arch/h8300/platform/h8300h/irq.c b/arch/h8300/platform/h8300h/irq.c
-index e977345..bc4f51b 100644
---- a/arch/h8300/platform/h8300h/irq.c
-+++ b/arch/h8300/platform/h8300h/irq.c
-@@ -11,7 +11,7 @@
- #include <asm/traps.h>
- #include <asm/irq.h>
- #include <asm/io.h>
--#include <asm/gpio.h>
-+#include <asm/gpio-internal.h>
- #include <asm/regs306x.h>
- 
- const int __initdata h8300_saved_vectors[] = {
-diff --git a/arch/h8300/platform/h8s/irq.c b/arch/h8300/platform/h8s/irq.c
-index 8182f04..7b5f29f 100644
---- a/arch/h8300/platform/h8s/irq.c
-+++ b/arch/h8300/platform/h8s/irq.c
-@@ -14,7 +14,7 @@
- #include <asm/traps.h>
- #include <asm/irq.h>
- #include <asm/io.h>
--#include <asm/gpio.h>
-+#include <asm/gpio-internal.h>
- #include <asm/regs267x.h>
- 
- /* saved vector list */
+
+
 -- 
-1.7.6.3
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
