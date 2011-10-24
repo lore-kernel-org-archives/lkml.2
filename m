@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1JXJR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:17:26 -0400
-Received: from fieldses.org ([174.143.236.118]:38650 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241Ab1JXJRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:17:24 -0400
-Date: Mon, 24 Oct 2011 05:17:16 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V8 00/26]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20111024091716.GA1109@fieldses.org>
-References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1754359Ab1JXJTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:19:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50010 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754161Ab1JXJTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 05:19:33 -0400
+Date: Mon, 24 Oct 2011 11:19:25 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Shawn Guo <shawn.guo@freescale.com>, patches@linaro.org,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111024091924.GA6148@opensource.wolfsonmicro.com>
+References: <20111019144215.GA32007@S2100-06.ap.freescale.net>
+ <4E9FAF42.5060200@ti.com>
+ <20111020061408.GE32007@S2100-06.ap.freescale.net>
+ <4EA00F7C.1080005@ti.com>
+ <20111021082309.GA337@S2100-06.ap.freescale.net>
+ <4EA13053.7080306@ti.com>
+ <20111021115809.GB337@S2100-06.ap.freescale.net>
+ <4EA4FF6B.2080906@ti.com>
+ <20111024081706.GC8708@ponder.secretlab.ca>
+ <4EA5279E.3000505@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EA5279E.3000505@ti.com>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How do we push these changes to Linus tree ? Andrew, Viro, any comment
-> on how we can get this merged upstream ?
+On Mon, Oct 24, 2011 at 02:23:50PM +0530, Rajendra Nayak wrote:
 
-Andrew, it sounds like you might be willing to shepherd these through?
-Let us know what you'd need.
+> How about the driver passing the of_node to be associated with the
+> regulator, as part of regulator_desc, to the regulator core,
+> instead of this complete DT search and the restriction of having
+> to match DT node names with names in regulator_desc.
 
---b.
-
-
-
-On Sun, Oct 23, 2011 at 11:13:29PM +0530, Aneesh Kumar K.V wrote:
-> Hi,
-> 
-> The following set of patches implements VFS and ext4 changes needed to implement
-> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> extended by file masks to fit into the standard POSIX file permission model.
-> They are designed to work seamlessly locally as well as across the NFSv4 and
-> CIFS/SMB2 network file system protocols.
-> 
-> A user-space utility for displaying and changing richacls is available at [4]
-> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-> 
-> [4] git://github.com/kvaneesh/richacl-tools.git master
-> 
-> To test richacl on ext4 use tune2fs -O richacl to enable richacl feature and mount
-> the file system using -o acl mount option.
-> 
-> More details regarding richacl can be found at
-> http://acl.bestbits.at/richacl/
-> 
-> Changes from v7:
-> a) Update patches based on review comments.
-> b) Add acked-by:
-> c) Change the richacl xattr format based on review feedback.
-> 
-> git repository With all the patches can be found at
-> git://github.com/kvaneesh/linux.git richacl
-> 
-> IMHO the patches are ready to be merged upstream.
+regulator_desc should be const so that we handle multiple instances of
+the same device nicely.  We could pass the information in as an argument
+I guess.
