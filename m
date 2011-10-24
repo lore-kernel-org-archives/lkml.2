@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab1JXUWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 16:22:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41580 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab1JXUWh (ORCPT
+	id S1755913Ab1JXUa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 16:30:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41770 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab1JXUa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 16:22:37 -0400
-Date: Mon, 24 Oct 2011 21:21:18 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Mark Einon <mark.einon@gmail.com>, Greg KH <greg@kroah.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH staging 3/6] et131x: fix error paths in et131x_pci_setup.
-Message-ID: <20111024202116.GC3851@msilap.einon>
-References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
- <20111023093651.GA22285@kroah.com>
- <20111023094231.GA3409@msilap.einon>
- <20111023171135.GC28657@electric-eye.fr.zoreil.com>
+	Mon, 24 Oct 2011 16:30:58 -0400
+Date: Mon, 24 Oct 2011 21:30:41 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-ID: <20111024203041.GA32545@flint.arm.linux.org.uk>
+References: <20111025072013.1824cfd24495819777ad2660@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Description: =?ISO-8859-1?Q?=20=1B?=
 Content-Disposition: inline
-In-Reply-To: <20111023171135.GC28657@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111025072013.1824cfd24495819777ad2660@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 07:11:35PM +0200, Francois Romieu wrote:
-> Wrong status code and unbalanced phy_connect.
+On Tue, Oct 25, 2011 at 07:20:13AM +1100, Stephen Rothwell wrote:
+> Hi Arnd,
 > 
-> Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-> ---
-[...]
-> @@ -5448,9 +5424,11 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
->  	 */
->  	pci_set_drvdata(pdev, netdev);
->  	pci_save_state(adapter->pdev);
-> +out:
-> +	return rc;
->  
-> -	return result;
-> -
-> +err_phy_disconnect:
-> +	phy_disconnect(adapter->phydev);
->  err_mdio_unregister:
->  	mdiobus_unregister(adapter->mii_bus);
->  err_mdio_free_irq:
-> @@ -5468,8 +5446,7 @@ err_release_res:
->  	pci_release_regions(pdev);
->  err_disable:
->  	pci_disable_device(pdev);
-> -err_out:
-> -	return result;
-> +	goto out;
->  }
->  
->  static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/plat-mxc/include/mach/memory.h between commit c039bad00f21
+> ("ARM: plat-mxc: remove mach/memory.h") from the arm tree and commits
+> ae4fa7f66e54 ("ARM i.MX: allow to compile together ARMv4 and ARMv5 based
+> SoCs") and 7409cd1cd554 ("ARM i.MX: allow to compile together all i.MX5
+> based SoCs") from the arm-soc tree.
+> 
+> The former removed the file, so I did that.
 
-Patch looks good, but again, could you remove the backwards jumping goto.
+Stephen - thanks.
+
+ARM guys, we need to be smarter about this stuff - if we're consolidating
+code across the ARM tree, committing changes to files which we're going
+to remove really isn't a good idea.  It probably means something else has
+changed elsewhere to accomodate the deletion of the file, which this
+kind of resolution won't fix up.
+
+It's a recipe for creating unnecessary build failures when these trees
+get merged together.
+
+It probably means that those two commits need to be postponed and
+updated for the changes already queued by other people.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
