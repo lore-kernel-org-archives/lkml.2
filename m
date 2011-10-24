@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab1JXNxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:53:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37940 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab1JXNxS convert rfc822-to-8bit (ORCPT
+	id S932722Ab1JXNx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:53:28 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44793 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932641Ab1JXNx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:53:18 -0400
+	Mon, 24 Oct 2011 09:53:26 -0400
+Message-ID: <4EA56D60.2030208@oracle.com>
+Date: Mon, 24 Oct 2011 21:51:28 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+Reply-To: jeff.liu@oracle.com
+Organization: Oracle
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1110242108540.19271@tundra.namei.org>
-References: <alpine.LRH.2.00.1110242108540.19271@tundra.namei.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 24 Oct 2011 15:52:56 +0200
-X-Google-Sender-Auth: tXzhvQ-9-Tqwss7qR2GA7a2kDbA
-Message-ID: <CA+55aFxbh9eHYe8cPH2TaTW1t5C6C+z-Bcy+kGhR0Gt=MgMvcQ@mail.gmail.com>
-Subject: Re: [GIT] Security subsystem updates for 3.2
-To: James Morris <jmorris@namei.org>, Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+CC: axboe@kernel.dk
+Subject: [PATCH] Fix a typo
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EA56DCD.007B:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 1:21 PM, James Morris <jmorris@namei.org> wrote:
->
-> The most significant item here is the inclusion of EVM:
-> https://lkml.org/lkml/2011/6/29/419
->
-> There are also enhancements to Smack and Tomoyo, as well as general
-> cleanups and fixes across the subsystem.
->
-> Please pull.
->
-> Jarkko Sakkinen (6):
->      Smack: domain transition protections (v3)
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
 
-So this is reverted in linux-next. I don't know why, but it's a bad
-sign. Doesn't compile?
+---
+ block/blk-cgroup.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-                  Linus
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index a71d290..6f3ace7 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -188,7 +188,7 @@ struct blkio_policy_node {
+ 	union {
+ 		unsigned int weight;
+ 		/*
+-		 * Rate read/write in terms of byptes per second
++		 * Rate read/write in terms of bytes per second
+ 		 * Whether this rate represents read or write is determined
+ 		 * by file type "fileid".
+ 		 */
+-- 
+1.7.4.1
