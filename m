@@ -1,139 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab1JXUJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 16:09:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54274 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713Ab1JXUJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 16:09:37 -0400
-Date: Mon, 24 Oct 2011 22:09:33 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC 3/4] lib: devres: add convenience function to remap a
- resource
-Message-ID: <20111024200933.GB6326@pengutronix.de>
-References: <1319445729-14841-1-git-send-email-w.sang@pengutronix.de>
- <1319445729-14841-4-git-send-email-w.sang@pengutronix.de>
- <20111024154307.GB24914@google.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
+	id S1755273Ab1JXUJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 16:09:49 -0400
+Received: from 1wt.eu ([62.212.114.60]:34449 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754717Ab1JXUJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 16:09:38 -0400
+Date: Mon, 24 Oct 2011 22:09:27 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Roland Kletzing <devzero@web.de>
+Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
+        Artem.Bityutskiy@nokia.com
+Subject: Re: [BUG] Re: mtd_stresstest module bricked my dockstar
+Message-ID: <20111024200927.GH5632@1wt.eu>
+References: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003> <20111024055705.GA4020@1wt.eu> <B10F15EA8AB74E698DC0D94563A30BE7@samsungnetbook>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111024154307.GB24914@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <B10F15EA8AB74E698DC0D94563A30BE7@samsungnetbook>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Roland,
 
---7ZAtKRhVyVSsbBD2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 24, 2011 at 09:32:42PM +0200, Roland Kletzing wrote:
+> Yes, i think accidentally insmodding  "mtd_stresstest" has just wiped it, 
+> not killed.
+> The problem is, that it is important stuff for booting and you can`t pull 
+> it out and
+> re-write externally, like a disk. Sorry, i that was probably not clearly 
+> stated.
+> 
+> Anyway - what would people think if linux had a kernel module  which wipes
+> /dev/sda1 when loaded ? :)
 
-Hi,
+I totally agree. And on some machines, you might have mtd0 mapped to a
+real block device.
 
-> On Mon, Oct 24, 2011 at 10:42:08AM +0200, Wolfram Sang wrote:
-> > * the new function is not named 'devm_ioremap_resource' because it does=
- more than
-> >   just ioremap, namely request_mem_region. I didn't want to create impl=
-icit
-> >   knowledge here.
->=20
-> Maybe devm_request_and_ioremap_resource()?  Maybe it's a bit long but
-> A_to_B names are usually used for trivial conversions.
+> >I got one Iomega Iconnect with a faulty flash that I got replaced for a
+> >good one, so it's more likely the case here.
+> 
+> Yes, i could give debricking with JTAG a try. But what about the cost for 
+> the JTAG
+> and the work to be spent with it? I could buy another Dockstar for that.....
 
-I had this name in mind, too. Yet, it implies that the function requests a
-resource but in fact it requests a mem_region. Requesting a resource (e.g.
-platform_get_resource) is THE thing the function does not do. So I scrapped
-this name. But will do some more brainstorming for a better name in V2.
+it's cheap, download openocd and make a Wiggler cable. It requires very
+little hardware. I don't see why it wouldn't work, I've done that to try
+to port Linux to a miniature ARM platform a few years ago (it was pretty
+funny). You just need one rainy sunday afternoon.
 
->=20
-> > +int __must_check devm_resource_to_mapped_ptr(struct device *dev,
-> > +			struct resource *res, void __iomem **dest)
->=20
-> If we're already printing out dev_err(), I think we can live with
-> %NULL return on error.
+> static int dev;   <-!
+> module_param(dev, int, S_IRUGO);
+> MODULE_PARM_DESC(dev, "MTD device number to use");
+...
+> My kernel log showed:
+> 
+> mtd_stresstest: MTD device: 0
+> mtd_stresstest: MTD device size 1048576 etc...
 
-Yes, already fixed this way.
+Ooops.
 
-> > +{
-> > +	resource_size_t size;
-> > +	const char *name;
-> > +
-> > +	BUG_ON(!dev || !dest);
-> > +
-> > +	*dest =3D NULL;
-> > +
-> > +	if (!res || resource_type(res) !=3D IORESOURCE_MEM) {
-> > +		dev_err(dev, "invalid resource\n");
-> > +		return -ENOENT;
-> > +	}
-> > +
-> > +	size =3D resource_size(res);
-> > +	name =3D res->name ?: dev_name(dev);
-> > +
-> > +	if (!devm_request_mem_region(dev, res->start, size, name)) {
-> > +		dev_err(dev, "can't request region for resource %pR\n", res);
-> > +		return -EBUSY;
-> > +	}
-> > +
-> > +	if (res->flags & IORESOURCE_CACHEABLE)
-> > +		*dest =3D devm_ioremap(dev, res->start, size);
-> > +	else
-> > +		*dest =3D devm_ioremap_nocache(dev, res->start, size);
-> > +
-> > +	if (!*dest) {
-> > +		dev_err(dev, "ioremap failed for resource %pR\n", res);
-> > +		return -ENOMEM;
-> > +	}
->=20
-> So, for library functions, it's nice if the function doesn't hold any
-> extra resource on error return.  devres has grouping to support this.
-> You just need to wrap allocations inside a group and remove it on
-> success and release on error.  ie.
->=20
-> 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
-> 		return NULL;
-> 	if (alloc_resource(0) < 0)
-> 		goto fail;
-> 	if (alloc_resource(1) < 0)
-> 		goto fail;
-> 	devres_remove_group(dev, NULL);
-> 	return 0;
-> fail:
-> 	devres_release_group(dev, NULL);
-> 	return 0;
+> So, apparenly the module accidentally picked mtd0 instead of exiting 
+> cleanly (as
+> i did not pass a device number)
+> 
+> I`m not a programmer, but doesn`t look that like an "unitialized variable" 
+> issue ?
 
-I am not sure I got what you mean here, but wouldn't it be easier to simply
-call devm_release_mem_region() when devm_ioremap comes back with a NULL
-pointer?
+You're pretty right indeed ! I think the code has only be tested with
+devices that ought to be killed, otherwise the author would have noticed
+it quickly.
 
-Thanks,
+> If yes, then i would call my Dockstar "victim of a bug".
 
-   Wolfram
+One more reason to try to resurrect it ;-)
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Cheers,
+Willy
 
---7ZAtKRhVyVSsbBD2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6lxf0ACgkQD27XaX1/VRtxiQCgr1SlL0N/kmHdyrwkzhxVEpHD
-PB4An1LMcrwe+FEXyrp1Lqo004S8GpJ6
-=OoUg
------END PGP SIGNATURE-----
-
---7ZAtKRhVyVSsbBD2--
