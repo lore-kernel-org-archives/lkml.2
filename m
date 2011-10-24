@@ -1,66 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1JXW36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 18:29:58 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:52927 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab1JXW34 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 18:29:56 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-CC: =?iso-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Oct 2011 18:24:14 -0400
-Subject: RE: kdump: crash_kexec()-smp_send_stop() race in panic
-Thread-Topic: kdump: crash_kexec()-smp_send_stop() race in panic
-Thread-Index: AcyScyfN+nUopmkqRAag965vXy24XQAKDuUQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57612A37@USINDEVS01.corp.hds.com>
-References: <1319468137.3615.16.camel@br98xy6r>
- <m1ipneifqv.fsf@fess.ebiederm.org>
- <CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
- <m1aa8qfhdk.fsf@fess.ebiederm.org> <20111024173336.GB8044@redhat.com>
-In-Reply-To: <20111024173336.GB8044@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752871Ab1JXWaO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:30:14 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:38991 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752477Ab1JXWaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 18:30:10 -0400
+Date: Mon, 24 Oct 2011 22:30:08 +0000
+From: "Robin H. Johnson" <robbat2@gentoo.org>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Cc: "Robin H. Johnson" <robbat2@gentoo.org>
+Subject: [PATCH v2/RESEND] mv_sas: OCZ RevoDrive3 & zDrive R4 support
+Message-ID: <20111024223008.GB3305@orbis-terrarum.net>
+References: <1318032026-21913-1-git-send-email-robbat2@gentoo.org>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=2 phishscore=0 bulkscore=2 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110240261
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/GPgYEyhnw15BExa"
+Content-Disposition: inline
+In-Reply-To: <1318032026-21913-1-git-send-email-robbat2@gentoo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
->> >>> 1st CPU:
->> >>> panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
->> >>>
->> >>> 2nd CPU:
->> >>> panic()->crash_kexec()->kexec_mutex already held by 1st CPU
->> >>>        ->smp_send_stop()-> stop CPU 1 (stop kdump)
->> >>>
->> >>> How should we fix this problem? One possibility could be to do
->> >>> smp_send_stop() before we call crash_kexec().
+--/GPgYEyhnw15BExa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-http://lkml.org/lkml/2010/9/16/353
+In the OCZ RevoDrive3/zDrive R4 series, the "OCZ SuperScale Storage
+Controller" with "Virtualized Controller Architecture 2.0" really seems
+to be a Marvell 88SE9485 part, with OCZ firmware/BIOS.
 
-I developed a patch solving this issue one year ago.
-(Just adding local_irq_disable in kexec path.)
+Developed and tested on OCZ RevoDrive3 120GB [PCI 1b85:1021]
 
-I hope this helps.
+Should work on:
+- OCZ RevoDrive3 (2x SandForce 2281)
+- OCZ RevoDrive3 X2 (4x SandForce 2281)
+- OCZ zDrive R4 CM84 (4x SandForce 2281)
+- OCZ zDrive R4 CM88 (8x SandForce 2281)
+- OCZ zDrive R4 RM84 (4x SandForce 2582)
+- OCZ zDrive R4 RM88 (8x SandForce 2582)
 
-Seiji
+All of this because a friend recently bought a OCZ RevoDrive3 and was
+bitten by the lack of Linux support.
 
+Notes from testing:
+-------------------
+- SMART works.
+- VPD Device Identification is "OCZ-REVODRIVE3"
+- Thin provisioning/TRIM seems to be implemented as WRITE SAME UNMAP,
+  with deterministic (non-zero) read after TRIM, but I'm not sure if it
+  works 100% in my testing.
+- Some of the tuning in the firmware seems to ensure much better
+  performance when in a RAID0 setup than using the two devices
+  seperately.
+
+I have not tested booting from the SSD, because all of this was
+developed and tested remotely from the actual hardware.
+
+Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+Thanks-To: Gordon Pritchard <gordp@sfu.ca>
+---
+ drivers/scsi/mvsas/mv_init.c |   10 ++++++++++
+ include/linux/pci_ids.h      |    2 ++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+Resending for the v3.2 merge window.
+
+I tested it with more than 5TiB of IO, no stability problems detected.
+
+Some fio performance numbers:
+http://paste.pocoo.org/show/489716/
+ =20
+dmesg/hdparm/smartctl:
+http://www.ocztechnologyforum.com/forum/showthread.php?95151-Linux-patch-su=
+pport-for-RevoDrive3-RevoDrive3-X2-zDrive-R4&p=3D686054&viewfull=3D1#post68=
+6054
+
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 4e9af66..b88315a 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -723,6 +723,16 @@ static struct pci_device_id __devinitdata mvs_pci_tabl=
+e[] =3D {
+ 		.class_mask	=3D 0,
+ 		.driver_data	=3D chip_9485,
+ 	},
++	{ PCI_VDEVICE(OCZ, 0x1021), chip_9485}, /* OCZ RevoDrive3 */
++	{ PCI_VDEVICE(OCZ, 0x1022), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1040), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1041), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1042), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1043), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1044), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1080), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1083), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
++	{ PCI_VDEVICE(OCZ, 0x1084), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact=
+ model unknown) */
+=20
+ 	{ }	/* terminate list */
+ };
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index ae96bbe..3fe46e9 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2868,3 +2868,5 @@
+=20
+ #define PCI_VENDOR_ID_XEN		0x5853
+ #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
++
++#define PCI_VENDOR_ID_OCZ		0x1b85
+--=20
+1.7.7
+
+
+--/GPgYEyhnw15BExa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+Comment: Robbat2 @ Orbis-Terrarum Networks - The text below is a digital signature. If it doesn't make any sense to you, ignore it.
+
+iEYEARECAAYFAk6l5vAACgkQPpIsIjIzwizbkwCeK5PZ+Oae8/EUVnayf5pyB14d
+pacAoLOtUrHUeIhDnnOstyp2MCnIatj4
+=6zqG
+-----END PGP SIGNATURE-----
+
+--/GPgYEyhnw15BExa--
