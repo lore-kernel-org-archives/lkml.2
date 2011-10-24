@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab1JXSP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 14:15:29 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:39823 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932872Ab1JXSP2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 14:15:28 -0400
-Message-ID: <4EA5AB40.2090609@profihost.ag>
-Date: Mon, 24 Oct 2011 20:15:28 +0200
-From: Stefan Priebe <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Stable Tree <stable@kernel.org>
-Subject: Re: Kernel hard LOCKUP with v3.0.7
-References: <4EA1536E.6090001@profihost.ag> <20111021130752.GC8219@suse.de> <AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag> <20111021200257.GA31198@suse.de> <4EA2F2E0.4020702@profihost.ag> <20111022165521.GA1716@suse.de>
-In-Reply-To: <20111022165521.GA1716@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
+	id S933078Ab1JXSQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 14:16:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27808 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932782Ab1JXSQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 14:16:02 -0400
+From: Flavio Leitner <fbl@redhat.com>
+To: netdev <netdev@vger.kernel.org>
+Cc: David Miller <davem@davemloft.net>, Dan McGee <dpmcgee@gmail.com>,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] TCP: remove TCP_DEBUG
+Date: Mon, 24 Oct 2011 16:15:10 -0200
+Message-Id: <1319480110-20361-1-git-send-email-fbl@redhat.com>
+In-Reply-To: <CAEik5nPciVMwOE-hC+oPP1gMEvRzbhFwAZHKNQnHEc0YOUXuWA@mail.gmail.com>
+References: <CAEik5nPciVMwOE-hC+oPP1gMEvRzbhFwAZHKNQnHEc0YOUXuWA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.10.2011 18:55, schrieb Greg KH:
->> this seems to fix it. Perhaps you should release v3.0.8 as the
->> stable tree isn't stable right now? I mean this bug seems to be
->> triggered on every SMP machine.
-> I will work to get it out soon.
-Fine. Any idea if this will happen this week or in a month or ... I'm 
-scheduling an update for all our systems and if this will happen really 
-soon i will probably schedule it a bit later.
+It was enabled by default and the messages guarded
+by the define are useful.
 
-> thanks for testing and letting me know.
-np
+Signed-off-by: Flavio Leitner <fbl@redhat.com>
+---
+ include/net/tcp.h    |    1 -
+ net/ipv4/tcp.c       |    2 --
+ net/ipv4/tcp_timer.c |    2 --
+ 3 files changed, 0 insertions(+), 5 deletions(-)
 
-Stefan
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index ed0e814..e147f42 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -18,7 +18,6 @@
+ #ifndef _TCP_H
+ #define _TCP_H
+ 
+-#define TCP_DEBUG 1
+ #define FASTRETRANS_DEBUG 1
+ 
+ #include <linux/list.h>
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index eefc61e..34f5db1 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1193,13 +1193,11 @@ void tcp_cleanup_rbuf(struct sock *sk, int copied)
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	int time_to_ack = 0;
+ 
+-#if TCP_DEBUG
+ 	struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
+ 
+ 	WARN(skb && !before(tp->copied_seq, TCP_SKB_CB(skb)->end_seq),
+ 	     "cleanup rbuf bug: copied %X seq %X rcvnxt %X\n",
+ 	     tp->copied_seq, TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt);
+-#endif
+ 
+ 	if (inet_csk_ack_scheduled(sk)) {
+ 		const struct inet_connection_sock *icsk = inet_csk(sk);
+diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
+index ecd44b0..2e0f0af 100644
+--- a/net/ipv4/tcp_timer.c
++++ b/net/ipv4/tcp_timer.c
+@@ -334,7 +334,6 @@ void tcp_retransmit_timer(struct sock *sk)
+ 		 * connection. If the socket is an orphan, time it out,
+ 		 * we cannot allow such beasts to hang infinitely.
+ 		 */
+-#ifdef TCP_DEBUG
+ 		struct inet_sock *inet = inet_sk(sk);
+ 		if (sk->sk_family == AF_INET) {
+ 			LIMIT_NETDEBUG(KERN_DEBUG "TCP: Peer %pI4:%u/%u unexpectedly shrunk window %u:%u (repaired)\n",
+@@ -349,7 +348,6 @@ void tcp_retransmit_timer(struct sock *sk)
+ 			       inet->inet_num, tp->snd_una, tp->snd_nxt);
+ 		}
+ #endif
+-#endif
+ 		if (tcp_time_stamp - tp->rcv_tstamp > TCP_RTO_MAX) {
+ 			tcp_write_err(sk);
+ 			goto out;
+-- 
+1.7.6
+
