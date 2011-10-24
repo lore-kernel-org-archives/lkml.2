@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1JXLF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 07:05:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37642 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904Ab1JXLFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 07:05:22 -0400
-Date: Mon, 24 Oct 2011 13:05:18 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mike Frysinger <vapier.adi@gmail.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stijn Devriendt <highguy@gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-Message-ID: <20111024110518.GG8708@ponder.secretlab.ca>
-References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
- <20110930020754.GK12606@ponder.secretlab.ca>
- <CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
- <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
- <CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
- <20111004203520.GK2870@ponder.secretlab.ca>
- <CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
- <CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
- <20111024073604.GA8708@ponder.secretlab.ca>
- <CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
+	id S1754954Ab1JXLG1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 07:06:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754829Ab1JXLG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 07:06:26 -0400
+Message-ID: <4EA54694.5070703@redhat.com>
+Date: Mon, 24 Oct 2011 13:05:56 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Alex,Shi" <alex.shi@intel.com>
+CC: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+Subject: Re: [PATCH 2/3] kvm: use this_cpu_xxx replace percpu_xxx funcs
+References: <1318237851.27949.190.camel@debian>  <alpine.DEB.2.00.1110101026080.16264@router.home>  <1318324774.27949.693.camel@debian>  <alpine.DEB.2.00.1110110910480.3388@router.home>  <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>  <alpine.DEB.2.00.1110120910540.26610@router.home>  <1318908091.23426.52.camel@debian>  <alpine.DEB.2.00.1110180932330.687@router.home>  <1319016218.23426.104.camel@debian>  <4E9E97D2.1040807@redhat.com>  <1319096041.23426.182.camel@debian> <1319424608.5061.25.camel@debian>
+In-Reply-To: <1319424608.5061.25.camel@debian>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 09:48:19AM +0200, Linus Walleij wrote:
-> On Mon, Oct 24, 2011 at 9:36 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Mon, Oct 24, 2011 at 09:26:38AM +0200, Linus Walleij wrote:
-> (...)
-> >> I was more thinking along the lines of one device per GPIO controller,
-> >> then you ioctl() to ask /dev/gpio0 how many pins it has or so.
-> >
-> > And there is also the question of whether it is even a good idea to
-> > export pinctrl manipulation to userspace.
-> 
-> The application I've seen is in automatic control.
-> 
-> I think people do things like connect they GPIO pins to electrical
-> relays, plus on top of that they use all the stuff in drivers/staging/iio.
-> 
-> All that from userspace. Controlling entire factories and industrial
-> robots, weapon systems too, I'm afraid.
-> 
-> The control of these dangerous things runs on a realtime-patched
-> kernel, in a single userspace app with a few threads and they have
-> done some realtime-tetris scheduling the beast more or less
-> manually with SCHED_FIFO. Basically that app is all that runs on
-> the board, and its threads take precedence over everything else
-> on the system.
-> 
-> That is the typical beast that is poking around on the GPIO sysfs
-> interfaces...
+On 10/24/2011 04:50 AM, Alex,Shi wrote:
+> On Thu, 2011-10-20 at 15:34 +0800, Alex,Shi wrote:
+> > percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
+> > for further code clean up.
+> > 
+> > And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
+> > performance since __this_cpu_xxx has no redundant preempt_disable()
+> > 
+>
+> Avi: 
+> Would you like to give some comments of this? 
+>
 
-... which maybe should be encouraged to use some form of uio driver.  :-)
+Sorry, was travelling:
 
-g.
+Acked-by: Avi Kivity <avi@redhat.com>
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
