@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1JXXMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 19:12:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49558 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab1JXXMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 19:12:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=sFEoRPOp7Od4IGK5tTvpU8VaWyuKrPPv14ID3bhsuO20YCXbI42HFeR880+rNSW6/
-	MiO8T2wheaOCzdcQ2SF+A==
-Date: Mon, 24 Oct 2011 16:12:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sam Tygier <samtygier@yahoo.co.uk>, Matthew Garrett <mjg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ike Panhc <ike.pan@canonical.com>
-Subject: Re: 3.1rc10 null pointer dereference
- ideapad_backlight_notify_power
-In-Reply-To: <1319493108.21408.YahooMailNeo@web25602.mail.ukl.yahoo.com>
-Message-ID: <alpine.DEB.2.00.1110241611270.3296@chino.kir.corp.google.com>
-References: <4E9EB1BC.9020709@yahoo.co.uk> <alpine.DEB.2.00.1110191315320.2892@chino.kir.corp.google.com> <4E9F7A25.1060001@canonical.com> <alpine.DEB.2.00.1110192233280.4618@chino.kir.corp.google.com>
- <1319493108.21408.YahooMailNeo@web25602.mail.ukl.yahoo.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754952Ab1JXXNg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 19:13:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab1JXXNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 19:13:34 -0400
+Date: Mon, 24 Oct 2011 19:13:29 -0400
+From: Dave Jones <davej@redhat.com>
+To: joeyli <jlee@suse.com>
+Cc: Ike Panhc <ike.pan@canonical.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Joey Lee <jlee@novell.com>
+Subject: Re: [PATCH] acer-wmi: blacklist Thinkpad edge E520
+Message-ID: <20111024231329.GA25993@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, joeyli <jlee@suse.com>,
+	Ike Panhc <ike.pan@canonical.com>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Matthew Garrett <mjg@redhat.com>, Joey Lee <jlee@novell.com>
+References: <1318488718-4744-1-git-send-email-ike.pan@canonical.com>
+ <1319494967.17773.156.camel@linux-s257.site>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-921260994-1319497957=:3296"
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1319494967.17773.156.camel@linux-s257.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, Oct 25, 2011 at 06:22:47AM +0800, joeyli wrote:
+ > 於 四，2011-10-13 於 14:51 +0800，Ike Panhc 提到：
+ > > BugLink: http://launchpad.net/bugs/836865
+ > > BugLink: http://launchpad.net/bugs/826784
+ > > 
+ > > There are reports say that acer-wmi is loaded on Thinkpad E520 which
+ > > cause wireless connection hard blocked and we can not unblock it. It
+ > > will be better not to load acer-wmi on this machine.
+ > > 
+ > > Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+ > > ---
+ > >  drivers/platform/x86/acer-wmi.c |    7 +++++++
+ > >  1 files changed, 7 insertions(+), 0 deletions(-)
+ > > 
+ > > diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+ > > index af2bb20..dc9a116 100644
+ > > --- a/drivers/platform/x86/acer-wmi.c
+ > > +++ b/drivers/platform/x86/acer-wmi.c
+ > > @@ -325,6 +325,13 @@ static struct dmi_system_id __devinitdata acer_blacklist[] = {
+ > >  			DMI_MATCH(DMI_PRODUCT_NAME, "AOA150"),
+ > >  		},
+ > >  	},
+ > > +	{
+ > > +		.ident = "Lenovo Thinkpad Edge E520",
+ > > +		.matches = {
+ > > +			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+ > > +			DMI_MATCH(DMI_PRODUCT_NAME, "114320U"),
+ > > +		},
+ > > +	},
+ > >  	{}
+ > >  };
+ > >  
+ > 
+ > Unfortunately didn't see any useful EC register for unblock wifi rfkill in acer-wmi, let's 
+ > add this device to blacklist.
+ > 
+ > Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
 
---397155492-921260994-1319497957=:3296
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+We've seen similar reports from other Lenovo machines & acer-wmi in Fedora bugzilla.
+https://bugzilla.redhat.com/show_bug.cgi?id=674353 for example has people reporting
+the b450 and V460 also suffer the same issue.
 
-On Mon, 24 Oct 2011, Sam Tygier wrote:
+(There are also a bunch of bug reports from the other *-wmi modules on various hardware.
+It seems these modules really upset rfkill).
 
-> >On Thu, 20 Oct 2011, Ike Panhc wrote:
-> >
-> >> This issue has been reported[1] and patch[2] is ready.
-> >> 
-> >> [1] http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg02340.html
-> >> 
-> >> [2] http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg02343.html
-> >>� � http://www.mail-archive.com/platform-driver-x86@vger.kernel.org/msg02346.html
-> >> 
-> >
-> >It certainly looks like the patch in [2] will fix the issue, but it looks 
-> >like those are from a couple months ago and I'm still not seeing it in 
-> >linux-next.� Matthew, how is this going to Linus and will it be cc'd to 
-> >stable@vger.kernel.org?
-> 
-> 
-> the patch works for me (i applied it to kernel between r10 and 3.1 final). for some reason i don't understand i had to apply the patch by hand.
-> 
+	Dave
 
-So we can add your
-
-	Tested-by: Sam Tygier <samtygier@yahoo.co.uk>
-
-to the patch.
-
-> i am not quite sure of the etiquette, should I repost the patch in its original form, or my version, or can someone else get this included.
-> 
-
-This will go through Matthew's tree and hopefully also backported to 
-stable through stable@vger.kernel.org.  Matthew?
---397155492-921260994-1319497957=:3296--
