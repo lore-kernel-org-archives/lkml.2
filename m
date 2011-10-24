@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab1JXE1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 00:27:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:33696 "EHLO ozlabs.org"
+	id S1753107Ab1JXErs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 00:47:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36540 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab1JXE1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 00:27:47 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "virtualization\@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v3] virtio: Add platform bus driver for memory mapped virtio device
-In-Reply-To: <1319219844.5094.16.camel@hornet.cambridge.arm.com>
-References: <1317841030-17758-1-git-send-email-pawel.moll@arm.com> <1317919843-8343-1-git-send-email-pawel.moll@arm.com> <1317921230.28696.102.camel@hornet.cambridge.arm.com> <87lisjq6tu.fsf@rustcorp.com.au> <1318931075.3146.285.camel@hornet.cambridge.arm.com> <87ty75adtb.fsf@rustcorp.com.au> <1319219844.5094.16.camel@hornet.cambridge.arm.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 24 Oct 2011 13:03:06 +1030
-Message-ID: <87wrbv15lp.fsf@rustcorp.com.au>
+	id S1752671Ab1JXErr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 00:47:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="66342899"
+From: Andi Kleen <andi@firstfloor.org>
+To: Eial Czerwacki <eial@scalemp.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Shai Fultheim \(Shai\@ScaleMP.com\)" <Shai@scalemp.com>
+Subject: Re: [PATCH] Move mostly read variables to __read_mostly section.
+References: <4EA45BB8.20505@scalemp.com>
+Date: Sun, 23 Oct 2011 21:47:45 -0700
+In-Reply-To: <4EA45BB8.20505@scalemp.com> (Eial Czerwacki's message of "Sun,
+	23 Oct 2011 20:23:52 +0200")
+Message-ID: <m2sjmj572m.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Oct 2011 18:57:24 +0100, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Wed, 2011-10-19 at 03:57 +0100, Rusty Russell wrote:
-> > > Oh, really? My host-side implementation is just doing that:
-> > > 
-> > >         addr += align - 1;
-> > >         addr &= ~(align - 1);
-> > 
-> > OK, so you're assuming power of 2.  Make sure you kill the guest or at
-> > least the device if it's not though.
-> 
-> Yep, I have assertions all around such places :-) (it's a non-production
-> code yet so I can do that)
-> 
-> > > \item The dynamic configuration changes, as described in p. 2.4.3
-> > > ``Dealing With Configuration Changes'' are not permitted.
-> > 
-> > This means some devices simply won't work, at least in theory.  Why
-> > don't you support this?
-> 
-> Uh. I simply forgot about it - my Host block device doesn't do that, so
-> I ignored that feature initially and then it slipped through cracks. And
-> till now I didn't realize that most of the drivers actually use this :-O
-> My fault.
-> 
-> Simple to fix anyway - I'll just add InterruptStatus register and use
-> second bit (same with InterruptACK) to get this through. Will be done on
-> Monday.
-> 
-> Any other final complaints regarding the interface while I'm on it? ;-)
+Eial Czerwacki <eial@scalemp.com> writes:
+>   * Once the number of bh's in the machine exceeds this level, we start
+> --- a/kernel/time/timekeeping.c	2010-05-12 14:59:32.000000000 -0700
+> +++ b/kernel/time/timekeeping.c	2010-05-24 11:56:32.000000000 -0700
+> @@ -154,7 +154,7 @@ __cacheline_aligned_in_smp DEFINE_SEQLOC
+>   * used instead.
+>   */
+>  static struct timespec xtime __attribute__ ((aligned (16)));
+> -static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+> +static struct timespec wall_to_monotonic __attribute__ ((aligned
+>   (16))) __read_mostly;
 
-No, that's it I think.  Please send a diff for the documentation, since
-I'm updating the LyX master and I've already applied your previous
-version.
+That means that a common time fetch/update call will usually have to fetch two
+cachelines now instead of one, because it needs xtime and
+wall_to_monotonic. Usually those end up nearby.
 
-Thanks!
-Rusty.
+On the other hand it's rare to fetch wall_to_monotonic without xtime.
+
+So if anything all those variables should be grouped together in a
+single cacheline, but definitely not split like you do.
+
+The other changes in your patch are fine for me.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
