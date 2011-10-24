@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab1JXLgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 07:36:42 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:54401 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab1JXLgk (ORCPT
+	id S1755637Ab1JXLpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 07:45:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57708 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab1JXLpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 07:36:40 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <20111024094910.GA28693@infradead.org>
-References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20111024091716.GA1109@fieldses.org> <20111024094910.GA28693@infradead.org>
-User-Agent: Notmuch/0.9_rc1-42-g76fdca8 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 24 Oct 2011 17:05:28 +0530
-Message-ID: <87fwiiei67.fsf@linux.vnet.ibm.com>
+	Mon, 24 Oct 2011 07:45:20 -0400
+Date: Mon, 24 Oct 2011 13:45:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: Re: [RFC] [PATCH -rt 5/5] cpufreq: get rid of
+ get_online_cpus()/put_online_cpus()
+In-Reply-To: <20111024113056.GA2635@zhy>
+Message-ID: <alpine.LFD.2.02.1110241343130.2633@ionos>
+References: <1318762607-2261-1-git-send-email-yong.zhang0@gmail.com> <1318762607-2261-6-git-send-email-yong.zhang0@gmail.com> <alpine.LFD.2.02.1110191110140.3240@ionos> <20111024024416.GB24581@zhy> <alpine.LFD.2.02.1110241123190.2642@ionos>
+ <20111024113056.GA2635@zhy>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11102411-6148-0000-0000-000000913314
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Oct 2011 05:49:10 -0400, Christoph Hellwig <hch@infradead.org> wrote:
-> On Mon, Oct 24, 2011 at 05:17:16AM -0400, J. Bruce Fields wrote:
-> > > How do we push these changes to Linus tree ? Andrew, Viro, any comment
-> > > on how we can get this merged upstream ?
+On Mon, 24 Oct 2011, Yong Zhang wrote:
+> On Mon, Oct 24, 2011 at 11:24:51AM +0200, Thomas Gleixner wrote:
+> > > No sure whether it's big issue or not.
+> > > Mind showing more about your concern?
 > > 
-> > Andrew, it sounds like you might be willing to shepherd these through?
-> > Let us know what you'd need.
+> > This is probably not the only place which will run into that issue and
+> > I have not much interest to patch all those sites.
 > 
-> It really has to through the VFS tree.  And to be honest despite the
-> repostings there's been exactly zero progress on getting there.
+> If so, I think that kind of violation has been caught in mainline,
+> because mainline has had CPU_DOWN_PREPARE called under
+> cpu_hotplug.lock, right?
 > 
-> Please as a first thing submit the various small cleanups indepent
-> of the other changes.  If you can't even those in there's no point
-> in trying. 
+> Or am I missing something?
 
-I will do this as the next step. The series actually contain them as
-separate patches.
+Hmm, no. I obviously forgot that I moved it in RT :(
 
-> Second do not repeat the mistakes of the old ACL code,
-> that is don't do too much work inside the filesystems.  Al, Linus
-> and me spent a lot of working on pushing it into common code and
-> it's not done.  For any new ACL model I really want to see zero
-> per-fs code except for callouts in chmod & co and actually
-> setting the xattr vector to a genericly provided one.  And please
-> wire up all common filesystems to actually prove that point.
-> 
+So yes, it should be safe. Though the question is why cpufreq does not
+suffer from that that problem in mainline. I'll stare at that code
+some more.
 
-This is what is done currently. I have only hooked up ext4 though.
-What I have done is add a new inode operation get_richacl, that 
-returns struct richacl *. Are you suggesting to get rid of that
-and make sure get_acl can return different type of ACL based on
-argument passed ?. IMHO that would end up making the code more complex.
+Thanks,
 
-
-> I also really hate all the duplication - I want to see a really good
-> reason why all this code needs to be duplicated.  Just look at
-> the mess done to check_acl and the ACL caching in the inode and
-> any normal person would throw up.  There is absolutely no reason
-> to not implement Posix ACLs as a subset of the NFSv4 ACL (not actually
-> a subset in the strict mathematical sense, but close enough).
-> 
-
-Can you explain this more ? What you would like to see changed ?
-
-
-> After all this techical work (which was brought up before) has been
-> done you can resubmit it.  And that point you'd better have very
-> good and very lengthy rationale for why adding an utterly stupid
-> ACL model is supposed to be a good idea.
-
-Thanks for the feedback.
-
--aneesh
-
+	tglx
