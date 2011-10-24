@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab1JXIIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 04:08:41 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:43454 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab1JXIIj convert rfc822-to-8bit (ORCPT
+	id S1753820Ab1JXIMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 04:12:50 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54275 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753727Ab1JXIMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 04:08:39 -0400
-Date: Mon, 24 Oct 2011 10:08:32 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Simon Kirby <sim@hostway.ca>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111024100832.7fcfefdd@de.ibm.com>
-In-Reply-To: <CA+55aFyybeTZvzSU4L=hV1Y6+wXn2ZkuZF9R+vAj6MRVC+MmBQ@mail.gmail.com>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-	<20111007070842.GA27555@hostway.ca>
-	<20111007174848.GA11011@hostway.ca>
-	<1318010515.398.8.camel@twins>
-	<20111008005035.GC22843@hostway.ca>
-	<1318060551.8395.0.camel@twins>
-	<20111012213555.GC24461@hostway.ca>
-	<20111013232521.GA5654@hostway.ca>
-	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
-	<20111020163609.16816e78@de.ibm.com>
-	<20111023113422.GD5156@elte.hu>
-	<20111024094817.30c01c9b@de.ibm.com>
-	<CA+55aFyybeTZvzSU4L=hV1Y6+wXn2ZkuZF9R+vAj6MRVC+MmBQ@mail.gmail.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Oct 2011 04:12:48 -0400
+Date: Mon, 24 Oct 2011 11:12:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: balbi@ti.com, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: DeviceTree and children devices
+Message-ID: <20111024081244.GD15288@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20111024064227.GW5453@legolas.emea.dhcp.ti.com>
+ <20111024074124.GB8708@ponder.secretlab.ca>
+ <20111024074957.GB15288@legolas.emea.dhcp.ti.com>
+ <CACxGe6v0kHNyO81XapR=jGEa8ZgJrUxN2EEiqW7c18NdurGNkg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ey/N+yb7u/X9mFhi"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6v0kHNyO81XapR=jGEa8ZgJrUxN2EEiqW7c18NdurGNkg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Oct 2011 09:51:09 +0200
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> On Mon, Oct 24, 2011 at 9:48 AM, Martin Schwidefsky
-> <schwidefsky@de.ibm.com> wrote:
+--ey/N+yb7u/X9mFhi
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Oct 24, 2011 at 09:58:39AM +0200, Grant Likely wrote:
+> On Mon, Oct 24, 2011 at 9:49 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Mon, Oct 24, 2011 at 09:41:24AM +0200, Grant Likely wrote:
+> >> On Mon, Oct 24, 2011 at 09:42:28AM +0300, Felipe Balbi wrote:
+> >> > then I can drop the dwc3 platform_device allocation and all of that
+> >> > resource copying, etc.
+> >> >
+> >> > What do you think ?
+> >>
+> >> Looks reasonable to me. =A0of_platform_populate() should be able to
+> >> handle the device generation for you here.
 > >
-> > These types are still there because cputime_t can be u32 or u64. E.g. this
+> > Ok cool I looking into that and it handles everything I need. There are
+> > only three issues which I see:
 > >
-> >  timer->expires.cpu = 0;
+> > a) it hardcoded DMA mask to 32-bit. Right ?
+> > b) it's not using dma_set_coherent_mask()
+> > c) in case parent is a valid pointer, shouldn't it copy DMA mask from
+> > =A0 =A0 =A0 =A0parent ?
 > >
-> > will give the following sparse warning
+> > I mean (doesn't solve (a) above):
 > >
-> >  kernel/posix-cpu-timers.c:463:46: warning: implicit cast to nocast type
-> 
-> Ok, we should probably special-case zero for that case too (we
-> consider zero to be very special - it's not only the NULL pointer, but
-> 0 is special for the bitwise types etc). So this is very arguably a
-> sparse issue: casting zero is special.
+> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > index ed5a6d3..172d4a9 100644
+> > --- a/drivers/of/platform.c
+> > +++ b/drivers/of/platform.c
+> > @@ -204,7 +204,12 @@ struct platform_device *of_platform_device_create_=
+pdata(
+> > =A0#if defined(CONFIG_MICROBLAZE)
+> > =A0 =A0 =A0 =A0dev->archdata.dma_mask =3D 0xffffffffUL;
+> > =A0#endif
+> > - =A0 =A0 =A0 dev->dev.coherent_dma_mask =3D DMA_BIT_MASK(32);
+> > +
+> > + =A0 =A0 =A0 if (parent)
+> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 dma_set_coherent_mask(&dev->dev, parent->=
+coherent_dma_mask);
+> > + =A0 =A0 =A0 else
+> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 dma_set_coherent_mask(&dev->dev, DMA_BIT_=
+MASK(32));
+> > +
+>=20
+> Right, this does need to be fixed.  The existing code just matched
+> what the historical powerpc code did, but it is certainly not correct.
 
-Ok, cool. In that case I'll cook up a patch without cputime_t & cputime64_t
-and put it on the cputime branch on git390.
+should I send patch above correctly ? Or do you want to also solve
+32-bit coherent mask altogether ? What are your plans for that ? Add a
+separate property to pass coherent_mask size (32-bit, 64-bit, etc) ?
 
--- 
-blue skies,
-   Martin.
+--=20
+balbi
 
-"Reality continues to ruin my life." - Calvin.
+--ey/N+yb7u/X9mFhi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOpR38AAoJEIaOsuA1yqREpyoP/Ra08Rlx0X4G8MkWR4r/Warf
+0/b+tcs8nzUIFWgYN6Tz6t8CkrV3IqBi2cGW4ZosCkFmmxHXui5BgHsLTgapZ9Lc
+cYvTla2He4maN8zLsOsAPbFhJ38ZrMQUZwMPik1uzTpbprUSU38i2fAKIn52n1yF
+cf5GwmpDXBvHKMVUJcqUUx1DTBRVuzk7wLZoX3tUoLY4XCzgJwBvDpi9xNbdayXy
+9b5e5ALubzsHGXUg9NRHWKGXn8czG7ThhQvfkC+5sCpfhesKAPBAZ5T66Z4CQjcO
+mwrfBIHc84u9gXC3t2Xq/q9kUhSs/HyP04TPPahZX8kB/H9Yp1KIW54AoFXV2Owg
++AmAh+R5QLwm1fKlH3jA3DhQwjJYLS4Ooe0OzRWLrS1eoLNWW9fD9XGdvNMOwtQk
+RnVM8TPvx60ZBFPr2sp8LOtOITOBbFqdcVTBQ+jI0Lw9F/mjvIfq48C1CFD7qjx4
+EWRtI/HaetcM7Dy/MAH+xZWL0gvTlLSUjZ9w7p3GmIZmAWXiL1FOBrkrCUmDeyZc
+rgTX6S/Vtp9/CjRE1j7rDTZPTrWditgVv7LwJ+p5A7vnQFj6FugG5jn91LeHnEbu
+QALGjzj/y1EUX7hWQFw2k3fU+RCF4qmAat1dnApnMUbg88dTaucLSq/M/vqQ5eT4
+I4Oc90iLgIozDtlaoSWv
+=iVII
+-----END PGP SIGNATURE-----
+
+--ey/N+yb7u/X9mFhi--
