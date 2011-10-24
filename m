@@ -1,143 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab1JXLsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 07:48:39 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:45167 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755452Ab1JXLsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 07:48:37 -0400
-Date: Mon, 24 Oct 2011 04:48:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: eric.dumazet@gmail.com, shaohua.li@intel.com, ak@linux.intel.com,
-        mhocko@suse.cz, alex.shi@intel.com, efault@gmx.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
-Message-ID: <20111024114806.GA3340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110930204503.GA32687@linux.vnet.ibm.com>
- <20111001152514.GA16930@elte.hu>
- <20111003055302.GA23527@elte.hu>
- <20111003161335.GA2403@linux.vnet.ibm.com>
- <20111004074637.GA14061@elte.hu>
- <20111024100501.GA24913@linux.vnet.ibm.com>
+	id S932109Ab1JXL4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 07:56:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59064 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab1JXL4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 07:56:17 -0400
+Date: Mon, 24 Oct 2011 13:56:12 +0200
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg KH <gregkh@suse.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 3/4] lib: devres: add convenience function to remap a
+ resource
+Message-ID: <20111024115612.GL8708@ponder.secretlab.ca>
+References: <1319445729-14841-1-git-send-email-w.sang@pengutronix.de>
+ <1319445729-14841-4-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111024100501.GA24913@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11102411-5930-0000-0000-00000087147A
+In-Reply-To: <1319445729-14841-4-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 03:05:01AM -0700, Paul E. McKenney wrote:
-> On Tue, Oct 04, 2011 at 09:46:37AM +0200, Ingo Molnar wrote:
-> > 
-> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > On Mon, Oct 03, 2011 at 07:53:02AM +0200, Ingo Molnar wrote:
-> > > > 
-> > > > Not sure whether you've seen this one already:
-> > > 
-> > > This is a new one for me.
-> > > 
-> > > > [   18.110320] Adding 3911820k swap on /dev/sda2.  Priority:-1 extents:1 across:3911820k 
-> > > > [   31.803721] 
-> > > > [   31.804597] ===============================
-> > > > [   31.804597] [ INFO: suspicious RCU usage. ]
-> > > > [   31.804597] -------------------------------
-> > > > [   31.804597] include/linux/cgroup.h:548 suspicious rcu_dereference_check() usage!
-> > > > [   31.804597] 
-> > > > [   31.804597] other info that might help us debug this:
-> > > > [   31.804597] 
-> > > > [   31.804597] 
-> > > > [   31.804597] rcu_scheduler_active = 1, debug_locks = 0
-> > > > [   31.804597] 1 lock held by true/845:
-> > > > [   31.804597]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<4109f06f>] prepare_bprm_creds+0x20/0x55
-> > > > [   31.804597] 
-> > > > [   31.804597] stack backtrace:
-> > > > [   31.804597] Pid: 845, comm: true Not tainted 3.1.0-rc8-tip-01699-gde204a2-dirty #157471
-> > > > [   31.804597] Call Trace:
-> > > > [   31.804597]  [<412d78fa>] ? printk+0x18/0x1a
-> > > > [   31.804597]  [<41044190>] lockdep_rcu_suspicious+0xb1/0xb9
-> > > > [   31.804597]  [<4106d6de>] perf_event_comm+0xb1/0x357
-> > > > [   31.804597]  [<4109f048>] set_task_comm+0x4d/0x54
-> > > 
-> > > 	This one does task_lock(), which acquires the task's
-> > > 	->alloc lock.  In theory, this should prevent the
-> > > 	lockdep-RCU splat.  It clearly does not, and here are
-> > > 	some possible reasons why:
-> > > 
-> > > 	1.	Something redirects to some other task along the way.
-> > > 
-> > > 	2.	Something releases ->alloc_lock along the way.
-> > > 
-> > > 	The output above shows no locks held, which points to #2.
-> > > 
-> > > 	set_task_comm() calls perf_event_comm() shown above, which calls
-> > > 	perf_event_comm_event(), which does rcu_read_lock(), which should
-> > > 	also prevent the splat.  Then perf_event_comm_event() calls
-> > > 	perf_event_comm_ctx(), which calls perf_event_comm_output()...
-> > > 
-> > > 	Holy inlining, Batman!!!
-> > > 
-> > > 	OK, I confess, I am a wuss...  Any chance of reproducing this
-> > > 	with CONFIG_SCHED_OMIT_FRAME_POINTER=n?  Or would someone more
-> > > 	familiar with these functions be willing to enlighten me?
-> > 
-> > Ok, i ran the tests some more and here's a similar splat with 
-> > framepointers enabled:
-> > 
-> > [   50.402719] eth0: no IPv6 routers present
-> > [   59.147572] 
-> > [   59.149064] ===============================
-> > [   59.151257] [ INFO: suspicious RCU usage. ]
-> > [   59.156865] -------------------------------
-> > [   59.156865] include/linux/cgroup.h:548 suspicious rcu_dereference_check() usage!
-> > [   59.156865] 
-> > [   59.156865] other info that might help us debug this:
-> > [   59.156865] 
-> > [   59.156865] 
-> > [   59.156865] rcu_scheduler_active = 1, debug_locks = 0
-> > [   59.156865] 1 lock held by true/667:
-> > [   59.156865]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c111d927>] prepare_bprm_creds+0x27/0x70
-> > [   59.156865] 
-> > [   59.156865] stack backtrace:
-> > [   59.156865] Pid: 667, comm: true Not tainted 3.1.0-rc8-tip+ #157499
-> > [   59.156865] Call Trace:
-> > [   59.156865]  [<c1a41f7c>] ? printk+0x28/0x2a
-> > [   59.156865]  [<c109d540>] lockdep_rcu_suspicious+0xc0/0xd0
-> > [   59.156865]  [<c10d8a98>] perf_event_enable_on_exec+0x1c8/0x1d0
-> > [   59.156865]  [<c109c364>] ? __lock_release+0x54/0xd0
-> > [   59.156865]  [<c10daef8>] perf_event_comm+0x18/0x60
-> > [   59.156865]  [<c111d80d>] ? set_task_comm+0x5d/0x80
-> > [   59.156865]  [<c1a6ac6d>] ? _raw_spin_unlock+0x1d/0x30
-> > [   59.156865]  [<c111d814>] set_task_comm+0x64/0x80
-> > [   59.156865]  [<c111e355>] setup_new_exec+0xc5/0x1f0
-> > [   59.156865]  [<c115313b>] load_elf_binary+0x28b/0xa00
-> > [   59.156865]  [<c111de59>] ? search_binary_handler+0xd9/0x1d0
-> > [   59.156865]  [<c109c364>] ? __lock_release+0x54/0xd0
-> > [   59.156865]  [<c1152eb0>] ? do_mmap+0x60/0x60
-> > [   59.156865]  [<c111de60>] search_binary_handler+0xe0/0x1d0
-> > [   59.156865]  [<c111ddb0>] ? search_binary_handler+0x30/0x1d0
-> > [   59.156865]  [<c111e17f>] do_execve_common+0x22f/0x2a0
-> > [   59.156865]  [<c111e202>] do_execve+0x12/0x20
-> > [   59.156865]  [<c1036462>] sys_execve+0x32/0x70
-> > [   59.156865]  [<c1a6c052>] ptregs_execve+0x12/0x18
-> > [   59.156865]  [<c1a6bfd7>] ? sysenter_do_call+0x12/0x36
-> > 
-> > Config and full bootlog attached.
+On Mon, Oct 24, 2011 at 10:42:08AM +0200, Wolfram Sang wrote:
+> Almost every platform_driver does the three steps get_resource,
+> request_mem_region, ioremap. This does not only lead to a lot of code
+> duplication, but also a number of similar error strings and inconsistent
+> error codes on failure. So, introduce a helper function which simplifies
+> remapping a resource and make it hard to do something wrong.
 > 
-> Hello, Ingo,
+> A few notes on design choices:
 > 
-> It appears that inlining has defeated me, so I tried reproducing under
-> KVM, using the closest bootable approximation to your .config (attached).
-> I booted ten times without seeing this error.  I have my changes against
-> 3.1-rc8.  I will try against 3.1, but in the meantime any enlightenment
-> would be most welcome.  ;-)
+> * not 100% sure on ENOENT when the resource is invalid. Seems to be frequently
+>   used currently and fits "somehow"
+> 
+> * the remapped pointer is a function argument and not a return value. This is to
+>   save users from forgetting to use IS_ERR/PTR_ERR.
+> 
+> * the usage of IORESOURCE_CACHEABLE enforces calling the correct ioremap-variant.
+>   A number of drivers miss to call the _nocache-version, although they should do.
+> 
+> * the new function is not named 'devm_ioremap_resource' because it does more than
+>   just ioremap, namely request_mem_region. I didn't want to create implicit
+>   knowledge here.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> ---
+>  Documentation/driver-model/devres.txt |    1 +
+>  include/linux/device.h                |    3 ++
+>  lib/devres.c                          |   52 +++++++++++++++++++++++++++++++++
+>  3 files changed, 56 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+> index badd964..3aeb4f4 100644
+> --- a/Documentation/driver-model/devres.txt
+> +++ b/Documentation/driver-model/devres.txt
+> @@ -266,6 +266,7 @@ IOMAP
+>    devm_ioremap()
+>    devm_ioremap_nocache()
+>    devm_iounmap()
+> +  devm_resource_to_mapped_ptr() : checks resource, requests region, ioremaps
+>    pcim_iomap()
+>    pcim_iounmap()
+>    pcim_iomap_table()	: array of mapped addresses indexed by BAR
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index c20dfbf..82a621c 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -481,6 +481,9 @@ extern int devres_release_group(struct device *dev, void *id);
+>  extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
+>  extern void devm_kfree(struct device *dev, void *p);
+>  
+> +int __must_check devm_resource_to_mapped_ptr(struct device *dev,
+> +			struct resource *res, void __iomem **dest);
+> +
+>  struct device_dma_parameters {
+>  	/*
+>  	 * a low level driver may set these to teach IOMMU code about
+> diff --git a/lib/devres.c b/lib/devres.c
+> index 78777ae..970588b 100644
+> --- a/lib/devres.c
+> +++ b/lib/devres.c
+> @@ -85,6 +85,58 @@ void devm_iounmap(struct device *dev, void __iomem *addr)
+>  }
+>  EXPORT_SYMBOL(devm_iounmap);
+>  
+> +/**
+> + * devm_resource_to_mapped_ptr - Check, request region, and ioremap resource
 
-And I cannot reproduce after merging into 3.1.  :-(
+Kernel doc format should have '()' for functions is:
+/*
+ * devm_resource_to_mapped_ptr() - Check, request region, and ioremap resource
 
-							Thanx, Paul
+> + * @dev: Generic device to handle the resource for
+> + * @res: resource to be handled
+> + * @dest: Pointer to pointer which carries the remapped address
+> + *
+> + * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
+> + * everything is undone on driver detach. Checks arguments, so you can feed
+> + * it the result from e.g. platform_get_resource() directly:
+> + *
+> + *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> + *	err = devm_resource_to_mapped_ptr(&pdev->dev, res, &priv->regs);
+> + *	if (err)
+> + *		return err;
+> + */
+> +int __must_check devm_resource_to_mapped_ptr(struct device *dev,
+> +			struct resource *res, void __iomem **dest)
 
+I'm not happy with the API.  I understand trying to avoid losing the
+error code, but passing back the value in a passed in pointer is
+rather horrible to use (as I discovered with the
+of_property_read_u32() patches) and it becomes too easy to improperly
+use it.
+
+I'd argue that the users of this probably really won't care about the
+actual error code.  If this function fails, then things are rather
+horribly wrong, and it would be entirely appropriate to do rely on the
+dev_err() to inform the user of the actual error code.
+
+So, just return the mapped (void __iomem *) value after requesting and
+mapping the region, and make exceptional situations exceptional.  :-)
+
+Otherwise, I'm quite happy to see this helper.  Good work!
+
+g.
+
+> +{
+> +	resource_size_t size;
+> +	const char *name;
+> +
+> +	BUG_ON(!dev || !dest);
+> +
+> +	*dest = NULL;
+> +
+> +	if (!res || resource_type(res) != IORESOURCE_MEM) {
+> +		dev_err(dev, "invalid resource\n");
+> +		return -ENOENT;
+> +	}
+> +
+> +	size = resource_size(res);
+> +	name = res->name ?: dev_name(dev);
+> +
+> +	if (!devm_request_mem_region(dev, res->start, size, name)) {
+> +		dev_err(dev, "can't request region for resource %pR\n", res);
+> +		return -EBUSY;
+> +	}
+> +
+> +	if (res->flags & IORESOURCE_CACHEABLE)
+> +		*dest = devm_ioremap(dev, res->start, size);
+> +	else
+> +		*dest = devm_ioremap_nocache(dev, res->start, size);
+> +
+> +	if (!*dest) {
+> +		dev_err(dev, "ioremap failed for resource %pR\n", res);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(devm_resource_to_mapped_ptr);
+> +
+>  #ifdef CONFIG_HAS_IOPORT
+>  /*
+>   * Generic iomap devres
+> -- 
+> 1.7.6.3
+> 
