@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab1JXIRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 04:17:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63874 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab1JXIRS (ORCPT
+	id S1753843Ab1JXITn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 04:19:43 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:51774 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753571Ab1JXITm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 04:17:18 -0400
-Date: Mon, 24 Oct 2011 10:17:06 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, broonie@opensource.wolfsonmicro.com,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111024081706.GC8708@ponder.secretlab.ca>
-References: <20111018132032.GD30703@S2100-06.ap.freescale.net>
- <4E9EB61C.1040207@ti.com>
- <20111019144215.GA32007@S2100-06.ap.freescale.net>
- <4E9FAF42.5060200@ti.com>
- <20111020061408.GE32007@S2100-06.ap.freescale.net>
- <4EA00F7C.1080005@ti.com>
- <20111021082309.GA337@S2100-06.ap.freescale.net>
- <4EA13053.7080306@ti.com>
- <20111021115809.GB337@S2100-06.ap.freescale.net>
- <4EA4FF6B.2080906@ti.com>
+	Mon, 24 Oct 2011 04:19:42 -0400
+Message-ID: <4EA51F9B.7090806@profihost.ag>
+Date: Mon, 24 Oct 2011 10:19:39 +0200
+From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+Reply-To: p.herz@profihost.ag
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA4FF6B.2080906@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        s.priebe@profihost.ag, linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+References: <4E9D53FF.7090609@profihost.ag> <m2ipnmz49x.fsf@firstfloor.org>		 <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com>		 <4EA506B9.4030604@profihost.ag> <1319439819.2517.38.camel@edumazet-laptop>	 <4EA51210.9070209@profihost.ag> <1319443278.2381.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1319443278.2381.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 11:32:19AM +0530, Rajendra Nayak wrote:
-> On Friday 21 October 2011 05:28 PM, Shawn Guo wrote:
-> >On Fri, Oct 21, 2011 at 02:11:55PM +0530, Rajendra Nayak wrote:
-> >[...]
-> >>>+       /* find device_node and attach it */
-> >>>+       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
-> >>
-> >>so would this do a complete dt search for every regulator?
-> >
-> >Yes, with the first param being NULL, tthe entire device tree will be
-> >searched.
-> >
-> >>we would also need the driver names and dt names to match for this to
-> >>work, right?
-> >>
-> >Driver name does not matter.  The key for this search to work is having
-> >regulator's name (regulator_desc->name) match device tree node's name,
-> >case ignored.
-> 
-> Mark, whats your take on this? I am somehow not quite sure if we should
-> have this limitation put in to match DT node names with whats in the
-> driver structs (regulator_desc).
+Am 24.10.2011 10:01, schrieb Eric Dumazet:
+> Le lundi 24 octobre 2011 à 09:21 +0200, Philipp Herz - Profihost AG a
+> écrit :
+>
+>> does that mean that there was no firmware limitation with kernel 2.6.32
+>> or that the tg3 module has any "disable warnings" flag matching
+>> __GFP_NOWARN?
+>>
+>
+> There is no __GFP_NOWARN trick on tg3.
+>
+> We tend to prefer to be notified of a memory problem, instead of
+> hide ...
+yes,
+that's exactly what would like to understand in comparison to the 
+behavior of kernel 2.6.32.
 
-This looks wrong to me.  Matching based on node /name/, particularly
-when searching the entire tree, will cause problems.
+why does this notification show up now and never did before...
 
-g.
+>
+> By the way, apparently this driver drops the frame and doesnt increase
+> tx_dropped device counter. A patch will follow.
+fine
+
+>
+> Could you post your full dmesg ?
+>
+>
+Currently i can not provide any further information, 'cause server has 
+been restarted.
+
+What exactly are you looking for?
