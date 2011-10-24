@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab1JXOE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:04:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53833 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab1JXOEZ (ORCPT
+	id S932759Ab1JXOFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:05:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41560 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932641Ab1JXOFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:04:25 -0400
-Date: Mon, 24 Oct 2011 16:04:21 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant@secretlab.ca>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] gpiolib: Ensure struct gpio is always defined
-Message-ID: <20111024140421.GW8708@ponder.secretlab.ca>
-References: <1319462650-23696-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 24 Oct 2011 10:05:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319462650-23696-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EA557B2.4020504@st.com>
+References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
+	<1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
+	<CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
+	<4EA5117C.3000402@st.com>
+	<CAJhJPsVSzXXmBOwLaGNtOsxhVEyC0fAJtiBvEWzcKcSDC8NEcA@mail.gmail.com>
+	<4EA557B2.4020504@st.com>
+Date: Mon, 24 Oct 2011 22:05:06 +0800
+Message-ID: <CAJhJPsXxUAuF9HdivLd66MQC45mz-iYAuF1SdGdU=-duxJJ5bQ@mail.gmail.com>
+Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 03:24:10PM +0200, Mark Brown wrote:
-> Currently struct gpio is only defined when using gpiolib which makes the
-> stub gpio_request_array() much less useful in drivers than is ideal as
-> they can't work with struct gpio.  Since there are no other definitions
-> in kernel instead make the define always available no matter if gpiolib
-> is selectable or selected, ensuring that drivers can always use the
-> type.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> flob
+2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
+> Hello Kelvin.
+>
+> On 10/24/2011 12:36 PM, Kelvin Cheung wrote:
+>
+> [snip]
+>
+>> According to datasheet of Loongson 1B, the buffer size in RX/TX
+>> descriptor is only 2KB. So the Loongson1B's GMAC could not handle
+>> jumbo frames. And the second buffer is useless in this case. Am I
+>> right? Is there a better way than ifdef CONFIG_MACH_LOONGSON1 to
+>> avoid duplicate code?
+>
+> Sorry for my misunderstanding.
+>
+> I think you have to use the normal descriptor and remove the enh_desc
+> from the platform w/o modifying the driver at all.
+>
+> The driver will be able to select/configure all automatically (also jumbo).
+>
+> Let me know.
 
-Applied, thanks.
+That's the problem.
+The bitfield definition of Loongson1B is also different from normal descriptor.
 
-What does "flob" mean?
+Moreover, I want to enable the TX checksum offload function which is
+not supported in normal descriptor.
 
-g.
+Any suggestions?
 
-> ---
->  include/asm-generic/gpio.h |   12 ------------
->  include/linux/gpio.h       |   22 ++++++++++++----------
->  2 files changed, 12 insertions(+), 22 deletions(-)
-> 
-> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> index d494001..d0b6423 100644
-> --- a/include/asm-generic/gpio.h
-> +++ b/include/asm-generic/gpio.h
-> @@ -170,18 +170,6 @@ extern int __gpio_cansleep(unsigned gpio);
->  
->  extern int __gpio_to_irq(unsigned gpio);
->  
-> -/**
-> - * struct gpio - a structure describing a GPIO with configuration
-> - * @gpio:	the GPIO number
-> - * @flags:	GPIO configuration as specified by GPIOF_*
-> - * @label:	a literal description string of this GPIO
-> - */
-> -struct gpio {
-> -	unsigned	gpio;
-> -	unsigned long	flags;
-> -	const char	*label;
-> -};
-> -
->  extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
->  extern int gpio_request_array(const struct gpio *array, size_t num);
->  extern void gpio_free_array(const struct gpio *array, size_t num);
-> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-> index 17b5a0d..38ac48b 100644
-> --- a/include/linux/gpio.h
-> +++ b/include/linux/gpio.h
-> @@ -14,6 +14,18 @@
->  #define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
->  #define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
->  
-> +/**
-> + * struct gpio - a structure describing a GPIO with configuration
-> + * @gpio:	the GPIO number
-> + * @flags:	GPIO configuration as specified by GPIOF_*
-> + * @label:	a literal description string of this GPIO
-> + */
-> +struct gpio {
-> +	unsigned	gpio;
-> +	unsigned long	flags;
-> +	const char	*label;
-> +};
-> +
->  #ifdef CONFIG_GENERIC_GPIO
->  #include <asm/gpio.h>
->  
-> @@ -24,18 +36,8 @@
->  #include <linux/errno.h>
->  
->  struct device;
-> -struct gpio;
->  struct gpio_chip;
->  
-> -/*
-> - * Some platforms don't support the GPIO programming interface.
-> - *
-> - * In case some driver uses it anyway (it should normally have
-> - * depended on GENERIC_GPIO), these routines help the compiler
-> - * optimize out much GPIO-related code ... or trigger a runtime
-> - * warning when something is wrongly called.
-> - */
-> -
->  static inline bool gpio_is_valid(int number)
->  {
->  	return false;
-> -- 
-> 1.7.6.3
-> 
+> Note:
+> IIRC, there is a bit difference in case of normal descriptors for
+> Synopsys databook newer than the 1.91 (I used for testing this mode).
+> In any case, I remember that, on some platforms, the normal descriptors
+> have been used w/o problems also on these new chip generations.
+>
+> Peppe
+>
+>
+
+
+-- 
+Best Regards!
+Kelvin
