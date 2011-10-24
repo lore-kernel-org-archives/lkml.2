@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab1JXRHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 13:07:41 -0400
-Received: from mail.fuel7.com ([74.222.0.51]:42646 "EHLO mail.fuel7.com"
+	id S933120Ab1JXRIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 13:08:13 -0400
+Received: from mail.fuel7.com ([74.222.0.51]:42627 "EHLO mail.fuel7.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933066Ab1JXRGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 13:06:33 -0400
+	id S933004Ab1JXRGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 13:06:31 -0400
 From: Kyle Manna <kyle.manna@fuel7.com>
 To: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
 Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Kyle Manna <kyle.manna@fuel7.com>
-Subject: [PATCH v2 4/6] mfd: TPS65910: Move linux/gpio.h include to header
-Date: Mon, 24 Oct 2011 12:06:02 -0500
-Message-Id: <1319475964-10841-5-git-send-email-kyle.manna@fuel7.com>
+Subject: [PATCH v2 1/6] mfd: TPS65910: Handle non-existent devices
+Date: Mon, 24 Oct 2011 12:05:59 -0500
+Message-Id: <1319475964-10841-2-git-send-email-kyle.manna@fuel7.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319475964-10841-1-git-send-email-kyle.manna@fuel7.com>
 References: <1319475964-10841-1-git-send-email-kyle.manna@fuel7.com>
@@ -21,41 +21,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tps65910.h file depends on linux/gpio.h.  Move the include from the
-source file to the tps65910.h header file.
+Attempt to read the first register of the device, if there is no
+device return -ENODEV
 
 Signed-off-by: Kyle Manna <kyle.manna@fuel7.com>
 ---
- drivers/mfd/tps65910.c       |    1 -
- include/linux/mfd/tps65910.h |    3 +++
- 2 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/mfd/tps65910.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index f4654d5..36bc08c 100644
+index 6f5b8cf..03fb4a7 100644
 --- a/drivers/mfd/tps65910.c
 +++ b/drivers/mfd/tps65910.c
-@@ -18,7 +18,6 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
--#include <linux/gpio.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/tps65910.h>
+@@ -138,6 +138,7 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	struct tps65910_board *pmic_plat_data;
+ 	struct tps65910_platform_data *init_data;
+ 	int ret = 0;
++	char buff;
  
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 399d80a..503ded3 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -17,6 +17,9 @@
- #ifndef __LINUX_MFD_TPS65910_H
- #define __LINUX_MFD_TPS65910_H
+ 	pmic_plat_data = dev_get_platdata(&i2c->dev);
+ 	if (!pmic_plat_data)
+@@ -161,11 +162,17 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	tps65910->write = tps65910_i2c_write;
+ 	mutex_init(&tps65910->io_mutex);
  
-+#include <linux/gpio.h>
-+#include <linux/regulator/machine.h>
+-	ret = mfd_add_devices(tps65910->dev, -1,
+-			      tps65910s, ARRAY_SIZE(tps65910s),
+-			      NULL, 0);
+-	if (ret < 0)
++	/* Check that the device is actually there */
++	ret = tps65910_i2c_read(tps65910, 0x0, 1, &buff);
++	if (ret < 0) {
++		ret = -ENODEV;
+ 		goto err;
++	}
 +
- /* TPS chip id list */
- #define TPS65910			0
- #define TPS65911			1
++	ret = mfd_add_devices(tps65910->dev, -1, tps65910s,
++			ARRAY_SIZE(tps65910s), NULL, 0);
++	if (ret < 0)
++		goto err2;
+ 
+ 	init_data->irq = pmic_plat_data->irq;
+ 	init_data->irq_base = pmic_plat_data->irq;
+@@ -174,13 +181,14 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 
+ 	ret = tps65910_irq_init(tps65910, init_data->irq, init_data);
+ 	if (ret < 0)
+-		goto err;
++		goto err2;
+ 
+ 	kfree(init_data);
+ 	return ret;
+ 
+-err:
++err2:
+ 	mfd_remove_devices(tps65910->dev);
++err:
+ 	kfree(tps65910);
+ 	kfree(init_data);
+ 	return ret;
 -- 
 1.7.5.4
 
