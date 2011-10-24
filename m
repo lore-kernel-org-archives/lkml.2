@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab1JXJnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:43:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35082 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753966Ab1JXJnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:43:03 -0400
-Date: Mon, 24 Oct 2011 11:38:29 +0200
-From: Greg KH <gregkh@suse.de>
-To: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 2/5] debugfs: Renaming of xen functions and change
- unsigned to u32
-Message-ID: <20111024093829.GA2214@suse.de>
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
- <20111023190459.16364.98151.sendpatchset@oc5400248562.ibm.com>
- <20111023221920.GA591@suse.de>
- <4EA52FCF.2090508@linux.vnet.ibm.com>
+	id S1754589Ab1JXJtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:49:21 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60730
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753987Ab1JXJtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 05:49:20 -0400
+Date: Mon, 24 Oct 2011 05:49:10 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V8 00/26]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20111024094910.GA28693@infradead.org>
+References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20111024091716.GA1109@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EA52FCF.2090508@linux.vnet.ibm.com>
+In-Reply-To: <20111024091716.GA1109@fieldses.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 02:58:47PM +0530, Raghavendra K T wrote:
-> On 10/24/2011 03:49 AM, Greg KH wrote:
-> >On Mon, Oct 24, 2011 at 12:34:59AM +0530, Raghavendra K T wrote:
-> >>Renaming of xen functions and change unsigned to u32.
-> >
-> >Why not just rename when you move the functions?  Why the extra step?
-> >
-> Intention was only clarity. Yes, if this patch is an overhead, I 'll
-> combine both the patches.
+On Mon, Oct 24, 2011 at 05:17:16AM -0400, J. Bruce Fields wrote:
+> > How do we push these changes to Linus tree ? Andrew, Viro, any comment
+> > on how we can get this merged upstream ?
+> 
+> Andrew, it sounds like you might be willing to shepherd these through?
+> Let us know what you'd need.
 
-Yeah, it makes more sense as it originally confused me why you were
-adding a "xen_*" function to the debugfs core code :)
+It really has to through the VFS tree.  And to be honest despite the
+repostings there's been exactly zero progress on getting there.
 
-thanks,
+Please as a first thing submit the various small cleanups indepent
+of the other changes.  If you can't even those in there's no point
+in trying.  Second do not repeat the mistakes of the old ACL code,
+that is don't do too much work inside the filesystems.  Al, Linus
+and me spent a lot of working on pushing it into common code and
+it's not done.  For any new ACL model I really want to see zero
+per-fs code except for callouts in chmod & co and actually
+setting the xattr vector to a genericly provided one.  And please
+wire up all common filesystems to actually prove that point.
 
-greg k-h
+I also really hate all the duplication - I want to see a really good
+reason why all this code needs to be duplicated.  Just look at
+the mess done to check_acl and the ACL caching in the inode and
+any normal person would throw up.  There is absolutely no reason
+to not implement Posix ACLs as a subset of the NFSv4 ACL (not actually
+a subset in the strict mathematical sense, but close enough).
+
+After all this techical work (which was brought up before) has been
+done you can resubmit it.  And that point you'd better have very
+good and very lengthy rationale for why adding an utterly stupid
+ACL model is supposed to be a good idea.
