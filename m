@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab1JXVhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 17:37:08 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12659 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355Ab1JXVhH (ORCPT
+	id S1756084Ab1JXViZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 17:38:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:45238 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756006Ab1JXViY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 17:37:07 -0400
-Date: Mon, 24 Oct 2011 23:41:37 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-cc: Markus Grabner <grabner@icg.tugraz.at>, Peter Huewe <peterhuewe@gmx.de>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] line6: fix memory leaks in line6_init_midi()
-Message-ID: <alpine.LNX.2.00.1110242339500.19795@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 24 Oct 2011 17:38:24 -0400
+Date: Mon, 24 Oct 2011 17:35:36 -0400 (EDT)
+Message-Id: <20111024.173536.776095567988184340.davem@davemloft.net>
+To: fbl@redhat.com
+Cc: netdev@vger.kernel.org, dpmcgee@gmail.com, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TCP: remove TCP_DEBUG
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1319480110-20361-1-git-send-email-fbl@redhat.com>
+References: <CAEik5nPciVMwOE-hC+oPP1gMEvRzbhFwAZHKNQnHEc0YOUXuWA@mail.gmail.com>
+	<1319480110-20361-1-git-send-email-fbl@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 24 Oct 2011 14:35:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the first call to line6_midibuf_init() fails we'll leak a little
-bit of memory. If the second call fails we'll leak a bit more. This
-happens when we return from the function and the local variable
-'line6midi' goes out of scope.
+From: Flavio Leitner <fbl@redhat.com>
+Date: Mon, 24 Oct 2011 16:15:10 -0200
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/line6/midi.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+> It was enabled by default and the messages guarded
+> by the define are useful.
+> 
+> Signed-off-by: Flavio Leitner <fbl@redhat.com>
 
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index e554a2d..86c50cf 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -391,12 +391,17 @@ int line6_init_midi(struct usb_line6 *line6)
- 		return -ENOMEM;
- 
- 	err = line6_midibuf_init(&line6midi->midibuf_in, MIDI_BUFFER_SIZE, 0);
--	if (err < 0)
-+	if (err < 0) {
-+		kfree(line6midi);
- 		return err;
-+	}
- 
- 	err = line6_midibuf_init(&line6midi->midibuf_out, MIDI_BUFFER_SIZE, 1);
--	if (err < 0)
-+	if (err < 0) {
-+		kfree(line6midi->midibuf_in.buf);
-+		kfree(line6midi);
- 		return err;
-+	}
- 
- 	line6midi->line6 = line6;
- 	line6midi->midi_mask_transmit = 1;
--- 
-1.7.7
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Applied, thanks Flavio.
