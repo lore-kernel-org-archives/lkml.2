@@ -1,318 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab1JXMs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:48:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10677 "EHLO mx1.redhat.com"
+	id S932473Ab1JXMtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:49:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932435Ab1JXMr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:47:57 -0400
+	id S932385Ab1JXMrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 08:47:55 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Benjamin Marzinski <bmarzins@redhat.com>,
+Cc: Bob Peterson <rpeterso@redhat.com>,
         Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 21/24] GFS2: rewrite fallocate code to write blocks directly
-Date: Mon, 24 Oct 2011 13:48:35 +0100
-Message-Id: <1319460518-9046-22-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 20/24] GFS2: speed up delete/unlink performance for large files
+Date: Mon, 24 Oct 2011 13:48:34 +0100
+Message-Id: <1319460518-9046-21-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
 References: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Marzinski <bmarzins@redhat.com>
+From: Bob Peterson <rpeterso@redhat.com>
 
-GFS2's fallocate code currently goes through the page cache. Since it's only
-writing to the end of the file or to holes in it, it doesn't need to, and it
-was causing issues on low memory environments. This patch pulls in some of
-Steve's block allocation work, and uses it to simply allocate the blocks for
-the file, and zero them out at allocation time.  It provides a slight
-performance increase, and it dramatically simplifies the code.
+This patch improves the performance of delete/unlink
+operations in a GFS2 file system where the files are large
+by adding a layer of metadata read-ahead for indirect blocks.
+Mileage will vary, but on my system, deleting an 8.6G file
+dropped from 22 seconds to about 4.5 seconds.
 
-Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
 diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
-index 834cd94..97b6195 100644
+index 22ad413..834cd94 100644
 --- a/fs/gfs2/bmap.c
 +++ b/fs/gfs2/bmap.c
-@@ -10,6 +10,7 @@
- #include <linux/spinlock.h>
- #include <linux/completion.h>
- #include <linux/buffer_head.h>
-+#include <linux/blkdev.h>
- #include <linux/gfs2_ondisk.h>
- #include <linux/crc32.h>
- 
-@@ -427,12 +428,14 @@ static int gfs2_bmap_alloc(struct inode *inode, const sector_t lblock,
+@@ -831,7 +831,7 @@ static int recursive_scan(struct gfs2_inode *ip, struct buffer_head *dibh,
  {
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_sbd *sdp = GFS2_SB(inode);
-+	struct super_block *sb = sdp->sd_vfs;
- 	struct buffer_head *dibh = mp->mp_bh[0];
- 	u64 bn, dblock = 0;
- 	unsigned n, i, blks, alloced = 0, iblks = 0, branch_start = 0;
- 	unsigned dblks = 0;
- 	unsigned ptrs_per_blk;
- 	const unsigned end_of_metadata = height - 1;
-+	int ret;
- 	int eob = 0;
- 	enum alloc_state state;
- 	__be64 *ptr;
-@@ -535,6 +538,15 @@ static int gfs2_bmap_alloc(struct inode *inode, const sector_t lblock,
- 			dblock = bn;
- 			while (n-- > 0)
- 				*ptr++ = cpu_to_be64(bn++);
-+			if (buffer_zeronew(bh_map)) {
-+				ret = sb_issue_zeroout(sb, dblock, dblks,
-+						       GFP_NOFS);
-+				if (ret) {
-+					fs_err(sdp,
-+					       "Failed to zero data buffers\n");
-+					clear_buffer_zeronew(bh_map);
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct buffer_head *bh = NULL;
+-	__be64 *top, *bottom;
++	__be64 *top, *bottom, *t2;
+ 	u64 bn;
+ 	int error;
+ 	int mh_size = sizeof(struct gfs2_meta_header);
+@@ -859,7 +859,27 @@ static int recursive_scan(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 	if (error)
+ 		goto out;
+ 
+-	if (height < ip->i_height - 1)
++	if (height < ip->i_height - 1) {
++		struct buffer_head *rabh;
++
++		for (t2 = top; t2 < bottom; t2++, first = 0) {
++			if (!*t2)
++				continue;
++
++			bn = be64_to_cpu(*t2);
++			rabh = gfs2_getbuf(ip->i_gl, bn, CREATE);
++			if (trylock_buffer(rabh)) {
++				if (buffer_uptodate(rabh)) {
++					unlock_buffer(rabh);
++					brelse(rabh);
++					continue;
 +				}
++				rabh->b_end_io = end_buffer_read_sync;
++				submit_bh(READA | REQ_META, rabh);
++				continue;
 +			}
- 			break;
- 		}
- 	} while ((state != ALLOC_DATA) || !dblock);
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index aa3a4dd..5002408 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -669,135 +669,18 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	return generic_file_aio_write(iocb, iov, nr_segs, pos);
- }
- 
--static int empty_write_end(struct page *page, unsigned from,
--			   unsigned to, int mode)
--{
--	struct inode *inode = page->mapping->host;
--	struct gfs2_inode *ip = GFS2_I(inode);
--	struct buffer_head *bh;
--	unsigned offset, blksize = 1 << inode->i_blkbits;
--	pgoff_t end_index = i_size_read(inode) >> PAGE_CACHE_SHIFT;
--
--	zero_user(page, from, to-from);
--	mark_page_accessed(page);
--
--	if (page->index < end_index || !(mode & FALLOC_FL_KEEP_SIZE)) {
--		if (!gfs2_is_writeback(ip))
--			gfs2_page_add_databufs(ip, page, from, to);
--
--		block_commit_write(page, from, to);
--		return 0;
--	}
--
--	offset = 0;
--	bh = page_buffers(page);
--	while (offset < to) {
--		if (offset >= from) {
--			set_buffer_uptodate(bh);
--			mark_buffer_dirty(bh);
--			clear_buffer_new(bh);
--			write_dirty_buffer(bh, WRITE);
--		}
--		offset += blksize;
--		bh = bh->b_this_page;
--	}
--
--	offset = 0;
--	bh = page_buffers(page);
--	while (offset < to) {
--		if (offset >= from) {
--			wait_on_buffer(bh);
--			if (!buffer_uptodate(bh))
--				return -EIO;
--		}
--		offset += blksize;
--		bh = bh->b_this_page;
--	}
--	return 0;
--}
--
--static int needs_empty_write(sector_t block, struct inode *inode)
--{
--	int error;
--	struct buffer_head bh_map = { .b_state = 0, .b_blocknr = 0 };
--
--	bh_map.b_size = 1 << inode->i_blkbits;
--	error = gfs2_block_map(inode, block, &bh_map, 0);
--	if (unlikely(error))
--		return error;
--	return !buffer_mapped(&bh_map);
--}
--
--static int write_empty_blocks(struct page *page, unsigned from, unsigned to,
--			      int mode)
--{
--	struct inode *inode = page->mapping->host;
--	unsigned start, end, next, blksize;
--	sector_t block = page->index << (PAGE_CACHE_SHIFT - inode->i_blkbits);
--	int ret;
--
--	blksize = 1 << inode->i_blkbits;
--	next = end = 0;
--	while (next < from) {
--		next += blksize;
--		block++;
--	}
--	start = next;
--	do {
--		next += blksize;
--		ret = needs_empty_write(block, inode);
--		if (unlikely(ret < 0))
--			return ret;
--		if (ret == 0) {
--			if (end) {
--				ret = __block_write_begin(page, start, end - start,
--							  gfs2_block_map);
--				if (unlikely(ret))
--					return ret;
--				ret = empty_write_end(page, start, end, mode);
--				if (unlikely(ret))
--					return ret;
--				end = 0;
--			}
--			start = next;
--		}
--		else
--			end = next;
--		block++;
--	} while (next < to);
--
--	if (end) {
--		ret = __block_write_begin(page, start, end - start, gfs2_block_map);
--		if (unlikely(ret))
--			return ret;
--		ret = empty_write_end(page, start, end, mode);
--		if (unlikely(ret))
--			return ret;
--	}
--
--	return 0;
--}
--
- static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
- 			   int mode)
- {
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct buffer_head *dibh;
- 	int error;
--	u64 start = offset >> PAGE_CACHE_SHIFT;
--	unsigned int start_offset = offset & ~PAGE_CACHE_MASK;
--	u64 end = (offset + len - 1) >> PAGE_CACHE_SHIFT;
--	pgoff_t curr;
--	struct page *page;
--	unsigned int end_offset = (offset + len) & ~PAGE_CACHE_MASK;
--	unsigned int from, to;
--
--	if (!end_offset)
--		end_offset = PAGE_CACHE_SIZE;
-+	unsigned int nr_blks;
-+	sector_t lblock = offset >> inode->i_blkbits;
- 
- 	error = gfs2_meta_inode_buffer(ip, &dibh);
- 	if (unlikely(error))
--		goto out;
-+		return error;
- 
- 	gfs2_trans_add_bh(ip->i_gl, dibh, 1);
- 
-@@ -807,39 +690,31 @@ static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
- 			goto out;
- 	}
- 
--	curr = start;
--	offset = start << PAGE_CACHE_SHIFT;
--	from = start_offset;
--	to = PAGE_CACHE_SIZE;
--	while (curr <= end) {
--		page = grab_cache_page_write_begin(inode->i_mapping, curr,
--						   AOP_FLAG_NOFS);
--		if (unlikely(!page)) {
--			error = -ENOMEM;
--			goto out;
--		}
-+	while (len) {
-+		struct buffer_head bh_map = { .b_state = 0, .b_blocknr = 0 };
-+		bh_map.b_size = len;
-+		set_buffer_zeronew(&bh_map);
- 
--		if (curr == end)
--			to = end_offset;
--		error = write_empty_blocks(page, from, to, mode);
--		if (!error && offset + to > inode->i_size &&
--		    !(mode & FALLOC_FL_KEEP_SIZE)) {
--			i_size_write(inode, offset + to);
--		}
--		unlock_page(page);
--		page_cache_release(page);
--		if (error)
-+		error = gfs2_block_map(inode, lblock, &bh_map, 1);
-+		if (unlikely(error))
- 			goto out;
--		curr++;
--		offset += PAGE_CACHE_SIZE;
--		from = 0;
-+		len -= bh_map.b_size;
-+		nr_blks = bh_map.b_size >> inode->i_blkbits;
-+		lblock += nr_blks;
-+		if (!buffer_new(&bh_map))
-+			continue;
-+		if (unlikely(!buffer_zeronew(&bh_map))) {
-+			error = -EIO;
-+			goto out;
++			brelse(rabh);
 +		}
- 	}
-+	if (offset + len > inode->i_size && !(mode & FALLOC_FL_KEEP_SIZE))
-+		i_size_write(inode, offset + len);
- 
- 	mark_inode_dirty(inode);
- 
--	brelse(dibh);
--
- out:
-+	brelse(dibh);
- 	return error;
- }
- 
-@@ -879,6 +754,7 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
- 	int error;
- 	loff_t bsize_mask = ~((loff_t)sdp->sd_sb.sb_bsize - 1);
- 	loff_t next = (offset + len - 1) >> sdp->sd_sb.sb_bsize_shift;
-+	loff_t max_chunk_size = UINT_MAX & bsize_mask;
- 	next = (next + 1) << sdp->sd_sb.sb_bsize_shift;
- 
- 	/* We only support the FALLOC_FL_KEEP_SIZE mode */
-@@ -932,7 +808,8 @@ retry:
- 			goto out_qunlock;
+ 		for (; top < bottom; top++, first = 0) {
+ 			if (!*top)
+ 				continue;
+@@ -871,7 +891,7 @@ static int recursive_scan(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 			if (error)
+ 				break;
  		}
- 		max_bytes = bytes;
--		calc_max_reserv(ip, len, &max_bytes, &data_blocks, &ind_blocks);
-+		calc_max_reserv(ip, (len > max_chunk_size)? max_chunk_size: len,
-+				&max_bytes, &data_blocks, &ind_blocks);
- 		al->al_requested = data_blocks + ind_blocks;
- 
- 		rblocks = RES_DINODE + ind_blocks + RES_STATFS + RES_QUOTA +
-diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-index 55e335b..6429aa4 100644
---- a/fs/gfs2/incore.h
-+++ b/fs/gfs2/incore.h
-@@ -103,12 +103,15 @@ struct gfs2_rgrpd {
- enum gfs2_state_bits {
- 	BH_Pinned = BH_PrivateStart,
- 	BH_Escaped = BH_PrivateStart + 1,
-+	BH_Zeronew = BH_PrivateStart + 2,
- };
- 
- BUFFER_FNS(Pinned, pinned)
- TAS_BUFFER_FNS(Pinned, pinned)
- BUFFER_FNS(Escaped, escaped)
- TAS_BUFFER_FNS(Escaped, escaped)
-+BUFFER_FNS(Zeronew, zeronew)
-+TAS_BUFFER_FNS(Zeronew, zeronew)
- 
- struct gfs2_bufdata {
- 	struct buffer_head *bd_bh;
+-
++	}
+ out:
+ 	brelse(bh);
+ 	return error;
 -- 
 1.7.4.4
 
