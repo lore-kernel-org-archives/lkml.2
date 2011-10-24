@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1JXWVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 18:21:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36136 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab1JXWVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 18:21:22 -0400
-Date: Tue, 25 Oct 2011 00:21:13 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rajendra Nayak <rnayak@ti.com>, patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111024222113.GG4394@ponder.secretlab.ca>
-References: <4EA00F7C.1080005@ti.com>
- <20111021082309.GA337@S2100-06.ap.freescale.net>
- <20111024092411.GE8708@ponder.secretlab.ca>
- <20111024130429.GD1755@S2100-06.ap.freescale.net>
- <20111024130636.GB26033@opensource.wolfsonmicro.com>
- <20111024134025.GE1755@S2100-06.ap.freescale.net>
- <20111024135950.GV8708@ponder.secretlab.ca>
- <20111024145139.GH1755@S2100-06.ap.freescale.net>
- <20111024145631.GB8708@ponder.secretlab.ca>
- <20111024155132.GI1755@S2100-06.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024155132.GI1755@S2100-06.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752203Ab1JXWVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:21:39 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:60553 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab1JXWVh (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 24 Oct 2011 18:21:37 -0400
+Subject: Re: [PATCH] acer-wmi: blacklist Thinkpad edge E520
+From: joeyli <jlee@suse.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Joey Lee <jlee@novell.com>
+In-Reply-To: <4E9CE262.60601@canonical.com>
+References: <1318488718-4744-1-git-send-email-ike.pan@canonical.com>
+	 <1318523759.1913.68.camel@linux-s257.site>  <4E97A307.20208@canonical.com>
+	 <1318902491.1913.348.camel@linux-s257.site>  <4E9CE262.60601@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Oct 2011 06:20:31 +0800
+Message-ID: <1319494831.17773.153.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 11:51:33PM +0800, Shawn Guo wrote:
-> On Mon, Oct 24, 2011 at 04:56:31PM +0200, Grant Likely wrote:
-> > On Mon, Oct 24, 2011 at 10:51:40PM +0800, Shawn Guo wrote:
-> > > On Mon, Oct 24, 2011 at 03:59:50PM +0200, Grant Likely wrote:
-> > > > On Mon, Oct 24, 2011 at 09:40:26PM +0800, Shawn Guo wrote:
-> > > > > diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> > > > > index 8fe132d..29dcf90 100644
-> > > > > --- a/drivers/regulator/core.c
-> > > > > +++ b/drivers/regulator/core.c
-> > > > > @@ -2673,7 +2673,8 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
-> > > > >         BLOCKING_INIT_NOTIFIER_HEAD(&rdev->notifier);
-> > > > > 
-> > > > >         /* find device_node and attach it */
-> > > > > -       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
-> > > > > +       rdev->dev.of_node = of_find_node_by_name(dev->parent->of_node,
-> > > > > +                                                regulator_desc->name);
-> > > > 
-> > > > of_find_node_by_name() doesn't work that way.  The first argument is a
-> > > > starting point, but it doesn't restrict the search to children of a
-> > > > node.
-> > > > 
-> > > > for_each_child_of_node() is what you want to use when iterating over
-> > > > the children which unfortunately changes the structure of this
-> > > > function.
-> > > > 
-> > > The dev->parent->of_node is meant to point to node 'pmic: mc13892@0'.
-> > > And the intention here is not to iterate over the children, but to
-> > > start a search from a reasonable point rather than the top root node.
-> > 
-> > It is always better to attach the of_node at struct device
-> > registration time instead of searching the tree in common code.  The
-> > of_node should already be assigned by the time regulator_register() is
-> > called.
+Hi Ike, 
+
+於 二，2011-10-18 於 10:20 +0800，Ike Panhc 提到：
+> Hi Joey,
 > 
-> That's the problem we have.  There is no 'struct dev' to attach of_node
-> for each regulator by the time regulator_register() is called, because
-> the 'struct dev' for each regulator is created inside
-> regulator_register() as wrapped by 'struct regulator_dev'.
+> On 10/18/2011 09:48 AM, joeyli wrote:
+> > Hi Ike, 
+> > 
+> > Could you please attached on the "rfkill list" output when press Fn key?
+> > Then we can check the rfkill status change.
+> 
+> The output of rfkill list is at
+>   https://launchpadlibrarian.net/78485925/RfKill.txt
+> 
+> .. and bug reporter tells me that he can not unblock wireless.
+>   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/836865/comments/0
+> 
+> > 
+> > And, 
+> > Thinkpad E520 have AMW0 method and I thought acer-wmi query wrong EC
+> > register address so your acer-wireless was always soft-blocked.
+> > 
+> > Does it possible kindly help me to find out which register on E520 is
+> > mapping to wireless status? Please reference to Carlos's acer_ec.pl
+> > tool:
+> > 
+> > http://code.google.com/p/aceracpi/wiki/EmbeddedController
+> > 
+> > Simple use:
+> >         watch -n 1 perl acer_ec.pl regs
+> > 
+> > Then press your wireless Fn key to monitor which register changed when
+> > you press Fn key:
+> > 
+> > e.g. the register at row B0 and column 0A is register 0xBA (0x is used
+> > to indicate this is a hexadecimal number).
+> > 
+> > There maybe have other EC register changing when you press key, please
+> > do a couple of times and make sure you find out the right one.
+> > 
+> > If we are lucky, we can find out one EC register mapping to your
+> > wireless state.
+> 
+> I've asked bug reporter to do so. Unfortunately nothing useful found.
+> 
+> Please refer to the link below:
+>   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/836865/comments/13
+>   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/836865/comments/14
+> 
+> The full discussion is at
+>   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/836865
+> 
 
-Then regulator_register must be split in half.  This is a common use
-case, and other libraries have had to do the same.  One half to
-allocate the structure, and then a second half for registration, and
-regulator_register() becomes a simpler helper that calls both.  That
-way a caller can insert extra initialization between the two steps.
+Bad! 
 
-g.
+I also didn't see useful things from DSDT, looks like the control
+doesn't through EC.
+
+Let's add this device to blacklist!
+
+
+Thank's
+Joey Lee
+
 
