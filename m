@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab1JXSSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 14:18:54 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40938 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933038Ab1JXSSx (ORCPT
+	id S1751585Ab1JXSpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 14:45:12 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38533 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab1JXSpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 14:18:53 -0400
-Date: Mon, 24 Oct 2011 14:18:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Hellstrom <thomas@shipmail.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        thellstrom@vmware.com, airlied@redhat.com,
-        xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com
-Subject: Re: [PATCH 06/11] ttm/driver: Expand ttm_backend_func to include two
- overrides for TTM page pool.
-Message-ID: <20111024181806.GA4369@phenom.dumpdata.com>
-References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
- <1319062772-2793-7-git-send-email-konrad.wilk@oracle.com>
- <4EA28FA6.7000006@shipmail.org>
- <20111024172728.GD2320@phenom.dumpdata.com>
- <4EA5A381.1050100@shipmail.org>
+	Mon, 24 Oct 2011 14:45:09 -0400
+Message-ID: <4EA5B241.5040003@linux.vnet.ibm.com>
+Date: Tue, 25 Oct 2011 00:15:21 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA5A381.1050100@shipmail.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4EA5ABE8.0146:SCFMA922111,ss=1,re=-4.000,fgs=0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC V2 4/5] kvm guest : Added configuration support to
+ enable debug information for KVM Guests
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190700.16364.7548.sendpatchset@oc5400248562.ibm.com> <1319450505.5660.5.camel@lappy>
+In-Reply-To: <1319450505.5660.5.camel@lappy>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >For that there are couple of architectural issues I am not sure how to solve.
-> >
-> >There has to be some form of TTM<->[Radeon|Nouveau] lookup mechanism
-> >to say: "here is a 'struct page *', give me the bus address". Currently
-> >this is solved by keeping an array of DMA addresses along with the list
-> >of pages. And passing the list and DMA address up the stack (and down)
-> >from TTM up to the driver (when ttm->be->func->populate is called and they
-> >are handed off) does it. It does not break any API layering .. and the internal
-> >TTM pool (non-DMA) can just ignore the dma_address altogether (see patch above).
-> >
-> 
-> I actually had something more simple in mind, but when tinking a bit
-> deeper into it, it seems more complicated than I initially thought.
-> 
-> Namely that when we allocate pages from the ttm_backend, we actually
-> populated it at the same time. be::populate would then not take a
-> page array as an argument, and would actually be a no-op on many
-> drivers.
-
-The programming of the gfx's MMU.. would be done via a new API call?
-I think this needs a bit of whiteboarding for me to be sure I understand you.
-> 
-> This makes us move towards struct ttm_tt consisting almost only of
-> its backend, so that whole API should perhaps be looked at with new
-> eyes.
-> 
-> So anyway, I'm fine with high level things as they are now, and the
-
-Great!
-> dma_addr issue can be looked at at a later time. If we could get a
-> couple of extra eyes to review the code for style etc. would be
-
-Anybody in particular you can recommend that I can pester^H^H^H^H politely
-ask :-)
-
-> great, because I have very little time the next couple of weeks.
-
-<nods> Understood. 
+On 10/24/2011 03:31 PM, Sasha Levin wrote:
+> On Mon, 2011-10-24 at 00:37 +0530, Raghavendra K T wrote:
+>> Added configuration support to enable debug information
+>> for KVM Guests in debugfs
+>> +config KVM_DEBUG_FS
+>> +	bool "Enable debug information for KVM Guests in debugfs"
+>> +	depends on KVM_GUEST
+>
+> Shouldn't it depend on DEBUG_FS as well?
+Thanks again for pointing. will correct this too.
