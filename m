@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab1JXPrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 11:47:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42708 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932793Ab1JXPrD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 11:47:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111024144334.GA26603@hallyn.com>
-References: <CALQRfL51U=cuLdVUpFXTog++3WwMjJB+9S6T8gVibC5gdGa5JQ@mail.gmail.com>
-	<1318974898-21431-1-git-send-email-serge@hallyn.com>
-	<1318974898-21431-6-git-send-email-serge@hallyn.com>
-	<14652.1319014868@redhat.com>
-	<20111024144334.GA26603@hallyn.com>
-Date: Mon, 24 Oct 2011 08:47:01 -0700
-X-Google-Sender-Auth: MVyHSxbhtMgc3UBw5lMwUU1VGug
-Message-ID: <CALQRfL4zCbzr_Fa0ySi96j06nw7ifocCxUjYUs6vXxeNvjCutQ@mail.gmail.com>
-Subject: Re: [PATCH 05/10] user namespace: clamp down users of cap_raised
-From: "Andrew G. Morgan" <morgan@kernel.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
-        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        eparis@redhat.com, "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932913Ab1JXPtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 11:49:32 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45170 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932793Ab1JXPtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 11:49:31 -0400
+Message-ID: <1319471369.25101.3.camel@Joe-Laptop>
+Subject: [PATCH] MAINTAINERS: Staging: cx25821: Add L: linux-media
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Date: Mon, 24 Oct 2011 08:49:29 -0700
+In-Reply-To: <20111024224623.7585c471@inspire>
+References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
+	 <20111022081941.GA5443@suse.de> <4EA3A7ED.8090404@redhat.com>
+	 <20111023232418.2d79ed12@inspire> <4EA47CF8.2090504@redhat.com>
+	 <20111024224623.7585c471@inspire>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge,
+Send patches to a mailing list.
 
-It seems as if this whole thing is really idiomatic. How about?
+Signed-off-by: Joe Perches <joe@perches.com>
 
-#define IN_ROOT_USER_NS_CAPABLE(cap)  \
-   ((current_user_ns() == &init_user_ns) && cap_raised(current_cap(), cap))
+---
 
-Cheers
+On Sun, 23 Oct 2011 22:45:44 +0200
+Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
 
-Andrew
+> The better is if you could send them to linux-media@vger.kernel.org. Patchwork
+> will catch them and put on my queue automatically.
 
-On Mon, Oct 24, 2011 at 7:43 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> A few modules are using cap_raised(current_cap(), cap) to authorize
-> actions.  This means that tasks which are privileged in non-initial
-> user namespaces will be deemed privileged.  The privilege should only
-> be granted if the task is in the initial user namespace.
->
-> Switching the calls to capable() would change the behavior - it would
-> cause the LSM capable hooks to be called, and set PF_SUPERPRIV if
-> the capability was used.  So instead, put in an explicit check and
-> refuse privilege if the caller is not in init_user_ns.
->
-> Changelog:
-> Oct 23: Use a nice macro to make the code shorter and easier to read,
->        per advice from Andrew Morgan and David Howells.
->
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Andrew Morgan <morgan@kernel.org>
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: David Howells <dhowells@redhat.com>
-> ---
->  drivers/block/drbd/drbd_nl.c           |    2 +-
->  drivers/md/dm-log-userspace-transfer.c |    2 +-
->  drivers/staging/pohmelfs/config.c      |    2 +-
->  drivers/video/uvesafb.c                |    2 +-
->  include/linux/cred.h                   |    2 ++
->  5 files changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-> index 0feab26..f799b15 100644
-> --- a/drivers/block/drbd/drbd_nl.c
-> +++ b/drivers/block/drbd/drbd_nl.c
-> @@ -2297,7 +2297,7 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
->                return;
->        }
->
-> -       if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
-> +       if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN)) {
->                retcode = ERR_PERM;
->                goto fail;
->        }
-> diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
-> index 1f23e04..126a79b 100644
-> --- a/drivers/md/dm-log-userspace-transfer.c
-> +++ b/drivers/md/dm-log-userspace-transfer.c
-> @@ -134,7 +134,7 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
->  {
->        struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
->
-> -       if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
-> +       if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN))
->                return;
->
->        spin_lock(&receiving_list_lock);
-> diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
-> index b6c42cb..327c047 100644
-> --- a/drivers/staging/pohmelfs/config.c
-> +++ b/drivers/staging/pohmelfs/config.c
-> @@ -525,7 +525,7 @@ static void pohmelfs_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *n
->  {
->        int err;
->
-> -       if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
-> +       if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN))
->                return;
->
->        switch (msg->flags) {
-> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-> index 7f8472c..94e0e9d 100644
-> --- a/drivers/video/uvesafb.c
-> +++ b/drivers/video/uvesafb.c
-> @@ -73,7 +73,7 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
->        struct uvesafb_task *utask;
->        struct uvesafb_ktask *task;
->
-> -       if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
-> +       if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN))
->                return;
->
->        if (msg->seq >= UVESAFB_TASKS_MAX)
-> diff --git a/include/linux/cred.h b/include/linux/cred.h
-> index 4030896..2f75da7 100644
-> --- a/include/linux/cred.h
-> +++ b/include/linux/cred.h
-> @@ -359,9 +359,11 @@ static inline void put_cred(const struct cred *_cred)
->
->  #ifdef CONFIG_USER_NS
->  #define current_user_ns() (current_cred_xxx(user_ns))
-> +#define IN_ROOT_USER_NS() (current_user_ns() == &init_user_ns)
->  #else
->  extern struct user_namespace init_user_ns;
->  #define current_user_ns() (&init_user_ns)
-> +#define IN_ROOT_USER_NS() (1)
->  #endif
->
->
-> --
-> 1.7.5.4
->
->
+ MAINTAINERS |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a85a9b7..75d0718 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6262,6 +6262,11 @@ M:	Mori Hess <fmhess@users.sourceforge.net>
+ S:	Odd Fixes
+ F:	drivers/staging/comedi/
+ 
++STAGING - CONEXANT CX25821 PCIE BRIDGE
++L:	linux-media@vger.kernel.org
++S:	Odd Fixes
++F:	drivers/staging/cx25821/
++
+ STAGING - CRYSTAL HD VIDEO DECODER
+ M:	Naren Sankar <nsankar@broadcom.com>
+ M:	Jarod Wilson <jarod@wilsonet.com>
+
+
