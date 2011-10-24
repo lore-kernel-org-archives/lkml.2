@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab1JXOFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:05:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58187 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932770Ab1JXOFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:05:21 -0400
-Date: Mon, 24 Oct 2011 16:05:19 +0200
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Grant Likely <grant@secretlab.ca>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] gpiolib: Ensure struct gpio is always defined
-Message-ID: <20111024140519.GE26033@opensource.wolfsonmicro.com>
-References: <1319462650-23696-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20111024140421.GW8708@ponder.secretlab.ca>
+	id S932195Ab1JXOJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:09:41 -0400
+Received: from brick.kernel.dk ([87.104.106.3]:55731 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932101Ab1JXOJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 10:09:40 -0400
+Message-ID: <4EA5719D.1020805@kernel.dk>
+Date: Mon, 24 Oct 2011 16:09:33 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024140421.GW8708@ponder.secretlab.ca>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: jeff.liu@oracle.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix a typo
+References: <4EA56D60.2030208@oracle.com>
+In-Reply-To: <4EA56D60.2030208@oracle.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 04:04:21PM +0200, Grant Likely wrote:
+On 2011-10-24 15:51, Jeff Liu wrote:
+> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
 
-> What does "flob" mean?
+Applied, but please next time use a more reasonable subject line.
 
-It means "I should have deleted this non-empty changelog I wrote so I
-could squash down the commit.".
+-- 
+Jens Axboe
+
