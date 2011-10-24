@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078Ab1JXSQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 14:16:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27808 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab1JXSQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 14:16:02 -0400
-From: Flavio Leitner <fbl@redhat.com>
-To: netdev <netdev@vger.kernel.org>
-Cc: David Miller <davem@davemloft.net>, Dan McGee <dpmcgee@gmail.com>,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] TCP: remove TCP_DEBUG
-Date: Mon, 24 Oct 2011 16:15:10 -0200
-Message-Id: <1319480110-20361-1-git-send-email-fbl@redhat.com>
-In-Reply-To: <CAEik5nPciVMwOE-hC+oPP1gMEvRzbhFwAZHKNQnHEc0YOUXuWA@mail.gmail.com>
-References: <CAEik5nPciVMwOE-hC+oPP1gMEvRzbhFwAZHKNQnHEc0YOUXuWA@mail.gmail.com>
+	id S933086Ab1JXSRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 14:17:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44663 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab1JXSRy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 14:17:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111017125126.GB18822@gere.osrc.amd.com>
+References: <4E9BE18B.5070803@f-secure.com>
+	<CAANzHtS8kCTBkHUwxN_s9ZucrkXHyUvzFzAN7TA7K_XGgiKwxA@mail.gmail.com>
+	<20111017125126.GB18822@gere.osrc.amd.com>
+Date: Mon, 24 Oct 2011 14:17:53 -0400
+Message-ID: <CAANzHtRdA2EzE7qxw+nkzQZojEt7vkux5RAnBsPgUuNLZuyCKQ@mail.gmail.com>
+Subject: Re: finger service @ftp.kernel.org
+From: =?UTF-8?B?wqA=?= <porpen@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Tarkan Erimer <tarkan.erimer@f-secure.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was enabled by default and the messages guarded
-by the define are useful.
+On 17 October 2011 08:51, Borislav Petkov <bp@alien8.de> wrote:
+> On Mon, Oct 17, 2011 at 05:03:07AM -0400,   wrote:
+>> The finger_banner page appears to be current,
+>
+> It doesn't look like it here:
+>
+> $ curl http://kernel.org/kdist/finger_banner
+> ...
+> The latest snapshot 3 version of the Linux kernel is:         3.1-rc4-git2
+> The latest mainline 3 version of the Linux kernel is:         3.1-rc4
+> ...
+> $ date
+> Mon Oct 17 14:50:59 CEST 2011
+> ...
+> Boris.
 
-Signed-off-by: Flavio Leitner <fbl@redhat.com>
----
- include/net/tcp.h    |    1 -
- net/ipv4/tcp.c       |    2 --
- net/ipv4/tcp_timer.c |    2 --
- 3 files changed, 0 insertions(+), 5 deletions(-)
+It seems both the finger_banner file and http://kernel.org home page
+both list -rc4 as the current 'mainline'.
+So, the rebuild of kernel.org has not yet hit the scripts that update
+those files.
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index ed0e814..e147f42 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -18,7 +18,6 @@
- #ifndef _TCP_H
- #define _TCP_H
- 
--#define TCP_DEBUG 1
- #define FASTRETRANS_DEBUG 1
- 
- #include <linux/list.h>
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index eefc61e..34f5db1 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1193,13 +1193,11 @@ void tcp_cleanup_rbuf(struct sock *sk, int copied)
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	int time_to_ack = 0;
- 
--#if TCP_DEBUG
- 	struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
- 
- 	WARN(skb && !before(tp->copied_seq, TCP_SKB_CB(skb)->end_seq),
- 	     "cleanup rbuf bug: copied %X seq %X rcvnxt %X\n",
- 	     tp->copied_seq, TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt);
--#endif
- 
- 	if (inet_csk_ack_scheduled(sk)) {
- 		const struct inet_connection_sock *icsk = inet_csk(sk);
-diff --git a/net/ipv4/tcp_timer.c b/net/ipv4/tcp_timer.c
-index ecd44b0..2e0f0af 100644
---- a/net/ipv4/tcp_timer.c
-+++ b/net/ipv4/tcp_timer.c
-@@ -334,7 +334,6 @@ void tcp_retransmit_timer(struct sock *sk)
- 		 * connection. If the socket is an orphan, time it out,
- 		 * we cannot allow such beasts to hang infinitely.
- 		 */
--#ifdef TCP_DEBUG
- 		struct inet_sock *inet = inet_sk(sk);
- 		if (sk->sk_family == AF_INET) {
- 			LIMIT_NETDEBUG(KERN_DEBUG "TCP: Peer %pI4:%u/%u unexpectedly shrunk window %u:%u (repaired)\n",
-@@ -349,7 +348,6 @@ void tcp_retransmit_timer(struct sock *sk)
- 			       inet->inet_num, tp->snd_una, tp->snd_nxt);
- 		}
- #endif
--#endif
- 		if (tcp_time_stamp - tp->rcv_tstamp > TCP_RTO_MAX) {
- 			tcp_write_err(sk);
- 			goto out;
--- 
-1.7.6
+Give it time, those sysadmins have been rather busy lately.
 
+Cheers!
+-porpen
