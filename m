@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab1JXMr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:47:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44854 "EHLO mx1.redhat.com"
+	id S932347Ab1JXMrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:47:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45873 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab1JXMr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:47:27 -0400
+	id S932288Ab1JXMr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 08:47:29 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 01/24] GFS2: Clean up dir hash table reading
-Date: Mon, 24 Oct 2011 13:48:15 +0100
-Message-Id: <1319460518-9046-2-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 03/24] GFS2: Fix bug-trap in ail flush code
+Date: Mon, 24 Oct 2011 13:48:17 +0100
+Message-Id: <1319460518-9046-4-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
 References: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there is now only a single caller to gfs2_dir_read_data()
-and it has a number of constant arguments, we can factor
-those out. Also some tests relating to the inode size were
-being done twice.
+The assert was being tested under the wrong lock, a
+legacy of the original code. Also, if it does trigger,
+the resulting information was not always a lot of help.
+
+This moves the patch under the correct lock and also
+prints out more useful information in tacking down the
+source of the problem.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
-index 1cc2f8e..2045d70 100644
---- a/fs/gfs2/dir.c
-+++ b/fs/gfs2/dir.c
-@@ -240,16 +240,15 @@ fail:
- 	return error;
- }
+diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
+index da21eca..99df483 100644
+--- a/fs/gfs2/glops.c
++++ b/fs/gfs2/glops.c
+@@ -28,6 +28,17 @@
+ #include "trans.h"
+ #include "dir.h"
  
--static int gfs2_dir_read_stuffed(struct gfs2_inode *ip, char *buf,
--				 u64 offset, unsigned int size)
-+static int gfs2_dir_read_stuffed(struct gfs2_inode *ip, __be64 *buf,
-+				 unsigned int size)
- {
- 	struct buffer_head *dibh;
- 	int error;
++static void gfs2_ail_error(struct gfs2_glock *gl, const struct buffer_head *bh)
++{
++	fs_err(gl->gl_sbd, "AIL buffer %p: blocknr %llu state 0x%08lx mapping %p page state 0x%lx\n",
++	       bh, (unsigned long long)bh->b_blocknr, bh->b_state,
++	       bh->b_page->mapping, bh->b_page->flags);
++	fs_err(gl->gl_sbd, "AIL glock %u:%llu mapping %p\n",
++	       gl->gl_name.ln_type, gl->gl_name.ln_number,
++	       gfs2_glock2aspace(gl));
++	gfs2_lm_withdraw(gl->gl_sbd, "AIL error\n");
++}
++
+ /**
+  * __gfs2_ail_flush - remove all buffers for a given lock from the AIL
+  * @gl: the glock
+@@ -41,20 +52,24 @@ static void __gfs2_ail_flush(struct gfs2_glock *gl)
+ 	struct list_head *head = &gl->gl_ail_list;
+ 	struct gfs2_bufdata *bd;
+ 	struct buffer_head *bh;
++	sector_t blocknr;
  
- 	error = gfs2_meta_inode_buffer(ip, &dibh);
- 	if (!error) {
--		offset += sizeof(struct gfs2_dinode);
--		memcpy(buf, dibh->b_data + offset, size);
-+		memcpy(buf, dibh->b_data + sizeof(struct gfs2_dinode), size);
- 		brelse(dibh);
- 	}
+ 	spin_lock(&sdp->sd_ail_lock);
+ 	while (!list_empty(head)) {
+ 		bd = list_entry(head->next, struct gfs2_bufdata,
+ 				bd_ail_gl_list);
+ 		bh = bd->bd_bh;
+-		gfs2_remove_from_ail(bd);
+-		bd->bd_bh = NULL;
++		blocknr = bh->b_blocknr;
++		if (buffer_busy(bh))
++			gfs2_ail_error(gl, bh);
+ 		bh->b_private = NULL;
++		gfs2_remove_from_ail(bd); /* drops ref on bh */
+ 		spin_unlock(&sdp->sd_ail_lock);
  
-@@ -261,13 +260,12 @@ static int gfs2_dir_read_stuffed(struct gfs2_inode *ip, char *buf,
-  * gfs2_dir_read_data - Read a data from a directory inode
-  * @ip: The GFS2 Inode
-  * @buf: The buffer to place result into
-- * @offset: File offset to begin jdata_readng from
-  * @size: Amount of data to transfer
-  *
-  * Returns: The amount of data actually copied or the error
-  */
--static int gfs2_dir_read_data(struct gfs2_inode *ip, char *buf, u64 offset,
--			      unsigned int size, unsigned ra)
-+static int gfs2_dir_read_data(struct gfs2_inode *ip, __be64 *buf,
-+			      unsigned int size)
- {
- 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
- 	u64 lblock, dblock;
-@@ -275,24 +273,14 @@ static int gfs2_dir_read_data(struct gfs2_inode *ip, char *buf, u64 offset,
- 	unsigned int o;
- 	int copied = 0;
- 	int error = 0;
--	u64 disksize = i_size_read(&ip->i_inode);
--
--	if (offset >= disksize)
--		return 0;
--
--	if (offset + size > disksize)
--		size = disksize - offset;
--
--	if (!size)
--		return 0;
+-		bd->bd_blkno = bh->b_blocknr;
++		bd->bd_bh = NULL;
++		bd->bd_blkno = blocknr;
++
+ 		gfs2_log_lock(sdp);
+-		gfs2_assert_withdraw(sdp, !buffer_busy(bh));
+ 		gfs2_trans_add_revoke(sdp, bd);
+ 		gfs2_log_unlock(sdp);
  
- 	if (gfs2_is_stuffed(ip))
--		return gfs2_dir_read_stuffed(ip, buf, offset, size);
-+		return gfs2_dir_read_stuffed(ip, buf, size);
- 
- 	if (gfs2_assert_warn(sdp, gfs2_is_jdata(ip)))
- 		return -EINVAL;
- 
--	lblock = offset;
-+	lblock = 0;
- 	o = do_div(lblock, sdp->sd_jbsize) + sizeof(struct gfs2_meta_header);
- 
- 	while (copied < size) {
-@@ -311,8 +299,6 @@ static int gfs2_dir_read_data(struct gfs2_inode *ip, char *buf, u64 offset,
- 			if (error || !dblock)
- 				goto fail;
- 			BUG_ON(extlen < 1);
--			if (!ra)
--				extlen = 1;
- 			bh = gfs2_meta_ra(ip->i_gl, dblock, extlen);
- 		} else {
- 			error = gfs2_meta_read(ip->i_gl, dblock, DIO_WAIT, &bh);
-@@ -328,7 +314,7 @@ static int gfs2_dir_read_data(struct gfs2_inode *ip, char *buf, u64 offset,
- 		extlen--;
- 		memcpy(buf, bh->b_data + o, amount);
- 		brelse(bh);
--		buf += amount;
-+		buf += (amount/sizeof(__be64));
- 		copied += amount;
- 		lblock++;
- 		o = sizeof(struct gfs2_meta_header);
-@@ -371,7 +357,7 @@ static __be64 *gfs2_dir_get_hash_table(struct gfs2_inode *ip)
- 	if (hc == NULL)
- 		return ERR_PTR(-ENOMEM);
- 
--	ret = gfs2_dir_read_data(ip, (char *)hc, 0, hsize, 1);
-+	ret = gfs2_dir_read_data(ip, hc, hsize);
- 	if (ret < 0) {
- 		kfree(hc);
- 		return ERR_PTR(ret);
 -- 
 1.7.4.4
 
