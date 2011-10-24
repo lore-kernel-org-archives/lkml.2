@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab1JXME4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:04:56 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:33921 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755452Ab1JXMEz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:04:55 -0400
+	id S932142Ab1JXMFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:05:40 -0400
+Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:32857 "EHLO
+	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932076Ab1JXMFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 08:05:39 -0400
+Message-ID: <4EA549C3.4080206@ntlworld.com>
+Date: Mon, 24 Oct 2011 12:19:31 +0100
+From: nick bray <nick.bray1@ntlworld.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <1319427072.5773.1.camel@phoenix>
-References: <1319427072.5773.1.camel@phoenix>
-Date: Mon, 24 Oct 2011 13:04:52 +0100
-Message-ID: <CABS+qY00AkNJ2HbpK59Qjph_EPD7=caVyagTVE8okHrb74cnpA@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: wm8996: Avoid a redundant i2c_get_clientdata call
- in wm8996_i2c_remove
-From: "Girdwood, Liam" <lrg@ti.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: kernel panic
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=KyjcROdnNc8A:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=I5KzmUk7OcGxrGpR7PkA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2011 04:31, Axel Lin <axel.lin@gmail.com> wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/wm8996.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/sound/soc/codecs/wm8996.c b/sound/soc/codecs/wm8996.c
-> index 645c980..32324c9 100644
-> --- a/sound/soc/codecs/wm8996.c
-> +++ b/sound/soc/codecs/wm8996.c
-> @@ -3144,7 +3144,7 @@ static __devexit int wm8996_i2c_remove(struct i2c_client *client)
->        snd_soc_unregister_codec(&client->dev);
->        if (wm8996->pdata.ldo_ena > 0)
->                gpio_free(wm8996->pdata.ldo_ena);
-> -       kfree(i2c_get_clientdata(client));
-> +       kfree(wm8996);
->        return 0;
->  }
->
+Hi,
+  after upgrading to linux kernel 3.xx I get kernel panic on boot unless 
+I use ACPI=off in the boot parameters this happens with both Ubuntu 
+11.10 and Fedora 16. The mainboard is an Intel S875WP1-E running a 
+Pentuim 4 3ghz with 3gig RAM in single-channel mode. I have performed a 
+Bios upgrade just in case tha ACPI tables were corrupt but it makes no 
+difference. Currently running 2.6.38-11-generic #50-Ubuntu SMP (Linux 
+Mint) with no issues. I can provide a screenshot if you wish but it's 
+looking like it's ACPI related as above.
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+Yours sincerely
+
+Nick Bray
