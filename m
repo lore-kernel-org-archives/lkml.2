@@ -1,72 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab1JXVZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 17:25:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55853 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab1JXVZC (ORCPT
+	id S1756063Ab1JXVbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 17:31:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41038 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756037Ab1JXVbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 17:25:02 -0400
-Date: Mon, 24 Oct 2011 23:24:55 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Roland Kletzing <devzero@web.de>, adrian.hunter@intel.com,
-        linux-mtd@lists.infradead.org, Willy Tarreau <w@1wt.eu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Re: mtd_stresstest module bricked my dockstar
-Message-ID: <20111024212455.GC6326@pengutronix.de>
-References: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003>
- <20111024055705.GA4020@1wt.eu>
- <B10F15EA8AB74E698DC0D94563A30BE7@samsungnetbook>
- <20111024195313.GA6326@pengutronix.de>
- <1319490276.12314.9.camel@golum>
+	Mon, 24 Oct 2011 17:31:08 -0400
+Date: Mon, 24 Oct 2011 23:31:04 +0200
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
+        jic23@cam.ac.uk, aghayal@codeaurora.org, david@hardeman.nu,
+        Shubhrajyoti@ti.com, saaguirre@ti.com, hemanthv@ti.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 1/6] input/cma3000_d0x: Support devices without pdata
+Message-ID: <20111024213104.GA4394@ponder.secretlab.ca>
+References: <1319487676-27181-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1319487676-27181-2-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z4+8/lEcDcG5Ke9S"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319490276.12314.9.camel@golum>
+In-Reply-To: <1319487676-27181-2-git-send-email-ricardo.ribalda@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 24, 2011 at 10:21:11PM +0200, Ricardo Ribalda Delgado wrote:
+> Architectures based on device-tree does not have platform data
+> associated to the spi/i2c devices. Instead they can have some of
+> the options embedded in the device tree.
+> 
+> This patch allows the cma3000  driver to get the configuration
+> from the platform_data, the device tree, or in the wort case,
+> just use a default configuration.
+> 
+> ---
 
---z4+8/lEcDcG5Ke9S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Drop this line, git cuts everything below a '---' line from the commit text.
 
+> 
+> v3: Fixes suggested by Jonathan Cameron
+>     -Code style
+> 
+> v3: Fixes suggested by Jonathan Cameron
+>     -Add support for the device tree
+> 
+> v2: Fixes suggested by Jonathan Cameron
+>     -Spelling
+>     -Simplify pdata!=NULL check
+> 
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/input/misc/cma3000_d0x.c |   86 +++++++++++++++++++++++++++++++++-----
+>  1 files changed, 75 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+> index 1633b63..e66036d 100644
+> --- a/drivers/input/misc/cma3000_d0x.c
+> +++ b/drivers/input/misc/cma3000_d0x.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/input.h>
+>  #include <linux/input/cma3000.h>
+> +#include <linux/of.h>
+>  
+>  #include "cma3000_d0x.h"
+>  
+> @@ -62,9 +63,21 @@
+>  #define BIT_TO_2G  18
+>  #define BIT_TO_8G  71
+>  
+> +static struct cma3000_platform_data cma3000_default_pdata = {
+> +	.mdthr = 0x8,
+> +	.mdfftmr = 0x33,
+> +	.ffthr = 0x8,
+> +	.mode = CMAMODE_MEAS400,
+> +	.g_range = CMARANGE_2G,
+> +	.fuzz_x = BIT_TO_2G,
+> +	.fuzz_y = BIT_TO_2G,
+> +	.fuzz_z = BIT_TO_2G,
+> +	.irqflags = 0,
+> +};
+> +
+>  struct cma3000_accl_data {
+>  	const struct cma3000_bus_ops *bus_ops;
+> -	const struct cma3000_platform_data *pdata;
+> +	struct cma3000_platform_data pdata;
+>  
+>  	struct device *dev;
+>  	struct input_dev *input_dev;
+> @@ -182,7 +195,7 @@ static int cma3000_reset(struct cma3000_accl_data *data)
+>  
+>  static int cma3000_poweron(struct cma3000_accl_data *data)
+>  {
+> -	const struct cma3000_platform_data *pdata = data->pdata;
+> +	struct cma3000_platform_data *pdata = &data->pdata;
+>  	u8 ctrl = 0;
+>  	int ret;
+>  
+> @@ -280,22 +293,57 @@ void cma3000_resume(struct cma3000_accl_data *data)
+>  }
+>  EXPORT_SYMBOL(cma3000_resume);
+>  
+> +#ifdef CONFIG_OF
+> +void cma3000_get_pdata_of(struct device *dev, struct cma3000_accl_data *data)
+> +{
+> +	const __be32 *property;
+> +	int len;
+> +
+> +	property = of_get_property(dev->of_node, "vti,mdthr", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.mdthr = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,mdfftmr", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.mdfftmr = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,mode", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.mode = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,g_range", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.g_range = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,fuzz_x", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.fuzz_x = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,fuzz_y", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.fuzz_y = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,fuzz_z", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.fuzz_z = be32_to_cpup(property);
+> +
+> +	property = of_get_property(dev->of_node, "vti,irqflags", &len);
+> +	if (property && len == sizeof(int))
+> +		data->pdata.irqflags = be32_to_cpup(property);
 
-> Yes, we should use -1 as the default value, and print a scary warning
-> message when the module is inserted without a parameter. We should
-> probably also put word "destructive" or something like this to the
-> module description.
+This binding needs documentation before it can be merged.
 
-I would volunteer to do this tomorrow if nobody is working on it at this
-moment...
+> +
+> +	return;
+> +}
+> +#endif
 
-Regards,
+No of_device_id match table to match against compatible values?
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---z4+8/lEcDcG5Ke9S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6l16cACgkQD27XaX1/VRt5RACgwMdTUyiafJ2KB96FbuJqx6Tg
-jJ8An2I0PmTHJyPzYfxknWjBhgroCuDU
-=B87k
------END PGP SIGNATURE-----
-
---z4+8/lEcDcG5Ke9S--
+> +
+>  struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+>  				       const struct cma3000_bus_ops *bops)
+>  {
+> -	const struct cma3000_platform_data *pdata = dev->platform_data;
+> +	struct cma3000_platform_data *pdata;
+>  	struct cma3000_accl_data *data;
+>  	struct input_dev *input_dev;
+>  	int rev;
+>  	int error;
+>  
+> -	if (!pdata) {
+> -		dev_err(dev, "platform data not found\n");
+> -		error = -EINVAL;
+> -		goto err_out;
+> -	}
+> -
+> -
+>  	/* if no IRQ return error */
+>  	if (irq == 0) {
+>  		error = -EINVAL;
+> @@ -309,10 +357,26 @@ struct cma3000_accl_data *cma3000_init(struct device *dev, int irq,
+>  		goto err_free_mem;
+>  	}
+>  
+> +	/*Init platform data*/
+> +	if (dev->platform_data != NULL) {
+> +		memcpy(&data->pdata, dev->platform_data, sizeof(data->pdata));
+> +	} else {
+> +		memcpy(&data->pdata, &cma3000_default_pdata,
+> +				sizeof(data->pdata));
+> +		#ifdef CONFIG_OF
+> +		if (dev->of_node != NULL)
+> +			cma3000_get_pdata_of(dev, data);
+> +		 else
+> +			dev_info(dev, "platform data not found, using default\n");
+> +		#else
+> +		dev_info(dev, "platform data not found, using default\n");
+> +		#endif
+> +	}
+> +	pdata = &data->pdata;
+> +
+>  	data->dev = dev;
+>  	data->input_dev = input_dev;
+>  	data->bus_ops = bops;
+> -	data->pdata = pdata;
+>  	data->irq = irq;
+>  	mutex_init(&data->mutex);
+>  
+> -- 
+> 1.7.7
+> 
