@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1JXIYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 04:24:06 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55943 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab1JXIYF convert rfc822-to-8bit (ORCPT
+	id S1753682Ab1JXIaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 04:30:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45326 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab1JXIaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 04:24:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111024081244.GD15288@legolas.emea.dhcp.ti.com>
-References: <20111024064227.GW5453@legolas.emea.dhcp.ti.com>
- <20111024074124.GB8708@ponder.secretlab.ca> <20111024074957.GB15288@legolas.emea.dhcp.ti.com>
- <CACxGe6v0kHNyO81XapR=jGEa8ZgJrUxN2EEiqW7c18NdurGNkg@mail.gmail.com> <20111024081244.GD15288@legolas.emea.dhcp.ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 24 Oct 2011 10:23:44 +0200
-X-Google-Sender-Auth: uk2zb-Fi2PvTHwohixb_fDVcMIo
-Message-ID: <CACxGe6uKremgkRA24PZk2DEAqiBudenoJA_x=DR=ByuDXoWncw@mail.gmail.com>
-Subject: Re: DeviceTree and children devices
-To: balbi@ti.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Oct 2011 04:30:03 -0400
+Message-ID: <1319444998.2381.4.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: p.herz@profihost.ag
+Cc: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        s.priebe@profihost.ag, linux-kernel@vger.kernel.org
+Date: Mon, 24 Oct 2011 10:29:58 +0200
+In-Reply-To: <4EA51F9B.7090806@profihost.ag>
+References: <4E9D53FF.7090609@profihost.ag> <m2ipnmz49x.fsf@firstfloor.org>
+			 <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com>
+			 <4EA506B9.4030604@profihost.ag>
+	 <1319439819.2517.38.camel@edumazet-laptop>	 <4EA51210.9070209@profihost.ag>
+	 <1319443278.2381.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4EA51F9B.7090806@profihost.ag>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 10:12 AM, Felipe Balbi <balbi@ti.com> wrote:
-> On Mon, Oct 24, 2011 at 09:58:39AM +0200, Grant Likely wrote:
->> On Mon, Oct 24, 2011 at 9:49 AM, Felipe Balbi <balbi@ti.com> wrote:
->> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
->> > index ed5a6d3..172d4a9 100644
->> > --- a/drivers/of/platform.c
->> > +++ b/drivers/of/platform.c
->> > @@ -204,7 +204,12 @@ struct platform_device *of_platform_device_create_pdata(
->> >  #if defined(CONFIG_MICROBLAZE)
->> >        dev->archdata.dma_mask = 0xffffffffUL;
->> >  #endif
->> > -       dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->> > +
->> > +       if (parent)
->> > +               dma_set_coherent_mask(&dev->dev, parent->coherent_dma_mask);
->> > +       else
->> > +               dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
->> > +
->>
->> Right, this does need to be fixed.  The existing code just matched
->> what the historical powerpc code did, but it is certainly not correct.
->
-> should I send patch above correctly ? Or do you want to also solve
-> 32-bit coherent mask altogether ? What are your plans for that ? Add a
-> separate property to pass coherent_mask size (32-bit, 64-bit, etc) ?
+Le lundi 24 octobre 2011 Ã  10:19 +0200, Philipp Herz - Profihost AG a
+Ã©crit :
+> Currently i can not provide any further information, 'cause server has 
+> been restarted.
+> 
+> What exactly are you looking for?
 
-i don't know.  I'm not the expert on how the coherent mask should be
-set.  Your patch does look sane as a starting point, but it bears
-looking at by someone more cluefull than me.  In particular, someone
-should investigate if the dma mask can be calculated from a dma-ranges
-property.
+A dmesg for 2.6.32 is OK, I look for :
 
-g.
+- memory layout (tg3 has workarounds for 4G crossing),
+- and exact tg3 chip, tg3 messages...
+
+
+
