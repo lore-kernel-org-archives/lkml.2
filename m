@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1JXWuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 18:50:11 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44028 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab1JXWuJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 18:50:09 -0400
+	id S1753928Ab1JXWvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:51:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753287Ab1JXWvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 18:51:20 -0400
+Date: Mon, 24 Oct 2011 18:51:08 -0400
+From: Dave Jones <davej@redhat.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Fix kmalloc argument order in um/vdso/vma.c
+Message-ID: <20111024225108.GA25654@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Richard Weinberger <richard@nod.at>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20111024221532.GA22671@redhat.com>
+ <4EA5E573.3080006@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <1319496149.2094.3.camel@Joe-Laptop>
-References: <alpine.LNX.2.00.1110250036370.19795@swampdragon.chaosbits.net>
-	<1319496149.2094.3.camel@Joe-Laptop>
-Date: Tue, 25 Oct 2011 00:50:08 +0200
-Message-ID: <CAFLxGvyh-u0Bg5_R4upMa=bM4H__i=dbvtLihFY+M+OEKdJL9w@mail.gmail.com>
-Subject: Re: [PATCH] SCSI, pmcraid: Fix kmalloc() argument order in pmcraid_chr_ioctl()
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>, davej@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EA5E573.3080006@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 12:42 AM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2011-10-25 at 00:38 +0200, Jesper Juhl wrote:
->> The first argument to kmalloc() is the size, the second is
->> flags. pmcraid_chr_ioctl() gets this wrong and swaps the
->> arguments. This patch corrects the mistake.
->>
->> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->> ---
->>  drivers/scsi/pmcraid.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->>  compile tested only.
->>
->> diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
->> index d079f9a..da19bdf 100644
->> --- a/drivers/scsi/pmcraid.c
->> +++ b/drivers/scsi/pmcraid.c
->> @@ -4103,7 +4103,7 @@ static long pmcraid_chr_ioctl(
->>       struct pmcraid_ioctl_header *hdr = NULL;
->>       int retval = -ENOTTY;
->>
->> -     hdr = kmalloc(GFP_KERNEL, sizeof(struct pmcraid_ioctl_header));
->> +     hdr = kmalloc(sizeof(struct pmcraid_ioctl_header), GFP_KERNEL);
->>
->>       if (!hdr) {
->>               pmcraid_err("faile to allocate memory for ioctl header\n");
->> --
->> 1.7.7
->>
->>
->
-> James seems to be uninterested in picking up
-> obvious and trivially correct patches.
->
+On Tue, Oct 25, 2011 at 12:23:47AM +0200, Richard Weinberger wrote:
+ > Am 25.10.2011 00:15, schrieb Dave Jones:
+ > > kmalloc size is 1st arg, not second.
+ > > 
+ > > Signed-off-by: Dave Jones <davej@redhat.com>
+ > 
+ > Applied, Thanks!
+ > 
+ > I'm a bit shocked that this obviously wrong code builds and seems to work.
 
-BTW: What about a checkpatch.pl rule to detect such a misuse of kmalloc()?
-We could grep for "k[mzc]alloc(GFP_".
+Both args are the same types, so gcc didn't know any better.
 
--- 
-Thanks,
-//richard
+ > How have you found this?
+
+grep -r kmalloc\(GFP *
+
+	Dave
+
