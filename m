@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1JYCMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 22:12:45 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34772 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756182Ab1JYCMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 22:12:43 -0400
+	id S1756205Ab1JYCTB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 22:19:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35115 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755818Ab1JYCTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 22:19:00 -0400
+Date: Mon, 24 Oct 2011 22:33:17 +0200
+From: Greg KH <gregkh@suse.de>
+To: Stefan Priebe <s.priebe@profihost.ag>
+Cc: LKML <linux-kernel@vger.kernel.org>, Stable Tree <stable@kernel.org>
+Subject: Re: Kernel hard LOCKUP with v3.0.7
+Message-ID: <20111024203317.GA11263@suse.de>
+References: <4EA1536E.6090001@profihost.ag>
+ <20111021130752.GC8219@suse.de>
+ <AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag>
+ <20111021200257.GA31198@suse.de>
+ <4EA2F2E0.4020702@profihost.ag>
+ <20111022165521.GA1716@suse.de>
+ <4EA5AB40.2090609@profihost.ag>
+ <20111024183820.GA9397@suse.de>
+ <4EA5B5F8.5090802@profihost.ag>
 MIME-Version: 1.0
-In-Reply-To: <4EA585B5.5030405@st.com>
-References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
-	<1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
-	<CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
-	<4EA5117C.3000402@st.com>
-	<CAJhJPsVSzXXmBOwLaGNtOsxhVEyC0fAJtiBvEWzcKcSDC8NEcA@mail.gmail.com>
-	<4EA557B2.4020504@st.com>
-	<CAJhJPsXxUAuF9HdivLd66MQC45mz-iYAuF1SdGdU=-duxJJ5bQ@mail.gmail.com>
-	<4EA585B5.5030405@st.com>
-Date: Tue, 25 Oct 2011 10:12:43 +0800
-Message-ID: <CAJhJPsVu7hahhmUvPQ=s=AqvXGhU-05x=GqQ29Mo6PZ8cTtefA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EA5B5F8.5090802@profihost.ag>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
-> On 10/24/2011 4:05 PM, Kelvin Cheung wrote:
->> 2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
->>> Hello Kelvin.
->>>
->>> On 10/24/2011 12:36 PM, Kelvin Cheung wrote:
->>>
->>> [snip]
->>>
->>>> According to datasheet of Loongson 1B, the buffer size in RX/TX
->>>> descriptor is only 2KB. So the Loongson1B's GMAC could not handle
->>>> jumbo frames. And the second buffer is useless in this case. Am I
->>>> right? Is there a better way than ifdef CONFIG_MACH_LOONGSON1 to
->>>> avoid duplicate code?
->>>
->>> Sorry for my misunderstanding.
->>>
->>> I think you have to use the normal descriptor and remove the enh_desc
->>> from the platform w/o modifying the driver at all.
->>>
->>> The driver will be able to select/configure all automatically (also
->>> jumbo).
->>>
->>> Let me know.
->>
->> That's the problem.
->> The bitfield definition of Loongson1B is also different from normal
->> descriptor.
->
-> The problem is not in the Loongson1B gmac.
+On Mon, Oct 24, 2011 at 09:01:12PM +0200, Stefan Priebe wrote:
+> Hi,
+> 
+> >On Mon, Oct 24, 2011 at 08:15:28PM +0200, Stefan Priebe wrote:
+> >>Am 22.10.2011 18:55, schrieb Greg KH:
+> >>>>this seems to fix it. Perhaps you should release v3.0.8 as the
+> >>>>stable tree isn't stable right now? I mean this bug seems to be
+> >>>>triggered on every SMP machine.
+> >>>I will work to get it out soon.
+> >>Fine. Any idea if this will happen this week or in a month or ...
+> >>I'm scheduling an update for all our systems and if this will happen
+> >>really soon i will probably schedule it a bit later.
+> >
+> >The 3.0.8-rc1 went out two days ago, so hopefully, if my gpg usb stick
+> >still works, I can get it out tomorrow, or the day after, as tomorrow,
+> >the Kernel Summit is still going on.
+> 
+> how to get 3.0.8-rc1? linux-stable.git does not have a tag named
+> v3.0.8-rc1
 
-I found that the bit checksum_insertion is not existed in normal descriptor.
+I never tag the -rc releases, as it doesn't make sense to (sometimes we
+drop them before the final release.)
 
-> The normal descriptor fields in the stmmac refer to an old synopsys
-> databook.
+> - will 3.0.8 be the same as 3.0.8-rc1?
 
-Could you send me the new databook of Synopsys GMAC?
+No, we have already dropped a patch and added 2 more.
 
-> New chips have the same structure you have added; so we should fix this
-> in the driver w/o breaking the compatibility for old chips.
+Hope this helps,
 
-Agree.
-
-> I kindly ask you to confirm if the currently normal descriptor structure
-> (w/o your changes) doesn't work on your platform.
-> Did you test it?
-
-Well, the normal descriptor works on my platform except TX checksum offload.
-
->> Moreover, I want to enable the TX checksum offload function which is
->> not supported in normal descriptor.
->> Any suggestions?
->
-> It is supported but you have to pass from the platform: tx_coe = 1.
-
-I noticed that the flag csum_insertion is passed to
-ndesc_prepare_tx_desc() in stmmac_xmit(). But ndesc_prepare_tx_desc()
-just ignores it.
-In other words, the TX checksum offload function is disabled in normal
-descriptor currently.
-
-Should we fix this problem for normal descriptor?
-
-> Peppe
->>
->>> Note:
->>> IIRC, there is a bit difference in case of normal descriptors for
->>> Synopsys databook newer than the 1.91 (I used for testing this mode).
->>> In any case, I remember that, on some platforms, the normal descriptors
->>> have been used w/o problems also on these new chip generations.
->>>
->>> Peppe
->>>
->>>
->>
->>
->
->
-
-
--- 
-Best Regards!
-Kelvin
+greg k-h
