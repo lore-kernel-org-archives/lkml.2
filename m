@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab1JXM23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:28:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61555 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab1JXM22 convert rfc822-to-8bit (ORCPT
+	id S932262Ab1JXM3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:29:07 -0400
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:35002
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932216Ab1JXM3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:28:28 -0400
+	Mon, 24 Oct 2011 08:29:06 -0400
+Message-ID: <4EA55A08.5090509@compulab.co.il>
+Date: Mon, 24 Oct 2011 14:28:56 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <CAMjpGUcWUp05SkBi1JWL+NFBCcZV5=EaidtYkEbONPheVwhjgw@mail.gmail.com>
-References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
-	<20110930020754.GK12606@ponder.secretlab.ca>
-	<CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
-	<CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
-	<CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
-	<20111004203520.GK2870@ponder.secretlab.ca>
-	<CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
-	<CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
-	<20111024073604.GA8708@ponder.secretlab.ca>
-	<CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
-	<CAMjpGUcWUp05SkBi1JWL+NFBCcZV5=EaidtYkEbONPheVwhjgw@mail.gmail.com>
-Date: Mon, 24 Oct 2011 14:28:26 +0200
-Message-ID: <CACRpkdbbNTGd3opbeAiY2uMpPzD+G_vj=jq_fiArhjosPXyMRQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stijn Devriendt <highguy@gmail.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Chen <peter.chen@freescale.com>,
+        Lin Tony-B19295 <B19295@freescale.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: Re: [PATCHv5 13/19] usb: otg: ulpi: Start using struct usb_otg
+References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com> <1317036092-3000-14-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1317036092-3000-14-git-send-email-heikki.krogerus@linux.intel.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 11:20 AM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-
-> but the question here is about pinctrl.  does userspace really need to
-> manipulate the pinmapping ?  if we agree on that, then the question is
-> on the userspace interface.
+On 09/26/2011 02:21 PM, Heikki Krogerus wrote:
+> Use struct usb_otg members with OTG specific functions instead
+> of usb_phy members.
 >
-> assuming we want this, i can't see the performance argument being made
-> here for pinctrl.  which means doing a sysfs interface here like we
-> already have with GPIO makes the most sense.  GPIO deals in "binary"
-> data for the most part (reading/writing 0/1 ints) so the string-based
-> sysfs parsing is a bit weird, but pinctrl deals with strings
-> everywhere for selecting mapping groups, so sysfs is the natural
-> answer.
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
 
-Hm now I feel I start to agree with you and come back to my
-original proposition to do pinctrl in sysfs after all.
-
-I wonder how soon we have a practical use case for this.
-We do have this hacked-up driver in ux500:
-http://git.linaro.org/gitweb?p=bsp/st-ericsson/linux-3.0-ux500.git;a=tree;f=drivers/staging/ab5500_sim;hb=HEAD
-
-This controls a lot of SIM card pins from userspace...
-
-Yours,
-Linus Walleij
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
