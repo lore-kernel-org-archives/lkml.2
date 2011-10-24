@@ -1,306 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1JWXor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 19:44:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42450 "EHLO mx2.suse.de"
+	id S1752551Ab1JXAA7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 20:00:59 -0400
+Received: from lucidpixels.com ([72.73.18.11]:52401 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141Ab1JWXop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 19:44:45 -0400
-Date: Mon, 24 Oct 2011 10:44:44 +1100
-From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
- suspend/hibernate interfaces
-Message-ID: <20111024104444.09337fe6@notabene.brown>
-In-Reply-To: <201110231516.36787.rjw@sisk.pl>
-References: <201110132145.42270.rjw@sisk.pl>
-	<201110230007.33683.rjw@sisk.pl>
-	<20111023135745.2bfe1d80@notabene.brown>
-	<201110231516.36787.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/MxG93GsjyjNYJOKiUZx.6dg"; protocol="application/pgp-signature"
+	id S1752412Ab1JXAA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 20:00:57 -0400
+Date: Sun, 23 Oct 2011 20:00:56 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: submit@bugs.debian.org
+cc: linux-kernel@vger.kernel.org
+Subject: 3.1-rcX (8,9,10): kernel does not validate swapfile on disk(?) -
+ WAS: vnc4server 4.1.1+X4.3.0-3 crashing under normal use
+In-Reply-To: <alpine.DEB.2.02.1110221939380.26496@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1110231756250.20069@p34.internal.lan>
+References: <alpine.DEB.2.02.1110221939380.26496@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MxG93GsjyjNYJOKiUZx.6dg
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Package: vnc4server
+Version: 4.1.1+X4.3.0-3
+Architecture: amd64 (x86-64)
+Kernel: 3.0-rc9
 
-On Sun, 23 Oct 2011 15:16:36 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Current theory--
 
-> On Sunday, October 23, 2011, NeilBrown wrote:
-> > On Sun, 23 Oct 2011 00:07:33 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wr=
-ote:
-> >=20
-> > > On Tuesday, October 18, 2011, NeilBrown wrote:
+(Debian, ) You can close the bug report, my .swapfile was corrupted it 
+appears! When I ran swapoff -a and re-launched VNC it did not crash 
+anymore, unbelievable, I am also cc'ing the kernel mailing list on this one,
+how come the kernel does not ALARM or WARN or BUG() when there is a problem 
+with the swapfile, is there no validation?
 
-> > > > >=20
-> > > > > > With that problem solved, experimenting is much easier in user-=
-space than in
-> > > > > > the kernel.
-> > > > >=20
-> > > > > Somehow, I'm not exactly sure if we should throw all kernel-based=
- solutions away
-> > > > > just yet.
-> > > >=20
-> > > > My rule-of-thumb is that we should reserve kernel space for when
-> > > >   a/ it cannot be done in user space
-> > > >   b/ it cannot be done efficient in user space
-> > > >   c/ it cannot be done securely in user space
-> > > >=20
-> > > > I don't think any of those have been demonstrated yet.  If/when the=
-y are it
-> > > > would be good to get those kernel-based solutions out of the draw (=
-so yes:
-> > > > keep them out of the rubbish bin).
-> > >=20
-> > > I have one more rule.  If my would-be user space solution has the fol=
-lowing
-> > > properties:
-> > >=20
-> > > * It is supposed to be used by all of the existing variants of user s=
-pace
-> > >   (i.e. all existing variants of user space are expected to use the v=
-ery same
-> > >   thing).
-> > >=20
-> > > * It requires all of those user space variants to be modified to work=
- with it
-> > >   correctly.
-> > >=20
-> > > * It includes a daemon process having to be started on boot and run p=
-ermanently.
-> > >=20
-> > > then it likely is better to handle the problem in the kernel.
-> >=20
-> > By that set or rules, upowerd, dbus, pulse audio, bluez, and probably s=
-ystemd
-> > all need to go in the kernel.  My guess is that you might not find wide
-> > acceptance for these rules.
->=20
-> Well, that's not what I thought.  Perhaps I didn't express that precisely
-> enough.  Take systemd, for example.  You still can design and use a Linux=
--based
-> system without systemd, so there's no requirement that _all_ variants of =
-user
-> space use the given approach.  The choice of whether or not to use systemd
-> is not a choice between a working and non-working system.
->=20
-> However, this is not the case with the system daemon, becuase it's suppos=
-ed
-> to handle problems that aren't possible to address without it.  So either=
- you
-> use it, or you end up with a (slightly) broken system.
+I was testing many 3.1.0-rcX kernels (some of them crashed my machine) and 
+it must have corrupted that file.  The weird part is it only seemed to 
+(mainly) affect VNC, I also saw a coredump with xfs_db (randomly) and a 
+memtest86+ showed ok after 1-2 passes.
 
-I think you are seeing a distinction that isn't there.
+Of course it was the last thing I decided to rule out and that was it-- it 
+appears, so far it has not crashed in over an hour, whereas it would crash 
+immediately in the past, over and over for several days so I stopped using 
+VNC until I had time to look into this problem further.
 
-Every system needs a process to run as 'init' - as PID =3D=3D 1.
-It might be systemd, it might be sysv-init, it might be /bin/sh, but there
-are tasks that process much perform and there must be exactly one process
-performing those tasks and the test of the systems need to be able to work
-with that task (or ignore if it it is wholely independent).
+Very interesting and putting this out there incase anyone else sees this 
+problem in the future, maybe it will help someone else.  But I wish the 
+kernel would alarm if there were some problem with the swapfile..  Even 
+when swap was not in use, the presence of the [bad] file would cause vnc 
+to coredump quickly (after launching chrome/thunderbird/etc)  After a 
+swapoff -a -- all problems, gone. All is back to normal now.
 
-Similarly every system need one process to manage suspend.  It can be my
-daemon or your daemon or Alan's daemon but it cannot be 2 or more of them
-running at the same time as that doesn't make any more sense than having
-systemd and init running at the same time.
+I waited a few hours before sending this, still no problems/errors, very 
+interesting, will update if any future coredumps, but none yet..
+
+Justin.
 
 
-> =20
-> > > > So I'd respond with "I'm not at all sure that we should throw away =
-an
-> > > > all-userspace solution just yet".  Particularly because many of us =
-seem to
-> > > > still be working to understand what all the issues really are.
-> > >=20
-> > > OK, so perhaps we should try to implement two concurrent solutions, o=
-ne
-> > > kernel-based and one purely in user space and decide which one is bet=
-ter
-> > > afterwards?
-> >=20
-> > Absolutely.
-> >=20
-> > My primary reason for entering this discussion is eloquently presented =
-in
-> >        http://xkcd.com/386/
-> >=20
-> > Someone said "We need to change the kernel to get race-free suspend" an=
-d this
-> > simply is not true.  I wanted to present a way to use the existing
-> > functionality to provide race-free suspend - and now even have code to =
-do it.
-> >=20
-> > If someone else wants to write a different implementation, either in
-> > userspace or kernel that is fine.
-> >=20
-> > They can then present it as "I know this can be implemented in userspac=
-e, but
-> > I don't like that solution for reasons X, Y, Z and so here is my better
-> > kernel-space implementation" then that is cool.  We can examine X, Y, Z=
- and
-> > the code and see if the argument holds up.  Maybe it will, maybe not.
-> >=20
-> > So far the only arguments I've seen for putting the code in the kernel =
-are:
-> >=20
-> >  1/ it cannot be done in userspace - demonstrably wrong
->=20
-> I'm not sure if that's correct.  If you meant "it can be done in user spa=
-ce
-> without _any_ kernel modifications", I probably wouldn't agree.
-
-I have code to do it correctly today with no kernel modifications.  It is
-called "lsusd".   Proof by example.  Or can you show that lsusd doesn't work
-correctly?
-
-
->=20
-> >  2/ it is more efficient in the kernel - not demonstrated or even
-> >     convincingly argued
->=20
-> I don't agree with that, but let's see.
-
-If you don't agree, then you presumably have a demonstration or a convincing
-argument.  Can you share it?
-
->=20
-> >  3/ doing it in user-space is too confusing - we would need a clear
-> >     demonstration that a kernel interface is less confusing - and still
-> >     correct.  Also the best way to remove confusion is with clear
-> >     documentation and sample code, not by making up new interfaces.
->=20
-> The user space solution makes up new interfaces too, although they are
-> confined to user space.
->=20
-> To me, it all boils down to two factors: (1) the complexity and efficiency
-> of the code needed to implement the feature and (2) the complexity of the
-> resulting framework (be it in the kernel or in user space).
->=20
-> >  4/ doing it in the kernel makes it more accessible to multiple desktop=
-s.
-> >     The success of freedesktop.org seems to contradict that.
->=20
-> I don't agree here too.  Is Android a member of freedesktop.org?
 >
-
-This is completely irrelevant.
-
-The "multiple desktops" issue that you brought up is (as I understand it)
-multiple desktops running on the same computer, whether concurrently or
-sequentially.
-Android simply does not face that issue - it is the only "desktop" and is in
-complete control of the machine it runs on.
-So it doesn't need to solve the issue, so it doesn't need to be a member of
-freedesktop.org.
-
-
-> > So if you can do it a "better" way, please do.  But also please make su=
-re
-> > you can quantify "better".   I claim that user-space solutions are "bet=
-ter"
-> > because they are more flexible and easier to experiment with.  The "no
-> > regressions" rule actively discourages experimentation in the kernel so
-> > people should only do it if there is a clear benefit.
->=20
-> You seem to suppose that every kernel modification necessarily has a pote=
-ntial
-> to lead to some regressions.  I'm not exactly use if that's correct
-> (e.g. adding a new driver usually doesn't affect people who don't need it=
-).
-
-I think that experimenting in the kernel (or at least in the upstream kerne=
-l)
-is likely to result in creating functionality that ultimately will
-not get used - the whole point of experimenting is that you probably get it
-wrong the first time.
-If this happens we either:
-  - remove the unwanted functionality, which could be considered a regressi=
-on
-    and so must be done very carefully
-  - leave the unwanted functionality there thus creating clutter and a
-    maintenance burden.
-
-i.e. the point of the "no-regressions" reference is that it tends to make it
-harder to remove mistakes.  Not impossible of course, but it requires a lot
-more care and time.
-
-So I am against adding code to the kernel until the problem is really well
-understood.  From the sorts of discussion that has been going on both in
-this thread and elsewhere I'm not convinced the problem really is well
-understood at all.
-I think we are very much at the stage where people should be experimenting
-with solutions, sharing the results, and learning.
-
-So please feel free to publish sample code - whether for the kernel or for
-user-space.  But it will only be credible if it is a fairly complete
-proposal - e.g. with sample code demonstrating how the kernel features are
-used.
-
-(my lsusd really needs a 'plugin' for pm_utils to get it to communicate with
-lsusd rather than writing to /sys/power/state ... I should probably add
-that.  Then it would be complete and usable on current desktops).
-
-
-
->=20
-> > User-space solutions are much easier to introduce and then deprecate.
->=20
-> That's demonstrably incorrect and the counter example is the hibernation =
-user
-> space interface.  The sheer amount of work needed to implement user
-> space-driven hibernation and maintain that code shows that it's not exact=
-ly
-> easy and it would be more difficult to deprecate than many existing kernel
-> interfaces at this point.
->=20
-> So, even if you have implemented something in user space, the "no regress=
-ions"
-> rule and deprecation difficulties will apply to it as well as to the kern=
-el as
-> soon as you make a sufficient number of people use it.
-
-Can we agree then that we shouldn't impose any part of a possible solution =
-on
-anyone until it has been sensibly tested and reviewed in a variety of
-different use cases and found to be reliable and usable?
-
-I think that addresses my main concern with kernel-space additions - I fear
-that parts of them will end up unnecessary and unused but we will be stuck
-with them.
-
-Thanks,
-NeilBrown
-
-
---Sig_/MxG93GsjyjNYJOKiUZx.6dg
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTqSm7Dnsnt1WYoG5AQKmPhAAkyV6nZBLFcYB4xtJJ5N4tZrFQw7NjOsE
-u0VJ9e3qngK2Sx/bmVqiheWD8uwTmBlYnrxDna4ap9gNcm+STjGUIIoa0BwtqcZX
-f6ztnakFo1SA0/J9NBzT5PnFkfv13eWwVzgflgKQklqh0OiwIesRUuCWSNajOSVQ
-jP+qFX0PbJlCDZkRhlcKEBPXP/JMFoZuVS9z/vB8QL90inb5TV22817UD8/2i3ZM
-XqT3VT6VH3XFCoz66Owup73GrWpOJHx3/ENoLN/pl2Uda3HMJcyRMDooc3D07ZJH
-buoSKtL+rNmHgCYmmE5gZRuO6gSkZKr2x73yuSBWsyPKBhZeVhTlwEWKUKaOls9o
-lCvz3hDO1vudgxUeLIc0mYmLlgoEmaCcC7kdcCq6BDBGyLdGO42obB772efAOBg3
-yvz/MVcm/T5epKOO2U8602sYCEk+xmyUNAalZaPGB9gWiUMA/ox9YHMMsffvuqip
-ZZk0nKaoGy84nsTU7fdZc4dHBGiUwrwTf6znWSWh1ioQhc3ESeE4zljJaqF55+Nl
-2NMgL4yJjzsyazVUpr6ai6amep8MOQOEnuJph0MLsaCW8TCSUBRq6v1oFKkHJVsE
-0wwYLHg7ONVm+DgVxhlgOG16Eztf6yYgOczfXVjnq9aspxq5Fs6dmypWUD8/f3oX
-e8JZLriMGV8=
-=rX8a
------END PGP SIGNATURE-----
-
---Sig_/MxG93GsjyjNYJOKiUZx.6dg--
+> Problem: About 1-2 weeks ago (I apt-get dist-upgrade regularly), VNC server
+> began crashing, e.g. if you launch thunderbird/google chrome or other 
+> windows, the VNC server crashes.
+>
+> May be related to:
+> http://old.nabble.com/Bug-424860%3A-eclipse-randomly-crashes-(VNC)-X-server-p11945956.html
+> http://forums.fedoraforum.org/showthread.php?t=246145
+>
+> Example:
+>
+> $ strace -o /tmp/out -f Xvnc -geometry 1920x1200 -depth 24 -rfbauth 
+> ~/.vnc/passwd :1
+>
+> Xvnc Free Edition 4.1.1 - built Mar 10 2010 22:35:30
+> Copyright (C) 2002-2005 RealVNC Ltd.
+> See http://www.realvnc.com for information on VNC.
+> Underlying X server release 40300000, The XFree86 Project, Inc
+>
+>
+> Sat Oct 22 19:38:49 2011
+> vncext:      VNC extension running!
+> vncext:      Listening for VNC connections on port 5901
+> vncext:      created VNC server for screen 0
+> error opening security policy file /etc/X11/xserver/SecurityPolicy
+> Could not init font path element /usr/share/fonts/X11/Speedo/, removing from 
+> list!
+> Could not init font path element /usr/share/fonts/X11/CID/, removing from 
+> list!
+>
+> Sat Oct 22 19:38:51 2011
+> Connections: accepted: 0.0.0.0::53214
+> SConnection: Client needs protocol version 3.8
+> SConnection: Client requests security type VncAuth(2)
+>
+> Sat Oct 22 19:38:53 2011
+> VNCSConnST:  Server default pixel format depth 24 (32bpp) little-endian 
+> bgr888
+> VNCSConnST:  Client pixel format depth 8 (8bpp) rgb max 3,3,3 shift 4,2,0
+> VNCSConnST:  Client pixel format depth 24 (32bpp) little-endian rgb888
+> Segmentation fault (core dumped)
+>
+> --
+>
+> Core backtrace:
+>
+> $ gdb /usr/bin/Xvnc ./core.Xvnc.26042
+> GNU gdb (GDB) 7.3-debian
+> Copyright (C) 2011 Free Software Foundation, Inc.
+> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> This is free software: you are free to change and redistribute it.
+> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> and "show warranty" for details.
+> This GDB was configured as "x86_64-linux-gnu".
+> For bug reporting instructions, please see:
+> <http://www.gnu.org/software/gdb/bugs/>...
+> Reading symbols from /usr/bin/Xvnc...(no debugging symbols found)...done.
+> [New LWP 26042]
+>
+> warning: Can't read pathname for load map: Input/output error.
+> Core was generated by `Xvnc -geometry 1920x1200 -depth 24 -rfbauth 
+> /home/user/.vnc/passwd :1'.
+> Program terminated with signal 11, Segmentation fault.
+> #0  0x00000000004cbed4 in ?? ()
+> (gdb) bt
+> #0  0x00000000004cbed4 in ?? ()
+> #1  0x00000000004dd577 in ?? ()
+> #2  0x00000000005832a2 in ?? ()
+> #3  0x00000000005834ff in ?? ()
+> #4  0x0000000000426d90 in ?? ()
+> #5  0x000000000040be86 in ?? ()
+> #6  0x00007f070be96ead in __libc_start_main ()
+>   from /lib/x86_64-linux-gnu/libc.so.6
+> #7  0x0000000000409259 in ?? ()
+> #8  0x00007fff22a53788 in ?? ()
+> #9  0x000000000000001c in ?? ()
+> #10 0x0000000000000008 in ?? ()
+> #11 0x00007fff22a54b2e in ?? ()
+> #12 0x00007fff22a54b33 in ?? ()
+> #13 0x00007fff22a54b3d in ?? ()
+> #14 0x00007fff22a54b47 in ?? ()
+> #15 0x00007fff22a54b4e in ?? ()
+> #16 0x00007fff22a54b51 in ?? ()
+> #17 0x00007fff22a54b5a in ?? ()
+> #18 0x00007fff22a54b70 in ?? ()
+> #19 0x0000000000000000 in ?? ()
+> (gdb)
+>
+> --
+>
+>
+> Strace output: (4M)
+> http://home.comcast.net/~jpiszcz/20111022/vnc-strace.out
+>
+> From the $HOME/.vnc/*log file:
+>
+> (xfdesktop:5201): Wnck-CRITICAL **: wnck_workspace_get_number: assertion 
+> `WNCK_IS_WORKSPACE (space)' failed
+> libpager-Message: Setting the pager rows returned false. Maybe the setting is 
+> not applied.
+>
+> Sat Oct 22 14:26:14 2011
+> Connections: accepted: 0.0.0.0::49493
+> SConnection: Client needs protocol version 3.8
+> SConnection: Client requests security type VncAuth(2)
+>
+> Sat Oct 22 14:26:15 2011
+> VNCSConnST:  Server default pixel format depth 24 (32bpp) little-endian 
+> bgr888
+> VNCSConnST:  Client pixel format depth 8 (8bpp) rgb max 3,3,3 shift 4,2,0
+>
+> Sat Oct 22 14:26:16 2011
+> VNCSConnST:  Client pixel format depth 24 (32bpp) little-endian rgb888
+> Gkr-Message: secret service operation failed: The name 
+> org.freedesktop.secrets was not provided by any .service files
+> XIO:  fatal IO error 11 (Resource temporarily unavailable) on X server ":1"
+>      after 143 requests (143 known processed) with 0 events remaining.
+> xfce4-panel: Fatal IO error 11 (Resource temporarily unavailable) on X server 
+> :1.0.
+> xfdesktop: Fatal IO error 11 (Resource temporarily unavailable) on X server 
+> :1.0.
+> [31476:31476:297527619035:ERROR:chrome_browser_main_x11.cc(57)] X IO Error 
+> detected
+> xfwm4: Fatal IO error 11 (Resource temporarily unavailable) on X server :1.0.
+> xfce4-session: Fatal IO error 11 (Resource temporarily unavailable) on X 
+> server :1.
+> XIO:  fatal IO error 11 (Resource temporarily unavailable) on X server ":1"
+>      after 64951 requests (64951 known processed) with 0 events remaining.
+> Thunar: Fatal IO error 11 (Resource temporarily unavailable) on X server 
+> :1.0.
+> wrapper: Fatal IO error 11 (Resource temporarily unavailable) on X server 
+> :1.0.
+> running 'ssh-agent -s -k'
+> xfsettingsd: Fatal IO error 11 (Resource temporarily unavailable) on X server 
+> :1.
+> unset SSH_AUTH_SOCK;
+> unset SSH_AGENT_PID;
+> echo Agent pid 5181 killed;
+>
+>
+> --
+>
+> Thoughts?
+>
+> Justin.
+>
