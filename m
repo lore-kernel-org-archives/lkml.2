@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1JXBSL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 21:18:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60169 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab1JXBSK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 21:18:10 -0400
-Date: Sun, 23 Oct 2011 18:18:04 -0700
-From: mark gross <markgross@thegnar.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, markgross@thegnar.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+	id S1752702Ab1JXBun (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 21:50:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45720 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752541Ab1JXBum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 21:50:42 -0400
+Date: Mon, 24 Oct 2011 12:50:34 +1100
+From: NeilBrown <neilb@suse.de>
+To: markgross@thegnar.org
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
         amit.kucheria@linaro.org, farrowg@sg.ibm.com,
         "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
@@ -19,84 +18,115 @@ Cc: Alan Stern <stern@rowland.harvard.edu>, markgross@thegnar.org,
         Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
 Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
  blocking (aka more wakelock stuff)]
-Message-ID: <20111024011804.GB12215@mgross-G62>
-Reply-To: markgross@thegnar.org
+Message-ID: <20111024125034.71993780@notabene.brown>
+In-Reply-To: <20111024011804.GB12215@mgross-G62>
 References: <20111016092556.07d6e415@notabene.brown>
- <Pine.LNX.4.44L0.1110152136460.19724-100000@netrider.rowland.org>
- <20111017083717.0bd5626c@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111017083717.0bd5626c@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	<Pine.LNX.4.44L0.1110152136460.19724-100000@netrider.rowland.org>
+	<20111017083717.0bd5626c@notabene.brown>
+	<20111024011804.GB12215@mgross-G62>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/VSk.TKBfakxTIqnamWLW=T8"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for going AWOL on this thread.  I had some biz travel and fires to
-fight.
+--Sig_/VSk.TKBfakxTIqnamWLW=T8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 17, 2011 at 08:37:17AM +1100, NeilBrown wrote:
-> On Sat, 15 Oct 2011 21:49:44 -0400 (EDT) Alan Stern
-> <stern@rowland.harvard.edu> wrote:
-> 
-> 
-> > All right, let's make things a little more complicated.
-> 
-> Let's call it "realistic".   It is good to have some realism to make sure our
-> abstract discussions actually mean something.
-> 
-> > 
-> > Here's what actually happens when a USB keyboard generates a wakeup 
-> > request.  The system wakes up, of course, but there's no particular 
-> > indication of the cause.  In particular, the usbhid driver has no way 
-> > to know directly that the keyboard was the reason for the wakeup.
-> > 
-> > In addition, usbhid can't poll keyboards to see if they have an event
-> > to report.  (In theory it could -- the HID protocol allows for this --
-> > but many keyboards don't support that part of the protocol properly.)  
-> > It has to wait until the keyboard gets around to reporting the event, 
-> > which can take 10 ms or more.
-> > 
-> > Taken together, this means usbhid must activate a wakeup_source every
-> > time it wakes up.  If a keyboard event report is received reasonably
-> > quickly then good, it can deactivate the wakeup_source at the right
-> > time.  But if not, all the driver can do is time out the wakeup_source
-> > after some delay.  I don't see any way to avoid it.
-> 
-> I have to agree with you there.
-> This is similar to Rafael's example of a Wake-on-LAN packet arriving.  At
-> that point there is nothing you can do except wait a little while expecting
-> more information.
-> 
-> You could see this as a case where the wake-up event isn't even visible to
-> the kernel, so there is obviously no way to make it visible to user-space.
-> 
-> Or you could see it as a wake-up event that is expected to be delivered over
-> a long period of time (many msecs).  The kernel gathers the wake-up event,
-> makes it visible to user-space (once it actually arrives), and then releases
-> the wakeup_source.
-> 
-> So it is a good example and highlights the difficulty of defining exactly
-> what a wake-up event it, and of what it means to be "visible".
-> 
-> I think it still fits in your rephrasing of my question which - if I rephrase
-> it as a requirement - is roughly,
-> 
->   A wakeup-event that needs to be handled by user-space must be visible to
->   user-space before the driver deactivates the wakeup_source.
-> 
-> A requirement which, in this case, means the driver needs to hold  the
-> wakeup_source for an extended time using a timeout, just as you say.
+On Sun, 23 Oct 2011 18:18:04 -0700 mark gross <markgross@thegnar.org> wrote:
 
-Timeout?  why can't we define a proper notification handshake for such
-things?  Timeouts are never right IMO.
+> Sorry for going AWOL on this thread.  I had some biz travel and fires to
+> fight.
 
---mark
+:-)  Life happens.  Welcome back.
 
 
+> > So it is a good example and highlights the difficulty of defining exact=
+ly
+> > what a wake-up event it, and of what it means to be "visible".
+> >=20
+> > I think it still fits in your rephrasing of my question which - if I re=
+phrase
+> > it as a requirement - is roughly,
+> >=20
+> >   A wakeup-event that needs to be handled by user-space must be visible=
+ to
+> >   user-space before the driver deactivates the wakeup_source.
+> >=20
+> > A requirement which, in this case, means the driver needs to hold  the
+> > wakeup_source for an extended time using a timeout, just as you say.
+>=20
+> Timeout?  why can't we define a proper notification handshake for such
+> things?  Timeouts are never right IMO.
+>=20
 
-> Thanks,
-> NeilBrown
+I thought that before, but I have come around to the opposite way of thinki=
+ng
+thanks to some instructive examples from Alan and Rafael.
 
+Some things are simply not visible to the OS.  We can expect them to be
+happening but we cannot be sure and there is no clear signal that they aren=
+'t
+actually happening.  So we need a timeout.
 
+- OS cannot detect state of user's brain, so uses a time-out to blank the
+  screen after a period of inactivity.
+- USB cannot (I think) know which USB device triggered a wake-from-suspend,
+  and in any case cannot directly ask the device why it woke from suspend.
+  It has to wait for the device to tell it (in response to a regular
+  'interrupt' poll I assume - but it isn't guaranteed to be reported on the
+  first poll) - or timeout and give up waiting.
+- A wake-on-Lan packet may wake a suspend up, but not be further visible to
+  the OS.  And even if it was, the 'SYN' packet or maybe 'ARP' packet that
+  might be expected to follow it is invisible until it actually arrives, and
+  it may not ever come.  So we need a timeout to give up waiting after a
+  while.
+
+When-ever we are dealing with external events we need timeouts - and
+wake-from-suspend is primarily about external events.
+
+So *somewhere* in the handling of wakeup events there must be timeouts.
+Whether that should be explicit in the wakeup-source is possibly a separate
+question.  Maybe you could argue that the low level device driver must have
+timeouts anyway, so it should use them to explicitly deactivate the source
+rather than the source having it's own timeout.
+I'm not sure that argument would work though it might.
+But saying "Timeouts are never right" cannot work - unless you mean it in a
+much more restricted sense than I think you mean it.
+
+(I can agree that it is *best* if timeouts never fire - if direct action
+causes the wakeup-source to deactivate long before the timeout.  I agree th=
+at
+is the best case and probably should be the common case, but I cannot see h=
+ow
+it can be the only case).
+
+Thanks,
+NeilBrown
+
+--Sig_/VSk.TKBfakxTIqnamWLW=T8
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTqTEajnsnt1WYoG5AQJg/g/+JrFTPYEui6r2RW/90xhOOhAG48qThU8K
+PVtxe7A8N4N/YZElRzxXw6RNJ5BgbFbT002VilfqfGpJmDm0jbksbS5MB3cdTJ0h
+Vhbt2wKIq2QLqiJ4SGKn5mLWbNmjtLqewD3Tl9K2f+VFvTCtC44McxgJrHTa/Q1w
+BFbomv78j2pXnYqnYYvNPTPdlm16Xtah+y4rpsqw8ipO7iojcb1DraDoxUXYo1a2
+9KpfdZe9I3ClXbaekLDxlr34qZoizuEpBm8kvLPMuB4mhLIlga6plDZMCWOv7ghB
+TXIGK4RcIqmdrkaRNrSLvjCageOxE0EaElNmT2HkQp1V/1sQhQ59hQkb7OyED2oz
+sJG0TDOKaMHZ+5V9CdRowM5ubJQHnJibyo67E9obP/suVSgt7d/gQX+qPmZLluhC
+hOMKp+VA+vbTGW16Mrsgc6KzNvZcHN0qiAJMtN2eKh7TUiPHaudlwIJfjZNXOky5
+NdD91wk1gkk/rn7fTaqgsgOj43xDFmFPVEieJyu69nkgN+cexiRATwlHWH7uEp76
+7QpV4jJHhgV2hoXq2tXyH0IE1TkOZPgOj/B0utDjAVVixvpyB9dDqoFAENw3G9jd
+npSP/wYluAVGkpChAbpPnD7oBDJGYA1CtHi1mT39kz6rdlJ+PIH3XzCx4wobhm92
+T7+MUZ7rTXw=
+=54Wu
+-----END PGP SIGNATURE-----
+
+--Sig_/VSk.TKBfakxTIqnamWLW=T8--
