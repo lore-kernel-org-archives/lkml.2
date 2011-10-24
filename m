@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab1JXLG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 07:06:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36310 "EHLO mx1.redhat.com"
+	id S1755052Ab1JXLIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 07:08:10 -0400
+Received: from fieldses.org ([174.143.236.118]:54310 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab1JXLG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 07:06:26 -0400
-Message-ID: <4EA54694.5070703@redhat.com>
-Date: Mon, 24 Oct 2011 13:05:56 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754848Ab1JXLIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 07:08:09 -0400
+Date: Mon, 24 Oct 2011 07:07:59 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V8 00/26]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20111024110759.GA1863@fieldses.org>
+References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20111024091716.GA1109@fieldses.org>
+ <20111024094910.GA28693@infradead.org>
 MIME-Version: 1.0
-To: "Alex,Shi" <alex.shi@intel.com>
-CC: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-Subject: Re: [PATCH 2/3] kvm: use this_cpu_xxx replace percpu_xxx funcs
-References: <1318237851.27949.190.camel@debian>  <alpine.DEB.2.00.1110101026080.16264@router.home>  <1318324774.27949.693.camel@debian>  <alpine.DEB.2.00.1110110910480.3388@router.home>  <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>  <alpine.DEB.2.00.1110120910540.26610@router.home>  <1318908091.23426.52.camel@debian>  <alpine.DEB.2.00.1110180932330.687@router.home>  <1319016218.23426.104.camel@debian>  <4E9E97D2.1040807@redhat.com>  <1319096041.23426.182.camel@debian> <1319424608.5061.25.camel@debian>
-In-Reply-To: <1319424608.5061.25.camel@debian>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111024094910.GA28693@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 04:50 AM, Alex,Shi wrote:
-> On Thu, 2011-10-20 at 15:34 +0800, Alex,Shi wrote:
-> > percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-> > for further code clean up.
+On Mon, Oct 24, 2011 at 05:49:10AM -0400, Christoph Hellwig wrote:
+> On Mon, Oct 24, 2011 at 05:17:16AM -0400, J. Bruce Fields wrote:
+> > > How do we push these changes to Linus tree ? Andrew, Viro, any comment
+> > > on how we can get this merged upstream ?
 > > 
-> > And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-> > performance since __this_cpu_xxx has no redundant preempt_disable()
-> > 
->
-> Avi: 
-> Would you like to give some comments of this? 
->
+> > Andrew, it sounds like you might be willing to shepherd these through?
+> > Let us know what you'd need.
+> 
+> It really has to through the VFS tree.
 
-Sorry, was travelling:
+Do we have a VFS tree right now?
 
-Acked-by: Avi Kivity <avi@redhat.com>
+> And to be honest despite the repostings there's been exactly zero
+> progress on getting there.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Apparently some review was missed--do you have pointers to it, if
+there's anything that isn't covered below?
 
+> Please as a first thing submit the various small cleanups indepent
+> of the other changes.  If you can't even those in there's no point
+> in trying.  Second do not repeat the mistakes of the old ACL code,
+> that is don't do too much work inside the filesystems.  Al, Linus
+> and me spent a lot of working on pushing it into common code and
+> it's not done.  For any new ACL model I really want to see zero
+> per-fs code except for callouts in chmod & co and actually
+> setting the xattr vector to a genericly provided one.  And please
+> wire up all common filesystems to actually prove that point.
+
+Sounds reasonable.
+
+> I also really hate all the duplication - I want to see a really good
+> reason why all this code needs to be duplicated.  Just look at
+> the mess done to check_acl and the ACL caching in the inode and
+> any normal person would throw up.  There is absolutely no reason
+> to not implement Posix ACLs as a subset of the NFSv4 ACL (not actually
+> a subset in the strict mathematical sense, but close enough).
+
+Just to make sure I understand: you're just talking about the
+implementation here--you want as much as possible to be done by routines
+shared by NFSv4 and Posix ACLs--right?  (You're not suggesting that e.g.
+a user should be able to treat NFSv4 ACLs as if they were Posix ACLs.)
+
+> After all this techical work (which was brought up before) has been
+> done you can resubmit it.  And that point you'd better have very
+> good and very lengthy rationale for why adding an utterly stupid
+> ACL model is supposed to be a good idea.
+
+It's the ACL model that Samba and NFSv4 clients use, and we want to do a
+better job of exporting linux filesystems to those clients.
+
+I don't know how to make the justification much longer than that.
+
+--b.
