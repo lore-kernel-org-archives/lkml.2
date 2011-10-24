@@ -1,212 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1JXJe1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:34:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61058 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab1JXJe0 (ORCPT
+	id S1754550Ab1JXJg2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:36:28 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:36005 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409Ab1JXJg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:34:26 -0400
-Date: Mon, 24 Oct 2011 11:34:14 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, robherring2@gmail.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v4 1/2] dmaengine: at_hdmac: platform data move to use
- .id_table
-Message-ID: <20111024093414.GF8708@ponder.secretlab.ca>
-References: <4E9C258D.3030509@atmel.com>
- <7cc84d91b280c5dde075c39de4feae5a6e6603a6.1318855784.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7cc84d91b280c5dde075c39de4feae5a6e6603a6.1318855784.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Oct 2011 05:36:26 -0400
+Date: Mon, 24 Oct 2011 20:36:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: David Miller <davem@davemloft.net>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com, tj@kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (sparc,
+ ptrace trees related)
+Message-Id: <20111024203607.4e50ad20ab69e57b9faa96a5@canb.auug.org.au>
+In-Reply-To: <20111014190950.GA10791@redhat.com>
+References: <20111014180714.e11e15fd35dfaca839c6421e@canb.auug.org.au>
+	<20111014.035459.2238341687770152474.davem@davemloft.net>
+	<20111014190950.GA10791@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Oct_2011_20_36_07_+1100_japXhm9XV13.awww"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 02:56:40PM +0200, Nicolas Ferre wrote:
-> We remove the use of platform data from DMA controller driver.
-> We now use of .id_table to distinguish between compatible
-> types. The two implementations allow to determine the
-> number of channels and the capabilities of the controller.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/dma/at_hdmac.c      |   48 ++++++++++++++++++++++++++++++++++---------
->  drivers/dma/at_hdmac_regs.h |    8 +++++++
->  2 files changed, 46 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index fcfa0a8..d1869c5 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -1175,6 +1175,18 @@ static void atc_free_chan_resources(struct dma_chan *chan)
->  
->  /*--  Module Management  -----------------------------------------------*/
->  
-> +static struct platform_device_id atdma_devtypes[] = {
-> +	{
-> +		.name = "at91sam9rl_dma",
-> +		.driver_data = ATDMA_DEVTYPE_SAM9RL,
-> +	}, {
-> +		.name = "at91sam9g45_dma",
-> +		.driver_data = ATDMA_DEVTYPE_SAM9G45,
-> +	}, {
-> +		/* sentinel */
-> +	}
-> +};
-> +
->  /**
->   * at_dma_off - disable DMA controller
->   * @atdma: the Atmel HDAMC device
-> @@ -1193,18 +1205,32 @@ static void at_dma_off(struct at_dma *atdma)
->  
->  static int __init at_dma_probe(struct platform_device *pdev)
->  {
-> -	struct at_dma_platform_data *pdata;
->  	struct resource		*io;
->  	struct at_dma		*atdma;
->  	size_t			size;
->  	int			irq;
->  	int			err;
->  	int			i;
-> +	u32                     nr_channels;
-> +	dma_cap_mask_t          cap_mask = {};
-> +	enum atdma_devtype	atdmatype;
-> +
-> +	dma_cap_set(DMA_MEMCPY, cap_mask);
-> +
-> +	/* get DMA parameters from controller type */
-> +	atdmatype = platform_get_device_id(pdev)->driver_data;
->  
-> -	/* get DMA Controller parameters from platform */
-> -	pdata = pdev->dev.platform_data;
-> -	if (!pdata || pdata->nr_channels > AT_DMA_MAX_NR_CHANNELS)
-> +	switch (atdmatype) {
-> +	case ATDMA_DEVTYPE_SAM9RL:
-> +		nr_channels = 2;
-> +		break;
-> +	case ATDMA_DEVTYPE_SAM9G45:
-> +		nr_channels = 8;
-> +		dma_cap_set(DMA_SLAVE, cap_mask);
-> +		break;
-> +	default:
->  		return -EINVAL;
+--Signature=_Mon__24_Oct_2011_20_36_07_+1100_japXhm9XV13.awww
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Instead of this song and dance, why not make a configuration structure
-and embed that into the platform_device_id table?  Like this:
+Hi Oleg,
 
-struct at_dma_platform_data at91sam9rl_config {
-	.nr_channels = 2;
-	.cap_mask = 0;
-};
-struct at_dma_platform_data at91samg45_config {
-	.nr_channels = 8;
-	.cap_mask = DMA_SLAVE;
-};
-static struct platform_device_id atdma_devtypes[] = {
-	{
-		.name = "at91sam9rl_dma",
-		.driver_data = (unsigned long) at91sam9rl_config,
-		/*
-		 * Yes, I know, ugly cast; but one case will be needed
-		 * regardless when the of_device_id table is added.
-		 * It's due to the platform_device_id not using a
-		 * void*
-		 */
-	}, {
-		.name = "at91sam9g45_dma",
-		.driver_data = (unsigned long) at91sam9g45_config,
-	}, {
-		/* sentinel */
-	}
-};
+On Fri, 14 Oct 2011 21:09:50 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> On 10/14, David Miller wrote:
+> >
+> > Now you guys are creating conflicts against those fixed up patches in
+> > another non-sparc tree, and adding new kinds of build failures as
+> > well.
+> >
+> > This doesn't work.
+>=20
+> Sorry David and Stephen.
+>=20
+> Stephen, could you please temporary remove ptrace from linux-next?
 
-And then the enum can be eliminated entirely.
+OK, I have removed it until you tell me otherwise.
 
-> +	}
->  
->  	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!io)
-> @@ -1215,14 +1241,15 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  		return irq;
->  
->  	size = sizeof(struct at_dma);
-> -	size += pdata->nr_channels * sizeof(struct at_dma_chan);
-> +	size += nr_channels * sizeof(struct at_dma_chan);
->  	atdma = kzalloc(size, GFP_KERNEL);
->  	if (!atdma)
->  		return -ENOMEM;
->  
-> -	/* discover transaction capabilites from the platform data */
-> -	atdma->dma_common.cap_mask = pdata->cap_mask;
-> -	atdma->all_chan_mask = (1 << pdata->nr_channels) - 1;
-> +	/* discover transaction capabilities */
-> +	atdma->dma_common.cap_mask = cap_mask;
-> +	atdma->all_chan_mask = (1 << nr_channels) - 1;
-> +	atdma->devtype = atdmatype;
->  
->  	size = resource_size(io);
->  	if (!request_mem_region(io->start, size, pdev->dev.driver->name)) {
-> @@ -1268,7 +1295,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  
->  	/* initialize channels related values */
->  	INIT_LIST_HEAD(&atdma->dma_common.channels);
-> -	for (i = 0; i < pdata->nr_channels; i++) {
-> +	for (i = 0; i < nr_channels; i++) {
->  		struct at_dma_chan	*atchan = &atdma->chan[i];
->  
->  		atchan->chan_common.device = &atdma->dma_common;
-> @@ -1313,7 +1340,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  	dev_info(&pdev->dev, "Atmel AHB DMA Controller ( %s%s), %d channels\n",
->  	  dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask) ? "cpy " : "",
->  	  dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)  ? "slave " : "",
-> -	  pdata->nr_channels);
-> +	  nr_channels);
->  
->  	dma_async_device_register(&atdma->dma_common);
->  
-> @@ -1495,6 +1522,7 @@ static const struct dev_pm_ops at_dma_dev_pm_ops = {
->  static struct platform_driver at_dma_driver = {
->  	.remove		= __exit_p(at_dma_remove),
->  	.shutdown	= at_dma_shutdown,
-> +	.id_table	= atdma_devtypes,
->  	.driver = {
->  		.name	= "at_hdmac",
->  		.pm	= &at_dma_dev_pm_ops,
-> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-> index aa4c9ae..d7d6737 100644
-> --- a/drivers/dma/at_hdmac_regs.h
-> +++ b/drivers/dma/at_hdmac_regs.h
-> @@ -248,9 +248,16 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
->  
->  /*--  Controller  ------------------------------------------------------*/
->  
-> +enum atdma_devtype {
-> +	ATDMA_DEVTYPE_UNDEFINED = 0,
-> +	ATDMA_DEVTYPE_SAM9RL,	/* compatible with SAM9RL DMA controller */
-> +	ATDMA_DEVTYPE_SAM9G45,	/* compatible with SAM9G45 DMA controller */
-> +};
-> +
->  /**
->   * struct at_dma - internal representation of an Atmel HDMA Controller
->   * @chan_common: common dmaengine dma_device object members
-> + * @atdma_devtype: identifier of DMA controller compatibility
->   * @ch_regs: memory mapped register base
->   * @clk: dma controller clock
->   * @save_imr: interrupt mask register that is saved on suspend/resume cycle
-> @@ -260,6 +267,7 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
->   */
->  struct at_dma {
->  	struct dma_device	dma_common;
-> +	enum atdma_devtype	devtype;
->  	void __iomem		*regs;
->  	struct clk		*clk;
->  	u32			save_imr;
-> -- 
-> 1.7.5.4
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__24_Oct_2011_20_36_07_+1100_japXhm9XV13.awww
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOpTGHAAoJEECxmPOUX5FElFcP/jOXKc6bmZxo0Hw6vj0ckM+r
+iHjVgPV/I8obWL+0eaFGIlGpqRp86NcIWsgmQ0qpDCviEbs4ZLgjzGvLc5bargQq
+CdLqIaW3zXEN41oer/QXPvogOsuPgOmDmAiOEH2CwsRdVUJKAIqseEFQj0llxug4
+KGnuP7ywcPQpvi2M/Dn5x7iwb97XoimNhIvSXV+g4Ct8P1bAO3SZlJ7trlEOOyz6
+/A+bzZ6jmZpDim5pM1UPGT9ztWqGd5YNogsTTYMGQJnnnjeKlGlIOdnNM8E2lQBf
+UCsXmZlrd65oL+F7ZLLtPDyyTp0Q592tTQK9s4xGMzLudog8CFggz98cWYR7I0Xt
+JTOiy6fLrP5wBbOx8yZpr5vgAaju0icvn+IKR093rNYvDUUvsGnl6xl/2qqlLBvl
+txsH6Jkm6Z94V2caNvRjrcl1i91CHZR0whJIOBcFYvMSKgjclvsBCIEqxbQwPw93
+bSr3EGvDcpe8RGnm422PjauiWriAk8aBk4Mmvmmlf2c9d3FaxZqchhH6i2QChC9b
+GiT/xLtJLSpAu72rEXsJLIxojEoYVfevy2pBVWdaGRqOOYTgCaak5VMatJ+OPWU0
+HbvfStZBoWltZFZRVDvdbrRrid2283274Hfjabis57r/9iU+Rn8Fm8Q8Z10HNR5O
+qfYczfDMwrEBwzeYDKJ9
+=WFAn
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__24_Oct_2011_20_36_07_+1100_japXhm9XV13.awww--
