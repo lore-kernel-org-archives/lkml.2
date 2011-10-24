@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab1JXJU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:20:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61101 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282Ab1JXJU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:20:28 -0400
+	id S1754437Ab1JXJUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:20:47 -0400
+Received: from ezo.ezono.com ([50.22.105.208]:59428 "EHLO ezo.ezono.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754369Ab1JXJUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 05:20:46 -0400
+Message-ID: <4EA52DE5.2010204@ezono.com>
+Date: Mon, 24 Oct 2011 11:20:37 +0200
+From: Abdelghani Ouchabane <abdelghani@ezono.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
-References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
- <20110930020754.GK12606@ponder.secretlab.ca> <CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
- <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
- <CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
- <20111004203520.GK2870@ponder.secretlab.ca> <CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
- <CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
- <20111024073604.GA8708@ponder.secretlab.ca> <CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 24 Oct 2011 05:20:07 -0400
-Message-ID: <CAMjpGUcWUp05SkBi1JWL+NFBCcZV5=EaidtYkEbONPheVwhjgw@mail.gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stijn Devriendt <highguy@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: PCIe can not rescan for new PCIe device ( FPGA board )
+References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com> <4E8F2758.3040408@ezono.com> <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com> <4E939E5D.3010208@jp.fujitsu.com> <4E93FA3D.2030400@ezono.com> <4E953579.6050807@jp.fujitsu.com> <4E95516F.60300@ezono.com> <4E96DE8A.6050404@jp.fujitsu.com> <4E98037C.4000403@ezono.com> <4EA4F0D2.3070301@jp.fujitsu.com>
+In-Reply-To: <4EA4F0D2.3070301@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - ezo.ezono.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - ezono.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 03:48, Linus Walleij wrote:
-> On Mon, Oct 24, 2011 at 9:36 AM, Grant Likely wrote:
->> On Mon, Oct 24, 2011 at 09:26:38AM +0200, Linus Walleij wrote:
-> (...)
->>> I was more thinking along the lines of one device per GPIO controller,
->>> then you ioctl() to ask /dev/gpio0 how many pins it has or so.
+
+Hallo Kenji,
+
+many thanks for your great supports. The new BIOS from Congatec solves
+the problem.
+
+I using both fakephp&  pciehp drivers, Can I use both drivers at the
+same time?
+
+> I think, "no".
+>
+>> I am using fakephp because I need "/sys/bus/pci/slots/0000\:02\:00.0/power".
 >>
->> And there is also the question of whether it is even a good idea to
->> export pinctrl manipulation to userspace.
+>> Other thing: my Kernel has "CONFIG_ACPI_PROC_EVENT is not set", does
+>> this explain why the scan is not performed automatically?
+> Fakephp driver doesn't have any corresponding hotplug controller (hardware).
+> So I don't think there is no way to detect presence change event on the slot.
 >
-> The application I've seen is in automatic control.
+>> [root@localhost ~]# modprobe acpiphp
+>> FATAL: Error inserting acpiphp
+>> (/lib/modules/2.6.40.3-0.119.delos.i686/kernel/drivers/pci/hotplug/acpiphp.ko):
+>> No such device
+>>
+>> What is the advantage to use acpiphp ?
+> Some platform only allows acpiphp, but doesn't allow PCIe native hotplug driver
+> (like pciehp). The 'pciehp_force' specified your environment is to load pciehp
+> forcibly on such platform. So I thought acpiphp might solve your problem.
 >
-> I think people do things like connect they GPIO pins to electrical
-> relays, plus on top of that they use all the stuff in drivers/staging/iio.
+> Regards,
+> Kenji Kaneshige
 >
-> All that from userspace. Controlling entire factories and industrial
-> robots, weapon systems too, I'm afraid.
->
-> The control of these dangerous things runs on a realtime-patched
-> kernel, in a single userspace app with a few threads and they have
-> done some realtime-tetris scheduling the beast more or less
-> manually with SCHED_FIFO. Basically that app is all that runs on
-> the board, and its threads take precedence over everything else
-> on the system.
->
-> That is the typical beast that is poking around on the GPIO sysfs
-> interfaces...
 
-we all agree that GPIO from userspace makes sense.  the only complaint
-i've seen so far against the GPIO sysfs interface that should be
-addressed is the performance overhead.
+Hallo
+many thanks for your support, my system is working perfectly.
 
-but the question here is about pinctrl.  does userspace really need to
-manipulate the pinmapping ?  if we agree on that, then the question is
-on the userspace interface.
+Cheers,
+Ghani
 
-assuming we want this, i can't see the performance argument being made
-here for pinctrl.  which means doing a sysfs interface here like we
-already have with GPIO makes the most sense.  GPIO deals in "binary"
-data for the most part (reading/writing 0/1 ints) so the string-based
-sysfs parsing is a bit weird, but pinctrl deals with strings
-everywhere for selecting mapping groups, so sysfs is the natural
-answer.
--mike
+
+
