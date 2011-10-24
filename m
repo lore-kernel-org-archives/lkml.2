@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1JXK6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 06:58:19 -0400
-Received: from dns1.mips.com ([12.201.5.69]:57960 "EHLO dns1.mips.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754332Ab1JXK6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 06:58:17 -0400
-From: Deng-Cheng Zhu <dczhu@mips.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Deng-Cheng Zhu <dczhu@mips.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [RFC PATCH 2/2] tools/perf: Make group_fd static and move its place in __perf_evsel__open()
-Date: Mon, 24 Oct 2011 18:57:00 +0800
-Message-ID: <1319453820-12992-3-git-send-email-dczhu@mips.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1319453820-12992-1-git-send-email-dczhu@mips.com>
-References: <1319453820-12992-1-git-send-email-dczhu@mips.com>
+	id S1754855Ab1JXLAa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 07:00:30 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46071 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab1JXLA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 07:00:28 -0400
+Message-ID: <4EA5455E.5090007@linux.vnet.ibm.com>
+Date: Mon, 24 Oct 2011 16:30:46 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
-X-EMS-STAMP: 73sl+2mUFWO8y1g6ItJp/Q==
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to support
+ pv-ticketlock
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com> <1319450510.5660.6.camel@lappy>
+In-Reply-To: <1319450510.5660.6.camel@lappy>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11102411-2000-0000-0000-000000A9D0A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__perf_evsel__open() is called per event, it does not work for all the
-grouped events at one time. So, currently group_fd will alway be -1 for
-the events in a group. This patch fixes it.
+On 10/24/2011 03:31 PM, Sasha Levin wrote:
+> On Mon, 2011-10-24 at 00:35 +0530, Raghavendra K T wrote:
+>> Add two hypercalls to KVM hypervisor to support pv-ticketlocks.
+>>
+>> +static void kvm_pv_kick_cpu_op(struct kvm *kvm, int cpu)
+>> +{
+>> +	struct kvm_vcpu *vcpu = kvm_get_vcpu(kvm, cpu);
+>> +
+>> +	if (vcpu) {
+>> +		vcpu->kicked = 1;
+>
+> I'm not sure about it, but maybe we want a memory barrier over here?
 
-Signed-off-by: Deng-Cheng Zhu <dczhu@mips.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
----
- tools/perf/util/evsel.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Yes, Thanks for pointing this. Avi Kivity also pointed same. 'll add 
+barrier() here.
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e389815..7bd0d9d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -219,9 +219,8 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	}
- 
- 	for (cpu = 0; cpu < cpus->nr; cpu++) {
--		int group_fd = -1;
--
- 		for (thread = 0; thread < threads->nr; thread++) {
-+			static int group_fd = -1;
- 
- 			if (!evsel->cgrp)
- 				pid = threads->map[thread];
--- 
-1.7.1
+>
+>> +		wake_up_interruptible(&vcpu->wq);
+>> +	}
+>> +}
 
