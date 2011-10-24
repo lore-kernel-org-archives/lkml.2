@@ -1,118 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab1JXGSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 02:18:34 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:61829 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab1JXGSc convert rfc822-to-8bit (ORCPT
+	id S1753303Ab1JXGdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 02:33:33 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:45706 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751990Ab1JXGdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 02:18:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=GDTmewIr5RyflZevXB2
-	QNLl1jh/PN02Emo//XhgTwlwWcRoaOPdM3cSaf/z8f+umLaGTZb2eegQBSR1ScOr
-	wZzGkbRtTnIuWX9L/Sijib74pAhUagYEU5sUVWFBP8Mokz58PPB/mxw6z4id8ahe
-	0kaH4aftYSl0mIuerqCy8X20=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.7.1
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 23 Oct 2011 23:18:29 -0700
-Message-ID: <7vr52252ve.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 24 Oct 2011 02:33:32 -0400
+Message-ID: <4EA506B9.4030604@profihost.ag>
+Date: Mon, 24 Oct 2011 08:33:29 +0200
+From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+Reply-To: p.herz@profihost.ag
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: FEC01232-FE07-11E0-A18C-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+To: David Rientjes <rientjes@google.com>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+References: <4E9D53FF.7090609@profihost.ag> <m2ipnmz49x.fsf@firstfloor.org> <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.7.1 is available.
 
-The release tarballs are found at:
+Am 19.10.2011 03:58, schrieb David Rientjes:
+> On Tue, 18 Oct 2011, Andi Kleen wrote:
+>
+>> Philipp Herz - Profihost AG<p.herz@profihost.ag>  writes:
+>>
+>>> After updating kernel (x86_64) to stable version 3 there are a few
+>>> messages appearing in the kernel log such as
+>>>
+>>> kworker/0:1: page allocation failure: order:1, mode:0x20
+>>> mysql: page allocation failure: order:1, mode:0x20
+>>> php5: page allocation failure: order:1, mode:0x20
+>>
+>> You just ran out of memory.
+>>
+>
+> He ran out of order-1 physically contiguous memory and was unable to
+> compact or reclaim because of the atomic context.
+>
+> Philipp, based on your pastes from another post, it's evident you're using
+> CONFIG_SLAB and, unfortunately, it's not possible to change to single
+> page allocations (which would only result in a page allocation failure if
+> you were completely out of memory) without recompiling.
+>
+> You have a couple options:
+>
+>   - recompile with BREAK_GFP_ORDER_HI redefined to 0 in mm/slab.c, or
+>
+>   - recompile with CONFIG_SLUB instead of CONFIG_SLAB.
+>
+> It's very possible that neither of these will help, but it will tell you
+> whether you need to go out and buy more RAM or not.  If you try to
+> recompile with BREAK_GFP_ORDER_HI, these may turn into order-0
+> allocations.  If you can't reboot, send the output of
+> /proc/<pid>/net/protocols where<pid>  is the pid of one of the above tasks
+> (kworker, mysql, php5) when they are running and we'll know.
+>
+>   [ Changing slab_break_gfp_order should really be a CONFIG_SLAB command-
+>     line option.  It can't be runtime because slab depends on the order for
+>     caches remaining constant, but we can certainly change it on boot. ]
+>
+> If you try CONFIG_SLUB instead of CONFIG_SLAB, you can pass
+> slub_max_order=0 on the command line and see if it helps.
 
-    http://code.google.com/p/git-core/downloads/list
+Hi David,
 
-and their SHA-1 checksums are:
+we have recompiled the kernel of one machine with CONFIG_SLUB instead of 
+CONFIG_SLAB, but it is showing similar message.
 
-9200e0b8ee543d297952b78aac8f61f8b3693f8e  git-1.7.7.1.tar.gz
-b25dacb07ebbfc37e7a90c3d47f76b4c0f0487d9  git-htmldocs-1.7.7.1.tar.gz
-419c750617ae0c952e2e43f0357c16de6ebc0a44  git-manpages-1.7.7.1.tar.gz
+Now it's showing failure at "order:5, mode:0x4020".
 
-Also the following public repositories all have a copy of the v1.7.7.1
-tag and the maint branch that the tag points at:
+Call trace can be found at:
+* http://pastebin.com/uGJiwvG1
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+Comparing kernel 2.6.32 (mm/page_alloc.c) there seams to be the same way 
+of dealing with page allocation.
 
-----------------------------------------------------------------
+Do you have an idea why these (warning) messages do never appear running 
+2.6.32?
 
-Changes since v1.7.7 are as follows:
-
-Brad King (1):
-      rev-list: Demonstrate breakage with --ancestry-path --all
-
-Brandon Casey (1):
-      strbuf.c: remove unnecessary strbuf_grow() from strbuf_getwholeline()
-
-Ilari Liusvaara (1):
-      Support ERR in remote archive like in fetch/push
-
-Jay Soffian (1):
-      merge-one-file: fix "expr: non-numeric argument"
-
-Jeff King (2):
-      fetch: avoid quadratic loop checking for updated submodules
-      filter-branch: use require_clean_work_tree
-
-Jim Meyering (1):
-      fix "git apply --index ..." not to deref NULL
-
-Jonathan Nieder (2):
-      Makefile: do not set setgid bit on directories on GNU/kFreeBSD
-      RelNotes/1.7.7.1: setgid bit patch is about fixing "git init" via Makefile setting
-
-Junio C Hamano (14):
-      revision: keep track of the end-user input from the command line
-      revision: do not include sibling history in --ancestry-path output
-      rebase -i: notice and warn if "exec $cmd" modifies the index or the working tree
-      traverse_trees(): allow pruning with pathspec
-      unpack-trees: allow pruning with pathspec
-      diff-index: pass pathspec down to unpack-trees machinery
-      fsck: do not abort upon finding an empty blob
-      Teach progress eye-candy to fetch_refs_from_bundle()
-      apply --whitespace=error: correctly report new blank lines at end
-      checkout $tree $path: do not clobber local changes in $path not in $tree
-      diff: resurrect XDF_NEED_MINIMAL with --minimal
-      Prepare for 1.7.7.1
-      Almost ready for 1.7.7.1
-      Git 1.7.7.1
-
-Matthieu Moy (2):
-      rebase -i: clean error message for --continue after failed exec
-      config: display key_delim for config --bool --get-regexp
-
-Michael Schubert (1):
-      patch-id.c: use strbuf instead of a fixed buffer
-
-Nguyễn Thái Ngọc Duy (4):
-      merge: keep stash[] a local variable
-      merge: use return value of resolve_ref() to determine if HEAD is invalid
-      merge: remove global variable head[]
-      Accept tags in HEAD or MERGE_HEAD
-
-Nicolas Morey-Chaisemartin (1):
-      grep: Fix race condition in delta_base_cache
-
-René Scharfe (2):
-      Revert removal of multi-match discard heuristic in 27af01
-      t1304: fall back to $USER if $LOGNAME is not defined
-
-Thomas Rast (2):
-      Symlink mergetools scriptlets into valgrind wrappers
-      t6019: avoid refname collision on case-insensitive systems
-
+Regards,
+Philipp
