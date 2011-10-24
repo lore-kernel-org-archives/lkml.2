@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab1JXTKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 15:10:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:55601 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab1JXTKY (ORCPT
+	id S1753404Ab1JXTNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 15:13:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43833 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab1JXTNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 15:10:24 -0400
-Date: Tue, 25 Oct 2011 06:10:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: failed to import the device-mapper quilt series
-Message-Id: <20111025061010.26d2b727559242a5d188918e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Oct_2011_06_10_10_+1100_UGKbK=hPfifq/SgP"
+	Mon, 24 Oct 2011 15:13:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EA5B5F8.5090802@profihost.ag>
+References: <4EA1536E.6090001@profihost.ag>
+	<20111021130752.GC8219@suse.de>
+	<AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag>
+	<20111021200257.GA31198@suse.de>
+	<4EA2F2E0.4020702@profihost.ag>
+	<20111022165521.GA1716@suse.de>
+	<4EA5AB40.2090609@profihost.ag>
+	<20111024183820.GA9397@suse.de>
+	<4EA5B5F8.5090802@profihost.ag>
+Date: Mon, 24 Oct 2011 15:13:53 -0400
+Message-ID: <CA+5PVA4tu5StMnj8CZ5qat8srBcOVyKChTLbN7YYAoDT1gVRJQ@mail.gmail.com>
+Subject: Re: Kernel hard LOCKUP with v3.0.7
+From: Josh Boyer <jwboyer@gmail.com>
+To: Stefan Priebe <s.priebe@profihost.ag>
+Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Stable Tree <stable@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Oct_2011_06_10_10_+1100_UGKbK=hPfifq/SgP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 24, 2011 at 3:01 PM, Stefan Priebe <s.priebe@profihost.ag> wrote:
+> Hi,
+>
+>> On Mon, Oct 24, 2011 at 08:15:28PM +0200, Stefan Priebe wrote:
+>>>
+>>> Am 22.10.2011 18:55, schrieb Greg KH:
+>>>>>
+>>>>> this seems to fix it. Perhaps you should release v3.0.8 as the
+>>>>> stable tree isn't stable right now? I mean this bug seems to be
+>>>>> triggered on every SMP machine.
+>>>>
+>>>> I will work to get it out soon.
+>>>
+>>> Fine. Any idea if this will happen this week or in a month or ...
+>>> I'm scheduling an update for all our systems and if this will happen
+>>> really soon i will probably schedule it a bit later.
+>>
+>> The 3.0.8-rc1 went out two days ago, so hopefully, if my gpg usb stick
+>> still works, I can get it out tomorrow, or the day after, as tomorrow,
+>> the Kernel Summit is still going on.
+>
+> how to get 3.0.8-rc1? linux-stable.git does not have a tag named v3.0.8-rc1
+> - will 3.0.8 be the same as 3.0.8-rc1?
 
-Hi Alasdair,
+kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.8-rc1.gz
 
-Importing the device-mapper tree today gave this error:
+I doubt it will be identical, but it should be close.
 
-$ git am ../quilt/device-mapper/dm-add-persistent-data-library.patch
-Applying: The persistent-data library offers a re-usable framework for the =
-storage
-error: drivers/md/persistent-data/dm-space-map-common.c: does not exist in =
-index
-Patch failed at 0001 The persistent-data library offers a re-usable framewo=
-rk for the storage
-
-And indeed, this file does not exist even though this patch is trying to
-patch it (not create it).
-
-I will use the device-mapper tree from next-20111014 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__25_Oct_2011_06_10_10_+1100_UGKbK=hPfifq/SgP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOpbgSAAoJEECxmPOUX5FEVxoP/RStmsXzyJ8dc5S4KiaWjvJP
-0HDuRWFV6e03dHSf9XnYG+GKqGXDdsvZwE/cxwG5YGRTcoXHQS9y8BPzdM19sJwQ
-LF2+7VRA15tFIS0+RMzFr88CbHDDLbDWrDygnkKT6Orgi0Gd43MJp+ptFY73po0S
-gBbR/ItlD2zlrPvlKXmtuCgXD+0yuimOpbypgEAXebxsd0W7aSNcPy6XvWs+z1yr
-3Iq+B03wSMOnbWYNiikKs4BlCkCIOtSsdP+wKw24dN6kTksfUQNh0zIgdklYbtzE
-gJ3t6j57acjK4R/J5bJxSI1Gw6JkXdSmwbNPvk+mPx0e4SPgO+SEyYdDV/Z19HjZ
-cnFqSDpbFuoFyStqfhGLzZ13z+UK2ORK8n+fk5nGTyPIxrr87Vh48E+ZbkKT88zA
-G0so/A8XLM0cr1/q8RSIcqQwNwTqm1gnB3kwDPE9CgwM72DX6rU5mJLz7YUECd+h
-zppUmmQbUHH7/nvh1wFSYfJr5fGzdzHzoQ8NAciadHKV4Go58EE3kh+axhCekL26
-4c/H8iilyfJ/0I0s0qqoOWPgCOGCek3FVXATksLZ8OsjpcaxoXIV2WIvlFWzzoh2
-OMxstUNIlCbw2pTLC+5r3hIjsBipRSsm9iEtaxvYKTTb7vS3gpBfEzlwm8B6xZff
-Tp7VcCm0mwuA+GFbU5+x
-=qfOy
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Oct_2011_06_10_10_+1100_UGKbK=hPfifq/SgP--
+josh
