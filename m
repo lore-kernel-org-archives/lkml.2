@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab1JXOqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:46:49 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:33422 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab1JXOqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:46:47 -0400
-Date: Mon, 24 Oct 2011 22:46:23 +0800
-From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Greg KH <gregkh@suse.de>, Namhyung Kim <namhyung@gmail.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Joe Perches <joe@perches.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        Youquan Song <youquan.song@intel.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/36] Staging: cx25821: Clean up patch series
-Message-ID: <20111024224623.7585c471@inspire>
-In-Reply-To: <4EA47CF8.2090504@redhat.com>
-References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
-	<20111022081941.GA5443@suse.de>
-	<4EA3A7ED.8090404@redhat.com>
-	<20111023232418.2d79ed12@inspire>
-	<4EA47CF8.2090504@redhat.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932801Ab1JXOq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:46:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31710 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932752Ab1JXOqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 10:46:48 -0400
+Date: Mon, 24 Oct 2011 16:41:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/X] uprobes: introduce UTASK_SSTEP_TRAPPED logic
+Message-ID: <20111024144127.GA14975@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215344.GG16395@redhat.com> <20111022072030.GB24475@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111022072030.GB24475@in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Oct 2011 22:45:44 +0200
-Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+On 10/22, Ananth N Mavinakayanahalli wrote:
+>
+> On Wed, Oct 19, 2011 at 11:53:44PM +0200, Oleg Nesterov wrote:
+> > Finally, add UTASK_SSTEP_TRAPPED state/code to handle the case when
+> > xol insn itself triggers the signal.
+> >
+> > In this case we should restart the original insn even if the task is
+> > already SIGKILL'ed (say, the coredump should report the correct ip).
+> > This is even more important if the task has a handler for SIGSEGV/etc,
+> > The _same_ instruction should be repeated again after return from the
+> > signal handler, and SSTEP can never finish in this case.
+>
+> Oleg,
+>
+> Not sure I understand this completely...
 
-> Em 23-10-2011 17:24, Leonid V. Fedorenchik escreveu:
-> > 
-> > Thank you. Should I send my future patches for this driver directly to you?
-> 
-> The better is if you could send them to linux-media@vger.kernel.org. Patchwork
-> will catch them and put on my queue automatically.
+I hope you do not think I do ;)
 
-OK, will do. :)
+> When you say 'correct ip' you mean the original vaddr where we now have
+> a uprobe breakpoint and not the xol copy, right?
 
-> 
-> Thanks,
-> Mauro
+Yes,
 
-Leonid V. Fedorenchik
+> Coredump needs to report the correct ip, but should it also not report
+> correctly the instruction that caused the signal? Ergo, shouldn't we
+> put the original instruction back at the uprobed vaddr?
+
+OK, now I see what you mean. I was confused by the "restore the original
+instruction before _restart_" suggestion.
+
+Agreed! it would be nice to "hide" these int3's if we dump the core, but
+I think this is a bit off-topic. It makes sense to do this in any case,
+even if the core-dumping was triggered by another thread/insn. It makes
+sense to remove all int3's, not only at regs->ip location. But how can
+we do this? This is nontrivial.
+
+And. Even worse. Suppose that you do "gdb probed_application". Now you
+see int3's in the disassemble output. What can we do?
+
+I think we can do nothing, at least currently. This just reflects the
+fact that uprobe connects to inode, not to process/mm/etc.
+
+What do you think?
+
+Oleg.
+
