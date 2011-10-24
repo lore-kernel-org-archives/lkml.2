@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab1JXNKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:10:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932369Ab1JXNK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:10:27 -0400
-Message-ID: <4EA56385.9040302@redhat.com>
-Date: Mon, 24 Oct 2011 15:09:25 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S932573Ab1JXNLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:11:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46015 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab1JXNLI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 09:11:08 -0400
+Message-ID: <4EA563E6.3040205@suse.cz>
+Date: Mon, 24 Oct 2011 15:11:02 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to support
- pv-ticketlock
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com> <4EA53A7D.300@redhat.com> <20111024122734.GA10634@linux.vnet.ibm.com>
-In-Reply-To: <20111024122734.GA10634@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ilya Zykov <ilya@ilyx.ru>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] TTY: pty, fix pty counting
+References: <4EA48094.8020508@ilyx.ru>
+In-Reply-To: <4EA48094.8020508@ilyx.ru>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=windows-1251
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 02:27 PM, Srivatsa Vaddagiri wrote:
-> Good point. Assuming yield_on_hlt=1, that would allow the vcpu to be put
-> to sleep and let other vcpus make progress.
->
-> I guess with that change, we can also dropthe need for other hypercall
-> introduced in this patch (kvm_pv_kick_cpu_op()). Essentially a vcpu sleeping 
-> because of HLT instruction can be woken up by a IPI issued by vcpu releasing a
-> lock.
+On 10/23/2011 11:01 PM, Ilya Zykov wrote:
+> New version for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
 
-Not if interrupts are disabled.  My original plan was to use NMIs for
-wakeups, but it turns out NMIs can be coalesced under certain rare
-circumstances; this requires workarounds by the generic NMI code that
-make NMIs too slow.
+Although it will work, as ptms are not allowed to be reopen, it doesn't
+look correct. We should decrement the count in ->remove, because we are
+incrementing in install.
 
+Now, when I understand ptm+devpts layer a bit more, instead of the
+current hackish approach introduced by 24d406a6b (TTY: pty, fix pty
+counting), I think we may introduce a ->remove hook specific to ptms. In
+that one we could decrement the count and don't bother with the
+pty_count macros anymore. Right?
+
+BTW you cannot remove ->remove hook of pty layer. It would cause an OOPS
+because driver->ttys is not allocated for ptys.
+
+> diff -uprN a/drivers/tty/pty.c b/drivers/tty/pty.c
+> --- a/drivers/tty/pty.c	2011-05-19 08:06:34.000000000 +0400
+> +++ b/drivers/tty/pty.c	2011-10-23 18:01:20.000000000 +0400
+> @@ -36,13 +36,15 @@
+>  static struct tty_driver *ptm_driver;
+>  static struct tty_driver *pts_driver;
+>  #endif
+> +static int pty_count;
+>  
+>  static void pty_close(struct tty_struct *tty, struct file *filp)
+>  {
+>  	BUG_ON(!tty);
+> -	if (tty->driver->subtype == PTY_TYPE_MASTER)
+> +	if (tty->driver->subtype == PTY_TYPE_MASTER) {
+>  		WARN_ON(tty->count > 1);
+> -	else {
+> +		pty_count--;
+> +	} else {
+>  		if (tty->count > 2)
+>  			return;
+>  	}
+> @@ -446,7 +448,6 @@ static inline void legacy_pty_init(void)
+>  int pty_limit = NR_UNIX98_PTY_DEFAULT;
+>  static int pty_limit_min;
+>  static int pty_limit_max = NR_UNIX98_PTY_MAX;
+> -static int pty_count;
+>  
+>  static struct cdev ptmx_cdev;
+>  
+> @@ -599,15 +600,9 @@ free_mem_out:
+>  	return -ENOMEM;
+>  }
+>  
+> -static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
+> -{
+> -	pty_count--;
+> -}
+> -
+>  static const struct tty_operations ptm_unix98_ops = {
+>  	.lookup = ptm_unix98_lookup,
+>  	.install = pty_unix98_install,
+> -	.remove = pty_unix98_remove,
+>  	.open = pty_open,
+>  	.close = pty_close,
+>  	.write = pty_write,
+> @@ -624,7 +619,6 @@ static const struct tty_operations ptm_u
+>  static const struct tty_operations pty_unix98_ops = {
+>  	.lookup = pts_unix98_lookup,
+>  	.install = pty_unix98_install,
+> -	.remove = pty_unix98_remove,
+>  	.open = pty_open,
+>  	.close = pty_close,
+>  	.write = pty_write,
+
+thanks,
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+js
+suse labs
