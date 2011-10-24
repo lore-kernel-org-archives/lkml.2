@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab1JXR2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 13:28:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39827 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755840Ab1JXR2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 13:28:53 -0400
-Date: Mon, 24 Oct 2011 12:28:42 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, David Howells <dhowells@redhat.com>,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        akpm@linux-foundation.org, oleg@redhat.com, richard@nod.at,
-        mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
-        eparis@redhat.com
-Subject: Re: [PATCH 05/10] user namespace: clamp down users of cap_raised
-Message-ID: <20111024172842.GA13556@sergelap>
-References: <CALQRfL51U=cuLdVUpFXTog++3WwMjJB+9S6T8gVibC5gdGa5JQ@mail.gmail.com>
- <1318974898-21431-1-git-send-email-serge@hallyn.com>
- <1318974898-21431-6-git-send-email-serge@hallyn.com>
- <14652.1319014868@redhat.com>
- <20111024144334.GA26603@hallyn.com>
- <CALQRfL4zCbzr_Fa0ySi96j06nw7ifocCxUjYUs6vXxeNvjCutQ@mail.gmail.com>
+	id S1755840Ab1JXReB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 13:34:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753859Ab1JXReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 13:34:00 -0400
+Date: Mon, 24 Oct 2011 13:33:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        holzheu@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: kdump: crash_kexec()-smp_send_stop() race in panic
+Message-ID: <20111024173336.GB8044@redhat.com>
+References: <1319468137.3615.16.camel@br98xy6r>
+ <m1ipneifqv.fsf@fess.ebiederm.org>
+ <CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
+ <m1aa8qfhdk.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CALQRfL4zCbzr_Fa0ySi96j06nw7ifocCxUjYUs6vXxeNvjCutQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m1aa8qfhdk.fsf@fess.ebiederm.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew G. Morgan (morgan@kernel.org):
-> Serge,
+On Mon, Oct 24, 2011 at 10:07:19AM -0700, Eric W. Biederman wrote:
+> Américo Wang <xiyou.wangcong@gmail.com> writes:
 > 
-> It seems as if this whole thing is really idiomatic. How about?
+> > On Mon, Oct 24, 2011 at 11:14 PM, Eric W. Biederman
+> > <ebiederm@xmission.com> wrote:
+> >> Michael Holzheu <holzheu@linux.vnet.ibm.com> writes:
+> >>
+> >>> Hello Vivek,
+> >>>
+> >>> In our tests we ran into the following scenario:
+> >>>
+> >>> Two CPUs have called panic at the same time. The first CPU called
+> >>> crash_kexec() and the second CPU called smp_send_stop() in panic()
+> >>> before crash_kexec() finished on the first CPU. So the second CPU
+> >>> stopped the first CPU and therefore kdump failed.
+> >>>
+> >>> 1st CPU:
+> >>> panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
+> >>>
+> >>> 2nd CPU:
+> >>> panic()->crash_kexec()->kexec_mutex already held by 1st CPU
+> >>>        ->smp_send_stop()-> stop CPU 1 (stop kdump)
+> >>>
+> >>> How should we fix this problem? One possibility could be to do
+> >>> smp_send_stop() before we call crash_kexec().
+> >>>
+> >>> What do you think?
+> >>
+> >> smp_send_stop is insufficiently reliable to be used before crash_kexec.
+> >>
+> >> My first reaction would be to test oops_in_progress and wait until
+> >> oops_in_progress == 1 before calling smp_send_stop.
+> >>
+> >
+> > +1
+> >
+> > One of my colleague mentioned the same problem with me inside
+> > RH, given the fact that the race condition window is small, it would
+> > not be easy to reproduce this scenario.
 > 
-> #define IN_ROOT_USER_NS_CAPABLE(cap)  \
->    ((current_user_ns() == &init_user_ns) && cap_raised(current_cap(), cap))
+> As for reproducing it I have a hunch you could hack up something
+> horrible with smp_call_function and kprobes.
+> 
+> 
+> On a little more reflection we can't wait until oops_in_progress goes
+> to 1 before calling smp_send_stop.  Because if crash_kexec is not
+> involved nothing we will never call smp_send_stop. 
+> 
+> So my second thought is to introduce another atomic variable
+> panic_in_progress, visible only in panic.  The cpu that sets
+> increments panic_in_progress can call smp_send_stop.  The rest of
+> the cpus can just go into a busy wait.  That should stop nasty
+> fights about who is going to come out of smp_send_stop first.
 
-My objection to this was that it seems to encourage others to use it :)  I'm
-not sure we want that.  Also, IN_ROOT_USER_NS seems more generally useful.
+Introducing panic_on_oops atomic sounds good.
 
-But if I'm the only one who feels this way I'll go ahead and do it...
-
-thanks,
--serge
+Thanks
+Vivek
