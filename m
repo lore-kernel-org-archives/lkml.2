@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab1JXWFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 18:05:24 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45707
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756072Ab1JXWFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 18:05:24 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus driver as part of the kernel
-Date: Mon, 24 Oct 2011 11:28:12 -0700
-Message-Id: <1319480892-26480-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756135Ab1JXWG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:06:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42025 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab1JXWG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 18:06:28 -0400
+Date: Tue, 25 Oct 2011 00:06:25 +0200
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Hamo <hamo.by@gmail.com>
+Cc: arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] gpio: fix build error in include/asm-generic/gpio.h
+Message-ID: <20111024220625.GD4394@ponder.secretlab.ca>
+References: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify the way we initialize the vmbus driver so that all the hyper-v drivers
-can be linked with the kernel and still ensure that the vmbus driver
-is fully initialized before the drivers that depend upon the vmbus 
-driver attempt to initialize.
+On Fri, Oct 21, 2011 at 09:38:32AM +0800, Hamo wrote:
+> Should call the platform-specific __gpio_{get,set}_value
+> instead of generic gpio_{get,set}_value
+> 
+> Signed-off-by: Yang Bai <hamo.by@gmail.com>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/vmbus_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 0c048dd..7d3bccb3 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -783,4 +783,4 @@ cleanup:
- MODULE_LICENSE("GPL");
- MODULE_VERSION(HV_DRV_VERSION);
- 
--module_init(hv_acpi_init);
-+subsys_initcall(hv_acpi_init);
--- 
-1.7.4.1
-
+> ---
+>  include/asm-generic/gpio.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index d494001..6acff5d 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -220,13 +220,13 @@ static inline int gpio_cansleep(unsigned gpio)
+>  static inline int gpio_get_value_cansleep(unsigned gpio)
+>  {
+>  	might_sleep();
+> -	return gpio_get_value(gpio);
+> +	return __gpio_get_value(gpio);
+>  }
+> 
+>  static inline void gpio_set_value_cansleep(unsigned gpio, int value)
+>  {
+>  	might_sleep();
+> -	gpio_set_value(gpio, value);
+> +	__gpio_set_value(gpio, value);
+>  }
+> 
+>  #endif /* !CONFIG_GPIOLIB */
+> -- 
+> 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
