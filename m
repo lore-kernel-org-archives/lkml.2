@@ -1,436 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab1JXEF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 00:05:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3971 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1JXEF0 (ORCPT
+	id S1753059Ab1JXEKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 00:10:14 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:45741 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab1JXEKM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 00:05:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:sender:from:to:cc:subject:date:message-id:
-	x-mailer:in-reply-to:to:x-system-of-record;
-	b=F6JQWoSwvgp4v/oR1Drmm1l+tOmgp84f3JRXfTO9O5YDFQOBl0X22NjCYhVWuQoVN
-	qMlN9HVxWhWgcLv1viq/A==
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>, Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-Date: Sun, 23 Oct 2011 21:05:05 -0700
-Message-Id: <809d0a2afe624c06505e0df51e7657f66aaf9007.1319428526.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111018122109.GB6660@csn.ul.ie>
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Mel Gorman" <mel@csn.ul.ie>
-X-System-Of-Record: true
+	Mon, 24 Oct 2011 00:10:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EA4B164.4000009@oracle.com>
+References: <s5hwrbvv227.wl%tiwai@suse.de>
+	<4EA4B164.4000009@oracle.com>
+Date: Sun, 23 Oct 2011 21:10:11 -0700
+X-Google-Sender-Auth: Qd3mcTtF_RMaDUPtuwa4B6SdYVo
+Message-ID: <CAE9FiQX7efVf0rtQW0NcJRjwDN=4a7nzhyfVEPKs6BvLxQwrkw@mail.gmail.com>
+Subject: Re: [PATCH] x86: Fix S4 regression
+From: Yinghai Lu <yinghai@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J.Wysocki" <rjw@sisk.pl>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Oct 06, 2011 at 03:54:42PM +0200, Marek Szyprowski wrote:
->> This commit introduces alloc_contig_freed_pages() function
->> which allocates (ie. removes from buddy system) free pages
->> in range. Caller has to guarantee that all pages in range
->> are in buddy system.
+On Sun, Oct 23, 2011 at 5:29 PM, Yinghai Lu <yinghai.lu@oracle.com> wrote:
+> On 10/23/2011 02:19 PM, Takashi Iwai wrote:
+>
+>> The commit 4b239f458: [x86-64, mm: Put early page table high] causes
+>> a S4 regression since 2.6.39, namely the machine reboots occasionally
+>> at S4 resume.  It doesn't happen always, overall rate is about 1/20.
+>> But, like other bugs, once when this happens, it continues to happen.
+>>
+>> This patch fixes the problem by essentially reverting the memory
+>> assignment in the older way.
+>>
+>> Cc: <stable@kernel.org>
+>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>
+>> ---
+>> I resend this as a "fix" patch now before it's forgotten and rotten.
+>> It's just papering again over the mystery, but IMO better than the
+>> hard-reset behavior as of now.  Unfortunately, bisection is pretty
+>> much difficult because the bug itself is fairly unstable...
+>
+>
+>
+> Did you try to check several commit that Rafael pointed out:
+>
+>
+> On Wed, Sep 28, 2011 at 12:30 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Wednesday, September 28, 2011, Takashi Iwai wrote:
+>>>
+>>> If my previous test -- 2.6.37+Yinghai's patches didn't show the
+>>> problem -- is correct, it means that some change in 2.6.38 reacted
+>>> badly with Yinghai's patches, not about 2.6.39.  I'll check tomorrow
+>>> again whether this observation is really correct.
+>>
+>> Yes, that would be good to know, thanks for doing this!
+>>
+>> If that turns out to be the case, there are the following commits
+>> looking like worth checking:
+>>
+>> d344e38 x86, nx: Mark the ACPI resume trampoline code as +x
+>> 884b821 ACPI: Fix acpi_os_read_memory() and acpi_os_write_memory() (v2)
+>> d551d81 ACPI / PM: Call suspend_nvs_free() earlier during resume
+>> 2d6d9fd ACPI: Introduce acpi_os_ioremap()
+>
 
-On Tue, 18 Oct 2011 05:21:09 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
-> Straight away, I'm wondering why you didn't use
-> mm/compaction.c#isolate_freepages()
+Also, can you check if reverting following patch could help?
 
-Does the below look like a step in the right direction?
+| commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e
+| Author: Yinghai Lu <yinghai@kernel.org>
+| Date:   Fri Feb 18 11:30:30 2011 +0000
+|
+|    x86: Cleanup highmap after brk is concluded
+|
+|    Now cleanup_highmap actually is in two steps: one is early in head64.c
+|    and only clears above _end; a second one is in init_memory_mapping() and
+|    tries to clean from _brk_end to _end.
+|    It should check if those boundaries are PMD_SIZE aligned but currently
+|    does not.
+|    Also init_memory_mapping() is called several times for numa or memory
+|    hotplug, so we really should not handle initial kernel mappings there.
+|
+|   This patch moves cleanup_highmap() down after _brk_end is settled so
+|    we can do everything in one step.
+|    Also we honor max_pfn_mapped in the implementation of cleanup_highmap.
 
-It basically moves isolate_freepages_block() to page_alloc.c (changing
-it name to isolate_freepages_range()) and changes it so that depending
-on arguments it treats holes (either invalid PFN or non-free page) as
-errors so that CMA can use it.
+Thanks
 
-It also accepts a range rather then just assuming a single pageblock
-thus the change moves range calculation in compaction.c from
-isolate_freepages_block() up to isolate_freepages().
-
-The change also modifies spilt_free_page() so that it does not try to
-change pageblock's migrate type if current migrate type is ISOLATE or
-CMA.
-
----
- include/linux/mm.h             |    1 -
- include/linux/page-isolation.h |    4 +-
- mm/compaction.c                |   73 +++--------------------
- mm/internal.h                  |    5 ++
- mm/page_alloc.c                |  128 +++++++++++++++++++++++++---------------
- 5 files changed, 95 insertions(+), 116 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fd599f4..98c99c4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -435,7 +435,6 @@ void put_page(struct page *page);
- void put_pages_list(struct list_head *pages);
- 
- void split_page(struct page *page, unsigned int order);
--int split_free_page(struct page *page);
- 
- /*
-  * Compound pages have a destructor function.  Provide a
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 003c52f..6becc74 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -48,10 +48,8 @@ static inline void unset_migratetype_isolate(struct page *page)
- }
- 
- /* The below functions must be run on a range from a single zone. */
--extern unsigned long alloc_contig_freed_pages(unsigned long start,
--					      unsigned long end, gfp_t flag);
- extern int alloc_contig_range(unsigned long start, unsigned long end,
--			      gfp_t flags, unsigned migratetype);
-+			      unsigned migratetype);
- extern void free_contig_pages(unsigned long pfn, unsigned nr_pages);
- 
- /*
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9e5cc59..685a19e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -58,77 +58,15 @@ static unsigned long release_freepages(struct list_head *freelist)
- 	return count;
- }
- 
--/* Isolate free pages onto a private freelist. Must hold zone->lock */
--static unsigned long isolate_freepages_block(struct zone *zone,
--				unsigned long blockpfn,
--				struct list_head *freelist)
--{
--	unsigned long zone_end_pfn, end_pfn;
--	int nr_scanned = 0, total_isolated = 0;
--	struct page *cursor;
--
--	/* Get the last PFN we should scan for free pages at */
--	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
--
--	/* Find the first usable PFN in the block to initialse page cursor */
--	for (; blockpfn < end_pfn; blockpfn++) {
--		if (pfn_valid_within(blockpfn))
--			break;
--	}
--	cursor = pfn_to_page(blockpfn);
--
--	/* Isolate free pages. This assumes the block is valid */
--	for (; blockpfn < end_pfn; blockpfn++, cursor++) {
--		int isolated, i;
--		struct page *page = cursor;
--
--		if (!pfn_valid_within(blockpfn))
--			continue;
--		nr_scanned++;
--
--		if (!PageBuddy(page))
--			continue;
--
--		/* Found a free page, break it into order-0 pages */
--		isolated = split_free_page(page);
--		total_isolated += isolated;
--		for (i = 0; i < isolated; i++) {
--			list_add(&page->lru, freelist);
--			page++;
--		}
--
--		/* If a page was split, advance to the end of it */
--		if (isolated) {
--			blockpfn += isolated - 1;
--			cursor += isolated - 1;
--		}
--	}
--
--	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
--	return total_isolated;
--}
--
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
--
- 	int migratetype = get_pageblock_migratetype(page);
- 
- 	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
- 	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
- 		return false;
- 
--	/* Keep MIGRATE_CMA alone as well. */
--	/*
--	 * XXX Revisit.  We currently cannot let compaction touch CMA
--	 * pages since compaction insists on changing their migration
--	 * type to MIGRATE_MOVABLE (see split_free_page() called from
--	 * isolate_freepages_block() above).
--	 */
--	if (is_migrate_cma(migratetype))
--		return false;
--
- 	/* If the page is a large free page, then allow migration */
- 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
- 		return true;
-@@ -149,7 +87,7 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn;
-+	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
- 	unsigned long flags;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
-@@ -169,6 +107,8 @@ static void isolate_freepages(struct zone *zone,
- 	 */
- 	high_pfn = min(low_pfn, pfn);
- 
-+	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+
- 	/*
- 	 * Isolate free pages until enough are available to migrate the
- 	 * pages on cc->migratepages. We stop searching if the migrate
-@@ -176,7 +116,7 @@ static void isolate_freepages(struct zone *zone,
- 	 */
- 	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
--		unsigned long isolated;
-+		unsigned isolated, scanned;
- 
- 		if (!pfn_valid(pfn))
- 			continue;
-@@ -205,7 +145,10 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 		spin_lock_irqsave(&zone->lock, flags);
- 		if (suitable_migration_target(page)) {
--			isolated = isolate_freepages_block(zone, pfn, freelist);
-+			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-+			isolated = isolate_freepages_range(zone, pfn,
-+					end_pfn, freelist, &scanned);
-+			trace_mm_compaction_isolate_freepages(scanned, isolated);
- 			nr_freepages += isolated;
- 		}
- 		spin_unlock_irqrestore(&zone->lock, flags);
-diff --git a/mm/internal.h b/mm/internal.h
-index d071d380..4a9bb3f 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -263,3 +263,8 @@ extern u64 hwpoison_filter_flags_mask;
- extern u64 hwpoison_filter_flags_value;
- extern u64 hwpoison_filter_memcg;
- extern u32 hwpoison_filter_enable;
-+
-+unsigned isolate_freepages_range(struct zone *zone,
-+				 unsigned long start, unsigned long end,
-+				 struct list_head *freelist,
-+				 unsigned *scannedp);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index df69706..adf3f34 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1300,10 +1300,11 @@ void split_page(struct page *page, unsigned int order)
-  * Note: this is probably too low level an operation for use in drivers.
-  * Please consult with lkml before using this in your driver.
-  */
--int split_free_page(struct page *page)
-+static unsigned split_free_page(struct page *page)
- {
- 	unsigned int order;
- 	unsigned long watermark;
-+	struct page *endpage;
- 	struct zone *zone;
- 
- 	BUG_ON(!PageBuddy(page));
-@@ -1326,14 +1327,18 @@ int split_free_page(struct page *page)
- 	set_page_refcounted(page);
- 	split_page(page, order);
- 
--	if (order >= pageblock_order - 1) {
--		struct page *endpage = page + (1 << order) - 1;
--		for (; page < endpage; page += pageblock_nr_pages)
--			if (!is_pageblock_cma(page))
--				set_pageblock_migratetype(page,
--							  MIGRATE_MOVABLE);
-+	if (order < pageblock_order - 1)
-+		goto done;
-+
-+	endpage = page + (1 << order) - 1;
-+	for (; page < endpage; page += pageblock_nr_pages) {
-+		int mt = get_pageblock_migratetype(page);
-+		/* Don't change CMA nor ISOLATE */
-+		if (!is_migrate_cma(mt) && mt != MIGRATE_ISOLATE)
-+			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
- 	}
- 
-+done:
- 	return 1 << order;
- }
- 
-@@ -5723,57 +5728,76 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
- 
--unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
--				       gfp_t flag)
-+/**
-+ * isolate_freepages_range() - isolate free pages, must hold zone->lock.
-+ * @zone:	Zone pages are in.
-+ * @start:	The first PFN to start isolating.
-+ * @end:	The one-past-last PFN.
-+ * @freelist:	A list to save isolated pages to.
-+ * @scannedp:	Optional pointer where to save number of scanned pages.
-+ *
-+ * If @freelist is not provided, holes in range (either non-free pages
-+ * or invalid PFN) are considered an error and function undos its
-+ * actions and returns zero.
-+ *
-+ * If @freelist is provided, function will simply skip non-free and
-+ * missing pages and put only the ones isolated on the list.  It will
-+ * also call trace_mm_compaction_isolate_freepages() at the end.
-+ *
-+ * Returns number of isolated pages.  This may be more then end-start
-+ * if end fell in a middle of a free page.
-+ */
-+unsigned isolate_freepages_range(struct zone *zone,
-+				 unsigned long start, unsigned long end,
-+				 struct list_head *freelist, unsigned *scannedp)
- {
--	unsigned long pfn = start, count;
-+	unsigned nr_scanned = 0, total_isolated = 0;
-+	unsigned long pfn = start;
- 	struct page *page;
--	struct zone *zone;
--	int order;
- 
- 	VM_BUG_ON(!pfn_valid(start));
--	page = pfn_to_page(start);
--	zone = page_zone(page);
- 
--	spin_lock_irq(&zone->lock);
-+	/* Isolate free pages. This assumes the block is valid */
-+	page = pfn_to_page(pfn);
-+	while (pfn < end) {
-+		unsigned isolated = 1;
- 
--	for (;;) {
--		VM_BUG_ON(!page_count(page) || !PageBuddy(page) ||
--			  page_zone(page) != zone);
-+		VM_BUG_ON(page_zone(page) != zone);
- 
--		list_del(&page->lru);
--		order = page_order(page);
--		count = 1UL << order;
--		zone->free_area[order].nr_free--;
--		rmv_page_order(page);
--		__mod_zone_page_state(zone, NR_FREE_PAGES, -(long)count);
-+		if (!pfn_valid_within(blockpfn))
-+			goto skip;
-+		++nr_scanned;
- 
--		pfn += count;
--		if (pfn >= end)
--			break;
--		VM_BUG_ON(!pfn_valid(pfn));
--
--		if (zone_pfn_same_memmap(pfn - count, pfn))
--			page += count;
--		else
--			page = pfn_to_page(pfn);
--	}
-+		if (!PageBuddy(page)) {
-+skip:
-+			if (freelist)
-+				goto next;
-+			for (; start < pfn; ++start)
-+				__free_page(pfn_to_page(pfn));
-+			return 0;
-+		}
- 
--	spin_unlock_irq(&zone->lock);
-+		/* Found a free page, break it into order-0 pages */
-+		isolated = split_free_page(page);
-+		total_isolated += isolated;
-+		if (freelist) {
-+			struct page *p = page;
-+			unsigned i = isolated;
-+			for (; i--; ++page)
-+				list_add(&p->lru, freelist);
-+		}
- 
--	/* After this, pages in the range can be freed one be one */
--	count = pfn - start;
--	pfn = start;
--	for (page = pfn_to_page(pfn); count; --count) {
--		prep_new_page(page, 0, flag);
--		++pfn;
--		if (likely(zone_pfn_same_memmap(pfn - 1, pfn)))
--			++page;
-+next:		/* Advance to the next page */
-+		pfn += isolated;
-+		if (zone_pfn_same_memmap(pfn - isolated, pfn))
-+			page += isolated;
- 		else
- 			page = pfn_to_page(pfn);
- 	}
- 
--	return pfn;
-+	if (scannedp)
-+		*scannedp = nr_scanned;
-+	return total_isolated;
- }
- 
- static unsigned long pfn_to_maxpage(unsigned long pfn)
-@@ -5837,7 +5861,6 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-  * alloc_contig_range() -- tries to allocate given range of pages
-  * @start:	start PFN to allocate
-  * @end:	one-past-the-last PFN to allocate
-- * @flags:	flags passed to alloc_contig_freed_pages().
-  * @migratetype:	migratetype of the underlaying pageblocks (either
-  *			#MIGRATE_MOVABLE or #MIGRATE_CMA).  All pageblocks
-  *			in range must have the same migratetype and it must
-@@ -5853,9 +5876,10 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-  * need to be freed with free_contig_pages().
-  */
- int alloc_contig_range(unsigned long start, unsigned long end,
--		       gfp_t flags, unsigned migratetype)
-+		       unsigned migratetype)
- {
- 	unsigned long outer_start, outer_end;
-+	struct zone *zone;
- 	int ret;
- 
- 	/*
-@@ -5910,7 +5934,17 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 			return -EINVAL;
- 
- 	outer_start = start & (~0UL << ret);
--	outer_end   = alloc_contig_freed_pages(outer_start, end, flags);
-+
-+	zone = page_zone(pfn_to_page(outer_start));
-+	spin_lock_irq(&zone->lock);
-+	outer_end = isolate_freepages_range(zone, outer_start, end, NULL, NULL);
-+	spin_unlock_irq(&zone->lock);
-+
-+	if (!outer_end) {
-+		ret = -EBUSY;
-+		goto done;
-+	}
-+	outer_end += outer_start;
- 
- 	/* Free head and tail (if any) */
- 	if (start != outer_start)
--- 
-1.7.3.1
-
+Yinghai Lu
