@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab1JXVRS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 17:17:18 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48635 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab1JXVRR (ORCPT
+	id S1756057Ab1JXVZE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 17:25:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55853 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756019Ab1JXVZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 17:17:17 -0400
-Date: Mon, 24 Oct 2011 22:16:58 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20111024211658.GD32545@flint.arm.linux.org.uk>
-References: <20111025072013.1824cfd24495819777ad2660@canb.auug.org.au> <20111024203041.GA32545@flint.arm.linux.org.uk> <20111024210952.GQ23421@pengutronix.de>
+	Mon, 24 Oct 2011 17:25:02 -0400
+Date: Mon, 24 Oct 2011 23:24:55 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Roland Kletzing <devzero@web.de>, adrian.hunter@intel.com,
+        linux-mtd@lists.infradead.org, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Re: mtd_stresstest module bricked my dockstar
+Message-ID: <20111024212455.GC6326@pengutronix.de>
+References: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003>
+ <20111024055705.GA4020@1wt.eu>
+ <B10F15EA8AB74E698DC0D94563A30BE7@samsungnetbook>
+ <20111024195313.GA6326@pengutronix.de>
+ <1319490276.12314.9.camel@golum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z4+8/lEcDcG5Ke9S"
 Content-Disposition: inline
-In-Reply-To: <20111024210952.GQ23421@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1319490276.12314.9.camel@golum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 11:09:52PM +0200, Sascha Hauer wrote:
-> On Mon, Oct 24, 2011 at 09:30:41PM +0100, Russell King wrote:
-> > On Tue, Oct 25, 2011 at 07:20:13AM +1100, Stephen Rothwell wrote:
-> > > Hi Arnd,
-> > > 
-> > > Today's linux-next merge of the arm-soc tree got a conflict in
-> > > arch/arm/plat-mxc/include/mach/memory.h between commit c039bad00f21
-> > > ("ARM: plat-mxc: remove mach/memory.h") from the arm tree and commits
-> > > ae4fa7f66e54 ("ARM i.MX: allow to compile together ARMv4 and ARMv5 based
-> > > SoCs") and 7409cd1cd554 ("ARM i.MX: allow to compile together all i.MX5
-> > > based SoCs") from the arm-soc tree.
-> > > 
-> > > The former removed the file, so I did that.
-> > 
-> > Stephen - thanks.
-> > 
-> > ARM guys, we need to be smarter about this stuff - if we're consolidating
-> > code across the ARM tree, committing changes to files which we're going
-> > to remove really isn't a good idea.  It probably means something else has
-> > changed elsewhere to accomodate the deletion of the file, which this
-> > kind of resolution won't fix up.
-> 
-> In this case deleting the file is the correct solution. I removed some
-> definitions of PLAT_PHYS_OFFSET which got unused due to "ARM i.MX: allow
-> to compile together..." and Nicolas removed the need for PLAT_PHYS_OFFSET
-> at all.
 
-Ok, at least this one is trivial.  Thanks for the confirmation.
+--z4+8/lEcDcG5Ke9S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+
+> Yes, we should use -1 as the default value, and print a scary warning
+> message when the module is inserted without a parameter. We should
+> probably also put word "destructive" or something like this to the
+> module description.
+
+I would volunteer to do this tomorrow if nobody is working on it at this
+moment...
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--z4+8/lEcDcG5Ke9S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk6l16cACgkQD27XaX1/VRt5RACgwMdTUyiafJ2KB96FbuJqx6Tg
+jJ8An2I0PmTHJyPzYfxknWjBhgroCuDU
+=B87k
+-----END PGP SIGNATURE-----
+
+--z4+8/lEcDcG5Ke9S--
