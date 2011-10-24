@@ -1,102 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab1JXUxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 16:53:12 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:34203 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab1JXUxK (ORCPT
+	id S1756013Ab1JXVDB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 17:03:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34387 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab1JXVC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 16:53:10 -0400
-Date: Tue, 25 Oct 2011 07:52:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Changhwan Youn <chaos.youn@samsung.com>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-Id: <20111025075253.ec6a5b720ccd5e14426ae780@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Oct_2011_07_52_53_+1100_S6KEoST7Ve5uEn+t"
+	Mon, 24 Oct 2011 17:02:58 -0400
+Message-Id: <20111024210230.095861558@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 25 Oct 2011 00:56:58 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: containers@lists.osdl.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: Nathan Lynch <ntl@pobox.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 1/2] fs, proc: Make proc_get_link to use dentry instead of inode
+References: <20111024205657.807512807@openvz.org>
+Content-Disposition: inline; filename=fs-proc-switch-to-dentry
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Oct_2011_07_52_53_+1100_S6KEoST7Ve5uEn+t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch prepares the ground for the next "map_files"
+patch which needs a name of a link file to analyse.
 
-Hi Arnd,
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/proc/base.c          |   20 ++++++++++----------
+ include/linux/proc_fs.h |    2 +-
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-exynos4/mct.c between commit 28af690a284d ("ARM: gic, local
-timers: use the request_percpu_irq() interface") from the arm tree and
-commit 3a0622811292 ("ARM: EXYNOS4: Add support MCT PPI for EXYNOS4212")
-from the arm-soc tree.
+Index: linux-2.6.git/fs/proc/base.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/base.c
++++ linux-2.6.git/fs/proc/base.c
+@@ -165,9 +165,9 @@ static int get_task_root(struct task_str
+ 	return result;
+ }
+ 
+-static int proc_cwd_link(struct inode *inode, struct path *path)
++static int proc_cwd_link(struct dentry *dentry, struct path *path)
+ {
+-	struct task_struct *task = get_proc_task(inode);
++	struct task_struct *task = get_proc_task(dentry->d_inode);
+ 	int result = -ENOENT;
+ 
+ 	if (task) {
+@@ -182,9 +182,9 @@ static int proc_cwd_link(struct inode *i
+ 	return result;
+ }
+ 
+-static int proc_root_link(struct inode *inode, struct path *path)
++static int proc_root_link(struct dentry *dentry, struct path *path)
+ {
+-	struct task_struct *task = get_proc_task(inode);
++	struct task_struct *task = get_proc_task(dentry->d_inode);
+ 	int result = -ENOENT;
+ 
+ 	if (task) {
+@@ -1580,13 +1580,13 @@ static const struct file_operations proc
+ 	.release	= single_release,
+ };
+ 
+-static int proc_exe_link(struct inode *inode, struct path *exe_path)
++static int proc_exe_link(struct dentry *dentry, struct path *exe_path)
+ {
+ 	struct task_struct *task;
+ 	struct mm_struct *mm;
+ 	struct file *exe_file;
+ 
+-	task = get_proc_task(inode);
++	task = get_proc_task(dentry->d_inode);
+ 	if (!task)
+ 		return -ENOENT;
+ 	mm = get_task_mm(task);
+@@ -1616,7 +1616,7 @@ static void *proc_pid_follow_link(struct
+ 	if (!proc_fd_access_allowed(inode))
+ 		goto out;
+ 
+-	error = PROC_I(inode)->op.proc_get_link(inode, &nd->path);
++	error = PROC_I(inode)->op.proc_get_link(dentry, &nd->path);
+ out:
+ 	return ERR_PTR(error);
+ }
+@@ -1655,7 +1655,7 @@ static int proc_pid_readlink(struct dent
+ 	if (!proc_fd_access_allowed(inode))
+ 		goto out;
+ 
+-	error = PROC_I(inode)->op.proc_get_link(inode, &path);
++	error = PROC_I(inode)->op.proc_get_link(dentry, &path);
+ 	if (error)
+ 		goto out;
+ 
+@@ -1959,9 +1959,9 @@ out_task:
+ 	return rc;
+ }
+ 
+-static int proc_fd_link(struct inode *inode, struct path *path)
++static int proc_fd_link(struct dentry *dentry, struct path *path)
+ {
+-	return proc_fd_info(inode, path, NULL);
++	return proc_fd_info(dentry->d_inode, path, NULL);
+ }
+ 
+ static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
+Index: linux-2.6.git/include/linux/proc_fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/proc_fs.h
++++ linux-2.6.git/include/linux/proc_fs.h
+@@ -253,7 +253,7 @@ extern const struct proc_ns_operations u
+ extern const struct proc_ns_operations ipcns_operations;
+ 
+ union proc_op {
+-	int (*proc_get_link)(struct inode *, struct path *);
++	int (*proc_get_link)(struct dentry *, struct path *);
+ 	int (*proc_read)(struct task_struct *task, char *page);
+ 	int (*proc_show)(struct seq_file *m,
+ 		struct pid_namespace *ns, struct pid *pid,
 
-I hacked it up (probably incorrectly - see below and dropping the
-local_timer_ack() change from the latter, since the former removed that
-function).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-exynos4/mct.c
-index 582b874,eb182f2..0000000
---- a/arch/arm/mach-exynos4/mct.c
-+++ b/arch/arm/mach-exynos4/mct.c
-@@@ -384,15 -400,17 +400,19 @@@ static void exynos4_mct_tick_init(struc
- =20
-  	exynos4_mct_write(0x1, mct_tick[cpu].base + MCT_L_TCNTB_OFFSET);
- =20
-- 	if (cpu =3D=3D 0) {
-- 		mct_tick0_event_irq.dev_id =3D &mct_tick[cpu];
-- 		evt->irq =3D IRQ_MCT_L0;
-- 		setup_irq(IRQ_MCT_L0, &mct_tick0_event_irq);
-+ 	if (mct_int_type =3D=3D MCT_INT_SPI) {
-+ 		if (cpu =3D=3D 0) {
-+ 			mct_tick0_event_irq.dev_id =3D &mct_tick[cpu];
-++			evt->irq =3D IRQ_MCT_L0;
-+ 			setup_irq(IRQ_MCT_L0, &mct_tick0_event_irq);
-+ 		} else {
-+ 			mct_tick1_event_irq.dev_id =3D &mct_tick[cpu];
-++			evt->irq =3D IRQ_MCT_L1;
-+ 			setup_irq(IRQ_MCT_L1, &mct_tick1_event_irq);
-+ 			irq_set_affinity(IRQ_MCT_L1, cpumask_of(1));
-+ 		}
-  	} else {
-- 		mct_tick1_event_irq.dev_id =3D &mct_tick[cpu];
-- 		evt->irq =3D IRQ_MCT_L1;
-- 		setup_irq(IRQ_MCT_L1, &mct_tick1_event_irq);
-- 		irq_set_affinity(IRQ_MCT_L1, cpumask_of(1));
-+ 		gic_enable_ppi(IRQ_MCT_LOCALTIMER);
-  	}
-  }
- =20
-
---Signature=_Tue__25_Oct_2011_07_52_53_+1100_S6KEoST7Ve5uEn+t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOpdAlAAoJEECxmPOUX5FEVooQAKFGr/680xzT2QugZFyqLiLm
-Q/Dl2v73VEK7dFpqfdcSwrtcu5V8BpY5M6l8fMht/8ZCMJrMRT8YAnrFDjHEkcCr
-Zb2m4WaDHpa/K9UDk/J0UxTdyn1latjWJt22JOOvP3lMRQJFnqfgTewlTK7O4ouW
-lF9hhsPrneBx5mkPcKZU520BxbNoUqe1eoqpcWgYjqcdYQMBhyNZ+fViHbHOvd4U
-AdI2+em/H2cvawWp4XMlpwZRB3mJcQ8upy9GKuquyK0UpqtKQsgP6ObngwA0wUAl
-/k3I6eTexMS2oos5FkWmNZ52rEVKjAlmDQ0fKpZudN5l/OBvMIw4xIf/fegyoqsS
-kzMqRdzwlj+XgUP/e9LtMb8qX8krzb94eDoTkjraIb2KcmLEr0k3jISTEhEEXhjL
-pbmddtq4beQfH4kavOqDL+Wl3EKuu1R66T9GRIsBw+RWpc6Jd7bQ3EVhrJdQtwh5
-1Nen+jE4VFOBmxZMoTQcrmNfmyyJ/fvwAcgyXDeK1JLOQgmxgsjWjvByWVet7Sz4
-p5wHA2uZ2bcAebjkuQcEVZVNpJeTqjMNBqDKXobQioSxUWaKcwatmJlHroX/VRpE
-Eor7RBq8UCzcj+PiP0wYEJElgjtbCVGQTUc+r9EEkZB9jPunqoOYlXDi8rMgBO0e
-j3iTW84uxCdSP6mM2UDM
-=3KIs
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Oct_2011_07_52_53_+1100_S6KEoST7Ve5uEn+t--
