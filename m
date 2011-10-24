@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab1JXNXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:23:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46759 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab1JXNXX (ORCPT
+	id S932636Ab1JXNYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:24:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44593 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932369Ab1JXNYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:23:23 -0400
-Date: Mon, 24 Oct 2011 15:23:19 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, mingo@kernel.org
-Subject: Re: [PATCH v2 1/2] irq: Add EXPORT_SYMBOL_GPL to function of irq
- generic-chip
-Message-ID: <20111024132319.GU8708@ponder.secretlab.ca>
-References: <1318817327-4589-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318817327-4589-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Oct 2011 09:24:13 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] gpiolib: Ensure struct gpio is always defined
+Date: Mon, 24 Oct 2011 15:24:10 +0200
+Message-Id: <1319462650-23696-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 11:08:46AM +0900, Nobuhiro Iwamatsu wrote:
-> Some functions of irq generic-chip is undefined, because
-> EXPORT_SYMBOL_GPL is not set to these.
-> 
-> -----
-> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
-> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
-> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
-> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
-> -----
-> 
-> This is revised that EXPORT_SYMBOL_GPL can be added and referred
-> to in functions.
-> 
-> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Currently struct gpio is only defined when using gpiolib which makes the
+stub gpio_request_array() much less useful in drivers than is ideal as
+they can't work with struct gpio.  Since there are no other definitions
+in kernel instead make the define always available no matter if gpiolib
+is selectable or selected, ensuring that drivers can always use the
+type.
 
-After getting verbal ack from Thomas, I've merged this via the gpio tree.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-g.
+flob
+---
+ include/asm-generic/gpio.h |   12 ------------
+ include/linux/gpio.h       |   22 ++++++++++++----------
+ 2 files changed, 12 insertions(+), 22 deletions(-)
 
-> ---
-> 
-> V2: Add EXPORT_SYMBOL_GPL to irq_setup_generic_chip, irq_alloc_generic_chip,
-> irq_setup_alt_chip and irq_remove_generic_chip only.
-> 
->  kernel/irq/generic-chip.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-> index e38544d..6cb7613 100644
-> --- a/kernel/irq/generic-chip.c
-> +++ b/kernel/irq/generic-chip.c
-> @@ -211,6 +211,7 @@ irq_alloc_generic_chip(const char *name, int num_ct, unsigned int irq_base,
->  	}
->  	return gc;
->  }
-> +EXPORT_SYMBOL_GPL(irq_alloc_generic_chip);
->  
->  /*
->   * Separate lockdep class for interrupt chip which can nest irq_desc
-> @@ -258,6 +259,7 @@ void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
->  	}
->  	gc->irq_cnt = i - gc->irq_base;
->  }
-> +EXPORT_SYMBOL_GPL(irq_setup_generic_chip);
->  
->  /**
->   * irq_setup_alt_chip - Switch to alternative chip
-> @@ -281,6 +283,7 @@ int irq_setup_alt_chip(struct irq_data *d, unsigned int type)
->  	}
->  	return -EINVAL;
->  }
-> +EXPORT_SYMBOL_GPL(irq_setup_alt_chip);
->  
->  /**
->   * irq_remove_generic_chip - Remove a chip
-> @@ -311,6 +314,7 @@ void irq_remove_generic_chip(struct irq_chip_generic *gc, u32 msk,
->  		irq_modify_status(i, clr, set);
->  	}
->  }
-> +EXPORT_SYMBOL_GPL(irq_remove_generic_chip);
->  
->  #ifdef CONFIG_PM
->  static int irq_gc_suspend(void)
-> -- 
-> 1.7.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index d494001..d0b6423 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -170,18 +170,6 @@ extern int __gpio_cansleep(unsigned gpio);
+ 
+ extern int __gpio_to_irq(unsigned gpio);
+ 
+-/**
+- * struct gpio - a structure describing a GPIO with configuration
+- * @gpio:	the GPIO number
+- * @flags:	GPIO configuration as specified by GPIOF_*
+- * @label:	a literal description string of this GPIO
+- */
+-struct gpio {
+-	unsigned	gpio;
+-	unsigned long	flags;
+-	const char	*label;
+-};
+-
+ extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
+ extern int gpio_request_array(const struct gpio *array, size_t num);
+ extern void gpio_free_array(const struct gpio *array, size_t num);
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 17b5a0d..38ac48b 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -14,6 +14,18 @@
+ #define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
+ #define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
+ 
++/**
++ * struct gpio - a structure describing a GPIO with configuration
++ * @gpio:	the GPIO number
++ * @flags:	GPIO configuration as specified by GPIOF_*
++ * @label:	a literal description string of this GPIO
++ */
++struct gpio {
++	unsigned	gpio;
++	unsigned long	flags;
++	const char	*label;
++};
++
+ #ifdef CONFIG_GENERIC_GPIO
+ #include <asm/gpio.h>
+ 
+@@ -24,18 +36,8 @@
+ #include <linux/errno.h>
+ 
+ struct device;
+-struct gpio;
+ struct gpio_chip;
+ 
+-/*
+- * Some platforms don't support the GPIO programming interface.
+- *
+- * In case some driver uses it anyway (it should normally have
+- * depended on GENERIC_GPIO), these routines help the compiler
+- * optimize out much GPIO-related code ... or trigger a runtime
+- * warning when something is wrongly called.
+- */
+-
+ static inline bool gpio_is_valid(int number)
+ {
+ 	return false;
+-- 
+1.7.6.3
+
