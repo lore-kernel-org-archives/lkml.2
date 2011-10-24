@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab1JXSrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 14:47:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43238 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab1JXSra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 14:47:30 -0400
-Date: Mon, 24 Oct 2011 20:38:20 +0200
-From: Greg KH <gregkh@suse.de>
-To: Stefan Priebe <s.priebe@profihost.ag>
-Cc: LKML <linux-kernel@vger.kernel.org>, Stable Tree <stable@kernel.org>
-Subject: Re: Kernel hard LOCKUP with v3.0.7
-Message-ID: <20111024183820.GA9397@suse.de>
-References: <4EA1536E.6090001@profihost.ag>
- <20111021130752.GC8219@suse.de>
- <AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag>
- <20111021200257.GA31198@suse.de>
- <4EA2F2E0.4020702@profihost.ag>
- <20111022165521.GA1716@suse.de>
- <4EA5AB40.2090609@profihost.ag>
+	id S1752769Ab1JXSzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 14:55:11 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39204 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab1JXSzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 14:55:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA5AB40.2090609@profihost.ag>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <11382.1319479512@turing-police.cc.vt.edu>
+References: <1319397143-20301-1-git-send-email-acme@infradead.org>
+ <1319397143-20301-5-git-send-email-acme@infradead.org> <11382.1319479512@turing-police.cc.vt.edu>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 24 Oct 2011 20:54:29 +0200
+Message-ID: <CAPybu_2rU7Zh9UOBuPp1-3sNMJiZxPkCzAYmXSBrtbDGB6RjTA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] perf symbols: Increase symbol KSYM_NAME_LEN size
+To: Valdis.Kletnieks@vt.edu
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        David Ahern <daahern@cisco.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 08:15:28PM +0200, Stefan Priebe wrote:
-> Am 22.10.2011 18:55, schrieb Greg KH:
-> >>this seems to fix it. Perhaps you should release v3.0.8 as the
-> >>stable tree isn't stable right now? I mean this bug seems to be
-> >>triggered on every SMP machine.
-> >I will work to get it out soon.
-> Fine. Any idea if this will happen this week or in a month or ...
-> I'm scheduling an update for all our systems and if this will happen
-> really soon i will probably schedule it a bit later.
+Also suck a big binary blob does not help :)
 
-The 3.0.8-rc1 went out two days ago, so hopefully, if my gpg usb stick
-still works, I can get it out tomorrow, or the day after, as tomorrow,
-the Kernel Summit is still going on.
+ricardo@newpili:/tmp/fglrx-driver-11-9/arch/x86_64/lib/modules/fglrx/build_mod$
+for a in $( objdump -t libfglrx_ip.a | grep text| awk '{print $6}' );
+do printf " %s $a\n" $(echo $a|  wc -c) ; done | sort -n  | tee
+symbols | tail -n 10
+ 137 _ZNK11R800AddrLib28ComputeSurfaceInfoMicroTiledEPK32_ADDR_COMPUTE_SURFACE_INFO_INPUTP33_ADDR_COMPUTE_SURFACE_INFO_OUTPUTj13_AddrTileMode
+ 140 _ZNK11R800AddrLib33DispatchComputeFmaskCoordFromAddrEPK39_ADDR_COMPUTE_FMASK_COORDFROMADDR_INPUTP40_ADDR_COMPUTE_FMASK_COORDFROMADDR_OUTPUT
+ 141 _ZNK11R600AddrLib30HwlComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
+ 141 _ZNK11R600AddrLib30HwlComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
+ 141 _ZNK11R800AddrLib30HwlComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
+ 141 _ZNK11R800AddrLib30HwlComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
+ 146 _ZNK11R600AddrLib35DispatchComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
+ 146 _ZNK11R600AddrLib35DispatchComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
+ 146 _ZNK11R800AddrLib35DispatchComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
+ 146 _ZNK11R800AddrLib35DispatchComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
 
-thanks,
 
-greg k-h
+On Mon, Oct 24, 2011 at 20:05,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Sun, 23 Oct 2011 17:12:23 -0200, Arnaldo Carvalho de Melo said:
+>
+>> Fglrx propietary driver has symbol names over 128 chars (:S). This
+>> breaks the function kallsyms__parse.
+>
+> Well, that explains why they haven't upstreamed the driver, it will never
+> pass checkpatch's line-lenght check :)
+>
+> But at some point you really need to just tell the vendors to put down
+> the crack pipe.
+>
+> (What *are* the symbols? C++ mangled function names?)
+>
+
+
+
+-- 
+Ricardo Ribalda
