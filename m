@@ -1,70 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab1JXUcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 16:32:17 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47301 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520Ab1JXUcQ (ORCPT
+	id S1755886Ab1JXUe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 16:34:58 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38528 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab1JXUe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 16:32:16 -0400
-Date: Mon, 24 Oct 2011 13:32:04 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: Denilson Figueiredo de =?iso-8859-1?Q?S=E1?= 
-	<denilsonsa@gmail.com>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Linux USB HID should ignore values outside Logical
- Minimum/Maximum range
-Message-ID: <20111024203204.GA31721@core.coreip.homeip.net>
-References: <op.v3q34la3dsdv5o@localhost>
- <1319476183.3210.12.camel@lovely>
+	Mon, 24 Oct 2011 16:34:57 -0400
+Date: Mon, 24 Oct 2011 21:33:39 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Mark Einon <mark.einon@gmail.com>, Greg KH <greg@kroah.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH staging 2/6] et131x: uintxy_t removal.
+Message-ID: <20111024203338.GD3851@msilap.einon>
+References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
+ <20111023093651.GA22285@kroah.com>
+ <20111023094231.GA3409@msilap.einon>
+ <20111023171119.GB28657@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1319476183.3210.12.camel@lovely>
+In-Reply-To: <20111023171119.GB28657@electric-eye.fr.zoreil.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+On Sun, Oct 23, 2011 at 07:11:19PM +0200, Francois Romieu wrote:
+> Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
 
-On Mon, Oct 24, 2011 at 07:09:43PM +0200, Christoph Fritz wrote:
-> Hi Denilson,
-> 
->  please see my comment below.
-> 
-> On Sat, 2011-10-22 at 09:42 -0200, Denilson Figueiredo de Sá wrote:
-> > Short description:
-> > 
-> > An absolute pointing device using USB HID defines a LOGICAL_MINIMUM and
-> > a LOGICAL_MAXIMUM for X, Y axes, and then sends a HID report containing
-> > values outside that range.
-> > 
-> > Linux kernel should ignore values outside that range, as they are not
-> > meaningful.
-> 
-> To answer with a quote from the comment above input.h:"struct
-> input_absinfo":
-> 
->  *
->  * Note that input core does not clamp reported values to the
->  * [minimum, maximum] limits, such task is left to userspace.
->  *
-> 
-> to do so, use this from input.h:
-> 
-> #define EVIOCGABS(abs)		_IOR('E', 0x40 + (abs), struct input_absinfo)	/* get abs value/limits */
-> #define EVIOCSABS(abs)		_IOW('E', 0xc0 + (abs), struct input_absinfo)	/* set abs value/limits */
-
-While input core does not clam or validate the values reported by the
-driver it might make sense to do so in hid-input; I am not sure how
-often these limits programmed intorrectly. Jiri i sprobably the best
-person to answer this question.
-
-Thanks.
-
--- 
-Dmitry
+I don't believe this is strictly necessary, as uintxy_ts are allowed, but ok - at least it makes the file homogeneous.
+Acked-by: Mark Einon <mark.einon@gmail.com>
