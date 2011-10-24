@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab1JXITn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 04:19:43 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:51774 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753571Ab1JXITm (ORCPT
+	id S1753851Ab1JXIWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 04:22:21 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60303
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753802Ab1JXIWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 04:19:42 -0400
-Message-ID: <4EA51F9B.7090806@profihost.ag>
-Date: Mon, 24 Oct 2011 10:19:39 +0200
-From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
-Reply-To: p.herz@profihost.ag
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Mon, 24 Oct 2011 04:22:20 -0400
+Date: Mon, 24 Oct 2011 04:22:19 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: XFS read hangs in 3.1-rc10
+Message-ID: <20111024082219.GA19941@infradead.org>
+References: <20111020224214.GC22772@hostway.ca>
+ <20111021132240.GA24136@infradead.org>
+ <20111021202857.GB30100@hostway.ca>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        s.priebe@profihost.ag, linux-kernel@vger.kernel.org
-Subject: Re: Vanilla-Kernel 3 - page allocation failure
-References: <4E9D53FF.7090609@profihost.ag> <m2ipnmz49x.fsf@firstfloor.org>		 <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com>		 <4EA506B9.4030604@profihost.ag> <1319439819.2517.38.camel@edumazet-laptop>	 <4EA51210.9070209@profihost.ag> <1319443278.2381.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1319443278.2381.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
+Content-Type: multipart/mixed; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <20111021202857.GB30100@hostway.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.10.2011 10:01, schrieb Eric Dumazet:
-> Le lundi 24 octobre 2011 à 09:21 +0200, Philipp Herz - Profihost AG a
-> écrit :
->
->> does that mean that there was no firmware limitation with kernel 2.6.32
->> or that the tg3 module has any "disable warnings" flag matching
->> __GFP_NOWARN?
->>
->
-> There is no __GFP_NOWARN trick on tg3.
->
-> We tend to prefer to be notified of a memory problem, instead of
-> hide ...
-yes,
-that's exactly what would like to understand in comparison to the 
-behavior of kernel 2.6.32.
 
-why does this notification show up now and never did before...
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> By the way, apparently this driver drops the frame and doesnt increase
-> tx_dropped device counter. A patch will follow.
-fine
+On Fri, Oct 21, 2011 at 01:28:57PM -0700, Simon Kirby wrote:
+> > So we're waiting for the inode to be flushed, aka I/O again.
+> 
+> But I don't seem to see any queued I/O, hmm.
 
->
-> Could you post your full dmesg ?
->
->
-Currently i can not provide any further information, 'cause server has 
-been restarted.
+Well, as far as XFS is concerned the inode is beeing flushed and
+the buffer is locked.  It could be stuck in the XFS internal delwri
+list because a buffer for example is pinned.
 
-What exactly are you looking for?
+If that is the case the big hammer patch I attached below - probably
+not the final issue, but it should fix the hang if that is the case.
+
+> > If this doesn't help I'll probably need to come up with some tracing
+> > patches for you.
+> 
+> It seemes 3.0.7+gregkh's stable-queue queue-3.0 patches seems to be
+> running fine without blocking at all on this SSD box, so that should
+> narrow it down significantly.
+> 
+> Hmm, looking at git diff --stat v3.0.7..v3.1-rc10 fs/xfs , maybe not.. :)
+> 
+> Maybe 3.1 fs/xfs would transplant into 3.0 or vice-versa?
+
+If the patch above doesn't work I'll prepare a backport for you.
+
+
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=xfs-hang-fix
+
+Index: linux-2.6/fs/xfs/xfs_sync.c
+===================================================================
+--- linux-2.6.orig/fs/xfs/xfs_sync.c	2011-10-24 10:02:27.361971264 +0200
++++ linux-2.6/fs/xfs/xfs_sync.c	2011-10-24 10:11:03.301036954 +0200
+@@ -764,7 +764,8 @@ xfs_reclaim_inode(
+ 	struct xfs_perag	*pag,
+ 	int			sync_mode)
+ {
+-	int	error;
++	struct xfs_mount	*mp = ip->i_mount;
++	int			error;
+ 
+ restart:
+ 	error = 0;
+@@ -772,6 +773,18 @@ restart:
+ 	if (!xfs_iflock_nowait(ip)) {
+ 		if (!(sync_mode & SYNC_WAIT))
+ 			goto out;
++
++		/*
++		 * If the inode is flush locked we probably had someone else
++		 * push it to the buffer and the buffer is now sitting in
++		 * the delwri list.
++		 *
++		 * Use the big hammer to force it.
++		 */
++		xfs_log_force(mp, XFS_LOG_SYNC);
++		set_bit(XBT_FORCE_FLUSH, &mp->m_ddev_targp->bt_flags);
++		wake_up_process(mp->m_ddev_targp->bt_task);
++
+ 		xfs_iflock(ip);
+ 	}
+ 
+
+--azLHFNyN32YCQGCU--
