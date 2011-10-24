@@ -1,57 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1JXGCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 02:02:30 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:49499 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751558Ab1JXGC3 (ORCPT
+	id S1753294Ab1JXGSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 02:18:34 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:61829 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751558Ab1JXGSc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 02:02:29 -0400
-Message-ID: <4EA4FF6B.2080906@ti.com>
-Date: Mon, 24 Oct 2011 11:32:19 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Mon, 24 Oct 2011 02:18:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=GDTmewIr5RyflZevXB2
+	QNLl1jh/PN02Emo//XhgTwlwWcRoaOPdM3cSaf/z8f+umLaGTZb2eegQBSR1ScOr
+	wZzGkbRtTnIuWX9L/Sijib74pAhUagYEU5sUVWFBP8Mokz58PPB/mxw6z4id8ahe
+	0kaH4aftYSl0mIuerqCy8X20=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.7.1
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Sun, 23 Oct 2011 23:18:29 -0700
+Message-ID: <7vr52252ve.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-4-git-send-email-rnayak@ti.com> <20111018132032.GD30703@S2100-06.ap.freescale.net> <4E9EB61C.1040207@ti.com> <20111019144215.GA32007@S2100-06.ap.freescale.net> <4E9FAF42.5060200@ti.com> <20111020061408.GE32007@S2100-06.ap.freescale.net> <4EA00F7C.1080005@ti.com> <20111021082309.GA337@S2100-06.ap.freescale.net> <4EA13053.7080306@ti.com> <20111021115809.GB337@S2100-06.ap.freescale.net>
-In-Reply-To: <20111021115809.GB337@S2100-06.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: FEC01232-FE07-11E0-A18C-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 October 2011 05:28 PM, Shawn Guo wrote:
-> On Fri, Oct 21, 2011 at 02:11:55PM +0530, Rajendra Nayak wrote:
-> [...]
->>> +       /* find device_node and attach it */
->>> +       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
->>
->> so would this do a complete dt search for every regulator?
->
-> Yes, with the first param being NULL, tthe entire device tree will be
-> searched.
->
->> we would also need the driver names and dt names to match for this to
->> work, right?
->>
-> Driver name does not matter.  The key for this search to work is having
-> regulator's name (regulator_desc->name) match device tree node's name,
-> case ignored.
+The latest maintenance release Git 1.7.7.1 is available.
 
-Mark, whats your take on this? I am somehow not quite sure if we should
-have this limitation put in to match DT node names with whats in the
-driver structs (regulator_desc).
+The release tarballs are found at:
 
->
->> The approach otherwise looks fine to me and should work for both cases
->> of one device per regulator and one device for all regulators.
->>
->
+    http://code.google.com/p/git-core/downloads/list
+
+and their SHA-1 checksums are:
+
+9200e0b8ee543d297952b78aac8f61f8b3693f8e  git-1.7.7.1.tar.gz
+b25dacb07ebbfc37e7a90c3d47f76b4c0f0487d9  git-htmldocs-1.7.7.1.tar.gz
+419c750617ae0c952e2e43f0357c16de6ebc0a44  git-manpages-1.7.7.1.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.7.1
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+----------------------------------------------------------------
+
+Changes since v1.7.7 are as follows:
+
+Brad King (1):
+      rev-list: Demonstrate breakage with --ancestry-path --all
+
+Brandon Casey (1):
+      strbuf.c: remove unnecessary strbuf_grow() from strbuf_getwholeline()
+
+Ilari Liusvaara (1):
+      Support ERR in remote archive like in fetch/push
+
+Jay Soffian (1):
+      merge-one-file: fix "expr: non-numeric argument"
+
+Jeff King (2):
+      fetch: avoid quadratic loop checking for updated submodules
+      filter-branch: use require_clean_work_tree
+
+Jim Meyering (1):
+      fix "git apply --index ..." not to deref NULL
+
+Jonathan Nieder (2):
+      Makefile: do not set setgid bit on directories on GNU/kFreeBSD
+      RelNotes/1.7.7.1: setgid bit patch is about fixing "git init" via Makefile setting
+
+Junio C Hamano (14):
+      revision: keep track of the end-user input from the command line
+      revision: do not include sibling history in --ancestry-path output
+      rebase -i: notice and warn if "exec $cmd" modifies the index or the working tree
+      traverse_trees(): allow pruning with pathspec
+      unpack-trees: allow pruning with pathspec
+      diff-index: pass pathspec down to unpack-trees machinery
+      fsck: do not abort upon finding an empty blob
+      Teach progress eye-candy to fetch_refs_from_bundle()
+      apply --whitespace=error: correctly report new blank lines at end
+      checkout $tree $path: do not clobber local changes in $path not in $tree
+      diff: resurrect XDF_NEED_MINIMAL with --minimal
+      Prepare for 1.7.7.1
+      Almost ready for 1.7.7.1
+      Git 1.7.7.1
+
+Matthieu Moy (2):
+      rebase -i: clean error message for --continue after failed exec
+      config: display key_delim for config --bool --get-regexp
+
+Michael Schubert (1):
+      patch-id.c: use strbuf instead of a fixed buffer
+
+Nguyễn Thái Ngọc Duy (4):
+      merge: keep stash[] a local variable
+      merge: use return value of resolve_ref() to determine if HEAD is invalid
+      merge: remove global variable head[]
+      Accept tags in HEAD or MERGE_HEAD
+
+Nicolas Morey-Chaisemartin (1):
+      grep: Fix race condition in delta_base_cache
+
+René Scharfe (2):
+      Revert removal of multi-match discard heuristic in 27af01
+      t1304: fall back to $USER if $LOGNAME is not defined
+
+Thomas Rast (2):
+      Symlink mergetools scriptlets into valgrind wrappers
+      t6019: avoid refname collision on case-insensitive systems
 
