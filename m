@@ -1,89 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1JXReB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 13:34:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753859Ab1JXReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 13:34:00 -0400
-Date: Mon, 24 Oct 2011 13:33:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        holzheu@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: kdump: crash_kexec()-smp_send_stop() race in panic
-Message-ID: <20111024173336.GB8044@redhat.com>
-References: <1319468137.3615.16.camel@br98xy6r>
- <m1ipneifqv.fsf@fess.ebiederm.org>
- <CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
- <m1aa8qfhdk.fsf@fess.ebiederm.org>
+	id S1755850Ab1JXRoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 13:44:55 -0400
+Received: from ns2.gothnet.se ([82.193.160.251]:45859 "EHLO
+	GOTHNET-SMTP2.gothnet.se" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751102Ab1JXRoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 13:44:54 -0400
+Message-ID: <4EA5A381.1050100@shipmail.org>
+Date: Mon, 24 Oct 2011 19:42:25 +0200
+From: Thomas Hellstrom <thomas@shipmail.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <m1aa8qfhdk.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        thellstrom@vmware.com, airlied@redhat.com,
+        xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com
+Subject: Re: [PATCH 06/11] ttm/driver: Expand ttm_backend_func to include
+ two overrides for TTM page pool.
+References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com> <1319062772-2793-7-git-send-email-konrad.wilk@oracle.com> <4EA28FA6.7000006@shipmail.org> <20111024172728.GD2320@phenom.dumpdata.com>
+In-Reply-To: <20111024172728.GD2320@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-BitDefender-Scanner: Mail not scanned due to license constraints
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 10:07:19AM -0700, Eric W. Biederman wrote:
-> Américo Wang <xiyou.wangcong@gmail.com> writes:
-> 
-> > On Mon, Oct 24, 2011 at 11:14 PM, Eric W. Biederman
-> > <ebiederm@xmission.com> wrote:
-> >> Michael Holzheu <holzheu@linux.vnet.ibm.com> writes:
-> >>
-> >>> Hello Vivek,
-> >>>
-> >>> In our tests we ran into the following scenario:
-> >>>
-> >>> Two CPUs have called panic at the same time. The first CPU called
-> >>> crash_kexec() and the second CPU called smp_send_stop() in panic()
-> >>> before crash_kexec() finished on the first CPU. So the second CPU
-> >>> stopped the first CPU and therefore kdump failed.
-> >>>
-> >>> 1st CPU:
-> >>> panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
-> >>>
-> >>> 2nd CPU:
-> >>> panic()->crash_kexec()->kexec_mutex already held by 1st CPU
-> >>>        ->smp_send_stop()-> stop CPU 1 (stop kdump)
-> >>>
-> >>> How should we fix this problem? One possibility could be to do
-> >>> smp_send_stop() before we call crash_kexec().
-> >>>
-> >>> What do you think?
-> >>
-> >> smp_send_stop is insufficiently reliable to be used before crash_kexec.
-> >>
-> >> My first reaction would be to test oops_in_progress and wait until
-> >> oops_in_progress == 1 before calling smp_send_stop.
-> >>
-> >
-> > +1
-> >
-> > One of my colleague mentioned the same problem with me inside
-> > RH, given the fact that the race condition window is small, it would
-> > not be easy to reproduce this scenario.
-> 
-> As for reproducing it I have a hunch you could hack up something
-> horrible with smp_call_function and kprobes.
-> 
-> 
-> On a little more reflection we can't wait until oops_in_progress goes
-> to 1 before calling smp_send_stop.  Because if crash_kexec is not
-> involved nothing we will never call smp_send_stop. 
-> 
-> So my second thought is to introduce another atomic variable
-> panic_in_progress, visible only in panic.  The cpu that sets
-> increments panic_in_progress can call smp_send_stop.  The rest of
-> the cpus can just go into a busy wait.  That should stop nasty
-> fights about who is going to come out of smp_send_stop first.
+On 10/24/2011 07:27 PM, Konrad Rzeszutek Wilk wrote:
+> On Sat, Oct 22, 2011 at 11:40:54AM +0200, Thomas Hellstrom wrote:
+>    
+>> Konrad,
+>>
+>> I was hoping that we could get rid of the dma_address shuffling into
+>> core TTM,
+>> like I mentioned in the review. From what I can tell it's now only
+>> used in the backend and
+>> core ttm doesn't care about it.
+>>
+>> Is there a particular reason we're still passing it around?
+>>      
+> Yes - and I should have addressed that in the writeup but forgot, sorry about that.
+>
+> So initially I thought you meant this:
+>
+> diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> index 360afb3..06ef048 100644
+> --- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> +++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+> @@ -662,8 +662,7 @@ out:
+>
+>   /* Put all pages in pages list to correct pool to wait for reuse */
+>   static void __ttm_put_pages(struct list_head *pages, unsigned page_count,
+> -			    int flags, enum ttm_caching_state cstate,
+> -			    dma_addr_t *dma_address)
+> +			    int flags, enum ttm_caching_state cstate)
+>   {
+>   	unsigned long irq_flags;
+>   	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+> @@ -707,8 +706,7 @@ static void __ttm_put_pages(struct list_head *pages, unsigned page_count,
+>    * cached pages.
+>    */
+>   static int __ttm_get_pages(struct list_head *pages, int flags,
+> -			   enum ttm_caching_state cstate, unsigned count,
+> -			   dma_addr_t *dma_address)
+> +			   enum ttm_caching_state cstate, unsigned count)
+>   {
+>   	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+>   	struct page *p = NULL;
+> @@ -864,7 +862,7 @@ int ttm_get_pages(struct ttm_tt *ttm, struct list_head *pages,
+>   	if (ttm->be&&  ttm->be->func&&  ttm->be->func->get_pages)
+>   		return ttm->be->func->get_pages(ttm, pages, count, dma_address);
+>   	return __ttm_get_pages(pages, ttm->page_flags, ttm->caching_state,
+> -				count, dma_address);
+> +				count)
+>   }
+>   void ttm_put_pages(struct ttm_tt *ttm, struct list_head *pages,
+>   		   unsigned page_count, dma_addr_t *dma_address)
+> @@ -873,5 +871,5 @@ void ttm_put_pages(struct ttm_tt *ttm, struct list_head *pages,
+>   		ttm->be->func->put_pages(ttm, pages, page_count, dma_address);
+>   	else
+>   		__ttm_put_pages(pages, page_count, ttm->page_flags,
+> -				ttm->caching_state, dma_address);
+> +				ttm->caching_state)
+>   }
+> which is trivial (thought I have not compile tested it), but it should do it.
+>
+> But I think you mean eliminate the dma_address handling completly in
+> ttm_page_alloc.c and ttm_tt.c.
+>
+> For that there are couple of architectural issues I am not sure how to solve.
+>
+> There has to be some form of TTM<->[Radeon|Nouveau] lookup mechanism
+> to say: "here is a 'struct page *', give me the bus address". Currently
+> this is solved by keeping an array of DMA addresses along with the list
+> of pages. And passing the list and DMA address up the stack (and down)
+> from TTM up to the driver (when ttm->be->func->populate is called and they
+> are handed off) does it. It does not break any API layering .. and the internal
+> TTM pool (non-DMA) can just ignore the dma_address altogether (see patch above).
+>
+>    
 
-Introducing panic_on_oops atomic sounds good.
+I actually had something more simple in mind, but when tinking a bit 
+deeper into it, it seems more complicated than I initially thought.
 
-Thanks
-Vivek
+Namely that when we allocate pages from the ttm_backend, we actually 
+populated it at the same time. be::populate would then not take a page 
+array as an argument, and would actually be a no-op on many
+drivers.
+
+This makes us move towards struct ttm_tt consisting almost only of its 
+backend, so that whole API should perhaps be looked at with new eyes.
+
+So anyway, I'm fine with high level things as they are now, and the 
+dma_addr issue can be looked at at a later time. If we could get a 
+couple of extra eyes to review the code for style etc. would be great, 
+because I have very little time the next couple of weeks.
+
+/Thomas
+
+
+
+
+
+
+
+
+
+
+
