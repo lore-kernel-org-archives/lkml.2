@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1JXJHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:07:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41025 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab1JXJHw (ORCPT
+	id S1754143Ab1JXJKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:10:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40498 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab1JXJKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:07:52 -0400
-Date: Mon, 24 Oct 2011 11:07:34 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, patches@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111024090734.GD8708@ponder.secretlab.ca>
-References: <20111019053354.GB31162@S2100-06.ap.freescale.net>
- <20111019144734.GI18713@sirena.org.uk>
- <20111019150448.GB32007@S2100-06.ap.freescale.net>
- <20111019151031.GA4275@opensource.wolfsonmicro.com>
- <4E9F9892.9070007@ti.com>
- <20111020094140.GK18713@sirena.org.uk>
- <20111020162743.GB31337@atomide.com>
- <20111020164006.GA10155@sirena.org.uk>
- <20111020170534.GC31337@atomide.com>
- <20111020172218.GE31337@atomide.com>
+	Mon, 24 Oct 2011 05:10:51 -0400
+Date: Mon, 24 Oct 2011 10:10:47 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mfd: Add s5m series irq support
+Message-ID: <20111024091046.GA16231@sirena.org.uk>
+References: <009301cc915a$cd72d1c0$68587540$@com>
+ <20111023084233.GB3135@opensource.wolfsonmicro.com>
+ <009801cc9171$c4ea1970$4ebe4c50$@com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111020172218.GE31337@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <009801cc9171$c4ea1970$4ebe4c50$@com>
+X-Cookie: Pyros of the world... IGNITE !!!
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 20, 2011 at 10:22:19AM -0700, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [111020 09:31]:
-> > 
-> > That's where a DT entry specific configuration string might be the best
-> > option as it still allows describing the hardware using DT standards,
-> > while also allowing board specific configuration too.
-> 
-> Hmm, actually, can't we just pass the board specific configuration in
-> the board specific .dts file and then it gets merged in with the
-> arch independent DT node?
+On Sun, Oct 23, 2011 at 07:51:50PM +0900, Sangbeom Kim wrote:
 
-It would be fine to, say, have a omap-specific board configuration
-node for collecting things that really don't fit anywhere else.  That
-would be in some ways analogous to the way we've decided to use top a
-top level node for describing a machines audio complex.
+> I hope that this driver will be base code for regmap based irq driver
+> I want discuss more detail in Prague.
 
-g.
-
+FWIW I've got an interface and part of the implementation coded up
+already but I've not got appropriate hardware for testing with me -
+let's use that as a basis for discussion, if I've got time I might also
+have the implementation implemented but not tested.
