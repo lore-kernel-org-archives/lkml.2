@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab1JXQ2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 12:28:47 -0400
-Received: from toast.topped-with-meat.com ([204.197.218.159]:33472 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932934Ab1JXQ2p (ORCPT
+	id S933028Ab1JXQ3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 12:29:18 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35720 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932934Ab1JXQ3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 12:28:45 -0400
+	Mon, 24 Oct 2011 12:29:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: Eric Paris <eparis@parisplace.org>
-X-Fcc: ~/Mail/lkml
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>,
-        selinux@tycho.nsa.gov, John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] LSM: Do not apply mmap_min_addr check to PROT_NONE
- mappings
-In-Reply-To: Eric Paris's message of  Monday, 24 October 2011 11:07:48 -0400 <1319468868.3280.9.camel@localhost>
-References: <20111021213916.914462C0A5@topped-with-meat.com>
-	<CA+55aFy3ALC34AyrsHi9yjBgRMwg9G5w2PhDfr_JVti1M8GbNQ@mail.gmail.com>
-	<20111022172450.0BCCE2C0A9@topped-with-meat.com>
-	<CA+55aFx_9D8jY2sqcZ+Tm305W9d8o+ZhEv8XNWuN4--S2bqRwQ@mail.gmail.com>
-	<20111023185243.EFE2F2C08F@topped-with-meat.com>
-	<1319468868.3280.9.camel@localhost>
-Emacs: the road to Hell is paved with extensibility.
-Message-Id: <20111024162842.CE1942C09C@topped-with-meat.com>
-Date: Mon, 24 Oct 2011 09:28:42 -0700 (PDT)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=fe7WOzsF c=1 sm=1 a=27hm96M904wA:10
-		a=kj9zAlcOel0A:10 a=YM7LnJMpTPLdd74ak4EA:9 a=CjuIK1q_8ugA:10
-		a=WkljmVdYkabdwxfqvArNOQ==:117
+From: Eric Van Hensbergen <ericvh@gmail.com>
+Date: Mon, 24 Oct 2011 11:28:56 -0500
+Message-ID: <CAFkjPT=KcY=YH=Vy+ikyzEe26pwZ3RQ8T=pf+3oGvgECkX7sPw@mail.gmail.com>
+Subject: [GIT PULL] 9p changes fro merge window
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I feel like, and it's just a very vague feeling, that the PROT bits
-> didn't matter to the kernel.  It would still happily execute stuff on
-> page 0 even without PROT_EXEC at some point in the past.  I'm probably
-> totally off base, and I could test it, but I sort of feel like I
-> remember something like that....
+The following changes since commit c3b92c8787367a8bb53d57d9789b558f1295cc96:
 
-Saying that PROT_EXEC might not be enforced is quite a different thing than
-saying "PROT bits don't matter".  It's certainly the case that in some past
-kernel versions, some hardware (older x86 chips), some configurations (x86
-non-PAE), and some modes (READ_IMPLIES_EXEC personality stuff), what you
-can read, you can execute.  I sincerely doubt it's ever been the case that
-anything mapped as PROT_NONE could be accessed in any manner.
+  Linux 3.1 (2011-10-24 09:10:05 +0200)
 
+are available in the git repository at:
+  git://github.com/ericvh/linux.git for-next
 
-Thanks,
-Roland
+Aneesh Kumar K.V (4):
+      fs/9p: Update zero-copy implementation in 9p
+      fs/9p: inode file operation is properly initialized init_special_inode
+      fs/9p: Cleanup option parsing in 9p
+      net/9p: Convert net/9p protocol dumps to tracepoints
+
+Dan Carpenter (2):
+      9p: move dereference after NULL check
+      fs/9p: change an int to unsigned int
+
+Nicolae Mogoreanu (1):
+      9p: fix 9p.txt to advertise msize instead of maxdata
+
+ Documentation/filesystems/9p.txt |    2 +-
+ fs/9p/v9fs.c                     |   33 ++-
+ fs/9p/vfs_dir.c                  |   14 +-
+ fs/9p/vfs_inode.c                |    2 -
+ include/net/9p/9p.h              |   14 +-
+ include/net/9p/client.h          |    8 +-
+ include/net/9p/transport.h       |   10 +-
+ include/trace/events/9p.h        |  176 ++++++++++++++
+ net/9p/client.c                  |  469 +++++++++++++++++++++++++++-----------
+ net/9p/protocol.c                |   99 +-------
+ net/9p/protocol.h                |    4 +-
+ net/9p/trans_common.c            |   53 ++---
+ net/9p/trans_common.h            |   21 +--
+ net/9p/trans_virtio.c            |  319 +++++++++++++++-----------
+ 14 files changed, 772 insertions(+), 452 deletions(-)
+ create mode 100644 include/trace/events/9p.h
