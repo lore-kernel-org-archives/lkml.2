@@ -1,34 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab1JXUfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 16:35:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37291 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab1JXUfn (ORCPT
+	id S1755961Ab1JXUfy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 16:35:54 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60568 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab1JXUfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 16:35:43 -0400
-Date: Mon, 24 Oct 2011 21:34:25 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Mark Einon <mark.einon@gmail.com>, Greg KH <greg@kroah.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH staging 1/6] et131x: add static qualifiers.
-Message-ID: <20111024203423.GE3851@msilap.einon>
-References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
- <20111023093651.GA22285@kroah.com>
- <20111023094231.GA3409@msilap.einon>
- <20111023171102.GA28657@electric-eye.fr.zoreil.com>
+	Mon, 24 Oct 2011 16:35:51 -0400
+Date: Mon, 24 Oct 2011 13:35:41 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Denilson Figueiredo de =?iso-8859-1?Q?S=E1?= 
+	<denilsonsa@gmail.com>
+Cc: Chris Friesen <chris.friesen@genband.com>, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: Linux USB HID should ignore values outside Logical
+ Minimum/Maximum range
+Message-ID: <20111024203541.GB31721@core.coreip.homeip.net>
+References: <op.v3q34la3dsdv5o@localhost>
+ <4EA5913D.7090004@genband.com>
+ <CACGt9ymGUAzjkZJCePnO+7cyKsi8-rtpno9ebjKtoCXj-tCALg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111023171102.GA28657@electric-eye.fr.zoreil.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACGt9ymGUAzjkZJCePnO+7cyKsi8-rtpno9ebjKtoCXj-tCALg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 07:11:02PM +0200, Francois Romieu wrote:
-> Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+On Mon, Oct 24, 2011 at 02:39:31PM -0200, Denilson Figueiredo de Sá wrote:
+> On Mon, Oct 24, 2011 at 14:24, Chris Friesen <chris.friesen@genband.com> wrote:
+> > On 10/22/2011 05:42 AM, Denilson Figueiredo de Sá wrote:
+> >
+> >> It may even happen to send an out-of-range value for one axis, but a
+> >> valid value for another axis. The code should be prepared for that
+> >> (ignore one, but keep the other).
+> >
+> > In this case what should be used for the "invalid" axis value?  The previous
+> > value?
+> 
+> If that's an absolute pointing device, can we supply only one axis? I
+> mean, can we do this: "move the pointer to this X position, but leave
+> the Y position where it currently is". (note that the pointer might
 
-Great, thanks.
-Acked-by: Mark Einon <mark.einon@gmail.com>
+Yes, input protocol is stateful and it will actually suppress duplicate
+events itself. I.e. if device moves from (10, 20) to (40, 20) usespace
+will see:
+
+EV_ABS/ABS_X/10
+EV_ABS/ABS_Y/20
+EV_SYN/SYN_REPORT
+EV_ABS/ABS_X/40
+EV_SYN/SYN_REPORT
+
+even if driver emits 2nd EV_ABS/ABS_Y/20 event.
+
+> have moved since last input from this device, due to other devices
+> also being present)
+
+The other devices have no effect on this device state.
+
+Thanks.
+
+-- 
+Dmitry
