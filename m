@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1JXWzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 18:55:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21121 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab1JXWzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 18:55:17 -0400
-Date: Mon, 24 Oct 2011 18:54:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Jesper Juhl <jj@chaosbits.net>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
-Subject: Re: [PATCH] SCSI, pmcraid: Fix kmalloc() argument order in
- pmcraid_chr_ioctl()
-Message-ID: <20111024225459.GB25654@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	Joe Perches <joe@perches.com>, Jesper Juhl <jj@chaosbits.net>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	"James E.J. Bottomley" <JBottomley@parallels.com>,
-	Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
-References: <alpine.LNX.2.00.1110250036370.19795@swampdragon.chaosbits.net>
- <1319496149.2094.3.camel@Joe-Laptop>
- <CAFLxGvyh-u0Bg5_R4upMa=bM4H__i=dbvtLihFY+M+OEKdJL9w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvyh-u0Bg5_R4upMa=bM4H__i=dbvtLihFY+M+OEKdJL9w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754342Ab1JXWz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:55:26 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:50640
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753868Ab1JXWzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 18:55:23 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus driver as part of the kernel
+Date: Mon, 24 Oct 2011 13:31:05 -0700
+Message-Id: <1319488265-26936-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 12:50:08AM +0200, richard -rw- weinberger wrote:
+Modify the way we initialize the vmbus driver so that all the hyper-v drivers
+can be linked with the kernel and still ensure that the vmbus driver
+is fully initialized before the drivers that depend upon the vmbus 
+driver attempt to initialize.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/hv/vmbus_drv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+index 0c048dd..7d3bccb3 100644
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -783,4 +783,4 @@ cleanup:
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(HV_DRV_VERSION);
  
- > BTW: What about a checkpatch.pl rule to detect such a misuse of kmalloc()?
- > We could grep for "k[mzc]alloc(GFP_".
+-module_init(hv_acpi_init);
++subsys_initcall(hv_acpi_init);
+-- 
+1.7.4.1
 
-Make sure to ignore bio_kmalloc (which has reverse argument order to kmalloc, ugh)
-
-	Dave
