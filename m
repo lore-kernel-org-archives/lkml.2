@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab1JXFAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 01:00:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52970 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab1JXFAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 01:00:12 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4EA4F0D2.3070301@jp.fujitsu.com>
-Date: Mon, 24 Oct 2011 14:00:02 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Abdelghani Ouchabane <abdelghani@ezono.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: PCIe can not rescan for new PCIe device ( FPGA board )
-References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com> <4E8F2758.3040408@ezono.com> <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com> <4E939E5D.3010208@jp.fujitsu.com> <4E93FA3D.2030400@ezono.com> <4E953579.6050807@jp.fujitsu.com> <4E95516F.60300@ezono.com> <4E96DE8A.6050404@jp.fujitsu.com> <4E98037C.4000403@ezono.com>
-In-Reply-To: <4E98037C.4000403@ezono.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1753185Ab1JXFHw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 01:07:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58658 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753019Ab1JXFHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 01:07:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,396,1315206000"; 
+   d="asc'?scan'208";a="65579298"
+Subject: Re: -next: NET_VENDOR_8390 dependencies
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 23 Oct 2011 22:07:22 -0700
+In-Reply-To: <CAMuHMdW6hC1JchxVL9-4f58a8Vg7cF+97BbKePxjEDHY3H8wNw@mail.gmail.com>
+References: <CAMuHMdW6hC1JchxVL9-4f58a8Vg7cF+97BbKePxjEDHY3H8wNw@mail.gmail.com>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-EFcc7WH1LVdV0FTMYrcl"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1319432843.10258.11.camel@jtkirshe-mobl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-I'm sorry for the long delay.
+--=-EFcc7WH1LVdV0FTMYrcl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-(2011/10/14 18:40), Abdelghani Ouchabane wrote:
-> On 13/10/11 14:50, Kenji Kaneshige wrote:
->> Thank you for the information. Though I don't have any good news for you,
->> I think as follows based on the info.
->>
->> - There are two hot-plug capable PCIe slots on your machine.
->>
->> - But, it seems you are using fakephp driver, not pciehp (is that
->>    correct?). The fakephp cannot handle hot-plug event such as presence
->>    change event on the slot. This is why the bus is not scanned automatically.
->>
->> - Unfortunately, the bus would not be scanned automatically even if you
->>    use pciehp. As I told you in the previous email, current pciehp don't
->>    scan the bus automatically only if the slot is hot-plug surprise
->>    capable. According to the lspci output, your hotplug controller is not
->>    hot-plug surprise capable.
->>
->> - I don't think pciehp solve invalid register read problem. According to
->>    the lspci output, power controller capability isn't present on your
->>    hotplug controller. On such environment, pciehp driver does almost the
->>    same thing as fakephp does (just scan the bus/remove the pci device data
->>    structure) except hot-plug event handling.
->>
->> But it's worth whole trying pciehp.
->> By the way, have you tried acpiphp? It might help you.
->>
->> Regards,
->> Kenji Kaneshige
->>
-> 
-> Hallo Kenji,
-> 
-> many thanks for your great supports. The new BIOS from Congatec solves
-> the problem.
-> 
-> I using both fakephp&  pciehp drivers, Can I use both drivers at the
-> same time?
+On Sun, 2011-10-23 at 14:21 -0700, Geert Uytterhoeven wrote:
+> drivers/net/ethernet/8390/Kconfig:
+>=20
+> config NET_VENDOR_8390
+>         bool "National Semi-conductor 8390 devices"
+>         default y
+>         depends on NET_VENDOR_NATSEMI && (AMIGA_PCMCIA || PCI || SUPERH |=
+| \
+>                    ISA || MCA || EISA || MAC || M32R || MACH_TX49XX || \
+>                    MCA_LEGACY || H8300 || ARM || MIPS || ZORRO || PCMCIA =
+|| \
+>                    EXPERIMENTAL)
+>         ---help---
+>           If you have a network (Ethernet) card belonging to this class, =
+say Y
+>           and read the Ethernet-HOWTO, available from
+>           <http://www.tldp.org/docs.html#howto>.
+>=20
+>           Note that the answer to this question doesn't directly affect t=
+he
+>           kernel: saying N will just cause the configurator to skip all
+>           the questions about Western Digital cards. If you say Y, you wi=
+ll be
+>           asked for your specific card in the following questions.
+>=20
+> So NET_VENDOR_8390 depends on NET_VENDOR_NATSEMI.
+>=20
+> drivers/net/ethernet/natsemi/Kconfig:
+>=20
+> config NET_VENDOR_NATSEMI
+>         bool "National Semi-conductor devices"
+>         default y
+>         depends on MCA || MAC || MACH_JAZZ || PCI || XTENSA_PLATFORM_XT20=
+00
+>         ---help---
+>           If you have a network (Ethernet) card belonging to this class, =
+say Y
+>           and read the Ethernet-HOWTO, available from
+>           <http://www.tldp.org/docs.html#howto>.
+>=20
+>           Note that the answer to this question doesn't directly affect t=
+he
+>           kernel: saying N will just cause the configurator to skip all
+>           the questions about National Semi-conductor devices. If you say=
+ Y,
+>           you will be asked for your specific card in the following quest=
+ions.
+>=20
+> But NET_VENDOR_NATSEMI will never be true for several of the other
+> dependencies of NET_VENDOR_8390 (e.g. AMIGA_PCMCIA, EISA, H8300, ARM,
+> ZORRO, PCMCIA)?
+>=20
 
-I think, "no".
+You are correct, I will put together a patch to fix that.  Thanks!
 
-> I am using fakephp because I need "/sys/bus/pci/slots/0000\:02\:00.0/power".
-> 
-> Other thing: my Kernel has "CONFIG_ACPI_PROC_EVENT is not set", does
-> this explain why the scan is not performed automatically?
+--=-EFcc7WH1LVdV0FTMYrcl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Fakephp driver doesn't have any corresponding hotplug controller (hardware).
-So I don't think there is no way to detect presence change event on the slot.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> [root@localhost ~]# modprobe acpiphp
-> FATAL: Error inserting acpiphp
-> (/lib/modules/2.6.40.3-0.119.delos.i686/kernel/drivers/pci/hotplug/acpiphp.ko):
-> No such device
-> 
-> What is the advantage to use acpiphp ?
+iQIcBAABCgAGBQJOpPKKAAoJEOVv75VaS+3Op58P/2ovL0Gp45bCSCDv9hAe+iNg
+CoWkoJzEv69OAmmLZRjwiZHNZ2hUk+DuIlAss3JCVDQHfbx7ICXquN1zKGLwfPed
+KlqzpC8vHP06RdCg0UQJZoD7THMTAflMLm6cx9vKW9TFq10sjvV2iZJlFDq5+vT2
+aTsZ3GIkwS65gHuyE/XaPZoRtaP01Je5R3oUZaVJ5YgrwVgOePC1YYd4/c1Iv8jE
+Q3jUS0TfIy1Lq7dsjy9ZZ3RGyIwrQguIdI8ocpjuVLxmT68Kq/f4A3qhizSj0Do4
+uKf5JWBZsU/6x8u6OzpHiIkAclEJAPSTk2O5gc1OhuyZkQiR0Gl51CPNDY7pLI8m
+9s5+596EmQ/rEosVVduvbnkYFjX8LT8cDZtRHxKMGCXTT6q1UXTu8qCLWnbhbMAs
+2foJNYkV4ZifzMkGY44qyUKi9/UBzc+sp2rMMf4BNjUfWPitjoM+dcpRaY/FQQqh
+l/jUCeD3UvYHlg8+qT2dtXl1w40TZo/R/j94rJnG3nMozx0EzCg6jZXLId1jsF4P
+XgYFVBSeC7zNZ+W9MAFStiQ80zaKBdXeWvC3oaC62ynS+H9gbG/OMasks2Qhty3V
+BBwGS6WegINoqB7SjRcegUFR0bCeGyDWhE5zD/yrp+WaKKX/Wl+sWwaoZFbGMPQt
+CUVRUb/3zUvB6+Vt0rJ5
+=trgz
+-----END PGP SIGNATURE-----
 
-Some platform only allows acpiphp, but doesn't allow PCIe native hotplug driver
-(like pciehp). The 'pciehp_force' specified your environment is to load pciehp
-forcibly on such platform. So I thought acpiphp might solve your problem.
-
-Regards,
-Kenji Kaneshige
-
-
-
-> 
-> 
-> Cheers,
-> Ghani
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+--=-EFcc7WH1LVdV0FTMYrcl--
 
