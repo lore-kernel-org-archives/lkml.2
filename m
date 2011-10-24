@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab1JXOTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:19:23 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49334 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172Ab1JXOTW (ORCPT
+	id S932531Ab1JXOUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:20:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36640 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932172Ab1JXOUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:19:22 -0400
-Message-ID: <4EA573E4.3090408@gmail.com>
-Date: Mon, 24 Oct 2011 08:19:16 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Mon, 24 Oct 2011 10:20:12 -0400
+Message-ID: <4EA57417.8060709@gmail.com>
+Date: Mon, 24 Oct 2011 09:20:07 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Deng-Cheng Zhu <dczhu@mips.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [RFC PATCH 1/2] tools/perf: Don't set attr->disabled when doing
- grouping
-References: <1319453820-12992-1-git-send-email-dczhu@mips.com> <1319453820-12992-2-git-send-email-dczhu@mips.com>
-In-Reply-To: <1319453820-12992-2-git-send-email-dczhu@mips.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] ahci: add DT binding for Calxeda AHCI controller
+References: <1314976215-23902-1-git-send-email-robherring2@gmail.com> <4E8A6FB3.4090909@gmail.com>
+In-Reply-To: <4E8A6FB3.4090909@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jeff,
 
-
-On 10/24/2011 04:56 AM, Deng-Cheng Zhu wrote:
-> Events will be created at the state PERF_EVENT_STATE_OFF if attr->disabled
-> is set. When these events go to arch level validate_group(), the function
-> won't do anything real because they are filtered out by the state check.
-
-Seems like a bug with the group checks. You should be able to enable and
-disable events - including creating them disabled.
-
-David
-
-
+On 10/03/2011 09:30 PM, Rob Herring wrote:
+> On 09/02/2011 10:10 AM, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Add devicetree match table to ahci platform driver for Calxeda Highbank
+>> AHCI controller.
+>>
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Jeff Garzik <jgarzik@pobox.com>
+>> Cc: linux-ide@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: devicetree-discuss@lists.ozlabs.org
+>> ---
 > 
-> Signed-off-by: Deng-Cheng Zhu <dczhu@mips.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> ---
->  tools/perf/builtin-record.c |    6 +++---
->  tools/perf/builtin-stat.c   |    3 ++-
->  2 files changed, 5 insertions(+), 4 deletions(-)
+> Any comments on this?
 > 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index f4c3fbe..67e8e4c 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -161,7 +161,6 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
->  	struct perf_event_attr *attr = &evsel->attr;
->  	int track = !evsel->idx; /* only the first counter needs these */
->  
-> -	attr->disabled		= 1;
->  	attr->inherit		= !no_inherit;
->  	attr->read_format	= PERF_FORMAT_TOTAL_TIME_ENABLED |
->  				  PERF_FORMAT_TOTAL_TIME_RUNNING |
-> @@ -222,10 +221,11 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
->  	attr->mmap		= track;
->  	attr->comm		= track;
->  
-> -	if (target_pid == -1 && target_tid == -1 && !system_wide) {
-> +	if (!group)
->  		attr->disabled = 1;
-> +
-> +	if (target_pid == -1 && target_tid == -1 && !system_wide)
->  		attr->enable_on_exec = 1;
-> -	}
->  }
->  
->  static bool perf_evlist__equal(struct perf_evlist *evlist,
-> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> index 5deb17d..ca95475 100644
-> --- a/tools/perf/builtin-stat.c
-> +++ b/tools/perf/builtin-stat.c
-> @@ -284,7 +284,8 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
->  		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus, group);
->  
->  	if (target_pid == -1 && target_tid == -1) {
-> -		attr->disabled = 1;
-> +		if (!group)
-> +			attr->disabled = 1;
->  		attr->enable_on_exec = 1;
->  	}
->  
+
+Ping.
+
+Can you please apply this for 3.2.
+
+Regards,
+Rob
+
+>>  .../devicetree/bindings/ata/calxeda-sata.txt       |   17 +++++++++++++++++
+>>  drivers/ata/ahci_platform.c                        |    7 +++++++
+>>  2 files changed, 24 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/ata/calxeda-sata.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/ata/calxeda-sata.txt b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
+>> new file mode 100644
+>> index 0000000..79caa56
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
+>> @@ -0,0 +1,17 @@
+>> +* Calxeda SATA Controller
+>> +
+>> +SATA nodes are defined to describe on-chip Serial ATA controllers.
+>> +Each SATA controller should have its own node.
+>> +
+>> +Required properties:
+>> +- compatible        : compatible list, contains "calxeda,hb-ahci"
+>> +- interrupts        : <interrupt mapping for SATA IRQ>
+>> +- reg               : <registers mapping>
+>> +
+>> +Example:
+>> +        sata@ffe08000 {
+>> +		compatible = "calxeda,hb-ahci";
+>> +                reg = <0xffe08000 0x1000>;
+>> +                interrupts = <115>;
+>> +        };
+>> +
+>> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+>> index 6fef1fa..9bfc970 100644
+>> --- a/drivers/ata/ahci_platform.c
+>> +++ b/drivers/ata/ahci_platform.c
+>> @@ -171,11 +171,18 @@ static int __devexit ahci_remove(struct platform_device *pdev)
+>>  	return 0;
+>>  }
+>>  
+>> +static const struct of_device_id ahci_of_match[] = {
+>> +	{ .compatible = "calxeda,hb-ahci", },
+>> +	{},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, ahci_of_match);
+>> +
+>>  static struct platform_driver ahci_driver = {
+>>  	.remove = __devexit_p(ahci_remove),
+>>  	.driver = {
+>>  		.name = "ahci",
+>>  		.owner = THIS_MODULE,
+>> +		.of_match_table = ahci_of_match,
+>>  	},
+>>  };
+>>  
+> 
+
