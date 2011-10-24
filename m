@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab1JXOe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:34:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35174 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547Ab1JXOe4 (ORCPT
+	id S932728Ab1JXOkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:40:25 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25646
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932390Ab1JXOkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:34:56 -0400
-Date: Mon, 24 Oct 2011 16:34:51 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Rob Herring <robherring2@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] AT91: dt: at91sam9g45 family and board device tree
- files
-Message-ID: <20111024143451.GA8708@ponder.secretlab.ca>
-References: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com>
- <4E8C54DC.6040700@gmail.com>
- <4E8EF6F4.4030905@atmel.com>
- <4E9D4FD5.8080802@atmel.com>
+	Mon, 24 Oct 2011 10:40:23 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 24 Oct 2011 22:47:17 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Rajendra Nayak <rnayak@ti.com>,
+        <patches@linaro.org>, <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <lrg@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111024144716.GG1755@S2100-06.ap.freescale.net>
+References: <20111019144215.GA32007@S2100-06.ap.freescale.net>
+ <4E9FAF42.5060200@ti.com>
+ <20111020061408.GE32007@S2100-06.ap.freescale.net>
+ <4EA00F7C.1080005@ti.com>
+ <20111021082309.GA337@S2100-06.ap.freescale.net>
+ <20111024092411.GE8708@ponder.secretlab.ca>
+ <20111024130429.GD1755@S2100-06.ap.freescale.net>
+ <20111024130636.GB26033@opensource.wolfsonmicro.com>
+ <20111024134025.GE1755@S2100-06.ap.freescale.net>
+ <20111024134930.GD26033@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4E9D4FD5.8080802@atmel.com>
+In-Reply-To: <20111024134930.GD26033@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 12:07:17PM +0200, Nicolas Ferre wrote:
-> On 10/07/2011 02:56 PM, Nicolas Ferre :
-> > On 10/05/2011 03:00 PM, Rob Herring :
-> >> Nicolas,
-> >>
-> >> On 10/03/2011 05:00 AM, Nicolas Ferre wrote:
-> >>> Create a new device tree source file for Atmel at91sam9g45 SoC family.
-> >>> The Evaluation Kit at91sam9m10g45ek includes it.
-> >>> This first basic support will be populated as drivers and boards will be
-> >>> converted to device tree.
-> >>> Contains serial, dma and interrupt controllers.
-> >>>
-> >>> The generic board file still takes advantage of platform data for early serial
-> >>> init. As we need a storage media and the NAND flash driver is not converted to
-> >>> DT yet, we keep old initialization for it.
-> >>>
-> >>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Mon, Oct 24, 2011 at 03:49:30PM +0200, Mark Brown wrote:
+> On Mon, Oct 24, 2011 at 09:40:26PM +0800, Shawn Guo wrote:
 > 
-> [..]
+> > +++ b/drivers/regulator/core.c
+> > @@ -2673,7 +2673,8 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+> >         BLOCKING_INIT_NOTIFIER_HEAD(&rdev->notifier);
+> > 
+> >         /* find device_node and attach it */
+> > -       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
+> > +       rdev->dev.of_node = of_find_node_by_name(dev->parent->of_node,
+> > +                                                regulator_desc->name);
+> > 
 > 
-> >>> diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
-> >>> new file mode 100644
-> >>> index 0000000..7bcb9a9
-> >>> --- /dev/null
-> >>> +++ b/arch/arm/mach-at91/board-dt.c
-> >>> @@ -0,0 +1,122 @@
-> >>> +/*
-> >>> + *  Setup code for AT91SAM Evaluation Kits with Device Tree support
-> >>> + *
-> >>> + *  Covers: * AT91SAM9G45-EKES  board
-> >>> + *          * AT91SAM9M10-EKES  board
-> >>> + *          * AT91SAM9M10G45-EK board
-> >>> + *
-> >>> + *  Copyright (C) 2011 Atmel,
-> >>> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-> >>> + *
-> >>> + * Licensed under GPLv2 or later.
-> >>> + */
-> >>> +
-> >>> +#include <linux/types.h>
-> >>> +#include <linux/init.h>
-> >>> +#include <linux/module.h>
-> >>> +#include <linux/irqdomain.h>
-> >>> +#include <linux/of_irq.h>
-> >>> +#include <linux/of_platform.h>
-> >>> +
-> >>> +#include <mach/hardware.h>
-> >>> +#include <mach/board.h>
-> >>> +#include <mach/gpio.h>
-> >>> +#include <mach/system_rev.h>
-> >>> +#include <mach/at91sam9_smc.h>
-> >>> +
-> >>> +#include <asm/setup.h>
-> >>> +#include <asm/irq.h>
-> >>> +#include <asm/mach/arch.h>
-> >>> +#include <asm/mach/map.h>
-> >>> +#include <asm/mach/irq.h>
-> >>> +
-> >>> +#include "sam9_smc.h"
-> >>> +#include "generic.h"
-> 
-> As found by Jean-Christophe, it seems that some clock lookup data are missing here. Something like:
-> 
-> +/*
-> + * Lookup table for attaching a specific name and platform_data pointer to
-> + * devices as they get created by of_platform_populate(). Ideally this table
-> + * would not exist, but the current clock implementation depends on some devices
-> + * having a specific name.
-> + /
-> +static const struct of_dev_auxdata at91_auxdata_lookup[] __initconst = {
-> + / at91sam9260/ at91sam9g20 /
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffff200, "atmel_usart.0", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb0000, "atmel_usart.1", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb4000, "atmel_usart.2", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb8000, "atmel_usart.3", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd0000, "atmel_usart.4", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd4000, "atmel_usart.5", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd8000, "atmel_usart.6", NULL),
-> + / at91sam9g45*/
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xffffee00, "atmel_usart.0", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff8c000, "atmel_usart.1", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff90000, "atmel_usart.2", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff94000, "atmel_usart.3", NULL),
-> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff98000, "atmel_usart.4", NULL),
-> + { /* sentinel */ }
-> +};
-> 
-> With a change here:
->   of_platform_populate(NULL, of_default_bus_match_table, at91_auxdata_lookup, NULL);
-> 
-> I know that it is a temporary usage of auxdata. Does it sound the right thing to do for the moment?
+> Is that going to do the right thing if you've got a MFD which does
+> register each regulator as a separate device?
 
-yes.
+Based on my understanding, 1:1 is just a special case of N:1.  I
+failed to see any problem having it work with registering each
+regulator as a separate device.
 
-g.
+> Might be best to just
+> search within dev and get drivers to pass the "real" device in when
+> registering the regulator rather than the virtual device.
+> 
+It should also work, but it will also change the API slightly for
+non-dt users.  I'm not sure it's something we want.
+
+-- 
+Regards,
+Shawn
 
