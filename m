@@ -1,84 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab1JXDhq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 23:37:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62708 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752816Ab1JXDhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 23:37:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,396,1315206000"; 
-   d="scan'208";a="81006032"
-Subject: Re: [PATCH v3 0/4] dmaengine: Device Tree support for Atmel DMA
-From: Vinod Koul <vinod.koul@intel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>, robherring2@gmail.com
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4E9C258D.3030509@atmel.com>
-References: <1318438634-11826-1-git-send-email-nicolas.ferre@atmel.com>
-	 <4E9C258D.3030509@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Oct 2011 08:58:24 +0530
-Message-ID: <1319426904.9355.40.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753000Ab1JXDrE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 23:47:04 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:40549 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752871Ab1JXDrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 23:47:02 -0400
+Message-ID: <4EA4DFAE.4030407@tao.ma>
+Date: Mon, 24 Oct 2011 11:46:54 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] block: Remove the control of complete cpu from bio.
+References: <1316166108-6465-1-git-send-email-tm@tao.ma>
+In-Reply-To: <1316166108-6465-1-git-send-email-tm@tao.ma>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 14:54 +0200, Nicolas Ferre wrote:
-> On 10/12/2011 06:57 PM, Nicolas Ferre :
-> > This series add the device tree support to Atmel DMA controller driver:
-> > at_hdmac.
-> > The removal of platform data ease the conversion to device tree. It also have
-> > the additional benefit of being simpler and cleaner.
-> > 
-> > Nicolas Ferre (4):
-> >       dmaengine: at_hdmac: platform data move to use .id_table
-> >       dmaengine: at_hdmac: add device tree support
-> >       ARM: at91/dma: remove platform data from DMA controller
-> >       ARM: at91/dma: DMA controller registering with DT support
-> > 
-> >  .../devicetree/bindings/dma/atmel-dma.txt          |   14 ++++
-> >  arch/arm/mach-at91/at91sam9g45_devices.c           |   17 ++---
-> >  arch/arm/mach-at91/at91sam9rl_devices.c            |    8 +--
-> >  arch/arm/mach-at91/include/mach/at_hdmac.h         |   10 ---
-> >  drivers/dma/at_hdmac.c                             |   76 +++++++++++++++++---
-> >  drivers/dma/at_hdmac_regs.h                        |    8 ++
-> >  6 files changed, 97 insertions(+), 36 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/dma/atmel-dma.txt
+ping.
+For the detailed discussion, please refer to
+https://lkml.org/lkml/2011/9/15/98
+
+Thanks
+Tao
+
+On 09/16/2011 05:41 PM, Tao Ma wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
 > 
-> Vinod,
+> bio originally has the functionality to set the complete cpu, but
+> it is broken.
 > 
-> I have just rebased the dmaengine at_hdmac driver patches on top of your
-> "next" branch as a "v4" series. I send it to you with Grant's "Acked-by"
-> right now.
-I manged to fail the compliation with this patch
-drivers/dma/at_hdmac.c: In function 'at_dma_get_driver_data':
-drivers/dma/at_hdmac.c:1211: error: implicit declaration of function 'of_match_node'
-drivers/dma/at_hdmac.c:1211: error: 'atmel_dma_dt_ids' undeclared (first use in this function)
-drivers/dma/at_hdmac.c:1211: error: (Each undeclared identifier is reported only once
-drivers/dma/at_hdmac.c:1211: error: for each function it appears in.)
-drivers/dma/at_hdmac.c:1211: warning: assignment makes pointer from integer without a cast
-drivers/dma/at_hdmac.c: At top level:
-drivers/dma/at_hdmac.c:1558: error: implicit declaration of function 'of_match_ptr'
-drivers/dma/at_hdmac.c:1558: error: 'atmel_dma_dt_ids' undeclared here (not in a function)
-drivers/dma/at_hdmac.c:1558: error: initializer element is not constant
-drivers/dma/at_hdmac.c:1558: error: (near initialization for 'at_dma_driver.driver.of_match_table')
-make[1]: *** [drivers/dma/at_hdmac.o] Error 1
-
-Which, IMO are triggered as one of my configs for at_hdmac did not have
-CONFIG_OF enabled. I think at_hdmac should select or depend on this. I
-did latter and still I get compilation error :(
-
-drivers/dma/at_hdmac.c:1558: error: implicit declaration of function 'of_match_ptr'
-drivers/dma/at_hdmac.c:1558: error: initializer element is not constant
-drivers/dma/at_hdmac.c:1558: error: (near initialization for 'at_dma_driver.driver.of_match_table')
-make[1]: *** [drivers/dma/at_hdmac.o] Error 1
-
-
-
--- 
-~Vinod
+> Chirstoph said that "This code is unused, and from the all the
+> discussions lately pretty obviously broken.  The only thing keeping
+> it serves is creating more confusion and possibly more bugs."
+> 
+> And Jens replied with "We can kill bio_set_completion_cpu(). I'm fine
+> with leaving cpu control to the request based drivers, they are the
+> only ones that can toggle the setting anyway".
+> 
+> So this patch tries to remove all the work of controling complete cpu
+> from a bio.
+> 
+> Cc: Shaohua Li <shaohua.li@intel.com>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> Cc: Jens Axboe <jaxboe@fusionio.com>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> ---
+>  block/blk-core.c          |    4 +---
+>  drivers/md/raid1.c        |    1 -
+>  fs/bio.c                  |    1 -
+>  include/linux/bio.h       |    8 --------
+>  include/linux/blk_types.h |   11 ++++-------
+>  5 files changed, 5 insertions(+), 20 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 90e1ffd..8a57916 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1200,7 +1200,6 @@ out:
+>  
+>  void init_request_from_bio(struct request *req, struct bio *bio)
+>  {
+> -	req->cpu = bio->bi_comp_cpu;
+>  	req->cmd_type = REQ_TYPE_FS;
+>  
+>  	req->cmd_flags |= bio->bi_rw & REQ_COMMON_MASK;
+> @@ -1281,8 +1280,7 @@ get_rq:
+>  	 */
+>  	init_request_from_bio(req, bio);
+>  
+> -	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) ||
+> -	    bio_flagged(bio, BIO_CPU_AFFINE))
+> +	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags))
+>  		req->cpu = raw_smp_processor_id();
+>  
+>  	plug = current->plug;
+> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> index 32323f0..3107bcc 100644
+> --- a/drivers/md/raid1.c
+> +++ b/drivers/md/raid1.c
+> @@ -2170,7 +2170,6 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
+>  		bio->bi_next = NULL;
+>  		bio->bi_flags &= ~(BIO_POOL_MASK-1);
+>  		bio->bi_flags |= 1 << BIO_UPTODATE;
+> -		bio->bi_comp_cpu = -1;
+>  		bio->bi_rw = READ;
+>  		bio->bi_vcnt = 0;
+>  		bio->bi_idx = 0;
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 9bfade8..41c93c7 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -255,7 +255,6 @@ void bio_init(struct bio *bio)
+>  {
+>  	memset(bio, 0, sizeof(*bio));
+>  	bio->bi_flags = 1 << BIO_UPTODATE;
+> -	bio->bi_comp_cpu = -1;
+>  	atomic_set(&bio->bi_cnt, 1);
+>  }
+>  EXPORT_SYMBOL(bio_init);
+> diff --git a/include/linux/bio.h b/include/linux/bio.h
+> index ce33e68..a3c071c 100644
+> --- a/include/linux/bio.h
+> +++ b/include/linux/bio.h
+> @@ -269,14 +269,6 @@ extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
+>  extern unsigned int bvec_nr_vecs(unsigned short idx);
+>  
+>  /*
+> - * Allow queuer to specify a completion CPU for this bio
+> - */
+> -static inline void bio_set_completion_cpu(struct bio *bio, unsigned int cpu)
+> -{
+> -	bio->bi_comp_cpu = cpu;
+> -}
+> -
+> -/*
+>   * bio_set is used to allow other portions of the IO system to
+>   * allocate their own private memory pools for bio and iovec structures.
+>   * These memory pools in turn all allocate from the bio_slab
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 32f0076..174bc3a 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -59,8 +59,6 @@ struct bio {
+>  
+>  	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
+>  
+> -	unsigned int		bi_comp_cpu;	/* completion CPU */
+> -
+>  	atomic_t		bi_cnt;		/* pin count */
+>  
+>  	struct bio_vec		*bi_io_vec;	/* the actual vec list */
+> @@ -93,11 +91,10 @@ struct bio {
+>  #define BIO_BOUNCED	5	/* bio is a bounce bio */
+>  #define BIO_USER_MAPPED 6	/* contains user pages */
+>  #define BIO_EOPNOTSUPP	7	/* not supported */
+> -#define BIO_CPU_AFFINE	8	/* complete bio on same CPU as submitted */
+> -#define BIO_NULL_MAPPED 9	/* contains invalid user pages */
+> -#define BIO_FS_INTEGRITY 10	/* fs owns integrity data, not block layer */
+> -#define BIO_QUIET	11	/* Make BIO Quiet */
+> -#define BIO_MAPPED_INTEGRITY 12/* integrity metadata has been remapped */
+> +#define BIO_NULL_MAPPED 8	/* contains invalid user pages */
+> +#define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
+> +#define BIO_QUIET	10	/* Make BIO Quiet */
+> +#define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
+>  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+>  
+>  /*
 
