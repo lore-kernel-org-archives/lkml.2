@@ -1,263 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1JXHUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 03:20:05 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:35622 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753326Ab1JXHUD (ORCPT
+	id S1753417Ab1JXHVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 03:21:55 -0400
+Received: from server655-han.de-nserver.de ([85.158.177.45]:57883 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753326Ab1JXHVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 03:20:03 -0400
-Message-ID: <4EA5117C.3000402@st.com>
-Date: Mon, 24 Oct 2011 09:19:24 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Mon, 24 Oct 2011 03:21:54 -0400
+Message-ID: <4EA51210.9070209@profihost.ag>
+Date: Mon, 24 Oct 2011 09:21:52 +0200
+From: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+Reply-To: p.herz@profihost.ag
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: keguang.zhang@gmail.com
-Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
-References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com> <1319192888-21465-2-git-send-email-keguang.zhang@gmail.com> <CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
-In-Reply-To: <CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        s.priebe@profihost.ag, linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+References: <4E9D53FF.7090609@profihost.ag> <m2ipnmz49x.fsf@firstfloor.org>	 <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com>	 <4EA506B9.4030604@profihost.ag> <1319439819.2517.38.camel@edumazet-laptop>
+In-Reply-To: <1319439819.2517.38.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-User-Auth: Auth by p.herz@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2011 7:33 PM, Wu Zhangjin wrote:
-> On Fri, Oct 21, 2011 at 6:28 PM,  <keguang.zhang@gmail.com> wrote:
->> From: Kelvin Cheung <keguang.zhang@gmail.com>
+Am 24.10.2011 09:03, schrieb Eric Dumazet:
+> Le lundi 24 octobre 2011 à 08:33 +0200, Philipp Herz - Profihost AG a
+> écrit :
+>> Am 19.10.2011 03:58, schrieb David Rientjes:
+>>> On Tue, 18 Oct 2011, Andi Kleen wrote:
+>>>
+>>>> Philipp Herz - Profihost AG<p.herz@profihost.ag>   writes:
+>>>>
+>>>>> After updating kernel (x86_64) to stable version 3 there are a few
+>>>>> messages appearing in the kernel log such as
+>>>>>
+>>>>> kworker/0:1: page allocation failure: order:1, mode:0x20
+>>>>> mysql: page allocation failure: order:1, mode:0x20
+>>>>> php5: page allocation failure: order:1, mode:0x20
+>>>>
+>>>> You just ran out of memory.
+>>>>
+>>>
+>>> He ran out of order-1 physically contiguous memory and was unable to
+>>> compact or reclaim because of the atomic context.
+>>>
+>>> Philipp, based on your pastes from another post, it's evident you're using
+>>> CONFIG_SLAB and, unfortunately, it's not possible to change to single
+>>> page allocations (which would only result in a page allocation failure if
+>>> you were completely out of memory) without recompiling.
+>>>
+>>> You have a couple options:
+>>>
+>>>    - recompile with BREAK_GFP_ORDER_HI redefined to 0 in mm/slab.c, or
+>>>
+>>>    - recompile with CONFIG_SLUB instead of CONFIG_SLAB.
+>>>
+>>> It's very possible that neither of these will help, but it will tell you
+>>> whether you need to go out and buy more RAM or not.  If you try to
+>>> recompile with BREAK_GFP_ORDER_HI, these may turn into order-0
+>>> allocations.  If you can't reboot, send the output of
+>>> /proc/<pid>/net/protocols where<pid>   is the pid of one of the above tasks
+>>> (kworker, mysql, php5) when they are running and we'll know.
+>>>
+>>>    [ Changing slab_break_gfp_order should really be a CONFIG_SLAB command-
+>>>      line option.  It can't be runtime because slab depends on the order for
+>>>      caches remaining constant, but we can certainly change it on boot. ]
+>>>
+>>> If you try CONFIG_SLUB instead of CONFIG_SLAB, you can pass
+>>> slub_max_order=0 on the command line and see if it helps.
 >>
->> This patch adds basic platform support for Loongson1B
->> including serial port, ethernet, and interrupt handler.
+>> Hi David,
 >>
->> Loongson1B UART is compatible with NS16550A.
->> Loongson1B GMAC is built around Synopsys IP Core.
+>> we have recompiled the kernel of one machine with CONFIG_SLUB instead of
+>> CONFIG_SLAB, but it is showing similar message.
 >>
-> 
-> Perhaps you'd better split out the GMAC support to its own patch and
-> send it to the net/ maintainer and the authors of the original files.
-
-Also suggest you to provide the stmmac patches for net-next.
-The stmmac driver has been recently updated and I've also several
-patches to commit (for example for PCI etc) on it.
-
-I'm happy that the support for big endianess arrived.
-I supported a guy some time ago but he didn't provided me the patches
-tested on his side :-(. So welcome yours and many thanks Kelvin!
-
-Please send the stmmac patches and add me on CC. I'm happy to help you
-on reviewing them.
-
->> diff --git a/drivers/net/stmmac/descs.h b/drivers/net/stmmac/descs.h
->> index 63a03e2..4db27d0 100644
->> --- a/drivers/net/stmmac/descs.h
->> +++ b/drivers/net/stmmac/descs.h
->> @@ -53,6 +53,38 @@ struct dma_desc {
->>                        u32 reserved3:5;
->>                        u32 disable_ic:1;
->>                } rx;
->> +#ifdef CONFIG_MACH_LOONGSON1
->> +               struct {
->> +                       /* RDES0 */
->> +                       u32 payload_csum_error:1;
->> +                       u32 crc_error:1;
->> +                       u32 dribbling:1;
->> +                       u32 error_gmii:1;
->> +                       u32 receive_watchdog:1;
->> +                       u32 frame_type:1;
->> +                       u32 late_collision:1;
->> +                       u32 ipc_csum_error:1;
->> +                       u32 last_descriptor:1;
->> +                       u32 first_descriptor:1;
->> +                       u32 vlan_tag:1;
->> +                       u32 overflow_error:1;
->> +                       u32 length_error:1;
->> +                       u32 sa_filter_fail:1;
->> +                       u32 descriptor_error:1;
->> +                       u32 error_summary:1;
->> +                       u32 frame_length:14;
->> +                       u32 da_filter_fail:1;
->> +                       u32 own:1;
->> +                       /* RDES1 */
->> +                       u32 buffer1_size:11;
->> +                       u32 buffer2_size:11;
->> +                       u32 reserved1:2;
->> +                       u32 second_address_chained:1;
->> +                       u32 end_ring:1;
->> +                       u32 reserved2:5;
->> +                       u32 disable_ic:1;
->> +               } erx;          /* -- enhanced -- */
->> +#else
->>                struct {
->>                        /* RDES0 */
->>                        u32 payload_csum_error:1;
->> @@ -83,6 +115,7 @@ struct dma_desc {
->>                        u32 reserved2:2;
->>                        u32 disable_ic:1;
->>                } erx;          /* -- enhanced -- */
->> +#endif
+>> Now it's showing failure at "order:5, mode:0x4020".
 >>
->>                /* Transmit descriptor */
->>                struct {
->> @@ -113,6 +146,40 @@ struct dma_desc {
->>                        u32 last_segment:1;
->>                        u32 interrupt:1;
->>                } tx;
->> +#ifdef CONFIG_MACH_LOONGSON1
->> +               struct {
->> +                       /* TDES0 */
->> +                       u32 deferred:1;
->> +                       u32 underflow_error:1;
->> +                       u32 excessive_deferral:1;
->> +                       u32 collision_count:4;
->> +                       u32 vlan_frame:1;
->> +                       u32 excessive_collisions:1;
->> +                       u32 late_collision:1;
->> +                       u32 no_carrier:1;
->> +                       u32 loss_carrier:1;
->> +                       u32 payload_error:1;
->> +                       u32 frame_flushed:1;
->> +                       u32 jabber_timeout:1;
->> +                       u32 error_summary:1;
->> +                       u32 ip_header_error:1;
->> +                       u32 time_stamp_status:1;
->> +                       u32 reserved1:13;
->> +                       u32 own:1;
->> +                       /* TDES1 */
->> +                       u32 buffer1_size:11;
->> +                       u32 buffer2_size:11;
->> +                       u32 time_stamp_enable:1;
->> +                       u32 disable_padding:1;
->> +                       u32 second_address_chained:1;
->> +                       u32 end_ring:1;
->> +                       u32 crc_disable:1;
->> +                       u32 checksum_insertion:2;
->> +                       u32 first_segment:1;
->> +                       u32 last_segment:1;
->> +                       u32 interrupt:1;
->> +               } etx;          /* -- enhanced -- */
->> +#else
->>                struct {
->>                        /* TDES0 */
->>                        u32 deferred:1;
->> @@ -148,6 +215,7 @@ struct dma_desc {
->>                        u32 buffer2_size:13;
->>                        u32 reserved4:3;
->>                } etx;          /* -- enhanced -- */
->> +#endif
->>        } des01;
->>        unsigned int des2;
->>        unsigned int des3;
-> 
-> 
-> If the difference is very much, perhaps a new dma_desc struct can be
-> defined instead.
-> 
-
-Concerning the descriptors, we could have two different files:
-
-descs_le.h
-descs_be.h
-
-and select their inclusion inside the common.h.
-
-Please use instead of the macro CONFIG_MACH_LOONGSON1 another one more
-generic e.g. CONFIG_STMMAC_BE  (and add it in the driver's Kconfig).
-
-On your platform you will have to enable it by default.
-Or it could be the default on MIPS: LE will be on ARM and SuperH.
-
->> diff --git a/drivers/net/stmmac/enh_desc.c b/drivers/net/stmmac/enh_desc.c
->> index e5dfb6a..3b5e4f1 100644
->> --- a/drivers/net/stmmac/enh_desc.c
->> +++ b/drivers/net/stmmac/enh_desc.c
->> @@ -108,6 +108,7 @@ static int enh_desc_get_tx_len(struct dma_desc *p)
->>  static int enh_desc_coe_rdes0(int ipc_err, int type, int payload_err)
->>  {
->>        int ret = good_frame;
->> +#ifndef CONFIG_MACH_LOONGSON1
->>        u32 status = (type << 2 | ipc_err << 1 | payload_err) & 0x7;
+>> Call trace can be found at:
+>> * http://pastebin.com/uGJiwvG1
 >>
->>        /* bits 5 7 0 | Frame status
->> @@ -145,6 +146,7 @@ static int enh_desc_coe_rdes0(int ipc_err, int type, int payload_err)
->>                CHIP_DBG(KERN_ERR "RX Des0 status: No IPv4, IPv6 frame.\n");
->>                ret = discard_frame;
->>        }
->> +#endif
->>        return ret;
->>  }
-
+>> Comparing kernel 2.6.32 (mm/page_alloc.c) there seams to be the same way
+>> of dealing with page allocation.
 >>
->> @@ -232,9 +234,17 @@ static void enh_desc_init_rx_desc(struct dma_desc *p, unsigned int ring_size,
->>        int i;
->>        for (i = 0; i < ring_size; i++) {
->>                p->des01.erx.own = 1;
->> +#ifdef CONFIG_MACH_LOONGSON1
->> +               p->des01.erx.buffer1_size = BUF_SIZE_2KiB - 1;
->> +#else
->>                p->des01.erx.buffer1_size = BUF_SIZE_8KiB - 1;
->> +#endif
->>                /* To support jumbo frames */
->> +#ifdef CONFIG_MACH_LOONGSON1
->> +               p->des01.erx.buffer2_size = BUF_SIZE_2KiB - 1;
->> +#else
->>                p->des01.erx.buffer2_size = BUF_SIZE_8KiB - 1;
->> +#endif
->>                if (i == ring_size - 1)
->>                        p->des01.erx.end_ring = 1;
->>                if (disable_rx_ic)
->> @@ -292,9 +302,15 @@ static void enh_desc_prepare_tx_desc(struct dma_desc *p, int is_fs, int len,
->>                                     int csum_flag)
->>  {
->>        p->des01.etx.first_segment = is_fs;
->> +#ifdef CONFIG_MACH_LOONGSON1
->> +       if (unlikely(len > BUF_SIZE_2KiB)) {
->> +               p->des01.etx.buffer1_size = BUF_SIZE_2KiB - 1;
->> +               p->des01.etx.buffer2_size = len - BUF_SIZE_2KiB + 1;
->> +#else
->>        if (unlikely(len > BUF_SIZE_4KiB)) {
->>                p->des01.etx.buffer1_size = BUF_SIZE_4KiB;
->>                p->des01.etx.buffer2_size = len - BUF_SIZE_4KiB;
->> +#endif
->>        } else {
->>                p->des01.etx.buffer1_size = len;
->>        }
+>> Do you have an idea why these (warning) messages do never appear running
+>> 2.6.32?
+>
+> Your tg3 has a firmware limitation, and some skbs using fragments have
+> to be reallocated using a single and contiguous area of memory.
+>
+> Initial skb delivered by tcp stack only uses order-0 pages, but the
+> reallocated one, being 64K, can be order-5
+>
+> You can avoid this by following tuning :
+>
+> ethtool -K eth0 sg off
+>
 
-No. I do not want to see all these ifdef inside the code.
-I had to rework some driver's part just last week to avoid this kind of
-code. I suggest you to re-base the work against the net-next kernel and
-look at how the ring/chained modes have been managed.
+ok,
 
-I added a new file called descs_com.h that you can re-use adding small
-inline functions where define the changes for be mode.
-
-> Is it possible to add two new macros RX_BUF_SIZE and TX_BUF_SIZE to .h
-> instead? which may reduce code duplication.
-
-This code exists because we have to properly handle the jumbo frames.
-
-Note that this code has been reworked to use the ring/chained modes.
-Take a look at descs_com.h.
-
-I expect to see the driver on your platform that uses jumbo and
-chained/ring modes.
-
-Best Regards
-Giuseppe
-
-> 
-> Regards,
-> Wu Zhangjin
-> 
->> --
->> 1.7.1
->>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+does that mean that there was no firmware limitation with kernel 2.6.32 
+or that the tg3 module has any "disable warnings" flag matching 
+__GFP_NOWARN?
 
