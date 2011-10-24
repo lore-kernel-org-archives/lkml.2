@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1JXBAi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 21:00:38 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48980 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab1JXBAg convert rfc822-to-8bit (ORCPT
+	id S1752657Ab1JXBSL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 21:18:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60169 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab1JXBSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 21:00:36 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Mel Gorman" <mel@csn.ul.ie>
-Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Ankita Garg" <ankita@in.ibm.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <1317909290-29832-3-git-send-email-m.szyprowski@samsung.com>
- <20111018122109.GB6660@csn.ul.ie> <op.v3j5ent03l0zgt@mpn-glaptop>
- <20111021100624.GB4029@csn.ul.ie>
-Date: Sun, 23 Oct 2011 18:00:30 -0700
+	Sun, 23 Oct 2011 21:18:10 -0400
+Date: Sun, 23 Oct 2011 18:18:04 -0700
+From: mark gross <markgross@thegnar.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, markgross@thegnar.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
+        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
+Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
+ blocking (aka more wakelock stuff)]
+Message-ID: <20111024011804.GB12215@mgross-G62>
+Reply-To: markgross@thegnar.org
+References: <20111016092556.07d6e415@notabene.brown>
+ <Pine.LNX.4.44L0.1110152136460.19724-100000@netrider.rowland.org>
+ <20111017083717.0bd5626c@notabene.brown>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v3tzq4q53l0zgt@mpn-glaptop>
-In-Reply-To: <20111021100624.GB4029@csn.ul.ie>
-User-Agent: Opera Mail/11.52 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111017083717.0bd5626c@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Oct 2011 03:06:24 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
+Sorry for going AWOL on this thread.  I had some biz travel and fires to
+fight.
 
-> On Tue, Oct 18, 2011 at 10:26:37AM -0700, Michal Nazarewicz wrote:
->> On Tue, 18 Oct 2011 05:21:09 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
->>
->> >At this point, I'm going to apologise for not reviewing this a long long
->> >time ago.
->> >
->> >On Thu, Oct 06, 2011 at 03:54:42PM +0200, Marek Szyprowski wrote:
->> >>From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> >>
->> >>This commit introduces alloc_contig_freed_pages() function
->> >>which allocates (ie. removes from buddy system) free pages
->> >>in range. Caller has to guarantee that all pages in range
->> >>are in buddy system.
->> >>
->> >
->> >Straight away, I'm wondering why you didn't use
->> >
->> >mm/compaction.c#isolate_freepages()
->> >
->> >It knows how to isolate pages within ranges. All its control information
->> >is passed via struct compact_control() which I recognise may be awkward
->> >for CMA but compaction.c know how to manage all the isolated pages and
->> >pass them to migrate.c appropriately.
->>
->> It is something to consider.  At first glance, I see that isolate_freepages
->> seem to operate on pageblocks which is not desired for CMA.
->>
->
-> isolate_freepages_block operates on a range of pages that happens to be
-> hard-coded to be a pageblock because that was the requirements. It calculates
-> end_pfn and it is possible to make that a function parameter.
+On Mon, Oct 17, 2011 at 08:37:17AM +1100, NeilBrown wrote:
+> On Sat, 15 Oct 2011 21:49:44 -0400 (EDT) Alan Stern
+> <stern@rowland.harvard.edu> wrote:
+> 
+> 
+> > All right, let's make things a little more complicated.
+> 
+> Let's call it "realistic".   It is good to have some realism to make sure our
+> abstract discussions actually mean something.
+> 
+> > 
+> > Here's what actually happens when a USB keyboard generates a wakeup 
+> > request.  The system wakes up, of course, but there's no particular 
+> > indication of the cause.  In particular, the usbhid driver has no way 
+> > to know directly that the keyboard was the reason for the wakeup.
+> > 
+> > In addition, usbhid can't poll keyboards to see if they have an event
+> > to report.  (In theory it could -- the HID protocol allows for this --
+> > but many keyboards don't support that part of the protocol properly.)  
+> > It has to wait until the keyboard gets around to reporting the event, 
+> > which can take 10 ms or more.
+> > 
+> > Taken together, this means usbhid must activate a wakeup_source every
+> > time it wakes up.  If a keyboard event report is received reasonably
+> > quickly then good, it can deactivate the wakeup_source at the right
+> > time.  But if not, all the driver can do is time out the wakeup_source
+> > after some delay.  I don't see any way to avoid it.
+> 
+> I have to agree with you there.
+> This is similar to Rafael's example of a Wake-on-LAN packet arriving.  At
+> that point there is nothing you can do except wait a little while expecting
+> more information.
+> 
+> You could see this as a case where the wake-up event isn't even visible to
+> the kernel, so there is obviously no way to make it visible to user-space.
+> 
+> Or you could see it as a wake-up event that is expected to be delivered over
+> a long period of time (many msecs).  The kernel gathers the wake-up event,
+> makes it visible to user-space (once it actually arrives), and then releases
+> the wakeup_source.
+> 
+> So it is a good example and highlights the difficulty of defining exactly
+> what a wake-up event it, and of what it means to be "visible".
+> 
+> I think it still fits in your rephrasing of my question which - if I rephrase
+> it as a requirement - is roughly,
+> 
+>   A wakeup-event that needs to be handled by user-space must be visible to
+>   user-space before the driver deactivates the wakeup_source.
+> 
+> A requirement which, in this case, means the driver needs to hold  the
+> wakeup_source for an extended time using a timeout, just as you say.
 
-Yes, this seems doable.  I'll try and rewrite the patches to use it.
+Timeout?  why can't we define a proper notification handshake for such
+things?  Timeouts are never right IMO.
 
-The biggest difference is in how CMA and compaction treat pages which are not
-free.  CMA treat it as an error and compaction just skips those.  This is
-solvable by an argument though.
+--mark
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+
+
+> Thanks,
+> NeilBrown
+
+
