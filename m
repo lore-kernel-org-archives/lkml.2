@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab1JXQje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 12:39:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61865 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933013Ab1JXQjd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 12:39:33 -0400
+	id S933045Ab1JXQ4C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 12:56:02 -0400
+Received: from mailsrv14.zmi.at ([212.69.164.54]:60117 "EHLO mailsrv14.zmi.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755399Ab1JXQ4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 12:56:00 -0400
+X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Oct 2011 12:56:00 EDT
+From: Michael Monnerie <michael.monnerie@is.it-management.at>
+Organization: it-management http://it-management.at
+To: xfs@oss.sgi.com
+Subject: Re: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O load
+Date: Mon, 24 Oct 2011 18:45:41 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.3-zmi; KDE/4.6.0; x86_64; ; )
+Cc: jesper@krogh.cc, Christoph Hellwig <hch@infradead.org>, aradford@gmail.com,
+        linux-kernel@vger.kernel.org
+References: <20111011091757.GA32589@otto.nzcorp.net> <20111011133448.GA10692@infradead.org> <e78a7c38af135cee4b742c99ecd1c011.squirrel@shrek.krogh.cc>
+In-Reply-To: <e78a7c38af135cee4b742c99ecd1c011.squirrel@shrek.krogh.cc>
 MIME-Version: 1.0
-In-Reply-To: <4EA5913D.7090004@genband.com>
-References: <op.v3q34la3dsdv5o@localhost>
-	<4EA5913D.7090004@genband.com>
-Date: Mon, 24 Oct 2011 14:39:31 -0200
-Message-ID: <CACGt9ymGUAzjkZJCePnO+7cyKsi8-rtpno9ebjKtoCXj-tCALg@mail.gmail.com>
-Subject: Re: Linux USB HID should ignore values outside Logical
- Minimum/Maximum range
-From: =?UTF-8?Q?Denilson_Figueiredo_de_S=C3=A1?= <denilsonsa@gmail.com>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed;
+  boundary="nextPart1887112.sravnr3J3p";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110241845.44463@zmi.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 14:24, Chris Friesen <chris.friesen@genband.com> wrote:
-> On 10/22/2011 05:42 AM, Denilson Figueiredo de Sá wrote:
->
->> It may even happen to send an out-of-range value for one axis, but a
->> valid value for another axis. The code should be prepared for that
->> (ignore one, but keep the other).
->
-> In this case what should be used for the "invalid" axis value?  The previous
-> value?
+--nextPart1887112.sravnr3J3p
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-If that's an absolute pointing device, can we supply only one axis? I
-mean, can we do this: "move the pointer to this X position, but leave
-the Y position where it currently is". (note that the pointer might
-have moved since last input from this device, due to other devices
-also being present)
+On Montag, 17. Oktober 2011 jesper@krogh.cc wrote:
+> Over the weekend, we have run memtest for 4 hours (50% of the
+> complete tests according to memtest) and it didnt find anything.
 
-If that's not possible, then I'm not sure about what should be the
-correct behavior. Should we ignore both axes if one of them is
-invalid? Should we use the last good value from the other axis? (note
-that relative pointing devices like proper mice shouldn't have this
-issue, as we can just use zero for invalid values, which means "no
-movement")
+This is a bit OT, but you *must* run at least one full loop of memtest=20
+in order to have significant output. I've had PCs that only broke on=20
+test 7, and sometimes even a PC could run 2-3 loops before a bad bit was=20
+found on the 4th loop or so. Only if there's a nasty error, like a=20
+physically broken mainboard, you'll gets errors quickly.
 
-I haven't tested that on Windows (yet), so I don't know how it
-behaves. If I test it, I'll post my results here.
+Despite that, I think your problem is not memory based, as you said you=20
+use ECC, and I'd believe you've turned on background scrubbing.
 
-I know, this is a corner case difficult to decide about.
+=2D-=20
+mit freundlichen Gr=FCssen,
+Michael Monnerie, Ing. BSc
 
+it-management Internet Services: Prot=E9ger
+http://proteger.at [gesprochen: Prot-e-schee]
+Tel: +43 660 / 415 6531
 
+--nextPart1887112.sravnr3J3p
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-By the way, my report was about absolute pointing devices, but I
-haven't tested how Linux USB HID behaves for other kinds of devices
-(keyboards, gamepads, anything else).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
+iEYEABECAAYFAk6lljgACgkQzhSR9xwSCbQmIwCcC1K76s65zfCBCXtiXmAx5Hms
+tPsAmQGA+qWyjULB2R2eX3W8xGGLt8U1
+=IXhx
+-----END PGP SIGNATURE-----
 
--- 
-Denilson Figueiredo de Sá
-Rio de Janeiro - Brasil
+--nextPart1887112.sravnr3J3p--
