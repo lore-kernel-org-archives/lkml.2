@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab1JXCrb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 22:47:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22941 "EHLO mga01.intel.com"
+	id S1752842Ab1JXDNY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 23:13:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7910 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab1JXCra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 22:47:30 -0400
+	id S1752708Ab1JXDNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 23:13:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,396,1315206000"; 
-   d="scan'208";a="80998220"
-Subject: Re: [PATCH 2/3] kvm: use this_cpu_xxx replace percpu_xxx funcs
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Christoph Lameter <cl@gentwo.org>, "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-In-Reply-To: <1319096041.23426.182.camel@debian>
-References: <1318237851.27949.190.camel@debian>
-	 <alpine.DEB.2.00.1110101026080.16264@router.home>
-	 <1318324774.27949.693.camel@debian>
-	 <alpine.DEB.2.00.1110110910480.3388@router.home>
-	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
-	 <alpine.DEB.2.00.1110120910540.26610@router.home>
-	 <1318908091.23426.52.camel@debian>
-	 <alpine.DEB.2.00.1110180932330.687@router.home>
-	 <1319016218.23426.104.camel@debian>  <4E9E97D2.1040807@redhat.com>
-	 <1319096041.23426.182.camel@debian>
+   d="scan'208";a="65552778"
+Subject: Re: [PATCH v3 0/4] dmaengine: Device Tree support for Atmel DMA
+From: Vinod Koul <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <4EA424FF.50103@atmel.com>
+References: <1318438634-11826-1-git-send-email-nicolas.ferre@atmel.com>
+	 <4E9C258D.3030509@atmel.com>  <4EA424FF.50103@atmel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Oct 2011 10:50:08 +0800
-Message-ID: <1319424608.5061.25.camel@debian>
+Date: Mon, 24 Oct 2011 08:34:02 +0530
+Message-ID: <1319425442.9355.27.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 15:34 +0800, Alex,Shi wrote:
-> percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-> for further code clean up.
+On Sun, 2011-10-23 at 16:30 +0200, Nicolas Ferre wrote:
+> On 10/17/2011 02:54 PM, Nicolas Ferre :
+> > On 10/12/2011 06:57 PM, Nicolas Ferre :
+> >> This series add the device tree support to Atmel DMA controller driver:
+> >> at_hdmac.
+> >> The removal of platform data ease the conversion to device tree. It also have
+> >> the additional benefit of being simpler and cleaner.
+> >>
+> >> Nicolas Ferre (4):
+> >>       dmaengine: at_hdmac: platform data move to use .id_table
+> >>       dmaengine: at_hdmac: add device tree support
+> >>       ARM: at91/dma: remove platform data from DMA controller
+> >>       ARM: at91/dma: DMA controller registering with DT support
+> >>
+> >>  .../devicetree/bindings/dma/atmel-dma.txt          |   14 ++++
+> >>  arch/arm/mach-at91/at91sam9g45_devices.c           |   17 ++---
+> >>  arch/arm/mach-at91/at91sam9rl_devices.c            |    8 +--
+> >>  arch/arm/mach-at91/include/mach/at_hdmac.h         |   10 ---
+> >>  drivers/dma/at_hdmac.c                             |   76 +++++++++++++++++---
+> >>  drivers/dma/at_hdmac_regs.h                        |    8 ++
+> >>  6 files changed, 97 insertions(+), 36 deletions(-)
+> >>  create mode 100644 Documentation/devicetree/bindings/dma/atmel-dma.txt
+> > 
+> > Vinod,
+> > 
+> > I have just rebased the dmaengine at_hdmac driver patches on top of your
+> > "next" branch as a "v4" series. I send it to you with Grant's "Acked-by"
+> > right now.
 > 
-> And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-> performance since __this_cpu_xxx has no redundant preempt_disable()
+> Vinod,
 > 
-
-Avi: 
-Would you like to give some comments of this? 
-
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  arch/x86/kvm/x86.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+> Ping?
 > 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 84a28ea..432c4bc 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5024,15 +5024,15 @@ static DEFINE_PER_CPU(struct kvm_vcpu *, current_vcpu);
->  
->  static int kvm_is_in_guest(void)
->  {
-> -	return percpu_read(current_vcpu) != NULL;
-> +	return __this_cpu_read(current_vcpu) != NULL;
->  }
->  
->  static int kvm_is_user_mode(void)
->  {
->  	int user_mode = 3;
->  
-> -	if (percpu_read(current_vcpu))
-> -		user_mode = kvm_x86_ops->get_cpl(percpu_read(current_vcpu));
-> +	if (__this_cpu_read(current_vcpu))
-> +		user_mode = kvm_x86_ops->get_cpl(__this_cpu_read(current_vcpu));
->  
->  	return user_mode != 0;
->  }
-> @@ -5041,8 +5041,8 @@ static unsigned long kvm_get_guest_ip(void)
->  {
->  	unsigned long ip = 0;
->  
-> -	if (percpu_read(current_vcpu))
-> -		ip = kvm_rip_read(percpu_read(current_vcpu));
-> +	if (__this_cpu_read(current_vcpu))
-> +		ip = kvm_rip_read(__this_cpu_read(current_vcpu));
->  
->  	return ip;
->  }
-> @@ -5055,13 +5055,13 @@ static struct perf_guest_info_callbacks kvm_guest_cbs = {
->  
->  void kvm_before_handle_nmi(struct kvm_vcpu *vcpu)
->  {
-> -	percpu_write(current_vcpu, vcpu);
-> +	__this_cpu_write(current_vcpu, vcpu);
->  }
->  EXPORT_SYMBOL_GPL(kvm_before_handle_nmi);
->  
->  void kvm_after_handle_nmi(struct kvm_vcpu *vcpu)
->  {
-> -	percpu_write(current_vcpu, NULL);
-> +	__this_cpu_write(current_vcpu, NULL);
->  }
->  EXPORT_SYMBOL_GPL(kvm_after_handle_nmi);
->  
+> Do you want me to provide you a git tree for those two patches?
+> Do you think it can make it for 3.2 merge window?
+> 
+Sorry lokks like this indeed got missed :(
 
+I will review this right away and if good will apply :)
+
+-- 
+~Vinod
 
