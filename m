@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab1JXMwU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:52:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51518 "EHLO mx1.redhat.com"
+	id S932433Ab1JXMwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:52:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14996 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932349Ab1JXMre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:47:34 -0400
+	id S932333Ab1JXMrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 08:47:31 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 06/24] GFS2: Fix bug trap and journaled data fsync
-Date: Mon, 24 Oct 2011 13:48:20 +0100
-Message-Id: <1319460518-9046-7-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 04/24] GFS2: Make atime checks more efficient
+Date: Mon, 24 Oct 2011 13:48:18 +0100
+Message-Id: <1319460518-9046-5-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
 References: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Journaled data requires that a complete flush of all dirty data for
-the file is done, in order that the ail flush which comes after
-will succeed.
-
-Also the recently enhanced bug trap can trigger falsely in case
-an ail flush from fsync races with a page read. This updates the
-bug trap such that it will ignore buffers which are locked and
-only trigger on dirty and/or pinned buffers when the ail flush
-is run from fsync. The original bug trap is retained when ail
-flush is run from ->go_sync()
+We do not need to start a transaction unless the atime
+check has proved positive. Also if we are going to flush
+the complete ail list anyway, we might as well skip the
+writeback for this specific inode's metadata, since that
+will be done as part of the ail writeback process in an
+order offering potentially more efficient I/O.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index 92c3db4..9d12286 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -590,6 +590,8 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
- 			mutex_unlock(&inode->i_mutex);
- 			return ret;
- 		}
-+		if (gfs2_is_jdata(ip))
-+			filemap_write_and_wait(mapping);
- 		gfs2_ail_flush(ip->i_gl);
- 		mutex_unlock(&inode->i_mutex);
+diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
+index b7beadd..afb8761 100644
+--- a/fs/gfs2/super.c
++++ b/fs/gfs2/super.c
+@@ -768,30 +768,30 @@ static int gfs2_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 			goto do_flush;
+ 		unlock_required = 1;
  	}
-diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-index 99df483..0cc3ff4 100644
---- a/fs/gfs2/glops.c
-+++ b/fs/gfs2/glops.c
-@@ -46,7 +46,7 @@ static void gfs2_ail_error(struct gfs2_glock *gl, const struct buffer_head *bh)
-  * None of the buffers should be dirty, locked, or pinned.
-  */
- 
--static void __gfs2_ail_flush(struct gfs2_glock *gl)
-+static void __gfs2_ail_flush(struct gfs2_glock *gl, unsigned long b_state)
- {
- 	struct gfs2_sbd *sdp = gl->gl_sbd;
- 	struct list_head *head = &gl->gl_ail_list;
-@@ -60,7 +60,7 @@ static void __gfs2_ail_flush(struct gfs2_glock *gl)
- 				bd_ail_gl_list);
- 		bh = bd->bd_bh;
- 		blocknr = bh->b_blocknr;
--		if (buffer_busy(bh))
-+		if (bh->b_state & b_state)
- 			gfs2_ail_error(gl, bh);
- 		bh->b_private = NULL;
- 		gfs2_remove_from_ail(bd); /* drops ref on bh */
-@@ -99,7 +99,7 @@ static void gfs2_ail_empty_gl(struct gfs2_glock *gl)
- 	BUG_ON(current->journal_info);
- 	current->journal_info = &tr;
- 
--	__gfs2_ail_flush(gl);
-+	__gfs2_ail_flush(gl, (1ul << BH_Dirty)|(1ul << BH_Pinned)|(1ul << BH_Lock));
- 
- 	gfs2_trans_end(sdp);
- 	gfs2_log_flush(sdp, NULL);
-@@ -117,7 +117,7 @@ void gfs2_ail_flush(struct gfs2_glock *gl)
- 	ret = gfs2_trans_begin(sdp, 0, revokes);
+-	ret = gfs2_trans_begin(sdp, RES_DINODE, 0);
+-	if (ret)
+-		goto do_unlock;
+ 	ret = gfs2_meta_inode_buffer(ip, &bh);
+ 	if (ret == 0) {
+ 		di = (struct gfs2_dinode *)bh->b_data;
+ 		atime.tv_sec = be64_to_cpu(di->di_atime);
+ 		atime.tv_nsec = be32_to_cpu(di->di_atime_nsec);
+ 		if (timespec_compare(&inode->i_atime, &atime) > 0) {
+-			gfs2_trans_add_bh(ip->i_gl, bh, 1);
+-			gfs2_dinode_out(ip, bh->b_data);
++			ret = gfs2_trans_begin(sdp, RES_DINODE, 0);
++			if (ret == 0) {
++				gfs2_trans_add_bh(ip->i_gl, bh, 1);
++				gfs2_dinode_out(ip, bh->b_data);
++				gfs2_trans_end(sdp);
++			}
+ 		}
+ 		brelse(bh);
+ 	}
+-	gfs2_trans_end(sdp);
+-do_unlock:
+ 	if (unlock_required)
+ 		gfs2_glock_dq_uninit(&gh);
+ do_flush:
+ 	if (wbc->sync_mode == WB_SYNC_ALL)
+ 		gfs2_log_flush(GFS2_SB(inode), ip->i_gl);
+-	filemap_fdatawrite(metamapping);
+ 	if (bdi->dirty_exceeded)
+ 		gfs2_ail1_flush(sdp, wbc);
++	else
++		filemap_fdatawrite(metamapping);
+ 	if (!ret && (wbc->sync_mode == WB_SYNC_ALL))
+ 		ret = filemap_fdatawait(metamapping);
  	if (ret)
- 		return;
--	__gfs2_ail_flush(gl);
-+	__gfs2_ail_flush(gl, (1ul << BH_Dirty)|(1ul << BH_Pinned));
- 	gfs2_trans_end(sdp);
- 	gfs2_log_flush(sdp, NULL);
- }
 -- 
 1.7.4.4
 
