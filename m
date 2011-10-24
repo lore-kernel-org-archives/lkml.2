@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab1JXLIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 07:08:10 -0400
-Received: from fieldses.org ([174.143.236.118]:54310 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754848Ab1JXLIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 07:08:09 -0400
-Date: Mon, 24 Oct 2011 07:07:59 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V8 00/26]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20111024110759.GA1863@fieldses.org>
-References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20111024091716.GA1109@fieldses.org>
- <20111024094910.GA28693@infradead.org>
+	id S1755285Ab1JXLTt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 07:19:49 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:60424 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab1JXLTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 07:19:47 -0400
+Message-ID: <4EA549E7.9090601@linux.vnet.ibm.com>
+Date: Mon, 24 Oct 2011 16:50:07 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024094910.GA28693@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to support
+ pv-ticketlock
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com> <4EA53A7D.300@redhat.com>
+In-Reply-To: <4EA53A7D.300@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 05:49:10AM -0400, Christoph Hellwig wrote:
-> On Mon, Oct 24, 2011 at 05:17:16AM -0400, J. Bruce Fields wrote:
-> > > How do we push these changes to Linus tree ? Andrew, Viro, any comment
-> > > on how we can get this merged upstream ?
-> > 
-> > Andrew, it sounds like you might be willing to shepherd these through?
-> > Let us know what you'd need.
-> 
-> It really has to through the VFS tree.
+On 10/24/2011 03:44 PM, Avi Kivity wrote:
+> On 10/23/2011 09:05 PM, Raghavendra K T wrote:
+>> Add two hypercalls to KVM hypervisor to support pv-ticketlocks.
+>> +
+>> +end_wait:
+>> +	finish_wait(&vcpu->wq,&wait);
+>> +}
+>
+> This hypercall can be replaced by a HLT instruction, no?
+>
+> I'm pretty sure this misses a lot of stuff from kvm_vcpu_block().
 
-Do we have a VFS tree right now?
+Yes.. agree. HLT sounds better idea. 'll try this out.
 
-> And to be honest despite the repostings there's been exactly zero
-> progress on getting there.
+>
+>> +	if (vcpu) {
+>> +		vcpu->kicked = 1;
+>
+> Need to use smp memory barriers here.
 
-Apparently some review was missed--do you have pointers to it, if
-there's anything that isn't covered below?
+Agree.
 
-> Please as a first thing submit the various small cleanups indepent
-> of the other changes.  If you can't even those in there's no point
-> in trying.  Second do not repeat the mistakes of the old ACL code,
-> that is don't do too much work inside the filesystems.  Al, Linus
-> and me spent a lot of working on pushing it into common code and
-> it's not done.  For any new ACL model I really want to see zero
-> per-fs code except for callouts in chmod & co and actually
-> setting the xattr vector to a genericly provided one.  And please
-> wire up all common filesystems to actually prove that point.
+>
+>> +		wake_up_interruptible(&vcpu->wq);
+>> +	}
+>> +}
+>> +
+>>   int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+>>   {
+>>   	unsigned long nr, a0, a1, a2, a3, ret;
+>>
+>
 
-Sounds reasonable.
-
-> I also really hate all the duplication - I want to see a really good
-> reason why all this code needs to be duplicated.  Just look at
-> the mess done to check_acl and the ACL caching in the inode and
-> any normal person would throw up.  There is absolutely no reason
-> to not implement Posix ACLs as a subset of the NFSv4 ACL (not actually
-> a subset in the strict mathematical sense, but close enough).
-
-Just to make sure I understand: you're just talking about the
-implementation here--you want as much as possible to be done by routines
-shared by NFSv4 and Posix ACLs--right?  (You're not suggesting that e.g.
-a user should be able to treat NFSv4 ACLs as if they were Posix ACLs.)
-
-> After all this techical work (which was brought up before) has been
-> done you can resubmit it.  And that point you'd better have very
-> good and very lengthy rationale for why adding an utterly stupid
-> ACL model is supposed to be a good idea.
-
-It's the ACL model that Samba and NFSv4 clients use, and we want to do a
-better job of exporting linux filesystems to those clients.
-
-I don't know how to make the justification much longer than that.
-
---b.
