@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab1JXVDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 17:03:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34387 "EHLO
+	id S1755998Ab1JXVC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 17:02:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36890 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab1JXVC6 (ORCPT
+	with ESMTP id S1755896Ab1JXVC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 17:02:58 -0400
-Message-Id: <20111024210230.095861558@openvz.org>
+	Mon, 24 Oct 2011 17:02:57 -0400
+Message-Id: <20111024205657.807512807@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 25 Oct 2011 00:56:58 +0400
+Date: Tue, 25 Oct 2011 00:56:57 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: containers@lists.osdl.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
@@ -22,117 +22,15 @@ Cc: Nathan Lynch <ntl@pobox.com>, Andrew Morton <akpm@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 1/2] fs, proc: Make proc_get_link to use dentry instead of inode
-References: <20111024205657.807512807@openvz.org>
-Content-Disposition: inline; filename=fs-proc-switch-to-dentry
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: [patch 0/2] fs, proc map_files new entry
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares the ground for the next "map_files"
-patch which needs a name of a link file to analyse.
+The fresh linux is out, so here the two patches were flowing around
+for pretty long time. Now they are well tested and reviewed. While
+c/r code is still under heavy development the /proc/map_files might
+be useful for other purposes as well, so please give them a chance.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Vasiliy Kulikov <segoon@openwall.com>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- fs/proc/base.c          |   20 ++++++++++----------
- include/linux/proc_fs.h |    2 +-
- 2 files changed, 11 insertions(+), 11 deletions(-)
-
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -165,9 +165,9 @@ static int get_task_root(struct task_str
- 	return result;
- }
- 
--static int proc_cwd_link(struct inode *inode, struct path *path)
-+static int proc_cwd_link(struct dentry *dentry, struct path *path)
- {
--	struct task_struct *task = get_proc_task(inode);
-+	struct task_struct *task = get_proc_task(dentry->d_inode);
- 	int result = -ENOENT;
- 
- 	if (task) {
-@@ -182,9 +182,9 @@ static int proc_cwd_link(struct inode *i
- 	return result;
- }
- 
--static int proc_root_link(struct inode *inode, struct path *path)
-+static int proc_root_link(struct dentry *dentry, struct path *path)
- {
--	struct task_struct *task = get_proc_task(inode);
-+	struct task_struct *task = get_proc_task(dentry->d_inode);
- 	int result = -ENOENT;
- 
- 	if (task) {
-@@ -1580,13 +1580,13 @@ static const struct file_operations proc
- 	.release	= single_release,
- };
- 
--static int proc_exe_link(struct inode *inode, struct path *exe_path)
-+static int proc_exe_link(struct dentry *dentry, struct path *exe_path)
- {
- 	struct task_struct *task;
- 	struct mm_struct *mm;
- 	struct file *exe_file;
- 
--	task = get_proc_task(inode);
-+	task = get_proc_task(dentry->d_inode);
- 	if (!task)
- 		return -ENOENT;
- 	mm = get_task_mm(task);
-@@ -1616,7 +1616,7 @@ static void *proc_pid_follow_link(struct
- 	if (!proc_fd_access_allowed(inode))
- 		goto out;
- 
--	error = PROC_I(inode)->op.proc_get_link(inode, &nd->path);
-+	error = PROC_I(inode)->op.proc_get_link(dentry, &nd->path);
- out:
- 	return ERR_PTR(error);
- }
-@@ -1655,7 +1655,7 @@ static int proc_pid_readlink(struct dent
- 	if (!proc_fd_access_allowed(inode))
- 		goto out;
- 
--	error = PROC_I(inode)->op.proc_get_link(inode, &path);
-+	error = PROC_I(inode)->op.proc_get_link(dentry, &path);
- 	if (error)
- 		goto out;
- 
-@@ -1959,9 +1959,9 @@ out_task:
- 	return rc;
- }
- 
--static int proc_fd_link(struct inode *inode, struct path *path)
-+static int proc_fd_link(struct dentry *dentry, struct path *path)
- {
--	return proc_fd_info(inode, path, NULL);
-+	return proc_fd_info(dentry->d_inode, path, NULL);
- }
- 
- static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
-Index: linux-2.6.git/include/linux/proc_fs.h
-===================================================================
---- linux-2.6.git.orig/include/linux/proc_fs.h
-+++ linux-2.6.git/include/linux/proc_fs.h
-@@ -253,7 +253,7 @@ extern const struct proc_ns_operations u
- extern const struct proc_ns_operations ipcns_operations;
- 
- union proc_op {
--	int (*proc_get_link)(struct inode *, struct path *);
-+	int (*proc_get_link)(struct dentry *, struct path *);
- 	int (*proc_read)(struct task_struct *task, char *page);
- 	int (*proc_show)(struct seq_file *m,
- 		struct pid_namespace *ns, struct pid *pid,
-
+Cyrill
