@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab1JXPRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 11:17:04 -0400
-Received: from [213.95.27.120] ([213.95.27.120]:39642 "EHLO
-	ganesha.gnumonks.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932904Ab1JXPRB (ORCPT
+	id S932947Ab1JXPRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 11:17:23 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48926 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932904Ab1JXPRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 11:17:01 -0400
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        Sangbeom Kim <sbkim73@samsung.com>
-Subject: [PATCH 3/3] mfd: Add S5M series configuration
-Date: Fri, 21 Oct 2011 19:28:14 +0900
-Message-Id: <1319192894-19292-4-git-send-email-sbkim73@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1319192894-19292-1-git-send-email-sbkim73@samsung.com>
-References: <1319192894-19292-1-git-send-email-sbkim73@samsung.com>
+	Mon, 24 Oct 2011 11:17:19 -0400
+Date: Mon, 24 Oct 2011 20:46:14 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/X] uprobes: introduce UTASK_SSTEP_TRAPPED logic
+Message-ID: <20111024151614.GA6034@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215344.GG16395@redhat.com> <20111022072030.GB24475@in.ibm.com> <20111024144127.GA14975@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111024144127.GA14975@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+x-cbid: 11102415-2398-0000-0000-0000014A7D8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add S5M series configuration.
+On Mon, Oct 24, 2011 at 04:41:27PM +0200, Oleg Nesterov wrote:
+> On 10/22, Ananth N Mavinakayanahalli wrote:
+> >
+> > On Wed, Oct 19, 2011 at 11:53:44PM +0200, Oleg Nesterov wrote:
+> > > Finally, add UTASK_SSTEP_TRAPPED state/code to handle the case when
+> > > xol insn itself triggers the signal.
+> > >
+> > > In this case we should restart the original insn even if the task is
+> > > already SIGKILL'ed (say, the coredump should report the correct ip).
+> > > This is even more important if the task has a handler for SIGSEGV/etc,
+> > > The _same_ instruction should be repeated again after return from the
+> > > signal handler, and SSTEP can never finish in this case.
+> >
+> > Oleg,
+> >
+> > Not sure I understand this completely...
+> 
+> I hope you do not think I do ;)
 
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
----
- drivers/mfd/Kconfig  |   12 ++++++++++++
- drivers/mfd/Makefile |    1 +
- 2 files changed, 13 insertions(+), 0 deletions(-)
+I think you understand it better than you think you do :-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 21574bd..e280d2a 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -386,6 +386,18 @@ config MFD_MAX8998
- 	  additional drivers must be enabled in order to use the functionality
- 	  of the device.
- 
-+config MFD_S5M_CORE
-+	bool "SAMSUNG S5M Series Support"
-+	depends on I2C=y && GENERIC_HARDIRQS
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	help
-+	  Say yes here to support for SAMSUNG S5M series.
-+	  This is a Power Management IC.
-+	  This driver provies common support for accessing the device,
-+	  additional drivers must be enabled in order to use the functionality
-+	  of the device
-+
- config MFD_WM8400
- 	tristate "Support Wolfson Microelectronics WM8400"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index c580203..dfd05a2 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -102,3 +102,4 @@ obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
- obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
- obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
-+obj-$(CONFIG_MFD_S5M_CORE)	+= s5m-core.o s5m-irq.o
--- 
-1.7.1
+> > When you say 'correct ip' you mean the original vaddr where we now have
+> > a uprobe breakpoint and not the xol copy, right?
+> 
+> Yes,
+> 
+> > Coredump needs to report the correct ip, but should it also not report
+> > correctly the instruction that caused the signal? Ergo, shouldn't we
+> > put the original instruction back at the uprobed vaddr?
+> 
+> OK, now I see what you mean. I was confused by the "restore the original
+> instruction before _restart_" suggestion.
+> 
+> Agreed! it would be nice to "hide" these int3's if we dump the core, but
+> I think this is a bit off-topic. It makes sense to do this in any case,
+> even if the core-dumping was triggered by another thread/insn. It makes
+> sense to remove all int3's, not only at regs->ip location. But how can
+> we do this? This is nontrivial.
+
+I don't think that is a problem.. see below...
+
+> And. Even worse. Suppose that you do "gdb probed_application". Now you
+> see int3's in the disassemble output. What can we do?
+
+In this case, nothing.
+
+> I think we can do nothing, at least currently. This just reflects the
+> fact that uprobe connects to inode, not to process/mm/etc.
+> 
+> What do you think?
+
+Thinking further on this, in the normal 'running gdb on a core' case, we
+won't have this problem, as the binary that we point gdb to, will be a
+pristine one, without the uprobe int3s, right?
+
+Ananth
 
