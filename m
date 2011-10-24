@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab1JXWfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 18:35:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39716 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751244Ab1JXWft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 18:35:49 -0400
-Message-ID: <1319495747.2094.1.camel@Joe-Laptop>
-Subject: Re: Update PMC Sierra MaxRAID MAINTAINERS entry
-From: Joe Perches <joe@perches.com>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-scsi@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Oct 2011 15:35:47 -0700
-In-Reply-To: <20111024221804.GB22671@redhat.com>
-References: <20111024221804.GB22671@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1753476Ab1JXWge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 18:36:34 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:51106 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab1JXWgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 18:36:32 -0400
+Date: Mon, 24 Oct 2011 18:36:23 -0400 (EDT)
+Message-Id: <20111024.183623.551713905402332500.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sjur.brandeland@stericsson.com
+Subject: Re: [PATCH] caif: fix cfcnfg_add_phy_layer() leaks
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1110242359160.19795@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1110242359160.19795@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 24 Oct 2011 15:36:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-24 at 18:18 -0400, Dave Jones wrote:
-> Anil's email no longer exists.
->  >    ----- The following addresses had permanent fatal errors -----
->  > <anil_ravindranath@pmc-sierra.com>
->  >     (reason: 550 5.1.1 <anil_ravindranath@pmc-sierra.com>: Recipient address rejected: User unknown in local recipient table)
-> Signed-off-by: Dave Jones <davej@redhat.com>
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 6185d05..cfc47ee 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5038,7 +5038,6 @@ F:	drivers/hwmon/pmbus/
->  F:	include/linux/i2c/pmbus.h
->  
->  PMC SIERRA MaxRAID DRIVER
-> -M:	Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
->  L:	linux-scsi@vger.kernel.org
->  W:	http://www.pmc-sierra.com/
->  S:	Supported
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Tue, 25 Oct 2011 00:01:00 +0200 (CEST)
 
-Without an actual person as maintainer,
-the S: entry should not be Supported.
-Maybe "S:	Orphan" instead.
+> There are two locations where we 'goto out' after having allocated
+> memory for 'phyinfo' but have not yet assigned it to anything. At the
+> 'out:' label we'll exit from the function and 'phyinfo' will go out of
+> scope and thus we leak the memory we allocated.
+> 
+> This patch frees the memory before jumping to 'out:', thus fixing the
+> leaks.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-
+The code in net-next looks a lot different, please see if the issue
+still exists there and resubmit if so, thanks!
