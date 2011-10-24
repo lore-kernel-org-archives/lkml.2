@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab1JXHsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 03:48:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40005 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387Ab1JXHsT (ORCPT
+	id S1753635Ab1JXHs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 03:48:27 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:32938 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab1JXHsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 03:48:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111024073604.GA8708@ponder.secretlab.ca>
-References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
-	<20110930020754.GK12606@ponder.secretlab.ca>
-	<CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
-	<CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
-	<CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
-	<20111004203520.GK2870@ponder.secretlab.ca>
-	<CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
-	<CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
-	<20111024073604.GA8708@ponder.secretlab.ca>
-Date: Mon, 24 Oct 2011 09:48:19 +0200
-Message-ID: <CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mike Frysinger <vapier.adi@gmail.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stijn Devriendt <highguy@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Oct 2011 03:48:24 -0400
+Date: Mon, 24 Oct 2011 09:48:17 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111024094817.30c01c9b@de.ibm.com>
+In-Reply-To: <20111023113422.GD5156@elte.hu>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
+	<20111007070842.GA27555@hostway.ca>
+	<20111007174848.GA11011@hostway.ca>
+	<1318010515.398.8.camel@twins>
+	<20111008005035.GC22843@hostway.ca>
+	<1318060551.8395.0.camel@twins>
+	<20111012213555.GC24461@hostway.ca>
+	<20111013232521.GA5654@hostway.ca>
+	<CA+55aFxxfsFMgqA7kYKukvkCX6Z9HrKOtP-22w5Mc21iQj4c=Q@mail.gmail.com>
+	<20111020163609.16816e78@de.ibm.com>
+	<20111023113422.GD5156@elte.hu>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 9:36 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon, Oct 24, 2011 at 09:26:38AM +0200, Linus Walleij wrote:
-(...)
->> I was more thinking along the lines of one device per GPIO controller,
->> then you ioctl() to ask /dev/gpio0 how many pins it has or so.
->
-> And there is also the question of whether it is even a good idea to
-> export pinctrl manipulation to userspace.
+On Sun, 23 Oct 2011 13:34:22 +0200
+Ingo Molnar <mingo@elte.hu> wrote:
 
-The application I've seen is in automatic control.
+> 
+> * Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> 
+> > +#define cputime_zero			((__force cputime_t) 0ULL)
+> > +#define cputime64_zero			((__force cputime64_t) 0ULL)
+> 
+> Hm, why are these still needed?
+> 
+> This:
+> 
+> 		if (*newval == cputime_zero)
+> 			return;
+> 
+> Could be written as the much simpler:
+> 
+> 		if (!*newval)
+>  			return;
+> 
+> with no ill effect that i can see.
 
-I think people do things like connect they GPIO pins to electrical
-relays, plus on top of that they use all the stuff in drivers/staging/iio.
+These types are still there because cputime_t can be u32 or u64. E.g. this
 
-All that from userspace. Controlling entire factories and industrial
-robots, weapon systems too, I'm afraid.
+  timer->expires.cpu = 0;
 
-The control of these dangerous things runs on a realtime-patched
-kernel, in a single userspace app with a few threads and they have
-done some realtime-tetris scheduling the beast more or less
-manually with SCHED_FIFO. Basically that app is all that runs on
-the board, and its threads take precedence over everything else
-on the system.
+will give the following sparse warning
 
-That is the typical beast that is poking around on the GPIO sysfs
-interfaces...
+  kernel/posix-cpu-timers.c:463:46: warning: implicit cast to nocast type
 
-Yours,
-Linus Walleij
+if you architecture happens to have a u64 as cputime_t.
+We could get rid of cputime64_t as it always should be a u64. To keep
+things symmetrical I choose to keep both defines.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
