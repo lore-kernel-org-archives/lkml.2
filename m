@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab1JXNuq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:50:46 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51527 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932641Ab1JXNuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:50:44 -0400
-Date: Mon, 24 Oct 2011 19:20:32 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to
- support pv-ticketlock
-Message-ID: <20111024135032.GB10634@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
- <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com>
- <4EA53A7D.300@redhat.com>
- <20111024122734.GA10634@linux.vnet.ibm.com>
- <4EA56385.9040302@redhat.com>
+	id S932709Ab1JXNxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:53:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37940 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932641Ab1JXNxS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 09:53:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4EA56385.9040302@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.00.1110242108540.19271@tundra.namei.org>
+References: <alpine.LRH.2.00.1110242108540.19271@tundra.namei.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 24 Oct 2011 15:52:56 +0200
+X-Google-Sender-Auth: tXzhvQ-9-Tqwss7qR2GA7a2kDbA
+Message-ID: <CA+55aFxbh9eHYe8cPH2TaTW1t5C6C+z-Bcy+kGhR0Gt=MgMvcQ@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem updates for 3.2
+To: James Morris <jmorris@namei.org>, Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2011-10-24 15:09:25]:
+On Mon, Oct 24, 2011 at 1:21 PM, James Morris <jmorris@namei.org> wrote:
+>
+> The most significant item here is the inclusion of EVM:
+> https://lkml.org/lkml/2011/6/29/419
+>
+> There are also enhancements to Smack and Tomoyo, as well as general
+> cleanups and fixes across the subsystem.
+>
+> Please pull.
+>
+> Jarkko Sakkinen (6):
+>      Smack: domain transition protections (v3)
 
-> > I guess with that change, we can also dropthe need for other hypercall
-> > introduced in this patch (kvm_pv_kick_cpu_op()). Essentially a vcpu sleeping 
-> > because of HLT instruction can be woken up by a IPI issued by vcpu releasing a
-> > lock.
-> 
-> Not if interrupts are disabled.
+So this is reverted in linux-next. I don't know why, but it's a bad
+sign. Doesn't compile?
 
-Hmm yes ..so we need a kick hypercall then.
-
-- vatsa
+                  Linus
