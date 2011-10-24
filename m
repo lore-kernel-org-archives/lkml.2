@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab1JXMG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:06:58 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:42553 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab1JXMG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:06:57 -0400
-From: Richard Weinberger <richard@nod.at>
-To: netfilter-devel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org,
-        davem@davemloft.net, kaber@trash.net,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] [TRIVIAL] netfilter: make physdev_mt more readable
-Date: Mon, 24 Oct 2011 14:06:41 +0200
-Message-Id: <1319458001-14958-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7
+	id S932185Ab1JXMHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:07:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43494 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932132Ab1JXMHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 08:07:09 -0400
+Date: Mon, 24 Oct 2011 14:07:06 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Grant Likely <grant@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpiolib: Provide a definition of struct gpio for the
+ stub gpiolib
+Message-ID: <20111024120706.GD6148@opensource.wolfsonmicro.com>
+References: <1319455649-4916-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20111024120120.GO8708@ponder.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111024120120.GO8708@ponder.secretlab.ca>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- net/netfilter/xt_physdev.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Mon, Oct 24, 2011 at 02:01:20PM +0200, Grant Likely wrote:
+> On Mon, Oct 24, 2011 at 01:27:29PM +0200, Mark Brown wrote:
+> > This makes the stub gpio_request_array() much more usable as drivers can
+> > declare struct gpio variables.
 
-diff --git a/net/netfilter/xt_physdev.c b/net/netfilter/xt_physdev.c
-index d7ca16b..eabb751 100644
---- a/net/netfilter/xt_physdev.c
-+++ b/net/netfilter/xt_physdev.c
-@@ -28,12 +28,12 @@ physdev_mt(const struct sk_buff *skb, struct xt_action_param *par)
- 	const struct xt_physdev_info *info = par->matchinfo;
- 	unsigned long ret;
- 	const char *indev, *outdev;
--	const struct nf_bridge_info *nf_bridge;
-+	const struct nf_bridge_info *nf_bridge = skb->nf_bridge;
- 
- 	/* Not a bridged IP packet or no info available yet:
- 	 * LOCAL_OUT/mangle and LOCAL_OUT/nat don't know if
- 	 * the destination device will be a bridge. */
--	if (!(nf_bridge = skb->nf_bridge)) {
-+	if (!nf_bridge) {
- 		/* Return MATCH if the invert flags of the used options are on */
- 		if ((info->bitmask & XT_PHYSDEV_OP_BRIDGED) &&
- 		    !(info->invert & XT_PHYSDEV_OP_BRIDGED))
--- 
-1.7.7
+> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
+> Shouldn't this patch remove the definition from
+> include/asm-generic/gpio.h at the same time?
+
+Both the original forward declaration and the new definition are within
+the !GPIOLIB case of the #defines, it's just a minimal patch moving the
+undefined forward declaration to a defintion.  I didn't want to worry
+about reading the individual users to figure out if they had separate
+defintions separately to the work to get them all moved over to gpiolib.
