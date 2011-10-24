@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab1JXVIq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 17:08:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64957 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755988Ab1JXVIo (ORCPT
+	id S1756034Ab1JXVKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 17:10:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42588 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755990Ab1JXVKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 17:08:44 -0400
-Subject: Re: [BUG] Re: mtd_stresstest module bricked my dockstar
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Willy Tarreau <w@1wt.eu>
-Cc: Roland Kletzing <devzero@web.de>, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com
-Date: Tue, 25 Oct 2011 00:08:12 +0300
-In-Reply-To: <20111024200927.GH5632@1wt.eu>
-References: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003>
-	 <20111024055705.GA4020@1wt.eu>
-	 <B10F15EA8AB74E698DC0D94563A30BE7@samsungnetbook>
-	 <20111024200927.GH5632@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-kURkV9AHC+fQCRja/AQ9"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1319490518.12314.13.camel@golum>
-Mime-Version: 1.0
+	Mon, 24 Oct 2011 17:10:02 -0400
+Date: Mon, 24 Oct 2011 23:09:52 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-ID: <20111024210952.GQ23421@pengutronix.de>
+References: <20111025072013.1824cfd24495819777ad2660@canb.auug.org.au>
+ <20111024203041.GA32545@flint.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111024203041.GA32545@flint.arm.linux.org.uk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:46:02 up 5 days,  3:21, 17 users,  load average: 0.15, 1.93, 2.79
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 24, 2011 at 09:30:41PM +0100, Russell King wrote:
+> On Tue, Oct 25, 2011 at 07:20:13AM +1100, Stephen Rothwell wrote:
+> > Hi Arnd,
+> > 
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/plat-mxc/include/mach/memory.h between commit c039bad00f21
+> > ("ARM: plat-mxc: remove mach/memory.h") from the arm tree and commits
+> > ae4fa7f66e54 ("ARM i.MX: allow to compile together ARMv4 and ARMv5 based
+> > SoCs") and 7409cd1cd554 ("ARM i.MX: allow to compile together all i.MX5
+> > based SoCs") from the arm-soc tree.
+> > 
+> > The former removed the file, so I did that.
+> 
+> Stephen - thanks.
+> 
+> ARM guys, we need to be smarter about this stuff - if we're consolidating
+> code across the ARM tree, committing changes to files which we're going
+> to remove really isn't a good idea.  It probably means something else has
+> changed elsewhere to accomodate the deletion of the file, which this
+> kind of resolution won't fix up.
 
---=-kURkV9AHC+fQCRja/AQ9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+In this case deleting the file is the correct solution. I removed some
+definitions of PLAT_PHYS_OFFSET which got unused due to "ARM i.MX: allow
+to compile together..." and Nicolas removed the need for PLAT_PHYS_OFFSET
+at all.
 
-On Mon, 2011-10-24 at 22:09 +0200, Willy Tarreau wrote:
-> You're pretty right indeed ! I think the code has only be tested with
-> devices that ought to be killed, otherwise the author would have
-> noticed
-> it quickly.=20
+Sascha
 
-Yes, they were usually used to validate a new driver or a new platform
-before, and no one noticed that default parameter value.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-kURkV9AHC+fQCRja/AQ9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOpdO8AAoJEJtuLFy+q7fesV8H/R5PSaLSJgrMXP4vjDfZJDmd
-T9vrzP6cttn40ED3kk2vS+Mvznf7wW54D2GKrAILXf2EV+rfEuAljqLvw17KHWPQ
-pB1NicTTbWRRxxL3DxzVy08XeLE3ee5ubx+qNQcq8nx3636tS0VmFdB4Bkeu+TUA
-TJmpCfRdlPTP4o38NuwfKDSK7M20Ta3+cTGLIz3hHFwMWSxjyr4/Nu5kyIi1S7Fi
-kEXHJeCQNo8N4IEBaV0Yjdd+dsxMG0pYkngGJNAY87uCtPEfVHqPGldDgiUJKHhJ
-3SEr2FqZRridC8s5/eC5p/yBEwqmhQ6ifzPx2vDgQgL+Y9sc2JgvvLXEhSRj3QI=
-=sYnk
------END PGP SIGNATURE-----
-
---=-kURkV9AHC+fQCRja/AQ9--
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
