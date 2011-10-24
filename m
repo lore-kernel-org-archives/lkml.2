@@ -1,142 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab1JXO5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:57:11 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:48332 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932589Ab1JXO5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:57:09 -0400
-Message-ID: <4EA57CBF.2050901@xenotime.net>
-Date: Mon, 24 Oct 2011 07:57:03 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	id S932828Ab1JXO7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:59:21 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55217 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932128Ab1JXO7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 10:59:20 -0400
+Date: Mon, 24 Oct 2011 09:59:16 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-ID: <20111024145916.GA18070@sgi.com>
+References: <alpine.DEB.2.00.1110140856420.6411@router.home>
+ <20111014141921.GC28592@sgi.com>
+ <alpine.DEB.2.00.1110140932530.6411@router.home>
+ <alpine.DEB.2.00.1110140958550.6411@router.home>
+ <20111014161603.GA30561@sgi.com>
+ <20111018134835.GA16222@sgi.com>
+ <m2mxcyz4f7.fsf@firstfloor.org>
+ <alpine.DEB.2.00.1110181806570.12850@chino.kir.corp.google.com>
+ <20111019145458.GA9266@sgi.com>
+ <alpine.DEB.2.00.1110191029570.24001@router.home>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
- built in-tree
-References: <1319461948.31243.31.camel@deadeye>
-In-Reply-To: <1319461948.31243.31.camel@deadeye>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1110191029570.24001@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/11 06:12, Ben Hutchings wrote:
-> Use of the GPL or a compatible licence doesn't necessarily make the code
-> any good.  We already consider staging modules to be suspect, and this
-> should also be true for out-of-tree modules which may receive very
-> little review.
+On Wed, Oct 19, 2011 at 10:31:54AM -0500, Christoph Lameter wrote:
+> On Wed, 19 Oct 2011, Dimitri Sivanich wrote:
 > 
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
-> Debian has been carrying this for the last few kernel versions.  The
-> recent thread '[RFC] virtualbox tainting.' and discussions at KS suggest
-> that this might be more generally useful.
+> > For 120 threads writing in parallel (each to it's own mountpoint), the
+> > threshold needs to be on the order of 1000.  At a threshold of 750, I
+> > start to see a slowdown of 50-60 MB/sec.
+> >
+> > For 400 threads writing in parallel, the threshold needs to be on the order
+> > of 2000 (although we're off by about 40 MB/sec at that point).
+> >
+> > The necessary deltas in these cases are quite a bit higher than the current
+> > 125 maximum (see calculate*threshold in mm/vmstat.c).
+> >
+> > I like the idea of having certain areas triggering vm_stat sync, as long
+> > as we know what those key areas are and how often they might be called.
 > 
-> Ben.
-> 
->  include/linux/kernel.h |    1 +
->  kernel/module.c        |    5 +++++
->  kernel/panic.c         |    2 ++
->  scripts/mod/modpost.c  |    7 +++++++
->  4 files changed, 15 insertions(+), 0 deletions(-)
+> You could potentially reduce the maximum necessary by applying my earlier
+> patch (but please reduce the counters touched to the current cacheline).
+> That should reduce the number of updates in the global cacheline and allow
+> you to reduce the very high deltas that you have to deal with now.
 
-Hi,
+I tried updating whole, single vm_stat cachelines as you suggest, but that
+made little if any difference in tmpfs writeback performance.  The same higher
+threshold values were still necessary to significantly reduce the contention
+seen in __vm_enough_memory.
 
-Please add 'O' to Documentation/oops-tracing.txt.
-
-Thanks.
-
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 46ac9a5..2c05967 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -369,6 +369,7 @@ extern enum system_states {
->  #define TAINT_WARN			9
->  #define TAINT_CRAP			10
->  #define TAINT_FIRMWARE_WORKAROUND	11
-> +#define TAINT_OOT_MODULE		12
->  
->  extern const char hex_asc[];
->  #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 04379f92..c0872f1 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2487,6 +2487,9 @@ static int check_modinfo(struct module *mod, struct load_info *info)
->  		return -ENOEXEC;
->  	}
->  
-> +	if (!get_modinfo(info, "intree"))
-> +		add_taint_module(mod, TAINT_OOT_MODULE);
-> +
->  	if (get_modinfo(info, "staging")) {
->  		add_taint_module(mod, TAINT_CRAP);
->  		printk(KERN_WARNING "%s: module is from the staging directory,"
-> @@ -3257,6 +3260,8 @@ static char *module_flags(struct module *mod, char *buf)
->  		buf[bx++] = '(';
->  		if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
->  			buf[bx++] = 'P';
-> +		else if (mod->taints & (1 << TAINT_OOT_MODULE))
-> +			buf[bx++] = 'O';
->  		if (mod->taints & (1 << TAINT_FORCED_MODULE))
->  			buf[bx++] = 'F';
->  		if (mod->taints & (1 << TAINT_CRAP))
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index d7bb697..b2659360 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -177,6 +177,7 @@ static const struct tnt tnts[] = {
->  	{ TAINT_WARN,			'W', ' ' },
->  	{ TAINT_CRAP,			'C', ' ' },
->  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
-> +	{ TAINT_OOT_MODULE,		'O', ' ' },
->  };
->  
->  /**
-> @@ -194,6 +195,7 @@ static const struct tnt tnts[] = {
->   *  'W' - Taint on warning.
->   *  'C' - modules from drivers/staging are loaded.
->   *  'I' - Working around severe firmware bug.
-> + *  'O' - Out-of-tree module has been loaded.
->   *
->   *	The string is overwritten by the next call to print_tainted().
->   */
-> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-> index a509ff8..2bd594e 100644
-> --- a/scripts/mod/modpost.c
-> +++ b/scripts/mod/modpost.c
-> @@ -1849,6 +1849,12 @@ static void add_header(struct buffer *b, struct module *mod)
->  	buf_printf(b, "};\n");
->  }
->  
-> +static void add_intree_flag(struct buffer *b, int is_intree)
-> +{
-> +	if (is_intree)
-> +		buf_printf(b, "\nMODULE_INFO(intree, \"Y\");\n");
-> +}
-> +
->  static void add_staging_flag(struct buffer *b, const char *name)
->  {
->  	static const char *staging_dir = "drivers/staging";
-> @@ -2169,6 +2175,7 @@ int main(int argc, char **argv)
->  		buf.pos = 0;
->  
->  		add_header(&buf, mod);
-> +		add_intree_flag(&buf, !external_module);
->  		add_staging_flag(&buf, mod->name);
->  		err |= add_versions(&buf, mod);
->  		add_depends(&buf, mod, modules);
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
