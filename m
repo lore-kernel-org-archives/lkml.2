@@ -1,157 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab1JXDrE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Oct 2011 23:47:04 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:40549 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752871Ab1JXDrC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Oct 2011 23:47:02 -0400
-Message-ID: <4EA4DFAE.4030407@tao.ma>
-Date: Mon, 24 Oct 2011 11:46:54 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] block: Remove the control of complete cpu from bio.
-References: <1316166108-6465-1-git-send-email-tm@tao.ma>
-In-Reply-To: <1316166108-6465-1-git-send-email-tm@tao.ma>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753036Ab1JXD6c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Oct 2011 23:58:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52596 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875Ab1JXD6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Oct 2011 23:58:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,396,1315206000"; 
+   d="scan'208";a="76706382"
+Subject: RE: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E552023672A3@CORPEXCH1.na.ads.idt.com>
+References: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	 <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+	 <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
+	 <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
+	 <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
+	 <20111018074211.GA13483@flint.arm.linux.org.uk>
+	 <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+	 <20111018094944.GA30644@flint.arm.linux.org.uk>
+	 <CAJe_ZhcDJjP3t_XFG04or4WzwzPHEcHo2ThstGCVFrYvYqTaiQ@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E552023672A3@CORPEXCH1.na.ads.idt.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Oct 2011 09:19:09 +0530
+Message-ID: <1319428149.9355.60.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping.
-For the detailed discussion, please refer to
-https://lkml.org/lkml/2011/9/15/98
+On Tue, 2011-10-18 at 10:57 -0700, Bounine, Alexandre wrote:
 
-Thanks
-Tao
+Sorry for delayed response, been quite busy with upcoming festival, and
+other stuff  :(
+> > >
+> > Thanks for the detailed explanation.
+> > 
+> > RapidIO is a packet switched interconnect with parallel or serial
+> > interface.
+> > Among other things, a packet contains 32, 48 or 64 bit offset into the
+> > remote-endpoint's address space. So I don't get how any of the above
+> > 6 points apply here.
+> > 
+> > Though I agree it is peculiar for a networking technology to expose a
+> > DMAEngine interface. But I assume Alex has good reasons for it, who
+> > knows RIO better than us.
+> To keep it simple, look at this as a peer-to-peer networking with HW ability
+> to directly address memory of the link partner.
+> 
+> RapidIO supports messaging which is closer to traditional networking and is
+> supported by RIONET driver (pretending to be Ethernet). But in some situations
+> messaging cannot be used. In these cases addressed memory read/write
+> operations take place.
+> 
+> I would like to put a simple example of RIO based system that may help to
+> understand our DMA requirements. 
+> 
+> Consider a platform with one host CPU and several DSP cards connected
+> to it through a switched backplane (transparent for purpose of this example).
+>  
+> The host CPU has one or more RIO-capable DMA channel and runs device
+> drivers for connected DSP cards. Each device driver is required to load
+> an individual program code into corresponding DSP(s). Directly addressed
+> writes have a lot of sense.
+> 
+> After DSP code is loaded device drivers start DSP program and may
+> participate in data transfers between DSP cards and host CPU. Again
+> messaging type transfers may add unnecessary overhead here compared
+> to direct data reads/writes.
+> 
+> Configuration of each DSP card may be different but from host's
+> POV is RIO spec compliant.
 
-On 09/16/2011 05:41 PM, Tao Ma wrote:
-> From: Tao Ma <boyu.mt@taobao.com>
-> 
-> bio originally has the functionality to set the complete cpu, but
-> it is broken.
-> 
-> Chirstoph said that "This code is unused, and from the all the
-> discussions lately pretty obviously broken.  The only thing keeping
-> it serves is creating more confusion and possibly more bugs."
-> 
-> And Jens replied with "We can kill bio_set_completion_cpu(). I'm fine
-> with leaving cpu control to the request based drivers, they are the
-> only ones that can toggle the setting anyway".
-> 
-> So this patch tries to remove all the work of controling complete cpu
-> from a bio.
-> 
-> Cc: Shaohua Li <shaohua.li@intel.com>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Jens Axboe <jaxboe@fusionio.com>
-> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-> ---
->  block/blk-core.c          |    4 +---
->  drivers/md/raid1.c        |    1 -
->  fs/bio.c                  |    1 -
->  include/linux/bio.h       |    8 --------
->  include/linux/blk_types.h |   11 ++++-------
->  5 files changed, 5 insertions(+), 20 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 90e1ffd..8a57916 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1200,7 +1200,6 @@ out:
->  
->  void init_request_from_bio(struct request *req, struct bio *bio)
->  {
-> -	req->cpu = bio->bi_comp_cpu;
->  	req->cmd_type = REQ_TYPE_FS;
->  
->  	req->cmd_flags |= bio->bi_rw & REQ_COMMON_MASK;
-> @@ -1281,8 +1280,7 @@ get_rq:
->  	 */
->  	init_request_from_bio(req, bio);
->  
-> -	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) ||
-> -	    bio_flagged(bio, BIO_CPU_AFFINE))
-> +	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags))
->  		req->cpu = raw_smp_processor_id();
->  
->  	plug = current->plug;
-> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> index 32323f0..3107bcc 100644
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -2170,7 +2170,6 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
->  		bio->bi_next = NULL;
->  		bio->bi_flags &= ~(BIO_POOL_MASK-1);
->  		bio->bi_flags |= 1 << BIO_UPTODATE;
-> -		bio->bi_comp_cpu = -1;
->  		bio->bi_rw = READ;
->  		bio->bi_vcnt = 0;
->  		bio->bi_idx = 0;
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 9bfade8..41c93c7 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -255,7 +255,6 @@ void bio_init(struct bio *bio)
->  {
->  	memset(bio, 0, sizeof(*bio));
->  	bio->bi_flags = 1 << BIO_UPTODATE;
-> -	bio->bi_comp_cpu = -1;
->  	atomic_set(&bio->bi_cnt, 1);
->  }
->  EXPORT_SYMBOL(bio_init);
-> diff --git a/include/linux/bio.h b/include/linux/bio.h
-> index ce33e68..a3c071c 100644
-> --- a/include/linux/bio.h
-> +++ b/include/linux/bio.h
-> @@ -269,14 +269,6 @@ extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
->  extern unsigned int bvec_nr_vecs(unsigned short idx);
->  
->  /*
-> - * Allow queuer to specify a completion CPU for this bio
-> - */
-> -static inline void bio_set_completion_cpu(struct bio *bio, unsigned int cpu)
-> -{
-> -	bio->bi_comp_cpu = cpu;
-> -}
-> -
-> -/*
->   * bio_set is used to allow other portions of the IO system to
->   * allocate their own private memory pools for bio and iovec structures.
->   * These memory pools in turn all allocate from the bio_slab
-> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-> index 32f0076..174bc3a 100644
-> --- a/include/linux/blk_types.h
-> +++ b/include/linux/blk_types.h
-> @@ -59,8 +59,6 @@ struct bio {
->  
->  	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
->  
-> -	unsigned int		bi_comp_cpu;	/* completion CPU */
-> -
->  	atomic_t		bi_cnt;		/* pin count */
->  
->  	struct bio_vec		*bi_io_vec;	/* the actual vec list */
-> @@ -93,11 +91,10 @@ struct bio {
->  #define BIO_BOUNCED	5	/* bio is a bounce bio */
->  #define BIO_USER_MAPPED 6	/* contains user pages */
->  #define BIO_EOPNOTSUPP	7	/* not supported */
-> -#define BIO_CPU_AFFINE	8	/* complete bio on same CPU as submitted */
-> -#define BIO_NULL_MAPPED 9	/* contains invalid user pages */
-> -#define BIO_FS_INTEGRITY 10	/* fs owns integrity data, not block layer */
-> -#define BIO_QUIET	11	/* Make BIO Quiet */
-> -#define BIO_MAPPED_INTEGRITY 12/* integrity metadata has been remapped */
-> +#define BIO_NULL_MAPPED 8	/* contains invalid user pages */
-> +#define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
-> +#define BIO_QUIET	10	/* Make BIO Quiet */
-> +#define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
->  #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
->  
->  /*
+I think we all agree that this fits the dma_slave case :)
+
+As for changing in dmaengine to u64, if we are thinking this as slave
+usage, then ideally we should not make assumption of the address type of
+peripheral so we should only move the dma_slave_config address fields to
+u64, if that helps in RIO case. Moving other usages would be insane.
+ 
+At this point we have two proposals
+a) to make RIO exceptional case and add RIO specific stuff.
+b) make dmaengine transparent and add additional argument
+in .device_prep_slave_sg() callback which is subsystem dependent.
+Current dmacs and those who don't need it will ignore it.
+
+ATM, I am leaning towards the latter, for the main reason to keep
+dmaengine away from subsystem details.
+
+-- 
+~Vinod
 
