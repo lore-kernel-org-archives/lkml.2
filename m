@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab1JXJOi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 05:14:38 -0400
-Received: from plane.gmane.org ([80.91.229.3]:45162 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344Ab1JXJOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 05:14:37 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4EA52C78.3030105@cam.ac.uk>
-Date: Mon, 24 Oct 2011 10:14:32 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
+	id S1754227Ab1JXJOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 05:14:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62323 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab1JXJOv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 05:14:51 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Maxin B John 
-	<public-maxin.john-Re5JQEeQqe8AvxtiuMwx3w@plane.gmane.org>,
-        Jonathan Cameron 
-	<public-jic23-KWPb1pKIrIJaa/9Udqfwiw@plane.gmane.org>,
-        Dan Carpenter 
-	<public-error27-Re5JQEeQqe8AvxtiuMwx3w@plane.gmane.org>,
-        Bryan Freed 
-	<public-bfreed-F7+t8E8rja9g9hUCZPvPmw@plane.gmane.org>,
-        public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
-        Greg Kroah-Hartman <public-gregkh-l3A5Bk7waGM@plane.gmane.org>,
-        public-linux-iio-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
-        Arnd Bergmann <public-arnd-r2nGTMty4D4@plane.gmane.org>,
-        public-devel-gWbeCf7V1WCQmaza687I9mD2FQJk+8+b@plane.gmane.org,
-        Amit Kucheria 
-	<public-amit.kucheria-LY4KaoCqKrnby3iVrkZq2A@plane.gmane.org>
-Subject: Re: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
-References: <20110902094107.GA2846@maxin> <4E60B63C.1030101@cam.ac.uk> <CAMhs6Yzw3-CARTULhy4s-Re4Q82Ek9gZGUQtABLLs0PSArHCuw@mail.gmail.com> <4EA52710.2060108@cam.ac.uk> <20111024090143.GB3526@mwanda>
-In-Reply-To: <20111024090143.GB3526@mwanda>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+ <20110930020754.GK12606@ponder.secretlab.ca> <CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
+ <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
+ <CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
+ <20111004203520.GK2870@ponder.secretlab.ca> <CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
+ <CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 24 Oct 2011 05:14:30 -0400
+Message-ID: <CAMjpGUc0TqqEFNXcg7m6K6Zc8GCYe1BgOHvZt4Cb35GHJ5=1fQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: create a pin control subsystem v8
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Stijn Devriendt <highguy@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 10/24/11 10:01, Dan Carpenter wrote:
-> On Mon, Oct 24, 2011 at 09:51:28AM +0100, Jonathan Cameron wrote:
->>>>> Signed-off-by: Maxin B. John <maxin.john-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
->>>> Acked-by: Jonathan Cameron <jic23-KWPb1pKIrIJaa/9Udqfwiw@public.gmane.org>
+On Mon, Oct 24, 2011 at 03:26, Linus Walleij wrote:
+> On Sat, Oct 22, 2011 at 7:44 PM, Mike Frysinger wrote:
+>> On Tue, Oct 4, 2011 at 16:35, Grant Likely wrote:
+>>> On Sat, Oct 01, 2011 at 12:39:21PM +0200, Linus Walleij wrote:
+>>>> 2011/9/30 Grant Likely:
+>>>> > I'm not convinced that the sysfs approach is
+>>>> > actually the right interface here (I'm certainly not a fan of the gpio
+>>>> > sysfs i/f), and I'd rather not be putting in unneeded stuff until the
+>>>> > userspace i/f is hammered out.
 >>>>
+>>>> Actually, thinking about it I cannot see what would be wrong
+>>>> with /dev/gpio0 & friends in the first place.
+>>>>
+>>>> Using sysfs as swiss army knife for custom I/O does not
+>>>> seem like it would be long-term viable so thanks for this
+>>>> observation, and I think we need /dev/gpio* put on some
+>>>> mental roadmap somewhere.
 >>>
->>> Sorry for the delay in replying to this mail. I am curious about the
->>> status of this patch. I couldn't locate this patch at  iio-blue.git as
->>> it is not present in kernel.org now
->>> (http://git.kernel.org/?p=linux/kernel/git/jic23/iio-blue.git;a=summary)
->>> Please ignore this mail if you have already added this patch to your tree.
->> Ah, sorry I slipped up here and should have noticed it didn't go directly to
->> Greg. Just to check, with everyone I have author as Dan, reporter as Maxin
->> and have signed off myself (it's going through my tree anyway now).
+>>> Agreed.  I don't want to be in the situation we are now with GPIO,
+>>> where every time I look at the sysfs interface I shudder.
 >>
->> I think from looking back it was Dan's suggestion in response to Maxin's
->> patch.  Hence convention would be a sign off from Dan and perhaps an
->> Ack from Maxin?
->>
-> 
-> Maxim is the author.  He didn't resend this in the proper way so it
-> was confusing...  Can you give me a Reviewed-by tag?
-> 
-> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
+>> the problem with that is it doesn't scale.  if i have a device with
+>> over 150 GPIOs on the SoC itself (obviously GPIO expanders can make
+>> that much bigger), i don't want to see 150+ device nodes in /dev/.
+>> that's a pretty big waste.  sysfs only allocates/frees resources when
+>> userspace actually wants to utilize a GPIO.
+>
+> I was more thinking along the lines of one device per GPIO controller,
+> then you ioctl() to ask /dev/gpio0 how many pins it has or so.
 
-Sure.
+that brings its own set of trade offs.  this might be OK from a
+debugging point of view, but it means security wise we have to grant
+access on a per-gpiochip basis instead of a per-gpio basis.  i think
+the sysfs interface has this granularity of support already as the
+root user can chmod/chown the files after exporting them.
 
-
+Grant suggested we extend UIO to export GPIOs.  this would be a good
+trade off i think -- sysfs is a good on-the-fly debugging/scripting
+interface, but UIO gets us the performance.  sysfs overhead can be
+mitigated by using pwrite/pread, but without pwritev/preadv, we're
+stuck with 1-transition-per-syscall.
+-mike
