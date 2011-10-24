@@ -1,132 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab1JXNMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:12:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56628 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932478Ab1JXNMm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:12:42 -0400
-Message-ID: <1319461948.31243.31.camel@deadeye>
-Subject: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not built
- in-tree
-From: Ben Hutchings <ben@decadent.org.uk>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Date: Mon, 24 Oct 2011 15:12:28 +0200
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 85.13.70.252
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S932616Ab1JXNNB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:13:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38050 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932478Ab1JXNNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 09:13:00 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Fix word wrap in Makefile
+Date: Mon, 24 Oct 2011 15:12:57 +0200
+Message-Id: <1319461978-17413-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of the GPL or a compatible licence doesn't necessarily make the code
-any good.  We already consider staging modules to be suspect, and this
-should also be true for out-of-tree modules which may receive very
-little review.
+80 columns FTW.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
-Debian has been carrying this for the last few kernel versions.  The
-recent thread '[RFC] virtualbox tainting.' and discussions at KS suggest
-that this might be more generally useful.
+ drivers/base/regmap/Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Ben.
-
- include/linux/kernel.h |    1 +
- kernel/module.c        |    5 +++++
- kernel/panic.c         |    2 ++
- scripts/mod/modpost.c  |    7 +++++++
- 4 files changed, 15 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 46ac9a5..2c05967 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -369,6 +369,7 @@ extern enum system_states {
- #define TAINT_WARN			9
- #define TAINT_CRAP			10
- #define TAINT_FIRMWARE_WORKAROUND	11
-+#define TAINT_OOT_MODULE		12
- 
- extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-diff --git a/kernel/module.c b/kernel/module.c
-index 04379f92..c0872f1 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2487,6 +2487,9 @@ static int check_modinfo(struct module *mod, struct load_info *info)
- 		return -ENOEXEC;
- 	}
- 
-+	if (!get_modinfo(info, "intree"))
-+		add_taint_module(mod, TAINT_OOT_MODULE);
-+
- 	if (get_modinfo(info, "staging")) {
- 		add_taint_module(mod, TAINT_CRAP);
- 		printk(KERN_WARNING "%s: module is from the staging directory,"
-@@ -3257,6 +3260,8 @@ static char *module_flags(struct module *mod, char *buf)
- 		buf[bx++] = '(';
- 		if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
- 			buf[bx++] = 'P';
-+		else if (mod->taints & (1 << TAINT_OOT_MODULE))
-+			buf[bx++] = 'O';
- 		if (mod->taints & (1 << TAINT_FORCED_MODULE))
- 			buf[bx++] = 'F';
- 		if (mod->taints & (1 << TAINT_CRAP))
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d7bb697..b2659360 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -177,6 +177,7 @@ static const struct tnt tnts[] = {
- 	{ TAINT_WARN,			'W', ' ' },
- 	{ TAINT_CRAP,			'C', ' ' },
- 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
-+	{ TAINT_OOT_MODULE,		'O', ' ' },
- };
- 
- /**
-@@ -194,6 +195,7 @@ static const struct tnt tnts[] = {
-  *  'W' - Taint on warning.
-  *  'C' - modules from drivers/staging are loaded.
-  *  'I' - Working around severe firmware bug.
-+ *  'O' - Out-of-tree module has been loaded.
-  *
-  *	The string is overwritten by the next call to print_tainted().
-  */
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index a509ff8..2bd594e 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1849,6 +1849,12 @@ static void add_header(struct buffer *b, struct module *mod)
- 	buf_printf(b, "};\n");
- }
- 
-+static void add_intree_flag(struct buffer *b, int is_intree)
-+{
-+	if (is_intree)
-+		buf_printf(b, "\nMODULE_INFO(intree, \"Y\");\n");
-+}
-+
- static void add_staging_flag(struct buffer *b, const char *name)
- {
- 	static const char *staging_dir = "drivers/staging";
-@@ -2169,6 +2175,7 @@ int main(int argc, char **argv)
- 		buf.pos = 0;
- 
- 		add_header(&buf, mod);
-+		add_intree_flag(&buf, !external_module);
- 		add_staging_flag(&buf, mod->name);
- 		err |= add_versions(&buf, mod);
- 		add_depends(&buf, mod, modules);
+diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
+index 0573c8a..f331a90 100644
+--- a/drivers/base/regmap/Makefile
++++ b/drivers/base/regmap/Makefile
+@@ -1,4 +1,5 @@
+-obj-$(CONFIG_REGMAP) += regmap.o regcache.o regcache-indexed.o regcache-rbtree.o regcache-lzo.o
++obj-$(CONFIG_REGMAP) += regmap.o regcache.o regcache-indexed.o
++obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o
+ obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
+ obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
+ obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
 -- 
-1.7.7
-
+1.7.6.3
 
