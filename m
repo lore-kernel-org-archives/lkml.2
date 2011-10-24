@@ -1,86 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab1JXPkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 11:40:52 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:26557
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932390Ab1JXPkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 11:40:51 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-Date: Mon, 24 Oct 2011 23:51:33 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rajendra Nayak <rnayak@ti.com>, <patches@linaro.org>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <lrg@ti.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111024155132.GI1755@S2100-06.ap.freescale.net>
-References: <20111020061408.GE32007@S2100-06.ap.freescale.net>
- <4EA00F7C.1080005@ti.com>
- <20111021082309.GA337@S2100-06.ap.freescale.net>
- <20111024092411.GE8708@ponder.secretlab.ca>
- <20111024130429.GD1755@S2100-06.ap.freescale.net>
- <20111024130636.GB26033@opensource.wolfsonmicro.com>
- <20111024134025.GE1755@S2100-06.ap.freescale.net>
- <20111024135950.GV8708@ponder.secretlab.ca>
- <20111024145139.GH1755@S2100-06.ap.freescale.net>
- <20111024145631.GB8708@ponder.secretlab.ca>
+	id S932889Ab1JXPmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 11:42:05 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:35095 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932764Ab1JXPmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 11:42:03 -0400
+Subject: Re: [PATCH 5/6] IIO:hwmon interface client driver.
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linus.ml.walleij@gmail.com" <linus.ml.walleij@gmail.com>,
+        "zdevai@gmail.com" <zdevai@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+In-Reply-To: <4EA53973.9080102@cam.ac.uk>
+References: <1319103187-27791-1-git-send-email-jic23@cam.ac.uk>
+	 <1319103187-27791-6-git-send-email-jic23@cam.ac.uk>
+	 <1319123566.3720.297.camel@groeck-laptop> <4EA03E8D.1010303@cam.ac.uk>
+	 <4EA53973.9080102@cam.ac.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Mon, 24 Oct 2011 08:39:44 -0700
+Message-ID: <1319470784.2583.46.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111024145631.GB8708@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 04:56:31PM +0200, Grant Likely wrote:
-> On Mon, Oct 24, 2011 at 10:51:40PM +0800, Shawn Guo wrote:
-> > On Mon, Oct 24, 2011 at 03:59:50PM +0200, Grant Likely wrote:
-> > > On Mon, Oct 24, 2011 at 09:40:26PM +0800, Shawn Guo wrote:
-> > > > diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> > > > index 8fe132d..29dcf90 100644
-> > > > --- a/drivers/regulator/core.c
-> > > > +++ b/drivers/regulator/core.c
-> > > > @@ -2673,7 +2673,8 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
-> > > >         BLOCKING_INIT_NOTIFIER_HEAD(&rdev->notifier);
-> > > > 
-> > > >         /* find device_node and attach it */
-> > > > -       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
-> > > > +       rdev->dev.of_node = of_find_node_by_name(dev->parent->of_node,
-> > > > +                                                regulator_desc->name);
-> > > 
-> > > of_find_node_by_name() doesn't work that way.  The first argument is a
-> > > starting point, but it doesn't restrict the search to children of a
-> > > node.
-> > > 
-> > > for_each_child_of_node() is what you want to use when iterating over
-> > > the children which unfortunately changes the structure of this
-> > > function.
-> > > 
-> > The dev->parent->of_node is meant to point to node 'pmic: mc13892@0'.
-> > And the intention here is not to iterate over the children, but to
-> > start a search from a reasonable point rather than the top root node.
+On Mon, 2011-10-24 at 06:09 -0400, Jonathan Cameron wrote:
+[ ... ]
+> >>> +/*
+> >>> + * Assumes that IIO and hwmon operate in the same base units.
+> >>> + * This is supposed to be true, but needs verification for
+> >>> + * new channel types.
+> >>> + */
+> >>> +static ssize_t iio_hwmon_read_val(struct device *dev,
+> >>> +				  struct device_attribute *attr,
+> >>> +				  char *buf)
+> >>> +{
+> >>> +	long result;
+> >>> +	int val, ret, scaleint, scalepart;
+> >>> +	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
+> >>> +	struct iio_hwmon_state *state = dev_get_drvdata(dev);
+> >>> +
+> >>> +	/*
+> >>> +	 * No locking between this pair, so theoretically possible
+> >>> +	 * the scale has changed.
+> >>> +	 */
+> >>> +	ret = iio_read_channel_raw(state->channels[sattr->index],
+> >>> +				   &val);
+> >>> +	if (ret < 0)
+> >>> +		return ret;
+> >>> +
+> >>> +	ret = iio_read_channel_scale(state->channels[sattr->index],
+> >>> +				     &scaleint, &scalepart);
+> >>> +	if (ret < 0)
+> >>> +		return ret;
+> >>> +	switch (ret) {
+> >>> +	case IIO_VAL_INT:
+> >>> +		result = val * scaleint;
+> >>> +		break;
+> >>> +	case IIO_VAL_INT_PLUS_MICRO:
+> >>> +		result = (long)val * (long)scaleint +
+> >>> +			(long)val * (long)scalepart / 1000000L;
+> >>> +		break;
+> >>> +	case IIO_VAL_INT_PLUS_NANO:
+> >>> +		result = (long)val * (long)scaleint +
+> >>> +			(long)val * (long)scalepart / 1000000000L;
+> >>> +		break;
+> >>
+> >> Still easy to imagine that val * scalepart gets larger than 2147483647L
+> >> (on machines where sizeof(long) = 4) ... it will already happen if the
+> >> result of (val * scalepart / 1000000000) is larger than 2. 
+> > Good point.  I really ought to have done the calcs.
+> > If we have maximum possible value in here things will be ugly.
+> > 
+> > Worst case is scalepart is 9999999999. (could be done as 1 - 0.000000001
+> > which would be nicer, but we don't specify a preference - from this
+> > discussion I am suspecting we should!)
+> > 
+> > Looks like 64 bits is going to be a requirement as you say.
+> >>
+> >> What value range do you expect to see here ?
+> >>
+> >> If (val * scaleint) is already the milli-unit, scalepart would possibly
+> >> only address fractions of milli-units. If so, the result of (val *
+> >> scalepart / 1000000000L) might always be smaller than 1, ie 0. 
+> > It certainly should be.
+> >> If so, for the calculation to have any value, you might be better off using
+> >> DIV_ROUND_CLOSEST(val * scalepart, 1000000000L).
+> > Good idea.
+> >>
+> >> I am a bit confused by this anyway. Since hwmon in general reports
+> >> milli-units, VAL_INT appears to reflect milli-units, VAL_INT_PLUS_MICRO
+> >> really means nano-units, and IIO_VAL_INT_PLUS_NANO really means
+> >> pico-units. Is this correct ?
+> > Micro units of the scale factor.
+> > 
+> > Take my test part a max1363...
+> > Scale is actually 0.5 so each adc count (e.g. raw value) is 0.5millivolts.
+> > 
+> > scale int here is 0,
+> > scale part is 500,000 (so 0.5) and it returns IIO_VAL_INT_PLUS_MICRO.
 > 
-> It is always better to attach the of_node at struct device
-> registration time instead of searching the tree in common code.  The
-> of_node should already be assigned by the time regulator_register() is
-> called.
+> How about the following?  It'll be extremely costly, but this isn't exactly
+> a fast path!
+> 
+> 	case IIO_VAL_INT_PLUS_MICRO:
+> 		result = (s64)val * (s64)scaleint +
+> 			div_s64((s64)val * (s64)scalepart, 1000000LL);
+> 		break;
+> 	case IIO_VAL_INT_PLUS_NANO:
+> 		result = (s64)val * (s64)scaleint +
+> 			div_s64((s64)val * (s64)scalepart, 1000000000LL);
+> 		break;
 
-That's the problem we have.  There is no 'struct dev' to attach of_node
-for each regulator by the time regulator_register() is called, because
-the 'struct dev' for each regulator is created inside
-regulator_register() as wrapped by 'struct regulator_dev'.
+Is div_s64 really necessary, or would
 
--- 
-Regards,
-Shawn
+		result = (long)val * (long)scaleint +
+			DIV_ROUND_CLOSEST((s64)val * (s64)scalepart,
+					 1000000000LL);
+
+work as well ?
+
+Thanks,
+Guenter
+
+
 
