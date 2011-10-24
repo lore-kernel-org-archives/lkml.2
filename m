@@ -1,67 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab1JXT5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 15:57:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42830 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab1JXT5a (ORCPT
+	id S1754875Ab1JXUJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 16:09:39 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54274 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab1JXUJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 15:57:30 -0400
-Date: Mon, 24 Oct 2011 20:56:06 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Mark Einon <mark.einon@gmail.com>, Greg KH <greg@kroah.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH staging 6/6] et131x: uncloak PCIe capabilities.
-Message-ID: <20111024195602.GA3473@msilap.einon>
-References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
- <20111023093651.GA22285@kroah.com>
- <20111023094231.GA3409@msilap.einon>
- <20111023171214.GF28657@electric-eye.fr.zoreil.com>
+	Mon, 24 Oct 2011 16:09:37 -0400
+Date: Mon, 24 Oct 2011 22:09:33 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC 3/4] lib: devres: add convenience function to remap a
+ resource
+Message-ID: <20111024200933.GB6326@pengutronix.de>
+References: <1319445729-14841-1-git-send-email-w.sang@pengutronix.de>
+ <1319445729-14841-4-git-send-email-w.sang@pengutronix.de>
+ <20111024154307.GB24914@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
 Content-Disposition: inline
-In-Reply-To: <20111023171214.GF28657@electric-eye.fr.zoreil.com>
+In-Reply-To: <20111024154307.GB24914@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 07:12:14PM +0200, Francois Romieu wrote:
-> FIXME: it should be possible to get rid of ET1310_PCI_L0L1LATENCY as well.
-> 
-> Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-> ---
->  drivers/staging/et131x/et131x.c |   53 ++++++++++++++++++++++----------------
->  1 files changed, 31 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-> index 79ca1d3..2a0b794 100644
-> --- a/drivers/staging/et131x/et131x.c
-> +++ b/drivers/staging/et131x/et131x.c
-[...]
-> -	if (et131x_init_eeprom(adapter) < 0)
-> -		return -EIO;
-> +	rc = et131x_init_eeprom(adapter);
-> +	if (rc < 0)
-> +		goto out;
->  
-[...]
->  	}
->  	memcpy(adapter->addr, adapter->rom_addr, ETH_ALEN);
-> -	return 0;
-> +out:
-> +	return rc;
-> +err_out:
-> +	rc = -EIO;
-> +	goto out;
->  }
 
-Hi Francois,
+--7ZAtKRhVyVSsbBD2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The PCIe changes are good, however I think using gotos here doesn't add anything as there's no difficult locking to navigate and makes the code harder to read.
-both out: and err_out: are used to return an error, and the backwards jumping goto makes me a bit uncomfortable. Could you respin with just the PCIe changes?
+Hi,
 
-Cheers,
+> On Mon, Oct 24, 2011 at 10:42:08AM +0200, Wolfram Sang wrote:
+> > * the new function is not named 'devm_ioremap_resource' because it does=
+ more than
+> >   just ioremap, namely request_mem_region. I didn't want to create impl=
+icit
+> >   knowledge here.
+>=20
+> Maybe devm_request_and_ioremap_resource()?  Maybe it's a bit long but
+> A_to_B names are usually used for trivial conversions.
 
-Mark
+I had this name in mind, too. Yet, it implies that the function requests a
+resource but in fact it requests a mem_region. Requesting a resource (e.g.
+platform_get_resource) is THE thing the function does not do. So I scrapped
+this name. But will do some more brainstorming for a better name in V2.
+
+>=20
+> > +int __must_check devm_resource_to_mapped_ptr(struct device *dev,
+> > +			struct resource *res, void __iomem **dest)
+>=20
+> If we're already printing out dev_err(), I think we can live with
+> %NULL return on error.
+
+Yes, already fixed this way.
+
+> > +{
+> > +	resource_size_t size;
+> > +	const char *name;
+> > +
+> > +	BUG_ON(!dev || !dest);
+> > +
+> > +	*dest =3D NULL;
+> > +
+> > +	if (!res || resource_type(res) !=3D IORESOURCE_MEM) {
+> > +		dev_err(dev, "invalid resource\n");
+> > +		return -ENOENT;
+> > +	}
+> > +
+> > +	size =3D resource_size(res);
+> > +	name =3D res->name ?: dev_name(dev);
+> > +
+> > +	if (!devm_request_mem_region(dev, res->start, size, name)) {
+> > +		dev_err(dev, "can't request region for resource %pR\n", res);
+> > +		return -EBUSY;
+> > +	}
+> > +
+> > +	if (res->flags & IORESOURCE_CACHEABLE)
+> > +		*dest =3D devm_ioremap(dev, res->start, size);
+> > +	else
+> > +		*dest =3D devm_ioremap_nocache(dev, res->start, size);
+> > +
+> > +	if (!*dest) {
+> > +		dev_err(dev, "ioremap failed for resource %pR\n", res);
+> > +		return -ENOMEM;
+> > +	}
+>=20
+> So, for library functions, it's nice if the function doesn't hold any
+> extra resource on error return.  devres has grouping to support this.
+> You just need to wrap allocations inside a group and remove it on
+> success and release on error.  ie.
+>=20
+> 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
+> 		return NULL;
+> 	if (alloc_resource(0) < 0)
+> 		goto fail;
+> 	if (alloc_resource(1) < 0)
+> 		goto fail;
+> 	devres_remove_group(dev, NULL);
+> 	return 0;
+> fail:
+> 	devres_release_group(dev, NULL);
+> 	return 0;
+
+I am not sure I got what you mean here, but wouldn't it be easier to simply
+call devm_release_mem_region() when devm_ioremap comes back with a NULL
+pointer?
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--7ZAtKRhVyVSsbBD2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk6lxf0ACgkQD27XaX1/VRtxiQCgr1SlL0N/kmHdyrwkzhxVEpHD
+PB4An1LMcrwe+FEXyrp1Lqo004S8GpJ6
+=OoUg
+-----END PGP SIGNATURE-----
+
+--7ZAtKRhVyVSsbBD2--
