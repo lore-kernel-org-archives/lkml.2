@@ -1,111 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab1JXMMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:12:52 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:8117 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932130Ab1JXMMv (ORCPT
+	id S932214Ab1JXMOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:14:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130Ab1JXMOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:12:51 -0400
-Message-ID: <4EA5563A.10703@dsn.lapis-semi.com>
-Date: Mon, 24 Oct 2011 21:12:42 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Mon, 24 Oct 2011 08:14:34 -0400
+Date: Mon, 24 Oct 2011 14:14:30 +0200
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 43/49] spi: irq: Remove IRQF_DISABLED
+Message-ID: <20111024121430.GS8708@ponder.secretlab.ca>
+References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
+ <1319277421-9203-44-git-send-email-yong.zhang0@gmail.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: perex@perex.cz, linux-kernel@vger.kernel.org,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Clark, Joel" <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] Add SoundCard driver for OKI SEMICONDUCTOR ML7213 IOH
-References: <70D251FDDC55405882A8447CC455D56E@hacdom.okisemi.com>	<8486F61FC3B94B908BFE654234DD6C97@hacdom.okisemi.com>	<4E9BAEF7.1080406@dsn.lapis-semi.com> <s5h7h3ysa4l.wl%tiwai@suse.de>
-In-Reply-To: <s5h7h3ysa4l.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319277421-9203-44-git-send-email-yong.zhang0@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Iwai,
+On Sat, Oct 22, 2011 at 05:56:55PM +0800, Yong Zhang wrote:
+> Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabled],
+> We run all interrupt handlers with interrupts disabled
+> and we even check and yell when an interrupt handler
+> returns with interrupts enabled (see commit [b738a50a:
+> genirq: Warn when handler enables interrupts]).
+> 
+> So now this flag is a NOOP and can be removed.
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-(2011/10/21 23:16), Takashi Iwai wrote:
-> At Mon, 17 Oct 2011 13:28:39 +0900,
-> Tomoya MORINAGA wrote:
->>
->> Hi Iwai,
->>
->> We have just started porting to ASoC structure.
->
-> Please add ASoC maintainers to Cc if you have questions about ASoC.
->
->> I have a question.
->>
->> As you reviewed before, currently, our driver consists of 2 parts,
->> Soundcard driver and I2S driver.
->>
->> Soundcard consists of 2 parts
->>     - ALSA interface / control part
->>     - CODEC control part
->>
->> I2S driver consists of 4 parts
->>    - HAL
->>    - DMA control / interrupt control
->>    - Soundcard interface part
->>    - PCI interface function
->>
->> According to "soc" Documentation,
->> We must divide to 3 parts, platform driver, machine driver and codec driver.
->>
->> So, I divided like the following parts.
->>
->> platform driver
->>    - ALSA interface / control part
->>    - HAL
->>    - DMA control / interrupt control
->>    - Soundcard interface part
->>    - PCI interface function
->>
->> machine driver
->>    - (none)
->>
->> codec driver
->>     - CODEC control part
->>
->> Is the above dividing true ?
->
-> Not really.  ASoC is designed to be much more modular.  Take a look at
-> the codes in sound/soc/*.  You'll grasp how the components are split.
-> (The documents in Documentation/sound/alsa/soc/ are slightly
->   obsoleted...)
+Applied, thanks.
 
-Of course, I read Documentation/sound/alsa/soc/ and sound/soc/*.
-However, it's not easy for me.
+g.
 
-I have just 2 questions.
-
-1. PCI interface function.
-Any current ASoC drivers don't have PCI interface function.
-So I don't know where the function should be in machine driver or 
-platform driver.
-
-2. Register Access
-Can platform driver access register ?
-According to the soc document, platform driver must not access hardware,
-however, some drivers looks accessing their hardware.
-
->
-> The conversion of PCM part is usually straightforward, as found in
-> *-pcm.c.  The DAI setup depends on the hardware implementation.
-> That's for machine driver.  But it's hard to tell in more details
-> until I see the actual code snippet you are working on...
-
-I understand.
-I'm going to send our modified driver soon.
-
-Thanks,
-
--- 
-tomoya
-ROHM Co., Ltd.
+> ---
+>  drivers/spi/spi-bfin5xx.c       |    2 +-
+>  drivers/spi/spi-coldfire-qspi.c |    2 +-
+>  drivers/spi/spi-ppc4xx.c        |    2 +-
+>  drivers/spi/spi-sh-msiof.c      |    2 +-
+>  drivers/spi/spi-sh.c            |    2 +-
+>  5 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
+> index b8d25f2..3b83ff8 100644
+> --- a/drivers/spi/spi-bfin5xx.c
+> +++ b/drivers/spi/spi-bfin5xx.c
+> @@ -1098,7 +1098,7 @@ static int bfin_spi_setup(struct spi_device *spi)
+>  
+>  	if (chip->pio_interrupt && !drv_data->irq_requested) {
+>  		ret = request_irq(drv_data->spi_irq, bfin_spi_pio_irq_handler,
+> -			IRQF_DISABLED, "BFIN_SPI", drv_data);
+> +			0, "BFIN_SPI", drv_data);
+>  		if (ret) {
+>  			dev_err(&spi->dev, "Unable to register spi IRQ\n");
+>  			goto error;
+> diff --git a/drivers/spi/spi-coldfire-qspi.c b/drivers/spi/spi-coldfire-qspi.c
+> index ae2cd1c..7397c4d 100644
+> --- a/drivers/spi/spi-coldfire-qspi.c
+> +++ b/drivers/spi/spi-coldfire-qspi.c
+> @@ -487,7 +487,7 @@ static int __devinit mcfqspi_probe(struct platform_device *pdev)
+>  		goto fail2;
+>  	}
+>  
+> -	status = request_irq(mcfqspi->irq, mcfqspi_irq_handler, IRQF_DISABLED,
+> +	status = request_irq(mcfqspi->irq, mcfqspi_irq_handler, 0,
+>  			     pdev->name, mcfqspi);
+>  	if (status) {
+>  		dev_dbg(&pdev->dev, "request_irq failed\n");
+> diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
+> index b267fd9..8ec43e0 100644
+> --- a/drivers/spi/spi-ppc4xx.c
+> +++ b/drivers/spi/spi-ppc4xx.c
+> @@ -514,7 +514,7 @@ static int __init spi_ppc4xx_of_probe(struct platform_device *op)
+>  	/* Request IRQ */
+>  	hw->irqnum = irq_of_parse_and_map(np, 0);
+>  	ret = request_irq(hw->irqnum, spi_ppc4xx_int,
+> -			  IRQF_DISABLED, "spi_ppc4xx_of", (void *)hw);
+> +			  0, "spi_ppc4xx_of", (void *)hw);
+>  	if (ret) {
+>  		dev_err(dev, "unable to allocate interrupt\n");
+>  		goto free_gpios;
+> diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+> index 2f61a84..51b14c9 100644
+> --- a/drivers/spi/spi-sh-msiof.c
+> +++ b/drivers/spi/spi-sh-msiof.c
+> @@ -636,7 +636,7 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+>  		goto err2;
+>  	}
+>  
+> -	ret = request_irq(i, sh_msiof_spi_irq, IRQF_DISABLED,
+> +	ret = request_irq(i, sh_msiof_spi_irq, 0,
+>  			  dev_name(&pdev->dev), p);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to request irq\n");
+> diff --git a/drivers/spi/spi-sh.c b/drivers/spi/spi-sh.c
+> index 9eedd71..e0343d4 100644
+> --- a/drivers/spi/spi-sh.c
+> +++ b/drivers/spi/spi-sh.c
+> @@ -484,7 +484,7 @@ static int __devinit spi_sh_probe(struct platform_device *pdev)
+>  		goto error2;
+>  	}
+>  
+> -	ret = request_irq(irq, spi_sh_irq, IRQF_DISABLED, "spi_sh", ss);
+> +	ret = request_irq(irq, spi_sh_irq, 0, "spi_sh", ss);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "request_irq error\n");
+>  		goto error3;
+> -- 
+> 1.7.1
+> 
