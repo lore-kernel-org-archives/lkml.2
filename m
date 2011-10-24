@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab1JXUTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 16:19:19 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33878 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab1JXUTR (ORCPT
+	id S1755803Ab1JXUUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 16:20:34 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:42964 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab1JXUUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 16:19:17 -0400
-Date: Mon, 24 Oct 2011 13:19:07 -0700
-From: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg KH <gregkh@suse.de>, Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC 3/4] lib: devres: add convenience function to remap a
- resource
-Message-ID: <20111024201907.GD24914@google.com>
-References: <1319445729-14841-1-git-send-email-w.sang@pengutronix.de>
- <1319445729-14841-4-git-send-email-w.sang@pengutronix.de>
- <20111024154307.GB24914@google.com>
- <20111024200933.GB6326@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024200933.GB6326@pengutronix.de>
-1;2305;0cTo: Wolfram Sang <w.sang@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 24 Oct 2011 16:20:32 -0400
+Date: Tue, 25 Oct 2011 07:20:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20111025072013.1824cfd24495819777ad2660@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Oct_2011_07_20_13_+1100_u4tRn=3HkYJXF1j7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 10:09:33PM +0200, Wolfram Sang wrote:
-> > So, for library functions, it's nice if the function doesn't hold any
-> > extra resource on error return.  devres has grouping to support this.
-> > You just need to wrap allocations inside a group and remove it on
-> > success and release on error.  ie.
-> > 
-> > 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
-> > 		return NULL;
-> > 	if (alloc_resource(0) < 0)
-> > 		goto fail;
-> > 	if (alloc_resource(1) < 0)
-> > 		goto fail;
-> > 	devres_remove_group(dev, NULL);
-> > 	return 0;
-> > fail:
-> > 	devres_release_group(dev, NULL);
-> > 	return 0;
-> 
-> I am not sure I got what you mean here, but wouldn't it be easier to simply
-> call devm_release_mem_region() when devm_ioremap comes back with a NULL
-> pointer?
+--Signature=_Tue__25_Oct_2011_07_20_13_+1100_u4tRn=3HkYJXF1j7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh, yeah, that would work too. :)
+Hi Arnd,
 
-Thanks.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/plat-mxc/include/mach/memory.h between commit c039bad00f21
+("ARM: plat-mxc: remove mach/memory.h") from the arm tree and commits
+ae4fa7f66e54 ("ARM i.MX: allow to compile together ARMv4 and ARMv5 based
+SoCs") and 7409cd1cd554 ("ARM i.MX: allow to compile together all i.MX5
+based SoCs") from the arm-soc tree.
 
--- 
-tejun
+The former removed the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__25_Oct_2011_07_20_13_+1100_u4tRn=3HkYJXF1j7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOpch9AAoJEECxmPOUX5FE8IgP/17dXm25zxmTwdc87PjwthGp
+h7ZzIhBm7+t1A1FXE5/Hu4parAUH8ZBGMNuDDQMmxh4hTmhNjAi9oRwCX3zQ92nJ
+HgT17Me9irlww2vQa1SpfeXCJrKpqskikbFvnZw8Qq1ZJ8qBd+pywaHOzDw8qePZ
+oU26NVKrzNdv4C3RbeESr/I7MegcFsreSDlUfiYMSo3xhvKFtl6kkWtPGbv66mwM
+U0UfA2FfNakj2FbsMeZ6G5CRxce1dP8R8adaV5OKFKBK37kkE91k7mKx1gfdFyTI
+oj7MLic/iLP6fC4roMQzM4ZeIimlk5pUVwQFtxOQfzGZEwBexVZMOUohFOhibG6J
+O9C3FDFSoFZP/Wi4oXyreD+J+DX3ups4/YgXhl/AdBYsxs6KhgtzJReubGZFGmco
+eNuO7P19wGIloolsxn6I+xjQcnR1+NFZcdfUYmMloFa9d/r5h1a0AlBduakzlpC8
+7OrYa+ZzG5QtxoyOkUm2cgTi7MCuRXtJnlOhOKsHvdH5t0V0mRp5e93us+rt8Ikx
+diJcPWpZVFxAhDxqvDBbdtkHQsKtt4C/JSpcoPAP9hCbLBmCTTyASTgr7OQuXqXy
+sS4tKGPcYSKUTnD5t48BPKO9b96wj1f9b5P408jb8y8rM4DGu4AbixHd/roTuXcj
+86JJBpzkMAAeRnxtK71X
+=TeSO
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Oct_2011_07_20_13_+1100_u4tRn=3HkYJXF1j7--
