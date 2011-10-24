@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab1JXNqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 09:46:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49178 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932478Ab1JXNqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 09:46:35 -0400
-Date: Mon, 24 Oct 2011 15:46:32 +0200
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: jhbird.choi@gmail.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Subject: Re: [PATCH v2] regulator: max8649 Convert max8649 to use regmap api
-Message-ID: <20111024134632.GC26033@opensource.wolfsonmicro.com>
-References: <1319462786-2602-1-git-send-email-jhbird.choi@gmail.com>
+	id S932687Ab1JXNqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 09:46:42 -0400
+Received: from sestofw01.enea.se ([192.36.1.252]:8614 "HELO mx-3.enea.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932478Ab1JXNqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 09:46:40 -0400
+Message-ID: <4EA56C3A.6080204@enea.com>
+Date: Mon, 24 Oct 2011 15:46:34 +0200
+From: Arvid Brodin <arvid.brodin@enea.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319462786-2602-1-git-send-email-jhbird.choi@gmail.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Memory leak in isp1760-hcd.c
+References: <20111019152132.GH29653@arm.com> <4EA55F0B.1070906@enea.com> <CAHkRjk6VBgFJTCcBp80wuJrGBp=0Nt302+jRw3TELcT1vFwJ7g@mail.gmail.com>
+In-Reply-To: <CAHkRjk6VBgFJTCcBp80wuJrGBp=0Nt302+jRw3TELcT1vFwJ7g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.23.1.38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 10:26:26PM +0900, jhbird.choi@gmail.com wrote:
-> From: Jonghwan Choi <jhbird.choi@gmail.com>
+Catalin Marinas wrote:
+> On 24 October 2011 14:50, Arvid Brodin <arvid.brodin@enea.com> wrote:
+>> Catalin Marinas wrote:
+>>> I get the following kmemleak report coming from the ISP1760 driver:
+>>>
+>> *snip*
+>>> Is there a race condition between isp1760_endpoint_disable and
+>>> isp1760_irq?
+>> Yes, I think there is. Thanks for a great bug report!
+>>
+>> Please try the patches in following emails.
 > 
-> Signed-off-by: Jonghwan Choi <jhbird.choi@gmail.com>
+> Thanks. I'll try them next week as I'm at the KS now.
+> 
+> The good news, I'm using this leak as an example in my kmemleak presentations :)
+> 
 
-Looks good!
+Hehe, what can I say... I'm honoured to be made an example of! ;D
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-Once the merge window is over it might be useful to look at enabling
-register cache for the driver, you'll get a performance improvement as
-it'll be able to skip the read part of read/modify/write cycles.
+-- 
+Arvid Brodin
+Enea Services Stockholm AB
