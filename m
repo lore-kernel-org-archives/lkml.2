@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1JXEKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 00:10:14 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45741 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab1JXEKM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 00:10:12 -0400
+	id S1753095Ab1JXEPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 00:15:04 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:51101 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752115Ab1JXEPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 00:15:03 -0400
+Date: Mon, 24 Oct 2011 04:15:29 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, oleg@redhat.com, richard@nod.at,
+        mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de,
+        dhowells@redhat.com, eparis@redhat.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 9/9] make net/core/scm.c uid comparisons user namespace
+ aware
+Message-ID: <20111024041529.GA23618@hallyn.com>
+References: <1318974898-21431-1-git-send-email-serge@hallyn.com>
+ <1318974898-21431-10-git-send-email-serge@hallyn.com>
+ <m1sjmpytpf.fsf@fess.ebiederm.org>
+ <20111020125801.GA1315@hallyn.com>
+ <m1fwinvl8u.fsf@fess.ebiederm.org>
+ <20111020141440.GA6201@sergelap>
 MIME-Version: 1.0
-In-Reply-To: <4EA4B164.4000009@oracle.com>
-References: <s5hwrbvv227.wl%tiwai@suse.de>
-	<4EA4B164.4000009@oracle.com>
-Date: Sun, 23 Oct 2011 21:10:11 -0700
-X-Google-Sender-Auth: Qd3mcTtF_RMaDUPtuwa4B6SdYVo
-Message-ID: <CAE9FiQX7efVf0rtQW0NcJRjwDN=4a7nzhyfVEPKs6BvLxQwrkw@mail.gmail.com>
-Subject: Re: [PATCH] x86: Fix S4 regression
-From: Yinghai Lu <yinghai@kernel.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J.Wysocki" <rjw@sisk.pl>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111020141440.GA6201@sergelap>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 5:29 PM, Yinghai Lu <yinghai.lu@oracle.com> wrote:
-> On 10/23/2011 02:19 PM, Takashi Iwai wrote:
->
->> The commit 4b239f458: [x86-64, mm: Put early page table high] causes
->> a S4 regression since 2.6.39, namely the machine reboots occasionally
->> at S4 resume.  It doesn't happen always, overall rate is about 1/20.
->> But, like other bugs, once when this happens, it continues to happen.
->>
->> This patch fixes the problem by essentially reverting the memory
->> assignment in the older way.
->>
->> Cc: <stable@kernel.org>
->> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>
->> ---
->> I resend this as a "fix" patch now before it's forgotten and rotten.
->> It's just papering again over the mystery, but IMO better than the
->> hard-reset behavior as of now.  Unfortunately, bisection is pretty
->> much difficult because the bug itself is fairly unstable...
->
->
->
-> Did you try to check several commit that Rafael pointed out:
->
->
-> On Wed, Sep 28, 2011 at 12:30 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Wednesday, September 28, 2011, Takashi Iwai wrote:
->>>
->>> If my previous test -- 2.6.37+Yinghai's patches didn't show the
->>> problem -- is correct, it means that some change in 2.6.38 reacted
->>> badly with Yinghai's patches, not about 2.6.39.  I'll check tomorrow
->>> again whether this observation is really correct.
->>
->> Yes, that would be good to know, thanks for doing this!
->>
->> If that turns out to be the case, there are the following commits
->> looking like worth checking:
->>
->> d344e38 x86, nx: Mark the ACPI resume trampoline code as +x
->> 884b821 ACPI: Fix acpi_os_read_memory() and acpi_os_write_memory() (v2)
->> d551d81 ACPI / PM: Call suspend_nvs_free() earlier during resume
->> 2d6d9fd ACPI: Introduce acpi_os_ioremap()
->
+Quoting Serge E. Hallyn (serge.hallyn@canonical.com):
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+> > "Serge E. Hallyn" <serge@hallyn.com> writes:
+> > 
+> > > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> > >> Serge Hallyn <serge@hallyn.com> writes:
+> > >> 
+> > >> > From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+> > >> >
+> > >> > Currently uids are compared without regard for the user namespace.
+> > >> > Fix that to prevent tasks in a different user namespace from
+> > >> > wrongly matching on SCM_CREDENTIALS.
+> > >> >
+> > >> > In the past, either your uids had to match, or you had to have
+> > >> > CAP_SETXID.  In a namespaced world, you must either (both be in the
+> > >> > same user namespace and have your uids match), or you must have
+> > >> > CAP_SETXID targeted at the other user namespace.  The latter can
+> > >> > happen for instance if uid 500 created a new user namespace and
+> > >> > now interacts with uid 0 in it.
+> > >> 
+> > >> Serge this approach is wrong.
+> > >
+> > > Thanks for looking, Eric.
+> > >
+> > >> Because we pass the cred and the pid through the socket socket itself
+> > >> is just a conduit and should be ignored in this context.
+> > >
+> > > Ok, that makes sense, but
+> > >
+> > >> The only interesting test should be are you allowed to impersonate other
+> > >> users in your current userk namespace.
+> > >
+> > > Why in your current user namespace?  Shouldn't it be in the
+> > > target user ns?  I understand it could be wrong to tie the
+> > > user ns owning the socket to the target userns (though I still
+> > > kind of like it), but just because I have CAP_SETUID in my
+> > > own user_ns doesn't mean I should be able to pose as another
+> > > uid in your user_ns.
+> > 
+> > First and foremost it is important that you be able if you have the
+> > capability to impersonate other users in your current user namespace.
+> > That is what the capability actually controls.
+> > 
+> > None of this allows you to impersonate any user in any other user
+> > namespace.  The translation between users prevents that.
+> > 
+> > > (Now I also see that cred_to_ucred() translates to the current
+> > > user_ns, so that should have been a hint to me before about
+> > > your intent, but I'm not convinced I agree with your intent).
+> > >
+> > > And you do the same with the pid.  Why is that a valid assumption?
+> > 
+> > Yes.  Basically all the code is allow you to impersonate people you
+> > would have been able to impersonate before.  If your target is in
+> > another namespace you can not fool them.
+> > 
+> > With pids the logic should be a lot clearer.  Pretend to be a pid you can
+> > see in your current pid namespace.  Lookup and convert to struct pid aka
+> > the namespace agnostic object.  On output return the pid value that
+> 
+> No.  That conversion is happending before the user-specified pid is
+> set.
 
-Also, can you check if reverting following patch could help?
+Never mind, it all gets a little convoluted, but I see how it works,
+and - when the time comes - how to do it right for userns.  :)  Sorry
+about that.
 
-| commit e5f15b45ddf3afa2bbbb10c7ea34fb32b6de0a0e
-| Author: Yinghai Lu <yinghai@kernel.org>
-| Date:   Fri Feb 18 11:30:30 2011 +0000
-|
-|    x86: Cleanup highmap after brk is concluded
-|
-|    Now cleanup_highmap actually is in two steps: one is early in head64.c
-|    and only clears above _end; a second one is in init_memory_mapping() and
-|    tries to clean from _brk_end to _end.
-|    It should check if those boundaries are PMD_SIZE aligned but currently
-|    does not.
-|    Also init_memory_mapping() is called several times for numa or memory
-|    hotplug, so we really should not handle initial kernel mappings there.
-|
-|   This patch moves cleanup_highmap() down after _brk_end is settled so
-|    we can do everything in one step.
-|    Also we honor max_pfn_mapped in the implementation of cleanup_highmap.
-
-Thanks
-
-Yinghai Lu
+thanks,
+-serge
