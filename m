@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1JXSzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 14:55:11 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39204 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab1JXSzJ (ORCPT
+	id S1752894Ab1JXS5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 14:57:10 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:55599 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab1JXS5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 14:55:09 -0400
+	Mon, 24 Oct 2011 14:57:09 -0400
+Date: Mon, 24 Oct 2011 14:57:07 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kmemleak: Report previously found leaks even after
+ an error
+Message-ID: <20111024185707.GA3399@elliptictech.com>
+References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
+ <20110929110239.10660.95998.stgit@e102109-lin.cambridge.arm.com>
+ <20111004174548.GA16209@elliptictech.com>
+ <CAHkRjk58zQF4ZxvH4Ex-sUpe9Wmhvt0xo5Juffq=DrpySE556Q@mail.gmail.com>
+ <20111004211446.GA19503@elliptictech.com>
 MIME-Version: 1.0
-In-Reply-To: <11382.1319479512@turing-police.cc.vt.edu>
-References: <1319397143-20301-1-git-send-email-acme@infradead.org>
- <1319397143-20301-5-git-send-email-acme@infradead.org> <11382.1319479512@turing-police.cc.vt.edu>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Mon, 24 Oct 2011 20:54:29 +0200
-Message-ID: <CAPybu_2rU7Zh9UOBuPp1-3sNMJiZxPkCzAYmXSBrtbDGB6RjTA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] perf symbols: Increase symbol KSYM_NAME_LEN size
-To: Valdis.Kletnieks@vt.edu
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        David Ahern <daahern@cisco.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111004211446.GA19503@elliptictech.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also suck a big binary blob does not help :)
+On 2011-10-04 17:14 -0400, Nick Bowler wrote:
+> On 2011-10-04 21:50 +0100, Catalin Marinas wrote:
+> > On 4 October 2011 18:45, Nick Bowler <nbowler@elliptictech.com> wrote:
+> > > Cool, I'll try this out.  Kmemleak rarely stays alive for more than a
+> > > few days on my desktop before shutting itself down due to an allocation
+> > > failure, so this should be really handy.
+> > 
+> > You can have a look at /proc/slabinfo and meminfo and see if there are
+> > any really big leaks. In general the kmemleak objects number is higher
+> > than the sum of all the other slab objects (but I haven't done any
+> > statistics). Hopefully kmemleak doesn't leak memory :) (I should add
+> > some simple checks though).
+> 
+> I don't think the failures that cause kmemleak to shut down in my case
+> are actually caused by a memory leak.  The machine is rather old and
+> has only 1G of RAM.  I think kmemleak is just failing to allocate during
+> a period of real memory pressure.
 
-ricardo@newpili:/tmp/fglrx-driver-11-9/arch/x86_64/lib/modules/fglrx/build_mod$
-for a in $( objdump -t libfglrx_ip.a | grep text| awk '{print $6}' );
-do printf " %s $a\n" $(echo $a|  wc -c) ; done | sort -n  | tee
-symbols | tail -n 10
- 137 _ZNK11R800AddrLib28ComputeSurfaceInfoMicroTiledEPK32_ADDR_COMPUTE_SURFACE_INFO_INPUTP33_ADDR_COMPUTE_SURFACE_INFO_OUTPUTj13_AddrTileMode
- 140 _ZNK11R800AddrLib33DispatchComputeFmaskCoordFromAddrEPK39_ADDR_COMPUTE_FMASK_COORDFROMADDR_INPUTP40_ADDR_COMPUTE_FMASK_COORDFROMADDR_OUTPUT
- 141 _ZNK11R600AddrLib30HwlComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
- 141 _ZNK11R600AddrLib30HwlComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
- 141 _ZNK11R800AddrLib30HwlComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
- 141 _ZNK11R800AddrLib30HwlComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
- 146 _ZNK11R600AddrLib35DispatchComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
- 146 _ZNK11R600AddrLib35DispatchComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
- 146 _ZNK11R800AddrLib35DispatchComputeSurfaceAddrFromCoordEPK41_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUTP42_ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT
- 146 _ZNK11R800AddrLib35DispatchComputeSurfaceCoordFromAddrEPK41_ADDR_COMPUTE_SURFACE_COORDFROMADDR_INPUTP42_ADDR_COMPUTE_SURFACE_COORDFROMADDR_OUTPUT
+FWIW, I applied this patch on top of 3.0.7 and I can successfully read
+the debugfs entry after kmemleak shuts down.
 
-
-On Mon, Oct 24, 2011 at 20:05,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Sun, 23 Oct 2011 17:12:23 -0200, Arnaldo Carvalho de Melo said:
->
->> Fglrx propietary driver has symbol names over 128 chars (:S). This
->> breaks the function kallsyms__parse.
->
-> Well, that explains why they haven't upstreamed the driver, it will never
-> pass checkpatch's line-lenght check :)
->
-> But at some point you really need to just tell the vendors to put down
-> the crack pipe.
->
-> (What *are* the symbols? C++ mangled function names?)
->
-
-
-
+Thanks,
 -- 
-Ricardo Ribalda
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
