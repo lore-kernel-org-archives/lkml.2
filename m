@@ -1,146 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1JXTcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 15:32:46 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:53329 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab1JXTcp (ORCPT
+	id S1754224Ab1JXTcx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 15:32:53 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:58570 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab1JXTcu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 15:32:45 -0400
-Message-ID: <B10F15EA8AB74E698DC0D94563A30BE7@samsungnetbook>
-From: "Roland Kletzing" <devzero@web.de>
-To: "Willy Tarreau" <w@1wt.eu>
-Cc: <linux-kernel@vger.kernel.org>, <adrian.hunter@intel.com>,
-        <Artem.Bityutskiy@nokia.com>
-References: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003> <20111024055705.GA4020@1wt.eu>
-In-Reply-To: <20111024055705.GA4020@1wt.eu>
-Subject: [BUG] Re: mtd_stresstest module bricked my dockstar
-Date: Mon, 24 Oct 2011 21:32:42 +0200
+	Mon, 24 Oct 2011 15:32:50 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Mel Gorman" <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Ankita Garg" <ankita@in.ibm.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        "Jesse Barker" <jesse.barker@linaro.org>,
+        "Jonathan Corbet" <corbet@lwn.net>,
+        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
+        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 4/9] mm: MIGRATE_CMA migration type added
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <1317909290-29832-5-git-send-email-m.szyprowski@samsung.com>
+ <20111018130826.GD6660@csn.ul.ie>
+Date: Mon, 24 Oct 2011 12:32:45 -0700
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8064.206
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8064.206
-X-Provags-ID: V01U2FsdGVkX18UC6y4ytM6KkVbxY7ZSnkCf9iXQFTIcujewzGA
-	2UZNWUdc28bi9Ir6rwUnX57TVbbL2vBtbL3BE8vqpSo2gnJSDh
-	RdO8xl6zc=
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v3ve8vbl3l0zgt@mpn-glaptop>
+In-Reply-To: <20111018130826.GD6660@csn.ul.ie>
+User-Agent: Opera Mail/11.52 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> On Thu, Oct 06, 2011 at 03:54:44PM +0200, Marek Szyprowski wrote:
+>> The MIGRATE_CMA migration type has two main characteristics:
+>> (i) only movable pages can be allocated from MIGRATE_CMA
+>> pageblocks and (ii) page allocator will never change migration
+>> type of MIGRATE_CMA pageblocks.
+>>
+>> This guarantees that page in a MIGRATE_CMA page block can
+>> always be migrated somewhere else (unless there's no memory left
+>> in the system).
 
-cc`ing correct email of Adrian Hunter and i found that mtd_torturetest (and 
-the
-other modules) have the same issue and there is another author i could find 
-the
-email for.
+On Tue, 18 Oct 2011 06:08:26 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
+> Or the count is premanently elevated by a device driver for some reason or if
+> the page is backed by a filesystem with a broken or unusable migrate_page()
+> function. This is unavoidable, I'm just pointing out that you can stil have
+> migration failures, particularly if GFP_MOVABLE has been improperly used.
 
-> If you can't restore it with JTAG, it means the hardware is really dead.
-> JTAG is used when you blank the flash, and is supposed to work. I don't
-> know what the module does, but I fail to see how to could wear the flash
-> that fast. At worst it could have wiped it, or the flash was already bad.
+CMA does not handle that well right now.  I guess it's something to think about
+once the rest is nice and working.
 
-Yes, i think accidentally insmodding  "mtd_stresstest" has just wiped it, 
-not killed.
-The problem is, that it is important stuff for booting and you can`t pull it 
-out and
-re-write externally, like a disk. Sorry, i that was probably not clearly 
-stated.
+>> It is designed to be used with Contiguous Memory Allocator
+>> (CMA) for allocating big chunks (eg. 10MiB) of physically
+>> contiguous memory.  Once driver requests contiguous memory,
+>> CMA will migrate pages from MIGRATE_CMA pageblocks.
+>>
+>> To minimise number of migrations, MIGRATE_CMA migration type
+>> is the last type tried when page allocator falls back to other
+>> migration types then requested.
 
-Anyway - what would people think if linux had a kernel module  which wipes
-/dev/sda1 when loaded ? :)
+> It would be preferable if you could figure out how to reuse the
+> MIGRATE_RESERVE type for just the bitmap.
 
-> I got one Iomega Iconnect with a faulty flash that I got replaced for a
-> good one, so it's more likely the case here.
+I'm not entirely sure of what you mean here.
 
-Yes, i could give debricking with JTAG a try. But what about the cost for 
-the JTAG
-and the work to be spent with it? I could buy another Dockstar for that.....
-
-> I agree with you. I remember the very old ISA NE2000 driver who used to
-> scan various addresses to find a NIC, causing some of them to reconfigure
-> their address to *none* and definitely stop responding on the bus to any
-> reconfiguration request. That was pretty annoying too. After killing a
-> few, I stopped using Linux on a machine with such a NIC for a long time!
-
-Oh, that could be an explanation why i had 2 broken NE2000 NICs in the 
-nineties.. ;)
-
-> You should keep it and retry the JTAG adapter. You just need a boot loader
-> so if you manage to find a usable memory location that you can select by
-> soldering two pins together, you could manage to store it and bood from
-> another device.
-
-I`m sure debricking with JTAG is possible and it would be an interesting 
-task.
-Maybe i like to spend some money and time with this one day. For now i 
-don`t.
-
-In the meantime i`d rather being interested in what can be done to add more
-safety to the mtd tests.
-
-By writing these lines and looking into the source, i started getting 
-curious -  i
-see there is dev param with that module(s), but i did not pass a device 
-number,
-nor did i pass anything to it.
-
-in
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=drivers/mtd/tests/mtd_stresstest.c;h=63920476b57a24c7e61563303eb3abb773b73fdf;hb=7163cea15f7b362795b858e7c130cd617aecc0aa
-
-i see:
-
-static int dev;   <-!
-module_param(dev, int, S_IRUGO);
-MODULE_PARM_DESC(dev, "MTD device number to use");
-
-static int count = 10000;
-module_param(count, int, S_IRUGO);
-MODULE_PARM_DESC(count, "Number of operations to do (default is 10000)");
-
-and then
-
-static int __init mtd_stresstest_init(void)
-{
-	int err;
-	int i, op;
-	uint64_t tmp;
-
-	printk(KERN_INFO "\n");
-	printk(KERN_INFO "=================================================\n");
-	printk(PRINT_PREF "MTD device: %d\n", dev);
-
-	mtd = get_mtd_device(NULL, dev);
-	if (IS_ERR(mtd)) {
-		err = PTR_ERR(mtd);
-		printk(PRINT_PREF "error: cannot get MTD device\n");
-		return err;
-	}
+> Like MIGRATE_CMA, it does not
+> change type except when min_free_kbytes changes. However, it is
+> something that could be done in the future to keep the size of the
+> pageblock bitmap where it is now.
 
 
+>> +enum {
+>> +	MIGRATE_UNMOVABLE,
+>> +	MIGRATE_RECLAIMABLE,
+>> +	MIGRATE_MOVABLE,
+>> +	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
+>> +	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
+>> +	/*
+>> +	 * MIGRATE_CMA migration type is designed to mimic the way
+>> +	 * ZONE_MOVABLE works.  Only movable pages can be allocated
+>> +	 * from MIGRATE_CMA pageblocks and page allocator never
+>> +	 * implicitly change migration type of MIGRATE_CMA pageblock.
+>> +	 *
+>> +	 * The way to use it is to change migratetype of a range of
+>> +	 * pageblocks to MIGRATE_CMA which can be done by
+>> +	 * __free_pageblock_cma() function.  What is important though
+>> +	 * is that a range of pageblocks must be aligned to
+>> +	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
+>> +	 * a single pageblock.
+>> +	 */
+>> +	MIGRATE_CMA,
 
-My kernel log showed:
+> This does mean that MIGRATE_CMA also does not have a per-cpu list.
+> I don't know if that matters to you but all allocations using
+> MIGRATE_CMA will take the zone lock.
 
-mtd_stresstest: MTD device: 0
-mtd_stresstest: MTD device size 1048576 etc...
+This is sort of an artefact of my misunderstanding of pcp lists in the
+past.  I'll have to re-evaluate the decision not to include CMA on pcp
+list.
 
-So, apparenly the module accidentally picked mtd0 instead of exiting cleanly 
-(as
-i did not pass a device number)
+Still, I think that CMA not being on pcp lists should not be a problem
+for us.  At least we can try and get CMA running and then consider adding
+CMA to pcp lists.
 
-I`m not a programmer, but doesn`t look that like an "unitialized variable" 
-issue ?
+> I'm not sure this can be easily avoided because
+> if there is a per-CPU list for MIGRATE_CMA, it might use a new cache
+> line for it and incur a different set of performance problems.
 
-If yes, then i would call my Dockstar "victim of a bug".
+>> +	MIGRATE_ISOLATE,	/* can't allocate from here */
+>> +	MIGRATE_TYPES
+>> +};
 
-regards
-Roland 
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 97254e4..9cf6b2b 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -115,6 +115,16 @@ static bool suitable_migration_target(struct page *page)
+>>  	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
+>>  		return false;
+>>
+>> +	/* Keep MIGRATE_CMA alone as well. */
+>> +	/*
+>> +	 * XXX Revisit.  We currently cannot let compaction touch CMA
+>> +	 * pages since compaction insists on changing their migration
+>> +	 * type to MIGRATE_MOVABLE (see split_free_page() called from
+>> +	 * isolate_freepages_block() above).
+>> +	 */
+>> +	if (is_migrate_cma(migratetype))
+>> +		return false;
+>> +
+>
+> This is another reason why CMA and compaction should be using almost
+> identical code. It does mean that the compact_control may need to be
+> renamed and get flags to control things like the setting of pageblock
+> flags but it would be preferable to having two almost identical pieces
+> of code.
 
+I've addressed it in my other mail where I've changed the split_free_page()
+to not touch CMA and ISOLATE pageblocks.  I think that this change should
+make the above comment no longer accurate and the check unnecessary.
+
+>>  	/* If the page is a large free page, then allow migration */
+>>  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+>>  		return true;
+
+>> @@ -940,12 +963,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+>>  	/* Find the largest possible block of pages in the other list */
+>>  	for (current_order = MAX_ORDER-1; current_order >= order;
+>>  						--current_order) {
+>> -		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
+>> +		for (i = 0; i < ARRAY_SIZE(fallbacks[0]); i++) {
+>
+> I don't see why this change is necessary.
+
+It changes a sort of a magic number into a value that is calculated
+ from the array.  This makes it resistant to changes in the definition
+of the fallbacks array.  I think this is a reasonable change.
+
+>>  			migratetype = fallbacks[start_migratetype][i];
+>>
+>>  			/* MIGRATE_RESERVE handled later if necessary */
+>>  			if (migratetype == MIGRATE_RESERVE)
+>> -				continue;
+>> +				break;
+>>
+>>  			area = &(zone->free_area[current_order]);
+>>  			if (list_empty(&area->free_list[migratetype]))
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
