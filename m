@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab1JXIMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 04:12:50 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54275 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753727Ab1JXIMs (ORCPT
+	id S1753835Ab1JXIRU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 04:17:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63874 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab1JXIRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 04:12:48 -0400
-Date: Mon, 24 Oct 2011 11:12:45 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: balbi@ti.com, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: DeviceTree and children devices
-Message-ID: <20111024081244.GD15288@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20111024064227.GW5453@legolas.emea.dhcp.ti.com>
- <20111024074124.GB8708@ponder.secretlab.ca>
- <20111024074957.GB15288@legolas.emea.dhcp.ti.com>
- <CACxGe6v0kHNyO81XapR=jGEa8ZgJrUxN2EEiqW7c18NdurGNkg@mail.gmail.com>
+	Mon, 24 Oct 2011 04:17:18 -0400
+Date: Mon, 24 Oct 2011 10:17:06 +0200
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, broonie@opensource.wolfsonmicro.com,
+        patches@linaro.org, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111024081706.GC8708@ponder.secretlab.ca>
+References: <20111018132032.GD30703@S2100-06.ap.freescale.net>
+ <4E9EB61C.1040207@ti.com>
+ <20111019144215.GA32007@S2100-06.ap.freescale.net>
+ <4E9FAF42.5060200@ti.com>
+ <20111020061408.GE32007@S2100-06.ap.freescale.net>
+ <4EA00F7C.1080005@ti.com>
+ <20111021082309.GA337@S2100-06.ap.freescale.net>
+ <4EA13053.7080306@ti.com>
+ <20111021115809.GB337@S2100-06.ap.freescale.net>
+ <4EA4FF6B.2080906@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ey/N+yb7u/X9mFhi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACxGe6v0kHNyO81XapR=jGEa8ZgJrUxN2EEiqW7c18NdurGNkg@mail.gmail.com>
+In-Reply-To: <4EA4FF6B.2080906@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ey/N+yb7u/X9mFhi
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Oct 24, 2011 at 09:58:39AM +0200, Grant Likely wrote:
-> On Mon, Oct 24, 2011 at 9:49 AM, Felipe Balbi <balbi@ti.com> wrote:
-> > On Mon, Oct 24, 2011 at 09:41:24AM +0200, Grant Likely wrote:
-> >> On Mon, Oct 24, 2011 at 09:42:28AM +0300, Felipe Balbi wrote:
-> >> > then I can drop the dwc3 platform_device allocation and all of that
-> >> > resource copying, etc.
-> >> >
-> >> > What do you think ?
+On Mon, Oct 24, 2011 at 11:32:19AM +0530, Rajendra Nayak wrote:
+> On Friday 21 October 2011 05:28 PM, Shawn Guo wrote:
+> >On Fri, Oct 21, 2011 at 02:11:55PM +0530, Rajendra Nayak wrote:
+> >[...]
+> >>>+       /* find device_node and attach it */
+> >>>+       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
 > >>
-> >> Looks reasonable to me. =A0of_platform_populate() should be able to
-> >> handle the device generation for you here.
+> >>so would this do a complete dt search for every regulator?
 > >
-> > Ok cool I looking into that and it handles everything I need. There are
-> > only three issues which I see:
+> >Yes, with the first param being NULL, tthe entire device tree will be
+> >searched.
 > >
-> > a) it hardcoded DMA mask to 32-bit. Right ?
-> > b) it's not using dma_set_coherent_mask()
-> > c) in case parent is a valid pointer, shouldn't it copy DMA mask from
-> > =A0 =A0 =A0 =A0parent ?
-> >
-> > I mean (doesn't solve (a) above):
-> >
-> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > index ed5a6d3..172d4a9 100644
-> > --- a/drivers/of/platform.c
-> > +++ b/drivers/of/platform.c
-> > @@ -204,7 +204,12 @@ struct platform_device *of_platform_device_create_=
-pdata(
-> > =A0#if defined(CONFIG_MICROBLAZE)
-> > =A0 =A0 =A0 =A0dev->archdata.dma_mask =3D 0xffffffffUL;
-> > =A0#endif
-> > - =A0 =A0 =A0 dev->dev.coherent_dma_mask =3D DMA_BIT_MASK(32);
-> > +
-> > + =A0 =A0 =A0 if (parent)
-> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 dma_set_coherent_mask(&dev->dev, parent->=
-coherent_dma_mask);
-> > + =A0 =A0 =A0 else
-> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 dma_set_coherent_mask(&dev->dev, DMA_BIT_=
-MASK(32));
-> > +
->=20
-> Right, this does need to be fixed.  The existing code just matched
-> what the historical powerpc code did, but it is certainly not correct.
+> >>we would also need the driver names and dt names to match for this to
+> >>work, right?
+> >>
+> >Driver name does not matter.  The key for this search to work is having
+> >regulator's name (regulator_desc->name) match device tree node's name,
+> >case ignored.
+> 
+> Mark, whats your take on this? I am somehow not quite sure if we should
+> have this limitation put in to match DT node names with whats in the
+> driver structs (regulator_desc).
 
-should I send patch above correctly ? Or do you want to also solve
-32-bit coherent mask altogether ? What are your plans for that ? Add a
-separate property to pass coherent_mask size (32-bit, 64-bit, etc) ?
+This looks wrong to me.  Matching based on node /name/, particularly
+when searching the entire tree, will cause problems.
 
---=20
-balbi
-
---ey/N+yb7u/X9mFhi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOpR38AAoJEIaOsuA1yqREpyoP/Ra08Rlx0X4G8MkWR4r/Warf
-0/b+tcs8nzUIFWgYN6Tz6t8CkrV3IqBi2cGW4ZosCkFmmxHXui5BgHsLTgapZ9Lc
-cYvTla2He4maN8zLsOsAPbFhJ38ZrMQUZwMPik1uzTpbprUSU38i2fAKIn52n1yF
-cf5GwmpDXBvHKMVUJcqUUx1DTBRVuzk7wLZoX3tUoLY4XCzgJwBvDpi9xNbdayXy
-9b5e5ALubzsHGXUg9NRHWKGXn8czG7ThhQvfkC+5sCpfhesKAPBAZ5T66Z4CQjcO
-mwrfBIHc84u9gXC3t2Xq/q9kUhSs/HyP04TPPahZX8kB/H9Yp1KIW54AoFXV2Owg
-+AmAh+R5QLwm1fKlH3jA3DhQwjJYLS4Ooe0OzRWLrS1eoLNWW9fD9XGdvNMOwtQk
-RnVM8TPvx60ZBFPr2sp8LOtOITOBbFqdcVTBQ+jI0Lw9F/mjvIfq48C1CFD7qjx4
-EWRtI/HaetcM7Dy/MAH+xZWL0gvTlLSUjZ9w7p3GmIZmAWXiL1FOBrkrCUmDeyZc
-rgTX6S/Vtp9/CjRE1j7rDTZPTrWditgVv7LwJ+p5A7vnQFj6FugG5jn91LeHnEbu
-QALGjzj/y1EUX7hWQFw2k3fU+RCF4qmAat1dnApnMUbg88dTaucLSq/M/vqQ5eT4
-I4Oc90iLgIozDtlaoSWv
-=iVII
------END PGP SIGNATURE-----
-
---ey/N+yb7u/X9mFhi--
+g.
