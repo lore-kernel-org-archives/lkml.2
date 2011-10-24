@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab1JXPfd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 11:35:33 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:45068 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932594Ab1JXPfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 11:35:32 -0400
-Message-ID: <4EA585B5.5030405@st.com>
-Date: Mon, 24 Oct 2011 17:35:17 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
-References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com> <1319192888-21465-2-git-send-email-keguang.zhang@gmail.com> <CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com> <4EA5117C.3000402@st.com> <CAJhJPsVSzXXmBOwLaGNtOsxhVEyC0fAJtiBvEWzcKcSDC8NEcA@mail.gmail.com> <4EA557B2.4020504@st.com> <CAJhJPsXxUAuF9HdivLd66MQC45mz-iYAuF1SdGdU=-duxJJ5bQ@mail.gmail.com>
-In-Reply-To: <CAJhJPsXxUAuF9HdivLd66MQC45mz-iYAuF1SdGdU=-duxJJ5bQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932870Ab1JXPgb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 11:36:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26999 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932390Ab1JXPga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 11:36:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="66272642"
+Subject: RE: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E5520236801F@CORPEXCH1.na.ads.idt.com>
+References: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	 <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202321E20@CORPEXCH1.na.ads.idt.com>
+	 <CAJe_ZhfWcUY2ctUFt0iUf2FOfjKj1Aa8hQH5LqFG+bZ+93CcNQ@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202321F65@CORPEXCH1.na.ads.idt.com>
+	 <CAJe_ZhfTg17YgyQ9TuKdhtXMu+8W_E2t3cBqZybfarxWu9Zasg@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E552023220AC@CORPEXCH1.na.ads.idt.com>
+	 <CAJe_ZhdBSxvH6Zd8JsoLrerapNbLn0a7Lv6KxwivbFuLaSavyg@mail.gmail.com>
+	 <20111018074211.GA13483@flint.arm.linux.org.uk>
+	 <CAJe_ZhdHcsBNT6iX7TJCqoGZMrPwE2BOt06e8M8PHzuDe3Z70w@mail.gmail.com>
+	 <20111018094944.GA30644@flint.arm.linux.org.uk>
+	 <CAJe_ZhcDJjP3t_XFG04or4WzwzPHEcHo2ThstGCVFrYvYqTaiQ@mail.gmail.com>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E552023672A3@CORPEXCH1.na.ads.idt.com>
+	 <1319428149.9355.60.camel@vkoul-udesk3>
+	 <0CE8B6BE3C4AD74AB97D9D29BD24E5520236801F@CORPEXCH1.na.ads.idt.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Oct 2011 20:57:04 +0530
+Message-ID: <1319470024.20054.10.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 4:05 PM, Kelvin Cheung wrote:
-> 2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
->> Hello Kelvin.
->>
->> On 10/24/2011 12:36 PM, Kelvin Cheung wrote:
->>
->> [snip]
->>
->>> According to datasheet of Loongson 1B, the buffer size in RX/TX
->>> descriptor is only 2KB. So the Loongson1B's GMAC could not handle
->>> jumbo frames. And the second buffer is useless in this case. Am I
->>> right? Is there a better way than ifdef CONFIG_MACH_LOONGSON1 to
->>> avoid duplicate code?
->>
->> Sorry for my misunderstanding.
->>
->> I think you have to use the normal descriptor and remove the enh_desc
->> from the platform w/o modifying the driver at all.
->>
->> The driver will be able to select/configure all automatically (also jumbo).
->>
->> Let me know.
-> 
-> That's the problem.
-> The bitfield definition of Loongson1B is also different from normal descriptor.
+On Mon, 2011-10-24 at 05:36 -0700, Bounine, Alexandre wrote:
+> > I think we all agree that this fits the dma_slave case :)
+> > 
+> > As for changing in dmaengine to u64, if we are thinking this as
+> slave
+> > usage, then ideally we should not make assumption of the address
+> type
+> > of
+> > peripheral so we should only move the dma_slave_config address
+> fields
+> > to
+> > u64, if that helps in RIO case. Moving other usages would be insane.
+> > 
+> > At this point we have two proposals
+> > a) to make RIO exceptional case and add RIO specific stuff.
+> > b) make dmaengine transparent and add additional argument
+> > in .device_prep_slave_sg() callback which is subsystem dependent.
+> > Current dmacs and those who don't need it will ignore it.
+> > 
+> > ATM, I am leaning towards the latter, for the main reason to keep
+> > dmaengine away from subsystem details.
+> > 
+> Both proposals will work for RapidIO but second option looks more
+> universal and may be used by another subsystem in the future.
+> My vote goes to the option b). 
+Thanks for the vote :D
 
-The problem is not in the Loongson1B gmac.
+I would really like to hear from Dan, Jassi and Russell as well.
 
-The normal descriptor fields in the stmmac refer to an old synopsys
-databook.
-New chips have the same structure you have added; so we should fix this
-in the driver w/o breaking the compatibility for old chips.
-I kindly ask you to confirm if the currently normal descriptor structure
-(w/o your changes) doesn't work on your platform.
-Did you test it?
 
-> Moreover, I want to enable the TX checksum offload function which is
-> not supported in normal descriptor.
-> Any suggestions?
-
-It is supported but you have to pass from the platform: tx_coe = 1.
-
-Peppe
-> 
->> Note:
->> IIRC, there is a bit difference in case of normal descriptors for
->> Synopsys databook newer than the 1.91 (I used for testing this mode).
->> In any case, I remember that, on some platforms, the normal descriptors
->> have been used w/o problems also on these new chip generations.
->>
->> Peppe
->>
->>
-> 
-> 
+-- 
+~Vinod
 
