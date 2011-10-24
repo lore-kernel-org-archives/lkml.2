@@ -1,141 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab1JXOmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:42:54 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:47771 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab1JXOmx (ORCPT
+	id S932771Ab1JXOm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:42:59 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:39747
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932390Ab1JXOmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:42:53 -0400
-Message-ID: <4EA5795F.7090101@atmel.com>
-Date: Mon, 24 Oct 2011 16:42:39 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
+	Mon, 24 Oct 2011 10:42:55 -0400
+X-SpamScore: -1
+X-BigFish: VS-1(zz1432N98dKa1fflb922lzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+Date: Mon, 24 Oct 2011 22:51:40 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
 To: Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <robherring2@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2] AT91: dt: at91sam9g45 family and board device tree
- files
-References: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com> <4E8C54DC.6040700@gmail.com> <4E8EF6F4.4030905@atmel.com> <4E9D4FD5.8080802@atmel.com> <20111024143451.GA8708@ponder.secretlab.ca>
-In-Reply-To: <20111024143451.GA8708@ponder.secretlab.ca>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rajendra Nayak <rnayak@ti.com>, <patches@linaro.org>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <lrg@ti.com>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111024145139.GH1755@S2100-06.ap.freescale.net>
+References: <20111019144215.GA32007@S2100-06.ap.freescale.net>
+ <4E9FAF42.5060200@ti.com>
+ <20111020061408.GE32007@S2100-06.ap.freescale.net>
+ <4EA00F7C.1080005@ti.com>
+ <20111021082309.GA337@S2100-06.ap.freescale.net>
+ <20111024092411.GE8708@ponder.secretlab.ca>
+ <20111024130429.GD1755@S2100-06.ap.freescale.net>
+ <20111024130636.GB26033@opensource.wolfsonmicro.com>
+ <20111024134025.GE1755@S2100-06.ap.freescale.net>
+ <20111024135950.GV8708@ponder.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111024135950.GV8708@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 04:34 PM, Grant Likely :
-> On Tue, Oct 18, 2011 at 12:07:17PM +0200, Nicolas Ferre wrote:
->> On 10/07/2011 02:56 PM, Nicolas Ferre :
->>> On 10/05/2011 03:00 PM, Rob Herring :
->>>> Nicolas,
->>>>
->>>> On 10/03/2011 05:00 AM, Nicolas Ferre wrote:
->>>>> Create a new device tree source file for Atmel at91sam9g45 SoC family.
->>>>> The Evaluation Kit at91sam9m10g45ek includes it.
->>>>> This first basic support will be populated as drivers and boards will be
->>>>> converted to device tree.
->>>>> Contains serial, dma and interrupt controllers.
->>>>>
->>>>> The generic board file still takes advantage of platform data for early serial
->>>>> init. As we need a storage media and the NAND flash driver is not converted to
->>>>> DT yet, we keep old initialization for it.
->>>>>
->>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>
->> [..]
->>
->>>>> diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
->>>>> new file mode 100644
->>>>> index 0000000..7bcb9a9
->>>>> --- /dev/null
->>>>> +++ b/arch/arm/mach-at91/board-dt.c
->>>>> @@ -0,0 +1,122 @@
->>>>> +/*
->>>>> + *  Setup code for AT91SAM Evaluation Kits with Device Tree support
->>>>> + *
->>>>> + *  Covers: * AT91SAM9G45-EKES  board
->>>>> + *          * AT91SAM9M10-EKES  board
->>>>> + *          * AT91SAM9M10G45-EK board
->>>>> + *
->>>>> + *  Copyright (C) 2011 Atmel,
->>>>> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>> + *
->>>>> + * Licensed under GPLv2 or later.
->>>>> + */
->>>>> +
->>>>> +#include <linux/types.h>
->>>>> +#include <linux/init.h>
->>>>> +#include <linux/module.h>
->>>>> +#include <linux/irqdomain.h>
->>>>> +#include <linux/of_irq.h>
->>>>> +#include <linux/of_platform.h>
->>>>> +
->>>>> +#include <mach/hardware.h>
->>>>> +#include <mach/board.h>
->>>>> +#include <mach/gpio.h>
->>>>> +#include <mach/system_rev.h>
->>>>> +#include <mach/at91sam9_smc.h>
->>>>> +
->>>>> +#include <asm/setup.h>
->>>>> +#include <asm/irq.h>
->>>>> +#include <asm/mach/arch.h>
->>>>> +#include <asm/mach/map.h>
->>>>> +#include <asm/mach/irq.h>
->>>>> +
->>>>> +#include "sam9_smc.h"
->>>>> +#include "generic.h"
->>
->> As found by Jean-Christophe, it seems that some clock lookup data are missing here. Something like:
->>
->> +/*
->> + * Lookup table for attaching a specific name and platform_data pointer to
->> + * devices as they get created by of_platform_populate(). Ideally this table
->> + * would not exist, but the current clock implementation depends on some devices
->> + * having a specific name.
->> + /
->> +static const struct of_dev_auxdata at91_auxdata_lookup[] __initconst = {
->> + / at91sam9260/ at91sam9g20 /
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffff200, "atmel_usart.0", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb0000, "atmel_usart.1", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb4000, "atmel_usart.2", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffb8000, "atmel_usart.3", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd0000, "atmel_usart.4", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd4000, "atmel_usart.5", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfffd8000, "atmel_usart.6", NULL),
->> + / at91sam9g45*/
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xffffee00, "atmel_usart.0", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff8c000, "atmel_usart.1", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff90000, "atmel_usart.2", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff94000, "atmel_usart.3", NULL),
->> + OF_DEV_AUXDATA("atmel,at91sam9260-usart", 0xfff98000, "atmel_usart.4", NULL),
->> + { /* sentinel */ }
->> +};
->>
->> With a change here:
->>   of_platform_populate(NULL, of_default_bus_match_table, at91_auxdata_lookup, NULL);
->>
->> I know that it is a temporary usage of auxdata. Does it sound the right thing to do for the moment?
+On Mon, Oct 24, 2011 at 03:59:50PM +0200, Grant Likely wrote:
+> On Mon, Oct 24, 2011 at 09:40:26PM +0800, Shawn Guo wrote:
+> > On Mon, Oct 24, 2011 at 03:06:37PM +0200, Mark Brown wrote:
+> > > On Mon, Oct 24, 2011 at 09:04:31PM +0800, Shawn Guo wrote:
+> > > 
+> > > > If we can attach the device_node of 'regulators' node to dev->of_node
+> > > > when calling regulator_register(regulator_desc, dev, ...) from
+> > > > regulator driver, the regulator core will be able to find all nodes under
+> > > > 'regulators' using for_each_child_of_node(dev->of_node, child).
+> > > 
+> > > Please provide concrete examples of the bindings you're talking about,
+> > > the really important thing here is how sane the bindings look and I've
+> > > really got no idea what any of what you're talking about will look like
+> > > or if they make sense.
+> > > 
+> > The only thing different from what I attached last time is the
+> > compatible string added to 'regulators' node.
+> > 
+> >         ecspi@70010000 { /* ECSPI1 */
+> >                 fsl,spi-num-chipselects = <2>;
+> >                 cs-gpios = <&gpio3 24 0>, /* GPIO4_24 */
+> >                            <&gpio3 25 0>; /* GPIO4_25 */
+> >                 status = "okay";
+> > 
+> >                 pmic: mc13892@0 {
+> >                         #address-cells = <1>;
+> >                         #size-cells = <0>;
+> >                         compatible = "fsl,mc13892";
+> >                         spi-max-frequency = <6000000>;
+> >                         reg = <0>;
+> >                         mc13xxx-irq-gpios = <&gpio0 8 0>; /* GPIO1_8 */
+> > 
+> >                         regulators {
+> >                         	compatible = "fsl,mc13892-regulator";
+> > 
+> >                                 sw1reg: mc13892_sw1 {
+> >                                         regulator-min-uV = <600000>;
+> >                                         regulator-max-uV = <1375000>;
+> >                                         regulator-change-voltage;
+> >                                         regulator-boot-on;
+> >                                         regulator-always-on;
+> >                                 };
+> > 
+> >                                 sw2reg: mc13892_sw2 {
+> >                                         regulator-min-uV = <900000>;
+> >                                         regulator-max-uV = <1850000>;
+> >                                         regulator-change-voltage;
+> >                                         regulator-boot-on;
+> >                                         regulator-always-on;
+> >                                 };
+> > 
+> >                                 ......
+> >                         };
+> > 
+> >                         leds {
+> >                                 ......
+> >                         };
+> > 
+> >                         buttons {
+> >                                 ......
+> >                         };
+> >                 };
+> > 
+> >                 flash: at45db321d@1 {
+> >                         ......
+> >                 };
+> >         };
+> > 
+> > > > hesitate to hack this into mfd_add_devices(), so I would like to add
+> > > > compatible string "fsl,mc13892-regulators" to node 'regulators' and
+> > > > find the node using of_find_compatible_node(dev->parent, NULL,
+> > > > "fsl,mc13892-regulators").
+> > > 
+> > > It's not immediately obvious to me that having a binding for the
+> > > regulators separately makes sense, it's not a usefully distinct device.
+> > > 
+> > Fair point.  Actually, I also hate to have the finding of node
+> > 'regulators' plugged into regulator driver.  What about following
+> > change to address Grant's concern on global device tree search?
+> >  
+> > diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+> > index 8fe132d..29dcf90 100644
+> > --- a/drivers/regulator/core.c
+> > +++ b/drivers/regulator/core.c
+> > @@ -2673,7 +2673,8 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+> >         BLOCKING_INIT_NOTIFIER_HEAD(&rdev->notifier);
+> > 
+> >         /* find device_node and attach it */
+> > -       rdev->dev.of_node = of_find_node_by_name(NULL, regulator_desc->name);
+> > +       rdev->dev.of_node = of_find_node_by_name(dev->parent->of_node,
+> > +                                                regulator_desc->name);
 > 
-> yes.
+> of_find_node_by_name() doesn't work that way.  The first argument is a
+> starting point, but it doesn't restrict the search to children of a
+> node.
+> 
+> for_each_child_of_node() is what you want to use when iterating over
+> the children which unfortunately changes the structure of this
+> function.
+> 
+The dev->parent->of_node is meant to point to node 'pmic: mc13892@0'.
+And the intention here is not to iterate over the children, but to
+start a search from a reasonable point rather than the top root node.
 
-Grant,
-
-It seems that Rob has had another idea. He advices me (on a Oct. 20th
-email) that I should add some clock lookup entries.
-That is what I did in a couple of patches that I have just sent some
-minutes ago... I tend to like the clock lookup adding more as it prevent
-the adding of big amount of code into the board-dt.c file.
-
-What is the preferred option? Are you fine with patches that I have just
-sent?
-
-Thanks,
-
-Best regards,
 -- 
-Nicolas Ferre
+Regards,
+Shawn
+
