@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab1JXFHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 01:07:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58658 "EHLO mga03.intel.com"
+	id S1753252Ab1JXF5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 01:57:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:34429 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019Ab1JXFHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 01:07:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,396,1315206000"; 
-   d="asc'?scan'208";a="65579298"
-Subject: Re: -next: NET_VENDOR_8390 dependencies
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 23 Oct 2011 22:07:22 -0700
-In-Reply-To: <CAMuHMdW6hC1JchxVL9-4f58a8Vg7cF+97BbKePxjEDHY3H8wNw@mail.gmail.com>
-References: <CAMuHMdW6hC1JchxVL9-4f58a8Vg7cF+97BbKePxjEDHY3H8wNw@mail.gmail.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-EFcc7WH1LVdV0FTMYrcl"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1319432843.10258.11.camel@jtkirshe-mobl>
+	id S1753224Ab1JXF5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 01:57:10 -0400
+Date: Mon, 24 Oct 2011 07:57:05 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Roland Kletzing <devzero@web.de>
+Cc: linux-kernel@vger.kernel.org, ext-adrian.hunter@nokia.com
+Subject: Re: mtd_stresstest module bricked my dockstar
+Message-ID: <20111024055705.GA4020@1wt.eu>
+References: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <69501156.1798237.1319395066798.JavaMail.fmail@mwmweb003>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Roland,
 
---=-EFcc7WH1LVdV0FTMYrcl
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Oct 23, 2011 at 08:37:46PM +0200, Roland Kletzing wrote:
+> It may be that it`s not recommended or considered "best practise" to load all sorts of unkown modules (i.e. find /lib/modules.... -name "*.ko"....)  - but people do (see https://bugzilla.novell.com/show_bug.cgi?id=224522[https://bugzilla.novell.com/show_bug.cgi?id=224522] ). And it`s not obvious that it`s THAT dangerous. And for me this is the first time Linux REALLY managed to badly brick my hardware in such a rigorous way.  Maybe someone can understand that i`m not really amused, as there is no easy way to recover, as seen on http://www.yourwarrantyisvoid.com/2010/09/08/dead-dockstar-resurrected-with-jtag/[http://www.yourwarrantyisvoid.com/2010/09/08/dead-dockstar-resurrected-with-jtag/] 
 
-On Sun, 2011-10-23 at 14:21 -0700, Geert Uytterhoeven wrote:
-> drivers/net/ethernet/8390/Kconfig:
->=20
-> config NET_VENDOR_8390
->         bool "National Semi-conductor 8390 devices"
->         default y
->         depends on NET_VENDOR_NATSEMI && (AMIGA_PCMCIA || PCI || SUPERH |=
-| \
->                    ISA || MCA || EISA || MAC || M32R || MACH_TX49XX || \
->                    MCA_LEGACY || H8300 || ARM || MIPS || ZORRO || PCMCIA =
-|| \
->                    EXPERIMENTAL)
->         ---help---
->           If you have a network (Ethernet) card belonging to this class, =
-say Y
->           and read the Ethernet-HOWTO, available from
->           <http://www.tldp.org/docs.html#howto>.
->=20
->           Note that the answer to this question doesn't directly affect t=
-he
->           kernel: saying N will just cause the configurator to skip all
->           the questions about Western Digital cards. If you say Y, you wi=
-ll be
->           asked for your specific card in the following questions.
->=20
-> So NET_VENDOR_8390 depends on NET_VENDOR_NATSEMI.
->=20
-> drivers/net/ethernet/natsemi/Kconfig:
->=20
-> config NET_VENDOR_NATSEMI
->         bool "National Semi-conductor devices"
->         default y
->         depends on MCA || MAC || MACH_JAZZ || PCI || XTENSA_PLATFORM_XT20=
-00
->         ---help---
->           If you have a network (Ethernet) card belonging to this class, =
-say Y
->           and read the Ethernet-HOWTO, available from
->           <http://www.tldp.org/docs.html#howto>.
->=20
->           Note that the answer to this question doesn't directly affect t=
-he
->           kernel: saying N will just cause the configurator to skip all
->           the questions about National Semi-conductor devices. If you say=
- Y,
->           you will be asked for your specific card in the following quest=
-ions.
->=20
-> But NET_VENDOR_NATSEMI will never be true for several of the other
-> dependencies of NET_VENDOR_8390 (e.g. AMIGA_PCMCIA, EISA, H8300, ARM,
-> ZORRO, PCMCIA)?
->=20
+If you can't restore it with JTAG, it means the hardware is really dead.
+JTAG is used when you blank the flash, and is supposed to work. I don't
+know what the module does, but I fail to see how to could wear the flash
+that fast. At worst it could have wiped it, or the flash was already bad.
 
-You are correct, I will put together a patch to fix that.  Thanks!
+I got one Iomega Iconnect with a faulty flash that I got replaced for a
+good one, so it's more likely the case here.
 
---=-EFcc7WH1LVdV0FTMYrcl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> Luckily, i got that dockstar for cheap and have some more, so let`s call that "shit really happens".
+> 
+> I don`t want to accuse anybody, that module has it`s purpose, but please consider adding more safeguard against such issues.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I agree with you. I remember the very old ISA NE2000 driver who used to
+scan various addresses to find a NIC, causing some of them to reconfigure
+their address to *none* and definitely stop responding on the bus to any
+reconfiguration request. That was pretty annoying too. After killing a
+few, I stopped using Linux on a machine with such a NIC for a long time!
 
-iQIcBAABCgAGBQJOpPKKAAoJEOVv75VaS+3Op58P/2ovL0Gp45bCSCDv9hAe+iNg
-CoWkoJzEv69OAmmLZRjwiZHNZ2hUk+DuIlAss3JCVDQHfbx7ICXquN1zKGLwfPed
-KlqzpC8vHP06RdCg0UQJZoD7THMTAflMLm6cx9vKW9TFq10sjvV2iZJlFDq5+vT2
-aTsZ3GIkwS65gHuyE/XaPZoRtaP01Je5R3oUZaVJ5YgrwVgOePC1YYd4/c1Iv8jE
-Q3jUS0TfIy1Lq7dsjy9ZZ3RGyIwrQguIdI8ocpjuVLxmT68Kq/f4A3qhizSj0Do4
-uKf5JWBZsU/6x8u6OzpHiIkAclEJAPSTk2O5gc1OhuyZkQiR0Gl51CPNDY7pLI8m
-9s5+596EmQ/rEosVVduvbnkYFjX8LT8cDZtRHxKMGCXTT6q1UXTu8qCLWnbhbMAs
-2foJNYkV4ZifzMkGY44qyUKi9/UBzc+sp2rMMf4BNjUfWPitjoM+dcpRaY/FQQqh
-l/jUCeD3UvYHlg8+qT2dtXl1w40TZo/R/j94rJnG3nMozx0EzCg6jZXLId1jsF4P
-XgYFVBSeC7zNZ+W9MAFStiQ80zaKBdXeWvC3oaC62ynS+H9gbG/OMasks2Qhty3V
-BBwGS6WegINoqB7SjRcegUFR0bCeGyDWhE5zD/yrp+WaKKX/Wl+sWwaoZFbGMPQt
-CUVRUb/3zUvB6+Vt0rJ5
-=trgz
------END PGP SIGNATURE-----
+> ps:
+> Someone want the Dockstar for spending the hours and the money for debrick ? Or for extracting gold and other precious metals from electronic waste ? ;)
 
---=-EFcc7WH1LVdV0FTMYrcl--
+You should keep it and retry the JTAG adapter. You just need a boot loader
+so if you manage to find a usable memory location that you can select by
+soldering two pins together, you could manage to store it and bood from
+another device.
+
+Willy
 
