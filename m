@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab1JXOo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 10:44:58 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46904 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab1JXOo5 (ORCPT
+	id S932780Ab1JXOqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 10:46:49 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:33422 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab1JXOqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 10:44:57 -0400
-Message-ID: <4EA579E7.7000002@gmail.com>
-Date: Mon, 24 Oct 2011 09:44:55 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, plagnioj@jcrosoft.com
-Subject: Re: [PATCH V3 1/2] ARM: at91: dt: at91sam9g45 family and board device
- tree files
-References: <4E9F8226.4030503@gmail.com> <15ab652499e7f6f8a26724bfd90643a8f3f96ad9.1319464310.git.nicolas.ferre@atmel.com>
-In-Reply-To: <15ab652499e7f6f8a26724bfd90643a8f3f96ad9.1319464310.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Oct 2011 10:46:47 -0400
+Date: Mon, 24 Oct 2011 22:46:23 +0800
+From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Greg KH <gregkh@suse.de>, Namhyung Kim <namhyung@gmail.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Joe Perches <joe@perches.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        Youquan Song <youquan.song@intel.com>, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/36] Staging: cx25821: Clean up patch series
+Message-ID: <20111024224623.7585c471@inspire>
+In-Reply-To: <4EA47CF8.2090504@redhat.com>
+References: <1319262236-6498-1-git-send-email-leonidsbox@gmail.com>
+	<20111022081941.GA5443@suse.de>
+	<4EA3A7ED.8090404@redhat.com>
+	<20111023232418.2d79ed12@inspire>
+	<4EA47CF8.2090504@redhat.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 09:05 AM, Nicolas Ferre wrote:
-> Create a new device tree source file for Atmel at91sam9g45 SoC family.
-> The Evaluation Kit at91sam9m10g45ek includes it.
-> This first basic support will be populated as drivers and boards will be
-> converted to device tree.
-> Contains serial, dma and interrupt controllers.
-> 
-> The generic board file still takes advantage of platform data for early serial
-> init. As we need a storage media and the NAND flash driver is not converted to
-> DT yet, we keep old initialization for it.
-> 
+On Sun, 23 Oct 2011 22:45:44 +0200
+Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
 
-This comment is out of date for serial.
-
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> V3:
-> - additional clock lookup for device tree handling
-> - devices disabled in dtsi file so that only useful devices are
->   enabled in dts files
+> Em 23-10-2011 17:24, Leonid V. Fedorenchik escreveu:
+> > 
+> > Thank you. Should I send my future patches for this driver directly to you?
 > 
-> V2: foundation for AT91SAM generic support
-> - device tree focused board file
-> - inclusion of USART DT support
-> - early USART and NAND still using platform data
+> The better is if you could send them to linux-media@vger.kernel.org. Patchwork
+> will catch them and put on my queue automatically.
+
+OK, will do. :)
+
 > 
+> Thanks,
+> Mauro
 
-Reviewed-by: Rob Herring <rob.herring@calxeda.com>
-
-Rob
+Leonid V. Fedorenchik
