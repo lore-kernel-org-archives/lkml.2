@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab1JXQRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 12:17:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5831 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932276Ab1JXQRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 12:17:48 -0400
-Date: Mon, 24 Oct 2011 18:13:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/X] uprobes: introduce UTASK_SSTEP_TRAPPED logic
-Message-ID: <20111024161306.GB19659@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215344.GG16395@redhat.com> <20111022072030.GB24475@in.ibm.com> <20111024144127.GA14975@redhat.com> <20111024151614.GA6034@in.ibm.com>
+	id S933008Ab1JXQ1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 12:27:34 -0400
+Received: from exprod7og102.obsmtp.com ([64.18.2.157]:47651 "EHLO
+	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab1JXQ1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 12:27:32 -0400
+Message-ID: <4EA5913D.7090004@genband.com>
+Date: Mon, 24 Oct 2011 10:24:29 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024151614.GA6034@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: =?ISO-8859-1?Q?Denilson_Figueiredo_de_S=E1?= <denilsonsa@gmail.com>
+CC: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Linux USB HID should ignore values outside Logical Minimum/Maximum
+ range
+References: <op.v3q34la3dsdv5o@localhost>
+In-Reply-To: <op.v3q34la3dsdv5o@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 24 Oct 2011 16:24:38.0812 (UTC) FILETIME=[6D320DC0:01CC9269]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18470.000
+X-TM-AS-Result: No--6.779800-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24, Ananth N Mavinakayanahalli wrote:
->
-> On Mon, Oct 24, 2011 at 04:41:27PM +0200, Oleg Nesterov wrote:
-> >
-> > Agreed! it would be nice to "hide" these int3's if we dump the core, but
-> > I think this is a bit off-topic. It makes sense to do this in any case,
-> > even if the core-dumping was triggered by another thread/insn. It makes
-> > sense to remove all int3's, not only at regs->ip location. But how can
-> > we do this? This is nontrivial.
->
-> I don't think that is a problem.. see below...
->
-> > And. Even worse. Suppose that you do "gdb probed_application". Now you
-> > see int3's in the disassemble output. What can we do?
->
-> In this case, nothing.
->
-> > I think we can do nothing, at least currently. This just reflects the
-> > fact that uprobe connects to inode, not to process/mm/etc.
-> >
-> > What do you think?
->
-> Thinking further on this, in the normal 'running gdb on a core' case, we
-> won't have this problem, as the binary that we point gdb to, will be a
-> pristine one, without the uprobe int3s, right?
+On 10/22/2011 05:42 AM, Denilson Figueiredo de Sá wrote:
 
-Not sure I understand.
+> It may even happen to send an out-of-range value for one axis, but a
+> valid value for another axis. The code should be prepared for that
+> (ignore one, but keep the other).
 
-I meant, if we have a binary with uprobes (iow, register_uprobe() installed
-uprobes into that file), then gdb will see int3's with or without the core.
-Or you can add uprobe into glibc, say you can probe getpid(). Now (again,
-with or without the core) disassemble shows that getpid() starts with int3.
+In this case what should be used for the "invalid" axis value?  The 
+previous value?
 
-But I guess you meant something else...
+Chris
 
-Oleg.
-
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
