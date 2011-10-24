@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab1JXM15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 08:27:57 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37195 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab1JXM14 (ORCPT
+	id S932257Ab1JXM23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 08:28:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61555 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab1JXM22 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 08:27:56 -0400
-Date: Mon, 24 Oct 2011 17:57:34 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to
- support pv-ticketlock
-Message-ID: <20111024122734.GA10634@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com>
- <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com>
- <4EA53A7D.300@redhat.com>
+	Mon, 24 Oct 2011 08:28:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4EA53A7D.300@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11102412-3270-0000-0000-00000123503B
+In-Reply-To: <CAMjpGUcWUp05SkBi1JWL+NFBCcZV5=EaidtYkEbONPheVwhjgw@mail.gmail.com>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+	<20110930020754.GK12606@ponder.secretlab.ca>
+	<CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
+	<CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
+	<CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
+	<20111004203520.GK2870@ponder.secretlab.ca>
+	<CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
+	<CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
+	<20111024073604.GA8708@ponder.secretlab.ca>
+	<CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
+	<CAMjpGUcWUp05SkBi1JWL+NFBCcZV5=EaidtYkEbONPheVwhjgw@mail.gmail.com>
+Date: Mon, 24 Oct 2011 14:28:26 +0200
+Message-ID: <CACRpkdbbNTGd3opbeAiY2uMpPzD+G_vj=jq_fiArhjosPXyMRQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: create a pin control subsystem v8
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Stijn Devriendt <highguy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2011-10-24 12:14:21]:
+On Mon, Oct 24, 2011 at 11:20 AM, Mike Frysinger <vapier.adi@gmail.com> wrote:
 
-> > +/*
-> > + * kvm_pv_wait_for_kick_op : Block until kicked by either a KVM_HC_KICK_CPU
-> > + * hypercall or a event like interrupt.
-> > + *
-> > + * @vcpu : vcpu which is blocking.
-> > + */
-> > +static void kvm_pv_wait_for_kick_op(struct kvm_vcpu *vcpu)
-> > +{
+> but the question here is about pinctrl.  does userspace really need to
+> manipulate the pinmapping ?  if we agree on that, then the question is
+> on the userspace interface.
+>
+> assuming we want this, i can't see the performance argument being made
+> here for pinctrl.  which means doing a sysfs interface here like we
+> already have with GPIO makes the most sense.  GPIO deals in "binary"
+> data for the most part (reading/writing 0/1 ints) so the string-based
+> sysfs parsing is a bit weird, but pinctrl deals with strings
+> everywhere for selecting mapping groups, so sysfs is the natural
+> answer.
 
-[snip]
+Hm now I feel I start to agree with you and come back to my
+original proposition to do pinctrl in sysfs after all.
 
-> > +}
-> 
-> This hypercall can be replaced by a HLT instruction, no?
+I wonder how soon we have a practical use case for this.
+We do have this hacked-up driver in ux500:
+http://git.linaro.org/gitweb?p=bsp/st-ericsson/linux-3.0-ux500.git;a=tree;f=drivers/staging/ab5500_sim;hb=HEAD
 
-Good point. Assuming yield_on_hlt=1, that would allow the vcpu to be put
-to sleep and let other vcpus make progress.
+This controls a lot of SIM card pins from userspace...
 
-I guess with that change, we can also dropthe need for other hypercall
-introduced in this patch (kvm_pv_kick_cpu_op()). Essentially a vcpu sleeping 
-because of HLT instruction can be woken up by a IPI issued by vcpu releasing a
-lock.
-
-- vatsa
-
+Yours,
+Linus Walleij
