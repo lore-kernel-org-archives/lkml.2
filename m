@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab1JYLHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:07:04 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:59525 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab1JYLHB (ORCPT
+	id S1755041Ab1JYLHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:07:34 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:48071 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab1JYLHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:07:01 -0400
-Message-ID: <4EA6983C.5080303@atmel.com>
-Date: Tue, 25 Oct 2011 13:06:36 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, plagnioj@jcrosoft.com
-Subject: Re: [PATCH V3 1/2] ARM: at91: dt: at91sam9g45 family and board device
- tree files
-References: <4E9F8226.4030503@gmail.com> <15ab652499e7f6f8a26724bfd90643a8f3f96ad9.1319464310.git.nicolas.ferre@atmel.com> <4EA579E7.7000002@gmail.com>
-In-Reply-To: <4EA579E7.7000002@gmail.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Oct 2011 07:07:33 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: [PATCH] fix typo in crypto/Kconfig
+From: Valdis.Kletnieks@vt.edu
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1319540838_3131P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 25 Oct 2011 07:07:18 -0400
+Message-ID: <27363.1319540838@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4EA6986A.00E9,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 04:44 PM, Rob Herring :
-> On 10/24/2011 09:05 AM, Nicolas Ferre wrote:
->> Create a new device tree source file for Atmel at91sam9g45 SoC family.
->> The Evaluation Kit at91sam9m10g45ek includes it.
->> This first basic support will be populated as drivers and boards will be
->> converted to device tree.
->> Contains serial, dma and interrupt controllers.
->>
->> The generic board file still takes advantage of platform data for early serial
->> init. As we need a storage media and the NAND flash driver is not converted to
->> DT yet, we keep old initialization for it.
->>
-> 
-> This comment is out of date for serial.
+--==_Exmh_1319540838_3131P
+Content-Type: text/plain; charset=us-ascii
 
-Well, not for early serial actually.
+Fix a typo in the Kconfig file help text.
 
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
->> V3:
->> - additional clock lookup for device tree handling
->> - devices disabled in dtsi file so that only useful devices are
->>   enabled in dts files
->>
->> V2: foundation for AT91SAM generic support
->> - device tree focused board file
->> - inclusion of USART DT support
->> - early USART and NAND still using platform data
->>
-> 
-> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
 
-Thanks Rob for your review. I send a pull request to Arnd on this material.
+--- linux-next/crypto/Kconfig.dist	2011-10-25 06:57:29.413596040 -0400
++++ linux-next/crypto/Kconfig	2011-10-25 07:01:51.518647308 -0400
+@@ -104,7 +104,7 @@
+ 	tristate "Userspace cryptographic algorithm configuration"
+ 	select CRYPTO_MANAGER
+ 	help
+-	  Userapace configuration for cryptographic instantiations such as
++	  Userspace configuration for cryptographic instantiations such as
+ 	  cbc(aes).
+ 
+ config CRYPTO_MANAGER_DISABLE_TESTS
 
-Best regards,
--- 
-Nicolas Ferre
+
+--==_Exmh_1319540838_3131P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOpphmcC3lWbTT17ARAiojAJ9xGtiMJrsIB06pLHHi8YgK7+wNBgCgzNfy
+BRiflJemi1Lf4zz0nkzLuNU=
+=z8QE
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1319540838_3131P--
+
