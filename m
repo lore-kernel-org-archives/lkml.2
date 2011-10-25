@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab1JYM0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 08:26:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47844 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932571Ab1JYM0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 08:26:21 -0400
-Date: Tue, 25 Oct 2011 14:26:18 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: Latency writing to an mlocked ext4 mapping
-Message-ID: <20111025122618.GA8072@quack.suse.cz>
-References: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
- <ACE78D84-0E94-4E7A-99BF-C20583018697@dilger.ca>
- <CALCETrU23vyCXPG6mJU9qaPeAGOWDQtur5C+LRT154V5FM=Ajg@mail.gmail.com>
- <CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
- <CALCETrUcOKQAJTTmCSD3Q3wYS-zLqv6tBa4AdkK50bNobRhDUQ@mail.gmail.com>
+	id S1756550Ab1JYM1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 08:27:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59785 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab1JYM1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 08:27:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrUcOKQAJTTmCSD3Q3wYS-zLqv6tBa4AdkK50bNobRhDUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111025.063206.2273357152859701628.davem@davemloft.net>
+References: <20111025.063206.2273357152859701628.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Oct 2011 14:26:53 +0200
+X-Google-Sender-Auth: M2KrFZs67t9DrnIYJz3HunmHICs
+Message-ID: <CA+55aFzkZofnUmBOGVvmNKyA0_FApo73xZ7J=aevbHPS_0+xKQ@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 19-10-11 22:59:55, Andy Lutomirski wrote:
-> On Wed, Oct 19, 2011 at 7:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Wed, Oct 19, 2011 at 6:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> >> On Wed, Oct 19, 2011 at 6:02 PM, Andreas Dilger <adilger@dilger.ca> wrote:
-> >>> What kernel are you using?  A change to keep pages consistent during writeout was landed not too long ago (maybe Linux 3.0) in order to allow checksumming of the data.
-> >>
-> >> 3.0.6, with no relevant patches.  (I have a one-liner added to the tcp
-> >> code that I'll submit sometime soon.)  Would this explain the latency
-> >> in file_update_time or is that a separate issue?  file_update_time
-> >> seems like a good thing to make fully asynchronous (especially if the
-> >> file in question is a fifo, but I've already moved my fifos to tmpfs).
-> >
-> > On 2.6.39.4, I got one instance of:
-> >
-> > call_rwsem_down_read_failed ext4_map_blocks ext4_da_get_block_prep
-> > __block_write_begin ext4_da_write_begin ext4_page_mkwrite do_wp_page
-> > handle_pte_fault handle_mm_fault do_page_fault page_fault
-> >
-> > but I'm not seeing the large numbers of the ext4_page_mkwrite trace
-> > that I get on 3.0.6.  file_update_time is now by far the dominant
-> > cause of latency.
-> 
-> The culprit seems to be do_wp_page -> file_update_time ->
-> mark_inode_dirty_sync.  This surprises me for two reasons:
-> 
->  - Why the _sync?  Are we worried that data will be written out before
-> the metadata?  If so, surely there's a better way than adding latency
-> here.
-  _sync just means that inode will become dirty for fsync(2) purposes but
-not for fdatasync(2) purposes - i.e. it's just a timestamp update (or
-it could be something similar).
+On Tue, Oct 25, 2011 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
+>
+> The most visible thing in here is the reorganization of the drivers
+> under drivers/net.
 
->  - Why are we calling file_update_time at all?  Presumably we also
-> update the time when the page is written back (if not, that sounds
-> like a bug, since the contents may be changed after something saw the
-> mtime update), and, if so, why bother updating it on the first write?
-> Anything that relies on this behavior is, I think, unreliable, because
-> the page could be made writable arbitrarily early by another program
-> that changes nothing.
-  We don't update timestamp when the page is written back. I believe this
-is mostly because we don't know whether the data has been changed by a
-write syscall, which already updated the timestamp, or by mmap. That is
-also the reason why we update the timestamp at page fault time.
+Nope, the most visible thing are some new annoying warnings, that seem
+absolutely broken.
 
-  The reason why file_update_time() blocks for you is probably that it
-needs to get access to buffer where inode is stored on disk and because a
-transaction including this buffer is committing at the moment, your thread
-has to wait until the transaction commit finishes. This is mostly a problem
-specific to how ext4 works so e.g. xfs shouldn't have it.
+At the very minimum, that WARN_ON(1) should be a WARN_ON_ONCE() or
+something like that. Because showing it over an dover again is not
+helpful.
 
-  Generally I believe the attempts to achieve any RT-like latencies when
-writing to a filesystem are rather hopeless. How much hopeless depends on
-the load of the filesystem (e.g., in your case of mostly idle filesystem I
-can imagine some tweaks could reduce your latencies to an acceptable level
-but once the disk gets loaded you'll be screwed). So I'd suggest that
-having RT thread just store log in memory (or write to a pipe) and have
-another non-RT thread write the data to disk would be a much more robust
-design.
+Added the people who signed off on the changes to the affected files,
+since they hopefully know why this happens and can fix it..
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+                      Linus
+
+---
+[   83.111504] wlan0: authenticate with 00:3a:98:27:aa:50 (try 1)
+[   83.111547] ------------[ cut here ]------------
+[   83.111563] WARNING: at include/net/mac80211.h:3570
+rate_control_send_low+0xf5/0x230()
+[   83.111568] Hardware name: 1294A58
+[   83.111571] Modules linked in: iwlwifi [last unloaded: scsi_wait_scan]
+[   83.111584] Pid: 955, comm: kworker/u:3 Tainted: G        W
+3.1.0-02609-gc9d6329c3586 #51
+[   83.111588] Call Trace:
+[   83.111601]  [<ffffffff81044d3f>] warn_slowpath_common+0x7f/0xc0
+[   83.111608]  [<ffffffff81044d9a>] warn_slowpath_null+0x1a/0x20
+[   83.111616]  [<ffffffff817afb85>] rate_control_send_low+0xf5/0x230
+[   83.111630]  [<ffffffffa0004e08>] rs_get_rate+0x58/0x1c0 [iwlwifi]
+[   83.111638]  [<ffffffff817b00f6>] rate_control_get_rate+0x96/0x170
+[   83.111648]  [<ffffffff817b9207>] invoke_tx_handlers+0x7e7/0x1130
+[   83.111658]  [<ffffffff815bdbf1>] ? led_trigger_event+0x81/0x90
+[   83.111665]  [<ffffffff817ba513>] ieee80211_tx+0x73/0xe0
+[   83.111671]  [<ffffffff817ba7a8>] ieee80211_xmit+0x88/0xc0
+[   83.111677]  [<ffffffff817bb5da>] ieee80211_tx_skb+0x5a/0x70
+[   83.111684]  [<ffffffff817a8536>] ieee80211_send_nullfunc+0x56/0x70
+[   83.111691]  [<ffffffff817a3fe1>] ieee80211_offchannel_return+0x1f1/0x200
+[   83.111699]  [<ffffffff817ac192>] ieee80211_work_work+0x5a2/0x1460
+[   83.111708]  [<ffffffff8167df17>] ? __kfree_skb+0x47/0xa0
+[   83.111718]  [<ffffffff8105f103>] ? cwq_activate_first_delayed+0x53/0x150
+[   83.111725]  [<ffffffff817abbf0>] ? free_work+0x20/0x20
+[   83.111733]  [<ffffffff810619cc>] process_one_work+0x12c/0x4e0
+[   83.111741]  [<ffffffff8106212e>] worker_thread+0x15e/0x340
+[   83.111749]  [<ffffffff81061fd0>] ? rescuer_thread+0x210/0x210
+[   83.111755]  [<ffffffff81066d3c>] kthread+0x8c/0xa0
+[   83.111765]  [<ffffffff817e8d34>] kernel_thread_helper+0x4/0x10
+[   83.111772]  [<ffffffff81066cb0>] ? kthread_worker_fn+0x190/0x190
+[   83.111779]  [<ffffffff817e8d30>] ? gs_change+0xb/0xb
+[   83.111783] ---[ end trace 95cdc4f2a378cb79 ]---
