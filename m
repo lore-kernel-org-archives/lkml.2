@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1JYHDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:03:37 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:56378 "EHLO mail.anarazel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab1JYHDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:03:36 -0400
-From: Andres Freund <andres@anarazel.de>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [GIT PULL] sound fix for 3.1
-Date: Tue, 25 Oct 2011 09:02:46 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc10-andres-00050-g7d802d7; KDE/4.6.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <s5hmxdjscs8.wl%tiwai@suse.de>
-In-Reply-To: <s5hmxdjscs8.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110250902.47120.andres@anarazel.de>
+	id S1753826Ab1JYHFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:05:37 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:35148 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1JYHFg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 03:05:36 -0400
+Date: Tue, 25 Oct 2011 09:05:21 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Swen Schillig <swen@vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: linux-next: manual merge of the scsi tree with the s390 tree
+Message-ID: <20111025090521.51cbd1ce@de.ibm.com>
+In-Reply-To: <20111025171601.c2365840409d17df161ca8b5@canb.auug.org.au>
+References: <20111025171601.c2365840409d17df161ca8b5@canb.auug.org.au>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Sunday, October 02, 2011 04:12:23 PM Takashi Iwai wrote:
-> The only commit to pull is 798cb7e897210dbf827f69a302c0967e0380ebac,
-> a fix for a regression introduced in 3.1-rc.
-Unfortunately that fix causes problems in audio playback for me. The audio 
-seems to play faster and have rather large skips.
+On Tue, 25 Oct 2011 17:16:01 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Reverting that commit ontop of v3.1-rc10-2-gfb630b9 fixes that problem for me.
+> Today's linux-next merge of the scsi tree got a conflict in
+> drivers/s390/cio/qdio_main.c between commit 9c20b3dd8479 ("[S390] qdio:
+> EQBS retry after CCQ 96") from the s390 tree and commit dfe5bb506172
+> ("[SCSI] qdio: base support for hardware data router with zfcp") from the
+> scsi tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary.
 
-05:00.0 Audio device: Creative Labs [SB X-Fi Xtreme Audio] CA0110-IBG
-        Subsystem: Creative Labs SB1040
-        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 64 (500ns min, 5000ns max)
-        Interrupt: pin A routed to IRQ 16
-        Region 0: Memory at fb9fc000 (32-bit, non-prefetchable) [size=16K]
-        Capabilities: [dc] Power Management version 3
-                Flags: PMEClk- DSI+ D1+ D2+ AuxCurrent=0mA 
-PME(D0-,D1-,D2-,D3hot-,D3cold-)
-                Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-        Kernel driver in use: snd_hda_intel
+Looks good. Thanks Stephen.
 
-Anything more you need?
+--=20
+blue skies,
+   Martin.
 
-Greetings, 
+"Reality continues to ruin my life." - Calvin.
 
-Andres
+
+--Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOpl+xAAoJELvpdr8mrl3Slr8QALTyrKDnHDCX40noaHmNzH8q
+wA8aUIGQ4VoDSawyrdBK+5mSwDngIk7op3DobMKewdYDF9bthRvHGtNOHeA9/vPM
+YrsIqSnJz+XQV6knajRjF3iI3kDYCHtFfPk8OseYGzGWvv1EfGEjacLEiPzFFZFf
++nWde8sRyovWEwTXoJKIIy8xipy1B9WSiMn+TzrILHuCUsm2yClz4qWL/k7/5UjG
+UNTxlW7hYyyRI3cOuilAhhba9o6tq7BtQI5WhAgSCinh8Kh7GUNZK6esmt7FErcL
+iSxTiup7EVtjqxhQFUdyk2h9V4B9NIawiWHLICLPLiwUxxXWgoFhmaQ+P39qjiVj
+8DoHJaTyx9Jr4aFqyIUS4+v9jKzD9hnRl3UEq35JF/AHyZmpY5bA187/UKaP1eno
+hVnm3nBwrZ2sE20odO850274O8OME0VN1DJcFmucUCG3dBgSUKhqzFrKulmzYjkA
+X3o8a1ucYIwpg8t6wSSMgj8OTvbUJuKGZX45ZKwpHcup+cDkGgYF9aZgDkSeCnPZ
+wogIaru19u7jg9PNCK8hRRehlHou69c+DVFYogN2BzJvqSlYDvTRPPRupXxkqrai
+TMkAqUK31jUpu/5hv367s2nYICSfB69qZB+sRPazQEV5HIOVAHjDHMSc+hhI6ITm
+NR+j+/Tm6pJ09/OkNUPp
+=pIKP
+-----END PGP SIGNATURE-----
+
+--Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA--
