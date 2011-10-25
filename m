@@ -1,116 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab1JYMRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 08:17:30 -0400
-Received: from mail-ww0-f66.google.com ([74.125.82.66]:64369 "EHLO
-	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756182Ab1JYMR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 08:17:28 -0400
-Date: Tue, 25 Oct 2011 13:15:52 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH] linux-next: et131x: Fixups due to merge issues from staging
- tree
-Message-ID: <20111025121551.GA2108@marke.airties>
-Reply-To: 20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au
-References: <20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au>
+	id S1755168Ab1JYMT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 08:19:27 -0400
+Received: from fieldses.org ([174.143.236.118]:37342 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753843Ab1JYMTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 08:19:25 -0400
+Date: Tue, 25 Oct 2011 08:19:25 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: nfsd (and lock) changes for 3.2
+Message-ID: <20111025121924.GA15662@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes for nfsd (and also a few file-locking changes) are available in
+the git repository at:
 
-Manually merged changes from commits afc4b13df143, bf3f1a6081aa and 5d6bcdfe38ce into et131x.c as identified in email below.
+	git://linux-nfs.org/~bfields/linux.git for-3.2
 
-Also removed dependency on NETDEV_1000 in Kconfig, which no longer exists.
+This is the same tree I've always used--I assume you believe it's mine
+without a need for signing anything.  Feel free to tell me otherwise.
 
-Greg: This patch should also be good for the staging tree.
+A voice in my head says "wait wait X Y and Z are ready Any Day Now!",
+and I'm silencing that voice by pretending I may send another (much
+smaller) pull request in a week.  Don't count on it.  Anyway:
 
-----------------------------------------------------------
-Date: Tue, 25 Oct 2011 19:26:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, Jiri Pirko
-<jpirko@redhat.com>, Ian Campbell <Ian.Campbell@citrix.com>, David Miller
-<davem@davemloft.net>, <netdev@vger.kernel.org>, Mark Einon
-<mark.einon@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the net-next tree
+In this request, among other work:
 
-Hi Greg,
+	- A rewrite of large parts of the NFSv4 state management to fix
+	  bugs and make the code more mantainable.  One of the goals was
+	  to break up the big state lock--unfortunately I didn't get
+	  there, but it looks close.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/et131x/et1310_tx.c drivers/staging/et131x/et131x_netdev.c
-between commits afc4b13df143 ("net: remove use of ndo_set_multicast_list
-in drivers"), bf3f1a6081aa ("et131x: convert to SKB paged frag API") and
-5d6bcdfe38ce ("net: use DMA_x_DEVICE and dma_mapping_error with
-skb_frag_dma_map") from the net-next tree and commit d2796743cba2
-("staging: et131x: Put all .c files into one big file") from the staging
-tree.
+	- Several 4.1 fixes from Benny Halevy--thanks to Benny for
+	  testing the server at the fall bakeathon.
 
-The latter removed these files, so I did that but more fixup is proably
-needed.
------------------------------------------------------------
+	- Progress on the basic 4.1 todo's.  Thanks in particular to Mi
+	  Jinlong for (among other things) implementing the somewhat
+	  tricky DRC limit checking.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/Kconfig  |    2 +-
- drivers/staging/et131x/et131x.c |   14 +++++++-------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+	  The 4.1 code is getting closer--it *might* be possible to
+	  finish basic 4.1 early as 3.3, at which point we could start
+	  on optional features (like pNFS).  But that will depend on
+	  people sending patches (and pynfs tests) for the remaining 4.1
+	  todo's.
 
-diff --git a/drivers/staging/et131x/Kconfig b/drivers/staging/et131x/Kconfig
-index f0ed08d..9e1864c 100644
---- a/drivers/staging/et131x/Kconfig
-+++ b/drivers/staging/et131x/Kconfig
-@@ -1,6 +1,6 @@
- config ET131X
- 	tristate "Agere ET-1310 Gigabit Ethernet support"
--	depends on NETDEV_1000 && PCI
-+	depends on PCI
- 	default n
- 	---help---
- 	  This driver supports Agere ET-1310 ethernet adapters.
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 45b88d4..32c805b 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -3403,12 +3403,12 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
- 			 * returned by dma_map_page() is always 32-bit
- 			 * addressable (as defined by the pci/dma subsystem)
- 			 */
--			desc[frag++].addr_lo =
--			    dma_map_page(&adapter->pdev->dev,
--					 frags[i - 1].page,
--					 frags[i - 1].page_offset,
--					 frags[i - 1].size,
--					 DMA_TO_DEVICE);
-+			desc[frag++].addr_lo = skb_frag_dma_map(
-+                                                       &adapter->pdev->dev,
-+                                                       &frags[i - 1],
-+                                                       0,
-+                                                       frags[i - 1].size,
-+                                                       DMA_TO_DEVICE);
- 		}
- 	}
- 
-@@ -5233,7 +5233,7 @@ static const struct net_device_ops et131x_netdev_ops = {
- 	.ndo_open		= et131x_open,
- 	.ndo_stop		= et131x_close,
- 	.ndo_start_xmit		= et131x_tx,
--	.ndo_set_multicast_list	= et131x_multicast,
-+	.ndo_set_rx_mode        = et131x_multicast,
- 	.ndo_tx_timeout		= et131x_tx_timeout,
- 	.ndo_change_mtu		= et131x_change_mtu,
- 	.ndo_set_mac_address	= et131x_set_mac_addr,
--- 
-1.7.6.4
+	- Fix for longstanding problems with duplicate directory cookies
+	  from ext3/4, from Bernd Schubert.  (One nfsv4-specific patch
+	  only in this pull, I believe the rest is going through the
+	  ext4 tree.)
 
+	- From Trond (and Chuck), kernel support for federated NFS.
+
+	- Fixes and some cleanup for vfs lease code.  I've deferred a
+	  larger change to fix lease semantics for NFSv4 after
+	  discovering those "fixes" aren't actually correct for Samba
+	  (the only other user I know of), and instead I intend to
+	  introduce a new lock type for NFSv4's use.
+
+Plus some other miscellaneous bug fixes--thanks to everyone who reported
+a bug or contributed a patch!
+
+--b.
+
+Benny Halevy (4):
+      nfsd41: use SEQ4_STATUS_BACKCHANNEL_FAULT when cb_sequence is invalid
+      nfsd4: seq->status_flags may be used unitialized
+      nfsd4: allow NFS4_SHARE_SIGNAL_DELEG_WHEN_RESRC_AVAIL | NFS4_SHARE_PUSH_DELEG_WHEN_UNCONTENDED
+      nfsd4: typo logical vs bitwise negate for want_mask
+
+Bernd Schubert (1):
+      nfsd4: Remove check for a 32-bit cookie in nfsd4_readdir()
+
+Boaz Harrosh (1):
+      nfsd4: fix failure to end nfsd4 grace period
+
+Dan Carpenter (1):
+      nfsd4: typo logical vs bitwise negate
+
+Eric Dumazet (1):
+      sunrpc: use better NUMA affinities
+
+J. Bruce Fields (86):
+      nfsd4: fix seqid_mutating_error
+      nfsd4: return nfserr_symlink on v4 OPEN of non-regular file
+      locks: minor lease cleanup
+      locks: move F_INPROGRESS from fl_type to fl_flags field
+      locks: fix tracking of inprogress lease breaks
+      locks: setlease cleanup
+      nfsd4: clean up S_IS -> NF4 file type mapping
+      nfsd: open-code special directory-hardlink check
+      nfsd: clean up nfsd_mode_check()
+      nfsd4: fix incorrect comment in nfsd4_set_nfs4_acl
+      nfsd4: it's OK to return nfserr_symlink
+      nfsd: remove unused defines
+      Remove include/linux/nfsd/const.h
+      nfsd4: permit read opens of executable-only files
+      nfsd: prettify NFSD_MAY_* flag definitions
+      nfsd4: simplify recovery dir setting
+      nfsd4: stop using nfserr_resource for transitory errors
+      nfsd4: replace some macros by functions
+      nfsd4: name openowner data structures more clearly
+      nfsd4: cleanup lock/stateowner initialization
+      nfsd4: remove HAS_SESSION
+      nfsd4: cleanup and consolidate seqid_mutating_err
+      nfsd4: simplify lock openmode check
+      nfsd4: get lock checks out of preprocess_seqid_op
+      nfsd4: remove redundant is_open_owner check
+      nfsd: remove include/linux/nfsd/syscall.h
+      nfsd4: fix off-by-one-error in SEQUENCE reply
+      nfsd4: remove typoed replay field
+      nfsd4: simplify distinguishing lock & open stateid's
+      nfsd4: consolidate lock & open stateid tables
+      nfsd4: simplify stateid generation code, fix wraparound
+      nfsd4: make delegation stateid's seqid start at 1
+      nfsd4: centralize handling of replay owners
+      nfsd4: cleanup seqid op stateowner usage
+      nfsd4: extend state lock over seqid replay logic
+      nfsd4: eliminate impossible open replay case
+      nfsd4: drop most stateowner refcounting
+      nfsd4: eliminate unused lt_stateowner
+      nfsd4: share common seqid checks
+      nfsd4: simplify check_open logic
+      nfsd4: move double-confirm test to open_confirm
+      nfsd4: move CLOSE_STATE special case to caller
+      nfsd4: split stateowners into open and lockowners
+      nfsd4: split out some free_generic_stateid code
+      nfsd4: rearrange to avoid a forward reference
+      nfsd4: split up find_stateid
+      nfsd4: split preprocess_seqid, cleanup
+      nfsd4: pass around typemask instead of flags
+      nfsd4: rename init_stateid
+      nfsd4: remove redundant stateid initialization
+      nfsd4: move some of nfs4_stateid into a separate structure
+      nfsd4: add common dl_stid field to delegation
+      nfsd4: share common stid-hashing helper function
+      nfsd4: hash deleg stateid's like any other
+      nfsd4: fix test_stateid for delegation stateid's
+      nfsd4: use deleg changes to cleanup preprocess_stateid_op
+      nfsd4: better stateid hashing
+      nfsd4: replace oo_confirmed by flag bit
+      nfsd4: match close replays on stateid, not open owner id
+      nfsd4: simplify free_stateid
+      nfsd4: construct stateid from clientid and counter
+      nfsd4: hash closed stateid's like any other
+      nfsd4: fix open downgrade, again
+      nfsd4: make op_cacheresult another flag
+      leases: split up generic_setlease into lock/unlock cases
+      nfsd4: move client * to nfs4_stateid, add init_stid helper
+      nfsd4: use idr for stateid's
+      nfsd4: assume test_stateid always has session
+      nfsd4: look up stateid's per clientid
+      nfsd4: fix state lock usage in LOCKU
+      nfsd4: clean up downgrading code
+      nfsd4: cleanup state.h comments
+      nfsd4: ignore WANT bits in open downgrade
+      nfsd4: move access/deny validity checks to xdr code
+      nfsd4: move name-length checks to xdr
+      nfsd4: more robust ignoring of WANT bits in OPEN
+      nfsd4: centralize renew_client() calls
+      nfsd4: make is_open_owner boolean
+      nfsd4: simplify process_open1 logic
+      nfsd4: clean up open owners on OPEN failure
+      nfsd4: preallocate nfs4_file in process_open1()
+      nfsd4: do idr preallocation with stateid allocation
+      nfsd4: preallocate open stateid in process_open1()
+      nfsd4: warn on open failure after create
+      nfsd4: remove unneeded CLAIM_DELEGATE_CUR workaround
+      nfsd4: implement new 4.1 open reclaim types
+
+Mi Jinlong (5):
+      SUNRPC: Replace svc_addr_u by sockaddr_storage
+      SUNRPC: compare scopeid for link-local addresses
+      nfsd41: try to check reply size before operation
+      nfs: fix bug about IPv6 address scope checking
+      nfs41: implement DESTROY_CLIENTID operation
+
+Michal Schmidt (1):
+      sunrpc: add MODULE_ALIAS to match the filesystem name
+
+Trond Myklebust (3):
+      NFSD: Cleanup for nfsd4_path()
+      NFSD: Remove the ex_pathname field from struct svc_export
+      NFSD: Add a cache for fs_locations information
+
+ arch/alpha/include/asm/fcntl.h |    2 -
+ fs/compat.c                    |    1 -
+ fs/lockd/host.c                |   25 +-
+ fs/lockd/svc.c                 |    2 +-
+ fs/locks.c                     |  223 ++++--
+ fs/nfs/callback.c              |    4 +-
+ fs/nfs/client.c                |    7 +-
+ fs/nfs/nfs4_fs.h               |   24 -
+ fs/nfsd/export.c               |   16 +-
+ fs/nfsd/nfs4callback.c         |   20 +-
+ fs/nfsd/nfs4proc.c             |  374 +++++++--
+ fs/nfsd/nfs4recover.c          |   53 +-
+ fs/nfsd/nfs4state.c            | 1794 +++++++++++++++++++---------------------
+ fs/nfsd/nfs4xdr.c              |  380 ++++++---
+ fs/nfsd/nfsctl.c               |    1 -
+ fs/nfsd/nfsd.h                 |   33 +
+ fs/nfsd/nfsfh.c                |   39 +-
+ fs/nfsd/state.h                |  174 ++--
+ fs/nfsd/vfs.c                  |   31 +-
+ fs/nfsd/vfs.h                  |   29 +-
+ fs/nfsd/xdr4.h                 |   28 +-
+ include/asm-generic/fcntl.h    |    5 -
+ include/linux/fs.h             |    8 +-
+ include/linux/nfs4.h           |   21 +-
+ include/linux/nfsd/Kbuild      |    2 -
+ include/linux/nfsd/const.h     |   55 --
+ include/linux/nfsd/export.h    |    2 +-
+ include/linux/nfsd/nfsfh.h     |    7 +-
+ include/linux/nfsd/syscall.h   |  116 ---
+ include/linux/sunrpc/clnt.h    |    8 +-
+ include/linux/sunrpc/svc.h     |   32 +-
+ net/sunrpc/rpc_pipe.c          |    3 +
+ net/sunrpc/svc.c               |   33 +-
+ net/sunrpc/svc_xprt.c          |   13 +-
+ net/sunrpc/svcsock.c           |   23 +-
+ 35 files changed, 1901 insertions(+), 1687 deletions(-)
+ delete mode 100644 include/linux/nfsd/const.h
+ delete mode 100644 include/linux/nfsd/syscall.h
