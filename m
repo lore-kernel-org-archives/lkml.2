@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab1JYUFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:05:41 -0400
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:42834 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab1JYUFj (ORCPT
+	id S1753370Ab1JYUG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:06:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43050 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1JYUG4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 16:05:39 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org
-Cc: Greg Ungerer <gerg@snapgear.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k: Revive lost ARAnyM config options
-Date: Tue, 25 Oct 2011 22:05:28 +0200
-Message-Id: <1319573128-21127-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 25 Oct 2011 16:06:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111004150111.e9337268.akpm00@gmail.com>
+References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com> <20111004150111.e9337268.akpm00@gmail.com>
+From: Tim Hockin <thockin@hockin.org>
+Date: Tue, 25 Oct 2011 13:06:35 -0700
+X-Google-Sender-Auth: p6zuKahrcR0wQUTLprLCmba0wsI
+Message-ID: <CAAAKZwu67VMiZgdpp=i5p7zyGbOHGHXwF_iprufGPzTLkkUF2A@mail.gmail.com>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
+To: Andrew Morton <akpm00@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <tj@kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Containers <containers@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0e152d80507b75c00aac60f2ffc586360687cd52 ("m68k: reorganize Kconfig
-options to improve mmu/non-mmu selections") accidentally dropped the ARAnyM
-config options. Re-add them to the "Platform devices" section.
+On Tue, Oct 4, 2011 at 3:01 PM, Andrew Morton <akpm00@gmail.com> wrote:
+> On Mon,  3 Oct 2011 21:07:02 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> Hi Andrew,
+>>
+>> This contains minor changes, mostly documentation and changelog
+>> updates, off-case build fix, and a code optimization in
+>> res_counter_common_ancestor().
+>
+> I'd normally duck a patch series like this when we're at -rc8 and ask
+> for it to be resent late in -rc1.  But I was feeling frisky so I
+> grabbed this lot for a bit of testing and will sit on it until -rc1.
+>
+> I'm still not convinced that the kernel has a burning need for a "task
+> counter subsystem".  Someone convince me that we should merge this!
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/Kconfig.devices |   31 +++++++++++++++++++++++++++++++
- 1 files changed, 31 insertions(+), 0 deletions(-)
+We have real (accidental) DoS situations which happen because we don't
+have this.  It usually takes the form of some library no re-joining
+threads.  We end up deploying a few apps linked against this library,
+and suddenly we're in trouble on a machine.  Except, this being
+Google, we're in trouble on a lot of machines.
 
-diff --git a/arch/m68k/Kconfig.devices b/arch/m68k/Kconfig.devices
-index 82ddb93..5cf1c54 100644
---- a/arch/m68k/Kconfig.devices
-+++ b/arch/m68k/Kconfig.devices
-@@ -24,6 +24,37 @@ config PROC_HARDWARE
- 	  including the model, CPU, MMU, clock speed, BogoMIPS rating,
- 	  and memory size.
- 
-+config NATFEAT
-+	bool "ARAnyM emulator support"
-+	depends on ATARI
-+	help
-+	  This option enables support for ARAnyM native features, such as
-+	  access to a disk image as /dev/hda.
-+
-+config NFBLOCK
-+	tristate "NatFeat block device support"
-+	depends on BLOCK && NATFEAT
-+	help
-+	  Say Y to include support for the ARAnyM NatFeat block device
-+	  which allows direct access to the hard drives without using
-+	  the hardware emulation.
-+
-+config NFCON
-+	tristate "NatFeat console driver"
-+	depends on NATFEAT
-+	help
-+	  Say Y to include support for the ARAnyM NatFeat console driver
-+	  which allows the console output to be redirected to the stderr
-+	  output of ARAnyM.
-+
-+config NFETH
-+	tristate "NatFeat Ethernet support"
-+	depends on ETHERNET && NATFEAT
-+	help
-+	  Say Y to include support for the ARAnyM NatFeat network device
-+	  which will emulate a regular ethernet device while presenting an
-+	  ethertap device to the host system.
-+
- endmenu
- 
- menu "Character devices"
--- 
-1.7.0.4
+There may be other ways to cobble this sort of safety together, but
+they are less appealing for various reasons.  cgroups are how we
+control groups of related pids.
 
+I'd really love to be able to use this.
+
+
+>> It's hard to put some statistic numbers while testing this feature
+>> given that the result is rather binary: we launch a forkbomb and
+>> either we stop and kill it or the system become unresponsive.
+>>
+>> Meanwhile, one can find a testsuite at this address:
+>> https://tglx.de/~fweisbec/task_counter_test.tar.gz
+>
+> I do think that we should merge tests like this into the main tree.  So
+> I can do "cd tests ; make ; ./run-tests".  The first step is for some hero
+> to propose the (simple!) framework and to drop a first test in there.
+>
+>> It performs several checks to ensure the interface and the behaviour
+>> are reliable after common events like moving tasks around over cgroups
+>> in a hierarchy, forking inside, etc.. It also launches a forkbomb,
+>> tries to stop and kill it. So beware, don't run it on a system that
+>> is doing serious things.
+>
+> Good stuff, that.  Then, when people propose additions or fix bugs, I can
+> whine at them for not updating the test suite.
+>
+>> Ensure you have CGROUP_TASK_COUNTER set
+>> before, or it may compress the Ten Plagues in your MBR and
+>> inflate the whole after your next reboot.
+>
+> That problem would need to be fixed.  Either probe for the feature
+> up-front, or don't build the test at all if CONFIG_CGROUP_TASK_COUNTER=n.
+>
+>
