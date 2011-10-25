@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1JYSLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 14:11:09 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:38876 "EHLO e3.ny.us.ibm.com"
+	id S1753117Ab1JYSLW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 14:11:22 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:60586 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752115Ab1JYSLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 14:11:07 -0400
+	id S1752989Ab1JYSLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 14:11:20 -0400
 From: y@kernel.beaverton.ibm.com
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Kyle McMartin <kyle@mcmartin.ca>,
+Cc: John Stultz <john.stultz@linaro.org>, Nikolaus Voss <n.voss@weinmann.de>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/8] clocksource: parisc: Convert to clocksource_register_hz/khz
-Date: Tue, 25 Oct 2011 11:08:10 -0700
-Message-Id: <1319566096-3222-2-git-send-email-y>
+Subject: [PATCH 1/8] clocksource: Convert tcb_clksrc to use clocksource_register_hz/khz
+Date: Tue, 25 Oct 2011 11:08:09 -0700
+Message-Id: <1319566096-3222-1-git-send-email-y>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1319566096-3222-1-git-send-email-y>
-References: <1319566096-3222-1-git-send-email-y>
-x-cbid: 11102518-8974-0000-0000-00000118BA31
+x-cbid: 11102518-6078-0000-0000-000002294BE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <johnstul@us.ibm.com>
+From: John Stultz <john.stultz@linaro.org>
 
-This converts the parisc clocksources to use clocksource_register_hz/khz
+Convert tcb_clksrc to use clocksource_register_hz.
 
-This is untested, so any assistance in testing would be appreciated!
+Untested. Help from maintainers would be appreciated.
 
-CC: Kyle McMartin <kyle@mcmartin.ca>
+CC: Nikolaus Voss <n.voss@weinmann.de>
 CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/parisc/kernel/time.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ drivers/clocksource/tcb_clksrc.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/parisc/kernel/time.c b/arch/parisc/kernel/time.c
-index 45b7389..7c07743 100644
---- a/arch/parisc/kernel/time.c
-+++ b/arch/parisc/kernel/time.c
-@@ -198,8 +198,6 @@ static struct clocksource clocksource_cr16 = {
- 	.rating			= 300,
- 	.read			= read_cr16,
- 	.mask			= CLOCKSOURCE_MASK(BITS_PER_LONG),
--	.mult			= 0, /* to be set */
--	.shift			= 22,
- 	.flags			= CLOCK_SOURCE_IS_CONTINUOUS,
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index 79c47e8..55d0f95 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -59,7 +59,6 @@ static struct clocksource clksrc = {
+ 	.rating         = 200,
+ 	.read           = tc_get_cycles,
+ 	.mask           = CLOCKSOURCE_MASK(32),
+-	.shift          = 18,
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
  };
  
-@@ -270,7 +268,5 @@ void __init time_init(void)
+@@ -256,7 +255,6 @@ static int __init tcb_clksrc_init(void)
+ 		best_divisor_idx = i;
+ 	}
  
- 	/* register at clocksource framework */
- 	current_cr16_khz = PAGE0->mem_10msec/10;  /* kHz */
--	clocksource_cr16.mult = clocksource_khz2mult(current_cr16_khz,
--						clocksource_cr16.shift);
--	clocksource_register(&clocksource_cr16);
-+	clocksource_register_khz(&clocksource_cr16, current_cr16_khz);
- }
+-	clksrc.mult = clocksource_hz2mult(divided_rate, clksrc.shift);
+ 
+ 	printk(bootinfo, clksrc.name, CONFIG_ATMEL_TCB_CLKSRC_BLOCK,
+ 			divided_rate / 1000000,
+@@ -292,7 +290,7 @@ static int __init tcb_clksrc_init(void)
+ 	__raw_writel(ATMEL_TC_SYNC, tcaddr + ATMEL_TC_BCR);
+ 
+ 	/* and away we go! */
+-	clocksource_register(&clksrc);
++	clocksource_register_hz(&clksrc, divided_rate);
+ 
+ 	/* channel 2:  periodic and oneshot timer support */
+ 	setup_clkevents(tc, clk32k_divisor_idx);
 -- 
 1.7.3.2.146.gca209
 
