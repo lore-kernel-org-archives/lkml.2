@@ -1,32 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab1JYXmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 19:42:45 -0400
-Received: from gw2.edong.com ([203.191.144.137]:54084 "EHLO gw2.edong.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339Ab1JYXmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 19:42:44 -0400
-Reply-To: <fa1fa000@sina.com>
-Message-ID: <EC7617CEF4829062A9A09BC7709EDCF7@caic>
-From: "hx" <dabao@ntscar.com>
-To: <linsycoope@ucla.edu>, <lintianding@163.net>, <lintinsen@263.net>,
-        <linsulan@sina.com>, <lintao@medpop.com>, <linusboy@km169.net>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linsong_1116@163.com>, <lintao129@21cn.com>, <lintianyu@126.com>
-Subject: =?utf-8?B?5ZWG5Lia5Lqk5rWB?=
-Date: Sun, 23 Oct 2011 21:02:32 +0800
+	id S1754062Ab1JYXog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 19:44:36 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45771 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab1JYXoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 19:44:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-Priority: 1
-X-MSMail-Priority: High
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
+In-Reply-To: <1319528012-19006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1319528012-19006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 25 Oct 2011 19:44:14 -0400
+X-Google-Sender-Auth: LMr4bVRSB-8Ew7ws3UQ_80sfyZk
+Message-ID: <CAJaTeTp2w85UHnmH-PPMZsQGQMNa-93kw-tjmDxA_wjJXkYQcQ@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib/arches: Centralise bolierplate asm/gpio.h
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-m68k@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9PNh3al014791
 
-21:02:34}æ‚¨å¥½ï¼šæœ¬å…¬ å¸æœ‰çœŸï¼ˆå‘ï¼‰Nï¼ˆç¥¨ï¼‰ä¼˜æƒ å‘å¤–ä»£å¼€ï¼Œæœ‰å„ç§æ™®é€šã€å¢žå€¼ä¸“ç”¨(å‘)(ç¥¨)ï¼Œå¯éªŒè¯åŽä»˜bgæ¬¾ã€‚ç”µè¯ï¼š136 21 888-363 è”¡ç»ç†, æœ¬ä¿¡æ¯é•¿-æœŸæœ‰æ•ˆï¼Œè” ç³»æ–¹å¼è¯·ä¿ç•™å¤‡éœ€ è¦æ—¶ç”¨ï¼‰>ç¥ï¼šé¡ºé¢‚ å•†ç¥º!Â·è°ƒæŸ¥æ˜¾ç¤ºï¼šä¸­å›½è¿‘ä¸‰æˆå¥³æ€§æ›¾é­å®¶åº­æš´åŠ›
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Tue, Oct 25, 2011 at 03:33, Mark Brown wrote:
+> Rather than requiring architectures that use gpiolib but don't have any
+> need to define anything custom to copy an asm/gpio.h provide a Kconfig
+> symbol which architectures must select in order to include gpio.h and
+> for other architectures just provide the trivial implementation directly.
+
+i don't think this is generally how asm-generic is handled.  instead, how about:
+ - move the duplicate code to asm-generic/gpio.h
+ - have the arches which merely need asm-generic/gpio.h add "generic-y
++= gpio.h" to their include/asm/Kbuild
+ - for arches which need to override these common funcs in some way,
+add #ifdef protection to the asm-generic/gpio.h
+
+and it seems like with slightly more work, this path allow you to
+merge most of arch/sh/include/asm/gpio.h.  and it has the advantage of
+not needing new Kconfig symbols.
+
+for example, with asm-generic/atomic.h, it does:
+#ifndef atomic_sub_return
+static inline int atomic_sub_return(int i, atomic_t *v)
+{ ... common implementation ... }
+#endif
+
+and then any arch that wants to override it does:
+#define atomic_sub_return atomic_sub_return
+static inline int atomic_sub_return(int i, atomic_t *v) { weirdness }
+#include <asm-generic/atomic.h>
+-mike
