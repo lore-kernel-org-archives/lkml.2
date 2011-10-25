@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab1JYMHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 08:07:06 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:58109 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756496Ab1JYMHD (ORCPT
+	id S1756521Ab1JYMMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 08:12:54 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:59120 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212Ab1JYMMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 08:07:03 -0400
-X-Sasl-enc: ZBmIBAFaeEJkBcjlm3yC4nkcAzj+LViEHARt6gTCS/bI 1319544420
-Date: Tue, 25 Oct 2011 14:02:57 +0200
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: linux-next: manual merge of the tty tree with Linus' tree
-Message-ID: <20111025120257.GA12558@kroah.com>
-References: <20111025191217.31638338379ac498fda051fb@canb.auug.org.au>
+	Tue, 25 Oct 2011 08:12:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111025191217.31638338379ac498fda051fb@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdZi=Vh-BfT9w_JVtL+wUPNtO41HqffD2hxoyQyT02iVcw@mail.gmail.com>
+References: <CACRpkdZi=Vh-BfT9w_JVtL+wUPNtO41HqffD2hxoyQyT02iVcw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Oct 2011 14:11:33 +0200
+X-Google-Sender-Auth: iNVXMDU-BoBrzZnTwQokDTxNheA
+Message-ID: <CA+55aFyt3GYRpbxZo4eyBj9BhhVSG2TwbtOC3XBvQBe1HbwdGQ@mail.gmail.com>
+Subject: Re: [GIT PULL] pinctrl subsystem creation
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: jesper.nilsson@axis.com, Stephen Warren <swarren@nvidia.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rongjun Ying <rongjun.ying@csr.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 07:12:17PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the tty tree got a conflict in
-> drivers/tty/serial/8250_pci.c between commit dacacc3e794c
-> ("serial/8250_pci: delete duplicate data definition") from Linus' tree
-> and commit 64d91cfaade2 ("8250_pci: Fix kernel panic when pch_uart is
-> disabled") from the tty tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+On Tue, Oct 25, 2011 at 12:11 PM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+>
+> this is a new subsystem in a new git so given all the current
+> GnuPG signing and hoopla the probability of this being rejected
+> for one or another reason tends to one. But anyway, here goes:
 
-Thanks, the fix is correct.
+Hmm. No problem. At least it's not some open git repo, and yes, I can
+check your gpg key - although whether it's actually *yours* I don't
+know, because I don't know the people who signed it ;)
 
-greg k-h
+But anyway, looks good.
+
+Except I wonder why you even made that CONFIG_PINCTRL user-visible?
+Any driver that uses the interface had better have a "select PINCTRL"
+in it, so actually asking the user whether they want that subsystem
+seems to be just annoying and pointless, no?
+
+So I suspect it should just be made a "def_bool n"?
+
+And I hope all these new lines will result in more deleted lines later...
+
+                    Linus
