@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab1JYLV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:21:57 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:32696 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab1JYLV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:21:56 -0400
-Message-ID: <4EA69BC9.8040402@atmel.com>
-Date: Tue, 25 Oct 2011 13:21:45 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1755771Ab1JYLWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:22:14 -0400
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:43460 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754855Ab1JYLWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 07:22:13 -0400
+Message-ID: <4EA69BE2.3020703@ilyx.ru>
+Date: Tue, 25 Oct 2011 15:22:10 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [GIT PULL] at91 device tree basics
-X-Enigmail-Version: 1.3.2
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY: tty flip buffer change reserve memory strategy.
+References: <4EA48474.4010101@ilyx.ru> <20111025084543.09432276@pyx>
+In-Reply-To: <20111025084543.09432276@pyx>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Thank you, for answer.
 
-The following changes since commit c3b92c8787367a8bb53d57d9789b558f1295cc96:
+> 
+> kmalloc is very fast anyway so I'd be interested in seeing the drivers
+> suffering and the profile traces of a real example.
+> 
 
-  Linux 3.1 (2011-10-24 09:10:05 +0200)
-
-are available in the git repository at:
-  git://github.com/at91linux/linux-at91.git for-arnd/at91-dt
-
-They cover the basic device tree work done during the last moths around both 
-at91sam9g45 and at91sam9g20 based board. They have been review by Grant and
-Rob. More device tree related stuff is comming ;-)
+Pty use chunk more 256 bytes very often. More program for communicate with
+pppd use pty master - slave. If often kmalloc()-kfree() calls don't provoke
+memory fragmentation and flush TLB, I agree it isn't important.
 
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: add at91sam9g20 and Calao USB A9G20 DT support
+> I'm also not sure I agree with the maths - we chunk buffers to 256 byte
+> boundaries to avoid getting lots of queued buffers of different sizes. We
+> could in fact I think simplify the code from what we have learned using
+> it and simply treat the 256 byte buffer case as special rather than 256
+> and 512 as we do now. That would let us remove the more generic support
+> for free buffer sizes which is overcomplex and mean we could simply count
+> the number of 256 byte buffers we have to hand.
 
-Nicolas Ferre (1):
-      ARM: at91: dt: at91sam9g45 family and board device tree files
+Now we can't accumulate buffer more than 256 byte. 
+"if (b->size >= 512) kfree(b);" and our buffer can be only 256, 512 ... .
+We can simplify tty_buffer_find() for don't look up buffer more 256 byte.
 
- arch/arm/boot/dts/at91sam9g20.dtsi     |  119 ++++++++++++++++++++++++++++++
- arch/arm/boot/dts/at91sam9g45.dtsi     |  106 +++++++++++++++++++++++++++
- arch/arm/boot/dts/at91sam9m10g45ek.dts |   35 +++++++++
- arch/arm/boot/dts/usb_a9g20.dts        |   30 ++++++++
- arch/arm/mach-at91/Kconfig             |   11 +++
- arch/arm/mach-at91/Makefile            |    3 +
- arch/arm/mach-at91/Makefile.boot       |    2 +
- arch/arm/mach-at91/at91sam9260.c       |    8 ++
- arch/arm/mach-at91/at91sam9g45.c       |    6 ++
- arch/arm/mach-at91/board-dt.c          |  123 ++++++++++++++++++++++++++++++++
- 10 files changed, 443 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/at91sam9g20.dtsi
- create mode 100644 arch/arm/boot/dts/at91sam9g45.dtsi
- create mode 100644 arch/arm/boot/dts/at91sam9m10g45ek.dts
- create mode 100644 arch/arm/boot/dts/usb_a9g20.dts
- create mode 100644 arch/arm/mach-at91/board-dt.c
+I think my patch very clear, because if stream from driver very slow we 
+will be use only two 256 byte chunk, as before. But with pty, maybe, new drivers,
+we could use flip buffer more effective.
 
-Thanks, best regards,
--- 
-Nicolas Ferre
+Ilya.
+
