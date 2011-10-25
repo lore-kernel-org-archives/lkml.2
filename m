@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab1JYLXL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:23:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39296 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab1JYLXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:23:10 -0400
-Date: Tue, 25 Oct 2011 13:23:00 +0200
-From: Mel Gorman <mgorman@suse.de>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-Message-ID: <20111025112300.GB10797@suse.de>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
- <20111025090956.GA10797@suse.de>
- <CAMbhsRR07Gpv-nEAvq8OQmLxkMyL5cASpq1vqQ8qN5ctwnamsQ@mail.gmail.com>
+	id S932198Ab1JYLXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:23:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62569 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab1JYLXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 07:23:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] gpio: fix build error in include/asm-generic/gpio.h
+Date: Tue, 25 Oct 2011 13:23:44 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Hamo <hamo.by@gmail.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <CAO_0yfOa7B4tB1nJg8c_5a612KjNmPh_aMvS=wHhfU_maAvZAg@mail.gmail.com> <201110211339.59280.arnd@arndb.de> <CACxGe6sFrJh+Y5CJVMTPiWH3m=j+J_YUzLP=MiaBbsvDkeA_Jg@mail.gmail.com>
+In-Reply-To: <CACxGe6sFrJh+Y5CJVMTPiWH3m=j+J_YUzLP=MiaBbsvDkeA_Jg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRR07Gpv-nEAvq8OQmLxkMyL5cASpq1vqQ8qN5ctwnamsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110251323.44313.arnd@arndb.de>
+X-Provags-ID: V02:K0:ulVdNUB/mccnyGJkNmIH8RUhkUR5n2j21mSv33bTfbE
+ vDKE1W5K/lacAQGGGxTF38agDBm0QUbCsEdwnNl42LkWh5xkCM
+ h9NAkRUI8PXpsIUFN5wlmTd5iMMv6+/EUJFE3Wns3ZAxXh9ixD
+ stBAuO9l6uTZUklydy2+/2XlL8iMlAx35+m9x93Q5KKmBFf4qD
+ boL1kCLLQ8pUt2fIVfG/Yq9nm8kgMkw4/U3Fcdq3ExV1aYYDW6
+ Ry7Vms7jE7VLK3xZa34fen8/hh4qnvhuTV+reP9oEP7F1gnAjQ
+ 7/H86CfeYIVjSJ1C9CIhSvA6AzdclSUlJJ7aBO/9NpnYfdmMp1
+ 6Y3kXGzHUVbkIPf6ybLY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 02:26:56AM -0700, Colin Cross wrote:
-> On Tue, Oct 25, 2011 at 2:09 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > On Mon, Oct 24, 2011 at 11:39:49PM -0700, Colin Cross wrote:
-> >> Under the following conditions, __alloc_pages_slowpath can loop
-> >> forever:
-> >> gfp_mask & __GFP_WAIT is true
-> >> gfp_mask & __GFP_FS is false
-> >> reclaim and compaction make no progress
-> >> order <= PAGE_ALLOC_COSTLY_ORDER
-> >>
-> >> These conditions happen very often during suspend and resume,
-> >> when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
-> >> allocations into __GFP_WAIT.
-> > b>
-> >> The oom killer is not run because gfp_mask & __GFP_FS is false,
-> >> but should_alloc_retry will always return true when order is less
-> >> than PAGE_ALLOC_COSTLY_ORDER.
-> >>
-> >> Fix __alloc_pages_slowpath to skip retrying when oom killer is
-> >> not allowed by the GFP flags, the same way it would skip if the
-> >> oom killer was allowed but disabled.
-> >>
-> >> Signed-off-by: Colin Cross <ccross@android.com>
+On Tuesday 25 October 2011, Grant Likely wrote:
+> by: Arnd Bergmann <arnd@arndb.de>
 > >
-> > Hi Colin,
-> >
-> > Your patch functionally seems fine. I see the problem and we certainly
-> > do not want to have the OOM killer firing during suspend. I would prefer
-> > that the IO devices would not be suspended until reclaim was completed
-> > but I imagine that would be a lot harder.
-> >
-> > That said, it will be difficult to remember why checking __GFP_NOFAIL in
-> > this case is necessary and someone might "optimitise" it away later. It
-> > would be preferable if it was self-documenting. Maybe something like
-> > this? (This is totally untested)
+> > Grant, can you put that into the gpio tree?
 > 
-> This issue is not limited to suspend, any GFP_NOIO allocation could
-> end up in the same loop.  Suspend is the most likely case, because it
-> effectively converts all GFP_KERNEL allocations into GFP_NOIO.
+> I can.
 > 
+> Hamo, next time make sure you cc: the relevant subsystem maintainer
+> (in this case, me) when submitting patches.  You can find the
+> maintainer by using ./scripts/get_maintainer.pl, or by looking at the
+> MAINTAINERS file.  It is more work for me when I don't receive the
+> patch directly in my inbox.
 
-I see what you mean with GFP_NOIO but there is an important difference
-between GFP_NOIO and suspend.  A GFP_NOIO low-order allocation currently
-implies __GFP_NOFAIL as commented on in should_alloc_retry(). If no progress
-is made, we call wait_iff_congested() and sleep for a bit. As the system
-is running, kswapd and other process activity will proceed and eventually
-reclaim enough pages for the GFP_NOIO allocation to succeed. In a running
-system, GFP_NOIO can stall for a period of time but your patch will cause
-the allocation to fail. While I expect callers return ENOMEM or handle
-the situation properly with a wait-and-retry loop, there will be
-operations that fail that used to succeed. This is why I'd prefer it was
-a suspend-specific fix unless we know there is a case where a machine
-livelocks due to a GFP_NOIO allocation looping forever and even then I'd
-wonder why kswapd was not helping.
+I would assume that this is what Hamo did:
 
--- 
-Mel Gorman
-SUSE Labs
+$ ./scripts/get_maintainer.pl -f include/asm-generic/gpio.h 
+Arnd Bergmann <arnd@arndb.de> (maintainer:GENERIC INCLUDE/A...)
+linux-arch@vger.kernel.org (open list:GENERIC INCLUDE/A...)
+linux-kernel@vger.kernel.org (open list)
+
+	Arnd
