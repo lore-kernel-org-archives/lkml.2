@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1JYIIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 04:08:17 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50618 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1JYIIO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 04:08:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMbhsRQs+P9djqW_62ajfZTHE3yxsOs0agek81aZrBzZ2-5-Fg@mail.gmail.com>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
-	<CAOJsxLGuHZG9pvx5bCp9tOLA40uDz+U_ZY=_xOddtR9423-Jww@mail.gmail.com>
-	<CAMbhsRQs+P9djqW_62ajfZTHE3yxsOs0agek81aZrBzZ2-5-Fg@mail.gmail.com>
-Date: Tue, 25 Oct 2011 11:08:13 +0300
-X-Google-Sender-Auth: NXPNcE-G9dj63mNyr5b_QG3axLg
-Message-ID: <CAOJsxLEFPhGra8ybpWCP-V8HF_BEUXpWe-tK7MMq0sDcoRFu=w@mail.gmail.com>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754143Ab1JYIJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 04:09:21 -0400
+Received: from mail.tnnet.fi ([217.112.240.26]:52909 "EHLO mail.tnnet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751368Ab1JYIJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 04:09:20 -0400
+Message-ID: <4EA66EAD.DD69F31C@users.sourceforge.net>
+Date: Tue, 25 Oct 2011 11:09:17 +0300
+From: Jari Ruusu <jariruusu@users.sourceforge.net>
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: kernel.org tarball/patch signature files
+References: <4EA3F7C0.24E469C5@users.sourceforge.net>
+		 <20111023113727.GA24285@kroah.com>
+		 <4EA41FB7.CB5369CF@users.sourceforge.net>
+		 <20111025014911.GC22764@kroah.com>
+		 <4EA651ED.44FDE737@users.sourceforge.net> <20111025070910.GA9639@kroah.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Colin,
+Greg KH wrote:
+> On Tue, Oct 25, 2011 at 09:06:37AM +0300, Jari Ruusu wrote:
+> > How about signing just one compressed tarball/patch, and let other
+> > compressed versions be without signature files. Users who want to check
+> > signature will then download the one you signed.
+> 
+> That's no difference from what we are doing today if you think it
+> though.
 
-On Tue, Oct 25, 2011 at 9:39 AM, Colin Cross <ccross@android.com> wrote:
->>> Under the following conditions, __alloc_pages_slowpath can loop
->>> forever:
->>> gfp_mask & __GFP_WAIT is true
->>> gfp_mask & __GFP_FS is false
->>> reclaim and compaction make no progress
->>> order <= PAGE_ALLOC_COSTLY_ORDER
->>>
->>> These conditions happen very often during suspend and resume,
->>> when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
->>> allocations into __GFP_WAIT.
+You signing compressed version eliminates exposure to yet undiscovered
+decompressor bugs. Pre-emptively removing as many as possible attack
+surfaces is the correct securely engineered way of doing things. You signing
+decompressed version is opposite of that. You added new attack surface.
 
-On Tue, Oct 25, 2011 at 12:40 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
->> Why does it do that? Why don't we fix the gfp mask instead?
+Decompressors are complex software. They almost certainly have bugs in
+evil-formatted data handling, forever. Reading data from untrusted internet
+and feeding that data to decompressor without any authentication, screams
+"REMOTE EXPLOIT ME", if you look at it from security point of view.
 
-On Tue, Oct 25, 2011 at 10:51 AM, Colin Cross <ccross@android.com> wrote:
-> It disables __GFP_IO and __GFP_FS because the IO drivers may be suspended.
+> Yes, we are working on just that thing, and the foo.tar.sums file will
+> be signed with the kernel.org "throwaway" key, so you can check that as
+> well.
 
-Sure but why doesn't it clear __GFP_WAIT too?
+That sounds much better than current signing practice.
 
->>> The oom killer is not run because gfp_mask & __GFP_FS is false,
->>> but should_alloc_retry will always return true when order is less
->>> than PAGE_ALLOC_COSTLY_ORDER.
->>>
->>> Fix __alloc_pages_slowpath to skip retrying when oom killer is
->>> not allowed by the GFP flags, the same way it would skip if the
->>> oom killer was allowed but disabled.
->>>
->>> Signed-off-by: Colin Cross <ccross@android.com>
->>> ---
->>>
->>> An alternative patch would add a did_some_progress argument to
->>> __alloc_pages_may_oom, and remove the checks in
->>> __alloc_pages_slowpath that require knowledge of when
->>> __alloc_pages_may_oom chooses to run out_of_memory. If
->>> did_some_progress was still zero, it would goto nopage whether
->>> or not __alloc_pages_may_oom was actually called.
->>>
->>>  mm/page_alloc.c |    4 ++++
->>>  1 files changed, 4 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->>> index fef8dc3..dcd99b3 100644
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -2193,6 +2193,10 @@ rebalance:
->>>                        }
->>>
->>>                        goto restart;
->>> +               } else {
->>> +                       /* If we aren't going to try the OOM killer, give up */
->>> +                       if (!(gfp_mask & __GFP_NOFAIL))
->>> +                               goto nopage;
->>>                }
->>>        }
->>
->> I don't quite understand how __GFP_WAIT is involved here. Which path
->> is causing the infinite loop?
->
-> GFP_KERNEL is __GFP_WAIT | __GFP_IO | __GFP_FS.  Once driver suspend
-> has started, gfp_allowed_mask is ~(__GFP_IO | GFP_FS), so any call to
-> __alloc_pages_nodemask(GFP_KERNEL, ...) gets masked to effectively
-> __alloc_pages_nodemask(__GFP_WAIT, ...).
->
-> The loop is in __alloc_pages_slowpath, from the rebalance label to
-> should_alloc_retry.  Under the conditions I listed in the commit
-> message, there is no path to the nopage label, because all the
-> relevant "goto nopage" lines that would normally allow a GFP_KERNEL
-> allocation to fail are inside a check for __GFP_FS.
-
-Right. Please include that information in the changelog.
-
-> Modifying the gfp_allowed_mask would not completely fix the issue, a
-> GFP_NOIO allocation can meet the conditions outside of suspend.
-> gfp_allowed_mask just makes the issue more likely, by converting
-> GFP_KERNEL into GFP_NOIO.
-
-Why would anyone want to combine __GFP_WAIT, __GFP_NOFAIL and
-!__GFP_IO on purpose? What is it useful for?
-
-As for your patch:
-
-Acked-by: Pekka Enberg <penberg@kernel.org>
-
-but I'd love to hear why we shouldn't also fix the suspend gfp mask to
-clear __GFP_WAIT and add a WARN_ON_ONCE to your new code path.
-
-                        Pekka
+-- 
+Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
