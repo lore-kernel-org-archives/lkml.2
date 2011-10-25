@@ -1,43 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab1JYQC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 12:02:56 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:49832 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756709Ab1JYQCy (ORCPT
+	id S1756771Ab1JYQD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 12:03:27 -0400
+Received: from cpanel23.proisp.no ([88.87.44.74]:43226 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756709Ab1JYQDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 12:02:54 -0400
-Date: Tue, 25 Oct 2011 17:59:21 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH staging 6/6] et131x: uncloak PCIe capabilities.
-Message-ID: <20111025155921.GC2019@electric-eye.fr.zoreil.com>
-References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com> <20111023093651.GA22285@kroah.com> <20111023094231.GA3409@msilap.einon> <20111023171214.GF28657@electric-eye.fr.zoreil.com> <20111024195602.GA3473@msilap.einon>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024195602.GA3473@msilap.einon>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Tue, 25 Oct 2011 12:03:25 -0400
+X-Greylist: delayed 1621 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 12:03:25 EDT
+Message-ID: <4EA6D76C.5050505@numascale.com>
+Date: Tue, 25 Oct 2011 17:36:12 +0200
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "'Arne Georg Gleditsch'" <arne.gleditsch@numascale.com>
+Subject: Re: [PATCH 3/3] Add NumaChip quirk
+References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com> <1318926156-25504-3-git-send-email-daniel@numascale-asia.com> <CAErSpo4Rmtd4LsXmgvb4Vn92z=u1feRyPWF=KS8ggVZvitjEnA@mail.gmail.com>
+In-Reply-To: <CAErSpo4Rmtd4LsXmgvb4Vn92z=u1feRyPWF=KS8ggVZvitjEnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Einon <mark.einon@gmail.com> :
-[...]
-> The PCIe changes are good, however I think using gotos here doesn't add
-> anything as there's no difficult locking to navigate and makes the code
-> harder to read.
-> both out: and err_out: are used to return an error, and the backwards
-> jumping goto makes me a bit uncomfortable. Could you respin with just the
-> PCIe changes?
+On 10/25/2011 16:38, Bjorn Helgaas wrote:
+> On Tue, Oct 18, 2011 at 2:22 AM, Daniel J Blueman
+> <daniel@numascale-asia.com>  wrote:
+>> Add quirk for Numascale's NumaChip to prevent resource conflicts.
+[]
+> This feels like a band-aid ... what's the background here?  I can see
+> that you're disabling PCI resources, and I can read that this avoids
+> conflicts, but what's the underlying cause of the conflict?
+>
+> I wonder if there's a more generic problem that should be fixed
+> differently.  Presumably the NumaChip designers put those BARs there
+> for a reason, and often when we report "conflicts," it's really a clue
+> that we're doing something wrong in host bridge discovery or in
+> generic PCI.
+>
+> Can you post a complete dmesg log showing the conflict?
+>
 
-I confess I use a 55 lines vi split terminal when reviewing these blocks.
+Hi Bjorn,
 
-As there is no documentation to check the remaining PCIe candidate bits,
-it's probably not worth it anyway.
+The issue is a bit complicated, but here's the story; NumaChip is a 
+coherent NorthBridge device on AMD systems (i.e part of the coherent 
+fabric) but the BIOS does *not* assign any resources to it, in fact the 
+BIOS skips our device entirely leaving our BAR registers at HW init 
+values (0x00000000). This is in fact by design (AMD AGESA code). This 
+isn't really a big issue for us anyway because we have other means of 
+reaching our CSR logic (not going into detail, but the other patches in 
+this patchset would reveal how we do that).
 
+Linux however, when scanning the PCI buses finds our device (because it 
+is responding to config space requests) it thinks that we got a BAR0 
+that starts at 0x00000000 which obviously isn't correct. In addition, in 
+the bootloader that we've written for NumaChip systems (to bring them 
+all together as a huge coherent system) we had to use the expansion rom 
+config space register (F0x030) as kind of a "scratch register".
+
+The end result is :
+
+[    4.636297] pci 0000:00:1a.0: reg 10: [mem 0x00000000-0x000fffff]
+[    4.640317] pci 0000:00:1a.0: reg 30: [mem 0x3fff0000-0x3fffffff pref]
+[    4.644369] pci 0000:00:1a.1: [1b47:0602] type 0 class 0x000600
+
+Neither of these resources are real, our device will not respond to 
+requests to any of those windows.
+
+The conflict we refer to in the patch is that since Linux thinks we have 
+those windows assigned to us, we get conflicts later on with real devices :
+
+[    5.887856] pnp 00:0e: disabling [mem 0x00000000-0x0009ffff] because 
+it overlaps 0000:00:1a.0 BAR 0 [mem 0x00000000-0x000fffff]
+[    5.899525] pnp 00:0e: disabling [mem 0x000c0000-0x000cffff] because 
+it overlaps 0000:00:1a.0 BAR 0 [mem 0x00000000-0x000fffff]
+[    5.911002] pnp 00:0e: disabling [mem 0x000e0000-0x000fffff] because 
+it overlaps 0000:00:1a.0 BAR 0 [mem 0x00000000-0x000fffff]
+
+
+I guess technically, the Linux PCI bus probing code should check the 
+Command register (offset 0x4) to see if MemorySpace is enabled (which in 
+our case it won't be) before checking the BAR registers.
+
+ From my perspective however, it seemed easier and less intrusive to 
+just hook in a quirk for our device since we do not use those BAR 
+settings anyway in any form once Linux is booted.
+
+I hope this clear things up a bit. If you have any other questions don't 
+hesitate to ask.
+
+Kind regards,
 -- 
-Ueimor
+Steffen Persvold, Chief Architect NumaChip
+Numascale AS - www.numascale.com
+Tel: +47 92 49 25 54 Skype: spersvold
