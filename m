@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab1JYIJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 04:09:21 -0400
-Received: from mail.tnnet.fi ([217.112.240.26]:52909 "EHLO mail.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab1JYIJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 04:09:20 -0400
-Message-ID: <4EA66EAD.DD69F31C@users.sourceforge.net>
-Date: Tue, 25 Oct 2011 11:09:17 +0300
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
+	id S1754389Ab1JYIMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 04:12:31 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:42605 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab1JYIM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 04:12:29 -0400
+Date: Tue, 25 Oct 2011 19:12:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: kernel.org tarball/patch signature files
-References: <4EA3F7C0.24E469C5@users.sourceforge.net>
-		 <20111023113727.GA24285@kroah.com>
-		 <4EA41FB7.CB5369CF@users.sourceforge.net>
-		 <20111025014911.GC22764@kroah.com>
-		 <4EA651ED.44FDE737@users.sourceforge.net> <20111025070910.GA9639@kroah.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: linux-next: manual merge of the tty tree with Linus' tree
+Message-Id: <20111025191217.31638338379ac498fda051fb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Oct_2011_19_12_17_+1100_V4K=Ef97Abn0aQgr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Tue, Oct 25, 2011 at 09:06:37AM +0300, Jari Ruusu wrote:
-> > How about signing just one compressed tarball/patch, and let other
-> > compressed versions be without signature files. Users who want to check
-> > signature will then download the one you signed.
-> 
-> That's no difference from what we are doing today if you think it
-> though.
+--Signature=_Tue__25_Oct_2011_19_12_17_+1100_V4K=Ef97Abn0aQgr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You signing compressed version eliminates exposure to yet undiscovered
-decompressor bugs. Pre-emptively removing as many as possible attack
-surfaces is the correct securely engineered way of doing things. You signing
-decompressed version is opposite of that. You added new attack surface.
+Hi Greg,
 
-Decompressors are complex software. They almost certainly have bugs in
-evil-formatted data handling, forever. Reading data from untrusted internet
-and feeding that data to decompressor without any authentication, screams
-"REMOTE EXPLOIT ME", if you look at it from security point of view.
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/serial/8250_pci.c between commit dacacc3e794c
+("serial/8250_pci: delete duplicate data definition") from Linus' tree
+and commit 64d91cfaade2 ("8250_pci: Fix kernel panic when pch_uart is
+disabled") from the tty tree.
 
-> Yes, we are working on just that thing, and the foo.tar.sums file will
-> be signed with the kernel.org "throwaway" key, so you can check that as
-> well.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-That sounds much better than current signing practice.
+diff --cc drivers/tty/serial/8250_pci.c
+index 3abeca2,1b449b7..0000000
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@@ -1598,7 -1639,14 +1639,8 @@@ static struct pci_serial_quirk pci_seri
+  		.vendor         =3D 0x10DB,
+  		.device         =3D 0x800D,
+  		.init		=3D pci_eg20t_init,
++ 		.setup		=3D pci_default_setup,
+  	},
+ -	{
+ -		.vendor         =3D 0x10DB,
+ -		.device         =3D 0x800D,
+ -		.init		=3D pci_eg20t_init,
+ -		.setup		=3D pci_default_setup,
+ -	},
+  	/*
+  	 * Cronyx Omega PCI (PLX-chip based)
+  	 */
 
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+--Signature=_Tue__25_Oct_2011_19_12_17_+1100_V4K=Ef97Abn0aQgr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOpm9hAAoJEECxmPOUX5FEEbkP/28YQyjlU/7fbvXg7jCK6XaN
+6qPNij3GW0maN9rtbKZmwGqwuLPEnwoSkp5P/WG4BncGP8uw+BLTHEIAolXD/7og
+l8u+tqkBDldV/Lcrwa4RGgdQF3y6YBp/eF55PZXqMeY0IwFzp4A6mzQ/4j4dCXy7
+7/xWdkDRlVlI20PBLg0d1BFHC1+TWdYxIA+qlBKSAX55k6z4MYxNJwMM68Z9eWR9
+9mGVNXXJf8n8qC6CGZKOB+mkE7u2tk8BKToVzBaogruS3EYohOg3ntgzpPnc4K/q
+7gqvDmMPL9eIBedbUQ5Do7dplwFNHb9E0wDg/SOlIDDp1a+YExT6kSgP0f+fkf0l
+prZB7Q8ZI6oEXqyLBop1wvVY0oqaoh7KibpPKBm7Ip4F1hHUkd8TLNvXhk9M9iNb
+7aTnPBzOFCofAffMwkECQkUd8mQolNqChwb9E8dIekBE01wMSu+TRV+M7K4uOS2J
+u1HneXuwAxqg8+OBBAYhjAbOBg6sgaj33mHMqFY0cQ7G4aa0FNRK7Bbg3gESADpL
++l5NByk8Hrii6rgtPC6rNwHH7Q6JQNnxbAuudkEiAzEzbUHYp6rsfUNM1VHGTToq
+rS3gWPVvtLBzwSXrpGZvvBbIADJOoeEtmVVE5I9Avnq2hXrlO5riQKkQHKwjLcr9
+EbVdNwrRJeKn098cs8dH
+=58OA
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Oct_2011_19_12_17_+1100_V4K=Ef97Abn0aQgr--
