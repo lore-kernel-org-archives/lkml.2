@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab1JYIds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 04:33:48 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:40059 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab1JYIdr (ORCPT
+	id S1755321Ab1JYIg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 04:36:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61168 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057Ab1JYIg0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 04:33:47 -0400
-Message-ID: <1319531622.3056.1.camel@br98xy6r>
-Subject: RE: kdump: crash_kexec()-smp_send_stop() race in panic
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 25 Oct 2011 10:33:42 +0200
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57612A37@USINDEVS01.corp.hds.com>
-References: <1319468137.3615.16.camel@br98xy6r>
-	 <m1ipneifqv.fsf@fess.ebiederm.org>
-	 <CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
-	 <m1aa8qfhdk.fsf@fess.ebiederm.org> <20111024173336.GB8044@redhat.com>
-	 <5C4C569E8A4B9B42A84A977CF070A35B2C57612A37@USINDEVS01.corp.hds.com>
-Organization: IBM
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 25 Oct 2011 04:36:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxK-OJXDNsJ37wSN+MGhGp-j50BX-52eEjBHVSepTTm9w@mail.gmail.com>
+References: <alpine.DEB.2.00.1110242118500.9114@ayla.of.borg>
+	<CA+55aFxK-OJXDNsJ37wSN+MGhGp-j50BX-52eEjBHVSepTTm9w@mail.gmail.com>
+Date: Tue, 25 Oct 2011 10:36:25 +0200
+X-Google-Sender-Auth: Zz7xF2SFn-IIE0AhdbhhTXIt7mM
+Message-ID: <CAMuHMdURW7QT+2tEfZDeH_z-OJEksx_j2gRg2BN-NfoXFTdOdA@mail.gmail.com>
+Subject: Re: [git pull] m68k updates for 3.2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Ungerer <gerg@uclinux.org>, Greg Ungerer <gerg@snapgear.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Seiji,
+Hi Linus,
 
-On Mon, 2011-10-24 at 18:24 -0400, Seiji Aguchi wrote:
-> Hi,
-> 
-> >> >>> 1st CPU:
-> >> >>> panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
-> >> >>>
-> >> >>> 2nd CPU:
-> >> >>> panic()->crash_kexec()->kexec_mutex already held by 1st CPU
-> >> >>>        ->smp_send_stop()-> stop CPU 1 (stop kdump)
-> >> >>>
-> >> >>> How should we fix this problem? One possibility could be to do
-> >> >>> smp_send_stop() before we call crash_kexec().
-> 
-> http://lkml.org/lkml/2010/9/16/353
-> 
-> I developed a patch solving this issue one year ago.
-> (Just adding local_irq_disable in kexec path.)
+On Tue, Oct 25, 2011 at 09:38, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Oct 24, 2011 at 9:26 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>>
+>>  git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+>
+> Please fix your pull script. There's an extraneous ":" there. Spot it?
 
-This won't work (at least on s390) because smp_send_stop() will also
-stop CPUs that have interrupts disabled.
+Sorry, I should _start_ scripting it.
 
-Michael
+> Also, while I see these commits in linux-next, I also see that they
+> have been rebased in the last day, which means that looking for them
+> in linux-next is actually much harder than they need to be.
+>
+> In other words - WHY DID YOU REBASE? It just generates more work for
+> me, and adds absolutely zero value.
 
+I always rebase m68k-queue (of which the for-{linus,next,x.y} are subsets)
+to the latest tagged release, as this allows to:
+  - check that m68k-queue and master are (almost) identical, to detect
+    mismerges on master, and misrebases on m68k-queue,
+  - clearly see which commits in m68k-queue have bubbled up to the for-*
+    queues.
+
+If you really hate this, I'll break these rules for for-linus, and
+make sure it's
+identical to yesterday's for-next.
+
+> I pulled it, but some of the silly details annoyed me.
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
