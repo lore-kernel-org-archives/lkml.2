@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab1JYCne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 22:43:34 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:8488 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841Ab1JYCnd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 22:43:33 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus
- driver as part of the kernel
-Thread-Topic: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus
- driver as part of the kernel
-Thread-Index: AQHMkqAExdpVY1SsrkaDm6NhGDwEYJWMy1OA//+Of5A=
-Date: Tue, 25 Oct 2011 02:43:31 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA39D21@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1319488265-26936-1-git-send-email-kys@microsoft.com>
- <20111025022717.GA32457@kroah.com>
-In-Reply-To: <20111025022717.GA32457@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.20]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756255Ab1JYCvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 22:51:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10169 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755787Ab1JYCvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 22:51:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="66472848"
+Subject: [patch 1/5]thp: improve the error code path
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: aarcange@redhat.com, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Oct 2011 10:58:41 +0800
+Message-ID: <1319511521.22361.135.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Improve the error code path. Delete unnecessary sysfs file for example.
 
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Monday, October 24, 2011 10:27 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> Haiyang Zhang
-> Subject: Re: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus driver
-> as part of the kernel
-> 
-> On Mon, Oct 24, 2011 at 01:31:05PM -0700, K. Y. Srinivasan wrote:
-> > Modify the way we initialize the vmbus driver so that all the hyper-v drivers
-> > can be linked with the kernel and still ensure that the vmbus driver
-> > is fully initialized before the drivers that depend upon the vmbus
-> > driver attempt to initialize.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> 
-> Any reason you sent this out twice?  Was there a difference between the
-> two versions that I missed?
+---
+ mm/huge_memory.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-No difference. It is the mail server acting up. After I sent the mail initially,
-it did not go out for several hours. I sent it again and after several hours, both were
-sent out. Sorry for the confusion; you can ignore one of them.
+Index: linux/mm/huge_memory.c
+===================================================================
+--- linux.orig/mm/huge_memory.c	2011-10-19 14:07:27.000000000 +0800
++++ linux/mm/huge_memory.c	2011-10-24 19:24:31.000000000 +0800
+@@ -512,25 +512,23 @@ static int __init hugepage_init(void)
+ 	err = sysfs_create_group(hugepage_kobj, &hugepage_attr_group);
+ 	if (err) {
+ 		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+-		goto out;
++		goto delete_obj;
+ 	}
+ 
+ 	err = sysfs_create_group(hugepage_kobj, &khugepaged_attr_group);
+ 	if (err) {
+ 		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+-		goto out;
++		goto remove_hp_group;
+ 	}
+ #endif
+ 
+ 	err = khugepaged_slab_init();
+ 	if (err)
+-		goto out;
++		goto remove_khp_group;
+ 
+ 	err = mm_slots_hash_init();
+-	if (err) {
+-		khugepaged_slab_free();
+-		goto out;
+-	}
++	if (err)
++		goto free_slab;
+ 
+ 	/*
+ 	 * By default disable transparent hugepages on smaller systems,
+@@ -544,7 +542,18 @@ static int __init hugepage_init(void)
+ 
+ 	set_recommended_min_free_kbytes();
+ 
++	return err;
++free_slab:
++	khugepaged_slab_free();
++remove_khp_group:
++#ifdef CONFIG_SYSFS
++	sysfs_remove_group(hugepage_kobj, &khugepaged_attr_group);
++remove_hp_group:
++	sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
++delete_obj:
++	kobject_put(hugepage_kobj);
+ out:
++#endif
+ 	return err;
+ }
+ module_init(hugepage_init)
 
-Regards,
-
-K. Y
-> 
-> greg k-h
 
