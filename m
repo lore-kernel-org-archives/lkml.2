@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab1JYVlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 17:41:55 -0400
-Received: from nic.fns.uniba.sk ([158.195.45.10]:38936 "EHLO nic.fns.uniba.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753008Ab1JYVly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 17:41:54 -0400
-X-Greylist: delayed 3180 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 17:41:54 EDT
-Message-ID: <b6285d3879dbb6b26a771d60fea4da91.squirrel@nic.fns.uniba.sk>
-Date: Tue, 25 Oct 2011 22:32:49 +0200
-Subject: You have exceeded the storage limit on your mailbox.
-From: "System Administrator" <webmaster@univ-montp1.fr>
-User-Agent: SquirrelMail/1.4.21
+	id S1753707Ab1JYVsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 17:48:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46335 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab1JYVsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 17:48:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+X-Originating-IP: [85.13.70.251]
+Date: Tue, 25 Oct 2011 14:48:52 -0700
+Message-ID: <CAOesGMhqRg29tq5Cw03UQMzGs_6nc3YA9UE6Cvps_0q7h5OeZw@mail.gmail.com>
+Subject: linux-next failure on tegra due to conflicts between PPI and irq
+ domain patches and irq.h->module.h include removal
+From: Olof Johansson <olof@lixom.net>
+To: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, paul.gortmaker@windriver.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have exceeded the storage limit on your mailbox.
-You will not be able to send or receive new mail until you upgrade your
-email quota.
+Hi,
 
-Copy the below link and fill the form to upgrade your account.
-http://woki.as48500.net/phpform/phpform/use/chform/form1.html
+Looks like Marc added new references to irq_start in his PPI patch,
+and Rob removed it in parallel. Also, irq_offset is no longer
+available. Looks like you need to respin your patch, Marc.
 
-System Administrator
-192.168.0.1
+arch/arm/common/gic.c: In function 'gic_dist_init':
+arch/arm/common/gic.c:290: error: 'irq_start' undeclared (first use in
+this function)
+arch/arm/common/gic.c:290: error: (Each undeclared identifier is
+reported only once
+arch/arm/common/gic.c:290: error: for each function it appears in.)
+arch/arm/common/gic.c:296: error: 'struct gic_chip_data' has no member
+named 'irq_offset'
 
 
+The second error is because of the change from Paul that removes
+module.h from irq.h:
+
+arch/arm/common/gic.c: In function 'gic_init':
+arch/arm/common/gic.c:620: error: 'THIS_MODULE' undeclared (first use
+in this function)
+
+Looks odd that I should need to include module.h on my own just to use
+irq defines. Paul?
 
 
+-Olof
