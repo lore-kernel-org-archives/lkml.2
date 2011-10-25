@@ -1,66 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab1JYJvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 05:51:11 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49392 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab1JYJvF (ORCPT
+	id S932509Ab1JYJvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 05:51:37 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43514 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932310Ab1JYJvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 05:51:05 -0400
-Subject: Re: [GIT PULL] target: Updates for v3.2-rc1 (round one)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@purestorage.com>
-In-Reply-To: <CA+55aFzUtu5jVt6XcP+cqLWSK1u+zbuJuWCJU0OhW2XVavv3VA@mail.gmail.com>
-References: <1319533236.17450.338.camel@haakon2.linux-iscsi.org>
-	 <CA+55aFyeCfXV9Fpg9vZywmHtP3PR8+voZpampVqW8TAfCvLv3Q@mail.gmail.com>
-	 <CA+55aFzUtu5jVt6XcP+cqLWSK1u+zbuJuWCJU0OhW2XVavv3VA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Oct 2011 02:51:02 -0700
-Message-ID: <1319536262.18871.14.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Oct 2011 05:51:32 -0400
+X-Sasl-enc: GeFSFAV1hLJxv5SpL9r0+w104pVeh9ovcGA6AgKB+reL 1319536291
+Date: Tue, 25 Oct 2011 11:50:24 +0200
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core patches for 3.2
+Message-ID: <20111025095024.GA8986@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 11:44 +0200, Linus Torvalds wrote:
-> On Tue, Oct 25, 2011 at 11:29 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Hmm. This is not what I get. It might be a git version issue or diff
-> > algorithm one - although that's actually pretty unusual. Do you do
-> > something odd/special?
-> 
-> Another question: you picked a very particular and odd place to start
-> development. It's commit 65112dccf8a ("Merge
-> git://git.samba.org/sfrench/cifs-2.6") which just *seems* to be some
-> "random Linux tree kernel of the day". I'm not seeing why you picked
-> that one.
-> 
-> This is not a deal-breaker, and *please* don't use this as an argument
-> for rebasing (quite the opposite), but it's basically a note to ask
-> you to just pick a better starting point next time. It's usually much
-> better to start from an actual release (preferably a *real* release,
-> like 3.0) than from a "random daily tree". Of course, using an -rc1
-> release is usually a really bad idea also, but in the rough timeframe
-> we're talking about (October 10 - two weeks ago - that's apparently
-> when you started worrying about this next merge window) you could have
-> at least picked something like -rc9 as the base.
-> 
-> So basically, I'm asking that people not rebase, but also spend a bit
-> of time thinking about "where should I start development".
-> 
 
-Point understood.   I'll make sure to pick a tagged -rc release for the
-target-pending.git base next time.
+--fUYQa+Pmc3FrFX/N
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you,
+Here is the "big" driver core update for your 3.2 tree.
 
---nab
+Nothing major here, all is explained below in the shortlog.
+
+One note, it would be nice if you could merge this before the USB tree
+in order to make a working bisectable tree for some embedded
+controllers, as they rely on the change to the platform core code in
+order to run properly (the tree will build either way, so it's probably
+not a big deal.)
+
+Please pull from:
+	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ driv=
+er-core-next
+
+All of these patches have been in the linux-next and mm trees for a
+while now.
+
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/DocBook/uio-howto.tmpl            |    2 +-
+ Documentation/driver-model/binding.txt          |    4 -
+ Documentation/driver-model/device.txt           |   65 ++++-----
+ Documentation/filesystems/sysfs.txt             |   10 ++-
+ Documentation/stable_kernel_rules.txt           |   14 +-
+ Documentation/zh_CN/SubmitChecklist             |  109 --------------
+ MAINTAINERS                                     |    6 +
+ arch/arm/plat-mxc/devices.c                     |   53 -------
+ arch/arm/plat-mxc/include/mach/devices-common.h |   16 ++-
+ drivers/base/core.c                             |    5 +-
+ drivers/base/dd.c                               |    3 +
+ drivers/base/memory.c                           |   62 ++++++---
+ drivers/base/platform.c                         |   52 ++++---
+ drivers/misc/pch_phub.c                         |   10 +-
+ drivers/uio/uio.c                               |   14 +-
+ drivers/uio/uio_pci_generic.c                   |    5 -
+ drivers/uio/uio_pdrv_genirq.c                   |    2 +-
+ fs/debugfs/inode.c                              |    2 +-
+ fs/sysfs/dir.c                                  |  166 +++++++++++++++----=
+---
+ fs/sysfs/inode.c                                |   14 +--
+ fs/sysfs/sysfs.h                                |   17 ++-
+ include/linux/device.h                          |    5 +
+ include/linux/dynamic_debug.h                   |   72 ++++++----
+ include/linux/netdevice.h                       |   10 +-
+ include/linux/platform_device.h                 |   48 ++++++-
+ include/linux/uio_driver.h                      |    7 +-
+ lib/dynamic_debug.c                             |  173 ++++++++++++++++---=
+----
+ lib/kobject_uevent.c                            |    2 +-
+ net/core/dev.c                                  |    3 +-
+ 29 files changed, 523 insertions(+), 428 deletions(-)
+ delete mode 100644 Documentation/zh_CN/SubmitChecklist
+
+---------------
+
+Andy Shevchenko (1):
+      pch_phub: use kernel's '%pM' format option to print MAC
+
+Anton Blanchard (1):
+      memory hotplug: Refuse to add unaligned memory regions
+
+Bart Van Assche (3):
+      docs/sysfs: Specify ABI documentation requirements
+      docs/driver-model: Document device.groups
+      docs/driver-model: Update device class docs
+
+Greg Kroah-Hartman (1):
+      Revert "memory hotplug: Correct page reservation checking"
+
+Hans J. Koch (1):
+      uio: uio_pci_generic: Remove useless spin_lock
+
+Harry Wei (2):
+      debugfs: Fix a comment mistake
+      remove the messy code file Documentation/zh_CN/SubmitChecklist
+
+Heiko Carstens (1):
+      sysfs: add unsigned long cast to prevent compile warning
+
+Jason Baron (8):
+      dynamic_debug: remove unused control variables
+      dynamic_debug: add Jason Baron as maintainer
+      dynamic_debug: make netdev_dbg() call __netdev_printk()
+      dynamic_debug: make netif_dbg() call __netdev_printk()
+      dynamic_debug: consolidate repetitive struct _ddebug descriptor defin=
+itions
+      dynamic_debug: remove num_enabled accounting
+      dynamic_debug: use a single printk() to emit messages
+      dynamic_debug: fix undefined reference to `__netdev_printk'
+
+Joe Perches (4):
+      dynamic_debug: Add __dynamic_dev_dbg
+      dynamic_debug: Consolidate prefix output to single routine
+      dynamic_debug: Remove uses of KERN_CONT in dynamic_emit_prefix
+      dynamic_debug: Convert printks to pr_<level>
+
+Josh Boyer (1):
+      Update email address for stable patch submission
+
+Kai Jiang (1):
+      uio: Support physical addresses >32 bits on 32-bit systems
+
+Mel Gorman (1):
+      mm: memory hotplug: Check if pages are correctly reserved on a per-se=
+ction basis
+
+Mikulas Patocka (4):
+      sysfs: count subdirectories
+      sysfs: use rb-tree for name lookups
+      sysfs: remove s_sibling hacks
+      sysfs: use rb-tree for inode number lookup
+
+Milan Broz (1):
+      kobj_uevent: Ignore if some listeners cannot handle message
+
+Nathan Fontenot (1):
+      memory hotplug: Correct page reservation checking
+
+Sebastian Andrzej Siewior (1):
+      drivers_base: platform: use always ->name for uevent
+
+Tomoya MORINAGA (1):
+      pch_phub: Care FUNCSEL register in PM
+
+Uwe Kleine-K=F6nig (2):
+      new helper to create platform devices with dma mask
+      ARM: mxc: convert device creation to use platform_device_register_full
+
+Wanlong Gao (2):
+      drivers:uio:change the goto label to consistent with others
+      drivers:uio:fix section mismatch in uio_pdrv_genirq.c
+
+Wolfram Sang (1):
+      drivers: base: print rejected matches with DEBUG_DRIVER
 
 
+--fUYQa+Pmc3FrFX/N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAk6mhmAACgkQMUfUDdst+ynmxwCffqkpKGQK8T2wE4nhgJpGe0XN
+StYAn1ghrKXScqDUvqKYWSYd+8/qO+26
+=CeWJ
+-----END PGP SIGNATURE-----
+
+--fUYQa+Pmc3FrFX/N--
