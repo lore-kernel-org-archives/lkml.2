@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab1JYCku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 22:40:50 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:54158 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754646Ab1JYCkh (ORCPT
+	id S1756274Ab1JYCne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 22:43:34 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:8488 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab1JYCnd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 22:40:37 -0400
-X-Sasl-enc: POkLS0H+h0ntoy+f1fzijSPH58vdsqkiswnvlZjbEwy2 1319510436
-Date: Tue, 25 Oct 2011 04:28:52 +0200
-From: Greg KH <greg@kroah.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: gregkh@suse.de, Nhan H Mai <nhan.h.mai@intel.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        alan@linux.intel.com
-Subject: Re: [PATCH] serial/8250_pci: add a quirk for the kt serial controller
-Message-ID: <20111025022852.GB32457@kroah.com>
-References: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
+	Mon, 24 Oct 2011 22:43:33 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus
+ driver as part of the kernel
+Thread-Topic: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus
+ driver as part of the kernel
+Thread-Index: AQHMkqAExdpVY1SsrkaDm6NhGDwEYJWMy1OA//+Of5A=
+Date: Tue, 25 Oct 2011 02:43:31 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA39D21@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1319488265-26936-1-git-send-email-kys@microsoft.com>
+ <20111025022717.GA32457@kroah.com>
+In-Reply-To: <20111025022717.GA32457@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.20]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 03:27:16PM -0700, Dan Williams wrote:
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2492,6 +2492,7 @@
->  #define PCI_DEVICE_ID_INTEL_IOAT	0x1a38
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
-> +#define PCI_DEVICE_ID_INTEL_PATSBURG_KT	0x1d3d
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_0	0x1d40
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_1	0x1d41
->  #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI	0x1e31
 
-Based on the comment at the top of this file, you shouldn't add this
-entry to it.
 
-Care to redo the patch without that change?
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, October 24, 2011 10:27 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> Haiyang Zhang
+> Subject: Re: [PATCH 1/1] Staging: hv: vmbus: Support building the vmbus driver
+> as part of the kernel
+> 
+> On Mon, Oct 24, 2011 at 01:31:05PM -0700, K. Y. Srinivasan wrote:
+> > Modify the way we initialize the vmbus driver so that all the hyper-v drivers
+> > can be linked with the kernel and still ensure that the vmbus driver
+> > is fully initialized before the drivers that depend upon the vmbus
+> > driver attempt to initialize.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> 
+> Any reason you sent this out twice?  Was there a difference between the
+> two versions that I missed?
 
-thanks,
+No difference. It is the mail server acting up. After I sent the mail initially,
+it did not go out for several hours. I sent it again and after several hours, both were
+sent out. Sorry for the confusion; you can ignore one of them.
 
-greg k-h
+Regards,
+
+K. Y
+> 
+> greg k-h
+
