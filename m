@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1JYSXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 14:23:52 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33100 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab1JYSXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 14:23:49 -0400
-Message-ID: <4EA6FEC2.1060209@linux.vnet.ibm.com>
-Date: Tue, 25 Oct 2011 23:54:02 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to support
- pv-ticketlock
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com> <4EA53A7D.300@redhat.com> <20111024122734.GA10634@linux.vnet.ibm.com> <4EA56385.9040302@redhat.com> <20111024135032.GB10634@linux.vnet.ibm.com>
-In-Reply-To: <20111024135032.GB10634@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753320Ab1JYSY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 14:24:56 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47133 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208Ab1JYSYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 14:24:55 -0400
+Message-ID: <1319566888.17505.18.camel@work-vm>
+Subject: Re: [PATCH 1/8] clocksource: Convert tcb_clksrc to use
+ clocksource_register_hz/khz
+From: john stultz <johnstul@us.ibm.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Nikolaus Voss <n.voss@weinmann.de>, Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 25 Oct 2011 11:21:28 -0700
+In-Reply-To: <4ea6fb1d.0b14970a.23e2.ffff8274SMTPIN_ADDED@mx.google.com>
+References: <4ea6fb1d.0b14970a.23e2.ffff8274SMTPIN_ADDED@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11102508-5140-0000-0000-0000001CEE1A
+Mime-Version: 1.0
+x-cbid: 11102518-5112-0000-0000-00000145B353
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2011 07:20 PM, Srivatsa Vaddagiri wrote:
-> * Avi Kivity<avi@redhat.com>  [2011-10-24 15:09:25]:
->
->>> I guess with that change, we can also dropthe need for other hypercall
->>> introduced in this patch (kvm_pv_kick_cpu_op()). Essentially a vcpu sleeping
->>> because of HLT instruction can be woken up by a IPI issued by vcpu releasing a
->>> lock.
->>
->> Not if interrupts are disabled.
->
-> Hmm yes ..so we need a kick hypercall then.
->
+On Tue, 2011-10-25 at 11:08 -0700, y@kernel.beaverton.ibm.com wrote:
+> From: John Stultz <john.stultz@linaro.org>
+> 
+> Convert tcb_clksrc to use clocksource_register_hz.
 
-So then do also you foresee the need for directed yield at some point, 
-to address LHP? provided we have good improvements to prove.
+Ugh. Apparently I hit "y" at the "Who should the emails appear to be
+from?". I blame too many apps recently asking for y/n prompts. :)
+
+The patche's From: is still right, so they should still apply ok, but
+I'll resend them later if they don't get merged for 3.2.
+
+thanks
+-john
+
+
 
