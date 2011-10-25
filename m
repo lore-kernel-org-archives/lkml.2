@@ -1,164 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab1JYEWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 00:22:24 -0400
-Received: from ozlabs.org ([203.10.76.45]:35949 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166Ab1JYEWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 00:22:23 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Randy Dunlap <rdunlap@xenotime.net>, Ben Hutchings <ben@decadent.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not built in-tree
-In-Reply-To: <4EA57CBF.2050901@xenotime.net>
-References: <1319461948.31243.31.camel@deadeye> <4EA57CBF.2050901@xenotime.net>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 25 Oct 2011 14:26:13 +1030
-Message-ID: <87k47tpvvm.fsf@rustcorp.com.au>
+	id S1752069Ab1JYEb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 00:31:59 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49783 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1JYEb6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 00:31:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20111025014911.GC22764@kroah.com>
+References: <4EA3F7C0.24E469C5@users.sourceforge.net> <20111023113727.GA24285@kroah.com>
+ <4EA41FB7.CB5369CF@users.sourceforge.net> <20111025014911.GC22764@kroah.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Tue, 25 Oct 2011 00:31:36 -0400
+Message-ID: <CAGZ=bqKvb96VvZ5a+VJWZXKdr553n8SW2=JOLZS1fGY5KE7iZg@mail.gmail.com>
+Subject: Re: kernel.org tarball/patch signature files
+To: Greg KH <greg@kroah.com>
+Cc: Jari Ruusu <jariruusu@users.sourceforge.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Oct 2011 07:57:03 -0700, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 10/24/11 06:12, Ben Hutchings wrote:
-> > Use of the GPL or a compatible licence doesn't necessarily make the code
-> > any good.  We already consider staging modules to be suspect, and this
-> > should also be true for out-of-tree modules which may receive very
-> > little review.
-> > 
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > ---
-> > Debian has been carrying this for the last few kernel versions.  The
-> > recent thread '[RFC] virtualbox tainting.' and discussions at KS suggest
-> > that this might be more generally useful.
-> > 
-> > Ben.
-> > 
-> >  include/linux/kernel.h |    1 +
-> >  kernel/module.c        |    5 +++++
-> >  kernel/panic.c         |    2 ++
-> >  scripts/mod/modpost.c  |    7 +++++++
-> >  4 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> Hi,
-> 
-> Please add 'O' to Documentation/oops-tracing.txt.
+On Mon, Oct 24, 2011 at 21:49, Greg KH <greg@kroah.com> wrote:
+> Please realize that we are building this whole thing back up from
+> scratch here, and some services are not possible to do just yet.
+>
+> Also realize our constraints.  I don't want to, and in fact it's almost
+> impossible to, upload the 3 compressed tarballs over a large number of
+> internet connections that I have access to as I travel around the world.
+> So, given that you don't want all kernel release maintainers to store
+> their private keys on the server (remember what just happened), the
+> ability to generate that signature would be a pretty difficult thing,
+> right?
+>
+> So, we are working on a proposal that has a "throw away" signature for
+> the compressed files, that can be verified by people after they download
+> the tarball to ensure that they didn't get something "odd".  That will
+> handle the sha256sum, and allow us to add future compression types with
+> no need to regenerate the "real" signatures from the original release.
+>
+> The real check, to verify that this tarball really came from "me" should
+> be done on the uncompressed tarball, which is what I can sign, and it is
+> something that you, or anyone else, can reliable duplicate on their own
+> by just using git and not even downloading the tarball at all.
+>
+> In other words, we just saved you a MASSIVE bandwidth transation for all
+> of your future kernel downloads, and you can reliable know that the
+> tarball you have in your system is what is on the kernel.org servers
+> without you even having to download it yourself and run those
+> decompression tools that you don't trus.
+>
+> And still you complain :)
+>
+> Hope this helps explain why this is the way it is.  It's as if people
+> think we are just making it up as we go along...
 
-I did that, and applied the patch.  See below.
+Well, in theory it could still be done (albeit not in practice right now).
 
-Thanks,
-Rusty.
+There is a tool called "pristine-tar" designed to generate a
+byte-identical tar.gz given the original source tree.  Obviously with
+git-archive you don't need the "tar" portion, but it also includes
+"pristine-gz" and "pristine-bz2" tools which tease out and store the
+original compression parameters in a small file.  It's commonly used
+to be able to "import" a bunch of source files and a tarball into GIT
+without storing the entire original tarball as a binary file.
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Subject: module,bug: Add TAINT_OOT_MODULE flag for modules not built in-tree
-Date: Mon, 24 Oct 2011 15:12:28 +0200
+So the kernel developers would locally produce the uncompressed and
+compressed tarballs, then digitally sign them and create small
+"pristine-{gz,bz2,xz}" archive deltas; the signatures and deltas would
+be uploaded.
 
-Use of the GPL or a compatible licence doesn't necessarily make the code
-any good.  We already consider staging modules to be suspect, and this
-should also be true for out-of-tree modules which may receive very
-little review.
+The kernel.org server would use the original input and compression
+parameters to reconstruct the byte-identical compressed archive from
+the output of "git archive --format=tar", again with the "pristine-*"
+tools.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Reviewed-by: Dave Jones <davej@redhat.com>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au> (patched oops-tracing.txt)
----
- Documentation/oops-tracing.txt |    2 ++
- include/linux/kernel.h         |    1 +
- kernel/module.c                |    5 +++++
- kernel/panic.c                 |    2 ++
- scripts/mod/modpost.c          |    7 +++++++
- 5 files changed, 17 insertions(+)
+Unfortunately, while there are "pristine-gz" and "pristine-bz2" tools,
+there has not yet been developed a "pristine-xz" tool:
+  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=499489
 
-diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
---- a/Documentation/oops-tracing.txt
-+++ b/Documentation/oops-tracing.txt
-@@ -263,6 +263,8 @@ characters, each representing a particul
-  12: 'I' if the kernel is working around a severe bug in the platform
-      firmware (BIOS or similar).
- 
-+ 13: 'O' if an externally-built ("out-of-tree") module has been loaded.
-+
- The primary reason for the 'Tainted: ' string is to tell kernel
- debuggers if this is a clean kernel or if anything unusual has
- occurred.  Tainting is permanent: even if an offending module is
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -369,6 +369,7 @@ extern enum system_states {
- #define TAINT_WARN			9
- #define TAINT_CRAP			10
- #define TAINT_FIRMWARE_WORKAROUND	11
-+#define TAINT_OOT_MODULE		12
- 
- extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-diff --git a/kernel/module.c b/kernel/module.c
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2487,6 +2487,9 @@ static int check_modinfo(struct module *
- 		return -ENOEXEC;
- 	}
- 
-+	if (!get_modinfo(info, "intree"))
-+		add_taint_module(mod, TAINT_OOT_MODULE);
-+
- 	if (get_modinfo(info, "staging")) {
- 		add_taint_module(mod, TAINT_CRAP);
- 		printk(KERN_WARNING "%s: module is from the staging directory,"
-@@ -3257,6 +3260,8 @@ static char *module_flags(struct module 
- 		buf[bx++] = '(';
- 		if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
- 			buf[bx++] = 'P';
-+		else if (mod->taints & (1 << TAINT_OOT_MODULE))
-+			buf[bx++] = 'O';
- 		if (mod->taints & (1 << TAINT_FORCED_MODULE))
- 			buf[bx++] = 'F';
- 		if (mod->taints & (1 << TAINT_CRAP))
-diff --git a/kernel/panic.c b/kernel/panic.c
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -177,6 +177,7 @@ static const struct tnt tnts[] = {
- 	{ TAINT_WARN,			'W', ' ' },
- 	{ TAINT_CRAP,			'C', ' ' },
- 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
-+	{ TAINT_OOT_MODULE,		'O', ' ' },
- };
- 
- /**
-@@ -194,6 +195,7 @@ static const struct tnt tnts[] = {
-  *  'W' - Taint on warning.
-  *  'C' - modules from drivers/staging are loaded.
-  *  'I' - Working around severe firmware bug.
-+ *  'O' - Out-of-tree module has been loaded.
-  *
-  *	The string is overwritten by the next call to print_tainted().
-  */
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1849,6 +1849,12 @@ static void add_header(struct buffer *b,
- 	buf_printf(b, "};\n");
- }
- 
-+static void add_intree_flag(struct buffer *b, int is_intree)
-+{
-+	if (is_intree)
-+		buf_printf(b, "\nMODULE_INFO(intree, \"Y\");\n");
-+}
-+
- static void add_staging_flag(struct buffer *b, const char *name)
- {
- 	static const char *staging_dir = "drivers/staging";
-@@ -2169,6 +2175,7 @@ int main(int argc, char **argv)
- 		buf.pos = 0;
- 
- 		add_header(&buf, mod);
-+		add_intree_flag(&buf, !external_module);
- 		add_staging_flag(&buf, mod->name);
- 		err |= add_versions(&buf, mod);
- 		add_depends(&buf, mod, modules);
+So it's not yet reasonably possible for the kernel.org archive, but
+sometime in the future it might become so.
+
+Cheers,
+Kyle Moffett
+
+-- 
+Curious about my work on the Debian powerpcspe port?
+I'm keeping a blog here: http://pureperl.blogspot.com/
