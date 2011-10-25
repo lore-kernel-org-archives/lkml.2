@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab1JYFkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 01:40:52 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:38081 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751325Ab1JYFkv (ORCPT
+	id S1752055Ab1JYFmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 01:42:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58920 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab1JYFmI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 01:40:51 -0400
-Message-ID: <4EA64BDC.8050709@xenotime.net>
-Date: Mon, 24 Oct 2011 22:40:44 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	Tue, 25 Oct 2011 01:42:08 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.0.8
-References: <20111025051928.GA7997@kroah.com>
-In-Reply-To: <20111025051928.GA7997@kroah.com>
+In-Reply-To: <20111025050003.GC798@ponder.secretlab.ca>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <1319144425-15547-7-git-send-email-Kyle.D.Moffett@boeing.com>
+ <201110201715.58441.vapier@gentoo.org> <20111025050003.GC798@ponder.secretlab.ca>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 25 Oct 2011 01:41:48 -0400
+X-Google-Sender-Auth: AUnPY9h6V00K7pvS5xVYWdKJkI0
+Message-ID: <CAJaTeTr2XXeq7HU1k6TU6kZCXj4ud0wUMiuA+3-2uHziK-3WmQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 06/17] phy_driver: Add and use phy_driver_[un]register_multiple()
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@conan.davemloft.net>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Baruch Siach <baruch@tkos.co.il>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/11 22:19, Greg KH wrote:
-> I'm announcing the release of the 3.0.8 kernel.
-> 
-> All users of the 3.0 kernel series must upgrade.
+On Tue, Oct 25, 2011 at 01:00, Grant Likely wrote:
+> On Thu, Oct 20, 2011 at 05:15:54PM -0400, Mike Frysinger wrote:
+>> On Thursday 20 October 2011 17:00:13 Kyle Moffett wrote:
+>> > +   return phy_driver_register_multiple(bcm63xx_drivers,
+>> > +                   ARRAY_SIZE(bcm63xx_drivers));
+>>
+>> if only the arm ARRAY_AND_SIZE() macro could gain traction in the wider tree:
+>>       return phy_driver_register_multiple(ARRAY_AND_SIZE(bcm63xx_drivers));
+>
+> Propose a patch to move it from arch/arm to include/linux/kernel.h.
+> This is the first I've heard of this macro, but I would probably use
+> it.
 
-I noticed that "must" word in 3.0.7 also.  Please explain.
-
-
-> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
->         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-> and can be browsed at the normal kernel.org git web browser:
->         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+i thought last time rmk suggested it, things got shot down.  but maybe
+i remember wrong ... it has been a while since i proposed something
+that generated bike shedding, so i'll try again.
+-mike
