@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933474Ab1JYNaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 09:30:39 -0400
-Received: from fieldses.org ([174.143.236.118]:51206 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933399Ab1JYNah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 09:30:37 -0400
-Date: Tue, 25 Oct 2011 09:30:16 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V8 00/26]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20111025133016.GC15662@fieldses.org>
-References: <1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20111024091716.GA1109@fieldses.org>
- <20111024094910.GA28693@infradead.org>
- <20111024110759.GA1863@fieldses.org>
+	id S933479Ab1JYNfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 09:35:16 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37084 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933399Ab1JYNfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 09:35:14 -0400
+Date: Tue, 25 Oct 2011 09:35:05 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Tao Ma <tm@tao.ma>, linux-ext4@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] ext4: Fix endian problem in MMP initialization
+Message-ID: <20111025133505.GL31921@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Darrick J. Wong" <djwong@us.ibm.com>, Tao Ma <tm@tao.ma>,
+	linux-ext4@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20111021211759.10784.17257.stgit@elm3c44.beaverton.ibm.com>
+ <20111021211825.10784.97113.stgit@elm3c44.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111024110759.GA1863@fieldses.org>
+In-Reply-To: <20111021211825.10784.97113.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 07:07:59AM -0400, J. Bruce Fields wrote:
-> On Mon, Oct 24, 2011 at 05:49:10AM -0400, Christoph Hellwig wrote:
-> > After all this techical work (which was brought up before) has been
-> > done you can resubmit it.  And that point you'd better have very
-> > good and very lengthy rationale for why adding an utterly stupid
-> > ACL model is supposed to be a good idea.
+On Fri, Oct 21, 2011 at 02:18:25PM -0700, Darrick J. Wong wrote:
+> As part of startup, the MMP initialization code does this:
 > 
-> It's the ACL model that Samba and NFSv4 clients use, and we want to do a
-> better job of exporting linux filesystems to those clients.
+> mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
 > 
-> I don't know how to make the justification much longer than that.
+> Next, mmp->mmp_seq is written out to disk, a delay happens, and then the MMP
+> block is read back in and the sequence value is tested:
+> 
+> if (seq != le32_to_cpu(mmp->mmp_seq)) {
+> 	/* fail the mount */
+> 
+> On a LE system such as x86, the *le32* functions do nothing and this works.
+> Unfortunately, on a BE system such as ppc64, this comparison becomes:
+> 
+> if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
+> 	/* fail the mount */
+> 
+> Except for a few palindromic sequence numbers, this test always
+> causes the mount to fail, which makes MMP filesystems generally
+> unmountable on ppc64.  The attached patch fixes this situation.
+> 
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 
-OK, sorry, that's not quite fair; we should add details about experience
-with alternative approaches in nfsd and samba (mapping between ACL
-models, adding "posix" acl support to the protocols, making the protocol
-daemon store and enforce the ACL instead of the filesystem).  And
-probably cc: samba-technical on that one message so they can confirm or
-deny any of that.
+Thanks, this is already in the ext4 tree, although not yet in the
+master branch (just the dev branch).
 
---b.
+					- Ted
