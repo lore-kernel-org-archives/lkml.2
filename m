@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933499Ab1JYNyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 09:54:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33662 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933347Ab1JYNyi (ORCPT
+	id S933517Ab1JYNzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 09:55:53 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:60619 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933347Ab1JYNzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 09:54:38 -0400
-Date: Tue, 25 Oct 2011 15:54:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-cc: Ingo Molnar <mingo@redhat.com>, H Peter Anvin <hpa@zytor.com>,
-        Steffen Persvold <sp@numascale.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 3/3] Add NumaChip quirk
-In-Reply-To: <1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
-Message-ID: <alpine.LFD.2.02.1110251550430.21837@ionos>
-References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com> <1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 25 Oct 2011 09:55:51 -0400
+Date: Wed, 26 Oct 2011 00:55:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-Id: <20111026005530.a4bd779e1a8182ea57dbf99f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+--Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 18 Oct 2011, Daniel J Blueman wrote:
+Hi all,
 
-> Add quirk for Numascale's NumaChip to prevent resource conflicts.
-> 
-> v2:
->  - [Daniel] rediffed and validated against 3.1-rc10
-> 
-> Signed-off-by: Steffen Persvold <sp@numascale.com>
+After merging the net-next tree, today's linux-next build (powerpc
+pseries_defconfig) failed like this:
 
-So, who wrote that code? If Steffen, then you should put a From:
-.... when sending patches.
+drivers/net/ethernet/ibm/ehea/ehea_main.c: In function 'write_swqe2_data':
+drivers/net/ethernet/ibm/ehea/ehea_main.c:1692: error: implicit declaration=
+ of function 'frag_size'
 
-> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-> ---
->  drivers/pci/quirks.c    |   14 ++++++++++++++
->  include/linux/pci_ids.h |    4 ++++
->  2 files changed, 18 insertions(+), 0 deletions(-)
+Presumably caused by commit 9e903e085262 ("net: add skb frag size
+accessors").  I guess it should have been "skb_frag_size()".
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Jesse,
+--Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi
+Content-Type: application/pgp-signature
 
-can you take that or should I push it through x86 ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks,
+iQIcBAEBCAAGBQJOpr/SAAoJEECxmPOUX5FEd+AQAIGk6I3YRTJ9RGHMU6MUEeEl
+J/VtRXodJfUdQxPGVPZth2F4ygGf4zRd+f2eYjikSL3RNCBZ9pdBzbffhtVaIO/U
+myXMPzXuk4DWryMj9wknqH5pnazxHXH65fTllQLwcjVOgfYHOmGFAVSMIbhlrjM7
+zBDG1dWLbth9v3z2/AkCQo6G09D57qGkXkDlszAVCyosmntJBmdvAHXkLJCMVDhm
+cAbxOW5ZBAh8PRspnIKYSyCAG4vC20t7DsY/V0krPU5Xi9KoAR2iud6lUSNK5sH8
+vFy4vxJQo5U6RnlZKPV2j3vEfYRlJABHwWdcNnTD+TrDweMLXq2kp3cjoZBDLBGx
+fiNs9DKgm1OjdvaA/nV+Bs/gXI2iVF6u4nXKg/gC+6Ona0eN2y1HBZ2PAOoBg4oF
+ZRqViID3mMhWFXMUTwjrDyVpYONGoFCVU85c8cST3ThUlo0tHvbinGQeocs5dbWW
+iqyZ0pgzWJa/wR4IDS2is4MQAPyoVeGXbVqQpYoKEW8Hmr9TerX+hB2nKrJCG4Ug
+uvAPjcR/Y4XrGE035hflNHRzWGS/UBUWsw0KmAXLE3aIJa2T6pmVDoxqSnrp1bLd
+H0eX+XO8J4+Qz+CMg0ypbnel+xXnjeeMaJiLF18Mvgy+kmjdV8GL+XRS5+DDDqJI
+WfXGMPn4mWU9YCdv+A8s
+=L8W+
+-----END PGP SIGNATURE-----
 
-	tglx
- 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 1196f61..051b793 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2679,6 +2679,20 @@ static void __devinit quirk_hotplug_bridge(struct pci_dev *dev)
->  
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_HINT, 0x0020, quirk_hotplug_bridge);
->  
-> +/* Clear all resources on NumaChip to avoid conflicts */
-> +static void __devinit numachip_resource_fixup(struct pci_dev *pdev)
-> +{
-> +	int i;
-> +
-> +	for (i = PCI_STD_RESOURCES; i <= PCI_ROM_RESOURCE; i++)
-> +		memset(&pdev->resource[i], 0, sizeof(pdev->resource[i]));
-> +
-> +	dev_notice(&pdev->dev, "Disabled all PCI resources for NumaChip\n");
-> +}
-> +
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NUMASCALE,
-> +	PCI_DEVICE_ID_NUMASCALE_NUMACHIP0, numachip_resource_fixup);
-> +
->  /*
->   * This is a quirk for the Ricoh MMC controller found as a part of
->   * some mulifunction chips.
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index ae96bbe..02e0959 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2400,6 +2400,10 @@
->  
->  #define PCI_VENDOR_ID_AZWAVE		0x1a3b
->  
-> +#define PCI_VENDOR_ID_NUMASCALE		0x1b47
-> +#define PCI_DEVICE_ID_NUMASCALE_NUMACHIP0 0x0601
-> +#define PCI_DEVICE_ID_NUMASCALE_NUMACHIP1 0x0602
-> +
->  #define PCI_VENDOR_ID_TEKRAM		0x1de1
->  #define PCI_DEVICE_ID_TEKRAM_DC290	0xdc29
->  
-> -- 
-> 1.7.5.4
-> 
-> 
+--Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi--
