@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1JYJKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 05:10:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55892 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab1JYJKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 05:10:01 -0400
-Date: Tue, 25 Oct 2011 11:09:56 +0200
-From: Mel Gorman <mgorman@suse.de>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-Message-ID: <20111025090956.GA10797@suse.de>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1319524789-22818-1-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932257Ab1JYJOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 05:14:06 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56683 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab1JYJOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 05:14:05 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>, Greg KH <greg@kroah.com>,
+        Jari Ruusu <jariruusu@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel.org tarball/patch signature files
+In-Reply-To: Your message of "Tue, 25 Oct 2011 10:27:05 +0200."
+             <4EA672D9.106@zytor.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4EA3F7C0.24E469C5@users.sourceforge.net> <20111023113727.GA24285@kroah.com> <4EA41FB7.CB5369CF@users.sourceforge.net> <20111025014911.GC22764@kroah.com> <CAGZ=bqKvb96VvZ5a+VJWZXKdr553n8SW2=JOLZS1fGY5KE7iZg@mail.gmail.com>
+            <4EA672D9.106@zytor.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1319534028_3131P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 25 Oct 2011 05:13:48 -0400
+Message-ID: <15483.1319534028@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4EA67DD0.008F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 11:39:49PM -0700, Colin Cross wrote:
-> Under the following conditions, __alloc_pages_slowpath can loop
-> forever:
-> gfp_mask & __GFP_WAIT is true
-> gfp_mask & __GFP_FS is false
-> reclaim and compaction make no progress
-> order <= PAGE_ALLOC_COSTLY_ORDER
-> 
-> These conditions happen very often during suspend and resume,
-> when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
-> allocations into __GFP_WAIT.
-b> 
-> The oom killer is not run because gfp_mask & __GFP_FS is false,
-> but should_alloc_retry will always return true when order is less
-> than PAGE_ALLOC_COSTLY_ORDER.
-> 
-> Fix __alloc_pages_slowpath to skip retrying when oom killer is
-> not allowed by the GFP flags, the same way it would skip if the
-> oom killer was allowed but disabled.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
+--==_Exmh_1319534028_3131P
+Content-Type: text/plain; charset=us-ascii
 
-Hi Colin,
+On Tue, 25 Oct 2011 10:27:05 +0200, "H. Peter Anvin" said:
 
-Your patch functionally seems fine. I see the problem and we certainly
-do not want to have the OOM killer firing during suspend. I would prefer
-that the IO devices would not be suspended until reclaim was completed
-but I imagine that would be a lot harder.
+> It would be a very good thing for people to develop tools to run
+> compressors and decompressors in locked-down boxes.  It should be
+> possible to run these kinds of programs without access to either network
+> or filesystem; only read from stdin and out on stdout (and presumably
+> stderr for errors.)  This would solve problems for much more than just
+> kernel.org.
 
-That said, it will be difficult to remember why checking __GFP_NOFAIL in
-this case is necessary and someone might "optimitise" it away later. It
-would be preferable if it was self-documenting. Maybe something like
-this? (This is totally untested)
+Wasn't there once a kernel hack called seccomp, that only allowed read syscalls
+on stdin and writes on stdout and that was it? ;)
 
- mm/page_alloc.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e8ecb6..ad8f376 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -127,6 +127,20 @@ void pm_restrict_gfp_mask(void)
- 	saved_gfp_mask = gfp_allowed_mask;
- 	gfp_allowed_mask &= ~GFP_IOFS;
- }
-+
-+static bool pm_suspending(void)
-+{
-+	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
-+		return false;
-+	return true;
-+}
-+
-+#else
-+
-+static bool pm_suspending(void)
-+{
-+	return false;
-+}
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
-@@ -2207,6 +2221,14 @@ rebalance:
- 
- 			goto restart;
- 		}
-+
-+		/*
-+		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
-+		 * prevent reclaim making forward progress without
-+		 * invoking OOM. Bail if we are suspending
-+		 */
-+		if (pm_suspending())
-+			goto nopage;
- 	}
- 
- 	/* Check if we should retry the allocation */
+--==_Exmh_1319534028_3131P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOpn3McC3lWbTT17ARAgrKAKDacCJN5r9YbAqcoXgleL3QfuveEQCgzrzP
+fmRiUF0NwcQ66D3gdQBM9ro=
+=P610
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1319534028_3131P--
+
