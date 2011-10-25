@@ -1,39 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab1JYLoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:44:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755959Ab1JYLoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:44:11 -0400
-Date: Tue, 25 Oct 2011 13:44:06 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5]thp: improve the error code path
-Message-ID: <20111025114406.GC10182@redhat.com>
-References: <1319511521.22361.135.camel@sli10-conroe>
+	id S1756356Ab1JYLqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:46:35 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:52714 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab1JYLqd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 07:46:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319511521.22361.135.camel@sli10-conroe>
+In-Reply-To: <20111025.063206.2273357152859701628.davem@davemloft.net>
+References: <20111025.063206.2273357152859701628.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Oct 2011 13:46:11 +0200
+X-Google-Sender-Auth: 7cSKNO2zrQCZ-RJnfAgyVtsTozU
+Message-ID: <CA+55aFw1GVvszqoC_f0RAvG5t1xj0CSYLhLU=y0gQ+_54Gsomw@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>, Greg KH <gregkh@suse.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Oct 25, 2011 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
+>
+> I have to say I was really impressed with GIT's rename detection.  For
+> example, when I'd pull bug fixes from the 'net' tree into this
+> 'net-next' tree, GIT would figure it out and cleanly merge in the
+> fixes even though the file names were completely different.
 
-On Tue, Oct 25, 2011 at 10:58:41AM +0800, Shaohua Li wrote:
-> +#ifdef CONFIG_SYSFS
-> +	sysfs_remove_group(hugepage_kobj, &khugepaged_attr_group);
-> +remove_hp_group:
-> +	sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
-> +delete_obj:
-> +	kobject_put(hugepage_kobj);
->  out:
-> +#endif
+Sadly, it doesn't work with files that aren't moved, but are split
+into lots of files. So I got a conflict on the drivers/net/Kconfig
+file due to the file being moved to tons of different locations. But
+the change was pretty trivial, so I think I got that trivially right
+too.
 
-Adding an ifdef is making the code worse, the whole point of having
-these functions become noops at build time is to avoid having to add
-ifdefs in the callers.
+> I'll also note that I had to bump GIT's diff.renamelimit to about 1000
+> to generate this pull request.
+
+Yeah. You can probably just set it to zero to disable the limiting
+entirely. The reason for the rename limit is for crazy use cases on
+smaller machines than you'll probably ever use. So the git default
+values tend to try to be safe for people who have smaller machines.
+
+> I think that, without the driver renames, this is actually a smaller
+> networking pull request than usual for the merge window.
+
+This had an annoying conflict with some of the driver base changes. It
+was made doubly annoying by the fact that Greg seems to use some
+seriously bad drugs, and creates totally crap commit messages that are
+just annoying when you have to look at them because there's some
+conflict.
+
+Greg - please fix your crazy tools. Look at this:
+
+   git log fs/sysfs/dir.c
+
+and tell me why the f*&% you have commit messages like this:
+
+  commit 4f72c0cab40536a0be501d85ea4918467ab82ad5
+  Author: Mikulas Patocka <mpatocka@redhat.com>
+  Date:   Mon Jul 25 17:55:57 2011 -0400
+
+      sysfs: use rb-tree for name lookups
+
+      sysfs: use rb-tree for name lookups
+
+      Use red-black tree for name lookups.
+
+      Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+      Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+and there's a *lot* of them. That duplication of the header line is
+useless. It is *doubly* useless to then have a "body" of the commit
+that just says the same thing *again*. Christ!
+
+EVERY SINGLE COMMIT from Mikulas has that problem. WHY?
+
+So stop duplicating the header line! And make the body of the commit
+actually tell us something *useful*.
+
+Anyway, after that rant about really bad practices, let me say that I
+did fix up the conflict and I think it's right. But I won't guarantee
+it, so please check the changes to fs/sysfs/dir.c.
+
+I added Mikulas, Greg and Eric Biederman to the email, because those
+three people seem to be the ones that caused the conflicts in that
+file. Please do check out my conflict resolution.
+
+                   Linus
