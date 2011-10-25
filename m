@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab1JYP30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 11:29:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab1JYP3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 11:29:23 -0400
-Date: Tue, 25 Oct 2011 17:29:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
-Message-ID: <20111025152922.GB2731@tiehlicka.suse.cz>
-References: <20111025184002.d70aeb245a4b9016635df242@canb.auug.org.au>
+	id S1756655Ab1JYPfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 11:35:46 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:38588 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab1JYPfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 11:35:45 -0400
+Date: Tue, 25 Oct 2011 08:35:38 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] lib: devres: add convenience function to remap a
+ resource
+Message-ID: <20111025153538.GA13012@google.com>
+References: <1319548607-28427-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111025184002.d70aeb245a4b9016635df242@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1319548607-28427-1-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-10-11 18:40:02, Stephen Rothwell wrote:
-> Hi all,
+On Tue, Oct 25, 2011 at 03:16:47PM +0200, Wolfram Sang wrote:
+> Almost every platform_driver does the three steps get_resource,
+> request_mem_region, ioremap. This does not only lead to a lot of code
+> duplication, but also a huge number of similar error strings and
+> inconsistent error codes on failure. So, introduce a helper function
+> which simplifies remapping a resource and make it hard to do something
+> wrong and add documentation for it.
 > 
-> Today's linux-next merge of the tip tree got a conflict in
-> include/asm-generic/cputime.h between commit f6116715d1ba ("[S390]
-> cputime: add sparse checking and cleanup") from the cputime tree and
-> commit ef0e0f5ed9bd ("cputime: Clean up cputime_to_usecs and
-> usecs_to_cputime macros") from the tip tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Greg KH <gregkh@suse.de>
 
-This one looks good as well.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc include/asm-generic/cputime.h
-> index 77202e2,62ce682..0000000
-> --- a/include/asm-generic/cputime.h
-> +++ b/include/asm-generic/cputime.h
-> @@@ -23,10 -38,8 +23,10 @@@ typedef u64 __nocast cputime64_t
->   /*
->    * Convert cputime to microseconds and back.
->    */
->  -#define cputime_to_usecs(__ct)		jiffies_to_usecs(__ct)
->  -#define usecs_to_cputime(__msecs)	usecs_to_jiffies(__msecs)
->  +#define cputime_to_usecs(__ct)		\
-> - 	jiffies_to_usecs(cputime_to_jiffies(__ct));
-> ++	jiffies_to_usecs(cputime_to_jiffies(__ct))
->  +#define usecs_to_cputime(__msecs)	\
-> - 	jiffies_to_cputime(usecs_to_jiffies(__msecs));
-> ++	jiffies_to_cputime(usecs_to_jiffies(__msecs))
->   
->   /*
->    * Convert cputime to seconds and back.
+Greg, can you please take this one?
 
-
+Thank you.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+tejun
