@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1JYLHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:07:34 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:48071 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab1JYLHd (ORCPT
+	id S1755321Ab1JYLI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:08:58 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63274 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490Ab1JYLI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:07:33 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: [PATCH] fix typo in crypto/Kconfig
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1319540838_3131P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 25 Oct 2011 07:07:18 -0400
-Message-ID: <27363.1319540838@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4EA6986A.00E9,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 25 Oct 2011 07:08:57 -0400
+MIME-Version: 1.0
+Date: Tue, 25 Oct 2011 20:08:55 +0900
+Message-ID: <CAME+iufebpYZ-0-H6KbORzxz30dPTQYfPLmvdLnDGFGT+FPKQg@mail.gmail.com>
+Subject: problem with UBIFS - Nand - Android
+From: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1319540838_3131P
-Content-Type: text/plain; charset=us-ascii
+Hi there,
 
-Fix a typo in the Kconfig file help text.
+I have a custom board of OMAP 3530 and I had been successful at
+bringing up Android.
+Recently I changed my NAND to UBIFS and after a few reboots, I have
+this workqueue-error and android stops booting.
 
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+I googled around and found some hints with respect to Frame Buffer
+settings, and none of them worked for me.
+Also, I did "nand scrub" from u-boot, and re-wrote the kernel to the
+NAND, system boots comfortably.
 
---- linux-next/crypto/Kconfig.dist	2011-10-25 06:57:29.413596040 -0400
-+++ linux-next/crypto/Kconfig	2011-10-25 07:01:51.518647308 -0400
-@@ -104,7 +104,7 @@
- 	tristate "Userspace cryptographic algorithm configuration"
- 	select CRYPTO_MANAGER
- 	help
--	  Userapace configuration for cryptographic instantiations such as
-+	  Userspace configuration for cryptographic instantiations such as
- 	  cbc(aes).
- 
- config CRYPTO_MANAGER_DISABLE_TESTS
+Any idea how I can fix this?
 
+Thanks in advance
+Murali
 
---==_Exmh_1319540838_3131P
-Content-Type: application/pgp-signature
+Kernel log:
+------------[ cut here ]------------
+WARNING: at kernel/workqueue.c:485 flush_cpu_workqueue+0x34/0x8c()
+Modules linked in:  omaplfb pvrsrvk  sdmak lpm_omap3530 dsplinkk  cmemk
+[<c003f9a4>] (unwind_backtrace+0x0/0xe0) from [<c0064940>]
+(warn_slowpath_common+0x48/0x60)
+[<c0064940>] (warn_slowpath_common+0x48/0x60) from [<c0073538>]
+(flush_cpu_workqueue+0x34/0x8c)
+[<c0073538>] (flush_cpu_workqueue+0x34/0x8c) from [<c02119a8>]
+(tty_ldisc_release+0x20/0x68)
+[<c02119a8>] (tty_ldisc_release+0x20/0x68) from [<c020cba4>]
+(tty_release+0x39c/0x3fc)
+[<c00b7bd0>] (__fput+0x104/0x1c4) from [<c00b4ef4>] (filp_close+0x70/0x7c)
+[<c020cba4>] (tty_release+0x39c/0x3fc) from [<c00b7bd0>] (__fput+0x104/0x1c4)
+[<c00b4ef4>] (filp_close+0x70/0x7c) from [<c006640c>]
+(put_files_struct+0x7c/0xd0)
+[<c006640c>] (put_files_struct+0x7c/0xd0) from [<c0368a0c>]
+(binder_deferred_func+0x4f0/0x530)
+[<c0368a0c>] (binder_deferred_func+0x4f0/0x530) from [<c0073d30>]
+(worker_thread+0x138/0x1b0)
+[<c0073d30>] (worker_thread+0x138/0x1b0) from [<c0076834>] (kthread+0x7c/0x84)
+[<c0076834>] (kthread+0x7c/0x84) from [<c003ae44>] (kernel_thread_exit+0x0/0x8)
+---[ end trace  1b75b31a2719ed1e]---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Android Logcat (last few messages):
 
-iD8DBQFOpphmcC3lWbTT17ARAiojAJ9xGtiMJrsIB06pLHHi8YgK7+wNBgCgzNfy
-BRiflJemi1Lf4zz0nkzLuNU=
-=z8QE
------END PGP SIGNATURE-----
+D/PackageManager( 1292): Scanning app dir /data/app-private
+I/PackageManager( 1292): Time to scan packages: 4.829 seconds
+W/PackageManager( 1292): Unknown permission
+com.google.android.gm.permission.WRITE_GMAIL in package
+com.android.settings
+W/PackageManager( 1292): Unknown permission
+com.google.android.gm.permission.READ_GMAIL in package
+com.android.settings
+W/PackageManager( 1292): Unknown permission
+com.google.android.googleapps.permission.GOOGLE_AUTH in package
+com.android.settings
+W/PackageManager( 1292): Unknown permission
+com.google.android.googleapps.permission.GOOGLE_AUTH in package
+com.android.providers.contacts
+W/PackageManager( 1292): Unknown permission
+com.google.android.googleapps.permission.GOOGLE_AUTH.cp in package
+com.android.providers.contacts
+W/PackageManager( 1292): Unknown permission
+com.google.android.googleapps.permission.GOOGLE_AUTH.mail in package
+com.android.contacts
+W/PackageManager( 1292): Not granting permission
+android.permission.CALL_PRIVILEGED to package com.SBN
+(protectionLevel=3 flags=0xbe46)
+W/PackageManager( 1292): Not granting permission
+android.permission.STATUS_BAR to package com.SBN (protectionLevel=3
+flags=0xbe46)
+W/PackageManager( 1292): Not granting permission
+android.permission.DEVICE_POWER to package com.SBN (protectionLevel=2
+flags=0xbe46)
+W/PackageManager( 1292): Unknown permission
+android.webkit.permission.PLUGIN in package com.adobe.flashplayer
+W/PackageManager( 1292): Unknown permission
+com.google.android.googleapps.permission.GOOGLE_AUTH in package
+com.android.providers.calendar
+W/PackageManager( 1292): Unknown permission
+com.google.android.googleapps.permission.GOOGLE_AUTH.cl in package
+com.android.providers.calendar
+W/PackageManager( 1292): Not granting permission
+android.permission.SEND_DOWNLOA D_COMPLETED_INTENTS to package
+com.android.browser (protectionLevel=2 flags=0x1be45)
+W/PackageManager( 1292): Not granting permmission
+android.permission.DEVICE_POWER to package com.android.de skclock
+(protectionLevel=2 flags=0xbe45)
+E/System  ( 1292): Failure starting core service
+E/System  ( 1292): java.lang.NullPointerException
+E/System  ( 1292): at
+com.android.server.PackageManagerService$PackageSignatures.writeXml(PackageManagerService.java:7309)
+E/System  ( 1292): at
+com.android.server.PackageManagerService$Settings.writePackage(PackageManagerService.java:8638)
+E/System  ( 1292):      at
+com.android.server.PackageManagerService$Settings.writeLP(PackageManagerService.java:8427)
+E/System  ( 1292):      at com.android.serverbinder: 1292:
+binder_alloc_buf, no vma.PackageManagerService.<init>(Pabinder:
+1305:1311 transaction failed 29201, size 60-0
+ckageManagerService.java:994)
+E/System  ( 1292):      at
+com.android.server.PackageManagerService.mrequest_suspend_state:
+wakeup (3->0) at 21906677250 (1970-01-01 00:00:21.906677250 UTC)
+ain(PackageManagerService.java:681)
+E/System  ( 1292):      at
+com.android.server.ServerThread.run(SystemServer.java:122)
+I/SystemServer( 1292): Device Policy
+E/SystemServer( 1292): Failure starting DevicePolicyService
+                       init: untracked pid 1157 exited
 
---==_Exmh_1319540838_3131P--
-
+E/SystemServer( 1292): java.lang.NullPointerException
