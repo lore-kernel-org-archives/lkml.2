@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab1JYP6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 11:58:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46049 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756649Ab1JYP6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 11:58:38 -0400
-Date: Tue, 25 Oct 2011 17:52:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH x86 2/2] Cleanup do_int3
-Message-ID: <20111025155259.GB17067@redhat.com>
-References: <20111025141812.GA21225@linux.vnet.ibm.com> <20111025142159.GB21225@linux.vnet.ibm.com>
+	id S1756730Ab1JYQBU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 12:01:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37504 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab1JYQBT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 12:01:19 -0400
+Date: Tue, 25 Oct 2011 17:01:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kyle Manna <kyle.manna@fuel7.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH v2 1/6] mfd: TPS65910: Handle non-existent devices
+Message-ID: <20111025160117.GA634@sirena.org.uk>
+References: <1319475964-10841-1-git-send-email-kyle.manna@fuel7.com>
+ <1319475964-10841-2-git-send-email-kyle.manna@fuel7.com>
+ <20111025071417.GE2919@opensource.wolfsonmicro.com>
+ <4EA6D14D.6060800@fuel7.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111025142159.GB21225@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4EA6D14D.6060800@fuel7.com>
+X-Cookie: diplomacy, n:
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25, Srikar Dronamraju wrote:
->
-> Since there is a possibility of !KPROBES int3 listeners and since
-> DIE_TRAP is currently not being used by anybody, notify all listeners
-> with DIE_INT3.
+On Tue, Oct 25, 2011 at 10:10:05AM -0500, Kyle Manna wrote:
+> On 10/25/2011 02:14 AM, Mark Brown wrote:
 
-Obviously I can't ack this change, but it looks like the bugfix to me.
+> >Can you check for a known value in any of the registers?
 
-The current code uses DIE_INT3 or DIE_TRAP depending on CONFIG_KPROBES,
-this can't be right.
+> Unfortunately on this chip there aren't any identification or
+> constant test registers.  The only register close is the
+> JTAGVERNUM_REG and that's will change across silicon revisions.
 
-> Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  arch/x86/kernel/traps.c |    7 +------
->  1 files changed, 1 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 6913369..c9a4be5 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -461,15 +461,10 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
->  			== NOTIFY_STOP)
->  		return;
->  #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
-> -#ifdef CONFIG_KPROBES
-> +
->  	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
->  			== NOTIFY_STOP)
->  		return;
-> -#else
-> -	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
-> -			== NOTIFY_STOP)
-> -		return;
-> -#endif
->  
->  	preempt_conditional_sti(regs);
->  	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
-> 
-
+It seems like a more useful implementation would be to have the driver
+read and display this revision number during boot, this will give you
+the register readability check and also let us know the device revision
+which might be useful for diagnostics.
