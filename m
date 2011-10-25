@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1JYLQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:16:28 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:29941 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755041Ab1JYLQ1 convert rfc822-to-8bit (ORCPT
+	id S1755602Ab1JYLV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:21:57 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:32696 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab1JYLV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:16:27 -0400
-X-IronPort-AV: E=Sophos;i="4.69,403,1315206000"; 
-   d="scan'208";a="592101501"
-Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Tue, 25 Oct 2011 13:16:09 +0200
-In-Reply-To: <20111025101608.12689.68689.stgit@localhost6.localdomain6>
-References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
-	 <20111025101608.12689.68689.stgit@localhost6.localdomain6>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1319541369.2716.1.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 25 Oct 2011 11:16:10.0028 (UTC) FILETIME=[7F837EC0:01CC9307]
+	Tue, 25 Oct 2011 07:21:56 -0400
+Message-ID: <4EA69BC9.8040402@atmel.com>
+Date: Tue, 25 Oct 2011 13:21:45 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [GIT PULL] at91 device tree basics
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 14:16 +0300, Stanislav Kinsbursky wrote: 
-> v6:
-> 1) added write memory barrier to rpcb_set_local to make sure, that rpcbind
-> clients become valid before rpcb_users assignment
-> 2) explicitly set rpcb_users to 1 instead of incrementing it (looks clearer from
-> my pow).
-> 
-> v5: fixed races with rpcb_users in rpcb_get_local()
-> 
-> This helpers will be used for dynamical creation and destruction of rpcbind
-> clients.
-> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-> clients has been created already, then we just increase rpcb_users.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  net/sunrpc/rpcb_clnt.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 54 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> index e45d2fb..9fcdb42 100644
-> --- a/net/sunrpc/rpcb_clnt.c
-> +++ b/net/sunrpc/rpcb_clnt.c
-> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
->  static struct rpc_clnt *	rpcb_local_clnt;
->  static struct rpc_clnt *	rpcb_local_clnt4;
->  
-> +DEFINE_SPINLOCK(rpcb_clnt_lock);
-> +unsigned int			rpcb_users;
-> +
->  struct rpcbind_args {
->  	struct rpc_xprt *	r_xprt;
->  
-> @@ -161,6 +164,57 @@ static void rpcb_map_release(void *data)
->  	kfree(map);
->  }
->  
-> +static int rpcb_get_local(void)
-> +{
-> +	int cnt;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (rpcb_users)
-> +		rpcb_users++;
-> +	cnt = rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	return cnt;
-> +}
-> +
-> +void rpcb_put_local(void)
-> +{
-> +	struct rpc_clnt *clnt = rpcb_local_clnt;
-> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-> +	int shutdown;
-> +
-> +	spin_lock(&rpcb_clnt_lock);
-> +	if (--rpcb_users == 0) {
-> +		rpcb_local_clnt = NULL;
-> +		rpcb_local_clnt4 = NULL;
-> +	}
-> +	shutdown = !rpcb_users;
-> +	spin_unlock(&rpcb_clnt_lock);
-> +
-> +	if (shutdown) {
-> +		/*
-> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-> +		 */
-> +		if (clnt4)
-> +			rpc_shutdown_client(clnt4);
-> +		if (clnt)
-> +			rpc_shutdown_client(clnt);
-> +	}
-> +	return;
+Hi Arnd,
 
-I'm removing this before applying...
+The following changes since commit c3b92c8787367a8bb53d57d9789b558f1295cc96:
 
-> +}
-> +
+  Linux 3.1 (2011-10-24 09:10:05 +0200)
 
+are available in the git repository at:
+  git://github.com/at91linux/linux-at91.git for-arnd/at91-dt
+
+They cover the basic device tree work done during the last moths around both 
+at91sam9g45 and at91sam9g20 based board. They have been review by Grant and
+Rob. More device tree related stuff is comming ;-)
+
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: add at91sam9g20 and Calao USB A9G20 DT support
+
+Nicolas Ferre (1):
+      ARM: at91: dt: at91sam9g45 family and board device tree files
+
+ arch/arm/boot/dts/at91sam9g20.dtsi     |  119 ++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi     |  106 +++++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts |   35 +++++++++
+ arch/arm/boot/dts/usb_a9g20.dts        |   30 ++++++++
+ arch/arm/mach-at91/Kconfig             |   11 +++
+ arch/arm/mach-at91/Makefile            |    3 +
+ arch/arm/mach-at91/Makefile.boot       |    2 +
+ arch/arm/mach-at91/at91sam9260.c       |    8 ++
+ arch/arm/mach-at91/at91sam9g45.c       |    6 ++
+ arch/arm/mach-at91/board-dt.c          |  123 ++++++++++++++++++++++++++++++++
+ 10 files changed, 443 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91sam9g20.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9g45.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9m10g45ek.dts
+ create mode 100644 arch/arm/boot/dts/usb_a9g20.dts
+ create mode 100644 arch/arm/mach-at91/board-dt.c
+
+Thanks, best regards,
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Nicolas Ferre
