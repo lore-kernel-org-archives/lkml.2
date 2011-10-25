@@ -1,124 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1JYHJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:09:59 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:47296 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754337Ab1JYHJz (ORCPT
+	id S1754608Ab1JYHJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:09:58 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:20769
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754489Ab1JYHJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Oct 2011 03:09:55 -0400
-Message-ID: <4EA660C0.1020901@st.com>
-Date: Tue, 25 Oct 2011 09:09:52 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+X-SpamScore: -11
+X-BigFish: VS-11(zz9371K1432N98dKzz1202hzz8275eha1495iz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+Date: Tue, 25 Oct 2011 15:20:04 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Rajendra Nayak <rnayak@ti.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        <broonie@opensource.wolfsonmicro.com>, <patches@linaro.org>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <lrg@ti.com>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111025072003.GF2119@S2100-06.ap.freescale.net>
+References: <4EA4FF6B.2080906@ti.com>
+ <20111024081706.GC8708@ponder.secretlab.ca>
+ <20111024090228.GA1755@S2100-06.ap.freescale.net>
+ <4EA52851.8000203@ti.com>
+ <20111024091158.GB1755@S2100-06.ap.freescale.net>
+ <4EA52C56.3080908@ti.com>
+ <20111024134727.GF1755@S2100-06.ap.freescale.net>
+ <4EA65073.7050205@ti.com>
+ <20111025065216.GD2119@S2100-06.ap.freescale.net>
+ <4EA65D81.6030109@ti.com>
 MIME-Version: 1.0
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
-References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com> <1319192888-21465-2-git-send-email-keguang.zhang@gmail.com> <CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com> <4EA5117C.3000402@st.com> <CAJhJPsVSzXXmBOwLaGNtOsxhVEyC0fAJtiBvEWzcKcSDC8NEcA@mail.gmail.com> <4EA557B2.4020504@st.com> <CAJhJPsXxUAuF9HdivLd66MQC45mz-iYAuF1SdGdU=-duxJJ5bQ@mail.gmail.com> <4EA585B5.5030405@st.com> <CAJhJPsVu7hahhmUvPQ=s=AqvXGhU-05x=GqQ29Mo6PZ8cTtefA@mail.gmail.com>
-In-Reply-To: <CAJhJPsVu7hahhmUvPQ=s=AqvXGhU-05x=GqQ29Mo6PZ8cTtefA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4EA65D81.6030109@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2011 4:12 AM, Kelvin Cheung wrote:
-> 2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
->> On 10/24/2011 4:05 PM, Kelvin Cheung wrote:
->>> 2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
->>>> Hello Kelvin.
->>>>
->>>> On 10/24/2011 12:36 PM, Kelvin Cheung wrote:
->>>>
->>>> [snip]
->>>>
->>>>> According to datasheet of Loongson 1B, the buffer size in RX/TX
->>>>> descriptor is only 2KB. So the Loongson1B's GMAC could not handle
->>>>> jumbo frames. And the second buffer is useless in this case. Am I
->>>>> right? Is there a better way than ifdef CONFIG_MACH_LOONGSON1 to
->>>>> avoid duplicate code?
->>>>
->>>> Sorry for my misunderstanding.
->>>>
->>>> I think you have to use the normal descriptor and remove the enh_desc
->>>> from the platform w/o modifying the driver at all.
->>>>
->>>> The driver will be able to select/configure all automatically (also
->>>> jumbo).
->>>>
->>>> Let me know.
->>>
->>> That's the problem.
->>> The bitfield definition of Loongson1B is also different from normal
->>> descriptor.
->>
->> The problem is not in the Loongson1B gmac.
+On Tue, Oct 25, 2011 at 12:26:01PM +0530, Rajendra Nayak wrote:
+> On Tuesday 25 October 2011 12:22 PM, Shawn Guo wrote:
+> >On Tue, Oct 25, 2011 at 11:30:19AM +0530, Rajendra Nayak wrote:
+[...]
+> >>Thats what we did for OMAP, and hence we always have the of_node
+> >>populated when the regulator devices are probed.
+> >>See this patch from Benoit on how thats done for twl devices..
+> >>http://marc.info/?l=linux-omap&m=131489864814428&w=2
+> >>
+> >OMAP is "Case 1", and we are talking about "Case 2".
 > 
-> I found that the bit checksum_insertion is not existed in normal descriptor.
-> 
->> The normal descriptor fields in the stmmac refer to an old synopsys
->> databook.
-> 
-> Could you send me the new databook of Synopsys GMAC?
-> 
->> New chips have the same structure you have added; so we should fix this
->> in the driver w/o breaking the compatibility for old chips.
-> 
-> Agree.
-> 
->> I kindly ask you to confirm if the currently normal descriptor structure
->> (w/o your changes) doesn't work on your platform.
->> Did you test it?
-> 
-> Well, the normal descriptor works on my platform except TX checksum offload.
+> I don't see why it wouldn't work for "Case 2".
 
-ok! I suspected that.
+I did not say it wouldn't work for "Case 2".  I meant they work in
+different way.
 
-
->>> Moreover, I want to enable the TX checksum offload function which is
->>> not supported in normal descriptor.
->>> Any suggestions?
->>
->> It is supported but you have to pass from the platform: tx_coe = 1.
+> The only difference
+> is in case of "Case 1", the dev->of_node would already point to
+> the right regulator node, like 'reg1', 'reg2' above.
+> In case of "Case 2", the dev->of_node would point to the 'regulators'
+> node instead, and the driver could then do a for_each_child_of_node()
+> to iterate over all its children to get 'reg1', 'reg2' etc.
 > 
-> I noticed that the flag csum_insertion is passed to
-> ndesc_prepare_tx_desc() in stmmac_xmit(). But ndesc_prepare_tx_desc()
-> just ignores it.
-> In other words, the TX checksum offload function is disabled in normal
-> descriptor currently.
-> 
-> Should we fix this problem for normal descriptor?
+Yes, that's the difference.  So you will need to distinguish these
+two cases in regulator_register()?  How?
 
-Yes, we should. If you agree, I'll update the normal descriptor
-structure to yours. This is the normal descriptor used in newer GMAC.
-Tx csum will be done for normal descriptors in case of these GMAC
-devices and not for old MAC10/100. For the MAC10/100 some bits for
-normal descriptors are reserved and won't be used at all.
-
-I'll also verify that the patch doesn't break the back-compatibility
-with old MAC10/100. I have the HW where doing the tests.
-
-After that, I'll prepare the patch for net-next and for your kernel.
-
-> 
->> Peppe
->>>
->>>> Note:
->>>> IIRC, there is a bit difference in case of normal descriptors for
->>>> Synopsys databook newer than the 1.91 (I used for testing this mode).
->>>> In any case, I remember that, on some platforms, the normal descriptors
->>>> have been used w/o problems also on these new chip generations.
->>>>
->>>> Peppe
->>>>
->>>>
->>>
->>>
->>
->>
-> 
-> 
+-- 
+Regards,
+Shawn
 
