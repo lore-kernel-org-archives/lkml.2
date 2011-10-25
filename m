@@ -1,36 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab1JYHII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:08:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43199 "EHLO
+	id S1754276Ab1JYHJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:09:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43203 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753643Ab1JYHIH (ORCPT
+	by vger.kernel.org with ESMTP id S1753643Ab1JYHJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:08:07 -0400
-Date: Tue, 25 Oct 2011 09:08:02 +0200
+	Tue, 25 Oct 2011 03:09:03 -0400
+Date: Tue, 25 Oct 2011 09:09:02 +0200
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Grant Likely <grant@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] h8300: Move gpio.h to gpio-internal.h
-Message-ID: <20111025070802.GA2919@opensource.wolfsonmicro.com>
-References: <1319493561-4094-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <87sjmhr4wo.wl%ysato@users.sourceforge.jp>
+To: "Ashish P. Chavan" <Ashish.Chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v8 3/3] ASoC: da7210: Add support for line
+ input and mic
+Message-ID: <20111025070901.GB2919@opensource.wolfsonmicro.com>
+References: <1319204398.24621.274.camel@matrix>
+ <20111022093836.GD3316@opensource.wolfsonmicro.com>
+ <E3DB41DBD579A349B4BC7C95EADB061620445548@KCHJEXMB02.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87sjmhr4wo.wl%ysato@users.sourceforge.jp>
+In-Reply-To: <E3DB41DBD579A349B4BC7C95EADB061620445548@KCHJEXMB02.kpit.com>
 X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 02:55:51PM +0900, Yoshinori Sato wrote:
+On Tue, Oct 25, 2011 at 03:59:35AM +0000, Ashish P. Chavan wrote:
 
-> I will moving generic GPIO.
+> Is it possible for you to correct it? Or should I send a new patch
+> with correct commit message?
 
-Excellent news!  I'm hoping this week to post some further patches which
-make this a little easier by making a default version of asm/gpio.h
-available.  Hopefully we'll also be able to turn on optional gpiolib
-support for all architectures which should mean that all that's required
-is a new driver for the CPU under drivers/gpio.
+Don't worry about it, I could correct it but it's more effort than it's
+worth.
