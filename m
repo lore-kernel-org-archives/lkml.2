@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1JYHFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:05:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27183 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab1JYHFy convert rfc822-to-8bit (ORCPT
+	id S1754226Ab1JYHGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:06:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43070 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab1JYHGf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:05:54 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=epWxAW1vmbgYnCwaHqdy8wQy7a5IS6ncx80V1y6ohgt3ruqjt02wFMqi4K3rHbTwd
-	aofIhzSKyqx+BvNaNAP3w==
+	Tue, 25 Oct 2011 03:06:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111024125034.71993780@notabene.brown>
-References: <20111016092556.07d6e415@notabene.brown>
-	<Pine.LNX.4.44L0.1110152136460.19724-100000@netrider.rowland.org>
-	<20111017083717.0bd5626c@notabene.brown>
-	<20111024011804.GB12215@mgross-G62>
-	<20111024125034.71993780@notabene.brown>
-Date: Tue, 25 Oct 2011 00:05:48 -0700
-Message-ID: <CANqkERDBizgOkHjhN1TihQ41627Ow7CvFRHwhC6ZEa6+ve2mdA@mail.gmail.com>
-Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
- blocking (aka more wakelock stuff)]
-From: Brian Swetland <swetland@google.com>
-To: NeilBrown <neilb@suse.de>
-Cc: markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAGZ=bqJNRCiiT6KvQBkZ5fs6b=RQG92xtmf1cGe1s9mdcbcDFA@mail.gmail.com>
+References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com>
+ <1319144425-15547-6-git-send-email-Kyle.D.Moffett@boeing.com>
+ <201110201710.17519.vapier@gentoo.org> <201110201714.36533.vapier@gentoo.org> <CAGZ=bqJNRCiiT6KvQBkZ5fs6b=RQG92xtmf1cGe1s9mdcbcDFA@mail.gmail.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 25 Oct 2011 03:06:15 -0400
+X-Google-Sender-Auth: 4mz-nABLPhjhSqZLFBZogndRUr0
+Message-ID: <CAJaTeTpZ4s3s1Xiy1Ng-hMiuGVTmJepRUHD-Cx4ruxBf+X7MzA@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/17] phy_driver: Make .read_status()/.config_aneg() optional
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Baruch Siach <baruch@tkos.co.il>, Thorsten Schubert <tshu@msc-ge.com>,
+        David Decotigny <decot@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 6:50 PM, NeilBrown <neilb@suse.de> wrote:
-> But saying "Timeouts are never right" cannot work - unless you mean it in a
-> much more restricted sense than I think you mean it.
+On Fri, Oct 21, 2011 at 01:13, Kyle Moffett wrote:
+> On Thu, Oct 20, 2011 at 17:14, Mike Frysinger wrote:
+>> On Thursday 20 October 2011 17:10:12 Mike Frysinger wrote:
+>>> On Thursday 20 October 2011 17:00:12 Kyle Moffett wrote:
+>>> > Approximately 90% of the PHY drivers follow the PHY layer docs and
+>>> > simply use &genphy_read_status and &genphy_config_aneg.  There would
+>>> > seem to be little point in requiring them all to manually specify those
+>>> > functions.
+>>>
+>>> well, it does make sense if you think about the compile vs build time
+>>> overhead.  yes, your patch does make things much nicer to read, and a
+>>> little easier to maintain the source.  however, it adds runtime overhead
+>>> (checking the func pointers) while the func pointer storage is unchanged
+>>> (it's now a NULL pointer instead of pointing to the genphy funcs).
+>>> personally, i think the savings in runtime and smaller compiled code is
+>>> more important.  so i'm going to NAK this.  sorry.
+>>
+>> ah, sorry, i was thinking this was u-boot since we were just having
+>> conversations there.
+>>
+>> since this is Linux, and i don't have real standing in the general netdev
+>> community, i can't really NAK here.  but i think my comment still stands in
+>> that this patch makes things much worse than the minor code style improvement.
 >
-> (I can agree that it is *best* if timeouts never fire - if direct action
-> causes the wakeup-source to deactivate long before the timeout. Â I agree that
-> is the best case and probably should be the common case, but I cannot see how
-> it can be the only case).
+> I would argue that the PHY layer itself is not remotely a hot-path,
+> especially not to the level of caring about an extra if statement.  A
+> single phy_read() is a sleeping call which goes over a slow serial
+> bus, so code maintainability is much more important.
 
-This was our conclusion when originally building the Android wakelock
-APIs.  Timeouts are undesirable, and whenever we can ensure there's a
-clear handoff of "ownership" of a wakeup event, so it's fully
-accounted for, that's the preferred way to go.  But reality gives us
-situations where we can't know with a certainty what woke us up (or we
-won't know until some time has passed -- USB resume, etc) and in those
-situations, timeouts are the best solution we have.  Over time we've
-always hoped to have fewer and fewer timeouts, but I'm not certain
-that we'll ever reach zero, for non-trivial systems.
+i disagree.  ignoring that, what you ultimately desire can be
+accomplished without bloating the kernel.
 
-Brian
+option 1: this can be done in the registration func just like the mtd
+layer.  if (!func_pointer) func_pointer = default;
+
+option 2: introduce a new macro in the common phy header similar to:
+  #define PHY_DRIVER_DEFAULT_FUNCS \
+    .config_aneg = genphy_config_aneg, \
+    .read_status = genphy_read_status
+and then use that in the phy_driver init structs:
+  struct phy_driver bcm5411_driver = {
+    PHY_DRIVER_DEFAULT_FUNCS,
+    .config_aneg = bcm5411_config_aneg,
+    ...
+
+however, imo, these func pointer arrays really should be in the
+.rodata section with proper const markers.  this would require
+breaking out into a new phy_driver_opts struct since the phy_driver
+struct has read/write fields (like the list structure).  option 2
+should allow this to work.
+-mike
