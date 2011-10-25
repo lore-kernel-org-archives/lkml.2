@@ -1,95 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1JYUHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:07:51 -0400
-Received: from peace.netnation.com ([204.174.223.2]:46849 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1JYUHu (ORCPT
+	id S1753453Ab1JYUIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:08:16 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:58883 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab1JYUIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 16:07:50 -0400
-Date: Tue, 25 Oct 2011 13:07:48 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: XFS read hangs in 3.1-rc10
-Message-ID: <20111025200748.GA25043@hostway.ca>
-References: <20111020224214.GC22772@hostway.ca> <20111021132240.GA24136@infradead.org> <20111021202857.GB30100@hostway.ca> <20111024082219.GA19941@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024082219.GA19941@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 25 Oct 2011 16:08:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] xen: use generic functions instead of xen_{alloc, free}_vm_area()
+Date: Tue, 25 Oct 2011 16:07:58 -0400
+Message-Id: <1319573279-13867-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
+References: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4EA7172A.008E:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 04:22:19AM -0400, Christoph Hellwig wrote:
+From: David Vrabel <david.vrabel@citrix.com>
 
-> On Fri, Oct 21, 2011 at 01:28:57PM -0700, Simon Kirby wrote:
-> > > So we're waiting for the inode to be flushed, aka I/O again.
-> > 
-> > But I don't seem to see any queued I/O, hmm.
-> 
-> Well, as far as XFS is concerned the inode is beeing flushed and
-> the buffer is locked.  It could be stuck in the XFS internal delwri
-> list because a buffer for example is pinned.
-> 
-> If that is the case the big hammer patch I attached below - probably
-> not the final issue, but it should fix the hang if that is the case.
-> 
-> > > If this doesn't help I'll probably need to come up with some tracing
-> > > patches for you.
-> > 
-> > It seemes 3.0.7+gregkh's stable-queue queue-3.0 patches seems to be
-> > running fine without blocking at all on this SSD box, so that should
-> > narrow it down significantly.
-> > 
-> > Hmm, looking at git diff --stat v3.0.7..v3.1-rc10 fs/xfs , maybe not.. :)
-> > 
-> > Maybe 3.1 fs/xfs would transplant into 3.0 or vice-versa?
-> 
-> If the patch above doesn't work I'll prepare a backport for you.
-> 
-> Index: linux-2.6/fs/xfs/xfs_sync.c
-> ===================================================================
-> --- linux-2.6.orig/fs/xfs/xfs_sync.c	2011-10-24 10:02:27.361971264 +0200
-> +++ linux-2.6/fs/xfs/xfs_sync.c	2011-10-24 10:11:03.301036954 +0200
-> @@ -764,7 +764,8 @@ xfs_reclaim_inode(
->  	struct xfs_perag	*pag,
->  	int			sync_mode)
->  {
-> -	int	error;
-> +	struct xfs_mount	*mp = ip->i_mount;
-> +	int			error;
->  
->  restart:
->  	error = 0;
-> @@ -772,6 +773,18 @@ restart:
->  	if (!xfs_iflock_nowait(ip)) {
->  		if (!(sync_mode & SYNC_WAIT))
->  			goto out;
-> +
-> +		/*
-> +		 * If the inode is flush locked we probably had someone else
-> +		 * push it to the buffer and the buffer is now sitting in
-> +		 * the delwri list.
-> +		 *
-> +		 * Use the big hammer to force it.
-> +		 */
-> +		xfs_log_force(mp, XFS_LOG_SYNC);
-> +		set_bit(XBT_FORCE_FLUSH, &mp->m_ddev_targp->bt_flags);
-> +		wake_up_process(mp->m_ddev_targp->bt_task);
-> +
->  		xfs_iflock(ip);
->  	}
->  
+Replace calls to the Xen-specific xen_alloc_vm_area() and
+xen_free_vm_area() functions with the generic equivalent
+(alloc_vm_area() and free_vm_area()).
 
-This patch seems to work, at least on an SSD box. No more hung task
-warnings, and everything appears normal.
+On x86, these were identical already.
 
-Do we know what caused this regression and/or how to fix it without the
-big hammer, or do we need to break it down further?
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/ia64/include/asm/xen/grant_table.h |   29 --------------
+ arch/ia64/xen/grant-table.c             |   62 -------------------------------
+ arch/x86/include/asm/xen/grant_table.h  |    7 ---
+ arch/x86/xen/grant-table.c              |    2 +-
+ drivers/xen/xenbus/xenbus_client.c      |    6 +-
+ include/xen/grant_table.h               |    1 -
+ 6 files changed, 4 insertions(+), 103 deletions(-)
+ delete mode 100644 arch/ia64/include/asm/xen/grant_table.h
+ delete mode 100644 arch/x86/include/asm/xen/grant_table.h
 
-Thanks!
+diff --git a/arch/ia64/include/asm/xen/grant_table.h b/arch/ia64/include/asm/xen/grant_table.h
+deleted file mode 100644
+index 2b1fae0..0000000
+--- a/arch/ia64/include/asm/xen/grant_table.h
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/******************************************************************************
+- * arch/ia64/include/asm/xen/grant_table.h
+- *
+- * Copyright (c) 2008 Isaku Yamahata <yamahata at valinux co jp>
+- *                    VA Linux Systems Japan K.K.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- */
+-
+-#ifndef _ASM_IA64_XEN_GRANT_TABLE_H
+-#define _ASM_IA64_XEN_GRANT_TABLE_H
+-
+-struct vm_struct *xen_alloc_vm_area(unsigned long size);
+-void xen_free_vm_area(struct vm_struct *area);
+-
+-#endif /* _ASM_IA64_XEN_GRANT_TABLE_H */
+diff --git a/arch/ia64/xen/grant-table.c b/arch/ia64/xen/grant-table.c
+index 48cca37..c182813 100644
+--- a/arch/ia64/xen/grant-table.c
++++ b/arch/ia64/xen/grant-table.c
+@@ -31,68 +31,6 @@
+ 
+ #include <asm/xen/hypervisor.h>
+ 
+-struct vm_struct *xen_alloc_vm_area(unsigned long size)
+-{
+-	int order;
+-	unsigned long virt;
+-	unsigned long nr_pages;
+-	struct vm_struct *area;
+-
+-	order = get_order(size);
+-	virt = __get_free_pages(GFP_KERNEL, order);
+-	if (virt == 0)
+-		goto err0;
+-	nr_pages = 1 << order;
+-	scrub_pages(virt, nr_pages);
+-
+-	area = kmalloc(sizeof(*area), GFP_KERNEL);
+-	if (area == NULL)
+-		goto err1;
+-
+-	area->flags = VM_IOREMAP;
+-	area->addr = (void *)virt;
+-	area->size = size;
+-	area->pages = NULL;
+-	area->nr_pages = nr_pages;
+-	area->phys_addr = 0;	/* xenbus_map_ring_valloc uses this field!  */
+-
+-	return area;
+-
+-err1:
+-	free_pages(virt, order);
+-err0:
+-	return NULL;
+-}
+-EXPORT_SYMBOL_GPL(xen_alloc_vm_area);
+-
+-void xen_free_vm_area(struct vm_struct *area)
+-{
+-	unsigned int order = get_order(area->size);
+-	unsigned long i;
+-	unsigned long phys_addr = __pa(area->addr);
+-
+-	/* This area is used for foreign page mappping.
+-	 * So underlying machine page may not be assigned. */
+-	for (i = 0; i < (1 << order); i++) {
+-		unsigned long ret;
+-		unsigned long gpfn = (phys_addr >> PAGE_SHIFT) + i;
+-		struct xen_memory_reservation reservation = {
+-			.nr_extents   = 1,
+-			.address_bits = 0,
+-			.extent_order = 0,
+-			.domid        = DOMID_SELF
+-		};
+-		set_xen_guest_handle(reservation.extent_start, &gpfn);
+-		ret = HYPERVISOR_memory_op(XENMEM_populate_physmap,
+-					   &reservation);
+-		BUG_ON(ret != 1);
+-	}
+-	free_pages((unsigned long)area->addr, order);
+-	kfree(area);
+-}
+-EXPORT_SYMBOL_GPL(xen_free_vm_area);
+-
+-
+ /****************************************************************************
+  * grant table hack
+  * cmd: GNTTABOP_xxx
+diff --git a/arch/x86/include/asm/xen/grant_table.h b/arch/x86/include/asm/xen/grant_table.h
+deleted file mode 100644
+index fdbbb45..0000000
+--- a/arch/x86/include/asm/xen/grant_table.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef _ASM_X86_XEN_GRANT_TABLE_H
+-#define _ASM_X86_XEN_GRANT_TABLE_H
+-
+-#define xen_alloc_vm_area(size)	alloc_vm_area(size)
+-#define xen_free_vm_area(area)	free_vm_area(area)
+-
+-#endif /* _ASM_X86_XEN_GRANT_TABLE_H */
+diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+index 49ba9b5..6bbfd7a 100644
+--- a/arch/x86/xen/grant-table.c
++++ b/arch/x86/xen/grant-table.c
+@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ 
+ 	if (shared == NULL) {
+ 		struct vm_struct *area =
+-			xen_alloc_vm_area(PAGE_SIZE * max_nr_gframes);
++			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
+ 		BUG_ON(area == NULL);
+ 		shared = area->addr;
+ 		*__shared = shared;
+diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+index cdacf92..229d3ad 100644
+--- a/drivers/xen/xenbus/xenbus_client.c
++++ b/drivers/xen/xenbus/xenbus_client.c
+@@ -443,7 +443,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
+ 
+ 	*vaddr = NULL;
+ 
+-	area = xen_alloc_vm_area(PAGE_SIZE);
++	area = alloc_vm_area(PAGE_SIZE);
+ 	if (!area)
+ 		return -ENOMEM;
+ 
+@@ -453,7 +453,7 @@ int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
+ 		BUG();
+ 
+ 	if (op.status != GNTST_okay) {
+-		xen_free_vm_area(area);
++		free_vm_area(area);
+ 		xenbus_dev_fatal(dev, op.status,
+ 				 "mapping in shared page %d from domain %d",
+ 				 gnt_ref, dev->otherend_id);
+@@ -552,7 +552,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
+ 		BUG();
+ 
+ 	if (op.status == GNTST_okay)
+-		xen_free_vm_area(area);
++		free_vm_area(area);
+ 	else
+ 		xenbus_dev_error(dev, op.status,
+ 				 "unmapping page at handle %d error %d",
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index b1fab6b..8a8bb76 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -43,7 +43,6 @@
+ #include <xen/interface/grant_table.h>
+ 
+ #include <asm/xen/hypervisor.h>
+-#include <asm/xen/grant_table.h>
+ 
+ #include <xen/features.h>
+ 
+-- 
+1.7.6.4
 
-Simon-
