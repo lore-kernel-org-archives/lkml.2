@@ -1,61 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab1JYJTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 05:19:39 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38541 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894Ab1JYJTh (ORCPT
+	id S1755927Ab1JYJVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 05:21:16 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64834 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690Ab1JYJVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 05:19:37 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Markus Kolb <linux-201011@tower-net.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question to directory setgid bit FS implementation details
-In-Reply-To: Your message of "Tue, 25 Oct 2011 10:55:55 +0200."
-             <af8d5834d1bfb5f19aaf7deba6caa1a0@mail.net4visions.de>
-From: Valdis.Kletnieks@vt.edu
-References: <af8d5834d1bfb5f19aaf7deba6caa1a0@mail.net4visions.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1319534364_3131P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 25 Oct 2011 05:19:24 -0400
-Message-ID: <15714.1319534364@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4EA67F20.000E,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 25 Oct 2011 05:21:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EA6716A.80307@st.com>
+References: <1319192888-21465-1-git-send-email-keguang.zhang@gmail.com>
+	<1319192888-21465-2-git-send-email-keguang.zhang@gmail.com>
+	<CAD+V5YKBkW52_md9rBeVZ1RXq2FGEXt=Ergsw+z8txMreZdNsA@mail.gmail.com>
+	<4EA5117C.3000402@st.com>
+	<CAJhJPsVSzXXmBOwLaGNtOsxhVEyC0fAJtiBvEWzcKcSDC8NEcA@mail.gmail.com>
+	<4EA557B2.4020504@st.com>
+	<CAJhJPsXxUAuF9HdivLd66MQC45mz-iYAuF1SdGdU=-duxJJ5bQ@mail.gmail.com>
+	<4EA585B5.5030405@st.com>
+	<CAJhJPsVu7hahhmUvPQ=s=AqvXGhU-05x=GqQ29Mo6PZ8cTtefA@mail.gmail.com>
+	<4EA660C0.1020901@st.com>
+	<4EA6716A.80307@st.com>
+Date: Tue, 25 Oct 2011 17:21:13 +0800
+Message-ID: <CAJhJPsUE1G5hRU7nSxjUU4aG+1BKDQD_kov1Xzg5k2_prjm_4w@mail.gmail.com>
+Subject: Re: [PATCH V2 2/4] MIPS: Add board support for Loongson1B
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org, r0bertz@gentoo.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1319534364_3131P
-Content-Type: text/plain; charset=us-ascii
+2011/10/25, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
+> On 10/25/2011 9:09 AM, Giuseppe CAVALLARO wrote:
+>> On 10/25/2011 4:12 AM, Kelvin Cheung wrote:
+>>> 2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
+>>>> On 10/24/2011 4:05 PM, Kelvin Cheung wrote:
+>>>>> 2011/10/24, Giuseppe CAVALLARO <peppe.cavallaro@st.com>:
+>>>>>> Hello Kelvin.
+>>>>>>
+>>>>>> On 10/24/2011 12:36 PM, Kelvin Cheung wrote:
+>>>>>>
+>>>>>> [snip]
+>>>>>>
+>>>>>>> According to datasheet of Loongson 1B, the buffer size in RX/TX
+>>>>>>> descriptor is only 2KB. So the Loongson1B's GMAC could not handle
+>>>>>>> jumbo frames. And the second buffer is useless in this case. Am I
+>>>>>>> right? Is there a better way than ifdef CONFIG_MACH_LOONGSON1 to
+>>>>>>> avoid duplicate code?
+>>>>>>
+>>>>>> Sorry for my misunderstanding.
+>>>>>>
+>>>>>> I think you have to use the normal descriptor and remove the enh_desc
+>>>>>> from the platform w/o modifying the driver at all.
+>>>>>>
+>>>>>> The driver will be able to select/configure all automatically (also
+>>>>>> jumbo).
+>>>>>>
+>>>>>> Let me know.
+>>>>>
+>>>>> That's the problem.
+>>>>> The bitfield definition of Loongson1B is also different from normal
+>>>>> descriptor.
+>>>>
+>>>> The problem is not in the Loongson1B gmac.
+>>>
+>>> I found that the bit checksum_insertion is not existed in normal
+>>> descriptor.
+>>>
+>>>> The normal descriptor fields in the stmmac refer to an old synopsys
+>>>> databook.
+>>>
+>>> Could you send me the new databook of Synopsys GMAC?
+>>>
+>>>> New chips have the same structure you have added; so we should fix this
+>>>> in the driver w/o breaking the compatibility for old chips.
+>>>
+>>> Agree.
+>>>
+>>>> I kindly ask you to confirm if the currently normal descriptor structure
+>>>> (w/o your changes) doesn't work on your platform.
+>>>> Did you test it?
+>>>
+>>> Well, the normal descriptor works on my platform except TX checksum
+>>> offload.
+>>
+>> ok! I suspected that.
+>>
+>>
+>>>>> Moreover, I want to enable the TX checksum offload function which is
+>>>>> not supported in normal descriptor.
+>>>>> Any suggestions?
+>>>>
+>>>> It is supported but you have to pass from the platform: tx_coe = 1.
+>>>
+>>> I noticed that the flag csum_insertion is passed to
+>>> ndesc_prepare_tx_desc() in stmmac_xmit(). But ndesc_prepare_tx_desc()
+>>> just ignores it.
+>>> In other words, the TX checksum offload function is disabled in normal
+>>> descriptor currently.
+>>>
+>>> Should we fix this problem for normal descriptor?
+>>
+>> Yes, we should. If you agree, I'll update the normal descriptor
+>> structure to yours. This is the normal descriptor used in newer GMAC.
+>> Tx csum will be done for normal descriptors in case of these GMAC
+>> devices and not for old MAC10/100. For the MAC10/100 some bits for
+>> normal descriptors are reserved and won't be used at all.
+>>
+>> I'll also verify that the patch doesn't break the back-compatibility
+>> with old MAC10/100. I have the HW where doing the tests.
+>>
+>> After that, I'll prepare the patch for net-next and for your kernel.
+>
+> Hello Kelvin
+>
+> attached the patch tested on my development kernel.
+> It runs fine on old and new mac devices.
+>
+> Can you try it on your side? Hmm, it is likely it won't apply fine on
+> your tree but you know the changes ;-).
 
-On Tue, 25 Oct 2011 10:55:55 +0200, Markus Kolb said:
+Sure.
 
-> can you please explain in brief how the creation of files
-> in directories with setgid bit set is implemented in
-> filesystems.
+> If ok, I'll rework it for net-next and send it to the mailing list.
+>
+> Thanks
+> Peppe
+>
+>>
+>>>
+>>>> Peppe
+>>>>>
+>>>>>> Note:
+>>>>>> IIRC, there is a bit difference in case of normal descriptors for
+>>>>>> Synopsys databook newer than the 1.91 (I used for testing this mode).
+>>>>>> In any case, I remember that, on some platforms, the normal
+>>>>>> descriptors
+>>>>>> have been used w/o problems also on these new chip generations.
+>>>>>>
+>>>>>> Peppe
+>>>>>>
+>>>>>>
+>>>>>
+>>>>>
+>>>>
+>>>>
+>>>
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+>
 
-Look in fs/inode.c, function inode_init_owner(). All of 8 lines of code.
 
---==_Exmh_1319534364_3131P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOpn8ccC3lWbTT17ARAnUnAKCOJp4N+eFeCWPj6iK2DCJz7mBmoACePC/D
-jT++MCC6lDQ0lNOr9VncVXQ=
-=2rMA
------END PGP SIGNATURE-----
-
---==_Exmh_1319534364_3131P--
-
+-- 
+Best Regards!
+Kelvin
