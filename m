@@ -1,49 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab1JYMMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 08:12:54 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59120 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab1JYMMx (ORCPT
+	id S1756527Ab1JYMRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 08:17:30 -0400
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:64369 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab1JYMR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 08:12:53 -0400
+	Tue, 25 Oct 2011 08:17:28 -0400
+Date: Tue, 25 Oct 2011 13:15:52 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH] linux-next: et131x: Fixups due to merge issues from staging
+ tree
+Message-ID: <20111025121551.GA2108@marke.airties>
+Reply-To: 20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au
+References: <20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZi=Vh-BfT9w_JVtL+wUPNtO41HqffD2hxoyQyT02iVcw@mail.gmail.com>
-References: <CACRpkdZi=Vh-BfT9w_JVtL+wUPNtO41HqffD2hxoyQyT02iVcw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 25 Oct 2011 14:11:33 +0200
-X-Google-Sender-Auth: iNVXMDU-BoBrzZnTwQokDTxNheA
-Message-ID: <CA+55aFyt3GYRpbxZo4eyBj9BhhVSG2TwbtOC3XBvQBe1HbwdGQ@mail.gmail.com>
-Subject: Re: [GIT PULL] pinctrl subsystem creation
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: jesper.nilsson@axis.com, Stephen Warren <swarren@nvidia.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rongjun Ying <rongjun.ying@csr.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 12:11 PM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
->
-> this is a new subsystem in a new git so given all the current
-> GnuPG signing and hoopla the probability of this being rejected
-> for one or another reason tends to one. But anyway, here goes:
 
-Hmm. No problem. At least it's not some open git repo, and yes, I can
-check your gpg key - although whether it's actually *yours* I don't
-know, because I don't know the people who signed it ;)
+Manually merged changes from commits afc4b13df143, bf3f1a6081aa and 5d6bcdfe38ce into et131x.c as identified in email below.
 
-But anyway, looks good.
+Also removed dependency on NETDEV_1000 in Kconfig, which no longer exists.
 
-Except I wonder why you even made that CONFIG_PINCTRL user-visible?
-Any driver that uses the interface had better have a "select PINCTRL"
-in it, so actually asking the user whether they want that subsystem
-seems to be just annoying and pointless, no?
+Greg: This patch should also be good for the staging tree.
 
-So I suspect it should just be made a "def_bool n"?
+----------------------------------------------------------
+Date: Tue, 25 Oct 2011 19:26:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, Jiri Pirko
+<jpirko@redhat.com>, Ian Campbell <Ian.Campbell@citrix.com>, David Miller
+<davem@davemloft.net>, <netdev@vger.kernel.org>, Mark Einon
+<mark.einon@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the net-next tree
 
-And I hope all these new lines will result in more deleted lines later...
+Hi Greg,
 
-                    Linus
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/et131x/et1310_tx.c drivers/staging/et131x/et131x_netdev.c
+between commits afc4b13df143 ("net: remove use of ndo_set_multicast_list
+in drivers"), bf3f1a6081aa ("et131x: convert to SKB paged frag API") and
+5d6bcdfe38ce ("net: use DMA_x_DEVICE and dma_mapping_error with
+skb_frag_dma_map") from the net-next tree and commit d2796743cba2
+("staging: et131x: Put all .c files into one big file") from the staging
+tree.
+
+The latter removed these files, so I did that but more fixup is proably
+needed.
+-----------------------------------------------------------
+
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/Kconfig  |    2 +-
+ drivers/staging/et131x/et131x.c |   14 +++++++-------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/et131x/Kconfig b/drivers/staging/et131x/Kconfig
+index f0ed08d..9e1864c 100644
+--- a/drivers/staging/et131x/Kconfig
++++ b/drivers/staging/et131x/Kconfig
+@@ -1,6 +1,6 @@
+ config ET131X
+ 	tristate "Agere ET-1310 Gigabit Ethernet support"
+-	depends on NETDEV_1000 && PCI
++	depends on PCI
+ 	default n
+ 	---help---
+ 	  This driver supports Agere ET-1310 ethernet adapters.
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 45b88d4..32c805b 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -3403,12 +3403,12 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+ 			 * returned by dma_map_page() is always 32-bit
+ 			 * addressable (as defined by the pci/dma subsystem)
+ 			 */
+-			desc[frag++].addr_lo =
+-			    dma_map_page(&adapter->pdev->dev,
+-					 frags[i - 1].page,
+-					 frags[i - 1].page_offset,
+-					 frags[i - 1].size,
+-					 DMA_TO_DEVICE);
++			desc[frag++].addr_lo = skb_frag_dma_map(
++                                                       &adapter->pdev->dev,
++                                                       &frags[i - 1],
++                                                       0,
++                                                       frags[i - 1].size,
++                                                       DMA_TO_DEVICE);
+ 		}
+ 	}
+ 
+@@ -5233,7 +5233,7 @@ static const struct net_device_ops et131x_netdev_ops = {
+ 	.ndo_open		= et131x_open,
+ 	.ndo_stop		= et131x_close,
+ 	.ndo_start_xmit		= et131x_tx,
+-	.ndo_set_multicast_list	= et131x_multicast,
++	.ndo_set_rx_mode        = et131x_multicast,
+ 	.ndo_tx_timeout		= et131x_tx_timeout,
+ 	.ndo_change_mtu		= et131x_change_mtu,
+ 	.ndo_set_mac_address	= et131x_set_mac_addr,
+-- 
+1.7.6.4
+
