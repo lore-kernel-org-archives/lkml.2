@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab1JYDY3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Oct 2011 23:24:29 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55852 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756233Ab1JYDY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Oct 2011 23:24:28 -0400
-Date: Tue, 25 Oct 2011 05:22:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        David Ahern <dsahern@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Neil Horman <nhorman@tuxdriver.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/4] perf/core fixes and improvements
-Message-ID: <20111025032236.GA10104@elte.hu>
-References: <1319397143-20301-1-git-send-email-acme@infradead.org>
+	id S1756378Ab1JYDZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Oct 2011 23:25:26 -0400
+Received: from ims-m14.mx.aol.com ([64.12.207.147]:56478 "EHLO
+	ims-m14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755865Ab1JYDZZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Oct 2011 23:25:25 -0400
+To: hfwagner@mail.jhuwash.jhu.edu
+Content-Transfer-Encoding: 8BIT
+Subject: Good day!  5246640
+X-MB-Message-Source: WebUI
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319397143-20301-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: Henrietta Reilly <henrietta.reilly@aol.com>
+X-MB-Message-Type: User
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+X-Mailer: AOL Webmail 34290-BASIC
+Message-Id: <8CE60DCD8B59663-EC0-4BFF8@webmail-m068.sysops.aol.com>
+X-Originating-IP: [189.134.51.242]
+Date: Mon, 24 Oct 2011 23:25:15 -0400 (EDT)
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-SCOLL-SCORE: 0:2:166226240:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d29484ea62c1b010d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Salute)
+How r you? ;) My name is Henrietta.
+I would like to know you better...
+I saw your profile on the dating site, I don't remember exact name of 
+the site *sad*
+I wanna meet smart and spirited man.
+I wanna know u closer, so write me something.))
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://github.com/acmel/linux.git perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (2):
->   perf ui browser: Use libslang to read keys
->   perf hists browser: Refuse 'a' hotkey on non symbolic views
-> 
-> Jiri Olsa (1):
->   perf tools: Fix tracing info recording
-> 
-> Ricardo Ribalda Delgado (1):
->   perf symbols: Increase symbol KSYM_NAME_LEN size
-> 
->  tools/perf/Makefile                    |    1 +
->  tools/perf/builtin-annotate.c          |    8 +-
->  tools/perf/util/header.c               |   27 +++++++-
->  tools/perf/util/hist.h                 |    9 +--
->  tools/perf/util/symbol.c               |    2 +-
->  tools/perf/util/trace-event-info.c     |  112 +++++++++++++++++++++++++-------
->  tools/perf/util/trace-event.h          |   13 ++++-
->  tools/perf/util/ui/browser.c           |   79 +++++++++++++++-------
->  tools/perf/util/ui/browsers/annotate.c |   19 ++---
->  tools/perf/util/ui/browsers/hists.c    |   40 +++++++-----
->  tools/perf/util/ui/keysyms.h           |   25 +++++++
->  tools/perf/util/ui/libslang.h          |    2 +
->  tools/perf/util/ui/setup.c             |   13 ++++
->  13 files changed, 256 insertions(+), 94 deletions(-)
->  create mode 100644 tools/perf/util/ui/keysyms.h
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
