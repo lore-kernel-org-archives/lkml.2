@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1JYTDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 15:03:21 -0400
-Received: from cpanel23.proisp.no ([88.87.44.74]:57270 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1JYTDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 15:03:19 -0400
-X-Greylist: delayed 3201 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 15:03:19 EDT
-Message-ID: <4EA6FB6A.2020800@numascale.com>
-Date: Tue, 25 Oct 2011 20:09:46 +0200
-From: Arne Georg Gleditsch <arne.gleditsch@numascale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Steffen Persvold <sp@numascale.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 3/3] Add NumaChip quirk
-References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com> <1318926156-25504-3-git-send-email-daniel@numascale-asia.com> <CAErSpo4Rmtd4LsXmgvb4Vn92z=u1feRyPWF=KS8ggVZvitjEnA@mail.gmail.com> <4EA6D76C.5050505@numascale.com> <CAErSpo6T8NXrHzkyHQmw3h4u5u61AZ_biF4FBf3US7FryEwhTw@mail.gmail.com> <4EA6F2F4.9080005@numascale.com>
-In-Reply-To: <4EA6F2F4.9080005@numascale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752252Ab1JYTEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 15:04:33 -0400
+Received: from mail0.scram.de ([78.47.204.202]:59084 "EHLO mail.scram.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755Ab1JYTEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 15:04:31 -0400
+X-Greylist: delayed 774 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 15:04:31 EDT
+Authentication-Results: localhost; dkim=pass (1024-bit key)
+	header.i=@scram.de; dkim-asp=signed
+X-Spam-Flag: NO
+X-Spam-Score: -4.183
+Authentication-Results: amavis.colab.de (amavisd-new); dkim=pass
+	header.i=@scram.de
+From: Jochen Friedrich <jochen@scram.de>
+To: linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jochen Friedrich <jochen@scram.de>, stable@kernel.org
+Subject: [PATCH] ARM: at91: Fix USBA gadget registration
+Date: Tue, 25 Oct 2011 20:51:06 +0200
+Message-Id: <1319568666-10745-1-git-send-email-jochen@scram.de>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25. okt. 2011 19:33, Steffen Persvold wrote:
-> On 10/25/2011 19:15, Bjorn Helgaas wrote:
->> NumaChip sounds like an exception because you know you never care
->> about using those BARs.  But I'm curious -- it looks like Linux didn't
->> even try to assign resources to them.  I thought something in the
->> pci_assign_unassigned_resources() path would have tried to do
->> something with them.  If we *did* assign resources to those BARs, I
->> assume nothing would break, since there's no driver that actually uses
->> them.  Right?
->>
-> 
-> Correct, the BARs are there and if something sensible were written to
-> them (and MemorySpace was enabled in the Command register) NumaChip
-> *would* respond to mmio accesses to that address range.
+Since 193ab2a6070039e7ee2b9b9bebea754a7c52fd1b, various AT91 boards don't
+register USBA adapters anymore due to depending on a now non-existing
+symbol. Fix the symbol name.
 
-A minor point: adjusting the BARs would not strictly speaking be
-sufficient for the NumaChip to respond, as it would never see these
-accesses unless the [MMIO address range]->[HyperTransport node/link]
-registers of the CPU NorthBridges were also updated with the relevant
-ranges.  This is a bit messy, but in a way much the same issue as when
-secondary southbridges are connected to secondary CPUs in any other
-HyperTransport-based system.
+Signed-off-by: Jochen Friedrich <jochen@scram.de>
+CC: stable@kernel.org
+---
+ arch/arm/mach-at91/at91cap9_devices.c    |    2 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Perhaps an alternative to this NumaChip-specific quirk would be to
-special-case BARs belonging to "PCI" devices 00:18 - 00:1f in AMD
-Opteron systems.  These always indicate coherent HT devices and fiddling
-with the CPU NB maps are going to be required if anything is changed
-regarding the BAR assignments here.
-
+diff --git a/arch/arm/mach-at91/at91cap9_devices.c b/arch/arm/mach-at91/at91cap9_devices.c
+index dba0d8d..0512baf 100644
+--- a/arch/arm/mach-at91/at91cap9_devices.c
++++ b/arch/arm/mach-at91/at91cap9_devices.c
+@@ -92,7 +92,7 @@ void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
+  *  USB HS Device (Gadget)
+  * -------------------------------------------------------------------- */
+ 
+-#if defined(CONFIG_USB_GADGET_ATMEL_USBA) || defined(CONFIG_USB_GADGET_ATMEL_USBA_MODULE)
++#if defined(CONFIG_USB_ATMEL_USBA) || defined(CONFIG_USB_ATMEL_USBA_MODULE)
+ 
+ static struct resource usba_udc_resources[] = {
+ 	[0] = {
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 600bffb..371bb0e 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -191,7 +191,7 @@ void __init at91_add_device_usbh_ehci(struct at91_usbh_data *data) {}
+  *  USB HS Device (Gadget)
+  * -------------------------------------------------------------------- */
+ 
+-#if defined(CONFIG_USB_GADGET_ATMEL_USBA) || defined(CONFIG_USB_GADGET_ATMEL_USBA_MODULE)
++#if defined(CONFIG_USB_ATMEL_USBA) || defined(CONFIG_USB_ATMEL_USBA_MODULE)
+ static struct resource usba_udc_resources[] = {
+ 	[0] = {
+ 		.start	= AT91SAM9G45_UDPHS_FIFO,
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index aacb19d..c884d59 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -75,7 +75,7 @@ void __init at91_add_device_hdmac(void) {}
+  *  USB HS Device (Gadget)
+  * -------------------------------------------------------------------- */
+ 
+-#if defined(CONFIG_USB_GADGET_ATMEL_USBA) || defined(CONFIG_USB_GADGET_ATMEL_USBA_MODULE)
++#if defined(CONFIG_USB_ATMEL_USBA) || defined(CONFIG_USB_ATMEL_USBA_MODULE)
+ 
+ static struct resource usba_udc_resources[] = {
+ 	[0] = {
 -- 
-							Arne.
+1.7.7
+
