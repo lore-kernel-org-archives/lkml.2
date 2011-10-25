@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab1JYN5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 09:57:05 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:17703 "EHLO relay.sw.ru"
+	id S933544Ab1JYN5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 09:57:17 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:43288 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933347Ab1JYN5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 09:57:03 -0400
-Subject: [PATCH v2 0/4] Series short description
+	id S933413Ab1JYN5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 09:57:13 -0400
+Subject: [PATCH v2 1/4] SUNRPC: rpcbind clients internals virtualization
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Tue, 25 Oct 2011 17:57:40 +0300
-Message-ID: <20111025135637.5286.89632.stgit@localhost6.localdomain6>
+Date: Tue, 25 Oct 2011 17:57:52 +0300
+Message-ID: <20111025135749.5286.57091.stgit@localhost6.localdomain6>
+In-Reply-To: <20111025135637.5286.89632.stgit@localhost6.localdomain6>
+References: <20111025135637.5286.89632.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,37 +24,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set was created in context of clone of git branch:
-git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
-and rebased on tag "v3.1".
+This patch moves static rpcbind internals to sunrpc part of network namespace
+context. This will allow to create rcpbind clients per network namespace.
 
-This patch-set virtualizes rpcbind clients per network namespace context. IOW,
-each network namespace will have its own pair of rpcbind clients (if the would
-be created by request).
-
-Note:
-1) this patch-set depends on "SUNRPC: make rpcbind clients allocated and
-destroyed dynamically" patch-set which has been send earlier.
-2) init_net pointer is still used instead of current->nsproxy->net_ns,
-because I'm not sure yet about how to virtualize services.
-I.e. NFS callback services will be per netns. NFSd service will be per netns
-too from my pow. But Lockd can be per netns or one for all.
-And also we have NFSd file system, which is not virtualized yet.
-
-The following series consists of:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
+ net/sunrpc/netns.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Stanislav Kinsbursky (4):
-      SUNRPC: rpcbind clients internals virtualization
-      SUNRPC: use virtualized rpcbind internals instead of static ones
-      SUNRPC: optimize net_ns dereferencing in rpcbind creation calls
-      SUNRPC: optimize net_ns dereferencing in rpcbind registering calls
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index d013bf2..83eede3 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -9,6 +9,11 @@ struct cache_detail;
+ struct sunrpc_net {
+ 	struct proc_dir_entry *proc_net_rpc;
+ 	struct cache_detail *ip_map_cache;
++
++	struct rpc_clnt *rpcb_local_clnt;
++	struct rpc_clnt *rpcb_local_clnt4;
++	spinlock_t rpcb_clnt_lock;
++	unsigned int rpcb_users;
+ };
+ 
+ extern int sunrpc_net_id;
 
-
- net/sunrpc/netns.h     |    5 ++
- net/sunrpc/rpcb_clnt.c |  103 ++++++++++++++++++++++++++----------------------
- 2 files changed, 61 insertions(+), 47 deletions(-)
-
--- 
-Signature
