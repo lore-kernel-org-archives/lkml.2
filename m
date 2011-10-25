@@ -1,31 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1JYHAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:00:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36296 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab1JYHAN (ORCPT
+	id S1753543Ab1JYHCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:02:01 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:55089 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751827Ab1JYHCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:00:13 -0400
+	Tue, 25 Oct 2011 03:02:00 -0400
+Message-ID: <4EA65EDF.2070803@ti.com>
+Date: Tue, 25 Oct 2011 12:31:51 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-In-Reply-To: <1319144425-15547-9-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1319144425-15547-1-git-send-email-Kyle.D.Moffett@boeing.com> <1319144425-15547-9-git-send-email-Kyle.D.Moffett@boeing.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Tue, 25 Oct 2011 02:59:53 -0400
-X-Google-Sender-Auth: VNO-tSNwLwaWn_UdB4-yvzBHl8o
-Message-ID: <CAJaTeTpzi4t7Qg2ncstLMqXZtNb7ptGmyRVfp6KPQN9OT59o_Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 08/17] drivers/net/bfin_mac: Don't unnecessarily reset
- the PHY
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@conan.davemloft.net>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, patches@linaro.org,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
+References: <20111021082309.GA337@S2100-06.ap.freescale.net> <20111024092411.GE8708@ponder.secretlab.ca> <20111024130429.GD1755@S2100-06.ap.freescale.net> <20111024130636.GB26033@opensource.wolfsonmicro.com> <20111024134025.GE1755@S2100-06.ap.freescale.net> <20111024135950.GV8708@ponder.secretlab.ca> <20111024145139.GH1755@S2100-06.ap.freescale.net> <20111024145631.GB8708@ponder.secretlab.ca> <20111024155132.GI1755@S2100-06.ap.freescale.net> <4EA652DA.5050901@ti.com> <20111025070837.GE2119@S2100-06.ap.freescale.net>
+In-Reply-To: <20111025070837.GE2119@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+On Tuesday 25 October 2011 12:38 PM, Shawn Guo wrote:
+> On Tue, Oct 25, 2011 at 11:40:34AM +0530, Rajendra Nayak wrote:
+>> On Monday 24 October 2011 09:21 PM, Shawn Guo wrote:
+>>> On Mon, Oct 24, 2011 at 04:56:31PM +0200, Grant Likely wrote:
+> [...]
+>>>> It is always better to attach the of_node at struct device
+>>>> registration time instead of searching the tree in common code.  The
+>>>> of_node should already be assigned by the time regulator_register() is
+>>>> called.
+>>>
+>>> That's the problem we have.  There is no 'struct dev' to attach of_node
+>>> for each regulator by the time regulator_register() is called, because
+>>> the 'struct dev' for each regulator is created inside
+>>> regulator_register() as wrapped by 'struct regulator_dev'.
+>>
+>> The root of your problem seems to be that your pmic driver isn't
+>> registering regulator devices from DT, and if it did, you wouldn't
+>> need to do a search in dev->parent->of_node and instead the driver
+>> would have the right dev->of_node populated.
+>>
+> No, it's not the root of my problem.  Again, we are talking about
+> 'Case 2', where multiple regulator devices are registered to
+> regulator core with regulator driver being probed once, where each
+> regulator node is taken as the child of 'regulators' node.  Having
+> device_node of 'regulators' attached to dev->of_node does not help
+> at all.  What we need is to have each child node attached to
+> regulator_dev->dev.of_node.
+
+It certainly helps if dev->of_node has the 'regulators' node attached.
+The driver can very easily then do a for_each_child_of_node() to extract
+and register individual regulators passing an additional of_node param.
+
+>
+
