@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab1JYNzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 09:55:53 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:60619 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933347Ab1JYNzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 09:55:51 -0400
-Date: Wed, 26 Oct 2011 00:55:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-Id: <20111026005530.a4bd779e1a8182ea57dbf99f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi"
+	id S933533Ab1JYN4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 09:56:07 -0400
+Received: from brick.kernel.dk ([87.104.106.3]:50298 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933347Ab1JYN4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 09:56:03 -0400
+Message-ID: <4EA6BFC4.3040905@kernel.dk>
+Date: Tue, 25 Oct 2011 15:55:16 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: sedat.dilek@gmail.com
+CC: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: Tree for Oct 25 (block ?)
+References: <CA+icZUVe7DrbrbDB7wJWrT9FHUsV62UFdifWbe3MGL7ujkX5Vw@mail.gmail.com> <CA+icZUUO3rxx4OFBNbHm4J3BFH66HBDY2LXC6-r2WY8ioo+8Dg@mail.gmail.com> <4EA6BBC2.2060406@kernel.dk> <CA+icZUUYcdS5C5DL3RnSbkWWu4hVuq4ecy5u1+0QLwEuSzJMeg@mail.gmail.com>
+In-Reply-To: <CA+icZUUYcdS5C5DL3RnSbkWWu4hVuq4ecy5u1+0QLwEuSzJMeg@mail.gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2011-10-25 15:43, Sedat Dilek wrote:
+> On Tue, Oct 25, 2011 at 3:38 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 2011-10-25 15:10, Sedat Dilek wrote:
+>>> On Tue, Oct 25, 2011 at 3:04 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>>> On Tue, Oct 25, 2011 at 11:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> *Note well*
+>>>>>
+>>>>> This tree has nate had any build testing at all.  As such, it probably
+>>>>> doesn't build :-) This tree is really just a roll up of the current state
+>>>>> of the trees when the v3.2 merge window opened.  It will not be put into
+>>>>> the build system referred to below.
+>>>>>
+>>>>
+>>>> I have generated a single linux-next (next-20111025) patch on top of
+>>>> v3.1, it's approx. 100M!
+>>>>
+>>>> $ du -h patch-v3.1-next-20111025.patch
+>>>> 96M     patch-v3.1-next-20111025.patch
+>>>>
+>>>> I noticed this build-failure:
+>>>>
+>>>>  CC      block/blk-throttle.o
+>>>>  CC [M]  fs/fuse/dir.o
+>>>> /mnt/sdb3/linux-kernel/linux-3.1/debian/build/source_i386_none/block/blk-throttle.c:
+>>>> In function 'blk_throtl_drain':
+>>>> /mnt/sdb3/linux-kernel/linux-3.1/debian/build/source_i386_none/block/blk-throttle.c:1221:2:
+>>>> error: implicit declaration of function 'lockdep_is_held'
+>>>> [-Werror=implicit-function-declaration]
+>>>> cc1: some warnings being treated as errors
+>>>>
+>>>> make[5]: *** [block/blk-throttle.o] Error 1
+>>>> make[4]: *** [block] Error 2
+>>>>
+>>>> This happens with Debian's gcc-4.6 (4.6.1-16) and default
+>>>> KBUILD_ENABLE_EXTRA_GCC_CHECKS value.
+>>>>
+>>>> - Sedat -
+>>>>
+>>>
+>>> Looks like "#include <linux/lockdep.h>" is missing in block/blk-throttle.c?
+>>
+>> Hmm, I wonder why it isn't triggering for cfq-iosched.o or elevator.o as
+>> well. Is blk-throttle modular? What is your .config?
+>>
+>> --
+>> Jens Axboe
+>>
+>>
+> 
+> CONFIG_BLK_DEV_THROTTLING=y
+> 
+> My kernel-config is attached.
 
-Hi all,
+The below should work, I checked it in.
 
-After merging the net-next tree, today's linux-next build (powerpc
-pseries_defconfig) failed like this:
 
-drivers/net/ethernet/ibm/ehea/ehea_main.c: In function 'write_swqe2_data':
-drivers/net/ethernet/ibm/ehea/ehea_main.c:1692: error: implicit declaration=
- of function 'frag_size'
+commit 334c2b0b8b2ab186fa198413386cba41fffcb4f2
+Author: Jens Axboe <axboe@kernel.dk>
+Date:   Tue Oct 25 15:51:48 2011 +0200
 
-Presumably caused by commit 9e903e085262 ("net: add skb frag size
-accessors").  I guess it should have been "skb_frag_size()".
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+    blk-throttle: use queue_is_locked() instead of lockdep_is_held()
+    
+    We can't use the latter if !CONFIG_LOCKDEP.
+    
+    Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
+    Signed-off-by: Jens Axboe <axboe@kernel.dk>
 
---Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi
-Content-Type: application/pgp-signature
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 8edb949..4553245 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -1218,7 +1218,7 @@ void blk_throtl_drain(struct request_queue *q)
+ 	struct bio_list bl;
+ 	struct bio *bio;
+ 
+-	lockdep_is_held(q->queue_lock);
++	WARN_ON_ONCE(!queue_is_locked(q));
+ 
+ 	bio_list_init(&bl);
+ 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+-- 
+Jens Axboe
 
-iQIcBAEBCAAGBQJOpr/SAAoJEECxmPOUX5FEd+AQAIGk6I3YRTJ9RGHMU6MUEeEl
-J/VtRXodJfUdQxPGVPZth2F4ygGf4zRd+f2eYjikSL3RNCBZ9pdBzbffhtVaIO/U
-myXMPzXuk4DWryMj9wknqH5pnazxHXH65fTllQLwcjVOgfYHOmGFAVSMIbhlrjM7
-zBDG1dWLbth9v3z2/AkCQo6G09D57qGkXkDlszAVCyosmntJBmdvAHXkLJCMVDhm
-cAbxOW5ZBAh8PRspnIKYSyCAG4vC20t7DsY/V0krPU5Xi9KoAR2iud6lUSNK5sH8
-vFy4vxJQo5U6RnlZKPV2j3vEfYRlJABHwWdcNnTD+TrDweMLXq2kp3cjoZBDLBGx
-fiNs9DKgm1OjdvaA/nV+Bs/gXI2iVF6u4nXKg/gC+6Ona0eN2y1HBZ2PAOoBg4oF
-ZRqViID3mMhWFXMUTwjrDyVpYONGoFCVU85c8cST3ThUlo0tHvbinGQeocs5dbWW
-iqyZ0pgzWJa/wR4IDS2is4MQAPyoVeGXbVqQpYoKEW8Hmr9TerX+hB2nKrJCG4Ug
-uvAPjcR/Y4XrGE035hflNHRzWGS/UBUWsw0KmAXLE3aIJa2T6pmVDoxqSnrp1bLd
-H0eX+XO8J4+Qz+CMg0ypbnel+xXnjeeMaJiLF18Mvgy+kmjdV8GL+XRS5+DDDqJI
-WfXGMPn4mWU9YCdv+A8s
-=L8W+
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_Oct_2011_00_55_30_+1100_+b=cS15HvDQ15HZi--
