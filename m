@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1JYO6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:58:24 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:39580 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1JYO6X (ORCPT
+	id S1756626Ab1JYPFA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 11:05:00 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:53185 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab1JYPE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:58:23 -0400
-Message-ID: <1319554699.3056.11.camel@br98xy6r>
-Subject: Re: kdump: crash_kexec()-smp_send_stop() race in panic
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, akpm@linux-foundation.org,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Oct 2011 16:58:19 +0200
-In-Reply-To: <m17h3tcm52.fsf@fess.ebiederm.org>
-References: <1319468137.3615.16.camel@br98xy6r>
-	 <m1ipneifqv.fsf@fess.ebiederm.org>
-	 <CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
-	 <m1aa8qfhdk.fsf@fess.ebiederm.org> <1319532245.3056.5.camel@br98xy6r>
-	 <m17h3tcm52.fsf@fess.ebiederm.org>
-Organization: IBM
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Oct 2011 11:04:59 -0400
+Subject: Re: [PATCH] mtd: clean up usage of MTD_DOCPROBE_ADDRESS
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 25 Oct 2011 18:04:47 +0300
+In-Reply-To: <1319533207.2409.68.camel@x61.thuisdomein>
+References: <1319533207.2409.68.camel@x61.thuisdomein>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-s0BauUu8GXOk4gMAgO/Q"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1319555096.2814.1.camel@golum>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 05:04 -0700, Eric W. Biederman wrote:
-> Michael Holzheu <holzheu@linux.vnet.ibm.com> writes:
-> 
-> > Hello Eric,
-> >
-> > On Mon, 2011-10-24 at 10:07 -0700, Eric W. Biederman wrote:
-> >
-> > [snip]
-> >
-> >> So my second thought is to introduce another atomic variable
-> >> panic_in_progress, visible only in panic.  The cpu that sets
-> >> increments panic_in_progress can call smp_send_stop.  The rest of
-> >> the cpus can just go into a busy wait.  That should stop nasty
-> >> fights about who is going to come out of smp_send_stop first.
-> >
-> > So this is a spinlock, no? What about the following patch:
-> Do we want both panic printks?
 
-Ok, good point. We proably should not change that.
+--=-s0BauUu8GXOk4gMAgO/Q
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> We really only need the mutual exclusion starting just before
-> smp_send_stop so that is where I would be inclined to put it.
+On Tue, 2011-10-25 at 11:00 +0200, Paul Bolle wrote:
+> Depending on whether MTD_DOCPROBE_ADVANCED is set or not,
+> MTD_DOCPROBE_ADDRESS will default to either 0x0000 or 0. That should
+> lead to (basically) identical code in docprobe.c. The current two
+> defaults should be merged.
+>=20
+> And, while we're at it, if MTD_DOCPROBE is set MTD_DOCPROBE_ADDRESS will
+> always be set. (MTD_DOCPROBE_ADDRESS depends on MTD_DOCPROBE and it has
+> a default value.) So the check whether CONFIG_MTD_DOCPROBE_ADDRESS is
+> defined is unnecessary and should be dropped.
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-I think to fix the race, at least we have the get the lock before we
-call crash_kexec(). 
+Pushed to l2-mtd-2.6.git, thanks!
 
-Is the following patch ok for you?
----
- kernel/panic.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+--=20
+Best Regards,
+Artem Bityutskiy
 
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
-  */
- NORET_TYPE void panic(const char * fmt, ...)
- {
-+	static DEFINE_SPINLOCK(panic_lock);
- 	static char buf[1024];
- 	va_list args;
- 	long i, i_next = 0;
-@@ -82,6 +83,13 @@ NORET_TYPE void panic(const char * fmt,
- #endif
- 
- 	/*
-+	 * Only one CPU is allowed to execute the panic code from here. For
-+	 * multiple parallel invocations of panic all other CPUs will wait on
-+	 * the panic_lock. They are stopped afterwards by smp_send_stop().
-+	 */
-+	spin_lock(&panic_lock);
-+
-+	/*
- 	 * If we have crashed and we have a crash kernel loaded let it handle
- 	 * everything else.
- 	 * Do we want to call this before we try to display a message?
+--=-s0BauUu8GXOk4gMAgO/Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJOptAPAAoJEJtuLFy+q7feiIsIAI300nkRST9olDtmP7+ipxxz
+J7+tKxNY9wFduWT5JQPVitRJQyQDVkp5pH/Ak40TSROp6WfLuQykgWIO7b1M62vb
+y9N4LnWEEY0xP56vHz/kIkcUIHbtkzx/slLBr/omIJUrpF7PLJncMjkkkoNoQalK
+FMTbw0ptLm+qil+REuHzmICOi9ODE+yj7xxaSpewQJwzxwRBJBVrzKDg4QWT0X1D
+yd34Vz0hRuC+XtoO6fpmTqczh1k4pnT4AK9LIDRZU6V2gv6kyM64WJvF487E28DO
+tYwDU1bDS0V/ny32WSSRsn6U2EefQNtvVMqBIjbKSBM+EhulcNQw3gyX/kXL4EI=
+=4PC9
+-----END PGP SIGNATURE-----
+
+--=-s0BauUu8GXOk4gMAgO/Q--
 
