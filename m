@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab1JYKQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 06:16:31 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:27601 "EHLO relay.sw.ru"
+	id S932584Ab1JYKQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 06:16:42 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:48201 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756392Ab1JYKQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 06:16:29 -0400
-Subject: [PATCH v6 4/8] SUNRPC: setup rpcbind clients if service requires it
+	id S932467Ab1JYKQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 06:16:39 -0400
+Subject: [PATCH v6 5/8] SUNRPC: cleanup service destruction
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Tue, 25 Oct 2011 14:17:08 +0300
-Message-ID: <20111025101705.12689.68022.stgit@localhost6.localdomain6>
+Date: Tue, 25 Oct 2011 14:17:18 +0300
+Message-ID: <20111025101716.12689.81697.stgit@localhost6.localdomain6>
 In-Reply-To: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
 References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -24,43 +24,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New function ("svc_uses_rpcbind") will be used to detect, that new service will
-send portmapper register calls. For such services we will create rpcbind
-clients and remove all stale portmap registrations.
-Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
-in case of this field wasn't initialized earlier. This will allow to destroy
-rpcbind clients when no other users of them left.
-
-Note: Currently, any creating service will be detected as portmap user.
-Probably, this is wrong. But now it depends on program versions "vs_hidden"
-flag.
+svc_unregister() call have to be removed from svc_destroy() since it will be
+called in sv_shutdown callback.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/svc.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ net/sunrpc/svc.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
 diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index d2d61bf..918edc3 100644
+index 918edc3..407462f 100644
 --- a/net/sunrpc/svc.c
 +++ b/net/sunrpc/svc.c
-@@ -454,8 +454,15 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 		spin_lock_init(&pool->sp_lock);
- 	}
+@@ -530,7 +530,6 @@ svc_destroy(struct svc_serv *serv)
+ 	if (svc_serv_is_pooled(serv))
+ 		svc_pool_map_put();
  
--	/* Remove any stale portmap registrations */
 -	svc_unregister(serv);
-+	if (svc_uses_rpcbind(serv)) {
-+	       	if (svc_rpcb_setup(serv) < 0) {
-+			kfree(serv->sv_pools);
-+			kfree(serv);
-+			return NULL;
-+		}
-+		if (!serv->sv_shutdown)
-+			serv->sv_shutdown = svc_rpcb_cleanup;
-+	}
- 
- 	return serv;
+ 	kfree(serv->sv_pools);
+ 	kfree(serv);
  }
 
