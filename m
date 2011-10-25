@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab1JYTEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 15:04:33 -0400
-Received: from mail0.scram.de ([78.47.204.202]:59084 "EHLO mail.scram.de"
+	id S1752402Ab1JYTP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 15:15:56 -0400
+Received: from claw.goop.org ([74.207.240.146]:46305 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab1JYTEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 15:04:31 -0400
-X-Greylist: delayed 774 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 15:04:31 EDT
-Authentication-Results: localhost; dkim=pass (1024-bit key)
-	header.i=@scram.de; dkim-asp=signed
-X-Spam-Flag: NO
-X-Spam-Score: -4.183
-Authentication-Results: amavis.colab.de (amavisd-new); dkim=pass
-	header.i=@scram.de
-From: Jochen Friedrich <jochen@scram.de>
-To: linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jochen Friedrich <jochen@scram.de>, stable@kernel.org
-Subject: [PATCH] ARM: at91: Fix USBA gadget registration
-Date: Tue, 25 Oct 2011 20:51:06 +0200
-Message-Id: <1319568666-10745-1-git-send-email-jochen@scram.de>
-X-Mailer: git-send-email 1.7.7
+	id S1751019Ab1JYTPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 15:15:55 -0400
+Message-ID: <4EA7003D.8050506@goop.org>
+Date: Tue, 25 Oct 2011 11:30:21 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>, Rik van Riel <riel@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC V2 4/5] kvm guest : Added configuration support to
+ enable debug information for KVM Guests
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190700.16364.7548.sendpatchset@oc5400248562.ibm.com> <4EA53AB2.9050805@redhat.com>
+In-Reply-To: <4EA53AB2.9050805@redhat.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 193ab2a6070039e7ee2b9b9bebea754a7c52fd1b, various AT91 boards don't
-register USBA adapters anymore due to depending on a now non-existing
-symbol. Fix the symbol name.
+On 10/24/2011 03:15 AM, Avi Kivity wrote:
+> On 10/23/2011 09:07 PM, Raghavendra K T wrote:
+>> Added configuration support to enable debug information
+>> for KVM Guests in debugfs
+>>     
+>> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+>> Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index 1f03f82..ed34269 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -562,6 +562,15 @@ config KVM_GUEST
+>>  	  This option enables various optimizations for running under the KVM
+>>  	  hypervisor.
+>>  
+>> +config KVM_DEBUG_FS
+>> +	bool "Enable debug information for KVM Guests in debugfs"
+>> +	depends on KVM_GUEST
+>> +	default n
+>> +	---help---
+>> +	  This option enables collection of various statistics for KVM guest.
+>> +   	  Statistics are displayed in debugfs filesystem. Enabling this option
+>> +	  may incur significant overhead.
+>> +
+>>  source "arch/x86/lguest/Kconfig"
+>>  
+>>
+> This might be better implemented through tracepoints, which an be
+> enabled dynamically.
 
-Signed-off-by: Jochen Friedrich <jochen@scram.de>
-CC: stable@kernel.org
----
- arch/arm/mach-at91/at91cap9_devices.c    |    2 +-
- arch/arm/mach-at91/at91sam9g45_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Tracepoints use spinlocks, so that could get awkward.
 
-diff --git a/arch/arm/mach-at91/at91cap9_devices.c b/arch/arm/mach-at91/at91cap9_devices.c
-index dba0d8d..0512baf 100644
---- a/arch/arm/mach-at91/at91cap9_devices.c
-+++ b/arch/arm/mach-at91/at91cap9_devices.c
-@@ -92,7 +92,7 @@ void __init at91_add_device_usbh(struct at91_usbh_data *data) {}
-  *  USB HS Device (Gadget)
-  * -------------------------------------------------------------------- */
- 
--#if defined(CONFIG_USB_GADGET_ATMEL_USBA) || defined(CONFIG_USB_GADGET_ATMEL_USBA_MODULE)
-+#if defined(CONFIG_USB_ATMEL_USBA) || defined(CONFIG_USB_ATMEL_USBA_MODULE)
- 
- static struct resource usba_udc_resources[] = {
- 	[0] = {
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index 600bffb..371bb0e 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -191,7 +191,7 @@ void __init at91_add_device_usbh_ehci(struct at91_usbh_data *data) {}
-  *  USB HS Device (Gadget)
-  * -------------------------------------------------------------------- */
- 
--#if defined(CONFIG_USB_GADGET_ATMEL_USBA) || defined(CONFIG_USB_GADGET_ATMEL_USBA_MODULE)
-+#if defined(CONFIG_USB_ATMEL_USBA) || defined(CONFIG_USB_ATMEL_USBA_MODULE)
- static struct resource usba_udc_resources[] = {
- 	[0] = {
- 		.start	= AT91SAM9G45_UDPHS_FIFO,
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index aacb19d..c884d59 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -75,7 +75,7 @@ void __init at91_add_device_hdmac(void) {}
-  *  USB HS Device (Gadget)
-  * -------------------------------------------------------------------- */
- 
--#if defined(CONFIG_USB_GADGET_ATMEL_USBA) || defined(CONFIG_USB_GADGET_ATMEL_USBA_MODULE)
-+#if defined(CONFIG_USB_ATMEL_USBA) || defined(CONFIG_USB_ATMEL_USBA_MODULE)
- 
- static struct resource usba_udc_resources[] = {
- 	[0] = {
--- 
-1.7.7
+    J
 
