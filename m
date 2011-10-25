@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933645Ab1JYO1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:27:30 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51141 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115Ab1JYO12 (ORCPT
+	id S1756582Ab1JYOa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:30:58 -0400
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:44092
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750831Ab1JYOa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:27:28 -0400
+	Tue, 25 Oct 2011 10:30:57 -0400
+Message-ID: <4EA6C810.30605@compulab.co.il>
+Date: Tue, 25 Oct 2011 16:30:40 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <4EA6C488.1030606@snapgear.com>
-References: <201110250229.p9P2Tvth015729@goober.corp.nai.org>
- <CA+55aFzLBaLpBWA8tspNbCyzMYeruK-waRCpRwVnZEOGw9FhRQ@mail.gmail.com> <4EA6C488.1030606@snapgear.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 25 Oct 2011 16:27:07 +0200
-X-Google-Sender-Auth: NjmKtqmrS6hD_8advjGnFTJSLpk
-Message-ID: <CA+55aFxondM5y9c2vLTnO87bTQeS4RB2LcH06YSozNZr+joZxQ@mail.gmail.com>
-Subject: Re: [git pull] m68knommu arch updates for 3.2
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: gerg@uclinux.org, linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        uclinux-dev@uclinux.org, geert@linux-m68k.org
+To: Eric Miao <eric.y.miao@gmail.com>
+CC: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: pxa/cm-x300: properly set bt_reset pin
+References: <1316268934.16763.2.camel@phoenix> <4E7B0E35.5010607@compulab.co.il> <CAF+7xW=AFmxCmppmt81pzkDbem=LAHdSYtT67yOOzMNPFRpnfA@mail.gmail.com> <4E9C4DAE.7020804@compulab.co.il>
+In-Reply-To: <4E9C4DAE.7020804@compulab.co.il>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 4:15 PM, Greg Ungerer <gerg@snapgear.com> wrote:
+ping x2
+
+On 10/17/2011 05:45 PM, Igor Grinberg wrote:
+> ping
 >
-> I don't think I will get back onto kernel.org anytime soon, I am in
-> the "geographically-isolated developers" group :-(
->
-> But I have put a signed tag on the top commit now, with the top
-> commit and repository info. Is this what you are looking for?
+> On 09/29/11 10:57, Axel Lin wrote:
+>> 2011/9/22 Igor Grinberg <grinberg@compulab.co.il>:
+>>> Hi Axel,
+>>>
+>>> On 09/17/11 17:15, Axel Lin wrote:
+>>>> Fix below build warning and properly set bt_reset pin.
+>>>>
+>>>>   CC      arch/arm/mach-pxa/cm-x300.o
+>>>> arch/arm/mach-pxa/cm-x300.c: In function 'cm_x300_init_wi2wi':
+>>>> arch/arm/mach-pxa/cm-x300.c:779: warning: unused variable 'wlan_en'
+>>>> arch/arm/mach-pxa/cm-x300.c:795: warning: 'bt_reset' may be used uninitialized in this function
+>>> Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+>>>
+>>> Also, this patch fixes a real regression since
+>>> 5a009df1f200efa49658b0e9c7ad056d59fbefe4 (ARM: pxa/cm-x300: GPIO cleanup)
+>>> - Wifi and Bluetooth do not work without it, so please:
+>>>
+>>> Cc: <stable@kernel.org> [3.0.x]
+>>>
+>> Hi, Eric,
+>> Just to pin the status of this patch. I think it should go for 3.1.
+>> Thanks,
+>> Axel
+>>
 
-That works for me, except that the gpg key is just not signed by
-anybody, so it doesn't really add any real trust. The fact that you
-reply sanely to and react to your email address is what makes me trust
-you are you, and it's not like I really worry about the m68k
-architecture as a security issue ;)
-
-So let's hope you can get your gpg key signed, but apart from that
-detail you did things right and everything looks fine. So pulled,
-
-               Linus
