@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab1JYPwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 11:52:41 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52088 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab1JYPwj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 11:52:39 -0400
+	id S1756699Ab1JYPyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 11:54:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751807Ab1JYPyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 11:54:00 -0400
+Date: Tue, 25 Oct 2011 17:49:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: test-case (Was: [PATCH 12/X] uprobes: x86: introduce
+	abort_xol())
+Message-ID: <20111025154906.GA17067@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215326.GF16395@redhat.com> <20111021144207.GN11831@linux.vnet.ibm.com> <20111021162631.GB2552@in.ibm.com> <20111021164221.GA30770@redhat.com> <20111021175915.GA1705@redhat.com> <20111025140613.GA17914@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4EA6ACBA.20200@jp.fujitsu.com>
-References: <4E9A3092.4080309@oracle.com>
-	<4E9A3408.9080905@oracle.com>
-	<CAErSpo5XdM+1OFmoU+rN_QNWCJ0Wzv1VwKxsTo9hTq=2=7KEHA@mail.gmail.com>
-	<4E9C6F0E.40501@oracle.com>
-	<CAErSpo7ofdVixyGR74_mc6ND5C3LROiR9PVzwNZaDe23ptJ2=Q@mail.gmail.com>
-	<4E9CAB21.2020302@oracle.com>
-	<CAErSpo4PLDfapndXJp-sXS-SJtv0a7PaD=UKX0HV0OV34an3kQ@mail.gmail.com>
-	<4E9DB11A.7030505@oracle.com>
-	<4EA6ACBA.20200@jp.fujitsu.com>
-Date: Tue, 25 Oct 2011 08:52:38 -0700
-X-Google-Sender-Auth: d1S48jylaXQy4pSUiQmrn5dEUss
-Message-ID: <CAE9FiQXOU+7F0N8G_d=W_HWocvwLum9qL6oZOVGfRLSp=UXs8Q@mail.gmail.com>
-Subject: Re: [PATCH 1/8] pci: Make sriov work with hotplug removal
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111025140613.GA17914@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/25 Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>:
+On 10/25, Srikar Dronamraju wrote:
+> >
+> > 	static inline void *uc_ip(struct ucontext *ctxt)
+> > 	{
+> > 		return (void*)ctxt->uc_mcontext.gregs[16];
+> > 	}
+> > ...
+> >
+> I have tested this on both x86_32 and x86_64 and can confirm that the
+> behaviour is same with or without uprobes placed at that instruction.
+> This is on the uprobes code with your changes.
+
+Great, thanks.
+
+> However on x86_32; the output is different from x86_64.
 >
-> I have one question.
+> On x86_32 (I have additionally printed the uc_ip and fault_insn.
 >
-> I think pci_stop_bus_devices() is called only when bridge device is removed.
-> Are you trying to hot-remove the bridge device that has SR-IOV capable
-> devices on the subordinate bus?
+> SIGSEGV! ip=0x10246 addr=0x12345678
+> ERR!! wrong ip uc_ip(ctxt) = 10246 fault_insn = 804856c
 
-Yes, I should include more pci info in patch comments:
+Yep. uc_ip() is not correct on x86_32. Sorry, I forgot to mention this.
 
-root complex: 80:02.2
-pci express modules: have pcie switch and are listed as b0:00.0,
-b1:02.0 and b1:03.0.
-                 end devices  are b2:00.0 and b3.00.0.
-                 VFs are: b2:00.1,... b2:00.3, and b3:00.1,...,b3:00.3
+I was really surprised when I wrote this test. I simply can't understand
+how can I play with ucontext in the user-space. I guess uc_ip() should use
+REG_EIP instead of 16, but I wasn't able to compile it even if I added
+__USE_GNU. It would be even better to use sigcontext instead of the ugly
+mcontext_t, but this looks "impossible". The kernel is much simpler ;)
 
-Thanks
 
-Yinghai Lu
+> I still trying to dig up what uc_ip is and why its different on x86_32.
+
+See above. I guess it needs ctxt->uc_mcontext.gregs[14]. Or REG_EIP.
+
+uc_ip() simply reads sigcontext->ip passed by setup_sigcontext().
+
+> Also I was thinking on your suggestion of making abort_xol a weak
+> function. In which case we could have architecture independent function
+> in kernel/uprobes.c which is just a wrapper for set_instruction_pointer.
+>
+> void __weak abort_xol(struct pt_regs *regs, struct uprobe_task *utask)
+> {
+> 	set_instruction_pointer(regs, utask->vaddr);
+> }
+>
+> where it would called  from uprobe_notify_resume() as
+>
+> 	abort_xol(regs, utask);
+>
+> If other archs would want to do something else, they could override
+> abort_xol definition.
+
+I didn't suggest this ;) But looks reasonable to me. And afaics x86_32
+can use this arch-independent function.
+
+Oleg.
+
