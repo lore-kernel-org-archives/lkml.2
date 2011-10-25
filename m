@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933628Ab1JYOQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:16:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57757 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933550Ab1JYOQb (ORCPT
+	id S933640Ab1JYOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:17:27 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:57010 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933550Ab1JYOR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:16:31 -0400
-Message-ID: <1319552170.10883.19.camel@edumazet-laptop>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Date: Tue, 25 Oct 2011 16:16:10 +0200
-In-Reply-To: <20111026005530.a4bd779e1a8182ea57dbf99f@canb.auug.org.au>
-References: <20111026005530.a4bd779e1a8182ea57dbf99f@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
+	Tue, 25 Oct 2011 10:17:26 -0400
+Date: Tue, 25 Oct 2011 16:17:20 +0200
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, H Peter Anvin <hpa@zytor.com>,
+        Steffen Persvold <sp@numascale.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/3] Add NumaChip quirk
+Message-ID: <20111025161720.351c3be4@jbarnes-x220>
+In-Reply-To: <alpine.LFD.2.02.1110251550430.21837@ionos>
+References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com>
+	<1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
+	<alpine.LFD.2.02.1110251550430.21837@ionos>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 85.13.70.251 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 26 octobre 2011 à 00:55 +1100, Stephen Rothwell a écrit :
-> Hi all,
+On Tue, 25 Oct 2011 15:54:29 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> Daniel,
 > 
-> After merging the net-next tree, today's linux-next build (powerpc
-> pseries_defconfig) failed like this:
+> On Tue, 18 Oct 2011, Daniel J Blueman wrote:
 > 
-> drivers/net/ethernet/ibm/ehea/ehea_main.c: In function 'write_swqe2_data':
-> drivers/net/ethernet/ibm/ehea/ehea_main.c:1692: error: implicit declaration of function 'frag_size'
+> > Add quirk for Numascale's NumaChip to prevent resource conflicts.
+> > 
+> > v2:
+> >  - [Daniel] rediffed and validated against 3.1-rc10
+> > 
+> > Signed-off-by: Steffen Persvold <sp@numascale.com>
 > 
-> Presumably caused by commit 9e903e085262 ("net: add skb frag size
-> accessors").  I guess it should have been "skb_frag_size()".
+> So, who wrote that code? If Steffen, then you should put a From:
+> .... when sending patches.
+> 
+> > Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+> > ---
+> >  drivers/pci/quirks.c    |   14 ++++++++++++++
+> >  include/linux/pci_ids.h |    4 ++++
+> >  2 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> Jesse,
+> 
+> can you take that or should I push it through x86 ?
 
-My bad, sorry
+I can pull it in.
 
-[PATCH] ehea: fix skb_frag_size typo
-
-commit 9e903e085262 (net: add skb frag size accessors) introduced a typo
-in ehea driver.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- drivers/net/ethernet/ibm/ehea/ehea_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-index 0d4d4f6..37b70f7 100644
---- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
-+++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-@@ -1689,7 +1689,7 @@ static inline void write_swqe2_data(struct sk_buff *skb, struct net_device *dev,
- 			sgentry = &sg_list[i - sg1entry_contains_frag_data];
- 
- 			sgentry->l_key = lkey;
--			sgentry->len = frag_size(frag);
-+			sgentry->len = skb_frag_size(frag);
- 			sgentry->vaddr = ehea_map_vaddr(skb_frag_address(frag));
- 			swqe->descriptors++;
- 		}
-
-
+Thanks,
+Jesse
