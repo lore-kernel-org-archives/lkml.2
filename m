@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab1JYImN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 04:42:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59635 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab1JYImJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 04:42:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: linux-next: manual merge of the pm tree with the s390 tree
-Date: Tue, 25 Oct 2011 10:44:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-References: <20111025182025.d57f82a57ceaa8fae7cc5127@canb.auug.org.au> <201110251039.46327.rjw@sisk.pl> <20111025104005.733cd419@de.ibm.com>
-In-Reply-To: <20111025104005.733cd419@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755454Ab1JYIoL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 04:44:11 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:41834 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab1JYIoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 04:44:09 -0400
+Message-ID: <1319532245.3056.5.camel@br98xy6r>
+Subject: Re: kdump: crash_kexec()-smp_send_stop() race in panic
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, akpm@linux-foundation.org,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 25 Oct 2011 10:44:05 +0200
+In-Reply-To: <m1aa8qfhdk.fsf@fess.ebiederm.org>
+References: <1319468137.3615.16.camel@br98xy6r>
+	 <m1ipneifqv.fsf@fess.ebiederm.org>
+	 <CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
+	 <m1aa8qfhdk.fsf@fess.ebiederm.org>
+Organization: IBM
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110251044.40354.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 25, 2011, Martin Schwidefsky wrote:
-> On Tue, 25 Oct 2011 10:39:46 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Tuesday, October 25, 2011, Stephen Rothwell wrote:
-> > > Hi Rafael,
-> > > 
-> > > Today's linux-next merge of the pm tree got a conflict in
-> > > arch/s390/kernel/suspend.c between commit 4de2166b1804 ("[S390] sparse:
-> > > fix sparse warnings about missing prototypes") from the s390 tree and
-> > > commit 85055dd805f0 ("PM / Hibernate: Include storage keys in hibernation
-> > > image on s390") from the pm tree.
-> > > 
-> > > I fixed it up (see below) and can carry the fix as necessary.
-> > 
-> > The fix looks correct to me, so please carry it going forward (unless
-> > Martin decides to pull it into his tree).
-> 
-> I could add the git commit 85055dd805f0 from the pm tree to git390 and fix
-> the merge conflict in the new sparse patch. Dunno if it is worthwhile.
+Hello Eric,
 
-Not really.  I think the conflict is easy enough to handle at merge time.
+On Mon, 2011-10-24 at 10:07 -0700, Eric W. Biederman wrote:
 
-Thanks,
-Rafael
+[snip]
+
+> So my second thought is to introduce another atomic variable
+> panic_in_progress, visible only in panic.  The cpu that sets
+> increments panic_in_progress can call smp_send_stop.  The rest of
+> the cpus can just go into a busy wait.  That should stop nasty
+> fights about who is going to come out of smp_send_stop first.
+
+So this is a spinlock, no? What about the following patch:
+---
+ kernel/panic.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
+  */
+ NORET_TYPE void panic(const char * fmt, ...)
+ {
++	static DEFINE_SPINLOCK(panic_lock);
+ 	static char buf[1024];
+ 	va_list args;
+ 	long i, i_next = 0;
+@@ -68,8 +69,12 @@ NORET_TYPE void panic(const char * fmt,
+ 	 * It's possible to come here directly from a panic-assertion and
+ 	 * not have preempt disabled. Some functions called from here want
+ 	 * preempt to be disabled. No point enabling it later though...
++	 *
++	 * Only one CPU is allowed to execute the panic code. For multiple
++	 * parallel invocations of panic all other CPUs will wait on the
++	 * panic_lock. They are stopped afterwards by smp_send_stop().
+ 	 */
+-	preempt_disable();
++	spin_lock(&panic_lock);
+ 
+ 	console_verbose();
+ 	bust_spinlocks(1);
+
+
