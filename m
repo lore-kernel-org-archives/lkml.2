@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab1JYReG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 13:34:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752661Ab1JYReD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 13:34:03 -0400
-Message-ID: <1319564009.3280.22.camel@localhost>
-Subject: Re: [PATCH 05/10] user namespace: clamp down users of cap_raised
-From: Eric Paris <eparis@redhat.com>
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
-        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de
-Date: Tue, 25 Oct 2011 13:33:29 -0400
-In-Reply-To: <20111025030314.GA27425@sergelap>
-References: <CALQRfL51U=cuLdVUpFXTog++3WwMjJB+9S6T8gVibC5gdGa5JQ@mail.gmail.com>
-	 <1318974898-21431-1-git-send-email-serge@hallyn.com>
-	 <1318974898-21431-6-git-send-email-serge@hallyn.com>
-	 <14652.1319014868@redhat.com> <20111024144334.GA26603@hallyn.com>
-	 <CALQRfL4zCbzr_Fa0ySi96j06nw7ifocCxUjYUs6vXxeNvjCutQ@mail.gmail.com>
-	 <20111024172842.GA13556@sergelap>
-	 <CALQRfL7ZNv9+7tooJC8x8Pmz62QtnJ+-pVFRy_YspCG1BhZKzg@mail.gmail.com>
-	 <20111025030314.GA27425@sergelap>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752585Ab1JYRnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 13:43:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48918 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab1JYRnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 13:43:45 -0400
+Date: Tue, 25 Oct 2011 18:42:22 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Mark Einon <mark.einon@gmail.com>, Greg KH <greg@kroah.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH staging 6/6] et131x: uncloak PCIe capabilities.
+Message-ID: <20111025174149.GA4251@msilap.einon>
+References: <1319361774-3148-1-git-send-email-mark.einon@gmail.com>
+ <20111023093651.GA22285@kroah.com>
+ <20111023094231.GA3409@msilap.einon>
+ <20111023171214.GF28657@electric-eye.fr.zoreil.com>
+ <20111024195602.GA3473@msilap.einon>
+ <20111025155921.GC2019@electric-eye.fr.zoreil.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111025155921.GC2019@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-24 at 22:03 -0500, Serge E. Hallyn wrote:
-> Quoting Andrew G. Morgan (morgan@kernel.org):
-> > On Mon, Oct 24, 2011 at 10:28 AM, Serge E. Hallyn
-> > <serge.hallyn@canonical.com> wrote:
-> > > Quoting Andrew G. Morgan (morgan@kernel.org):
-> > >> Serge,
-> > >>
-> > >> It seems as if this whole thing is really idiomatic. How about?
-> > >>
-> > >> #define IN_ROOT_USER_NS_CAPABLE(cap)  \
-> > >>    ((current_user_ns() == &init_user_ns) && cap_raised(current_cap(), cap))
-> > >
-> > > My objection to this was that it seems to encourage others to use it :)  I'm
-> > > not sure we want that.  Also, IN_ROOT_USER_NS seems more generally useful.
-> > 
-> > What is driving the choice of when its appropriate? How can a
+On Tue, Oct 25, 2011 at 05:59:21PM +0200, Francois Romieu wrote:
+> Mark Einon <mark.einon@gmail.com> :
+> [...]
+> > The PCIe changes are good, however I think using gotos here doesn't add
+> > anything as there's no difficult locking to navigate and makes the code
+> > harder to read.
+> > both out: and err_out: are used to return an error, and the backwards
+> > jumping goto makes me a bit uncomfortable. Could you respin with just the
+> > PCIe changes?
 > 
-> I'd like to say it's never appropriate.  The reason is that it bypasses
-> the whole security_ops->capable() sequence, so for instance SELinux is
-> kept in the dark.
+> I confess I use a 55 lines vi split terminal when reviewing these blocks.
 > 
-> > developer determine this? If you make it hard, presumably folk won't
-> > do it by default, but will that create a burdon on others to go round
-> > patching things like this up?
-> > 
-> > > But if I'm the only one who feels this way I'll go ahead and do it...
-> > 
-> > I'm more of a optimize for a human to read the source code (ie. debug
-> > a problem) kind of person. If IN_ROOT_USER_NS is useful, you could
-> > always define IN_ROOT_USER_NS_CAPABLE in terms of IN_ROOT_USER_NS &&
-> 
-> My other objection is that, in contrast to IN_ROOT_USER_NS(), which is
-> very clear, IN_ROOT_USER_NS_CAPABLE() is not as helpful.  I'm sure a
-> better name is out there somewhere, though.
-> 
-> > ... and provide both.
-> > 
-> > I guess I'm unclear, however, when you want developers to use one or
-> > the other variant of the basic capable() functionality. Since I'm not
-> > clear, I'm suspecting this is a fragile situation.
-> 
-> I think only security code (LSMs) should be using cap_raised directly.
-> Everything else should go through the capable()/has_capability() family
-> of functions.  Which, incidentally, have been (or are about to be) made
-> less of a mess and thus less fragile by Eric Paris' patchset starting at
-> http://www.spinics.net/linux/fedora/linux-security-module/msg11896.html
+> As there is no documentation to check the remaining PCIe candidate bits,
+> it's probably not worth it anyway.
 
-(sorry out all last week)
+Ok, I'll fixup the changes I highlighted and Ack your original patches, it's not much work to do so.
 
-I was going to ask why we have these user at all.  Is there a reason
-they are bypassing the LSM and not setting PF_PRIV?  Is the best
-solution to just bring them back into the capable fold?
+I do have some documentation for the PCI part of the registers (et1310_datasheet.pdf), which you can find online or I can send you a copy if you're interested (I managed to get it from LSI, who bought Agere).
+I've also been using a datasheet for the truephy ET1011 (also found online) as reference for some of the other registers, which although not exactly the same, is almost identical. You're welcome to a copy of that too.
 
--Eric
+Cheers,
 
+Mark
