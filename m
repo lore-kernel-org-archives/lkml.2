@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab1JYKQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 06:16:21 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28381 "EHLO relay.sw.ru"
+	id S1756422Ab1JYKQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 06:16:31 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:27601 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756312Ab1JYKQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 06:16:19 -0400
-Subject: [PATCH v6 3/8] SUNRPC: introduce svc helpers for prepairing rpcbind
-	infrastructure
+	id S1756392Ab1JYKQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 06:16:29 -0400
+Subject: [PATCH v6 4/8] SUNRPC: setup rpcbind clients if service requires it
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Tue, 25 Oct 2011 14:16:58 +0300
-Message-ID: <20111025101656.12689.66420.stgit@localhost6.localdomain6>
+Date: Tue, 25 Oct 2011 14:17:08 +0300
+Message-ID: <20111025101705.12689.68022.stgit@localhost6.localdomain6>
 In-Reply-To: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
 References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,87 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helpers will be used only for those services, that will send portmapper
-registration calls.
+New function ("svc_uses_rpcbind") will be used to detect, that new service will
+send portmapper register calls. For such services we will create rpcbind
+clients and remove all stale portmap registrations.
+Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
+in case of this field wasn't initialized earlier. This will allow to destroy
+rpcbind clients when no other users of them left.
+
+Note: Currently, any creating service will be detected as portmap user.
+Probably, this is wrong. But now it depends on program versions "vs_hidden"
+flag.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- include/linux/sunrpc/clnt.h |    2 ++
- net/sunrpc/rpcb_clnt.c      |    2 +-
- net/sunrpc/svc.c            |   35 +++++++++++++++++++++++++++++++++++
- 3 files changed, 38 insertions(+), 1 deletions(-)
+ net/sunrpc/svc.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index db7bcaf..1eb437d 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -135,6 +135,8 @@ void		rpc_shutdown_client(struct rpc_clnt *);
- void		rpc_release_client(struct rpc_clnt *);
- void		rpc_task_release_client(struct rpc_task *);
- 
-+int		rpcb_create_local(void);
-+void		rpcb_put_local(void);
- int		rpcb_register(u32, u32, int, unsigned short);
- int		rpcb_v4_register(const u32 program, const u32 version,
- 				 const struct sockaddr *address,
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index 7e5a0f8..dba2331 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -321,7 +321,7 @@ out:
-  * Returns zero on success, otherwise a negative errno value
-  * is returned.
-  */
--static int rpcb_create_local(void)
-+int rpcb_create_local(void)
- {
- 	static DEFINE_MUTEX(rpcb_create_local_mutex);
- 	int result = 0;
 diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 6a69a11..d2d61bf 100644
+index d2d61bf..918edc3 100644
 --- a/net/sunrpc/svc.c
 +++ b/net/sunrpc/svc.c
-@@ -354,6 +354,41 @@ svc_pool_for_cpu(struct svc_serv *serv, int cpu)
- 	return &serv->sv_pools[pidx % serv->sv_nrpools];
- }
+@@ -454,8 +454,15 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 		spin_lock_init(&pool->sp_lock);
+ 	}
  
-+static int svc_rpcb_setup(struct svc_serv *serv)
-+{
-+	int err;
-+
-+	err = rpcb_create_local();
-+	if (err)
-+		return err;
-+
-+	/* Remove any stale portmap registrations */
-+	svc_unregister(serv);
-+	return 0;
-+}
-+
-+static void svc_rpcb_cleanup(struct svc_serv *serv)
-+{
-+	svc_unregister(serv);
-+	rpcb_put_local();
-+}
-+
-+static int svc_uses_rpcbind(struct svc_serv *serv)
-+{
-+	struct svc_program	*progp;
-+	unsigned int		i;
-+
-+	for (progp = serv->sv_program; progp; progp = progp->pg_next) {
-+		for (i = 0; i < progp->pg_nvers; i++) {
-+			if (progp->pg_vers[i] == NULL)
-+				continue;
-+			if (progp->pg_vers[i]->vs_hidden == 0)
-+				return 1;
+-	/* Remove any stale portmap registrations */
+-	svc_unregister(serv);
++	if (svc_uses_rpcbind(serv)) {
++	       	if (svc_rpcb_setup(serv) < 0) {
++			kfree(serv->sv_pools);
++			kfree(serv);
++			return NULL;
 +		}
++		if (!serv->sv_shutdown)
++			serv->sv_shutdown = svc_rpcb_cleanup;
 +	}
-+
-+	return 0;
-+}
  
- /*
-  * Create an RPC service
+ 	return serv;
+ }
 
