@@ -1,95 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab1JYLqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:46:35 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:52714 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab1JYLqd convert rfc822-to-8bit (ORCPT
+	id S1756396Ab1JYLt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:49:28 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:58591 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab1JYLt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:46:33 -0400
+	Tue, 25 Oct 2011 07:49:27 -0400
+Message-ID: <4EA6A23D.3080605@scalemp.com>
+Date: Tue, 25 Oct 2011 13:49:17 +0200
+From: Eial Czerwacki <eial@scalemp.com>
+Organization: ScaleMP
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101020 Remi/fc8 Thunderbird/3.1.5
 MIME-Version: 1.0
-In-Reply-To: <20111025.063206.2273357152859701628.davem@davemloft.net>
-References: <20111025.063206.2273357152859701628.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 25 Oct 2011 13:46:11 +0200
-X-Google-Sender-Auth: 7cSKNO2zrQCZ-RJnfAgyVtsTozU
-Message-ID: <CA+55aFw1GVvszqoC_f0RAvG5t1xj0CSYLhLU=y0gQ+_54Gsomw@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>, Greg KH <gregkh@suse.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+CC: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: [PATCH] IRQ: no IRQ affinity patch
+References: <4EA66964.8050602@scalemp.com> <9B14D1490DDECA4E974F6B9FC9EBAB3140CD274368@VMBX108.ihostexchange.net>
+In-Reply-To: <9B14D1490DDECA4E974F6B9FC9EBAB3140CD274368@VMBX108.ihostexchange.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
->
-> I have to say I was really impressed with GIT's rename detection.  For
-> example, when I'd pull bug fixes from the 'net' tree into this
-> 'net-next' tree, GIT would figure it out and cleanly merge in the
-> fixes even though the file names were completely different.
+Tell vSMP Foundation to ignore IOAPIC irq routing and make the kernel
+work in this mode by setting vector_allocation for all CPUs, so IDT
+on all processors will accept this interrupt.
 
-Sadly, it doesn't work with files that aren't moved, but are split
-into lots of files. So I got a conflict on the drivers/net/Kconfig
-file due to the file being moved to tons of different locations. But
-the change was pretty trivial, so I think I got that trivially right
-too.
+Signed-off-by: Eial Czerwacki<eial@scalemp.com>
+Signed-off-by: Shai Fultheim<shai@scalemp.com>
+Author: Ravikiran Thirumalai<kiran@scalemp.com>
+---
 
-> I'll also note that I had to bump GIT's diff.renamelimit to about 1000
-> to generate this pull request.
+Index: b/arch/x86/kernel/vsmp_64.c
+===================================================================
+--- a/arch/x86/kernel/vsmp_64.c	2010-05-12 14:59:32.000000000 -0700
++++ b/arch/x86/kernel/vsmp_64.c	2010-05-24 11:58:28.000000000 -0700
+@@ -15,6 +15,7 @@
+   #include<linux/init.h>
+   #include<linux/pci_ids.h>
+   #include<linux/pci_regs.h>
++#include<linux/irq.h>
 
-Yeah. You can probably just set it to zero to disable the limiting
-entirely. The reason for the rename limit is for crazy use cases on
-smaller machines than you'll probably ever use. So the git default
-values tend to try to be safe for people who have smaller machines.
+   #include<asm/apic.h>
+   #include<asm/pci-direct.h>
+@@ -92,6 +93,12 @@ static void __init set_vsmp_pv_ops(void)
+   	ctl = readl(address + 4);
+   	printk(KERN_INFO "vSMP CTL: capabilities:0x%08x  control:0x%08x\n",
+   	       cap, ctl);
++	/* Set irqrouting to ignore since this vsmp */
++	if (cap&   ctl&   (1<<   8)) {
++		ctl&= ~(1<<   8);
++		no_irq_affinity = 1;
++	}
++
+   	if (cap&   ctl&   (1<<   4)) {
+   		/* Setup irq ops and turn on vSMP  IRQ fastpath handling */
+   		pv_irq_ops.irq_disable = PV_CALLEE_SAVE(vsmp_irq_disable);
+@@ -99,12 +106,11 @@ static void __init set_vsmp_pv_ops(void)
+   		pv_irq_ops.save_fl  = PV_CALLEE_SAVE(vsmp_save_fl);
+   		pv_irq_ops.restore_fl  = PV_CALLEE_SAVE(vsmp_restore_fl);
+   		pv_init_ops.patch = vsmp_patch;
+-
+   		ctl&= ~(1<<   4);
+-		writel(ctl, address + 4);
+-		ctl = readl(address + 4);
+-		printk(KERN_INFO "vSMP CTL: control set to:0x%08x\n", ctl);
+   	}
++	writel(ctl, address + 4);
++	ctl = readl(address + 4);
++	printk(KERN_INFO "vSMP CTL: control set to:0x%08x\n", ctl);
 
-> I think that, without the driver renames, this is actually a smaller
-> networking pull request than usual for the merge window.
+   	early_iounmap(address, 8);
+   }
 
-This had an annoying conflict with some of the driver base changes. It
-was made doubly annoying by the fact that Greg seems to use some
-seriously bad drugs, and creates totally crap commit messages that are
-just annoying when you have to look at them because there's some
-conflict.
+Index: b/arch/x86/kernel/apic/apic_flat_64.c
+===================================================================
+--- a/arch/x86/kernel/apic/apic_flat_64.c	2010-05-12 14:59:32.000000000 -0700
++++ b/arch/x86/kernel/apic/apic_flat_64.c	2010-05-24 11:58:28.000000000 -0700
+@@ -52,7 +52,10 @@
+   	 * hyperthread was specified in the interrupt desitination.
+   	 */
+   	cpumask_clear(retmask);
+-	cpumask_bits(retmask)[0] = APIC_ALL_CPUS;
++	if(is_vsmp_box())
++		cpumask_setall(retmask);
++	else
++		cpumask_bits(retmask)[0] = APIC_ALL_CPUS;
+   }
 
-Greg - please fix your crazy tools. Look at this:
+   /*
+@@ -263,7 +266,10 @@
+   static void physflat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+   {
+   	cpumask_clear(retmask);
+-	cpumask_set_cpu(cpu, retmask);
++	if(is_vsmp_box())
++		cpumask_setall(retmask);
++	else
++		cpumask_set_cpu(cpu, retmask);
+   }
 
-   git log fs/sysfs/dir.c
+   static void physflat_send_IPI_mask(const struct cpumask *cpumask, int vector)
 
-and tell me why the f*&% you have commit messages like this:
+Index: b/arch/x86/include/asm/x2apic.h
+===================================================================
+--- a/arch/x86/include/asm/x2apic.h 	2010-05-12 14:59:32.000000000 -0700
++++ b/arch/x86/include/asm/x2apic.h 	2010-05-24 11:58:28.000000000 -0700
+@@ -29,7 +29,10 @@
+   static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
+   {
+   	cpumask_clear(retmask);
+-	cpumask_set_cpu(cpu, retmask);
++	if(is_vsmp_box())
++		cpumask_setall(retmask);
++	else
++		cpumask_set_cpu(cpu, retmask);
+   }
 
-  commit 4f72c0cab40536a0be501d85ea4918467ab82ad5
-  Author: Mikulas Patocka <mpatocka@redhat.com>
-  Date:   Mon Jul 25 17:55:57 2011 -0400
+   static void
 
-      sysfs: use rb-tree for name lookups
 
-      sysfs: use rb-tree for name lookups
 
-      Use red-black tree for name lookups.
-
-      Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-      Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-and there's a *lot* of them. That duplication of the header line is
-useless. It is *doubly* useless to then have a "body" of the commit
-that just says the same thing *again*. Christ!
-
-EVERY SINGLE COMMIT from Mikulas has that problem. WHY?
-
-So stop duplicating the header line! And make the body of the commit
-actually tell us something *useful*.
-
-Anyway, after that rant about really bad practices, let me say that I
-did fix up the conflict and I think it's right. But I won't guarantee
-it, so please check the changes to fs/sysfs/dir.c.
-
-I added Mikulas, Greg and Eric Biederman to the email, because those
-three people seem to be the ones that caused the conflicts in that
-file. Please do check out my conflict resolution.
-
-                   Linus
