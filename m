@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab1JYKQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 06:16:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:6624 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932625Ab1JYKQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 06:16:50 -0400
-Subject: [PATCH v6 6/8] NFSd: call svc rpcbind cleanup explicitly
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Tue, 25 Oct 2011 14:17:28 +0300
-Message-ID: <20111025101725.12689.17164.stgit@localhost6.localdomain6>
-In-Reply-To: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
-References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S932623Ab1JYKQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 06:16:47 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6052 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467Ab1JYKQp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 06:16:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 25 Oct 2011 03:16:44 -0700
+From: vbyravarasu@nvidia.com
+To: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, gregkh@suse.de
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vbyravarasu@nvidia.com
+Subject: [PATCH] PM: fix calculation mistake in roll-over cases
+Date: Tue, 25 Oct 2011 15:50:52 +0530
+Message-Id: <1319538052-2480-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have to call svc_rpcb_cleanup() explicitly from nfsd_last_thread() since
-this function is registered as service shutdown callback and thus nobody else
-will done it for us.
+From: venu byravarasu <vbyravarasu@nvidia.com>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+In case of jiffies roll over, delta is made zero.
+Hence fixing it, after taking roll over into consideration.
 
+Signed-off-by: venu byravarasu <vbyravarasu@nvidia.com>
 ---
- fs/nfsd/nfssvc.c           |    2 ++
- include/linux/sunrpc/svc.h |    1 +
- net/sunrpc/svc.c           |    3 ++-
- 3 files changed, 5 insertions(+), 1 deletions(-)
+When jiffies roll over, calculation of time spent in the
+current state (stored in variable 'delta') is incorrect.
+Hence fixing it, after taking roll over into consideration.
 
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index dc5a1bf..52cd976 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -256,6 +256,8 @@ static void nfsd_last_thread(struct svc_serv *serv)
- 	nfsd_serv = NULL;
- 	nfsd_shutdown();
- 
-+	svc_rpcb_cleanup(serv);
-+
- 	printk(KERN_WARNING "nfsd: last server has exited, flushing export "
- 			    "cache\n");
- 	nfsd_export_flush();
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 223588a..5e71a30 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -401,6 +401,7 @@ struct svc_procedure {
- /*
-  * Function prototypes.
-  */
-+void svc_rpcb_cleanup(struct svc_serv *serv);
- struct svc_serv *svc_create(struct svc_program *, unsigned int,
- 			    void (*shutdown)(struct svc_serv *));
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 407462f..252552a 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -367,11 +367,12 @@ static int svc_rpcb_setup(struct svc_serv *serv)
- 	return 0;
- }
- 
--static void svc_rpcb_cleanup(struct svc_serv *serv)
-+void svc_rpcb_cleanup(struct svc_serv *serv)
+ drivers/base/power/runtime.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 1079e03..bd93fb0 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -30,12 +30,13 @@ static int rpm_suspend(struct device *dev, int rpmflags);
+ void update_pm_runtime_accounting(struct device *dev)
  {
- 	svc_unregister(serv);
- 	rpcb_put_local();
- }
-+EXPORT_SYMBOL_GPL(svc_rpcb_cleanup);
+ 	unsigned long now = jiffies;
+-	int delta;
++	unsigned long delta;
++	unsigned long max_num = ~0;
  
- static int svc_uses_rpcbind(struct svc_serv *serv)
- {
+ 	delta = now - dev->power.accounting_timestamp;
+ 
+-	if (delta < 0)
+-		delta = 0;
++	if (now < dev->power.accounting_timestamp)
++		delta = max_num - dev->power.accounting_timestamp + now;
+ 
+ 	dev->power.accounting_timestamp = now;
+ 
+-- 
+1.7.1.1
 
