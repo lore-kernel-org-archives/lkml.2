@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464Ab1JYNXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 09:23:03 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57185 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933399Ab1JYNXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 09:23:00 -0400
-Date: Tue, 25 Oct 2011 09:22:56 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Tao Ma <tm@tao.ma>, linux-ext4@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] ext4: Prevent stack overrun in ext4_file_open when
- recording last known mountpoint
-Message-ID: <20111025132256.GK31921@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>, Tao Ma <tm@tao.ma>,
-	linux-ext4@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <20111021211759.10784.17257.stgit@elm3c44.beaverton.ibm.com>
- <20111021211818.10784.77127.stgit@elm3c44.beaverton.ibm.com>
+	id S933469Ab1JYNYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 09:24:37 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:21713 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933399Ab1JYNYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 09:24:36 -0400
+Message-ID: <4EA6B8BA.2030709@parallels.com>
+Date: Tue, 25 Oct 2011 17:25:14 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111021211818.10784.77127.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
+ rpcbind clients
+References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>		 <20111025101608.12689.68689.stgit@localhost6.localdomain6>	 <1319541369.2716.1.camel@lade.trondhjem.org>	 <4EA6AE87.5000309@parallels.com> <1319546750.2716.5.camel@lade.trondhjem.org>
+In-Reply-To: <1319546750.2716.5.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 02:18:18PM -0700, Darrick J. Wong wrote:
-> In ext4_file_open, the filesystem records the mountpoint of the first file that
-> is opened after mounting the filesystem.  It does this by allocating a 64-byte
-> stack buffer, calling d_path() to grab the mount point through which this file
-> was accessed, and then memcpy()ing 64 bytes into the superblock's
-> s_last_mounted field, starting from the return value of d_path(), which is
-> stored as "cp".  However, if cp > buf (which it frequently is since path
-> components are prepended starting at the end of buf) then we can end up copying
-> stack data into the superblock.
-> 
-> Writing stack variables into the superblock doesn't sound like a great idea, so
-> use strlcpy instead.  Andi Kleen suggested using strlcpy instead of strncpy.
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+25.10.2011 16:45, Trond Myklebust пишет:
+>
+> The empty 'return' at the end of a void function: it is 100%
+> redundant...
+>
 
-Thanks, applied.
+O, yes, of course. Sorry.
 
-						- Ted
+
+-- 
+Best regards,
+Stanislav Kinsbursky
