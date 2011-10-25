@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1JYI0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 04:26:51 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47033 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab1JYI0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 04:26:50 -0400
-Date: Tue, 25 Oct 2011 19:26:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Pirko <jpirko@redhat.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Mark Einon <mark.einon@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the net-next tree
-Message-Id: <20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d"
+	id S1755241Ab1JYI10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 04:27:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50478 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754589Ab1JYI1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 04:27:24 -0400
+Message-ID: <4EA672D9.106@zytor.com>
+Date: Tue, 25 Oct 2011 10:27:05 +0200
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Kyle Moffett <kyle@moffetthome.net>
+CC: Greg KH <greg@kroah.com>, Jari Ruusu <jariruusu@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel.org tarball/patch signature files
+References: <4EA3F7C0.24E469C5@users.sourceforge.net> <20111023113727.GA24285@kroah.com> <4EA41FB7.CB5369CF@users.sourceforge.net> <20111025014911.GC22764@kroah.com> <CAGZ=bqKvb96VvZ5a+VJWZXKdr553n8SW2=JOLZS1fGY5KE7iZg@mail.gmail.com>
+In-Reply-To: <CAGZ=bqKvb96VvZ5a+VJWZXKdr553n8SW2=JOLZS1fGY5KE7iZg@mail.gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/25/2011 06:31 AM, Kyle Moffett wrote:
+> 
+> Unfortunately, while there are "pristine-gz" and "pristine-bz2" tools,
+> there has not yet been developed a "pristine-xz" tool:
+>   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=499489
+> 
+> So it's not yet reasonably possible for the kernel.org archive, but
+> sometime in the future it might become so.
+> 
 
-Hi Greg,
+There are a lot of strong reasons to NOT do so, however.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/et131x/et1310_tx.c drivers/staging/et131x/et131x_netdev.c
-between commits afc4b13df143 ("net: remove use of ndo_set_multicast_list
-in drivers"), bf3f1a6081aa ("et131x: convert to SKB paged frag API") and
-5d6bcdfe38ce ("net: use DMA_x_DEVICE and dma_mapping_error with
-skb_frag_dma_map") from the net-next tree and commit d2796743cba2
-("staging: et131x: Put all .c files into one big file") from the staging
-tree.
+Any time we have something signed by a developer, we have something that
+is precious and cannot be replicated by kernel.org staff.
 
-The latter removed these files, so I did that but more fixup is proably
-needed.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Any time we have something signed by a robot, we have something that
+people *will* misinterpret as having security properties that they don't
+-- this has unfortunately been amply shown.
 
---Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d
-Content-Type: application/pgp-signature
+Compression formats evolve over time; right now we're concerned with gz,
+bz2, and xz, but xz is brand new here and there may very well be new
+things in the future.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+It would be a very good thing for people to develop tools to run
+compressors and decompressors in locked-down boxes.  It should be
+possible to run these kinds of programs without access to either network
+or filesystem; only read from stdin and out on stdout (and presumably
+stderr for errors.)  This would solve problems for much more than just
+kernel.org.
 
-iQIcBAEBCAAGBQJOpnK8AAoJEECxmPOUX5FE4DkP/A+8ojZnxf73+gX+05N+PFD4
-Fe6VxHQR4eMCVNvY6CKmtCngwMHyDeWqXqSneOSB2bFrVDg6gpMTujMqaceoq4mt
-3J1QpZbJ6yGYhkYf3QqC7C5AgEgvThqcRS4C7pLukzNZDno7os26Lp095eIPyJDf
-9wAMr1oAn1Q/6Um0uRazC/RRCv0B0RsQGUhFGvua1E3bgKVYzOVmD4kyRGky6CiU
-VbUWIa+0pSZ1JaUR1zaHF+N1A/s1gtkVarc0iO7SbifK1x5Wq7e+BA72guTzaDGQ
-DMGLeC2C854j+WDbv1yiQ+KwCsyiEjMnITHDGmzVsd8nW3VxA1xg4/hSpQma0ktE
-ecQzFgl1R8/7NnT5unTkvTW+tU2dLtsO/y7952aXHLTS5qSImI5fMN2AhHTAD0UE
-luUQAx82VYFVwQI5MrYwPkEJkt8ycZ4VtOvlQQ54EFyuW80efF1ZGRB9wtNmgtKf
-J5+AHZ6n0EawwdkCpVmTVwiJClIShUgpNlStGVzXTKsmo0wA+j+D9RCYJNcHB3jS
-fKTHIjj+VGzDH37R5tznQqPxU9ZafPR91vLadNRizyuHGCwA6sYOsNp8E2DDlaYw
-gaPTxSoT7RpcKCIh16bjpijVeBaTXH7FrbPPkGXjTXlbQ0+mJOTuE2ycEp7Vx7GO
-idBP6fqx5yZ8ivpBzht/
-=Ti4E
------END PGP SIGNATURE-----
+	-hpa
 
---Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d--
