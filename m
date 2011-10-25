@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab1JYNE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 09:04:56 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55539 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933213Ab1JYNEy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 09:04:54 -0400
+	id S933424Ab1JYNGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 09:06:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60158 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933213Ab1JYNGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 09:06:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: vbyravarasu@nvidia.com
+Subject: Re: [PATCH] PM: fix calculation mistake in roll-over cases
+Date: Tue, 25 Oct 2011 15:08:40 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, len.brown@intel.com, gregkh@suse.de,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <1319538052-2480-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1319538052-2480-1-git-send-email-vbyravarasu@nvidia.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 25 Oct 2011 15:04:53 +0200
-Message-ID: <CA+icZUVe7DrbrbDB7wJWrT9FHUsV62UFdifWbe3MGL7ujkX5Vw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Oct 25 (block ?)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110251508.40854.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 11:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> *Note well*
->
-> This tree has nate had any build testing at all.  As such, it probably
-> doesn't build :-) This tree is really just a roll up of the current state
-> of the trees when the v3.2 merge window opened.  It will not be put into
-> the build system referred to below.
->
+On Tuesday, October 25, 2011, vbyravarasu@nvidia.com wrote:
+> From: venu byravarasu <vbyravarasu@nvidia.com>
+> 
+> In case of jiffies roll over, delta is made zero.
+> Hence fixing it, after taking roll over into consideration.
+> 
+> Signed-off-by: venu byravarasu <vbyravarasu@nvidia.com>
+> ---
+> When jiffies roll over, calculation of time spent in the
+> current state (stored in variable 'delta') is incorrect.
+> Hence fixing it, after taking roll over into consideration.
+> 
+>  drivers/base/power/runtime.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> index 1079e03..bd93fb0 100644
+> --- a/drivers/base/power/runtime.c
+> +++ b/drivers/base/power/runtime.c
+> @@ -30,12 +30,13 @@ static int rpm_suspend(struct device *dev, int rpmflags);
+>  void update_pm_runtime_accounting(struct device *dev)
+>  {
+>  	unsigned long now = jiffies;
+> -	int delta;
+> +	unsigned long delta;
+> +	unsigned long max_num = ~0;
+>  
+>  	delta = now - dev->power.accounting_timestamp;
+>  
+> -	if (delta < 0)
+> -		delta = 0;
+> +	if (now < dev->power.accounting_timestamp)
+> +		delta = max_num - dev->power.accounting_timestamp + now;
+>  
+>  	dev->power.accounting_timestamp = now;
 
-I have generated a single linux-next (next-20111025) patch on top of
-v3.1, it's approx. 100M!
+I'm not sure how this is supposed to improve things.  Care to give more
+details?
 
-$ du -h patch-v3.1-next-20111025.patch
-96M     patch-v3.1-next-20111025.patch
-
-I noticed this build-failure:
-
-  CC      block/blk-throttle.o
-  CC [M]  fs/fuse/dir.o
-/mnt/sdb3/linux-kernel/linux-3.1/debian/build/source_i386_none/block/blk-throttle.c:
-In function 'blk_throtl_drain':
-/mnt/sdb3/linux-kernel/linux-3.1/debian/build/source_i386_none/block/blk-throttle.c:1221:2:
-error: implicit declaration of function 'lockdep_is_held'
-[-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-
-make[5]: *** [block/blk-throttle.o] Error 1
-make[4]: *** [block] Error 2
-
-This happens with Debian's gcc-4.6 (4.6.1-16) and default
-KBUILD_ENABLE_EXTRA_GCC_CHECKS value.
-
-- Sedat -
+Rafael
