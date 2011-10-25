@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab1JYKnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 06:43:14 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:37794 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab1JYKnN (ORCPT
+	id S1754803Ab1JYLHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:07:04 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:59525 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab1JYLHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 06:43:13 -0400
-Date: Tue, 25 Oct 2011 21:42:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: Tree for Oct 25
-Message-Id: <20111025214255.4381ace152ef032ebb9cc740@canb.auug.org.au>
-In-Reply-To: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
-References: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV."
+	Tue, 25 Oct 2011 07:07:01 -0400
+Message-ID: <4EA6983C.5080303@atmel.com>
+Date: Tue, 25 Oct 2011 13:06:36 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, plagnioj@jcrosoft.com
+Subject: Re: [PATCH V3 1/2] ARM: at91: dt: at91sam9g45 family and board device
+ tree files
+References: <4E9F8226.4030503@gmail.com> <15ab652499e7f6f8a26724bfd90643a8f3f96ad9.1319464310.git.nicolas.ferre@atmel.com> <4EA579E7.7000002@gmail.com>
+In-Reply-To: <4EA579E7.7000002@gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/24/2011 04:44 PM, Rob Herring :
+> On 10/24/2011 09:05 AM, Nicolas Ferre wrote:
+>> Create a new device tree source file for Atmel at91sam9g45 SoC family.
+>> The Evaluation Kit at91sam9m10g45ek includes it.
+>> This first basic support will be populated as drivers and boards will be
+>> converted to device tree.
+>> Contains serial, dma and interrupt controllers.
+>>
+>> The generic board file still takes advantage of platform data for early serial
+>> init. As we need a storage media and the NAND flash driver is not converted to
+>> DT yet, we keep old initialization for it.
+>>
+> 
+> This comment is out of date for serial.
 
-Hi all,
+Well, not for early serial actually.
 
-On Tue, 25 Oct 2011 20:36:28 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> It will not be put into the build system referred to below.
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>> V3:
+>> - additional clock lookup for device tree handling
+>> - devices disabled in dtsi file so that only useful devices are
+>>   enabled in dts files
+>>
+>> V2: foundation for AT91SAM generic support
+>> - device tree focused board file
+>> - inclusion of USART DT support
+>> - early USART and NAND still using platform data
+>>
+> 
+> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
 
-Linus convinced me that it may be useful to do the builds anyway, so the
-results will start appearing at http://kisskb.ellerman.id.au/linux-next
-over the next few hours.  Take the results with a grain of salt, some
-failures may have been caused by my merge fixups (and sparc will fail due
-to me applying a fix for a bug that no longer exists :-().
+Thanks Rob for your review. I send a pull request to Arnd on this material.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOppKvAAoJEECxmPOUX5FEfogQAJS0cWKFUltVyf34Mofkz8Fi
-bLzGhZxQBRCl7rjBmVxGYuOkcqphGa55boFDSb8pXs7xcDxhxbi13ud7CCVNaZMW
-U/DSXp4GJMW7lPST31uRF9bg4vX84Rs/+/ai19uWeViqtOjNYpG/tdYn99onulA3
-T0Bl3Vd/M+zANcmk1Z3Ukpf48aAO9/iC+oXsUrCv867L1H/IYdIfvisCq9tZmfmP
-Cv87e56/510+1hLS30xLmZpMZdkWxOZXhvOytn7UhYwfY13d9ohzdtK9Lnsv33v+
-5WYuAqdJb4vlS1k5M+r0c/Mw09df267qNOq77vlodVwncvVUkxOwhILL1d8MBQAE
-gA3SApZzECV4IOqWnfNA+4zsZN4IIEUF3j0U5sopgvV6TmvVR1RupnASDu0Ud+Wr
-eILhml5jN/fdQJlV7eI7aunNp1swyZZXGYBpRIz8veHYPIpOaM4DdtOCqSVhmZtS
-OxynMSRvIz/JVVM8ISFMHN9/nmloHi5LAeC6HUIVfE9C5p2xaWJsX1qEKdKTxZuo
-oca9sxozLUe8qEFgXW4Cvmx8kbnTIT+q7UGdPLuPUKdfmzocM5n+ePcqwCufgpAe
-6+DspxWIOHH/EjvZnsrZvpF4WNZhLEQs/NSSvLxLq4Vk04eB+myicKPKZXELftdi
-HwSx3cv8MPNMVrXZVs7V
-=IIS7
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV.--
+Best regards,
+-- 
+Nicolas Ferre
