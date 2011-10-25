@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1JYIXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 04:23:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41566 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab1JYIXn (ORCPT
+	id S1754946Ab1JYI0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 04:26:51 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47033 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab1JYI0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 04:23:43 -0400
-Date: Tue, 25 Oct 2011 09:23:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Tony Lindgren <tony@atomide.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stijn Devriendt <highguy@gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-Message-ID: <20111025082334.GA21616@sirena.org.uk>
-References: <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
- <CAKnu2MpQ8Wvd4TF8Ge=o8ACyEoaEY8TcvOSdT1w6zfYiSKFUiw@mail.gmail.com>
- <20111004203520.GK2870@ponder.secretlab.ca>
- <CAMjpGUe9abPsdWbum2MRzOV2b5_2FDqXZC-K0KThRA6MNTr4FA@mail.gmail.com>
- <CACRpkdatiBathcoo2VjKs9jHJiKC5trDCJ0bePX1q6KbrYRN-g@mail.gmail.com>
- <20111024073604.GA8708@ponder.secretlab.ca>
- <CACRpkdZ6DCeELLhiXF=oOMKB-DxeMuvbd_c6n4H1UDMhpHKZbA@mail.gmail.com>
- <20111024110518.GG8708@ponder.secretlab.ca>
- <20111025080532.GI4429@atomide.com>
- <20111025081719.GA4605@ponder.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111025081719.GA4605@ponder.secretlab.ca>
-X-Cookie: For off-road use only.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Tue, 25 Oct 2011 04:26:50 -0400
+Date: Tue, 25 Oct 2011 19:26:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jpirko@redhat.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Mark Einon <mark.einon@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the net-next tree
+Message-Id: <20111025192636.f816c8860ee168a0a4756eda@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 10:17:19AM +0200, Grant Likely wrote:
+--Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I've got no issue with a debugfs interface, although it would probably
-> a good idea to put a big scary warning into klog when userspace starts
-> manipulating pinctrl setting.  Maybe should taint the kernel too.
+Hi Greg,
 
-Yes, we really should taint the kernel for any non-mediated interface -
-never mind instability this stuff can cause physical damage if you get
-it wrong.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/et131x/et1310_tx.c drivers/staging/et131x/et131x_netdev.c
+between commits afc4b13df143 ("net: remove use of ndo_set_multicast_list
+in drivers"), bf3f1a6081aa ("et131x: convert to SKB paged frag API") and
+5d6bcdfe38ce ("net: use DMA_x_DEVICE and dma_mapping_error with
+skb_frag_dma_map") from the net-next tree and commit d2796743cba2
+("staging: et131x: Put all .c files into one big file") from the staging
+tree.
+
+The latter removed these files, so I did that but more fixup is proably
+needed.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOpnK8AAoJEECxmPOUX5FE4DkP/A+8ojZnxf73+gX+05N+PFD4
+Fe6VxHQR4eMCVNvY6CKmtCngwMHyDeWqXqSneOSB2bFrVDg6gpMTujMqaceoq4mt
+3J1QpZbJ6yGYhkYf3QqC7C5AgEgvThqcRS4C7pLukzNZDno7os26Lp095eIPyJDf
+9wAMr1oAn1Q/6Um0uRazC/RRCv0B0RsQGUhFGvua1E3bgKVYzOVmD4kyRGky6CiU
+VbUWIa+0pSZ1JaUR1zaHF+N1A/s1gtkVarc0iO7SbifK1x5Wq7e+BA72guTzaDGQ
+DMGLeC2C854j+WDbv1yiQ+KwCsyiEjMnITHDGmzVsd8nW3VxA1xg4/hSpQma0ktE
+ecQzFgl1R8/7NnT5unTkvTW+tU2dLtsO/y7952aXHLTS5qSImI5fMN2AhHTAD0UE
+luUQAx82VYFVwQI5MrYwPkEJkt8ycZ4VtOvlQQ54EFyuW80efF1ZGRB9wtNmgtKf
+J5+AHZ6n0EawwdkCpVmTVwiJClIShUgpNlStGVzXTKsmo0wA+j+D9RCYJNcHB3jS
+fKTHIjj+VGzDH37R5tznQqPxU9ZafPR91vLadNRizyuHGCwA6sYOsNp8E2DDlaYw
+gaPTxSoT7RpcKCIh16bjpijVeBaTXH7FrbPPkGXjTXlbQ0+mJOTuE2ycEp7Vx7GO
+idBP6fqx5yZ8ivpBzht/
+=Ti4E
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Oct_2011_19_26_36_+1100_5+fykKIOW=qJZ7+d--
