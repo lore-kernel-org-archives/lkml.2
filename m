@@ -1,132 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab1JYMpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 08:45:53 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:2015 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab1JYMpw convert rfc822-to-8bit (ORCPT
+	id S933391Ab1JYMrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 08:47:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48997 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932198Ab1JYMrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 08:45:52 -0400
-X-IronPort-AV: E=Sophos;i="4.69,404,1315206000"; 
-   d="scan'208";a="592119935"
-Subject: Re: [PATCH v6 1/8] SUNRPC: introduce helpers for reference counted
- rpcbind clients
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Date: Tue, 25 Oct 2011 14:45:50 +0200
-In-Reply-To: <4EA6AE87.5000309@parallels.com>
-References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
-		 <20111025101608.12689.68689.stgit@localhost6.localdomain6>
-	 <1319541369.2716.1.camel@lade.trondhjem.org>
-	 <4EA6AE87.5000309@parallels.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1319546750.2716.5.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 25 Oct 2011 12:45:51.0609 (UTC) FILETIME=[072F9690:01CC9314]
+	Tue, 25 Oct 2011 08:47:48 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] mfd: Convert wm831x core driver to devm_kzalloc()
+Date: Tue, 25 Oct 2011 14:47:40 +0200
+Message-Id: <1319546861-7620-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 16:41 +0400, Stanislav Kinsbursky wrote: 
-> 25.10.2011 15:16, Trond Myklebust пишет:
-> > On Tue, 2011-10-25 at 14:16 +0300, Stanislav Kinsbursky wrote:
-> >> v6:
-> >> 1) added write memory barrier to rpcb_set_local to make sure, that rpcbind
-> >> clients become valid before rpcb_users assignment
-> >> 2) explicitly set rpcb_users to 1 instead of incrementing it (looks clearer from
-> >> my pow).
-> >>
-> >> v5: fixed races with rpcb_users in rpcb_get_local()
-> >>
-> >> This helpers will be used for dynamical creation and destruction of rpcbind
-> >> clients.
-> >> Variable rpcb_users is actually a counter of lauched RPC services. If rpcbind
-> >> clients has been created already, then we just increase rpcb_users.
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> >>
-> >> ---
-> >>   net/sunrpc/rpcb_clnt.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >>   1 files changed, 54 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-> >> index e45d2fb..9fcdb42 100644
-> >> --- a/net/sunrpc/rpcb_clnt.c
-> >> +++ b/net/sunrpc/rpcb_clnt.c
-> >> @@ -114,6 +114,9 @@ static struct rpc_program	rpcb_program;
-> >>   static struct rpc_clnt *	rpcb_local_clnt;
-> >>   static struct rpc_clnt *	rpcb_local_clnt4;
-> >>
-> >> +DEFINE_SPINLOCK(rpcb_clnt_lock);
-> >> +unsigned int			rpcb_users;
-> >> +
-> >>   struct rpcbind_args {
-> >>   	struct rpc_xprt *	r_xprt;
-> >>
-> >> @@ -161,6 +164,57 @@ static void rpcb_map_release(void *data)
-> >>   	kfree(map);
-> >>   }
-> >>
-> >> +static int rpcb_get_local(void)
-> >> +{
-> >> +	int cnt;
-> >> +
-> >> +	spin_lock(&rpcb_clnt_lock);
-> >> +	if (rpcb_users)
-> >> +		rpcb_users++;
-> >> +	cnt = rpcb_users;
-> >> +	spin_unlock(&rpcb_clnt_lock);
-> >> +
-> >> +	return cnt;
-> >> +}
-> >> +
-> >> +void rpcb_put_local(void)
-> >> +{
-> >> +	struct rpc_clnt *clnt = rpcb_local_clnt;
-> >> +	struct rpc_clnt *clnt4 = rpcb_local_clnt4;
-> >> +	int shutdown;
-> >> +
-> >> +	spin_lock(&rpcb_clnt_lock);
-> >> +	if (--rpcb_users == 0) {
-> >> +		rpcb_local_clnt = NULL;
-> >> +		rpcb_local_clnt4 = NULL;
-> >> +	}
-> >> +	shutdown = !rpcb_users;
-> >> +	spin_unlock(&rpcb_clnt_lock);
-> >> +
-> >> +	if (shutdown) {
-> >> +		/*
-> >> +		 * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-> >> +		 */
-> >> +		if (clnt4)
-> >> +			rpc_shutdown_client(clnt4);
-> >> +		if (clnt)
-> >> +			rpc_shutdown_client(clnt);
-> >> +	}
-> >> +	return;
-> >
-> > I'm removing this before applying...
-> >
-> Sorry, but I don't understand what exactly you are removing, and why?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |    2 --
+ drivers/mfd/wm831x-i2c.c  |    3 +--
+ drivers/mfd/wm831x-spi.c  |    3 +--
+ 3 files changed, 2 insertions(+), 6 deletions(-)
 
-The empty 'return' at the end of a void function: it is 100%
-redundant...
-
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 0a2b8d4..3b76189 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -1875,7 +1875,6 @@ err_irq:
+ err_regmap:
+ 	mfd_remove_devices(wm831x->dev);
+ 	regmap_exit(wm831x->regmap);
+-	kfree(wm831x);
+ 	return ret;
+ }
+ 
+@@ -1887,7 +1886,6 @@ void wm831x_device_exit(struct wm831x *wm831x)
+ 		free_irq(wm831x->irq_base + WM831X_IRQ_AUXADC_DATA, wm831x);
+ 	wm831x_irq_exit(wm831x);
+ 	regmap_exit(wm831x->regmap);
+-	kfree(wm831x);
+ }
+ 
+ int wm831x_device_suspend(struct wm831x *wm831x)
+diff --git a/drivers/mfd/wm831x-i2c.c b/drivers/mfd/wm831x-i2c.c
+index ac8da1d..cb15609 100644
+--- a/drivers/mfd/wm831x-i2c.c
++++ b/drivers/mfd/wm831x-i2c.c
+@@ -30,7 +30,7 @@ static int wm831x_i2c_probe(struct i2c_client *i2c,
+ 	struct wm831x *wm831x;
+ 	int ret;
+ 
+-	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
++	wm831x = devm_kzalloc(&i2c->dev, sizeof(struct wm831x), GFP_KERNEL);
+ 	if (wm831x == NULL)
+ 		return -ENOMEM;
+ 
+@@ -42,7 +42,6 @@ static int wm831x_i2c_probe(struct i2c_client *i2c,
+ 		ret = PTR_ERR(wm831x->regmap);
+ 		dev_err(wm831x->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+-		kfree(wm831x);
+ 		return ret;
+ 	}
+ 
+diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
+index 8d6a9a9..a43cba3 100644
+--- a/drivers/mfd/wm831x-spi.c
++++ b/drivers/mfd/wm831x-spi.c
+@@ -30,7 +30,7 @@ static int __devinit wm831x_spi_probe(struct spi_device *spi)
+ 
+ 	type = (enum wm831x_parent)id->driver_data;
+ 
+-	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
++	wm831x = devm_kzalloc(&spi->dev, sizeof(struct wm831x), GFP_KERNEL);
+ 	if (wm831x == NULL)
+ 		return -ENOMEM;
+ 
+@@ -45,7 +45,6 @@ static int __devinit wm831x_spi_probe(struct spi_device *spi)
+ 		ret = PTR_ERR(wm831x->regmap);
+ 		dev_err(wm831x->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+-		kfree(wm831x);
+ 		return ret;
+ 	}
+ 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.6.3
 
