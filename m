@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab1JYQUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 12:20:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13785 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103Ab1JYQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 12:20:31 -0400
-Date: Tue, 25 Oct 2011 18:14:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>, Shuah Khan <shuah.khan@hp.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Russell King <rmk@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND] [RFC][PATCH X86_32 1/2]: Call do_notify_resume() with
-	interrupts enabled
-Message-ID: <20111025161426.GC17067@redhat.com>
-References: <20111025141812.GA21225@linux.vnet.ibm.com>
+	id S1751626Ab1JYQXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 12:23:09 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:60743 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab1JYQXH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 12:23:07 -0400
+Message-ID: <4EA6E256.1060803@panasas.com>
+Date: Tue, 25 Oct 2011 09:22:46 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111025141812.GA21225@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        open-osd <osd-dev@open-osd.org>, "Welch, Brent" <welch@panasas.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ore/exofs: Changes for the 3.2 Merge Window (Part 1)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25, Srikar Dronamraju wrote:
->
-> do_notify_resume() gets called with interrupts disabled on x86_32. This
-> is different from the x86_64 behavior, where interrupts are enabled at
-> the time.
+Linus Hi
 
-And note that do_notify_resume() paths assume that irqs are enabled.
-key_replace_session_keyring/get_signal_to_deliver start with _lock_irq.
+Please pull the following changes since v3.1-rc6 [b6fd41e2]
 
-IOW, I vote for this change even if I can't ack it (although it looks
-"obviously correct" to me). In fact refrigerator() looks buggy without
-this change. Yes, it enables irqs but only "by accident", via unlock_irq().
-And we are going to remove this recalc_sigpending() from freezer.
+Which are available in the git repository at:
+  git://git.open-osd.org/linux-open-osd.git for-linus
 
+The biggest highlight of this Merge is support for RAID5 over objects
+with full support for the pnfs-objects-ietf-standard layout. (This is
+a special RAID5 over objects which is equivalent to RAID5 over files
+much more then RAID5 over block devices).
 
-> Queries on lkml on this issue hasn't yielded any clear answer. Lets make
-> x86_32 behave the same as x86_64, unless there is a real reason to
-> maintain status quo.
-> 
-> Please refer https://lkml.org/lkml/2011/9/27/130 for more details
-> 
-> A similar change was suggested in arm
-> 	https://lkml.org/lkml/2011/8/25/231
-> 
-> My 32-bit machine works fine (tm) with the patch below
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  arch/x86/kernel/entry_32.S |    4 ++++
->  1 files changed, 4 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index f3f6f53..22d0e21 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -625,6 +625,8 @@ work_notifysig:				# deal with pending signals and
->  	movl %esp, %eax
->  	jne work_notifysig_v86		# returning to kernel-space or
->  					# vm86-space
-> +	TRACE_IRQS_ON
-> +	ENABLE_INTERRUPTS(CLBR_NONE)
->  	xorl %edx, %edx
->  	call do_notify_resume
->  	jmp resume_userspace_sig
-> @@ -638,6 +640,8 @@ work_notifysig:				# deal with pending signals and
->  #else
->  	movl %esp, %eax
->  #endif
-> +	TRACE_IRQS_ON
-> +	ENABLE_INTERRUPTS(CLBR_NONE)
->  	xorl %edx, %edx
->  	call do_notify_resume
->  	jmp resume_userspace_sig
-> 
+Part 2: Of this merge is dependent on this inclusion and the bits
+in Trond's NFS tree. For the fs/nfs/objlayout and will be pushed
+through Trond, once both hit mainline.
 
+Thanks!
+Boaz Harrosh (19):
+      osd: Kconfig remove wrong FIXME
+      exofs: Rename struct ore_components comps => oc
+      exofs: Remove unused data_map member from exofs_sb_info
+      ore: Make ore_striping_info and ore_calc_stripe_info public
+      ore/exofs: Change the type of the devices array (API change)
+      ore: Only IO one group at a time (API change)
+      ore: cleanup: Embed an ore_striping_info inside ore_io_state
+      ore: Remove check for ios->kern_buff in _prepare_for_striping to later
+      exofs: Support for short read/writes
+      ore: Support for short read/writes
+      ore: Support for partial component table
+      ore/exofs: Define new ore_verify_layout
+      ore/exofs: Change ore_check_io API
+      ore: Make ore_calc_stripe_info EXPORT_SYMBOL
+      fs/Makefile: Always inspect exofs/
+      ore: RAID5 read
+      ore: RAID5 Write
+      exofs: Support for RAID5 read-4-write interface.
+      ore: Enable RAID5 mounts
+
+H Hartley Sweeten (2):
+      exofs/ore.c: local functions should be static
+      exofs/super.c: local functions should be static
+
+ drivers/scsi/osd/Kconfig |    4 -
+ fs/Makefile              |    2 +-
+ fs/exofs/Kbuild          |    3 +-
+ fs/exofs/Kconfig         |    9 +-
+ fs/exofs/exofs.h         |   26 +-
+ fs/exofs/inode.c         |  233 +++++++++++++----
+ fs/exofs/ore.c           |  656 +++++++++++++++++++++++++++++++++-------------
+ fs/exofs/ore_raid.c      |  660 ++++++++++++++++++++++++++++++++++++++++++++++
+ fs/exofs/ore_raid.h      |   79 ++++++
+ fs/exofs/super.c         |  205 ++++++---------
+ include/scsi/osd_ore.h   |   80 ++++++-
+ 11 files changed, 1583 insertions(+), 374 deletions(-)
+ create mode 100644 fs/exofs/ore_raid.c
+ create mode 100644 fs/exofs/ore_raid.h
