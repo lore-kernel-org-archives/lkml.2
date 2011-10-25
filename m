@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1JYG0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 02:26:50 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:33817 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419Ab1JYG0t (ORCPT
+	id S1753322Ab1JYGk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 02:40:29 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17643 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1JYGk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 02:26:49 -0400
-Message-ID: <4EA656A0.4010102@ti.com>
-Date: Tue, 25 Oct 2011 11:56:40 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        broonie@opensource.wolfsonmicro.com, patches@linaro.org,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
-References: <4EA00F7C.1080005@ti.com> <20111021082309.GA337@S2100-06.ap.freescale.net> <4EA13053.7080306@ti.com> <20111021115809.GB337@S2100-06.ap.freescale.net> <4EA4FF6B.2080906@ti.com> <20111024081706.GC8708@ponder.secretlab.ca> <20111024090228.GA1755@S2100-06.ap.freescale.net> <4EA52851.8000203@ti.com> <20111024091158.GB1755@S2100-06.ap.freescale.net> <4EA52C56.3080908@ti.com> <20111024134727.GF1755@S2100-06.ap.freescale.net> <4EA65073.7050205@ti.com>
-In-Reply-To: <4EA65073.7050205@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Oct 2011 02:40:28 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Subject: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Date: Mon, 24 Oct 2011 23:39:49 -0700
+Message-Id: <1319524789-22818-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.4.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 October 2011 11:30 AM, Rajendra Nayak wrote:
->
-> In that case should you not be first converting the mfd driver to
-> register regulator devices using DT?
-> Thats what we did for OMAP, and hence we always have the of_node
-> populated when the regulator devices are probed.
-> See this patch from Benoit on how thats done for twl devices..
-> http://marc.info/?l=linux-omap&m=131489864814428&w=2
+Under the following conditions, __alloc_pages_slowpath can loop
+forever:
+gfp_mask & __GFP_WAIT is true
+gfp_mask & __GFP_FS is false
+reclaim and compaction make no progress
+order <= PAGE_ALLOC_COSTLY_ORDER
 
-Sorry, that was a link to an older version of the patch.
-Here's the latest one from Benoit which he did based
-on Arnd's suggestion of using of_platform_populate() directly.
+These conditions happen very often during suspend and resume,
+when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
+allocations into __GFP_WAIT.
 
-http://marc.info/?l=linux-omap&m=131705623822369&w=2
+The oom killer is not run because gfp_mask & __GFP_FS is false,
+but should_alloc_retry will always return true when order is less
+than PAGE_ALLOC_COSTLY_ORDER.
+
+Fix __alloc_pages_slowpath to skip retrying when oom killer is
+not allowed by the GFP flags, the same way it would skip if the
+oom killer was allowed but disabled.
+
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+
+An alternative patch would add a did_some_progress argument to
+__alloc_pages_may_oom, and remove the checks in
+__alloc_pages_slowpath that require knowledge of when
+__alloc_pages_may_oom chooses to run out_of_memory. If
+did_some_progress was still zero, it would goto nopage whether
+or not __alloc_pages_may_oom was actually called.
+
+ mm/page_alloc.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index fef8dc3..dcd99b3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2193,6 +2193,10 @@ rebalance:
+ 			}
+ 
+ 			goto restart;
++		} else {
++			/* If we aren't going to try the OOM killer, give up */
++			if (!(gfp_mask & __GFP_NOFAIL))
++				goto nopage;
+ 		}
+ 	}
+ 
+-- 
+1.7.4.1
+
