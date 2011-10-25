@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab1JYUId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:08:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:53184 "EHLO
+	id S1753539Ab1JYUIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:08:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:53320 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab1JYUIQ (ORCPT
+	with ESMTP id S1751671Ab1JYUIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 16:08:16 -0400
+	Tue, 25 Oct 2011 16:08:30 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com
-Subject: [PATCH] MMU bug-fixes in generic code that are mostly used by Xen.
-Date: Tue, 25 Oct 2011 16:07:56 -0400
-Message-Id: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        stable@kernel.org
+Subject: [PATCH 1/3] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode.
+Date: Tue, 25 Oct 2011 16:07:57 -0400
+Message-Id: <1319573279-13867-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.6.4
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4EA7172A.00DF,ss=1,re=0.000,fgs=0
+In-Reply-To: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
+References: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4EA7172C.001A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was wondering if you could help. I've this bug-fix:
- [PATCH 1/3] x86/paravirt: PTE updates in k(un)map_atomic need to be
+This patch fixes an outstanding issue that has been reported since 2.6.37.
+Under a heavy loaded machine processing "fork()" calls could keepover with:
 
-that you picked up some time ago in your tree and then dropped. I am not sure why it
-was dropped but perhaps it is b/c I also had that patch in my linux-next and your tool
-decided to drop it. Anyhow, was wondering if you would be OK giving it your
-Ack or just pulling it in your tree for 3.2.
+BUG: unable to handle kernel paging request at f573fc8c
+IP: [<c01abc54>] swap_count_continued+0x104/0x180
+*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000
+Oops: 0000 [#1] SMP
+Modules linked in:
+Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
+EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
+EIP is at swap_count_continued+0x104/0x180
+.. snip..
+Call Trace:
+ [<c01ac222>] ? __swap_duplicate+0xc2/0x160
+ [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
+ [<c01ac2e4>] ? swap_duplicate+0x14/0x40
+ [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
+ [<c01a0ca5>] ? copy_page_range+0x195/0x200
+ [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
+ [<c0132cf8>] ? dup_mm+0xa8/0x130
+ [<c013376a>] ? copy_process+0x98a/0xb30
+ [<c013395f>] ? do_fork+0x4f/0x280
+ [<c01573b3>] ? getnstimeofday+0x43/0x100
+ [<c010f770>] ? sys_clone+0x30/0x40
+ [<c06c048d>] ? ptregs_clone+0x15/0x48
+ [<c06bfb71>] ? syscall_call+0x7/0xb
 
-These two:
- [PATCH 2/3] xen: use generic functions instead of xen_{alloc,
- [PATCH 3/3] xen: map foreign pages for shared rings by updating the
+The problem is that in copy_page_range we turn lazy mode on, and then
+in swap_entry_free we call swap_count_continued which ends up in:
 
-remove what git commit d2fe97c3315a6a406540f74651e7430d9d51e671
-	Author: David Vrabel <david.vrabel@citrix.com>
-	Date:   Thu Sep 29 16:53:32 2011 +0100
+         map = kmap_atomic(page, KM_USER0) + offset;
 
-	    xen: map foreign pages for shared rings by updating the PTEs directly
+and then later we touch *map.
 
-added in 3.1 with a more selective way instead of using the big hammer.
+Since we are running in batched mode (lazy) we don't actually set up the
+PTE mappings and the kmap_atomic is not done synchronously and ends up
+trying to dereference a page that has not been set.
 
-I was wondering if you would be OK ACK-ing those two or sticking them
-in your tree for 3.2.
+Looking at kmap_atomic_prot_pfn, it uses 'arch_flush_lazy_mmu_mode' and
+doing the same in kmap_atomic_prot and __kunmap_atomic makes the problem
+go away.
 
-All of the patches are in:
+Interestingly, git commit b8bcfe997e46150fedcc3f5b26b846400122fdd9
+removed part of this to fix an interrupt issue - but it went to far
+and did not consider this scenario.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-akpm-3.2
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+CC: stable@kernel.org
+[v1: Redid the commit description per Jeremy's apt suggestion]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/mm/highmem_32.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-and the last two have also been sitting for some time in linux-next (and the first
-one was there but it looks like I forgot to put it back there as I had thought
-that Linus had picked it up.. argh).
+diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
+index b499626..f4f29b1 100644
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+ 	BUG_ON(!pte_none(*(kmap_pte-idx)));
+ 	set_pte(kmap_pte-idx, mk_pte(page, prot));
++	arch_flush_lazy_mmu_mode();
+ 
+ 	return (void *)vaddr;
+ }
+@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
+ 		 */
+ 		kpte_clear_flush(kmap_pte-idx, vaddr);
+ 		kmap_atomic_idx_pop();
++		arch_flush_lazy_mmu_mode();
+ 	}
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	else {
+-- 
+1.7.6.4
 
- arch/ia64/include/asm/xen/grant_table.h |   29 --------------
- arch/ia64/xen/grant-table.c             |   62 -------------------------------
- arch/x86/include/asm/xen/grant_table.h  |    7 ---
- arch/x86/mm/highmem_32.c                |    2 +
- arch/x86/xen/grant-table.c              |    2 +-
- drivers/xen/xenbus/xenbus_client.c      |   15 +++++--
- include/linux/vmalloc.h                 |    2 +-
- include/xen/grant_table.h               |    1 -
- mm/vmalloc.c                            |   27 ++++++-------
- 9 files changed, 27 insertions(+), 120 deletions(-)
