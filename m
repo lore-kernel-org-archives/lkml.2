@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab1JYVvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 17:51:18 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44637 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab1JYVvR convert rfc822-to-8bit (ORCPT
+	id S1753768Ab1JYV4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 17:56:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:56003 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab1JYV4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 17:51:17 -0400
+	Tue, 25 Oct 2011 17:56:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=gtx2ixpEnMPMTx5inPKY3giu57QTCq7W4ib8Ja+4S8goS+O5E6shkcDHLczATAGYC
+	W5NEEv5fbpyYlBiceEoHA==
+Date: Tue, 25 Oct 2011 14:50:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Satoru Moriya <satoru.moriya@hds.com>
+cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB4F747B3@USINDEVS02.corp.hds.com>
+Message-ID: <alpine.DEB.2.00.1110251446340.26017@chino.kir.corp.google.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com> <20111011125419.2702b5dc.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com> <20111011135445.f580749b.akpm@linux-foundation.org> <4E95917D.3080507@redhat.com>
+ <20111012122018.690bdf28.akpm@linux-foundation.org>,<4E95F167.5050709@redhat.com> <65795E11DBF1E645A09CEC7EAEE94B9CB4F747B1@USINDEVS02.corp.hds.com>,<alpine.DEB.2.00.1110231419070.17218@chino.kir.corp.google.com>
+ <65795E11DBF1E645A09CEC7EAEE94B9CB4F747B3@USINDEVS02.corp.hds.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4EA6A24D.1000400@scalemp.com>
-References: <4EA6695C.1000904@scalemp.com>
-	<9B14D1490DDECA4E974F6B9FC9EBAB3140CD274366@VMBX108.ihostexchange.net>
-	<4EA699B5.4030008@scalemp.com>
-	<9B14D1490DDECA4E974F6B9FC9EBAB3140CD27436C@VMBX108.ihostexchange.net>
-	<4EA6A24D.1000400@scalemp.com>
-Date: Tue, 25 Oct 2011 14:51:16 -0700
-X-Google-Sender-Auth: pocpTm3jaRbUy2GgJAh9jtoXay4
-Message-ID: <CAE9FiQUrq-3GDhaZS8gOL5NBHF-ZcWjHiWWUYP4AdM2+q_12Ow@mail.gmail.com>
-Subject: Re: [PATCH] AMD: modify cpu probe from APICID to initial APICID
-From: Yinghai Lu <yinghai@kernel.org>
-To: Eial Czerwacki <eial@scalemp.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 4:49 AM, Eial Czerwacki <eial@scalemp.com> wrote:
-> Make AMD probe processors using APICID rather than the initial APICID.
->
->
-> Signed-off-by: Eial Czerwacki<eial@scalemp.com>
-> Signed-off-by: Shai Fultheim<shai@scalemp.com>
-> ---
->
-> --- a/arch/x86/kernel/cpu/amd.c 2011-09-14 05:58:19.542910736 -0700
-> +++ b/arch/x86/kernel/cpu/amd.c 2011-09-14 06:01:41.493209624 -0700
-> @@ -299,9 +299,9 @@ static void __cpuinit amd_detect_cmp(str
->
->        bits = c->x86_coreid_bits;
->        /* Low order bits define the core id (index of core in socket) */
-> -       c->cpu_core_id = c->initial_apicid&    ((1<<    bits)-1);
-> +       c->cpu_core_id = c->apicid&    ((1<<    bits)-1);
->        /* Convert the initial APIC ID into the socket ID */
-> -       c->phys_proc_id = c->initial_apicid>>    bits;
-> +       c->phys_proc_id = c->apicid>>    bits;
->        /* use socket ID also for last level cache */
->        per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
->        /* fixup topology information on multi-node processors */
->
+On Mon, 24 Oct 2011, Satoru Moriya wrote:
 
-No, that is not right.
+> >> We do.
+> >> Basically we need this kind of feature for almost all our latency
+> >> sensitive applications to avoid latency issue in memory allocation.
+> >>
+> > 
+> > These are all realtime?
+> 
+> Do you mean that these are all realtime process?
+> 
+> If so, answer is depending on the situation. In the some situations,
+> we can set these applications as rt-task. But the other situation,
+> e.g. using some middlewares, package softwares etc, we can't set them
+> as rt-task because they are not built for running as rt-task. And also
+> it is difficult to rebuilt them for working as rt-task because they
+> usually have huge code base.
+> 
 
-We have to initial apicid to get socket/core mapping.
+If this problem affects processes that aren't realtime, then your only 
+option is to increase /proc/sys/vm/min_free_kbytes.  It's unreasonable to 
+believe that the VM should be able to reclaim in the background at the 
+same rate that an application is allocating huge amounts of memory without 
+allowing there to be a buffer.  Adding another tunable isn't going to 
+address that situation better than min_free_kbytes.
 
-BTW, your mail client has some problem with formatting.
+> As I reported another mail, changing kswapd priority does not mitigate
+> even my simple testcase very much. Of course, reclaiming above the high
+> wmark may solve the issue on some workloads but if an application can
+> allocate memory more than high wmark - min wmark which is extended and
+> fast enough, latency issue will happen.
+> Unless this latency concern is fixed, customers doesn't use vanilla
+> kernel.
+> 
 
-Thanks
-
-Yinghai
+And you have yet to provide an expression that shows what a sane setting 
+for this tunable will be.  In fact, it seems like you're just doing trial 
+and error and finding where it works pretty well for a certain VM 
+implementation in a certain kernel.  That's simply not a maintainable 
+userspace interface!
