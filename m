@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab1JYQwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 12:52:00 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:55985 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab1JYQv7 (ORCPT
+	id S1752082Ab1JYQx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 12:53:57 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:1834 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1JYQxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 12:51:59 -0400
-Date: Tue, 25 Oct 2011 12:51:42 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Greg KH <greg@kroah.com>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
- built in-tree
-Message-ID: <20111025165142.GA25354@elliptictech.com>
-References: <1319461948.31243.31.camel@deadeye>
- <4EA57CBF.2050901@xenotime.net>
- <87k47tpvvm.fsf@rustcorp.com.au>
- <20111025153855.GA24779@elliptictech.com>
- <1319558749.11727.6.camel@deadeye>
+	Tue, 25 Oct 2011 12:53:55 -0400
+X-IronPort-AV: E=Sophos;i="4.69,404,1315180800"; 
+   d="scan'208";a="8577827"
+From: Ian Jackson <Ian.Jackson@eu.citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319558749.11727.6.camel@deadeye>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20134.59800.835498.929876@mariner.uk.xensource.com>
+Date: Tue, 25 Oct 2011 17:53:44 +0100
+To: Borislav Petkov <bp@amd64.org>
+CC: Christoph Egger <Christoph.Egger@amd.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for microcode
+	update in Xen dom0
+Newsgroups: chiark.mail.xen.devel
+In-Reply-To: <m2n.s.1RGYF2-136675@chiark.greenend.org.uk>
+References: <20111012101615.GA14966@aftab>
+	<4E95D9E7.6090304@zytor.com>
+	<4E95E7FE.6050302@goop.org>
+	<20111012194543.GD14966@aftab>
+	<20111012204048.GA22260@phenom.oracle.com>
+	<4E960746.90805@zytor.com>
+	<20111012214013.GD28723@aftab>
+	<4E9D3F36.6070201@amd.com>
+	<m2n.s.1RGYF2-136675@chiark.greenend.org.uk>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-25 18:05 +0200, Ben Hutchings wrote:
-> On Tue, 2011-10-25 at 11:38 -0400, Nick Bowler wrote:
-> > This patch prevents the use of lockdep for debugging out of tree
-> > modules, which is rather mean.
-> 
-> It was already disabled for staging modules, which seems equally
-> unhelpful.
+Borislav Petkov writes ("Re: [Xen-devel] Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen dom0"):
+> No, you don't want to keep the existing API and you know it. I've
+> explained to you last week why.
 
-This is not the case: lockdep works fine with staging modules.
+So should I submit a patchset to remove the existing post-boot
+microcode loading from Linux ?
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Ian.
