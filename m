@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1JYOvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:51:40 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58649 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1JYOvi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:51:38 -0400
+	id S1756630Ab1JYOwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:52:11 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:46733 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756550Ab1JYOwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 10:52:09 -0400
+Date: Tue, 25 Oct 2011 19:48:12 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>, Shuah Khan <shuah.khan@hp.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Russell King <rmk@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [RESEND] [RFC][PATCH X86_32 1/2]: Call do_notify_resume() with
+ interrupts enabled
+Message-ID: <20111025141812.GA21225@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20111026005939.ad20ab7a2dacce216c69e821@canb.auug.org.au>
-References: <20111026005939.ad20ab7a2dacce216c69e821@canb.auug.org.au>
-Date: Tue, 25 Oct 2011 09:51:37 -0500
-Message-ID: <CAH2r5muLiYKCrS2f_DftZSnyuP0EC+vu99mENznCSL8ecnTkpg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the cifs tree
-From: Steve French <smfrench@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
-        Linus <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11102514-5112-0000-0000-000001440457
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am fixing it now.  Jeff missed a stub for the non-freezer case.
+do_notify_resume() gets called with interrupts disabled on x86_32. This
+is different from the x86_64 behavior, where interrupts are enabled at
+the time.
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index a155561..cd2d55b 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -202,6 +202,8 @@ static inline void set_freezable_with_signal(void) {}
+Queries on lkml on this issue hasn't yielded any clear answer. Lets make
+x86_32 behave the same as x86_64, unless there is a real reason to
+maintain status quo.
 
- #define wait_event_freezable_timeout(wq, condition, timeout)		\
- 		wait_event_interruptible_timeout(wq, condition, timeout)
-+#define #define wait_event_freezekillable(wq, condition)		\
-+		wait_event_killable(wq, condition)
+Please refer https://lkml.org/lkml/2011/9/27/130 for more details
 
+A similar change was suggested in arm
+	https://lkml.org/lkml/2011/8/25/231
 
-On Tue, Oct 25, 2011 at 8:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the cifs tree, today's linux-next build (powerpc
-> iseries_defconfig) failed like this:
->
-> fs/cifs/transport.c: In function 'wait_for_response':
-> fs/cifs/transport.c:328: error: implicit declaration of function 'wait_event_freezekillable'
->
-> Caused by commit f06ac72e9291 ("cifs, freezer: add
-> wait_event_freezekillable and have cifs use it").  In this config,
-> CONFIG_FREEZER is not set.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
->
+My 32-bit machine works fine (tm) with the patch below
 
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/entry_32.S |    4 ++++
+ 1 files changed, 4 insertions(+)
 
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index f3f6f53..22d0e21 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -625,6 +625,8 @@ work_notifysig:				# deal with pending signals and
+ 	movl %esp, %eax
+ 	jne work_notifysig_v86		# returning to kernel-space or
+ 					# vm86-space
++	TRACE_IRQS_ON
++	ENABLE_INTERRUPTS(CLBR_NONE)
+ 	xorl %edx, %edx
+ 	call do_notify_resume
+ 	jmp resume_userspace_sig
+@@ -638,6 +640,8 @@ work_notifysig:				# deal with pending signals and
+ #else
+ 	movl %esp, %eax
+ #endif
++	TRACE_IRQS_ON
++	ENABLE_INTERRUPTS(CLBR_NONE)
+ 	xorl %edx, %edx
+ 	call do_notify_resume
+ 	jmp resume_userspace_sig
 
--- 
-Thanks,
-
-Steve
