@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1JYUzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:55:37 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:32843 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752585Ab1JYUze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753503Ab1JYUzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:55:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48238 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751619Ab1JYUze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Oct 2011 16:55:34 -0400
-X-Sasl-enc: wDJdWcdWT0FT8hnw8KWHSvKueZ3Pxed77WMkAfHVbMYz 1319576133
-Date: Tue, 25 Oct 2011 22:54:10 +0200
-From: Greg KH <greg@kroah.com>
-To: Dave Jones <davej@redhat.com>, Nick Bowler <nbowler@elliptictech.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
- built in-tree
-Message-ID: <20111025205410.GA7479@kroah.com>
-References: <1319461948.31243.31.camel@deadeye>
- <4EA57CBF.2050901@xenotime.net>
- <87k47tpvvm.fsf@rustcorp.com.au>
- <20111025153855.GA24779@elliptictech.com>
- <1319558749.11727.6.camel@deadeye>
- <20111025165142.GA25354@elliptictech.com>
- <20111025200455.GA6376@kroah.com>
- <20111025201723.GA25063@redhat.com>
+Date: Tue, 25 Oct 2011 22:51:06 +0200
+From: Greg KH <gregkh@suse.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Greg KH <greg@kroah.com>, Nhan H Mai <nhan.h.mai@intel.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@linux.intel.com
+Subject: Re: [PATCH] serial/8250_pci: add a quirk for the kt serial controller
+Message-ID: <20111025205106.GD7234@suse.de>
+References: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
+ <20111025022852.GB32457@kroah.com>
+ <1319573794.9320.15.camel@dwillia2-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111025201723.GA25063@redhat.com>
+In-Reply-To: <1319573794.9320.15.camel@dwillia2-mobl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 04:17:24PM -0400, Dave Jones wrote:
-> On Tue, Oct 25, 2011 at 10:04:55PM +0200, Greg Kroah-Hartman wrote:
->  > On Tue, Oct 25, 2011 at 12:51:42PM -0400, Nick Bowler wrote:
->  > > On 2011-10-25 18:05 +0200, Ben Hutchings wrote:
->  > > > On Tue, 2011-10-25 at 11:38 -0400, Nick Bowler wrote:
->  > > > > This patch prevents the use of lockdep for debugging out of tree
->  > > > > modules, which is rather mean.
->  > > > 
->  > > > It was already disabled for staging modules, which seems equally
->  > > > unhelpful.
->  > > 
->  > > This is not the case: lockdep works fine with staging modules.
->  > 
->  > Yes, that was fixed a few kernel versions ago.
->  > 
->  > Now you might want to update that fix for the TAINT_OOT_MODULE flag as
->  > well, if you feel it is needed.
+On Tue, Oct 25, 2011 at 01:16:34PM -0700, Dan Williams wrote:
+> From: Dan Williams <dan.j.williams@intel.com>
+> Date: Sun, 23 Oct 2011 15:06:24 -0700
+> Subject: [PATCH v2] serial/8250_pci: add a quirk for the kt serial controller
 > 
-> I'm assuming you mean this patch ?
+> Workaround dropped notifications in the iir register.  Prevent reads
+> coincident with new interrupt notifications by reading the iir at most
+> once per interrupt.
 > 
-> commit 7816c45bf13255157c00fb8aca86cb64d825e878
-> Author: Roland Vossen <rvossen@broadcom.com>
-> Date:   Thu Apr 7 11:20:58 2011 +0200
-> 
->     modules: Enabled dynamic debugging for staging modules
+> Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 
-Hm, this is the patch I was thinking about yes.  But as you point out:
+Much better.
 
-> If we want to support out of tree modules with this, should we just nuke the
-> whole check, or do we still want to prevent certain types of tainted kernels
-> from using this stuff ?
+But.
 
-I don't know, there was some reason we didn't want to run dynamic_debug
-for "normal" tainted kernel modules, but I can't recall it at the
-moment, sorry.
+Do you really think I can apply a patch that looks like this above?  I
+have to edit the text of the email before I apply it.
 
-> 
-> (sidenote: it's not immediately obvious to me that this is the right patch,
-> as dynamic debug & lockdep are separate things, though this was the only
-> thing in kernel/module.c's history this year that sounds similar)
+Now I'm a bit grumpy about this at the moment as Linus yelled at me for
+patches where I missed this on a few for the 3.2 merge window, so I'm
+going to push back on people now very hard.
 
-Perhaps the lockdep thing is totally different.  I don't know about that
-check.
+Please send this in a format that I can run 'git am' on the email you
+send me.  I could not do that here, otherwise we would end up with a
+duplicate header in the changelog message.
+
+Yes, it makes you do a bit more work, but when you are handling
+thousands of patches like me, you scale better than I do :)
+
+Actually, it's just making you do it properly, along with everyone else,
+which is a good thing, right?
 
 thanks,
 
