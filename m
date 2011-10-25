@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab1JYJ5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 05:57:05 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54516 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab1JYJ5C (ORCPT
+	id S1754198Ab1JYKFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 06:05:41 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:52852 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab1JYKFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 05:57:02 -0400
-Subject: Re: [GIT PULL] target: Updates for v3.2-rc1 (round one)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@purestorage.com>
-In-Reply-To: <CA+55aFwk6CmHbVfV0eNPPdD4nmRJ_doGB1h6W4ywT-ZBprYR0w@mail.gmail.com>
-References: <1319533236.17450.338.camel@haakon2.linux-iscsi.org>
-	 <CA+55aFyeCfXV9Fpg9vZywmHtP3PR8+voZpampVqW8TAfCvLv3Q@mail.gmail.com>
-	 <1319535924.18871.11.camel@haakon2.linux-iscsi.org>
-	 <CA+55aFwk6CmHbVfV0eNPPdD4nmRJ_doGB1h6W4ywT-ZBprYR0w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Oct 2011 02:56:59 -0700
-Message-ID: <1319536619.18871.20.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Oct 2011 06:05:40 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: sfr@canb.auug.org.au, greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        N.Voss@weinmann.de, nicolas.ferre@atmel.com
+Subject: [PATCH] tty/serial: atmel_serial: fixup merge conflict
+Date: Tue, 25 Oct 2011 12:05:29 +0200
+Message-Id: <1319537129-7164-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <4EA68955.8010102@atmel.com>
+References: <4EA68955.8010102@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 11:48 +0200, Linus Torvalds wrote:
-> On Tue, Oct 25, 2011 at 11:45 AM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> >
-> > I don't believe so.  The diff-stat was generated using git-format-patch
-> > from target-pending.git with git 1.5.6.5 from the following HEAD:
-> 
-> It might just be that you apparently have a rather old git version.
-> I'm rather more current, and some of the xdiff options have changed (I
-> think that 1.5.6 had the old "generate minimal diff" that got disabled
-> because it was very slow for some cases)
-> 
-> I am running git version 1.7.6.4.
-> 
+Proper atmel_console_init() merge using platform data.
 
-That appears to be it, as the gateway I'm pushing to target-pending.git
-is running this rather old version of git.  I'm happy to verify this
-again from another machine with a more modern version of git, and send a
-a followup PULL request later today if you're more comfortable with
-that.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/tty/serial/atmel_serial.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Thanks,
-
---nab
-
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 358bbb2..9988c0c 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -1671,7 +1671,9 @@ static struct console atmel_console = {
+ static int __init atmel_console_init(void)
+ {
+ 	if (atmel_default_console_device) {
+-		int id = atmel_default_console_device->id;
++		struct atmel_uart_data *pdata =
++			atmel_default_console_device->dev.platform_data;
++		int id = pdata->num;
+ 		struct atmel_uart_port *port = &atmel_ports[id];
+ 
+ 		port->backup_imr = 0;
+-- 
+1.7.5.4
 
