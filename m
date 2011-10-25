@@ -1,146 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab1JYUQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:16:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6787 "EHLO mga14.intel.com"
+	id S1753534Ab1JYUSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:18:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58457 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab1JYUQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 16:16:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,405,1315206000"; 
-   d="scan'208";a="66564468"
-Subject: Re: [PATCH] serial/8250_pci: add a quirk for the kt serial
- controller
-From: Dan Williams <dan.j.williams@intel.com>
+	id S1751368Ab1JYUSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 16:18:03 -0400
+Date: Tue, 25 Oct 2011 16:17:24 -0400
+From: Dave Jones <davej@redhat.com>
 To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, Nhan H Mai <nhan.h.mai@intel.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        alan@linux.intel.com, Dan Williams <dan.j.williams@intel.com>
-Date: Tue, 25 Oct 2011 13:16:34 -0700
-In-Reply-To: <20111025022852.GB32457@kroah.com>
-References: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
-	 <20111025022852.GB32457@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1319573794.9320.15.camel@dwillia2-mobl>
-Mime-Version: 1.0
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
+ built in-tree
+Message-ID: <20111025201723.GA25063@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
+	Nick Bowler <nbowler@elliptictech.com>,
+	Ben Hutchings <ben@decadent.org.uk>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Debian kernel maintainers <debian-kernel@lists.debian.org>
+References: <1319461948.31243.31.camel@deadeye>
+ <4EA57CBF.2050901@xenotime.net>
+ <87k47tpvvm.fsf@rustcorp.com.au>
+ <20111025153855.GA24779@elliptictech.com>
+ <1319558749.11727.6.camel@deadeye>
+ <20111025165142.GA25354@elliptictech.com>
+ <20111025200455.GA6376@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111025200455.GA6376@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Williams <dan.j.williams@intel.com>
-Date: Sun, 23 Oct 2011 15:06:24 -0700
-Subject: [PATCH v2] serial/8250_pci: add a quirk for the kt serial controller
+On Tue, Oct 25, 2011 at 10:04:55PM +0200, Greg Kroah-Hartman wrote:
+ > On Tue, Oct 25, 2011 at 12:51:42PM -0400, Nick Bowler wrote:
+ > > On 2011-10-25 18:05 +0200, Ben Hutchings wrote:
+ > > > On Tue, 2011-10-25 at 11:38 -0400, Nick Bowler wrote:
+ > > > > This patch prevents the use of lockdep for debugging out of tree
+ > > > > modules, which is rather mean.
+ > > > 
+ > > > It was already disabled for staging modules, which seems equally
+ > > > unhelpful.
+ > > 
+ > > This is not the case: lockdep works fine with staging modules.
+ > 
+ > Yes, that was fixed a few kernel versions ago.
+ > 
+ > Now you might want to update that fix for the TAINT_OOT_MODULE flag as
+ > well, if you feel it is needed.
 
-Workaround dropped notifications in the iir register.  Prevent reads
-coincident with new interrupt notifications by reading the iir at most
-once per interrupt.
+I'm assuming you mean this patch ?
 
-Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
-On Tue, 2011-10-25 at 04:28 +0200, Greg KH wrote:
-On Sun, Oct 23, 2011 at 03:27:16PM -0700, Dan Williams wrote:
-> > --- a/include/linux/pci_ids.h
-> > +++ b/include/linux/pci_ids.h
-[..]
-> Based on the comment at the top of this file, you shouldn't add this
-> entry to it.
-> 
-> Care to redo the patch without that change?
+commit 7816c45bf13255157c00fb8aca86cb64d825e878
+Author: Roland Vossen <rvossen@broadcom.com>
+Date:   Thu Apr 7 11:20:58 2011 +0200
 
-Ok, moved it to drivers/tty/serial/8250_pci.c and cleaned up the
-conflicting "/* This should be in linux/pci_ids.h */" comment.
+    modules: Enabled dynamic debugging for staging modules
+    
+    Driver modules from the staging directory are marked 'tainted'
+    by module.c. Subsequently, tainted modules are denied dynamic
+    debugging. This is unwanted behavior, since staging modules should
+    be able to use the dynamic debugging mechanism.
+    
+    Please merge this also into the staging-linus branch.
+    
+    Signed-off-by: Roland Vossen <rvossen@broadcom.com>
+    Acked-by: Jason Baron <jbaron@redhat.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Thanks,
-Dan
-
- drivers/tty/serial/8250.c     |    6 +++++-
- drivers/tty/serial/8250_pci.c |   17 ++++++++++++++++-
- include/linux/serial_core.h   |    1 +
- 3 files changed, 22 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 7f50999..513e728 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -1652,7 +1652,11 @@ static irqreturn_t serial8250_interrupt(int irq, void *dev_id)
+diff --git a/kernel/module.c b/kernel/module.c
+index d5938a5..4d5c16a 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2790,7 +2790,7 @@ static struct module *load_module(void __user *umod,
+        }
  
- 		up = list_entry(l, struct uart_8250_port, list);
+        /* This has to be done once we're sure module name is unique. */
+-       if (!mod->taints)
++       if (!mod->taints || mod->taints == (1U<<TAINT_CRAP))
+                dynamic_debug_setup(info.debug, info.num_debug);
  
--		iir = serial_in(up, UART_IIR);
-+		if (pass_counter && up->port.flags & UPF_IIR_ONCE)
-+			iir = UART_IIR_NO_INT;
-+		else
-+			iir = serial_in(up, UART_IIR);
-+
- 		if (!(iir & UART_IIR_NO_INT)) {
- 			serial8250_handle_port(up);
+        /* Find duplicate symbols */
+@@ -2827,7 +2827,7 @@ static struct module *load_module(void __user *umod,
+        module_bug_cleanup(mod);
  
-diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
-index 3abeca2..d8fd94a 100644
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -1092,6 +1092,14 @@ static int skip_tx_en_setup(struct serial_private *priv,
- 	return pci_default_setup(priv, board, port, idx);
- }
- 
-+static int kt_serial_setup(struct serial_private *priv,
-+			   const struct pciserial_board *board,
-+			   struct uart_port *port, int idx)
-+{
-+	port->flags |= UPF_IIR_ONCE;
-+	return skip_tx_en_setup(priv, board, port, idx);
-+}
-+
- static int pci_eg20t_init(struct pci_dev *dev)
- {
- #if defined(CONFIG_SERIAL_PCH_UART) || defined(CONFIG_SERIAL_PCH_UART_MODULE)
-@@ -1101,7 +1109,6 @@ static int pci_eg20t_init(struct pci_dev *dev)
- #endif
- }
- 
--/* This should be in linux/pci_ids.h */
- #define PCI_VENDOR_ID_SBSMODULARIO	0x124B
- #define PCI_SUBVENDOR_ID_SBSMODULARIO	0x124B
- #define PCI_DEVICE_ID_OCTPRO		0x0001
-@@ -1127,6 +1134,7 @@ static int pci_eg20t_init(struct pci_dev *dev)
- #define PCI_DEVICE_ID_OXSEMI_16PCI958	0x9538
- #define PCIE_DEVICE_ID_NEO_2_OX_IBM	0x00F6
- #define PCI_DEVICE_ID_PLX_CRONYX_OMEGA	0xc001
-+#define PCI_DEVICE_ID_INTEL_PATSBURG_KT 0x1d3d
- 
- /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
- #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
-@@ -1211,6 +1219,13 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= ce4100_serial_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_PATSBURG_KT,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= kt_serial_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index a5c3114..a66484b3 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -350,6 +350,7 @@ struct uart_port {
- #define UPF_MAGIC_MULTIPLIER	((__force upf_t) (1 << 16))
- #define UPF_CONS_FLOW		((__force upf_t) (1 << 23))
- #define UPF_SHARE_IRQ		((__force upf_t) (1 << 24))
-+#define UPF_IIR_ONCE		((__force upf_t) (1 << 25))
- /* The exact UART type is known and should not be probed.  */
- #define UPF_FIXED_TYPE		((__force upf_t) (1 << 27))
- #define UPF_BOOT_AUTOCONF	((__force upf_t) (1 << 28))
--- 
-1.7.6
+  ddebug:
+-       if (!mod->taints)
++       if (!mod->taints || mod->taints == (1U<<TAINT_CRAP))
+                dynamic_debug_remove(info.debug);
+  unlock:
+        mutex_unlock(&module_mutex);
 
 
+
+If we want to support out of tree modules with this, should we just nuke the
+whole check, or do we still want to prevent certain types of tainted kernels
+from using this stuff ?
+
+(sidenote: it's not immediately obvious to me that this is the right patch,
+as dynamic debug & lockdep are separate things, though this was the only
+thing in kernel/module.c's history this year that sounds similar)
+
+	Dave
 
