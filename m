@@ -1,92 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab1JYEb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 00:31:59 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49783 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab1JYEb6 convert rfc822-to-8bit (ORCPT
+	id S1752202Ab1JYEns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 00:43:48 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9688 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1JYEnr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 00:31:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111025014911.GC22764@kroah.com>
-References: <4EA3F7C0.24E469C5@users.sourceforge.net> <20111023113727.GA24285@kroah.com>
- <4EA41FB7.CB5369CF@users.sourceforge.net> <20111025014911.GC22764@kroah.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Tue, 25 Oct 2011 00:31:36 -0400
-Message-ID: <CAGZ=bqKvb96VvZ5a+VJWZXKdr553n8SW2=JOLZS1fGY5KE7iZg@mail.gmail.com>
-Subject: Re: kernel.org tarball/patch signature files
-To: Greg KH <greg@kroah.com>
-Cc: Jari Ruusu <jariruusu@users.sourceforge.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 25 Oct 2011 00:43:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 24 Oct 2011 21:43:40 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Barry Song <21cnbao@gmail.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Mon, 24 Oct 2011 21:43:36 -0700
+Subject: RE: [PATCH 2/2] pinctrl: add a generic control interface
+Thread-Topic: [PATCH 2/2] pinctrl: add a generic control interface
+Thread-Index: AcyRXBZWVFq0SOSmRWCUqZEiA1EWLABdD9XQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B417C@HQMAIL01.nvidia.com>
+References: <1319041274-18723-1-git-send-email-linus.walleij@stericsson.com>
+ <20111020023140.GC32007@S2100-06.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF173D51C1C4@HQMAIL01.nvidia.com>
+ <20111023082540.GA1401@S2100-06.ap.freescale.net>
+In-Reply-To: <20111023082540.GA1401@S2100-06.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 21:49, Greg KH <greg@kroah.com> wrote:
-> Please realize that we are building this whole thing back up from
-> scratch here, and some services are not possible to do just yet.
->
-> Also realize our constraints.  I don't want to, and in fact it's almost
-> impossible to, upload the 3 compressed tarballs over a large number of
-> internet connections that I have access to as I travel around the world.
-> So, given that you don't want all kernel release maintainers to store
-> their private keys on the server (remember what just happened), the
-> ability to generate that signature would be a pretty difficult thing,
-> right?
->
-> So, we are working on a proposal that has a "throw away" signature for
-> the compressed files, that can be verified by people after they download
-> the tarball to ensure that they didn't get something "odd".  That will
-> handle the sha256sum, and allow us to add future compression types with
-> no need to regenerate the "real" signatures from the original release.
->
-> The real check, to verify that this tarball really came from "me" should
-> be done on the uncompressed tarball, which is what I can sign, and it is
-> something that you, or anyone else, can reliable duplicate on their own
-> by just using git and not even downloading the tarball at all.
->
-> In other words, we just saved you a MASSIVE bandwidth transation for all
-> of your future kernel downloads, and you can reliable know that the
-> tarball you have in your system is what is on the kernel.org servers
-> without you even having to download it yourself and run those
-> decompression tools that you don't trus.
->
-> And still you complain :)
->
-> Hope this helps explain why this is the way it is.  It's as if people
-> think we are just making it up as we go along...
+Shawn Guo wrote at Sunday, October 23, 2011 2:26 AM:
+> On Thu, Oct 20, 2011 at 10:26:43AM -0700, Stephen Warren wrote:
+> > Shawn Guo wrote at Wednesday, October 19, 2011 8:32 PM:
+> > > On Wed, Oct 19, 2011 at 06:21:14PM +0200, Linus Walleij wrote:
+> > ...
+> > > > +int pin_config_group(struct pinctrl_dev *pctldev, const char *pin_group,
+> > > > +		     enum pin_config_param param, unsigned long data)
+> > ...
+> > > > +enum pin_config_param {
+> > > > +	PIN_CONFIG_BIAS_UNKNOWN,
+> > > > +	PIN_CONFIG_BIAS_FLOAT,
+> > > > +	PIN_CONFIG_BIAS_HIGH_IMPEDANCE,
+> > > > +	PIN_CONFIG_BIAS_PULL_UP,
+> > > > +	PIN_CONFIG_BIAS_PULL_DOWN,
+> > > > +	PIN_CONFIG_BIAS_HIGH,
+> > > > +	PIN_CONFIG_BIAS_GROUND,
+> > > > +	PIN_CONFIG_DRIVE_UNKNOWN,
+> > > > +	PIN_CONFIG_DRIVE_PUSH_PULL,
+> > > > +	PIN_CONFIG_DRIVE_OPEN_DRAIN,
+> > > > +	PIN_CONFIG_DRIVE_OPEN_SOURCE,
+> > > > +	PIN_CONFIG_DRIVE_OFF,
+> > > > +	PIN_CONFIG_INPUT_SCHMITT,
+> > > > +	PIN_CONFIG_SLEW_RATE_RISING,
+> > > > +	PIN_CONFIG_SLEW_RATE_FALLING,
+> > > > +	PIN_CONFIG_LOAD_CAPACITANCE,
+> > > > +	PIN_CONFIG_WAKEUP_ENABLE,
+> > > > +	PIN_CONFIG_END,
+> > > > +};
+> > >
+> > > IMO, trying to enumerate all possible pin_config options is just to
+> > > make everyone's life harder.  Firstly, this enumeration is far from
+> > > completion, for imx6 iomuxc example, we have 3 options for pull-up,
+> > > 22, 47 and 100 kOhm, and 7 options for driver-strength, 34, 40, 48,
+> > > 60, 80, 120, and 240 Ohm.  It's just so hard to make this enumeration
+> > > complete.  Secondly, defining this param as enum requires the API
+> > > user to call the function multiple times to configure one pin.  For
+> > > example, if I want to configure pin_foo as slow-slew, open-drain,
+> > > 100 kOhm pull-up and 120 Ohm driver-strength, I will have to call
+> > > pin_config(pctldev, pin_foo, ...) 4 times to achieve that.
+> > >
+> > > I like Stephen's idea about having 'u32 param' and let pinctrl drivers
+> > > to encode/decode this u32 for their pinctrl controller.  It makes
+> > > people's life much easier.
+> >
+> > That's not quite what I meant.
+> >
+> > I meant that I thought the types for param and value should be simple
+> > integers, with meanings of the values defined by the individual drivers,
+> > rather than a system-defined enum.
+> >
+> > However, I wasn't envisaging packing multiple fields into the "value"
+> > parameter; that would essentially be packing a struct into a u32 for
+> > transport. I still figured that "param" would logically be an enum,
+> > and represent a single modifiable parameter, and "data"/"value" would
+> > be the single value of that one parameter.
+> >
+> Oops, I misread your idea.  Reading it correctly, I do not like it
+> either :)  It does not resolve my concern that we need to call the API
+> multiple times to configure one pin.
+> 
+> > Still, perhaps packing stuff is an option that makes sense in some cases,
+> 
+> I feel strongly that this is what we want.
 
-Well, in theory it could still be done (albeit not in practice right now).
-
-There is a tool called "pristine-tar" designed to generate a
-byte-identical tar.gz given the original source tree.  Obviously with
-git-archive you don't need the "tar" portion, but it also includes
-"pristine-gz" and "pristine-bz2" tools which tease out and store the
-original compression parameters in a small file.  It's commonly used
-to be able to "import" a bunch of source files and a tarball into GIT
-without storing the entire original tarball as a binary file.
-
-So the kernel developers would locally produce the uncompressed and
-compressed tarballs, then digitally sign them and create small
-"pristine-{gz,bz2,xz}" archive deltas; the signatures and deltas would
-be uploaded.
-
-The kernel.org server would use the original input and compression
-parameters to reconstruct the byte-identical compressed archive from
-the output of "git archive --format=tar", again with the "pristine-*"
-tools.
-
-Unfortunately, while there are "pristine-gz" and "pristine-bz2" tools,
-there has not yet been developed a "pristine-xz" tool:
-  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=499489
-
-So it's not yet reasonably possible for the kernel.org archive, but
-sometime in the future it might become so.
-
-Cheers,
-Kyle Moffett
+Perhaps the solution is for the pinctrl core -> pinctrl driver API to take
+arrays of params and values. A simple driver can simply iterate over the
+arrays 1 element at a time, and a more complex driver can read the relevant
+regs, apply all the changes, then write all the regs back. This would allow
+atomically updating multiple values at once, without much function call
+overhead, yet still keep the data for each param a simple unpacked value.
 
 -- 
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
+nvpublic
+
+
