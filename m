@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab1JYJtG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 05:49:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49702 "EHLO
+	id S932531Ab1JYJut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 05:50:49 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41435 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab1JYJtB (ORCPT
+	with ESMTP id S1756031Ab1JYJtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 05:49:01 -0400
+	Tue, 25 Oct 2011 05:49:04 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
@@ -18,9 +18,9 @@ Cc: <akpm@linux-foundation.org>, Brian Swetland <swetland@google.com>,
         Russell King <linux@arm.linux.org.uk>,
         Ohad Ben-Cohen <ohad@wizery.com>, Greg KH <greg@kroah.com>,
         Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH 3/7] amp/remoteproc: create rpmsg virtio device
-Date: Tue, 25 Oct 2011 11:48:22 +0200
-Message-Id: <1319536106-25802-4-git-send-email-ohad@wizery.com>
+Subject: [PATCH 5/7] ARM: OMAP: add amp/remoteproc support
+Date: Tue, 25 Oct 2011 11:48:24 +0200
+Message-Id: <1319536106-25802-6-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319536106-25802-1-git-send-email-ohad@wizery.com>
 References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
@@ -28,29 +28,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create an rpmsg virtio device to allow message-based communication
-with the remote processor (but only if supported by its firmware).
+Add an omap-rproc device with which one can start using OMAP4's
+dual-M3 "Ducati" ipu subsystem.
 
-There are several advantages to provide this functionality at
-the remoteproc-level:
-- to support it, platforms only have to provide their own ->kick()
-  handler; no need to duplicate the rest of the code.
-- the virtio device is created only when the remote processor is
-  registered and ready to go. No need to depend on initcall magic.
-  moreover, we only add the virtio device if the firmware really
-  supports it, and only after we know the supported virtio device features.
-- correct device model hierarchy can be set, so we can use device-based
-  API cleanly (e.g. power management, DMA API, ...).
-- when the remote processor crashes (or removed) we only need
-  to remove the virtio device, and the driver core will take care of
-  the rest. No need to implement any out-of-bound notifiers.
-- we can now easily bind the virtio device to its rproc handle, and
-  this way we don't need any name-based remoteproc ->get() API.
+Currently we're adding support only for the first M3 core (hence
+the name "ipu_c0"); support for the second M3 core, as well as for
+the DSP subsystem, will be added later on.
 
-Currently we only support creating a single rpmsg virtio device per
-remote processor, but later this is going to be extended to support
-creating numerous virtio devices of other types too (block, net,
-console...).
+Bind this device to its dedicated IOMMU device, and assign it a
+dedicated mailbox instance too.
+
+In addition, reserve it a physically contiguous memory region using
+the upcoming CMA mechanism (this makes this patch impossible to merge
+at this point, but this patch only).
+
+This patch also depends on:
+- https://lkml.org/lkml/2011/9/25/44
+- http://www.spinics.net/lists/linux-omap/msg59342.html
+
+Note: at this point we're using a fixed CMA base address (as defined by
+OMAP_RPROC_CMA_BASE), but this will go away once the generic iommu-based
+DMA API will materialize, because at that point we will (almost) not care about
+the physical location of the CMA memory.
+
+Based on (but now quite far from) work done by Fernando Guzman Lugo
+<fernando.lugo@ti.com>.
 
 Designed with Brian Swetland <swetland@google.com>.
 
@@ -65,42 +67,57 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Greg KH <greg@kroah.com>
 Cc: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/amp/remoteproc/Makefile           |    3 +-
- drivers/amp/remoteproc/remoteproc_rpmsg.c |  297 +++++++++++++++++++++++++++++
- 2 files changed, 299 insertions(+), 1 deletions(-)
- create mode 100644 drivers/amp/remoteproc/remoteproc_rpmsg.c
+ MAINTAINERS                      |    6 ++
+ arch/arm/mach-omap2/Makefile     |    4 +
+ arch/arm/mach-omap2/remoteproc.c |  167 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/plat-omap/common.c      |    3 +-
+ drivers/amp/remoteproc/Kconfig   |   14 +++-
+ 5 files changed, 192 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/remoteproc.c
 
-diff --git a/drivers/amp/remoteproc/Makefile b/drivers/amp/remoteproc/Makefile
-index b888c37..0a24a3b 100644
---- a/drivers/amp/remoteproc/Makefile
-+++ b/drivers/amp/remoteproc/Makefile
-@@ -4,4 +4,5 @@
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 2812cd7..db3b08a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4597,6 +4597,12 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git
+ S:	Maintained
+ F:	arch/arm/*omap*/
  
- obj-$(CONFIG_REMOTEPROC)		+= remoteproc.o
- remoteproc-y				:= remoteproc_core.o
--remoteproc-y				+= remoteproc_debugfs.o
-\ No newline at end of file
-+remoteproc-y				+= remoteproc_debugfs.o
-+remoteproc-y				+= remoteproc_rpmsg.o
-\ No newline at end of file
-diff --git a/drivers/amp/remoteproc/remoteproc_rpmsg.c b/drivers/amp/remoteproc/remoteproc_rpmsg.c
++OMAP ASYNCHRONOUS MULTIPROCESSING (AMP) SUPPORT
++M:	Ohad Ben-Cohen <ohad@wizery.com>
++L:	linux-omap@vger.kernel.org
++S:	Maintained
++F:	arch/arm/*omap*/*remoteproc*
++
+ OMAP CLOCK FRAMEWORK SUPPORT
+ M:	Paul Walmsley <paul@pwsan.com>
+ L:	linux-omap@vger.kernel.org
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 5129785..6b567ea 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -270,3 +270,7 @@ disp-$(CONFIG_OMAP2_DSS)		:= display.o
+ obj-y					+= $(disp-m) $(disp-y)
+ 
+ obj-y					+= common-board-devices.o twl-common.o
++
++ifneq ($(CONFIG_OMAP_REMOTEPROC),)
++obj-y					+= remoteproc.o
++endif
+diff --git a/arch/arm/mach-omap2/remoteproc.c b/arch/arm/mach-omap2/remoteproc.c
 new file mode 100644
-index 0000000..b319e54
+index 0000000..342d446
 --- /dev/null
-+++ b/drivers/amp/remoteproc/remoteproc_rpmsg.c
-@@ -0,0 +1,297 @@
++++ b/arch/arm/mach-omap2/remoteproc.c
+@@ -0,0 +1,167 @@
 +/*
-+ * Remote processor messaging transport (OMAP platform-specific bits)
++ * Remote processor machine-specific module for OMAP4
 + *
 + * Copyright (C) 2011 Texas Instruments, Inc.
-+ * Copyright (C) 2011 Google, Inc.
 + *
-+ * Ohad Ben-Cohen <ohad@wizery.com>
-+ * Brian Swetland <swetland@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -108,284 +125,200 @@ index 0000000..b319e54
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/amp/remoteproc.h>
-+#include <linux/amp/rpmsg.h>
-+#include <linux/virtio.h>
-+#include <linux/virtio_config.h>
-+#include <linux/virtio_ids.h>
-+#include <linux/virtio_ring.h>
++#define pr_fmt(fmt)    "%s: " fmt, __func__
++
++#include <linux/kernel.h>
 +#include <linux/err.h>
-+#include <linux/kref.h>
-+#include <linux/slab.h>
++#include <linux/amp/remoteproc.h>
++#include <linux/dma-contiguous.h>
++#include <linux/dma-mapping.h>
 +
-+#include "remoteproc_internal.h"
++#include <plat/omap_device.h>
++#include <plat/omap_hwmod.h>
++#include <plat/remoteproc.h>
++#include <plat/iommu.h>
 +
-+/**
-+ * struct rproc_virtio_vq_info - virtqueue state
-+ * @vq_id: a unique index of this virtqueue (unique for this @rproc)
-+ * @rproc: handle to the remote processor
++/*
++ * Temporarily define the CMA base address explicitly.
 + *
-+ * Such a struct will be maintained for every virtqueue we're
-+ * using to communicate with the remote processor
++ * This will go away as soon as we have the IOMMU-based generic
++ * DMA API in place.
 + */
-+struct rproc_virtio_vq_info {
-+	__u16 vq_id;
-+	struct rproc *rproc;
++#define OMAP_RPROC_CMA_BASE	(0xa9800000)
++
++/*
++ * These data structures define platform-specific information
++ * needed for each supported remote processor.
++ *
++ * At this point we only support the remote dual M3 "Ducati" imaging
++ * subsystem (aka "ipu"), but later on we'll also add support for the
++ * DSP ("Tesla").
++ */
++static struct omap_rproc_pdata omap4_rproc_data[] = {
++	{
++		.name		= "ipu_c0",
++		.firmware	= "ducati-m3-core0.xem3",
++		.mbox_name	= "mailbox-1",
++		.oh_name	= "ipu_c0",
++	},
 +};
 +
-+/* kick the remote processor, and let it know which virtqueue to poke at */
-+static void rproc_virtio_notify(struct virtqueue *vq)
++static struct omap_iommu_arch_data omap4_rproc_iommu[] = {
++	{ .name = "ducati" },
++};
++
++static struct omap_device_pm_latency omap_rproc_latency[] = {
++	{
++		.deactivate_func = omap_device_idle_hwmods,
++		.activate_func = omap_device_enable_hwmods,
++		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
++	},
++};
++
++static struct platform_device omap4_ducati = {
++	.name	= "omap-rproc",
++	.id	= 1, /* reserve 0 for tesla. we respect. */
++};
++
++static struct platform_device *omap4_rproc_devs[] __initdata = {
++	&omap4_ducati,
++};
++
++void __init omap_rproc_reserve_cma(void)
 +{
-+	struct rproc_virtio_vq_info *rpvq = vq->priv;
-+	struct rproc *rproc = rpvq->rproc;
++	int ret;
 +
-+	dev_dbg(rproc->dev, "kicking vq id: %d\n", rpvq->vq_id);
-+
-+	rproc->ops->kick(rproc, rpvq->vq_id);
++	/* reserve CMA memory for OMAP4's M3 "ducati" remote processor */
++	ret = dma_declare_contiguous(&omap4_ducati.dev,
++					CONFIG_OMAP_DUCATI_CMA_SIZE,
++					OMAP_RPROC_CMA_BASE, 0);
++	if (ret)
++		pr_err("dma_declare_contiguous failed %d\n", ret);
 +}
 +
-+/**
-+ * rproc_vq_interrupt() - tell remoteproc that a virtqueue is interrupted
-+ * @rproc: handle to the remote processor
-+ * @vq_id: index of the signalled virtqueue
-+ *
-+ * This function should be called by the platform-specific rproc driver,
-+ * when the remote processor signals that a specific virtqueue has pending
-+ * messages available.
-+ *
-+ * Returns IRQ_NONE if no message was found in the @vq_id virtqueue,
-+ * and otherwise returns IRQ_HANDLED.
-+ */
-+irqreturn_t rproc_vq_interrupt(struct rproc *rproc, int vq_id)
++static int __init omap_rproc_init(void)
 +{
-+	return vring_interrupt(0, rproc->rvdev->vq[vq_id]);
-+}
-+EXPORT_SYMBOL(rproc_vq_interrupt);
++	struct omap_hwmod *oh[2];
++	struct omap_device *od;
++	int i, ret = 0, oh_count;
 +
-+static struct virtqueue *rp_find_vq(struct virtio_device *vdev,
-+				    unsigned id,
-+				    void (*callback)(struct virtqueue *vq),
-+				    const char *name)
-+{
-+	struct rproc *rproc = vdev_to_rproc(vdev);
-+	struct rproc_vdev *rvdev = rproc->rvdev;
-+	struct rproc_virtio_vq_info *rpvq;
-+	struct virtqueue *vq;
-+	void *addr;
-+	int ret, len;
++	/* names like ipu_cx/dsp_cx might show up on other OMAPs, too */
++	if (!cpu_is_omap44xx())
++		return 0;
 +
-+	rpvq = kmalloc(sizeof(*rpvq), GFP_KERNEL);
-+	if (!rpvq)
-+		return ERR_PTR(-ENOMEM);
++	/* build the remote proc devices */
++	for (i = 0; i < ARRAY_SIZE(omap4_rproc_data); i++) {
++		const char *oh_name = omap4_rproc_data[i].oh_name;
++		const char *oh_name_opt = omap4_rproc_data[i].oh_name_opt;
++		struct platform_device *pdev = omap4_rproc_devs[i];
++		oh_count = 0;
 +
-+	rpvq->rproc = rproc;
-+	rpvq->vq_id = id;
++		oh[0] = omap_hwmod_lookup(oh_name);
++		if (!oh[0]) {
++			pr_err("could not look up %s\n", oh_name);
++			continue;
++		}
++		oh_count++;
 +
-+	addr = rvdev->vring[id].va;
-+	len = rvdev->vring[id].len;
++		/*
++		 * ipu might have a secondary hwmod entry (for configurations
++		 * where we want both M3 cores to be represented by a single
++		 * device).
++		 */
++		if (oh_name_opt) {
++			oh[1] = omap_hwmod_lookup(oh_name_opt);
++			if (!oh[1]) {
++				pr_err("could not look up %s\n", oh_name_opt);
++				continue;
++			}
++			oh_count++;
++		}
 +
-+	dev_dbg(rproc->dev, "vring%d: va %p qsz %d\n", id, addr, len);
++		omap4_rproc_data[i].device_enable = omap_device_enable;
++		omap4_rproc_data[i].device_shutdown = omap_device_shutdown;
 +
-+	vq = vring_new_virtqueue(len, AMP_VRING_ALIGN, vdev, addr,
-+					rproc_virtio_notify, callback, name);
-+	if (!vq) {
-+		dev_err(rproc->dev, "vring_new_virtqueue %s failed\n", name);
-+		ret = -ENOMEM;
-+		goto free_rpvq;
-+	}
++		device_initialize(&pdev->dev);
 +
-+	rvdev->vq[id] = vq;
-+	vq->priv = rpvq;
++		/* Set dev_name early to allow dev_xxx in omap_device_alloc */
++		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
 +
-+	return vq;
++		od = omap_device_alloc(pdev, oh, oh_count,
++					omap_rproc_latency,
++					ARRAY_SIZE(omap_rproc_latency));
++		if (!od) {
++			dev_err(&pdev->dev, "omap_device_alloc failed\n");
++			put_device(&pdev->dev);
++			ret = PTR_ERR(od);
++			continue;
++		}
 +
-+free_rpvq:
-+	kfree(rpvq);
-+	return ERR_PTR(ret);
-+}
++		ret = platform_device_add_data(pdev,
++					&omap4_rproc_data[i],
++					sizeof(struct omap_rproc_pdata));
++		if (ret) {
++			dev_err(&pdev->dev, "can't add pdata\n");
++			omap_device_delete(od);
++			put_device(&pdev->dev);
++			continue;
++		}
 +
-+static void rproc_virtio_del_vqs(struct virtio_device *vdev)
-+{
-+	struct virtqueue *vq, *n;
-+	struct rproc *rproc = vdev_to_rproc(vdev);
++		/* attach the remote processor to its iommu device */
++		pdev->dev.archdata.iommu = &omap4_rproc_iommu[i];
 +
-+	list_for_each_entry_safe(vq, n, &vdev->vqs, list) {
-+		struct rproc_virtio_vq_info *rpvq = vq->priv;
-+		vring_del_virtqueue(vq);
-+		kfree(rpvq);
-+	}
-+
-+	/* power down the remote processor */
-+	rproc_shutdown(rproc);
-+}
-+
-+static int rproc_virtio_find_vqs(struct virtio_device *vdev, unsigned nvqs,
-+		       struct virtqueue *vqs[],
-+		       vq_callback_t *callbacks[],
-+		       const char *names[])
-+{
-+	struct rproc *rproc = vdev_to_rproc(vdev);
-+	int i, ret;
-+
-+	/* we maintain two virtqueues per remote processor (for RX and TX) */
-+	if (nvqs != 2)
-+		return -EINVAL;
-+
-+	/* boot the remote processor */
-+	ret = rproc_boot(rproc);
-+	if (ret) {
-+		dev_err(rproc->dev, "rproc_boot() failed %d\n", ret);
-+		goto error;
-+	}
-+
-+	for (i = 0; i < nvqs; ++i) {
-+		vqs[i] = rp_find_vq(vdev, i, callbacks[i], names[i]);
-+		if (IS_ERR(vqs[i])) {
-+			ret = PTR_ERR(vqs[i]);
-+			goto error;
++		ret = omap_device_register(pdev);
++		if (ret) {
++			dev_err(&pdev->dev, "omap_device_register failed\n");
++			omap_device_delete(od);
++			put_device(&pdev->dev);
++			continue;
 +		}
 +	}
 +
-+	return 0;
-+
-+error:
-+	rproc_virtio_del_vqs(vdev);
 +	return ret;
 +}
++device_initcall(omap_rproc_init);
+diff --git a/arch/arm/plat-omap/common.c b/arch/arm/plat-omap/common.c
+index d9f10a3..e2aa143 100644
+--- a/arch/arm/plat-omap/common.c
++++ b/arch/arm/plat-omap/common.c
+@@ -20,7 +20,7 @@
+ #include <plat/board.h>
+ #include <plat/vram.h>
+ #include <plat/dsp.h>
+-
++#include <plat/remoteproc.h>
+ 
+ #define NO_LENGTH_CHECK 0xffffffff
+ 
+@@ -65,4 +65,5 @@ void __init omap_reserve(void)
+ 	omapfb_reserve_sdram_memblock();
+ 	omap_vram_reserve_sdram_memblock();
+ 	omap_dsp_reserve_sdram_memblock();
++	omap_rproc_reserve_cma();
+ }
+diff --git a/drivers/amp/remoteproc/Kconfig b/drivers/amp/remoteproc/Kconfig
+index 78ebff9..e1c617e 100644
+--- a/drivers/amp/remoteproc/Kconfig
++++ b/drivers/amp/remoteproc/Kconfig
+@@ -21,4 +21,16 @@ config OMAP_REMOTEPROC
+ 	  offloaded to remote DSP processors using this framework).
+ 
+ 	  It's safe to say n here if you're not interested in multimedia
+-	  offloading or just want a bare minimum kernel.
+\ No newline at end of file
++	  offloading or just want a bare minimum kernel.
 +
-+/*
-+ * We don't support yet real virtio status semantics.
-+ *
-+ * The plan is to provide this via the VIRTIO HDR resource entry
-+ * which is part of the firmware: this way the remote processor
-+ * will be able to access the status values as set by us.
-+ */
-+static u8 rproc_virtio_get_status(struct virtio_device *vdev)
-+{
-+	return 0;
-+}
-+
-+static void rproc_virtio_set_status(struct virtio_device *vdev, u8 status)
-+{
-+	dev_dbg(&vdev->dev, "new status: %d\n", status);
-+}
-+
-+static void rproc_virtio_reset(struct virtio_device *vdev)
-+{
-+	dev_dbg(&vdev->dev, "reset !\n");
-+}
-+
-+/* provide the vdev features as retrieved from the firmware */
-+static u32 rproc_virtio_get_features(struct virtio_device *vdev)
-+{
-+	struct rproc *rproc = vdev_to_rproc(vdev);
-+
-+	/* we only support a single vdev device for now */
-+	return rproc->rvdev->dfeatures;
-+}
-+
-+static void rproc_virtio_finalize_features(struct virtio_device *vdev)
-+{
-+	struct rproc *rproc = vdev_to_rproc(vdev);
-+
-+	/* Give virtio_ring a chance to accept features */
-+	vring_transport_features(vdev);
-+
-+	/*
-+	 * Remember the finalized features of our vdev, and provide it
-+	 * to the remote processor once it is powered on.
-+	 *
-+	 * Similarly to the status field, we don't expose yet the negotiated
-+	 * features to the remote processors at this point. This will be
-+	 * fixed as part of a small resource table overhaul and then an
-+	 * extension of the virtio resource entries.
-+	 */
-+	rproc->rvdev->gfeatures = vdev->features[0];
-+}
-+
-+static struct virtio_config_ops rproc_virtio_config_ops = {
-+	.get_features	= rproc_virtio_get_features,
-+	.finalize_features = rproc_virtio_finalize_features,
-+	.find_vqs	= rproc_virtio_find_vqs,
-+	.del_vqs	= rproc_virtio_del_vqs,
-+	.reset		= rproc_virtio_reset,
-+	.set_status	= rproc_virtio_set_status,
-+	.get_status	= rproc_virtio_get_status,
-+};
-+
-+/*
-+ * This function is called whenever vdev is released, and is responsible
-+ * to decrement the remote processor's refcount taken when vdev was
-+ * added.
-+ *
-+ * Never call this function directly; it will be called by the driver
-+ * core when needed.
-+ */
-+static void rproc_vdev_release(struct device *dev)
-+{
-+	struct virtio_device *vdev = dev_to_virtio(dev);
-+	struct rproc *rproc = vdev_to_rproc(vdev);
-+
-+	kref_put(&rproc->refcount, rproc_release);
-+}
-+
-+/**
-+ * rproc_add_rpmsg_vdev() - create an rpmsg virtio device
-+ * @rproc: the rproc handle
-+ *
-+ * This function is called if virtio rpmsg support was found in the
-+ * firmware of the remote processor.
-+ *
-+ * Today we only support creating a single rpmsg vdev (virtio device),
-+ * but the plan is to remove this limitation. At that point this interface
-+ * will be revised/extended.
-+ */
-+int rproc_add_rpmsg_vdev(struct rproc *rproc)
-+{
-+	struct device *dev = rproc->dev;
-+	struct rproc_vdev *rvdev = rproc->rvdev;
-+	int ret;
-+
-+	rvdev->vdev.id.device	= VIRTIO_ID_RPMSG,
-+	rvdev->vdev.config	= &rproc_virtio_config_ops,
-+	rvdev->vdev.dev.parent	= dev;
-+	rvdev->vdev.dev.release	= rproc_vdev_release;
-+
-+	/*
-+	 * We're indirectly making a non-temporary copy of the rproc pointer
-+	 * here, because drivers probed with this vdev will indirectly
-+	 * access the wrapping rproc.
-+	 *
-+	 * Therefore we must increment the rproc refcount here, and decrement
-+	 * it _only_ when the vdev is released.
-+	 */
-+	kref_get(&rproc->refcount);
-+
-+	ret = register_virtio_device(&rvdev->vdev);
-+	if (ret) {
-+		kref_put(&rproc->refcount, rproc_release);
-+		dev_err(dev, "failed to register vdev: %d\n", ret);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * rproc_remove_rpmsg_vdev() - remove an rpmsg vdev device
-+ * @rproc: the rproc handle
-+ *
-+ * This function is called whenever @rproc is removed _iff_ an rpmsg
-+ * vdev was created beforehand.
-+ */
-+void rproc_remove_rpmsg_vdev(struct rproc *rproc)
-+{
-+	struct rproc_vdev *rvdev = rproc->rvdev;
-+
-+	unregister_virtio_device(&rvdev->vdev);
-+}
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("OMAP Remote processor messaging virtio device");
++# Amount of CMA memory to reserve for OMAP's dual-M3 "Ducati" sub-system.
++# We need quite much. Fortunately, CMA makes sure this memory isn't
++# wasted in case we're not loading the remote processors.
++config OMAP_DUCATI_CMA_SIZE
++	hex "Ducati M3 physically contiguous memory pool size (in bytes)"
++	depends on OMAP_REMOTEPROC
++	default 0x6500000
++	help
++	  Allocate a specified size of physically contiguous memory (CMA)
++	  for OMAP's dual M3 "Ducati" sub-system. Vast majority of this
++	  memory isn't wasted in case the M3 sub-system isn't loaded.
 -- 
 1.7.5.4
 
