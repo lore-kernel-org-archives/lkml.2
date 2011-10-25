@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260Ab1JYSyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 14:54:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab1JYSyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 14:54:05 -0400
-Date: Tue, 25 Oct 2011 14:54:00 -0400
-From: Dave Jones <davej@redhat.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: wm8400-core: select REGMAP_I2C in kconfig
-Message-ID: <20111025185359.GA21019@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1751978Ab1JYSyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 14:54:45 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:31744 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150Ab1JYSyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 14:54:44 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtITAIMFp05tgww4/2dsb2JhbABDqAsCgQ2BBoFuAQEFOhwjEAgDDjgUJQMhiBUGtHASiEQEpWo
+Date: Tue, 25 Oct 2011 20:52:29 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: currently missing kernel devel trees
+Message-ID: <20111025185229.GY11844@infomag.iguana.be>
+References: <20111013174358.b20fedb97c7b53db2ba82ff6@canb.auug.org.au> <20111016211102.GA15720@infomag.iguana.be> <20111024205028.42b236c4e318032d73317324@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111024205028.42b236c4e318032d73317324@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wm8400-core.c is using the regmap I2C API, so needs to select it.
+Hi Stephen,
 
-ERROR: "regmap_write" [drivers/mfd/wm8400-core.ko] undefined!
-ERROR: "regmap_raw_read" [drivers/mfd/wm8400-core.ko] undefined!
-ERROR: "regmap_read" [drivers/mfd/wm8400-core.ko] undefined!
-ERROR: "regmap_init_i2c" [drivers/mfd/wm8400-core.ko] undefined!
-ERROR: "regmap_bulk_read" [drivers/mfd/wm8400-core.ko] undefined!
-ERROR: "regmap_exit" [drivers/mfd/wm8400-core.ko] undefined!
+> > ...
+> > > watchdog
+> > ...
+> > 
+> > Untill I have the time to do something new could you use the following tree and branch:
+> > 
+> > git://www.linux-watchdog.org/linux-watchdog.git linux-next
+> > 
+> > I started filling it with 5 patches allready, but still need to add some others in the next day.
+> 
+> OK, I have switched to using this.  Please let me know if/when you switch
+> back to kernel.org.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Thanks. If things change, I will let you know.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index a67adcb..67a6126 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -389,6 +389,7 @@ config MFD_MAX8998
- config MFD_WM8400
- 	tristate "Support Wolfson Microelectronics WM8400"
- 	select MFD_CORE
-+	select REGMAP_I2C
- 	depends on I2C
- 	help
- 	  Support for the Wolfson Microelecronics WM8400 PMIC and audio
+Kind regards,
+Wim.
+
