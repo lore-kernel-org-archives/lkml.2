@@ -1,37 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab1JYGYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 02:24:55 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:53883 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419Ab1JYGYy (ORCPT
+	id S1753483Ab1JYGZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 02:25:25 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:51915 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab1JYGZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 02:24:54 -0400
-Message-ID: <4EA65636.6050903@profihost.ag>
-Date: Tue, 25 Oct 2011 08:24:54 +0200
-From: Stefan Priebe <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Stable Tree <stable@kernel.org>
-Subject: Re: Kernel hard LOCKUP with v3.0.7
-References: <4EA1536E.6090001@profihost.ag> <20111021130752.GC8219@suse.de> <AA4CF3E1-3D52-418E-BED9-F34BD22168C3@profihost.ag> <20111021200257.GA31198@suse.de> <4EA2F2E0.4020702@profihost.ag> <20111022165521.GA1716@suse.de> <4EA5AB40.2090609@profihost.ag> <20111024183820.GA9397@suse.de> <4EA5B5F8.5090802@profihost.ag> <20111024203317.GA11263@suse.de>
-In-Reply-To: <20111024203317.GA11263@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
+	Tue, 25 Oct 2011 02:25:23 -0400
+Date: Tue, 25 Oct 2011 17:25:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Moore <pmoore@redhat.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+Subject: linux-next: manual merge of the bluetooth tree with Linus' tree
+Message-Id: <20111025172509.931831a5ad9ae3dab8fca562@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Oct_2011_17_25_09_+1100_RCSxjPHuGjtwZXBB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.10.2011 22:33, schrieb Greg KH:
-> I never tag the -rc releases, as it doesn't make sense to (sometimes we
-> drop them before the final release.)
->
->> - will 3.0.8 be the same as 3.0.8-rc1?
->
-> No, we have already dropped a patch and added 2 more.
+--Signature=_Tue__25_Oct_2011_17_25_09_+1100_RCSxjPHuGjtwZXBB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK thanks. Then i will def. wait for 3.0.8 final.
+Hi Gustavo,
 
-Stefan
+Today's linux-next merge of the bluetooth tree got a conflict in
+net/bluetooth/l2cap_sock.c between commit 6230c9b4f895 ("bluetooth:
+Properly clone LSM attributes to newly created child connections") from
+Linus' tree and commit 15770b1ab974 ("Bluetooth: convert force_active
+variable to flag in l2cap chan") from the bluetooth tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/bluetooth/l2cap_sock.c
+index e829236,836d12e..0000000
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@@ -931,12 -944,7 +946,9 @@@ static void l2cap_sock_init(struct soc
+  		chan->max_tx =3D pchan->max_tx;
+  		chan->tx_win =3D pchan->tx_win;
+  		chan->sec_level =3D pchan->sec_level;
+- 		chan->role_switch =3D pchan->role_switch;
+- 		chan->force_reliable =3D pchan->force_reliable;
+- 		chan->flushable =3D pchan->flushable;
+- 		chan->force_active =3D pchan->force_active;
++ 		chan->flags =3D pchan->flags;
+ +
+ +		security_sk_clone(parent, sk);
+  	} else {
+ =20
+  		switch (sk->sk_type) {
+
+--Signature=_Tue__25_Oct_2011_17_25_09_+1100_RCSxjPHuGjtwZXBB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOplZFAAoJEECxmPOUX5FEgjsP+wfLQkTRW/iVuvDvHajKcV+y
+FJpd3aVPJ62dP9hiswggUDoF1UTiynf9VkpeCPTsYTWlNeT/9lgykVLn/3HK72fp
+04WSu8hK3QIgyOtqTBwolDkcQahaaaJtDvHb7PQIBky9+NW+ucPAGkd0E7lEdgtt
+K31b+sUFNvlT1wUodXf+zcFNTUXfwBbo6wALWaY7hL+D+5sQX07kQ1zpqlqRuY5F
+zTSEPAhdw2sjllYpEz3oT/eILykLilc9HDcplhzDqOTPT5P4NS8aOKO4i0McSXq4
+E0YdhWvQLDMzmvDG6SDyci0ibi/q1gxHHLPjGqt+FbDJuLDA3atwgEoFhr/SjFeK
+jtTVm/SLIyfmHfmcS6vSealoN6+2UVy2oGVfc58T41e2azYUUeD/HQsB3BneGO5g
+rZ01rNnfO0hbPHoikUjiBr/rj2B0iWOs4B8zwoYEO89YoxyvxQZMoZG3LF88f+Qt
+ZG442D4P1uHd2vVboIBqVTv2nTO0DdXCjAlmoZyJnsrWf/SAFyI+VcSi6G9+yNiw
+EjOE7UYRe+dhRYYNUPJtudhoIVPhkpA857oc1xJETpNL3CBmOOIUOdDjMwRfrcgA
+N86LFVt2JNQYIGn3yk9svVZFz4vitSbCTJJS4jNboHUUdPkO4zIA3EGF+YNN2y1O
+2x2S9uKZxYJFTJM7hrb/
+=xLtF
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Oct_2011_17_25_09_+1100_RCSxjPHuGjtwZXBB--
