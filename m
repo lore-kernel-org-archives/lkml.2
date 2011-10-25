@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab1JYLWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 07:22:14 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:43460 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab1JYLWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 07:22:13 -0400
-Message-ID: <4EA69BE2.3020703@ilyx.ru>
-Date: Tue, 25 Oct 2011 15:22:10 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
+	id S932132Ab1JYLXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 07:23:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754855Ab1JYLXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 07:23:10 -0400
+Date: Tue, 25 Oct 2011 13:23:00 +0200
+From: Mel Gorman <mgorman@suse.de>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
+Message-ID: <20111025112300.GB10797@suse.de>
+References: <1319524789-22818-1-git-send-email-ccross@android.com>
+ <20111025090956.GA10797@suse.de>
+ <CAMbhsRR07Gpv-nEAvq8OQmLxkMyL5cASpq1vqQ8qN5ctwnamsQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TTY: tty flip buffer change reserve memory strategy.
-References: <4EA48474.4010101@ilyx.ru> <20111025084543.09432276@pyx>
-In-Reply-To: <20111025084543.09432276@pyx>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRR07Gpv-nEAvq8OQmLxkMyL5cASpq1vqQ8qN5ctwnamsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you, for answer.
-
+On Tue, Oct 25, 2011 at 02:26:56AM -0700, Colin Cross wrote:
+> On Tue, Oct 25, 2011 at 2:09 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Mon, Oct 24, 2011 at 11:39:49PM -0700, Colin Cross wrote:
+> >> Under the following conditions, __alloc_pages_slowpath can loop
+> >> forever:
+> >> gfp_mask & __GFP_WAIT is true
+> >> gfp_mask & __GFP_FS is false
+> >> reclaim and compaction make no progress
+> >> order <= PAGE_ALLOC_COSTLY_ORDER
+> >>
+> >> These conditions happen very often during suspend and resume,
+> >> when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
+> >> allocations into __GFP_WAIT.
+> > b>
+> >> The oom killer is not run because gfp_mask & __GFP_FS is false,
+> >> but should_alloc_retry will always return true when order is less
+> >> than PAGE_ALLOC_COSTLY_ORDER.
+> >>
+> >> Fix __alloc_pages_slowpath to skip retrying when oom killer is
+> >> not allowed by the GFP flags, the same way it would skip if the
+> >> oom killer was allowed but disabled.
+> >>
+> >> Signed-off-by: Colin Cross <ccross@android.com>
+> >
+> > Hi Colin,
+> >
+> > Your patch functionally seems fine. I see the problem and we certainly
+> > do not want to have the OOM killer firing during suspend. I would prefer
+> > that the IO devices would not be suspended until reclaim was completed
+> > but I imagine that would be a lot harder.
+> >
+> > That said, it will be difficult to remember why checking __GFP_NOFAIL in
+> > this case is necessary and someone might "optimitise" it away later. It
+> > would be preferable if it was self-documenting. Maybe something like
+> > this? (This is totally untested)
 > 
-> kmalloc is very fast anyway so I'd be interested in seeing the drivers
-> suffering and the profile traces of a real example.
+> This issue is not limited to suspend, any GFP_NOIO allocation could
+> end up in the same loop.  Suspend is the most likely case, because it
+> effectively converts all GFP_KERNEL allocations into GFP_NOIO.
 > 
 
-Pty use chunk more 256 bytes very often. More program for communicate with
-pppd use pty master - slave. If often kmalloc()-kfree() calls don't provoke
-memory fragmentation and flush TLB, I agree it isn't important.
+I see what you mean with GFP_NOIO but there is an important difference
+between GFP_NOIO and suspend.  A GFP_NOIO low-order allocation currently
+implies __GFP_NOFAIL as commented on in should_alloc_retry(). If no progress
+is made, we call wait_iff_congested() and sleep for a bit. As the system
+is running, kswapd and other process activity will proceed and eventually
+reclaim enough pages for the GFP_NOIO allocation to succeed. In a running
+system, GFP_NOIO can stall for a period of time but your patch will cause
+the allocation to fail. While I expect callers return ENOMEM or handle
+the situation properly with a wait-and-retry loop, there will be
+operations that fail that used to succeed. This is why I'd prefer it was
+a suspend-specific fix unless we know there is a case where a machine
+livelocks due to a GFP_NOIO allocation looping forever and even then I'd
+wonder why kswapd was not helping.
 
-
-> I'm also not sure I agree with the maths - we chunk buffers to 256 byte
-> boundaries to avoid getting lots of queued buffers of different sizes. We
-> could in fact I think simplify the code from what we have learned using
-> it and simply treat the 256 byte buffer case as special rather than 256
-> and 512 as we do now. That would let us remove the more generic support
-> for free buffer sizes which is overcomplex and mean we could simply count
-> the number of 256 byte buffers we have to hand.
-
-Now we can't accumulate buffer more than 256 byte. 
-"if (b->size >= 512) kfree(b);" and our buffer can be only 256, 512 ... .
-We can simplify tty_buffer_find() for don't look up buffer more 256 byte.
-
-I think my patch very clear, because if stream from driver very slow we 
-will be use only two 256 byte chunk, as before. But with pty, maybe, new drivers,
-we could use flip buffer more effective.
-
-Ilya.
-
+-- 
+Mel Gorman
+SUSE Labs
