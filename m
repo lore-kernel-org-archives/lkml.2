@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab1JYHvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:51:23 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:45856 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1JYHvW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:51:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=kpzg870EaFjm1BixPRHUuUswAzrz68K1RG9vx0Vn4tb6oEJJKqEB2q+WYxH+01xaV
-	TnbfuRjLbSzBbm8+uhhyg==
+	id S1753044Ab1JYHyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:54:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25110 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab1JYHys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 03:54:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,403,1315206000"; 
+   d="scan'208";a="81438679"
+Date: Tue, 25 Oct 2011 09:54:35 +0200
+From: Andi Kleen <ak@linux.intel.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/24] GFS2: Fix lseek after SEEK_DATA, SEEK_HOLE have
+ been added
+Message-ID: <20111025075435.GA5325@alboin.Mikenopa.local>
+References: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
+ <1319460518-9046-10-git-send-email-swhiteho@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLGuHZG9pvx5bCp9tOLA40uDz+U_ZY=_xOddtR9423-Jww@mail.gmail.com>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
-	<CAOJsxLGuHZG9pvx5bCp9tOLA40uDz+U_ZY=_xOddtR9423-Jww@mail.gmail.com>
-Date: Tue, 25 Oct 2011 00:51:19 -0700
-X-Google-Sender-Auth: LapMj4ew5mnHoePqlhpuUXNUfxM
-Message-ID: <CAMbhsRQs+P9djqW_62ajfZTHE3yxsOs0agek81aZrBzZ2-5-Fg@mail.gmail.com>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-From: Colin Cross <ccross@android.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319460518-9046-10-git-send-email-swhiteho@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 12:40 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> On Tue, Oct 25, 2011 at 9:39 AM, Colin Cross <ccross@android.com> wrote:
->> Under the following conditions, __alloc_pages_slowpath can loop
->> forever:
->> gfp_mask & __GFP_WAIT is true
->> gfp_mask & __GFP_FS is false
->> reclaim and compaction make no progress
->> order <= PAGE_ALLOC_COSTLY_ORDER
->>
->> These conditions happen very often during suspend and resume,
->> when pm_restrict_gfp_mask() effectively converts all GFP_KERNEL
->> allocations into __GFP_WAIT.
->
-> Why does it do that? Why don't we fix the gfp mask instead?
-It disables __GFP_IO and __GFP_FS because the IO drivers may be suspended.
+On Mon, Oct 24, 2011 at 01:48:23PM +0100, Steven Whitehouse wrote:
+> We need to take the inode's glock whenever the inode's size
+> is referenced, otherwise it might not be uptodate. Even
+> though generic_file_llseek_unlocked() doesn't implement
+> SEEK_DATA, SEEK_HOLE directly, it does reference the inode's
+> size in those cases, so we need to add them to the list
+> of origins which need the glock.
+> 
+> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
 
->> The oom killer is not run because gfp_mask & __GFP_FS is false,
->> but should_alloc_retry will always return true when order is less
->> than PAGE_ALLOC_COSTLY_ORDER.
->>
->> Fix __alloc_pages_slowpath to skip retrying when oom killer is
->> not allowed by the GFP flags, the same way it would skip if the
->> oom killer was allowed but disabled.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
->> ---
->>
->> An alternative patch would add a did_some_progress argument to
->> __alloc_pages_may_oom, and remove the checks in
->> __alloc_pages_slowpath that require knowledge of when
->> __alloc_pages_may_oom chooses to run out_of_memory. If
->> did_some_progress was still zero, it would goto nopage whether
->> or not __alloc_pages_may_oom was actually called.
->>
->>  mm/page_alloc.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index fef8dc3..dcd99b3 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -2193,6 +2193,10 @@ rebalance:
->>                        }
->>
->>                        goto restart;
->> +               } else {
->> +                       /* If we aren't going to try the OOM killer, give up */
->> +                       if (!(gfp_mask & __GFP_NOFAIL))
->> +                               goto nopage;
->>                }
->>        }
->
-> I don't quite understand how __GFP_WAIT is involved here. Which path
-> is causing the infinite loop?
-GFP_KERNEL is __GFP_WAIT | __GFP_IO | __GFP_FS.  Once driver suspend
-has started, gfp_allowed_mask is ~(__GFP_IO | GFP_FS), so any call to
-__alloc_pages_nodemask(GFP_KERNEL, ...) gets masked to effectively
-__alloc_pages_nodemask(__GFP_WAIT, ...).
+Looks good.
 
-The loop is in __alloc_pages_slowpath, from the rebalance label to
-should_alloc_retry.  Under the conditions I listed in the commit
-message, there is no path to the nopage label, because all the
-relevant "goto nopage" lines that would normally allow a GFP_KERNEL
-allocation to fail are inside a check for __GFP_FS.
+Acked-by: Andi Kleen <ak@linux.intel.com>
 
-Modifying the gfp_allowed_mask would not completely fix the issue, a
-GFP_NOIO allocation can meet the conditions outside of suspend.
-gfp_allowed_mask just makes the issue more likely, by converting
-GFP_KERNEL into GFP_NOIO.
+-Andi
