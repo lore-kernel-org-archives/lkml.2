@@ -1,112 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab1JYUIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:08:32 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:53320 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1JYUIa (ORCPT
+	id S1753476Ab1JYUJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:09:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53697 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636Ab1JYUJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 16:08:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        stable@kernel.org
-Subject: [PATCH 1/3] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode.
-Date: Tue, 25 Oct 2011 16:07:57 -0400
-Message-Id: <1319573279-13867-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
-References: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4EA7172C.001A,ss=1,re=0.000,fgs=0
+	Tue, 25 Oct 2011 16:09:45 -0400
+Date: Tue, 25 Oct 2011 15:09:35 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, akpm@linux-foundation.org, oleg@redhat.com,
+        richard@nod.at, mikevs@xs4all.net, segoon@openwall.com, gregkh@suse.de
+Subject: Re: [PATCH 05/10] user namespace: clamp down users of cap_raised
+Message-ID: <20111025200935.GA13187@sergelap>
+References: <CALQRfL51U=cuLdVUpFXTog++3WwMjJB+9S6T8gVibC5gdGa5JQ@mail.gmail.com>
+ <1318974898-21431-1-git-send-email-serge@hallyn.com>
+ <1318974898-21431-6-git-send-email-serge@hallyn.com>
+ <14652.1319014868@redhat.com>
+ <20111024144334.GA26603@hallyn.com>
+ <CALQRfL4zCbzr_Fa0ySi96j06nw7ifocCxUjYUs6vXxeNvjCutQ@mail.gmail.com>
+ <20111024172842.GA13556@sergelap>
+ <CALQRfL7ZNv9+7tooJC8x8Pmz62QtnJ+-pVFRy_YspCG1BhZKzg@mail.gmail.com>
+ <20111025030314.GA27425@sergelap>
+ <1319564009.3280.22.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319564009.3280.22.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes an outstanding issue that has been reported since 2.6.37.
-Under a heavy loaded machine processing "fork()" calls could keepover with:
+Quoting Eric Paris (eparis@redhat.com):
+> On Mon, 2011-10-24 at 22:03 -0500, Serge E. Hallyn wrote:
+> > Quoting Andrew G. Morgan (morgan@kernel.org):
+> > > On Mon, Oct 24, 2011 at 10:28 AM, Serge E. Hallyn
+> > > <serge.hallyn@canonical.com> wrote:
+> > > > Quoting Andrew G. Morgan (morgan@kernel.org):
+> > > >> Serge,
+> > > >>
+> > > >> It seems as if this whole thing is really idiomatic. How about?
+> > > >>
+> > > >> #define IN_ROOT_USER_NS_CAPABLE(cap)  \
+> > > >>    ((current_user_ns() == &init_user_ns) && cap_raised(current_cap(), cap))
+> > > >
+> > > > My objection to this was that it seems to encourage others to use it :)  I'm
+> > > > not sure we want that.  Also, IN_ROOT_USER_NS seems more generally useful.
+> > > 
+> > > What is driving the choice of when its appropriate? How can a
+> > 
+> > I'd like to say it's never appropriate.  The reason is that it bypasses
+> > the whole security_ops->capable() sequence, so for instance SELinux is
+> > kept in the dark.
+> > 
+> > > developer determine this? If you make it hard, presumably folk won't
+> > > do it by default, but will that create a burdon on others to go round
+> > > patching things like this up?
+> > > 
+> > > > But if I'm the only one who feels this way I'll go ahead and do it...
+> > > 
+> > > I'm more of a optimize for a human to read the source code (ie. debug
+> > > a problem) kind of person. If IN_ROOT_USER_NS is useful, you could
+> > > always define IN_ROOT_USER_NS_CAPABLE in terms of IN_ROOT_USER_NS &&
+> > 
+> > My other objection is that, in contrast to IN_ROOT_USER_NS(), which is
+> > very clear, IN_ROOT_USER_NS_CAPABLE() is not as helpful.  I'm sure a
+> > better name is out there somewhere, though.
+> > 
+> > > ... and provide both.
+> > > 
+> > > I guess I'm unclear, however, when you want developers to use one or
+> > > the other variant of the basic capable() functionality. Since I'm not
+> > > clear, I'm suspecting this is a fragile situation.
+> > 
+> > I think only security code (LSMs) should be using cap_raised directly.
+> > Everything else should go through the capable()/has_capability() family
+> > of functions.  Which, incidentally, have been (or are about to be) made
+> > less of a mess and thus less fragile by Eric Paris' patchset starting at
+> > http://www.spinics.net/linux/fedora/linux-security-module/msg11896.html
+> 
+> (sorry out all last week)
+> 
+> I was going to ask why we have these user at all.  Is there a reason
+> they are bypassing the LSM and not setting PF_PRIV?  Is the best
+> solution to just bring them back into the capable fold?
 
-BUG: unable to handle kernel paging request at f573fc8c
-IP: [<c01abc54>] swap_count_continued+0x104/0x180
-*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000
-Oops: 0000 [#1] SMP
-Modules linked in:
-Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
-EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
-EIP is at swap_count_continued+0x104/0x180
-.. snip..
-Call Trace:
- [<c01ac222>] ? __swap_duplicate+0xc2/0x160
- [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
- [<c01ac2e4>] ? swap_duplicate+0x14/0x40
- [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
- [<c01a0ca5>] ? copy_page_range+0x195/0x200
- [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
- [<c0132cf8>] ? dup_mm+0xa8/0x130
- [<c013376a>] ? copy_process+0x98a/0xb30
- [<c013395f>] ? do_fork+0x4f/0x280
- [<c01573b3>] ? getnstimeofday+0x43/0x100
- [<c010f770>] ? sys_clone+0x30/0x40
- [<c06c048d>] ? ptregs_clone+0x15/0x48
- [<c06bfb71>] ? syscall_call+0x7/0xb
+Probably, but I didn't really want to tackle that - and risk
+regressions - just then.  The most important issue for now is
+that anyone who can create a new user namespace can pass this
+test, so I wanted to fix that first.  (Creating a new user ns
+takes quite a bit of privilege, but of course userspace loves
+to bypass that with setuid)
 
-The problem is that in copy_page_range we turn lazy mode on, and then
-in swap_entry_free we call swap_count_continued which ends up in:
+Maybe, since everyone is calling me on it, I'm wrong and we should
+consider it after all :)
 
-         map = kmap_atomic(page, KM_USER0) + offset;
-
-and then later we touch *map.
-
-Since we are running in batched mode (lazy) we don't actually set up the
-PTE mappings and the kmap_atomic is not done synchronously and ends up
-trying to dereference a page that has not been set.
-
-Looking at kmap_atomic_prot_pfn, it uses 'arch_flush_lazy_mmu_mode' and
-doing the same in kmap_atomic_prot and __kunmap_atomic makes the problem
-go away.
-
-Interestingly, git commit b8bcfe997e46150fedcc3f5b26b846400122fdd9
-removed part of this to fix an interrupt issue - but it went to far
-and did not consider this scenario.
-
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: stable@kernel.org
-[v1: Redid the commit description per Jeremy's apt suggestion]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/mm/highmem_32.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
-index b499626..f4f29b1 100644
---- a/arch/x86/mm/highmem_32.c
-+++ b/arch/x86/mm/highmem_32.c
-@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
- 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
- 	BUG_ON(!pte_none(*(kmap_pte-idx)));
- 	set_pte(kmap_pte-idx, mk_pte(page, prot));
-+	arch_flush_lazy_mmu_mode();
- 
- 	return (void *)vaddr;
- }
-@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
- 		 */
- 		kpte_clear_flush(kmap_pte-idx, vaddr);
- 		kmap_atomic_idx_pop();
-+		arch_flush_lazy_mmu_mode();
- 	}
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	else {
--- 
-1.7.6.4
-
+-serge
