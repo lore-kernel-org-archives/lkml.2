@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab1JYOa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:30:58 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:44092
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750831Ab1JYOa5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:30:57 -0400
-Message-ID: <4EA6C810.30605@compulab.co.il>
-Date: Tue, 25 Oct 2011 16:30:40 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S1756588Ab1JYOdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:33:08 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:52565 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab1JYOdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 10:33:06 -0400
+X-Greylist: delayed 1191 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 10:33:06 EDT
+X-ASG-Debug-ID: 1319551994-03d6a50f2b1ffe80001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4EA6C3F7.20604@fusionio.com>
+Date: Tue, 25 Oct 2011 16:13:11 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Eric Miao <eric.y.miao@gmail.com>
-CC: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: pxa/cm-x300: properly set bt_reset pin
-References: <1316268934.16763.2.camel@phoenix> <4E7B0E35.5010607@compulab.co.il> <CAF+7xW=AFmxCmppmt81pzkDbem=LAHdSYtT67yOOzMNPFRpnfA@mail.gmail.com> <4E9C4DAE.7020804@compulab.co.il>
-In-Reply-To: <4E9C4DAE.7020804@compulab.co.il>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] blk-throttle: Take blkcg->lock while traversing blkcg->policy_list
+References: <1319144906-5066-1-git-send-email-vgoyal@redhat.com> <1319144906-5066-2-git-send-email-vgoyal@redhat.com> <20111020211140.GY25124@google.com> <20111020212021.GA2841@redhat.com> <20111020212958.GA25124@google.com> <20111021121043.GB6474@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 2/2] blk-throttle: Take blkcg->lock while traversing blkcg->policy_list
+In-Reply-To: <20111021121043.GB6474@redhat.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1319551994
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.78360
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping x2
-
-On 10/17/2011 05:45 PM, Igor Grinberg wrote:
-> ping
->
-> On 09/29/11 10:57, Axel Lin wrote:
->> 2011/9/22 Igor Grinberg <grinberg@compulab.co.il>:
->>> Hi Axel,
->>>
->>> On 09/17/11 17:15, Axel Lin wrote:
->>>> Fix below build warning and properly set bt_reset pin.
->>>>
->>>>   CC      arch/arm/mach-pxa/cm-x300.o
->>>> arch/arm/mach-pxa/cm-x300.c: In function 'cm_x300_init_wi2wi':
->>>> arch/arm/mach-pxa/cm-x300.c:779: warning: unused variable 'wlan_en'
->>>> arch/arm/mach-pxa/cm-x300.c:795: warning: 'bt_reset' may be used uninitialized in this function
->>> Acked-by: Igor Grinberg <grinberg@compulab.co.il>
->>>
->>> Also, this patch fixes a real regression since
->>> 5a009df1f200efa49658b0e9c7ad056d59fbefe4 (ARM: pxa/cm-x300: GPIO cleanup)
->>> - Wifi and Bluetooth do not work without it, so please:
->>>
->>> Cc: <stable@kernel.org> [3.0.x]
->>>
->> Hi, Eric,
->> Just to pin the status of this patch. I think it should go for 3.1.
->> Thanks,
->> Axel
+On 2011-10-21 14:10, Vivek Goyal wrote:
+> On Thu, Oct 20, 2011 at 02:29:58PM -0700, Tejun Heo wrote:
+>> Hello,
 >>
+>> On Thu, Oct 20, 2011 at 05:20:21PM -0400, Vivek Goyal wrote:
+>>> The only problem with this approach is that it will cleanup per device
+>>> weight rules also at elevator_exit() time which is not same as device
+>>> removal and one might device to bring CFQ back on device and we will
+>>> need the rules again.
+>>
+>> I actually think removoing those rules on elevator detach would be the
+>> right thing to do.  We don't try to keep cfq setting across elevator
+>> switch.  When we're switching from cfq, we're detaching iocg policy
+>> too.  The settings going away is perfectly fine.  I actually think
+>> it's a pretty bad idea to implement ad-hoc setting persistence in
+>> kernel.  Just making sure that userland is notified is far better
+>> approach.  Userland has all the facilities to deal with this type of
+>> situations.
+>>
+>> When switching from cfq to deadline, we lose the whole proportional io
+>> control.  It's way more confusing to have lingering settings which
+>> don't do anything.
+> 
+> I am not so sure about this. Suppose tomorrow another IO sheduler starts
+> taking into account the cgroup gloabl weight or cgroup per device weight
+> to do some kind of IO prioritization, then removing the rules upon
+> changing the IO schduler will not make sense.
+> 
+> IOW, rules are per cgroup per device and not per cgroup per IO scheduler
+> and more than one IO scheduler should be able to share the rules.
+
+FWIW, I agree with Tejun here. A switch operation is a reset, start from
+scratch. We don't preserve other per IO-scheduler settings on a switch,
+preserving _some_ settings is just confusing.
+
+-- 
+Jens Axboe
 
