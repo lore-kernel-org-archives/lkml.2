@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1JYKkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 06:40:18 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:54065 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab1JYKkM convert rfc822-to-8bit (ORCPT
+	id S1755057Ab1JYKnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 06:43:14 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:37794 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab1JYKnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 06:40:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH-7YMmx0J+pQFfrU4KW2ahFDPL3udvAUgPy4_Hf19HP46MZHw@mail.gmail.com>
-References: <CAH-7YMmqs9j2-UTUSCZaFDEhxmjkAZvHzKVvbvy7nsG8JpFA9w@mail.gmail.com>
-	<alpine.LRH.2.00.1110210232450.31056@tundra.namei.org>
-	<CAH-7YMmx0J+pQFfrU4KW2ahFDPL3udvAUgPy4_Hf19HP46MZHw@mail.gmail.com>
-Date: Tue, 25 Oct 2011 18:40:11 +0800
-Message-ID: <CAH-7YMmAM8e051PopL92WhqSvqz23_eWKjfZbuaLZ4_UhGR5jw@mail.gmail.com>
-Subject: Re: [PATCH] ACL supports to mqueue
-From: Zhou Peng <ailvpeng25@gmail.com>
-To: James Morris <jmorris@namei.org>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, security@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Oct 2011 06:43:13 -0400
+Date: Tue, 25 Oct 2011 21:42:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: Tree for Oct 25
+Message-Id: <20111025214255.4381ace152ef032ebb9cc740@canb.auug.org.au>
+In-Reply-To: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
+References: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, how about this patch pls?
+--Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Oct 21, 2011 at 6:46 PM, Zhou Peng <ailvpeng25@gmail.com> wrote:
-> * In general, it can give a more fine grained and flexible DAC to msg queue obj.
-> * NFSARK(A distro) wants all posix ipc objects to support ACL, including mqueue.
-> * Posix semphore and shmem both support ACL, but mqueue as one of the
-> three basic ipc doesn't.
-> * At least, it may save one note sentence for MQ_OVERVIEW(7)   ^_^
->    "Linux does not currently (2.6.26) support the use of access
-> control lists (ACLs) for POSIX message queues."
->    http://www.kernel.org/doc/man-pages/online/pages/man7/mq_overview.7.html
+Hi all,
+
+On Tue, 25 Oct 2011 20:36:28 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> On Thu, Oct 20, 2011 at 11:33 PM, James Morris <jmorris@namei.org> wrote:
-> > On Thu, 20 Oct 2011, Zhou Peng wrote:
-> >
-> >> This patch adds ACL supports to mqueue filesystem.
-> >> Based on Linux 3.0.4.
-> >
-> > Why is this necessary, and who is planning to use it?
-> >
-> > Are any distros likely to enable this?
-> >
+> It will not be put into the build system referred to below.
+
+Linus convinced me that it may be useful to do the builds anyway, so the
+results will start appearing at http://kisskb.ellerman.id.au/linux-next
+over the next few hours.  Take the results with a grain of salt, some
+failures may have been caused by my merge fixups (and sparc will fail due
+to me applying a fix for a bug that no longer exists :-().
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOppKvAAoJEECxmPOUX5FEfogQAJS0cWKFUltVyf34Mofkz8Fi
+bLzGhZxQBRCl7rjBmVxGYuOkcqphGa55boFDSb8pXs7xcDxhxbi13ud7CCVNaZMW
+U/DSXp4GJMW7lPST31uRF9bg4vX84Rs/+/ai19uWeViqtOjNYpG/tdYn99onulA3
+T0Bl3Vd/M+zANcmk1Z3Ukpf48aAO9/iC+oXsUrCv867L1H/IYdIfvisCq9tZmfmP
+Cv87e56/510+1hLS30xLmZpMZdkWxOZXhvOytn7UhYwfY13d9ohzdtK9Lnsv33v+
+5WYuAqdJb4vlS1k5M+r0c/Mw09df267qNOq77vlodVwncvVUkxOwhILL1d8MBQAE
+gA3SApZzECV4IOqWnfNA+4zsZN4IIEUF3j0U5sopgvV6TmvVR1RupnASDu0Ud+Wr
+eILhml5jN/fdQJlV7eI7aunNp1swyZZXGYBpRIz8veHYPIpOaM4DdtOCqSVhmZtS
+OxynMSRvIz/JVVM8ISFMHN9/nmloHi5LAeC6HUIVfE9C5p2xaWJsX1qEKdKTxZuo
+oca9sxozLUe8qEFgXW4Cvmx8kbnTIT+q7UGdPLuPUKdfmzocM5n+ePcqwCufgpAe
+6+DspxWIOHH/EjvZnsrZvpF4WNZhLEQs/NSSvLxLq4Vk04eB+myicKPKZXELftdi
+HwSx3cv8MPNMVrXZVs7V
+=IIS7
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_Oct_2011_21_42_55_+1100_Y_3I+WNeD=r_VjV.--
