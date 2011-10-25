@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab1JYHyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:54:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25110 "EHLO mga11.intel.com"
+	id S1753941Ab1JYH6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:58:42 -0400
+Received: from lucidpixels.com ([72.73.18.11]:49636 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750Ab1JYHys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:54:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,403,1315206000"; 
-   d="scan'208";a="81438679"
-Date: Tue, 25 Oct 2011 09:54:35 +0200
-From: Andi Kleen <ak@linux.intel.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/24] GFS2: Fix lseek after SEEK_DATA, SEEK_HOLE have
- been added
-Message-ID: <20111025075435.GA5325@alboin.Mikenopa.local>
-References: <1319460518-9046-1-git-send-email-swhiteho@redhat.com>
- <1319460518-9046-10-git-send-email-swhiteho@redhat.com>
+	id S1753709Ab1JYH6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 03:58:41 -0400
+Date: Tue, 25 Oct 2011 03:58:40 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rcX (8,9,10): kernel does not validate swapfile on disk(?)
+ - WAS: vnc4server 4.1.1+X4.3.0-3 crashing under normal use
+In-Reply-To: <alpine.DEB.2.02.1110231756250.20069@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1110250357350.9631@p34.internal.lan>
+References: <alpine.DEB.2.02.1110221939380.26496@p34.internal.lan> <alpine.DEB.2.02.1110231756250.20069@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319460518-9046-10-git-send-email-swhiteho@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 01:48:23PM +0100, Steven Whitehouse wrote:
-> We need to take the inode's glock whenever the inode's size
-> is referenced, otherwise it might not be uptodate. Even
-> though generic_file_llseek_unlocked() doesn't implement
-> SEEK_DATA, SEEK_HOLE directly, it does reference the inode's
-> size in those cases, so we need to add them to the list
-> of origins which need the glock.
-> 
-> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
+Hi,
 
-Looks good.
+Back to the drawing board, while it did seem to help, it crashed a day or 
+so later..
 
-Acked-by: Andi Kleen <ak@linux.intel.com>
+Mem:  49555968k total, 43546968k used,  6009000k free, 13823244k buffers
+Swap: 31248972k total,   125432k used, 31123540k free, 26341364k cached
 
--Andi
+[158525.666164] Xvnc4[19596]: segfault at 8 ip 00000000004cbed4 sp
+00007fffe95b0ec0 error 4 in Xvnc4[400000+450000]
+
+Justin.
+
