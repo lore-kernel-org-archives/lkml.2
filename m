@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab1JYTBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 15:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1652 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab1JYTBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 15:01:54 -0400
-Date: Tue, 25 Oct 2011 15:01:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] blk-throttle: Take blkcg->lock while traversing
- blkcg->policy_list
-Message-ID: <20111025190151.GH23292@redhat.com>
-References: <1319144906-5066-1-git-send-email-vgoyal@redhat.com>
- <1319144906-5066-2-git-send-email-vgoyal@redhat.com>
- <20111020211140.GY25124@google.com>
- <20111020212021.GA2841@redhat.com>
- <20111020212958.GA25124@google.com>
- <20111021121043.GB6474@redhat.com>
- <4EA6C3F7.20604@fusionio.com>
+	id S1752126Ab1JYTDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 15:03:21 -0400
+Received: from cpanel23.proisp.no ([88.87.44.74]:57270 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab1JYTDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 15:03:19 -0400
+X-Greylist: delayed 3201 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Oct 2011 15:03:19 EDT
+Message-ID: <4EA6FB6A.2020800@numascale.com>
+Date: Tue, 25 Oct 2011 20:09:46 +0200
+From: Arne Georg Gleditsch <arne.gleditsch@numascale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA6C3F7.20604@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steffen Persvold <sp@numascale.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 3/3] Add NumaChip quirk
+References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com> <1318926156-25504-3-git-send-email-daniel@numascale-asia.com> <CAErSpo4Rmtd4LsXmgvb4Vn92z=u1feRyPWF=KS8ggVZvitjEnA@mail.gmail.com> <4EA6D76C.5050505@numascale.com> <CAErSpo6T8NXrHzkyHQmw3h4u5u61AZ_biF4FBf3US7FryEwhTw@mail.gmail.com> <4EA6F2F4.9080005@numascale.com>
+In-Reply-To: <4EA6F2F4.9080005@numascale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 04:13:11PM +0200, Jens Axboe wrote:
-> On 2011-10-21 14:10, Vivek Goyal wrote:
-> > On Thu, Oct 20, 2011 at 02:29:58PM -0700, Tejun Heo wrote:
-> >> Hello,
-> >>
-> >> On Thu, Oct 20, 2011 at 05:20:21PM -0400, Vivek Goyal wrote:
-> >>> The only problem with this approach is that it will cleanup per device
-> >>> weight rules also at elevator_exit() time which is not same as device
-> >>> removal and one might device to bring CFQ back on device and we will
-> >>> need the rules again.
-> >>
-> >> I actually think removoing those rules on elevator detach would be the
-> >> right thing to do.  We don't try to keep cfq setting across elevator
-> >> switch.  When we're switching from cfq, we're detaching iocg policy
-> >> too.  The settings going away is perfectly fine.  I actually think
-> >> it's a pretty bad idea to implement ad-hoc setting persistence in
-> >> kernel.  Just making sure that userland is notified is far better
-> >> approach.  Userland has all the facilities to deal with this type of
-> >> situations.
-> >>
-> >> When switching from cfq to deadline, we lose the whole proportional io
-> >> control.  It's way more confusing to have lingering settings which
-> >> don't do anything.
-> > 
-> > I am not so sure about this. Suppose tomorrow another IO sheduler starts
-> > taking into account the cgroup gloabl weight or cgroup per device weight
-> > to do some kind of IO prioritization, then removing the rules upon
-> > changing the IO schduler will not make sense.
-> > 
-> > IOW, rules are per cgroup per device and not per cgroup per IO scheduler
-> > and more than one IO scheduler should be able to share the rules.
+On 25. okt. 2011 19:33, Steffen Persvold wrote:
+> On 10/25/2011 19:15, Bjorn Helgaas wrote:
+>> NumaChip sounds like an exception because you know you never care
+>> about using those BARs.  But I'm curious -- it looks like Linux didn't
+>> even try to assign resources to them.  I thought something in the
+>> pci_assign_unassigned_resources() path would have tried to do
+>> something with them.  If we *did* assign resources to those BARs, I
+>> assume nothing would break, since there's no driver that actually uses
+>> them.  Right?
+>>
 > 
-> FWIW, I agree with Tejun here. A switch operation is a reset, start from
-> scratch. We don't preserve other per IO-scheduler settings on a switch,
-> preserving _some_ settings is just confusing.
+> Correct, the BARs are there and if something sensible were written to
+> them (and MemorySpace was enabled in the Command register) NumaChip
+> *would* respond to mmio accesses to that address range.
 
-Ok. But this is more of a per queue setting (per cgroup, per device) and
-not per IO scheduler one. That's a different thing that currently only CFQ
-makes use of it. 
+A minor point: adjusting the BARs would not strictly speaking be
+sufficient for the NumaChip to respond, as it would never see these
+accesses unless the [MMIO address range]->[HyperTransport node/link]
+registers of the CPU NorthBridges were also updated with the relevant
+ranges.  This is a bit messy, but in a way much the same issue as when
+secondary southbridges are connected to secondary CPUs in any other
+HyperTransport-based system.
 
-If we start looking at them just as CFQ specific weigths, then it is a 
-different story. My thought process about these files was per cgroup per
-device weights. 
+Perhaps an alternative to this NumaChip-specific quirk would be to
+special-case BARs belonging to "PCI" devices 00:18 - 00:1f in AMD
+Opteron systems.  These always indicate coherent HT devices and fiddling
+with the CPU NB maps are going to be required if anything is changed
+regarding the BAR assignments here.
 
-Thanks
-Vivek
+-- 
+							Arne.
