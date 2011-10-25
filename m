@@ -1,191 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1JYUIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 16:08:18 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:53185 "EHLO
+	id S1753568Ab1JYUId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:08:33 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:53184 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab1JYUIQ (ORCPT
+	with ESMTP id S1753429Ab1JYUIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Oct 2011 16:08:16 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/3] xen: map foreign pages for shared rings by updating the PTEs directly
-Date: Tue, 25 Oct 2011 16:07:59 -0400
-Message-Id: <1319573279-13867-4-git-send-email-konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, david.vrabel@citrix.com
+Subject: [PATCH] MMU bug-fixes in generic code that are mostly used by Xen.
+Date: Tue, 25 Oct 2011 16:07:56 -0400
+Message-Id: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
-References: <1319573279-13867-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4EA7172A.00D0:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090208.4EA7172A.00DF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Vrabel <david.vrabel@citrix.com>
+I was wondering if you could help. I've this bug-fix:
+ [PATCH 1/3] x86/paravirt: PTE updates in k(un)map_atomic need to be
 
-When mapping a foreign page with xenbus_map_ring_valloc() with the
-GNTTABOP_map_grant_ref hypercall, set the GNTMAP_contains_pte flag and
-pass a pointer to the PTE (in init_mm).
+that you picked up some time ago in your tree and then dropped. I am not sure why it
+was dropped but perhaps it is b/c I also had that patch in my linux-next and your tool
+decided to drop it. Anyhow, was wondering if you would be OK giving it your
+Ack or just pulling it in your tree for 3.2.
 
-After the page is mapped, the usual fault mechanism can be used to
-update additional MMs.  This allows the vmalloc_sync_all() to be
-removed from alloc_vm_area().
+These two:
+ [PATCH 2/3] xen: use generic functions instead of xen_{alloc,
+ [PATCH 3/3] xen: map foreign pages for shared rings by updating the
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/grant-table.c         |    2 +-
- drivers/xen/xenbus/xenbus_client.c |   11 ++++++++---
- include/linux/vmalloc.h            |    2 +-
- mm/vmalloc.c                       |   27 +++++++++++++--------------
- 4 files changed, 23 insertions(+), 19 deletions(-)
+remove what git commit d2fe97c3315a6a406540f74651e7430d9d51e671
+	Author: David Vrabel <david.vrabel@citrix.com>
+	Date:   Thu Sep 29 16:53:32 2011 +0100
 
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 6bbfd7a..5a40d24 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- 
- 	if (shared == NULL) {
- 		struct vm_struct *area =
--			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-+			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
- 		BUG_ON(area == NULL);
- 		shared = area->addr;
- 		*__shared = shared;
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index 229d3ad..52bc57f 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -34,6 +34,7 @@
- #include <linux/types.h>
- #include <linux/vmalloc.h>
- #include <asm/xen/hypervisor.h>
-+#include <asm/xen/page.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/event_channel.h>
- #include <xen/events.h>
-@@ -435,19 +436,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
- int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
- {
- 	struct gnttab_map_grant_ref op = {
--		.flags = GNTMAP_host_map,
-+		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
- 		.ref   = gnt_ref,
- 		.dom   = dev->otherend_id,
- 	};
- 	struct vm_struct *area;
-+	pte_t *pte;
- 
- 	*vaddr = NULL;
- 
--	area = alloc_vm_area(PAGE_SIZE);
-+	area = alloc_vm_area(PAGE_SIZE, &pte);
- 	if (!area)
- 		return -ENOMEM;
- 
--	op.host_addr = (unsigned long)area->addr;
-+	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
- 
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
- 		BUG();
-@@ -526,6 +528,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 	struct gnttab_unmap_grant_ref op = {
- 		.host_addr = (unsigned long)vaddr,
- 	};
-+	unsigned int level;
- 
- 	/* It'd be nice if linux/vmalloc.h provided a find_vm_area(void *addr)
- 	 * method so that we don't have to muck with vmalloc internals here.
-@@ -547,6 +550,8 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 	}
- 
- 	op.handle = (grant_handle_t)area->phys_addr;
-+	op.host_addr = arbitrary_virt_to_machine(
-+		lookup_address((unsigned long)vaddr, &level)).maddr;
- 
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
- 		BUG();
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 9332e52..1a77252 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -118,7 +118,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
- #endif
- 
- /* Allocate/destroy a 'vmalloc' VM area. */
--extern struct vm_struct *alloc_vm_area(size_t size);
-+extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
- extern void free_vm_area(struct vm_struct *area);
- 
- /* for /dev/kmem */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 5016f19..b5deec6 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2105,23 +2105,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
- 
- static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
- {
--	/* apply_to_page_range() does all the hard work. */
-+	pte_t ***p = data;
-+
-+	if (p) {
-+		*(*p) = pte;
-+		(*p)++;
-+	}
- 	return 0;
- }
- 
- /**
-  *	alloc_vm_area - allocate a range of kernel address space
-  *	@size:		size of the area
-+ *	@ptes:		returns the PTEs for the address space
-  *
-  *	Returns:	NULL on failure, vm_struct on success
-  *
-  *	This function reserves a range of kernel address space, and
-  *	allocates pagetables to map that range.  No actual mappings
-- *	are created.  If the kernel address space is not shared
-- *	between processes, it syncs the pagetable across all
-- *	processes.
-+ *	are created.
-+ *
-+ *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
-+ *	allocated for the VM area are returned.
-  */
--struct vm_struct *alloc_vm_area(size_t size)
-+struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
- {
- 	struct vm_struct *area;
- 
-@@ -2135,19 +2142,11 @@ struct vm_struct *alloc_vm_area(size_t size)
- 	 * of kernel virtual address space and mapped into init_mm.
- 	 */
- 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
--				area->size, f, NULL)) {
-+				size, f, ptes ? &ptes : NULL)) {
- 		free_vm_area(area);
- 		return NULL;
- 	}
- 
--	/*
--	 * If the allocated address space is passed to a hypercall
--	 * before being used then we cannot rely on a page fault to
--	 * trigger an update of the page tables.  So sync all the page
--	 * tables here.
--	 */
--	vmalloc_sync_all();
--
- 	return area;
- }
- EXPORT_SYMBOL_GPL(alloc_vm_area);
--- 
-1.7.6.4
+	    xen: map foreign pages for shared rings by updating the PTEs directly
 
+added in 3.1 with a more selective way instead of using the big hammer.
+
+I was wondering if you would be OK ACK-ing those two or sticking them
+in your tree for 3.2.
+
+All of the patches are in:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-akpm-3.2
+
+and the last two have also been sitting for some time in linux-next (and the first
+one was there but it looks like I forgot to put it back there as I had thought
+that Linus had picked it up.. argh).
+
+ arch/ia64/include/asm/xen/grant_table.h |   29 --------------
+ arch/ia64/xen/grant-table.c             |   62 -------------------------------
+ arch/x86/include/asm/xen/grant_table.h  |    7 ---
+ arch/x86/mm/highmem_32.c                |    2 +
+ arch/x86/xen/grant-table.c              |    2 +-
+ drivers/xen/xenbus/xenbus_client.c      |   15 +++++--
+ include/linux/vmalloc.h                 |    2 +-
+ include/xen/grant_table.h               |    1 -
+ mm/vmalloc.c                            |   27 ++++++-------
+ 9 files changed, 27 insertions(+), 120 deletions(-)
