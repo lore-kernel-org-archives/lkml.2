@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1JYT7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 15:59:06 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:57920 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab1JYT7F (ORCPT
+	id S1752855Ab1JYUDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 16:03:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54502 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab1JYUDa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 15:59:05 -0400
-Date: Wed, 26 Oct 2011 06:58:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Myron Stowe <mstowe@redhat.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the pci tree
-Message-Id: <20111026065839.e24d529ff6ff2e6fcc413a02@canb.auug.org.au>
-In-Reply-To: <1319562878.2417.18.camel@zim.stowe>
-References: <20111026004430.6725033af543cb336a786a3e@canb.auug.org.au>
-	<1319562878.2417.18.camel@zim.stowe>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Oct_2011_06_58_39_+1100_Bpv.S+F.ryMzI9vD"
+	Tue, 25 Oct 2011 16:03:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=P5A/RKpxS1V2vlEFjo21OXjoyViWD5j/u8deiYshmyDLOS6eqwkY11xNnhdbg4gvW
+	95DdXMia72CFjHgafxVGg==
+MIME-Version: 1.0
+In-Reply-To: <4EA6FB6A.2020800@numascale.com>
+References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com>
+ <1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
+ <CAErSpo4Rmtd4LsXmgvb4Vn92z=u1feRyPWF=KS8ggVZvitjEnA@mail.gmail.com>
+ <4EA6D76C.5050505@numascale.com> <CAErSpo6T8NXrHzkyHQmw3h4u5u61AZ_biF4FBf3US7FryEwhTw@mail.gmail.com>
+ <4EA6F2F4.9080005@numascale.com> <4EA6FB6A.2020800@numascale.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 25 Oct 2011 14:03:08 -0600
+Message-ID: <CAErSpo7tPwZQ_SokhUL_-M5MG1FueuP7hwR=sxoL2H2t_b-7QA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] Add NumaChip quirk
+To: Arne Georg Gleditsch <arne.gleditsch@numascale.com>
+Cc: Steffen Persvold <sp@numascale.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Oct_2011_06_58_39_+1100_Bpv.S+F.ryMzI9vD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Myron,
-
-On Tue, 25 Oct 2011 11:14:38 -0600 Myron Stowe <mstowe@redhat.com> wrote:
+On Tue, Oct 25, 2011 at 12:09 PM, Arne Georg Gleditsch
+<arne.gleditsch@numascale.com> wrote:
+> On 25. okt. 2011 19:33, Steffen Persvold wrote:
+>> On 10/25/2011 19:15, Bjorn Helgaas wrote:
+>>> NumaChip sounds like an exception because you know you never care
+>>> about using those BARs.  But I'm curious -- it looks like Linux didn't
+>>> even try to assign resources to them.  I thought something in the
+>>> pci_assign_unassigned_resources() path would have tried to do
+>>> something with them.  If we *did* assign resources to those BARs, I
+>>> assume nothing would break, since there's no driver that actually uses
+>>> them.  Right?
+>>>
+>>
+>> Correct, the BARs are there and if something sensible were written to
+>> them (and MemorySpace was enabled in the Command register) NumaChip
+>> *would* respond to mmio accesses to that address range.
 >
-> Stephen: do you need me to do anything here or can you also drop the
-> series from linux-next?
+> A minor point: adjusting the BARs would not strictly speaking be
+> sufficient for the NumaChip to respond, as it would never see these
+> accesses unless the [MMIO address range]->[HyperTransport node/link]
+> registers of the CPU NorthBridges were also updated with the relevant
+> ranges.  This is a bit messy, but in a way much the same issue as when
+> secondary southbridges are connected to secondary CPUs in any other
+> HyperTransport-based system.
 
-I just use whatever is in Jesse's tree.
+The [MMIO address range]->[HyperTransport node/link] registers you're
+talking about are the implementation side of the PCI host bridge
+abstraction.  You should have an ACPI host bridge device (PNP0A03 or
+PNP0A08) that describes the apertures, and if Linux assigns resources
+to the BARs, it will only use areas inside the apertures.  If there's
+no available space in the apertures, we just leave the device alone
+(maybe this explains why we didn't assign anything).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> Perhaps an alternative to this NumaChip-specific quirk would be to
+> special-case BARs belonging to "PCI" devices 00:18 - 00:1f in AMD
+> Opteron systems.  These always indicate coherent HT devices and fiddling
+> with the CPU NB maps are going to be required if anything is changed
+> regarding the BAR assignments here.
 
---Signature=_Wed__26_Oct_2011_06_58_39_+1100_Bpv.S+F.ryMzI9vD
-Content-Type: application/pgp-signature
+I don't think there's a need to special-case these AMD BARs.  If the
+BIOS programs them correctly (inside a PCI host bridge aperture
+reported via ACPI), Linux won't touch them.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOpxTvAAoJEECxmPOUX5FEblwP/jzcdD6A0GQt24Kkte5XhWWy
-o9d5hZTGLHMDVUhid+HBE5ag1CBBTKzTkO9a4UgRZq9MMpKFR+5aLLl7+gFeYbxc
-EOv6FbJ8V8UOSrHlRcBgdVgZBxQRDJLR4xBLfjZGW25FOwIriy5G+CjT+kAtLeHU
-77Q1TNwP14FmZOFnY2LijS52KRmYnkyrcqBnOGjT+BrcGxHZ/eVrk5X8yRkhXQ8p
-ajvHRJVz8Jl/vBN82WA2Nq3WFXYvMjvmcsReP+VXQdd2oM4dwI97n93k0SLgOa6U
-6BT73lIcNFTmDmf7LVKABv4XsXo5UgDwL0C3MULETImfuEVWswmm7qn93RO0TIgl
-xiHoMH8OBgOUKb/POlHeIIGz7KryYF9513emGoqhmqK9leZ/xYIJDRV00MnEAR5A
-Vn2nF5VZN8rHgxMtmmlWWhApZvajq9dCsEf2/+kmiPSw54qHDYc74NFjXI9SMhQ0
-pUv6OHy0VQLKFO6YNk3oiL3ceKNRjVbuA8Rd9nojfUe28//+Ux55lqACS9HHBHiC
-vjP8hPebrvAKPI+cX3npNqsT8+goMO2TvWTUisC88Vb7/XK73Mf2j18p0K7piCtq
-NT1CcE7RjK2ft/3VO7o0DB4HpQFd8ONw2cjkeYF99cqe+12OhfG6lWDn0lUgu/BO
-wvOBCbL9X7/gkyrtoBFw
-=VeWL
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_Oct_2011_06_58_39_+1100_Bpv.S+F.ryMzI9vD--
+Bjorn
