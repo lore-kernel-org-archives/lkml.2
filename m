@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab1JYPyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 11:54:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11755 "EHLO mx1.redhat.com"
+	id S1756713Ab1JYPzU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 11:55:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25568 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab1JYPyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 11:54:00 -0400
-Date: Tue, 25 Oct 2011 17:49:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: test-case (Was: [PATCH 12/X] uprobes: x86: introduce
-	abort_xol())
-Message-ID: <20111025154906.GA17067@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215326.GF16395@redhat.com> <20111021144207.GN11831@linux.vnet.ibm.com> <20111021162631.GB2552@in.ibm.com> <20111021164221.GA30770@redhat.com> <20111021175915.GA1705@redhat.com> <20111025140613.GA17914@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111025140613.GA17914@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755728Ab1JYPzS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 11:55:18 -0400
+Date: Tue, 25 Oct 2011 11:55:01 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-cifs@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+Message-ID: <20111025115501.1471db86@corrin.poochiereds.net>
+In-Reply-To: <CAH2r5muLiYKCrS2f_DftZSnyuP0EC+vu99mENznCSL8ecnTkpg@mail.gmail.com>
+References: <20111026005939.ad20ab7a2dacce216c69e821@canb.auug.org.au>
+	<CAH2r5muLiYKCrS2f_DftZSnyuP0EC+vu99mENznCSL8ecnTkpg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25, Srikar Dronamraju wrote:
+On Tue, 25 Oct 2011 09:51:37 -0500
+Steve French <smfrench@gmail.com> wrote:
+
+> Am fixing it now.  Jeff missed a stub for the non-freezer case.
+> 
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index a155561..cd2d55b 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -202,6 +202,8 @@ static inline void set_freezable_with_signal(void) {}
+> 
+>  #define wait_event_freezable_timeout(wq, condition, timeout)		\
+>  		wait_event_interruptible_timeout(wq, condition, timeout)
+> +#define #define wait_event_freezekillable(wq, condition)		\
+> +		wait_event_killable(wq, condition)
+> 
+> 
+
+Yep, silly oversight on my part -- sorry about that. That's exactly
+what I was planning to do, so you can add my acked-by on that patch...
+
+Thanks,
+Jeff
+
+
+> On Tue, Oct 25, 2011 at 8:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi all,
 > >
-> > 	static inline void *uc_ip(struct ucontext *ctxt)
-> > 	{
-> > 		return (void*)ctxt->uc_mcontext.gregs[16];
-> > 	}
-> > ...
+> > After merging the cifs tree, today's linux-next build (powerpc
+> > iseries_defconfig) failed like this:
 > >
-> I have tested this on both x86_32 and x86_64 and can confirm that the
-> behaviour is same with or without uprobes placed at that instruction.
-> This is on the uprobes code with your changes.
-
-Great, thanks.
-
-> However on x86_32; the output is different from x86_64.
->
-> On x86_32 (I have additionally printed the uc_ip and fault_insn.
->
-> SIGSEGV! ip=0x10246 addr=0x12345678
-> ERR!! wrong ip uc_ip(ctxt) = 10246 fault_insn = 804856c
-
-Yep. uc_ip() is not correct on x86_32. Sorry, I forgot to mention this.
-
-I was really surprised when I wrote this test. I simply can't understand
-how can I play with ucontext in the user-space. I guess uc_ip() should use
-REG_EIP instead of 16, but I wasn't able to compile it even if I added
-__USE_GNU. It would be even better to use sigcontext instead of the ugly
-mcontext_t, but this looks "impossible". The kernel is much simpler ;)
+> > fs/cifs/transport.c: In function 'wait_for_response':
+> > fs/cifs/transport.c:328: error: implicit declaration of function 'wait_event_freezekillable'
+> >
+> > Caused by commit f06ac72e9291 ("cifs, freezer: add
+> > wait_event_freezekillable and have cifs use it").  In this config,
+> > CONFIG_FREEZER is not set.
+> > --
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > http://www.canb.auug.org.au/~sfr/
+> >
+> 
+> 
+> 
 
 
-> I still trying to dig up what uc_ip is and why its different on x86_32.
-
-See above. I guess it needs ctxt->uc_mcontext.gregs[14]. Or REG_EIP.
-
-uc_ip() simply reads sigcontext->ip passed by setup_sigcontext().
-
-> Also I was thinking on your suggestion of making abort_xol a weak
-> function. In which case we could have architecture independent function
-> in kernel/uprobes.c which is just a wrapper for set_instruction_pointer.
->
-> void __weak abort_xol(struct pt_regs *regs, struct uprobe_task *utask)
-> {
-> 	set_instruction_pointer(regs, utask->vaddr);
-> }
->
-> where it would called  from uprobe_notify_resume() as
->
-> 	abort_xol(regs, utask);
->
-> If other archs would want to do something else, they could override
-> abort_xol definition.
-
-I didn't suggest this ;) But looks reasonable to me. And afaics x86_32
-can use this arch-independent function.
-
-Oleg.
-
+-- 
+Jeff Layton <jlayton@redhat.com>
