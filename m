@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab1JYOoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:44:24 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:36804 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab1JYOoX (ORCPT
+	id S1756620Ab1JYOvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:51:40 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:58649 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1JYOvi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:44:23 -0400
-Date: Tue, 25 Oct 2011 19:51:59 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] [PATCH x86 2/2] Cleanup do_int3
-Message-ID: <20111025142159.GB21225@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111025141812.GA21225@linux.vnet.ibm.com>
+	Tue, 25 Oct 2011 10:51:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111025141812.GA21225@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11102514-3352-0000-0000-0000005E4919
+In-Reply-To: <20111026005939.ad20ab7a2dacce216c69e821@canb.auug.org.au>
+References: <20111026005939.ad20ab7a2dacce216c69e821@canb.auug.org.au>
+Date: Tue, 25 Oct 2011 09:51:37 -0500
+Message-ID: <CAH2r5muLiYKCrS2f_DftZSnyuP0EC+vu99mENznCSL8ecnTkpg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        Linus <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there is a possibility of !KPROBES int3 listeners and since
-DIE_TRAP is currently not being used by anybody, notify all listeners
-with DIE_INT3.
+Am fixing it now.  Jeff missed a stub for the non-freezer case.
 
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- arch/x86/kernel/traps.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index a155561..cd2d55b 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -202,6 +202,8 @@ static inline void set_freezable_with_signal(void) {}
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 6913369..c9a4be5 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -461,15 +461,10 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
- 			== NOTIFY_STOP)
- 		return;
- #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
--#ifdef CONFIG_KPROBES
-+
- 	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
- 			== NOTIFY_STOP)
- 		return;
--#else
--	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
--			== NOTIFY_STOP)
--		return;
--#endif
- 
- 	preempt_conditional_sti(regs);
- 	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
+ #define wait_event_freezable_timeout(wq, condition, timeout)		\
+ 		wait_event_interruptible_timeout(wq, condition, timeout)
++#define #define wait_event_freezekillable(wq, condition)		\
++		wait_event_killable(wq, condition)
 
+
+On Tue, Oct 25, 2011 at 8:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the cifs tree, today's linux-next build (powerpc
+> iseries_defconfig) failed like this:
+>
+> fs/cifs/transport.c: In function 'wait_for_response':
+> fs/cifs/transport.c:328: error: implicit declaration of function 'wait_event_freezekillable'
+>
+> Caused by commit f06ac72e9291 ("cifs, freezer: add
+> wait_event_freezekillable and have cifs use it").  In this config,
+> CONFIG_FREEZER is not set.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
+
+
+
+-- 
+Thanks,
+
+Steve
