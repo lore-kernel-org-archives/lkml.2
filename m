@@ -1,183 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1JYSOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 14:14:09 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:50909 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1JYSOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 14:14:06 -0400
-Subject: [PATCH] scsi: lpfc: drop SCSI_LPFC_DEBUG_FS
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Oct 2011 20:13:12 +0200
-Message-ID: <1319566392.2409.71.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753098Ab1JYSPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 14:15:31 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34894 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab1JYSPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 14:15:30 -0400
+From: y@kernel.beaverton.ibm.com
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: [PATCH 7/8] clocksource: Convert m68k to use clocksource_register_hz/khz
+Date: Tue, 25 Oct 2011 11:08:15 -0700
+Message-Id: <1319566096-3222-7-git-send-email-y>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1319566096-3222-1-git-send-email-y>
+References: <1319566096-3222-1-git-send-email-y>
+x-cbid: 11102518-1976-0000-0000-00000057CFA8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 88a2cfbb8bf3802ca5a90c7d1567a1e542e6ef0c ("[SCSI] lpfc 8.3.25:
-Miscellaneous Bug fixes and code cleanup") turned SCSI_LPFC_DEBUG_FS
-into an alias of DEBUG_FS (for all code enabled by SCSI_LPFC). So
-SCSI_LPFC_DEBUG_FS can as well be dropped.
+From: John Stultz <john.stultz@linaro.org>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Cleanup m68k clocksource registration.
+
+This is untested, so any assistance in testing would be appreciated!
+
+CC: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Greg Ungerer <gerg@uclinux.org>
+CC: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
-Eyeball tested only.
+ arch/m68k/platform/coldfire/pit.c      |    4 +---
+ arch/m68k/platform/coldfire/sltimers.c |    4 +---
+ arch/m68k/platform/coldfire/timers.c   |    4 +---
+ 3 files changed, 3 insertions(+), 9 deletions(-)
 
- drivers/scsi/Kconfig             |    7 -------
- drivers/scsi/lpfc/lpfc.h         |    8 ++------
- drivers/scsi/lpfc/lpfc_debugfs.c |   16 ++++++++--------
- drivers/scsi/lpfc/lpfc_debugfs.h |    2 +-
- 4 files changed, 11 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index 3878b73..8aa80f1 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -1457,13 +1457,6 @@ config SCSI_LPFC
-           This lpfc driver supports the Emulex LightPulse
-           Family of Fibre Channel PCI host adapters.
+diff --git a/arch/m68k/platform/coldfire/pit.c b/arch/m68k/platform/coldfire/pit.c
+index c2b9809..02663d2 100644
+--- a/arch/m68k/platform/coldfire/pit.c
++++ b/arch/m68k/platform/coldfire/pit.c
+@@ -144,7 +144,6 @@ static struct clocksource pit_clk = {
+ 	.name	= "pit",
+ 	.rating	= 100,
+ 	.read	= pit_read_clk,
+-	.shift	= 20,
+ 	.mask	= CLOCKSOURCE_MASK(32),
+ };
  
--config SCSI_LPFC_DEBUG_FS
--	bool "Emulex LightPulse Fibre Channel debugfs Support"
--	depends on SCSI_LPFC && DEBUG_FS
--	help
--	  This makes debugging information from the lpfc driver
--	  available via the debugfs filesystem.
--
- config SCSI_SIM710
- 	tristate "Simple 53c710 SCSI support (Compaq, NCR machines)"
- 	depends on (EISA || MCA) && SCSI
-diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
-index c088a36..3e024ae 100644
---- a/drivers/scsi/lpfc/lpfc.h
-+++ b/drivers/scsi/lpfc/lpfc.h
-@@ -21,10 +21,6 @@
+@@ -162,8 +161,7 @@ void hw_timer_init(void)
  
- #include <scsi/scsi_host.h>
+ 	setup_irq(MCFINT_VECBASE + MCFINT_PIT1, &pit_irq);
  
--#if defined(CONFIG_DEBUG_FS) && !defined(CONFIG_SCSI_LPFC_DEBUG_FS)
--#define CONFIG_SCSI_LPFC_DEBUG_FS
--#endif
--
- struct lpfc_sli2_slim;
- 
- #define LPFC_PCI_DEV_LP		0x1
-@@ -420,7 +416,7 @@ struct lpfc_vport {
- 
- 	struct fc_vport *fc_vport;
- 
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	struct dentry *debug_disc_trc;
- 	struct dentry *debug_nodelist;
- 	struct dentry *vport_debugfs_root;
-@@ -840,7 +836,7 @@ struct lpfc_hba {
- 	unsigned long last_rsrc_error_time;
- 	unsigned long last_ramp_down_time;
- 	unsigned long last_ramp_up_time;
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	struct dentry *hba_debugfs_root;
- 	atomic_t debugfs_vport_count;
- 	struct dentry *debug_hbqinfo;
-diff --git a/drivers/scsi/lpfc/lpfc_debugfs.c b/drivers/scsi/lpfc/lpfc_debugfs.c
-index a0424dd..89b8e80 100644
---- a/drivers/scsi/lpfc/lpfc_debugfs.c
-+++ b/drivers/scsi/lpfc/lpfc_debugfs.c
-@@ -50,7 +50,7 @@
- #include "lpfc_debugfs.h"
- #include "lpfc_bsg.h"
- 
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- /*
-  * debugfs interface
-  *
-@@ -624,7 +624,7 @@ inline void
- lpfc_debugfs_disc_trc(struct lpfc_vport *vport, int mask, char *fmt,
- 	uint32_t data1, uint32_t data2, uint32_t data3)
- {
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	struct lpfc_debugfs_trc *dtp;
- 	int index;
- 
-@@ -665,7 +665,7 @@ inline void
- lpfc_debugfs_slow_ring_trc(struct lpfc_hba *phba, char *fmt,
- 	uint32_t data1, uint32_t data2, uint32_t data3)
- {
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	struct lpfc_debugfs_trc *dtp;
- 	int index;
- 
-@@ -686,7 +686,7 @@ lpfc_debugfs_slow_ring_trc(struct lpfc_hba *phba, char *fmt,
- 	return;
+-	pit_clk.mult = clocksource_hz2mult(FREQ, pit_clk.shift);
+-	clocksource_register(&pit_clk);
++	clocksource_register_hz(&pit_clk, FREQ);
  }
  
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- /**
-  * lpfc_debugfs_disc_trc_open - Open the discovery trace log
-  * @inode: The inode pointer that contains a vport pointer.
-@@ -3489,7 +3489,7 @@ lpfc_idiag_mbxacc_dump_bsg_mbox(struct lpfc_hba *phba, enum nemb_type nemb_tp,
- 				enum sta_type sta_tp,
- 				struct lpfc_dmabuf *dmabuf, uint32_t ext_buf)
- {
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	uint32_t *mbx_mbox_cmd, *mbx_dump_map, *mbx_dump_cnt, *mbx_word_cnt;
- 	char line_buf[LPFC_MBX_ACC_LBUF_SZ];
- 	int len = 0;
-@@ -3585,7 +3585,7 @@ lpfc_idiag_mbxacc_dump_bsg_mbox(struct lpfc_hba *phba, enum nemb_type nemb_tp,
- void
- lpfc_idiag_mbxacc_dump_issue_mbox(struct lpfc_hba *phba, MAILBOX_t *pmbox)
- {
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	uint32_t *mbx_dump_map, *mbx_dump_cnt, *mbx_word_cnt, *mbx_mbox_cmd;
- 	char line_buf[LPFC_MBX_ACC_LBUF_SZ];
- 	int len = 0;
-@@ -3684,7 +3684,7 @@ lpfc_idiag_mbxacc_dump_issue_mbox(struct lpfc_hba *phba, MAILBOX_t *pmbox)
- inline void
- lpfc_debugfs_initialize(struct lpfc_vport *vport)
- {
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	struct lpfc_hba   *phba = vport->phba;
- 	char name[64];
- 	uint32_t num, i;
-@@ -4047,7 +4047,7 @@ debug_failed:
- inline void
- lpfc_debugfs_terminate(struct lpfc_vport *vport)
- {
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
- 	struct lpfc_hba   *phba = vport->phba;
+ /***************************************************************************/
+diff --git a/arch/m68k/platform/coldfire/sltimers.c b/arch/m68k/platform/coldfire/sltimers.c
+index 6a85daf..b7f822b 100644
+--- a/arch/m68k/platform/coldfire/sltimers.c
++++ b/arch/m68k/platform/coldfire/sltimers.c
+@@ -114,7 +114,6 @@ static struct clocksource mcfslt_clk = {
+ 	.name	= "slt",
+ 	.rating	= 250,
+ 	.read	= mcfslt_read_clk,
+-	.shift	= 20,
+ 	.mask	= CLOCKSOURCE_MASK(32),
+ 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+@@ -136,8 +135,7 @@ void hw_timer_init(void)
  
- 	if (vport->disc_trc) {
-diff --git a/drivers/scsi/lpfc/lpfc_debugfs.h b/drivers/scsi/lpfc/lpfc_debugfs.h
-index f83bd94..a9e092b 100644
---- a/drivers/scsi/lpfc/lpfc_debugfs.h
-+++ b/drivers/scsi/lpfc/lpfc_debugfs.h
-@@ -21,7 +21,7 @@
- #ifndef _H_LPFC_DEBUG_FS
- #define _H_LPFC_DEBUG_FS
+ 	setup_irq(MCF_IRQ_TIMER, &mcfslt_timer_irq);
  
--#ifdef CONFIG_SCSI_LPFC_DEBUG_FS
-+#ifdef CONFIG_DEBUG_FS
+-	mcfslt_clk.mult = clocksource_hz2mult(MCF_BUSCLK, mcfslt_clk.shift);
+-	clocksource_register(&mcfslt_clk);
++	clocksource_register_hz(&mcfslt_clk, MCF_BUSCLK);
  
- /* size of output line, for discovery_trace and slow_ring_trace */
- #define LPFC_DEBUG_TRC_ENTRY_SIZE 100
+ #ifdef CONFIG_HIGHPROFILE
+ 	mcfslt_profile_init();
+diff --git a/arch/m68k/platform/coldfire/timers.c b/arch/m68k/platform/coldfire/timers.c
+index 60242f6..0d90da3 100644
+--- a/arch/m68k/platform/coldfire/timers.c
++++ b/arch/m68k/platform/coldfire/timers.c
+@@ -88,7 +88,6 @@ static struct clocksource mcftmr_clk = {
+ 	.name	= "tmr",
+ 	.rating	= 250,
+ 	.read	= mcftmr_read_clk,
+-	.shift	= 20,
+ 	.mask	= CLOCKSOURCE_MASK(32),
+ 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+@@ -109,8 +108,7 @@ void hw_timer_init(void)
+ 	__raw_writew(MCFTIMER_TMR_ENORI | MCFTIMER_TMR_CLK16 |
+ 		MCFTIMER_TMR_RESTART | MCFTIMER_TMR_ENABLE, TA(MCFTIMER_TMR));
+ 
+-	mcftmr_clk.mult = clocksource_hz2mult(FREQ, mcftmr_clk.shift);
+-	clocksource_register(&mcftmr_clk);
++	clocksource_register_hz(&mcftmr_clk, FREQ);
+ 
+ 	setup_irq(MCF_IRQ_TIMER, &mcftmr_timer_irq);
+ 
 -- 
-1.7.4.4
-
-
+1.7.3.2.146.gca209
 
