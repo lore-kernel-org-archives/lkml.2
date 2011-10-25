@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab1JYOie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:38:34 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50131 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab1JYOid convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:38:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=r74/rwSUBYpv7RtcGAyRTZqjTSQZ7tAQmZNL6/AzQ7Uxch3Mlp0ECxx4xIhHzwygR
-	8Cnst1Mdo9bJ2xXuAtaiA==
+	id S1756603Ab1JYOk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:40:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab1JYOk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 10:40:56 -0400
+Date: Tue, 25 Oct 2011 16:30:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/X] uprobes: introduce UTASK_SSTEP_TRAPPED logic
+Message-ID: <20111025143026.GA12750@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20111015190007.GA30243@redhat.com> <20111019215139.GA16395@redhat.com> <20111019215344.GG16395@redhat.com> <20111022072030.GB24475@in.ibm.com> <20111024144127.GA14975@redhat.com> <20111024151614.GA6034@in.ibm.com> <20111024161306.GB19659@redhat.com> <20111025060059.GA8247@in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
-References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com> <1318926156-25504-3-git-send-email-daniel@numascale-asia.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 25 Oct 2011 08:38:10 -0600
-Message-ID: <CAErSpo4Rmtd4LsXmgvb4Vn92z=u1feRyPWF=KS8ggVZvitjEnA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Add NumaChip quirk
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111025060059.GA8247@in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 18, 2011 at 2:22 AM, Daniel J Blueman
-<daniel@numascale-asia.com> wrote:
-> Add quirk for Numascale's NumaChip to prevent resource conflicts.
+On 10/25, Ananth N Mavinakayanahalli wrote:
 >
-> v2:
->  - [Daniel] rediffed and validated against 3.1-rc10
+> No, you are right... my inference was wrong. On a core with a uprobe
+> with an explicit raise(SIGABRT) does show the breakpoint.
 >
-> Signed-off-by: Steffen Persvold <sp@numascale.com>
-> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-> ---
->  drivers/pci/quirks.c    |   14 ++++++++++++++
->  include/linux/pci_ids.h |    4 ++++
->  2 files changed, 18 insertions(+), 0 deletions(-)
+> (gdb) disassemble start_thread2
+> Dump of assembler code for function start_thread2:
+>    0x0000000000400831 <+0>:	int3
+>    0x0000000000400832 <+1>:	mov    %rsp,%rbp
+>    0x0000000000400835 <+4>:	sub    $0x10,%rsp
+>    0x0000000000400839 <+8>:	mov    %rdi,-0x8(%rbp)
+>    0x000000000040083d <+12>:	callq  0x400650 <getpid@plt>
 >
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 1196f61..051b793 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2679,6 +2679,20 @@ static void __devinit quirk_hotplug_bridge(struct pci_dev *dev)
->
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_HINT, 0x0020, quirk_hotplug_bridge);
->
-> +/* Clear all resources on NumaChip to avoid conflicts */
-> +static void __devinit numachip_resource_fixup(struct pci_dev *pdev)
-> +{
-> +       int i;
-> +
-> +       for (i = PCI_STD_RESOURCES; i <= PCI_ROM_RESOURCE; i++)
-> +               memset(&pdev->resource[i], 0, sizeof(pdev->resource[i]));
-> +
-> +       dev_notice(&pdev->dev, "Disabled all PCI resources for NumaChip\n");
-> +}
-> +
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NUMASCALE,
-> +       PCI_DEVICE_ID_NUMASCALE_NUMACHIP0, numachip_resource_fixup);
+> Now, I guess we need to agree on what is the acceptable behavior in the
+> uprobes case. What's your suggestion?
 
-This feels like a band-aid ... what's the background here?  I can see
-that you're disabling PCI resources, and I can read that this avoids
-conflicts, but what's the underlying cause of the conflict?
+Well, personally I think this is acceptable.
 
-I wonder if there's a more generic problem that should be fixed
-differently.  Presumably the NumaChip designers put those BARs there
-for a reason, and often when we report "conflicts," it's really a clue
-that we're doing something wrong in host bridge discovery or in
-generic PCI.
+Once again, uprobes were designed to be "system wide", and each uprobe
+connects to the file. This int3 reflects this fact. In any case, I do
+not see how we can hide these int3's. Perhaps we can fool ptrace/core,
+but I am not sure this would be really good, this can add more confusion.
+And the application itself can read its .text and see int3, what can
+we do?
 
-Can you post a complete dmesg log showing the conflict?
+Oleg.
 
-Bjorn
