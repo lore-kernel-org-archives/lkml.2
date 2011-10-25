@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1JYHFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:05:37 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:35148 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab1JYHFg (ORCPT
+	id S1754069Ab1JYHFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:05:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27183 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab1JYHFy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:05:36 -0400
-Date: Tue, 25 Oct 2011 09:05:21 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Swen Schillig <swen@vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: linux-next: manual merge of the scsi tree with the s390 tree
-Message-ID: <20111025090521.51cbd1ce@de.ibm.com>
-In-Reply-To: <20111025171601.c2365840409d17df161ca8b5@canb.auug.org.au>
-References: <20111025171601.c2365840409d17df161ca8b5@canb.auug.org.au>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA"; protocol="application/pgp-signature"
+	Tue, 25 Oct 2011 03:05:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=epWxAW1vmbgYnCwaHqdy8wQy7a5IS6ncx80V1y6ohgt3ruqjt02wFMqi4K3rHbTwd
+	aofIhzSKyqx+BvNaNAP3w==
+MIME-Version: 1.0
+In-Reply-To: <20111024125034.71993780@notabene.brown>
+References: <20111016092556.07d6e415@notabene.brown>
+	<Pine.LNX.4.44L0.1110152136460.19724-100000@netrider.rowland.org>
+	<20111017083717.0bd5626c@notabene.brown>
+	<20111024011804.GB12215@mgross-G62>
+	<20111024125034.71993780@notabene.brown>
+Date: Tue, 25 Oct 2011 00:05:48 -0700
+Message-ID: <CANqkERDBizgOkHjhN1TihQ41627Ow7CvFRHwhC6ZEa6+ve2mdA@mail.gmail.com>
+Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
+ blocking (aka more wakelock stuff)]
+From: Brian Swetland <swetland@google.com>
+To: NeilBrown <neilb@suse.de>
+Cc: markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
+        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sun, Oct 23, 2011 at 6:50 PM, NeilBrown <neilb@suse.de> wrote:
+> But saying "Timeouts are never right" cannot work - unless you mean it in a
+> much more restricted sense than I think you mean it.
+>
+> (I can agree that it is *best* if timeouts never fire - if direct action
+> causes the wakeup-source to deactivate long before the timeout.  I agree that
+> is the best case and probably should be the common case, but I cannot see how
+> it can be the only case).
 
-On Tue, 25 Oct 2011 17:16:01 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+This was our conclusion when originally building the Android wakelock
+APIs.  Timeouts are undesirable, and whenever we can ensure there's a
+clear handoff of "ownership" of a wakeup event, so it's fully
+accounted for, that's the preferred way to go.  But reality gives us
+situations where we can't know with a certainty what woke us up (or we
+won't know until some time has passed -- USB resume, etc) and in those
+situations, timeouts are the best solution we have.  Over time we've
+always hoped to have fewer and fewer timeouts, but I'm not certain
+that we'll ever reach zero, for non-trivial systems.
 
-> Today's linux-next merge of the scsi tree got a conflict in
-> drivers/s390/cio/qdio_main.c between commit 9c20b3dd8479 ("[S390] qdio:
-> EQBS retry after CCQ 96") from the s390 tree and commit dfe5bb506172
-> ("[SCSI] qdio: base support for hardware data router with zfcp") from the
-> scsi tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary.
-
-Looks good. Thanks Stephen.
-
---=20
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
-
---Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOpl+xAAoJELvpdr8mrl3Slr8QALTyrKDnHDCX40noaHmNzH8q
-wA8aUIGQ4VoDSawyrdBK+5mSwDngIk7op3DobMKewdYDF9bthRvHGtNOHeA9/vPM
-YrsIqSnJz+XQV6knajRjF3iI3kDYCHtFfPk8OseYGzGWvv1EfGEjacLEiPzFFZFf
-+nWde8sRyovWEwTXoJKIIy8xipy1B9WSiMn+TzrILHuCUsm2yClz4qWL/k7/5UjG
-UNTxlW7hYyyRI3cOuilAhhba9o6tq7BtQI5WhAgSCinh8Kh7GUNZK6esmt7FErcL
-iSxTiup7EVtjqxhQFUdyk2h9V4B9NIawiWHLICLPLiwUxxXWgoFhmaQ+P39qjiVj
-8DoHJaTyx9Jr4aFqyIUS4+v9jKzD9hnRl3UEq35JF/AHyZmpY5bA187/UKaP1eno
-hVnm3nBwrZ2sE20odO850274O8OME0VN1DJcFmucUCG3dBgSUKhqzFrKulmzYjkA
-X3o8a1ucYIwpg8t6wSSMgj8OTvbUJuKGZX45ZKwpHcup+cDkGgYF9aZgDkSeCnPZ
-wogIaru19u7jg9PNCK8hRRehlHou69c+DVFYogN2BzJvqSlYDvTRPPRupXxkqrai
-TMkAqUK31jUpu/5hv367s2nYICSfB69qZB+sRPazQEV5HIOVAHjDHMSc+hhI6ITm
-NR+j+/Tm6pJ09/OkNUPp
-=pIKP
------END PGP SIGNATURE-----
-
---Sig_/+n8C+7Z9Bo3gQqI3gbX.sIA--
+Brian
