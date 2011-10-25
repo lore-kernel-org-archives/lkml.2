@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab1JYFAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 01:00:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39566 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab1JYFAu (ORCPT
+	id S1752746Ab1JYFUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 01:20:47 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36447 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751624Ab1JYFUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 01:00:50 -0400
+	Tue, 25 Oct 2011 01:20:46 -0400
+X-Sasl-enc: Up5IrRTr6aoKx75HMIPbUTTYR3YldA9k6ZddtGfCTfvc 1319520045
+Date: Tue, 25 Oct 2011 07:19:28 +0200
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 3.0.8
+Message-ID: <20111025051928.GA7997@kroah.com>
 MIME-Version: 1.0
-Date: Tue, 25 Oct 2011 13:00:40 +0800
-Message-ID: <CAER915_iPCdvgKZVzWJC3vcGMm_voENbmwejeNbD7S2ZB2_xaw@mail.gmail.com>
-Subject: =?Big5?B?uvS49KVArMmqusDnp1G80qahpHe2V6VHp9qtzKq6t1G5sw==?=
-From: hong-zen liu <uf014069@gmail.com>
-To: uf014069 <uf014069@gmail.com>
-Content-Type: text/plain; charset=Big5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9P50wbq009945
-
-±z¦n~¥´ÂZ¤F! ±ÀÂË±z¤@­Ó¤£¿ùªººô¸ô½Òµ{¡AÅwªï±z¨Ó°Ñ¥[!
 
 
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-¦pªG
-±z¬O¦ÑªO¡A·Q­n¬[ºc¦Û¤vªººô¯¸¡A¦ı¬O¨S¦³¤Ó¦h¸g¶O¡C
-±z´¿¸g°Ñ¥[¹L³\¦h°ö°V½Òµ{¡A¦ı¬O«o¨S¦³¨}¦nªº¤u¨ã¥i¥Hµo´§¡C
-±z·Q­n¾Ç²ß¤@®M¦p¦ó¦bºô¸ô¤W³Ğ³y¦¬¤Jªº§¹¾ã¤èªk¡C
-±z±q¨Æ·~°È¤è­±ªº¤u§@¡A·Q§Q¥Îºô¸ô³Ğ³y§ó¦hªº·~ÁZ¡C
-±z¥»¨­¦³²£«~©Î¦³²£«~¨Ó·½¡A«o­WµL¨}¦nªº±À¼s¤è¦¡¡C
-±z·Q­n¦h¾Ç¡u¤@§Ş¤§ªø¡v¡A¨Ó§ïµ½¦Û¤vªº¥Í¬¡¡C
+I'm announcing the release of the 3.0.8 kernel.
 
-±zµ´¹ï¤£¯à¿ù¹L³o­Ó¾÷·|¡I
+All users of the 3.0 kernel series must upgrade.
 
-¤W§¹³o°ó½Ò±z±N·|¾Ç¨ì¡G
+The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
 
-¦p¦ó¨Ï¥Îºô¸ô¤u¨ãÀ°¦Û¤v©Î¤½¥q¬[³]ºô¯¸¡C
-¦p¦ó¨Ï¥Îºô¸ô¤u¨ãÀ°±zªº«È¤á¬[³]ºô¯¸ÁÈ¨úªA°È¶O¡C
-¦p¦ó¨Ï¥Î½u¤W¹q¤l®Ñ½s¿è¨t²Î½s¼g¦Û¤vªº¹q¤l®Ñ¡AÁÈ¨ú100% §Q¼í¡C
-¦p¦ó§Q¥Î¡u¸m¤J¦¡¦æ¾P¡v»s§@¹q¤l®Ñ¡A¦¨¬°¡u¯f¬r¦¡¦æ¾P¡v ³Ì¨Î§Q¾¹¡C
-¦p¦ó»s§@¡u·Ç«È¤á¦W³æ·j¶°ºô­¶¡v¡A§Ö³tºë·Ç¦a²Ö¿n«È¤á¦W³æ¡I
-¦p¦ó»s§@¦Ê¸U¯Å¾P°âºô­¶¡A¤j´T´£ª@±z¤½¥q©Î­Ó¤H3~ 5­¿ªº¾P°â·~ÁZ¡C
-¦p¦ó¹B¥Î«È¤á°l°âªA°È¨t²Î¡A¤j´T´£°ªÁÊ¶R²v¤Î¦^ÁÊ²v¡C
+thanks,
 
-³ø¦W¤è¦¡¤Î½Òµ{¤º®e½Ğ°Ñ¦Ò    http://wunion.twcom.net/b/181507.htm
+greg k-h
 
-¬ÛÃö°İÃD½ĞÁpµ¸ 0916846817 ¼B¥ı¥Í
+------------
 
+ Makefile                              |    2=20
+ arch/arm/kernel/perf_event_v7.c       |    4=20
+ arch/arm/mm/init.c                    |    7 +
+ arch/x86/mm/init.c                    |    3=20
+ crypto/ghash-generic.c                |    6 +
+ drivers/firewire/sbp2.c               |    4=20
+ drivers/gpu/drm/radeon/atom.c         |   15 ++
+ drivers/gpu/drm/radeon/atom.h         |    1=20
+ drivers/gpu/drm/ttm/ttm_bo.c          |   10 +
+ drivers/gpu/drm/ttm/ttm_bo_util.c     |    2=20
+ drivers/hid/hid-ids.h                 |    3=20
+ drivers/hid/hid-magicmouse.c          |   10 +
+ drivers/hid/usbhid/hid-quirks.c       |    1=20
+ drivers/hwmon/w83627ehf.c             |   20 ++-
+ drivers/media/video/uvc/uvc_entity.c  |    2=20
+ drivers/platform/x86/samsung-laptop.c |   10 +
+ fs/cifs/cifsfs.c                      |   10 +
+ fs/fuse/dev.c                         |   12 +-
+ fs/hfsplus/hfsplus_fs.h               |   16 ++
+ fs/hfsplus/part_tbl.c                 |   32 +++--
+ fs/hfsplus/super.c                    |   16 +-
+ fs/hfsplus/wrapper.c                  |   87 +++++++++++----
+ fs/xfs/linux-2.6/xfs_linux.h          |    2=20
+ fs/xfs/linux-2.6/xfs_super.c          |   48 ++------
+ fs/xfs/quota/xfs_dquot_item.c         |   10 +
+ fs/xfs/xfs_buf_item.c                 |    3=20
+ fs/xfs/xfs_inode_item.c               |   10 +
+ fs/xfs/xfs_trans.c                    |   27 ++++
+ fs/xfs/xfs_trans.h                    |    2=20
+ fs/xfs/xfs_trans_ail.c                |  192 ++++++++++++++++++++++++-----=
+-----
+ fs/xfs/xfs_trans_priv.h               |   18 +--
+ kernel/posix-cpu-timers.c             |    7 -
+ kernel/sys.c                          |    2=20
+ mm/migrate.c                          |    8 -
+ net/x25/af_x25.c                      |    3=20
+ sound/pci/hda/hda_intel.c             |    1=20
+ sound/pci/hda/patch_conexant.c        |    1=20
+ 37 files changed, 413 insertions(+), 194 deletions(-)
 
-8 ¤ë¥÷§Ú­Ì¥¿¦¡±À¥X¤F¤@­Ó®×¤l~¥xÆWª©ªºinfinity downline¡C
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature
 
-§Ú­Ì¹w­p¦b©ú¦~¤~¶}©ñ¥xÆW¥H¥~ªº·|­û°Ñ¥[¡A
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-±z¥i¥H¥ı¬İ¤@¤U¤º®e    http://wunion.twcom.net/b/181507.htm
+iQIcBAEBAgAGBQJOpkbKAAoJEDjbvchgkmk+taAP/R4ldm5KgnUSMsNbigY9M6Ft
+3PJKaNFPyf+n2Qp1kU2DsE5DUM2t/NZjHDHBq74EK8En2AWxb50kl2jbZXysxhji
+RHzRH/Y2XDxvHeHCSetZy6HIS5kqt29EpTTa6foNn8OUAsYWh1xk1CNgG52dIT7r
+7dokpEzpLKeHKN/VfW+JR4rsYFCpuPaoM/38kPZIuDKDgNVLdcUP+nHZcULeqeun
+IrK5lN3yhLXvz9v+jMBRP4kBMnDh0Mn7xz2Pby9ze1H6KiK3WbJzJ2l5hAKWnLhm
+omPa8qPxOgAKDkF0WXzIw4YMIjaPky2JkW/91gOl7Hk1ssecZdaiHlOokwrhiMGZ
+GRqfQt2aiLi3+95oCIv7cpbYe5YezDO/l1Zd7jkMt9G6oAo/vIY4ia4MmlVTfbW/
+JKwtwHNvwP+VelPREmE1lxAMIsvvvAvWAAtQmhNnv0xzibLf1ANMtnzM8T7VjKh1
+J8XpDB397LfyT61VJIHtQTohDZTp2csV/xe0g/q3LGO3aXeJnXVadkdTSKaJkRGj
+ULfIKKfWi3hk1vaFWG8WSj3azFOs2vW+7vSUirh6WXlsly8KqJ6pgNUK5JE9yXo7
+LJf06PrI+mycTKOUBO2W4eMeBh6IhpNvZFx95sNm+hl/2PvWPwCu+qHv2vhPwG1M
+MacjhzXHStFnrYcDoQfa
+=PCTb
+-----END PGP SIGNATURE-----
 
-§Ú­Ì´£¨Ñ±j¤jªº«á¥x¨t²Î¡A©Ò¥H¥¿¦¡µo§G¥H¨Ó¡A¤ÏÀ³ÁÙ¤£¿ù¡A
-
-¦ı¬Oºô¸ô¤W©|¥¼¥¿¦¡¤j¶qÃn¥ú¡C
-
-
-¦pªG±z¦³¿³½ì¡AÅwªï¦@Á¸²±Á|¡C
-
-¦pªG¦³¥ô¦ó°İÃD¡A¥iª½±µ»P§ÚÁpÃ´
-
-0916846817 ¼B¥ı¥Í
-ÁÂÁÂ!!
-
-
-ps.©êºp,¦³¥´ÂZ¤§³B½Ğ¦h¥]²[!!
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--RnlQjJ0d97Da+TV1--
