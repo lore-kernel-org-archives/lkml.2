@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab1JYMDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 08:03:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48468 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab1JYMDb convert rfc822-to-8bit (ORCPT
+	id S1756502Ab1JYME2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 08:04:28 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:36487 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756437Ab1JYME1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 08:03:31 -0400
+	Tue, 25 Oct 2011 08:04:27 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: holzheu@linux.vnet.ibm.com
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, akpm@linux-foundation.org,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1319468137.3615.16.camel@br98xy6r>
+	<m1ipneifqv.fsf@fess.ebiederm.org>
+	<CAM_iQpVktWsgOFCWoT47dQ1YdSTnnbTZAAKNYEEX=5wWzhHMzg@mail.gmail.com>
+	<m1aa8qfhdk.fsf@fess.ebiederm.org> <1319532245.3056.5.camel@br98xy6r>
+Date: Tue, 25 Oct 2011 05:04:57 -0700
+In-Reply-To: <1319532245.3056.5.camel@br98xy6r> (Michael Holzheu's message of
+	"Tue, 25 Oct 2011 10:44:05 +0200")
+Message-ID: <m17h3tcm52.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20111025115634.GA12128@suse.de>
-References: <20111025.063206.2273357152859701628.davem@davemloft.net>
- <CA+55aFw1GVvszqoC_f0RAvG5t1xj0CSYLhLU=y0gQ+_54Gsomw@mail.gmail.com> <20111025115634.GA12128@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 25 Oct 2011 14:03:09 +0200
-X-Google-Sender-Auth: 2sCfC_hoPcHO91qD3xD7y6En2DM
-Message-ID: <CA+55aFzYW_Pku3ESH8HHHkGMu+G9UZPUSLajZy=edEnQ+vycNg@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: Greg KH <gregkh@suse.de>
-Cc: David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/VvWdQmqqYDC1dAr69YzOUWYNc4OtsTzI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;holzheu@linux.vnet.ibm.com
+X-Spam-Relay-Country: **
+Subject: Re: kdump: crash_kexec()-smp_send_stop() race in panic
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 1:56 PM, Greg KH <gregkh@suse.de> wrote:
+Michael Holzheu <holzheu@linux.vnet.ibm.com> writes:
+
+> Hello Eric,
 >
-> The "crazy" tool was using 'git am'.  The problem was that I missed the
-> fact that the first line of the patch sent to me duplicated the subject
-> line.  It's a really common problem when people generate patches and
-> send them off by email, I just forgot to edit the patches from Mikulas
-> to remove them, my fault, sorry.
+> On Mon, 2011-10-24 at 10:07 -0700, Eric W. Biederman wrote:
+>
+> [snip]
+>
+>> So my second thought is to introduce another atomic variable
+>> panic_in_progress, visible only in panic.  The cpu that sets
+>> increments panic_in_progress can call smp_send_stop.  The rest of
+>> the cpus can just go into a busy wait.  That should stop nasty
+>> fights about who is going to come out of smp_send_stop first.
+>
+> So this is a spinlock, no? What about the following patch:
+Do we want both panic printks?
 
-Ok, please (a) check these things before applying patches, and (b)
-COMPLAIN TO EVERY SOURCE THAT SENDS YOU CRAP.
+We really only need the mutual exclusion starting just before
+smp_send_stop so that is where I would be inclined to put it.
 
-The push-back so that it doesn't happen again is important.
+But yeah something like the below should work.
 
-In other words: Mikulas - whatever tool you're using, stop using it,
-or start using it correctly. Duplicating the header line in the body
-of the email is crap and wrong. If you want to duplicate it in the
-email, add the "Subject:" prefix to it (same goes for "Date:" and
-particularly "From:" - those fields are actually destroyed by
-forwarding the patches over email - unlike the subject line)
+Eric
 
-             Linus
+
+> ---
+>  kernel/panic.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
+>   */
+>  NORET_TYPE void panic(const char * fmt, ...)
+>  {
+> +	static DEFINE_SPINLOCK(panic_lock);
+>  	static char buf[1024];
+>  	va_list args;
+>  	long i, i_next = 0;
+> @@ -68,8 +69,12 @@ NORET_TYPE void panic(const char * fmt,
+>  	 * It's possible to come here directly from a panic-assertion and
+>  	 * not have preempt disabled. Some functions called from here want
+>  	 * preempt to be disabled. No point enabling it later though...
+> +	 *
+> +	 * Only one CPU is allowed to execute the panic code. For multiple
+> +	 * parallel invocations of panic all other CPUs will wait on the
+> +	 * panic_lock. They are stopped afterwards by smp_send_stop().
+>  	 */
+> -	preempt_disable();
+> +	spin_lock(&panic_lock);
+>  
+>  	console_verbose();
+>  	bust_spinlocks(1);
