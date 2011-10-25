@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933552Ab1JYOFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 10:05:48 -0400
-Received: from brick.kernel.dk ([87.104.106.3]:50518 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933413Ab1JYOFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 10:05:46 -0400
-Message-ID: <4EA6C22E.6040208@kernel.dk>
-Date: Tue, 25 Oct 2011 16:05:34 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: Tree for Oct 25 (block ?)
-References: <CA+icZUVe7DrbrbDB7wJWrT9FHUsV62UFdifWbe3MGL7ujkX5Vw@mail.gmail.com> <CA+icZUUO3rxx4OFBNbHm4J3BFH66HBDY2LXC6-r2WY8ioo+8Dg@mail.gmail.com> <4EA6BBC2.2060406@kernel.dk> <CA+icZUUYcdS5C5DL3RnSbkWWu4hVuq4ecy5u1+0QLwEuSzJMeg@mail.gmail.com> <4EA6BFC4.3040905@kernel.dk> <CA+icZUXnW6s-rXhX3USET-_RSbtQNH_3DLHPydPSgNhX8b7uqw@mail.gmail.com>
-In-Reply-To: <CA+icZUXnW6s-rXhX3USET-_RSbtQNH_3DLHPydPSgNhX8b7uqw@mail.gmail.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933628Ab1JYOQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 10:16:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57757 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933550Ab1JYOQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 10:16:31 -0400
+Message-ID: <1319552170.10883.19.camel@edumazet-laptop>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Date: Tue, 25 Oct 2011 16:16:10 +0200
+In-Reply-To: <20111026005530.a4bd779e1a8182ea57dbf99f@canb.auug.org.au>
+References: <20111026005530.a4bd779e1a8182ea57dbf99f@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-25 16:03, Sedat Dilek wrote:
-> On Tue, Oct 25, 2011 at 3:55 PM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 2011-10-25 15:43, Sedat Dilek wrote:
->>> On Tue, Oct 25, 2011 at 3:38 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>> On 2011-10-25 15:10, Sedat Dilek wrote:
->>>>> On Tue, Oct 25, 2011 at 3:04 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->>>>>> On Tue, Oct 25, 2011 at 11:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>>>>> Hi all,
->>>>>>>
->>>>>>> *Note well*
->>>>>>>
->>>>>>> This tree has nate had any build testing at all.  As such, it probably
->>>>>>> doesn't build :-) This tree is really just a roll up of the current state
->>>>>>> of the trees when the v3.2 merge window opened.  It will not be put into
->>>>>>> the build system referred to below.
->>>>>>>
->>>>>>
->>>>>> I have generated a single linux-next (next-20111025) patch on top of
->>>>>> v3.1, it's approx. 100M!
->>>>>>
->>>>>> $ du -h patch-v3.1-next-20111025.patch
->>>>>> 96M     patch-v3.1-next-20111025.patch
->>>>>>
->>>>>> I noticed this build-failure:
->>>>>>
->>>>>>  CC      block/blk-throttle.o
->>>>>>  CC [M]  fs/fuse/dir.o
->>>>>> /mnt/sdb3/linux-kernel/linux-3.1/debian/build/source_i386_none/block/blk-throttle.c:
->>>>>> In function 'blk_throtl_drain':
->>>>>> /mnt/sdb3/linux-kernel/linux-3.1/debian/build/source_i386_none/block/blk-throttle.c:1221:2:
->>>>>> error: implicit declaration of function 'lockdep_is_held'
->>>>>> [-Werror=implicit-function-declaration]
->>>>>> cc1: some warnings being treated as errors
->>>>>>
->>>>>> make[5]: *** [block/blk-throttle.o] Error 1
->>>>>> make[4]: *** [block] Error 2
->>>>>>
->>>>>> This happens with Debian's gcc-4.6 (4.6.1-16) and default
->>>>>> KBUILD_ENABLE_EXTRA_GCC_CHECKS value.
->>>>>>
->>>>>> - Sedat -
->>>>>>
->>>>>
->>>>> Looks like "#include <linux/lockdep.h>" is missing in block/blk-throttle.c?
->>>>
->>>> Hmm, I wonder why it isn't triggering for cfq-iosched.o or elevator.o as
->>>> well. Is blk-throttle modular? What is your .config?
->>>>
->>>> --
->>>> Jens Axboe
->>>>
->>>>
->>>
->>> CONFIG_BLK_DEV_THROTTLING=y
->>>
->>> My kernel-config is attached.
->>
->> The below should work, I checked it in.
->>
->>
->> commit 334c2b0b8b2ab186fa198413386cba41fffcb4f2
->> Author: Jens Axboe <axboe@kernel.dk>
->> Date:   Tue Oct 25 15:51:48 2011 +0200
->>
->>    blk-throttle: use queue_is_locked() instead of lockdep_is_held()
->>
->>    We can't use the latter if !CONFIG_LOCKDEP.
->>
->>    Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
->>    Signed-off-by: Jens Axboe <axboe@kernel.dk>
->>
->> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
->> index 8edb949..4553245 100644
->> --- a/block/blk-throttle.c
->> +++ b/block/blk-throttle.c
->> @@ -1218,7 +1218,7 @@ void blk_throtl_drain(struct request_queue *q)
->>        struct bio_list bl;
->>        struct bio *bio;
->>
->> -       lockdep_is_held(q->queue_lock);
->> +       WARN_ON_ONCE(!queue_is_locked(q));
->>
->>        bio_list_init(&bl);
->>
->>
->> --
->> Jens Axboe
->>
->>
+Le mercredi 26 octobre 2011 à 00:55 +1100, Stephen Rothwell a écrit :
+> Hi all,
 > 
-> Hi Jens,
+> After merging the net-next tree, today's linux-next build (powerpc
+> pseries_defconfig) failed like this:
 > 
-> Thanks for the explanations and the quick fix!
+> drivers/net/ethernet/ibm/ehea/ehea_main.c: In function 'write_swqe2_data':
+> drivers/net/ethernet/ibm/ehea/ehea_main.c:1692: error: implicit declaration of function 'frag_size'
 > 
-> Continued with 'make':
-> ...
->   CC      block/blk-throttle.o
->   CC      block/noop-iosched.o
->   CC      block/deadline-iosched.o
->   CC      block/cfq-iosched.o
->   CC      block/blk-integrity.o
->   LD      block/built-in.o
-> ...
-> 
-> Feel free to add:
-> 
->     Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> Presumably caused by commit 9e903e085262 ("net: add skb frag size
+> accessors").  I guess it should have been "skb_frag_size()".
 
-I wish I could, but it's already in...
+My bad, sorry
 
--- 
-Jens Axboe
+[PATCH] ehea: fix skb_frag_size typo
+
+commit 9e903e085262 (net: add skb frag size accessors) introduced a typo
+in ehea driver.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ drivers/net/ethernet/ibm/ehea/ehea_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index 0d4d4f6..37b70f7 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -1689,7 +1689,7 @@ static inline void write_swqe2_data(struct sk_buff *skb, struct net_device *dev,
+ 			sgentry = &sg_list[i - sg1entry_contains_frag_data];
+ 
+ 			sgentry->l_key = lkey;
+-			sgentry->len = frag_size(frag);
++			sgentry->len = skb_frag_size(frag);
+ 			sgentry->vaddr = ehea_map_vaddr(skb_frag_address(frag));
+ 			swqe->descriptors++;
+ 		}
+
 
