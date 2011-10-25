@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab1JYPFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 11:05:00 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53185 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab1JYPE7 (ORCPT
+	id S1756642Ab1JYPFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 11:05:55 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38683 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab1JYPFx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 11:04:59 -0400
-Subject: Re: [PATCH] mtd: clean up usage of MTD_DOCPROBE_ADDRESS
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 25 Oct 2011 18:04:47 +0300
-In-Reply-To: <1319533207.2409.68.camel@x61.thuisdomein>
-References: <1319533207.2409.68.camel@x61.thuisdomein>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-s0BauUu8GXOk4gMAgO/Q"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1319555096.2814.1.camel@golum>
-Mime-Version: 1.0
+	Tue, 25 Oct 2011 11:05:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAH2r5muLiYKCrS2f_DftZSnyuP0EC+vu99mENznCSL8ecnTkpg@mail.gmail.com>
+References: <20111026005939.ad20ab7a2dacce216c69e821@canb.auug.org.au>
+	<CAH2r5muLiYKCrS2f_DftZSnyuP0EC+vu99mENznCSL8ecnTkpg@mail.gmail.com>
+Date: Tue, 25 Oct 2011 10:05:52 -0500
+Message-ID: <CAH2r5mtkByKNPYN50ioRoS79sAR_rhShANcm9o-Qvo7S762VFg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        Linus <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Corrected typo in proposed patch and merged to cifs-2.6.git
 
---=-s0BauUu8GXOk4gMAgO/Q
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 25, 2011 at 9:51 AM, Steve French <smfrench@gmail.com> wrote:
+> Am fixing it now.  Jeff missed a stub for the non-freezer case.
+>
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index a155561..cd2d55b 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -202,6 +202,8 @@ static inline void set_freezable_with_signal(void) {}
+>
+>  #define wait_event_freezable_timeout(wq, condition, timeout)           \
+>                wait_event_interruptible_timeout(wq, condition, timeout)
+> +#define #define wait_event_freezekillable(wq, condition)               \
+> +               wait_event_killable(wq, condition)
+>
+>
+> On Tue, Oct 25, 2011 at 8:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> After merging the cifs tree, today's linux-next build (powerpc
+>> iseries_defconfig) failed like this:
+>>
+>> fs/cifs/transport.c: In function 'wait_for_response':
+>> fs/cifs/transport.c:328: error: implicit declaration of function 'wait_event_freezekillable'
+>>
+>> Caused by commit f06ac72e9291 ("cifs, freezer: add
+>> wait_event_freezekillable and have cifs use it").  In this config,
+>> CONFIG_FREEZER is not set.
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>> http://www.canb.auug.org.au/~sfr/
+>>
+>
+>
+>
+> --
+> Thanks,
+>
+> Steve
+>
 
-On Tue, 2011-10-25 at 11:00 +0200, Paul Bolle wrote:
-> Depending on whether MTD_DOCPROBE_ADVANCED is set or not,
-> MTD_DOCPROBE_ADDRESS will default to either 0x0000 or 0. That should
-> lead to (basically) identical code in docprobe.c. The current two
-> defaults should be merged.
->=20
-> And, while we're at it, if MTD_DOCPROBE is set MTD_DOCPROBE_ADDRESS will
-> always be set. (MTD_DOCPROBE_ADDRESS depends on MTD_DOCPROBE and it has
-> a default value.) So the check whether CONFIG_MTD_DOCPROBE_ADDRESS is
-> defined is unnecessary and should be dropped.
->=20
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Pushed to l2-mtd-2.6.git, thanks!
 
---=20
-Best Regards,
-Artem Bityutskiy
+-- 
+Thanks,
 
---=-s0BauUu8GXOk4gMAgO/Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOptAPAAoJEJtuLFy+q7feiIsIAI300nkRST9olDtmP7+ipxxz
-J7+tKxNY9wFduWT5JQPVitRJQyQDVkp5pH/Ak40TSROp6WfLuQykgWIO7b1M62vb
-y9N4LnWEEY0xP56vHz/kIkcUIHbtkzx/slLBr/omIJUrpF7PLJncMjkkkoNoQalK
-FMTbw0ptLm+qil+REuHzmICOi9ODE+yj7xxaSpewQJwzxwRBJBVrzKDg4QWT0X1D
-yd34Vz0hRuC+XtoO6fpmTqczh1k4pnT4AK9LIDRZU6V2gv6kyM64WJvF487E28DO
-tYwDU1bDS0V/ny32WSSRsn6U2EefQNtvVMqBIjbKSBM+EhulcNQw3gyX/kXL4EI=
-=4PC9
------END PGP SIGNATURE-----
-
---=-s0BauUu8GXOk4gMAgO/Q--
-
+Steve
