@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab1JYHZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 03:25:30 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35442 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab1JYHZ2 convert rfc822-to-8bit (ORCPT
+	id S1754901Ab1JYHZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 03:25:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65475 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab1JYHZu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 03:25:28 -0400
+	Tue, 25 Oct 2011 03:25:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111024213635.GB4394@ponder.secretlab.ca>
-References: <1319487676-27181-1-git-send-email-ricardo.ribalda@gmail.com>
- <1319487676-27181-5-git-send-email-ricardo.ribalda@gmail.com> <20111024213635.GB4394@ponder.secretlab.ca>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 25 Oct 2011 09:24:48 +0200
-Message-ID: <CAPybu_3pF6u10JMmcbho1e7=8EPHMq8LQ1+uHpyVMOmbRMUsHA@mail.gmail.com>
-Subject: Re: [PATCHv4 4/6] input/cma3000_d0x: Add CMA3000 spi support
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
-        jic23@cam.ac.uk, aghayal@codeaurora.org, david@hardeman.nu,
-        Shubhrajyoti@ti.com, saaguirre@ti.com, hemanthv@ti.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAFkjPT=KcY=YH=Vy+ikyzEe26pwZ3RQ8T=pf+3oGvgECkX7sPw@mail.gmail.com>
+References: <CAFkjPT=KcY=YH=Vy+ikyzEe26pwZ3RQ8T=pf+3oGvgECkX7sPw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Oct 2011 09:25:29 +0200
+X-Google-Sender-Auth: GEtqhS4JYyU2Q-9edwRwcLRoz8A
+Message-ID: <CA+55aFyRpjKrjOkiwUDKb_madynN71neUzCjNVt-TPzsRbEcOQ@mail.gmail.com>
+Subject: Re: [GIT PULL] 9p changes fro merge window
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Grant
-
-  Thanks for your comments. I am fixing the  --- problem in all the patches.
-
+On Mon, Oct 24, 2011 at 6:28 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
 >
-> Mark Brown had posted a generic indirect register read/write library
-> that I believe is getting merged.  Maybe this driver should be using
-> it?
+> are available in the git repository at:
+>  git://github.com/ericvh/linux.git for-next
 
-It is not on linux-next, and also it cannot be used directly, in order
-to read you have to do set reg= (reg << 2) | 2; And AFAIK it is not
-supported by the regmap
+So for the merge window, I *really* want the development trees I pull
+from explicitly verified some way.
 
->
-> Drop the .bus line.  The core code does this bit for you.
+Now, the p9 patches seem to be small enough, and not core enough, for
+me to care deeply, but I really *really* want to not see unsigned
+github things.
 
-Done
+Putting a signed tag on there somewhere that actually signs the top
+commit *and* mentions the repository and branch it is on (ie github)
+kis not wonderfully convenient, but it's at least relatively
+straightforward (do I have a gpg key I can trust?).
 
->> +module_init(cma3000_spi_init);
->> +module_exit(cma3000_spi_exit);
->
-> move module_init() directly below the function it registers.
+Or using a host that I can trust is being maintained by you guys (or
+some trusted third party like kernel.org).
 
-Also done, but I believe the other is more elegant :)
->
->> +
->> +MODULE_DESCRIPTION("CMA3000-D0x Accelerometer SPI Driver");
->> +MODULE_LICENSE("GPL");
->> +MODULE_AUTHOR("Ricardo Ribalda <ricardo.ribalda@gmail.com>");
->> --
->> 1.7.7
->>
->
+(Also, I'm only seeing about half the patches mentioned in linux-next. Hmm?)
 
+Please? Not pulled.
 
-
--- 
-Ricardo Ribalda
+                   Linus
