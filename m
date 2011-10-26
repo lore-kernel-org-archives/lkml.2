@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab1JZTZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 15:25:56 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47639 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab1JZTZy (ORCPT
+	id S1752017Ab1JZT3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 15:29:38 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33561 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab1JZT3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 15:25:54 -0400
-Date: Wed, 26 Oct 2011 12:25:48 -0700
+	Wed, 26 Oct 2011 15:29:37 -0400
+Date: Wed, 26 Oct 2011 12:29:31 -0700
 From: Tejun Heo <tj@kernel.org>
 To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, jgarzik@pobox.com, davem@davemloft.net, hch@infradead.org,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] block: add blk_queue_dead()
-Message-ID: <20111026192548.GB24261@google.com>
-References: <1319590927-15791-1-git-send-email-tj@kernel.org>
- <1319590927-15791-5-git-send-email-tj@kernel.org>
- <20111026172049.GD355@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/13] block: make ioc get/put interface more
+ conventional and fix race on alloction
+Message-ID: <20111026192917.GC24261@google.com>
+References: <1319593719-19132-1-git-send-email-tj@kernel.org>
+ <1319593719-19132-5-git-send-email-tj@kernel.org>
+ <20111026160101.GB355@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111026172049.GD355@redhat.com>
+In-Reply-To: <20111026160101.GB355@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,30 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-On Wed, Oct 26, 2011 at 01:20:49PM -0400, Vivek Goyal wrote:
-> On Tue, Oct 25, 2011 at 06:02:05PM -0700, Tejun Heo wrote:
-> > @@ -603,7 +603,7 @@ EXPORT_SYMBOL(blk_init_allocated_queue_node);
-> >  
-> >  int blk_get_queue(struct request_queue *q)
-> >  {
-> > -	if (likely(!test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-> > +	if (likely(!blk_queue_dead(q))) {
-> >  		kobject_get(&q->kobj);
-> >  		return 0;
+On Wed, Oct 26, 2011 at 12:01:01PM -0400, Vivek Goyal wrote:
+> We really don't need to create a new io context here if it is not present.
+> cgroup_changed is set so that reference to old sync cfqq is dropped and
+> a new one is assigned when new IO comes in. Given the fact that io context
+> is not even present for the task being attached, there is no way there
+> is associated cic and associated cfqq. So no need to set changed_cgroup=1.
 > 
-> I thought DEAD flag is now synchronized with queue lock. So the protocol
-> is that caller should be holding queue lock here first?
+> Will it make sense to pass in additional parameter to get_task_io_context()
+> so that it takes a reference if ioc exists otherwise returns NULL. Or may
+> be another variant of get_task_io_context() function.
+> 
+> This is a minor issue though. Will just avoid creating iocontext memory
+> for task if one is not using CFQ in the system.
 
-The requirement is that issue and processing of requests don't happen
-once DEAD is set and to guarantee that it's necessary to set DEAD and
-check DEAD in rq alloc/issue paths.
+Yeah, something like GFP_NOALLOC would have been nice for cases like
+this.  That said, adding another param or API for this doesn't sound
+too hot to me.  It's an extremely marginal optimization.  Let's just
+let it be.
 
-blk_get_queue() is inherently opportunistic as holding a reference
-doesn't prevent it from being killed.  It doesn't make any sense to
-require its holder to grab spinlock - either the caller doesn't need a
-refcnt (as it's holding spinlock) or the result of the check becomes
-stale as soon as it drops the spinlock.  Whether testing DEAD is
-helpful (it isn't necessary per-se) is another question tho.
+> > +extern char __blk_test_mode[2];
+> > +#define blk_test_mode	(__blk_test_mode[0])
+> > +
+> 
+> Looks like leftover of your testing code.
+
+Heh... what does that doing there? :) Will update the patch & git
+tree.
 
 Thanks.
 
