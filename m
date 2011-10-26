@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1JZVWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 17:22:50 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:35974 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab1JZVWt (ORCPT
+	id S1753146Ab1JZVXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 17:23:13 -0400
+Received: from exprod7og112.obsmtp.com ([64.18.2.177]:35037 "EHLO
+	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab1JZVXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 17:22:49 -0400
-Subject: [PATCH] cciss: fix flush cache transfer length
-To: axboe@kernel.dk
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
-        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
-        thenzl@redhat.com
-Date: Wed, 26 Oct 2011 16:22:45 -0500
-Message-ID: <20111026212245.15723.30415.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Wed, 26 Oct 2011 17:23:11 -0400
+Message-ID: <4EA87A2F.9080408@genband.com>
+Date: Wed, 26 Oct 2011 15:22:55 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Seth Forshee <seth.forshee@canonical.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Rubini <rubini@cvml.unipv.it>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] Additional ALPS touchpad protocol support
+References: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
+In-Reply-To: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Oct 2011 21:22:57.0203 (UTC) FILETIME=[6E4B4830:01CC9425]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18474.001
+X-TM-AS-Result: No--7.623000-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On 10/26/2011 03:14 PM, Seth Forshee wrote:
+> This patch series adds support for two ALPS touchpad protocol versions
+> currently unsupported by the driver, which I've arbitrarily called
+> versions 3 and 4 (with the two currently supported protocol versions
+> changed to be called versions 1 and 2). The v3 touchpads are commonly
+> found on Dell laptops, and the v4 touchpads are found on machines from a
+> variety of other manufacturers.
 
-We weren't filling in the transfer length of the
-flush cache command (it transfers 4 bytes of zeroes).
-Firmware didn't seem to be bothered by this, but it
-should be fixed.
+Thanks for doing this!  Here's hoping it fixes my Dell.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/block/cciss.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Chris
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 8f4ef65..54d76ea 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -2582,6 +2582,8 @@ static int fill_cmd(ctlr_info_t *h, CommandList_struct *c, __u8 cmd, void *buff,
- 			c->Request.Timeout = 0;
- 			c->Request.CDB[0] = BMIC_WRITE;
- 			c->Request.CDB[6] = BMIC_CACHE_FLUSH;
-+			c->Request.CDB[7] = (size >> 8) & 0xFF;
-+			c->Request.CDB[8] = size & 0xFF;
- 			break;
- 		case TEST_UNIT_READY:
- 			c->Request.CDBLen = 6;
-
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
