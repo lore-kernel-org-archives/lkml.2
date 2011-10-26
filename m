@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab1JZISx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 04:18:53 -0400
-Received: from brick.kernel.dk ([87.104.106.3]:39566 "EHLO kernel.dk"
+	id S932417Ab1JZIUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 04:20:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14711 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754608Ab1JZISw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 04:18:52 -0400
-Message-ID: <4EA7C265.3030808@kernel.dk>
-Date: Wed, 26 Oct 2011 10:18:45 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S932142Ab1JZIU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 04:20:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,408,1315206000"; 
+   d="scan'208";a="30240538"
+From: Andi Kleen <andi@firstfloor.org>
+To: Eial Czerwacki <eial@scalemp.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Shai Fultheim \(Shai\@ScaleMP.com\)" <Shai@scalemp.com>
+Subject: Re: [PATCH] APICID: Avoid false sharing on the read mostly x86_cpu_to_apicid
+References: <4EA66960.7050907@scalemp.com>
+	<9B14D1490DDECA4E974F6B9FC9EBAB3140CD274367@VMBX108.ihostexchange.net>
+	<4EA6A265.1080506@scalemp.com>
+Date: Wed, 26 Oct 2011 01:20:26 -0700
+In-Reply-To: <4EA6A265.1080506@scalemp.com> (Eial Czerwacki's message of "Tue,
+	25 Oct 2011 13:49:57 +0200")
+Message-ID: <m2fwigw4dx.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: vgoyal@redhat.com, jgarzik@pobox.com, davem@davemloft.net,
-        hch@infradead.org, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] block: add blk_queue_dead()
-References: <1319590927-15791-1-git-send-email-tj@kernel.org> <1319590927-15791-5-git-send-email-tj@kernel.org>
-In-Reply-To: <1319590927-15791-5-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-26 03:02, Tejun Heo wrote:
-> There are a number of QUEUE_FLAG_DEAD tests.  Add blk_queue_dead()
-> macro and use it.
-> 
-> This patch doesn't introduce any functional difference.
+Eial Czerwacki <eial@scalemp.com> writes:
 
-Applied 4-6 as well, thanks!
+> ===================================================================
+> --- a/arch/x86/include/asm/smp.h	2010-06-01 09:56:03.000000000 -0700
+> +++ b/arch/x86/include/asm/smp.h	2010-06-02 15:59:21.000000000 -0700
+> @@ -36,7 +36,8 @@ static inline struct cpumask *cpu_core_m
+>   	return per_cpu(cpu_core_map, cpu);
+>   }
+>
+> -DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
+> +extern u16 x86_cpu_to_apicid[NR_CPUS];
+
+That's a big waste of memory. On a CONFIG_MAX_SMP kernel compiled for
+4096 CPUs you're wasting 8k now on smaller systems. The per cpu
+data only allocates what is needed.
+
+NR_CPUS is usually a bad idea and it 
+
+Perhaps need a __read_mostly cache line padded per CPU section instead
+for cases like this.
+
+-Andi
 
 -- 
-Jens Axboe
-
+ak@linux.intel.com -- Speaking for myself only
