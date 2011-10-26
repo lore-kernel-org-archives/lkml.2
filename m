@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933189Ab1JZOAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:00:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35089 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247Ab1JZOAE convert rfc822-to-8bit (ORCPT
+	id S933210Ab1JZOFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:05:16 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40370 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab1JZOFO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:00:04 -0400
+	Wed, 26 Oct 2011 10:05:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111026120725.GA23142@kroah.com>
-References: <20111026120725.GA23142@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 26 Oct 2011 15:59:40 +0200
-X-Google-Sender-Auth: xkRMOPXECvZZSxUsPryxh3vgg4I
-Message-ID: <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
-Subject: Re: [GIT PATCH] big staging merge for 3.2
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, Mark Einon <mark.einon@gmail.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+55aFwHw=xSdk7VtHCiVKzfzvGS=d8hXwwfaPEcU=P6PDarsA@mail.gmail.com>
+References: <CAFkjPT=KcY=YH=Vy+ikyzEe26pwZ3RQ8T=pf+3oGvgECkX7sPw@mail.gmail.com>
+	<CA+55aFyRpjKrjOkiwUDKb_madynN71neUzCjNVt-TPzsRbEcOQ@mail.gmail.com>
+	<CAFkjPTkD+Ld8mhAdNZe_RbZaVZjDT+w61FhswzMQok3T2RbmYg@mail.gmail.com>
+	<CA+55aFxQJBcdOqY_dekYiouVM_udb-4D2f_1n2WrGRdRfx=HPw@mail.gmail.com>
+	<FC179A32-61E1-4B40-AE58-724D255586F8@gmail.com>
+	<CA+55aFwHw=xSdk7VtHCiVKzfzvGS=d8hXwwfaPEcU=P6PDarsA@mail.gmail.com>
+Date: Wed, 26 Oct 2011 16:05:13 +0200
+X-Google-Sender-Auth: -VZHzHJs6b5aro_xBxbIPUUYcRo
+Message-ID: <CAMuHMdU71jN=SWUU7O-Cq7ZtCi9r+3fhih72gBRPscagkGipjQ@mail.gmail.com>
+Subject: Re: [GIT PULL] 9p changes fro merge window
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 2:07 PM, Greg KH <greg@kroah.com> wrote:
+On Wed, Oct 26, 2011 at 14:58, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Oct 26, 2011 at 2:48 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+>> What's the preferred maintainer workflow?  I had been fetching and then rebasing, which seemed to keep my shortlog clean of merge commits and the outstanding patches towards the top.  Should I just be pulling from upstream and not caring about the merge commits?
 >
-> Here is the big staging merge for 3.2
+> Hell no.
 >
-> Note, I ended up merging this with your 3.1 release to resolve a merge
-> issue with one of the comedi drivers to fix a build issue. �If you want
-> me to redo the tree without this merge, I'll be glad to do so and let
-> you do it :)
+> Why do you pull from upstream? What does that add to *your*
+> development? Don't do it. Pick a place to start, and just develop
+> things. Ask me to pull.
+>
+> No merge commits, no rebases, no nothing. JUST ACTUAL WORK. It also
+> keeps the history clean, and means that what people test (in
+> linux-next _and_ in your own internal testing) is actually what you
+> ask me to pull, rather than something else.
 
-I don't hate merges that make sense, and that one looks fine. You
-picked a logical merge point, and you wrote a merge message that
-explains it. No problem.
+That works if what you do is "small" and "fast".
 
-> There's a lot of patches in here, and the overall diff is quite
-> impressive:
->  834 files changed, 103718 insertions(+), 230262 deletions(-)
+"small":
+  - There are no conflicts with anyone else who is e.g. restructuring
+part of the tree,
+  - You do not want to early submit parts that should go in through a different
+    maintainer as soon as they're ready (and thus they disappear from
+your patchset
+    when you rebase),
 
-Hmm... I only get
+"fast":
+  - You started working on it after the last merge window, and not 3
+releases ago.
 
- 725 files changed, 103936 insertions(+), 180480 deletions(-)
+If the above are not true, it's a hell of work to keep track of
+everything without
+rebasing. Not to mention that the reviewers don't like seeing patches that apply
+to obsolete trees.
 
-Which is still good, but nothing like your numbers. Where did you find
-the extra 50k lines?
+And of course I don't want to bother you with fixing the merge
+conflicts that happen
+when I would ask to pull e.g. the m68k genirq conversion based on the
+state of your
+tree when I started working on it ;-)
 
-> All patches have been in the -next releases for a while now.
+Gr{oetje,eeting}s,
 
-So I got several conflicts with the networking tree. Most of them were
-trivial (eg driver removal conflicting with somebody trying to fix up
-the now dead driver), but I really hope somebody looks at the
-resulting drivers/staging/et131x/et131x.c file.
+                        Geert
 
-That driver wasn't removed, it was consolidated as one big file, and
-so the fixes to the original files needed to be resolved. I tried to
-do that correctly, but there's the skb_frag_dma_map() change and the
-removal of .ndo_set_multicast_list, and while I think I did it right,
-I really want somebody who knows that code to double check me.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Appropriate people to do that added to the cc,
-
-                 Linus
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
