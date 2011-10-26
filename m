@@ -1,118 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1JZEku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 00:40:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52935 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab1JZEks convert rfc822-to-8bit (ORCPT
+	id S1753328Ab1JZEtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 00:49:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62596 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab1JZEtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 00:40:48 -0400
+	Wed, 26 Oct 2011 00:49:02 -0400
 MIME-Version: 1.0
-Date: Wed, 26 Oct 2011 12:40:47 +0800
-Message-ID: <CA+tHM2Hw4jzTNmNtD3ttVpyCFCHnFB9USWK5XsUK6vqGJVmGRg@mail.gmail.com>
-Subject: about NPIV with qemu-kvm.
-From: ya su <suya94335@gmail.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Date: Wed, 26 Oct 2011 00:49:02 -0400
+X-Google-Sender-Auth: V16CGPT4zShL-uC_tOwrKd-IBgI
+Message-ID: <CABDyM6T5_rwkEUu6133Xmgbyfo5naPNLEBrtyMiwrX3vHNdtdQ@mail.gmail.com>
+Subject: Random I/O lags on Lenovo T520: exception Emask 0x10 SAct 0x0 SErr
+ 0x4040000 action 0xe frozen
+From: Richard Yao <ryao@cs.stonybrook.edu>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, hannes:
+Dear Everyone,
 
-    I want to use NPIV with qemu-kvm, I issued the following command:
+I am seeing the following my system log on my 5 month old Lenovo T520,
+which has an OCZ Vertex 3 with the 2.15 firmware from OCZ:
 
-    echo '1111222233334444:5555666677778888' >
-/sys/class/fc_host/host0/vport_create
+[38985.474597] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[38985.474606] ata4: irq_stat 0x00000040, connection status changed
+[38985.474621] ata4: hard resetting link
+[38986.196436] ata4: SATA link down (SStatus 0 SControl 300)
+[38986.207412] ata4: EH complete
+[39109.561841] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[39109.561851] ata4: irq_stat 0x00000040, connection status changed
+[39109.561865] ata4: hard resetting link
+[39110.283738] ata4: SATA link down (SStatus 0 SControl 300)
+[39110.294765] ata4: EH complete
+[41874.348949] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[41874.348958] ata4: irq_stat 0x00000040, connection status changed
+[41874.348973] ata4: hard resetting link
+[41875.070896] ata4: SATA link down (SStatus 0 SControl 300)
+[41875.081871] ata4: EH complete
+[42038.632726] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[42038.632736] ata4: irq_stat 0x00000040, connection status changed
+[42038.632750] ata4: hard resetting link
+[42039.354452] ata4: SATA link down (SStatus 0 SControl 300)
+[42039.365441] ata4: EH complete
+[45924.973330] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[45924.973339] ata4: irq_stat 0x00000040, connection status changed
+[45924.973353] ata4: hard resetting link
+[45925.694644] ata4: SATA link down (SStatus 0 SControl 300)
+[45925.705593] ata4: EH complete
+[47147.406966] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[47147.406975] ata4: irq_stat 0x00000040, connection status changed
+[47147.406989] ata4: hard resetting link
+[47148.128733] ata4: SATA link down (SStatus 0 SControl 300)
+[47148.139655] ata4: EH complete
+[49175.880115] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[49175.880124] ata4: irq_stat 0x00000040, connection status changed
+[49175.880137] ata4: hard resetting link
+[49176.601441] ata4: SATA link down (SStatus 0 SControl 300)
+[49176.612382] ata4: EH complete
+[61159.032750] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[61159.032759] ata4: irq_stat 0x00000040, connection status changed
+[61159.032773] ata4: hard resetting link
+[61159.753832] ata4: SATA link down (SStatus 0 SControl 300)
+[61159.764804] ata4: EH complete
+[67797.682487] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[67797.682496] ata4: irq_stat 0x00000040, connection status changed
+[67797.682510] ata4: hard resetting link
+[67798.403637] ata4: SATA link down (SStatus 0 SControl 300)
+[67798.414643] ata4: EH complete
+[73680.166448] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[73680.166453] ata4: irq_stat 0x00000040, connection status changed
+[73680.166461] ata4: hard resetting link
+[73680.887669] ata4: SATA link down (SStatus 0 SControl 300)
+[73680.898649] ata4: EH complete
 
-    and it will produce a new host6 and one vport succesfully, but it
-does not create any virtual hba pci device. so I don't know how to
-assign the virtual host to qemu-kvm.
+Whenever this happens, KDE becomes semi-unresponsive. My first thought
+was that this might be an indicator that the Intel Cougar Point
+chipset in my laptop is dying, but I did a quick google search and
+people seemed to think it was a kernel bug. The last time I called
+Lenovo about an issue I had encountered, they told me that unless they
+can reproduce it on Windows, they would not do anything.  Does it look
+like a hardware problem or a kernel bug? I want the opinion of someone
+here before I call Lenovo about it.
 
-    from your this mail, does array will first need to assign a lun to
-this vport? and through this new created disk, like device /dev/sdf,
-then I add qemu-kvm with -drive file=/dev/sdf,if=virtio... arguments?
-
-
-Regards.
-
-Suya.
-
-2011/6/29, Hannes Reinecke <hare@suse.de>:
-> On 06/29/2011 12:07 PM, Christoph Hellwig wrote:
->> On Wed, Jun 29, 2011 at 10:39:42AM +0100, Stefan Hajnoczi wrote:
->>> I think we're missing a level of addressing.  We need the ability to
->>> talk to multiple target ports in order for "list target ports" to make
->>> sense.  Right now there is one implicit target that handles all
->>> commands.  That means there is one fixed I_T Nexus.
->>>
->>> If we introduce "list target ports" we also need a way to say "This
->>> CDB is destined for target port #0".  Then it is possible to enumerate
->>> target ports and address targets independently of the LUN field in the
->>> CDB.
->>>
->>> I'm pretty sure this is also how SAS and other transports work.  In
->>> their framing they include the target port.
->>
->> Yes, exactly.  Hierachial LUNs are a nasty fringe feature that we should
->> avoid as much as possible, that is for everything but IBM vSCSI which is
->> braindead enough to force them.
->>
-> Yep.
->
->>> The question is whether we really need to support multiple targets on
->>> a virtio-scsi adapter or not.  If you are selectively mapping LUNs
->>> that the guest may access, then multiple targets are not necessary.
->>> If we want to do pass-through of the entire SCSI bus then we need
->>> multiple targets but I'm not sure if there are other challenges like
->>> dependencies on the transport (Fibre Channel, SAS, etc) which make it
->>> impossible to pass through bus-level access?
->>
->> I don't think bus-level pass through is either easily possible nor
->> desirable.  What multiple targets are useful for is allowing more
->> virtual disks than we have virtual PCI slots.  We could do this by
->> supporting multiple LUNs, but given that many SCSI ressources are
->> target-based doing multiple targets most likely is the more scabale
->> and more logical variant.  E.g. we could much more easily have one
->> virtqueue per target than per LUN.
->>
-> The general idea here is that we can support NPIV.
-> With NPIV we'll have several scsi_hosts, each of which is assigned a
-> different set of LUNs by the array.
-> With virtio we need to able to react on LUN remapping on the array
-> side, ie we need to be able to issue a 'REPORT LUNS' command and
-> add/remove LUNs on the fly. This means we have to expose the
-> scsi_host in some way via virtio.
->
-> This is impossible with a one-to-one mapping between targets and
-> LUNs. The actual bus-level pass-through will be just on the SCSI
-> layer, ie 'REPORT LUNS' should be possible. If and how we do a LUN
-> remapping internally on the host is a totally different matter.
-> Same goes for the transport details; I doubt we will expose all the
-> dingy details of the various transports, but rather restrict
-> ourselves to an abstract transport.
->
-> Cheers,
->
-> Hannes
-> --
-> Dr. Hannes Reinecke		      zSeries & Storage
-> hare@suse.de			      +49 911 74053 688
-> SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-> GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Yours truly,
+Richard Yao
