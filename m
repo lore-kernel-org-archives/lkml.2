@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670Ab1JZRXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:23:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35884 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933408Ab1JZRXe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:23:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:from:date:message-id:subject:to:cc:
-	content-type:x-system-of-record;
-	b=qnR89v1E27BA1tJUEKbobLejj36yUXI1HbbSRkwuUib0dUb8jsWeUQEKqnUuJqhqV
-	bTKsBn/d5a6+lUaRM76ZQ==
+	id S933686Ab1JZR1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:27:19 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:47257 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933408Ab1JZR1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 13:27:17 -0400
+Date: Wed, 26 Oct 2011 10:16:10 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Bob Pearson <rpearson@systemfabricworks.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        David Miller <davem@davemloft.net>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 1/4] crc32: Bolt on crc32c
+Message-ID: <20111026171556.GU12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au> <20111021165703.GS12447@tux1.beaverton.ibm.com> <20111021191514.GA3997@gondor.apana.org.au>
 MIME-Version: 1.0
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Oct 2011 11:23:11 -0600
-Message-ID: <CAErSpo4REhcp_SgDyUTbi8jw9_8317Zi1duo1fTihB8x=drtuw@mail.gmail.com>
-Subject: regression tracking
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111021191514.GA3997@gondor.apana.org.au>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11102617-8974-0000-0000-0000011F80BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regression tracking that you folks used to do before the demise of
-bugzilla.kernel.org was incredibly valuable.
+On Fri, Oct 21, 2011 at 09:15:14PM +0200, Herbert Xu wrote:
+> On Fri, Oct 21, 2011 at 09:57:03AM -0700, Darrick J. Wong wrote:
+> > 
+> > My patchset builds upon Bob Pearson's crc32 patchset from early September.  Do
+> > my patches fail to apply after applying his patchset?
+> > 
+> > Or, to speed things along, should I simply repost both Bob's and my patches as
+> > one big series?
+> > 
+> > Bob, have you sent out a new iteration of your patches since September 6th?
+> 
+> I'm fine with you pushing this through whichever tree that Bob's
+> patches are going through.
 
-I'm very concerned about the fact that we don't have a systematic way
-to do this any more.  Some things do get reported on LKML, of course,
-but without the legwork you guys did, I'm afraid we're just dropping
-things on the floor because there's no summary of what the issues are,
-how many people are seeing them, who's responsible, etc.
+Bob,
 
-Consider this as (1) kudos for performing an essential community
-service, and (2) a plea for the resurrection or replacement of
-bugzilla.kernel.org or some other mechanism for reviving regression
-tracking.
+Which tree (if any) are your patches going through?  
 
-Bjorn
+--D
+
