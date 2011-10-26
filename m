@@ -1,57 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab1JZEGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 00:06:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14387 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840Ab1JZEGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 00:06:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,407,1315206000"; 
-   d="scan'208";a="82275993"
-Subject: Re: iwlagn is getting very shaky
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <20111026040332.GF24956@gamma.logic.tuwien.ac.at>
-References: <20111019062517.GC11588@gamma.logic.tuwien.ac.at>
-	 <1319003304.31823.46.camel@wwguy-huron>
-	 <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
-	 <1319004836.31823.57.camel@wwguy-huron>
-	 <20111020045927.GB23044@gamma.logic.tuwien.ac.at>
-	 <1319119852.2111.2.camel@wwguy-ubuntu>
-	 <20111021012442.GB26758@gamma.logic.tuwien.ac.at>
-	 <alpine.DEB.2.00.1110231424500.17218@chino.kir.corp.google.com>
-	 <20111026025014.GB24956@gamma.logic.tuwien.ac.at>
-	 <1319601333.14693.19.camel@wwguy-ubuntu>
-	 <20111026040332.GF24956@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Oct 2011 21:00:54 -0700
-Message-ID: <1319601654.14693.20.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751390Ab1JZERN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 00:17:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57875 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab1JZERL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 00:17:11 -0400
+From: Paul Schilling <paul.s.schilling@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>, "David S. Miller" <davem@davemloft.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Cc: Paul Schilling <Paul.S.Schilling@gmail.com>,
+        Paul Schilling <paul.s.schilling@gmail.com>
+Subject: [PATCH 02/15] ATA : vortex86 : fix vortex86dx/sx hardware CRC bug.
+Date: Tue, 25 Oct 2011 23:16:04 -0500
+Message-Id: <1319602564-19162-1-git-send-email-paul.s.schilling@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <fix vortex86>
+References: <fix vortex86>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 21:03 -0700, Norbert Preining wrote:
-> On Di, 25 Okt 2011, wwguy wrote:
-> > so this is different problem, right? it looks different compare to what
-> > you described before which is cause by queue stopped.
-> 
-> I assume that this is a different regression concerning 3.1.0 released.
-> 
-> But *I* cannot be sure about it ;-)
-> 
-Are you seeing this without suspend/resume?
+This fixes a DMA issue related to a CRC bug on
+the RDC pata peripherial found on the vortex86sx and vortex86dx.
 
-Thanks
-Wey
+Signed-off-by: Paul Schilling <paul.s.schilling@gmail.com>
+---
+ drivers/ata/pata_it821x.c |   14 ++++++++++----
+ drivers/ata/pata_rdc.c    |   29 ++++++++++++++++++++++++-----
+ drivers/ide/it821x.c      |    9 +++++++--
+ include/linux/pci_ids.h   |    2 ++
+ 4 files changed, 43 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/ata/pata_it821x.c b/drivers/ata/pata_it821x.c
+index c5532b9..72c91f2 100644
+--- a/drivers/ata/pata_it821x.c
++++ b/drivers/ata/pata_it821x.c
+@@ -897,7 +897,8 @@ static int it821x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	static const struct ata_port_info info_rdc_11 = {
+ 		.flags = ATA_FLAG_SLAVE_POSS,
+ 		.pio_mask = ATA_PIO4,
+-		.mwdma_mask = ATA_MWDMA2,
++		.mwdma_mask = 0,
++		.udma_mask = 0,
+ 		/* No UDMA */
+ 		.port_ops = &it821x_rdc_port_ops
+ 	};
+@@ -911,11 +912,16 @@ static int it821x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		return rc;
+ 
+ 	if (pdev->vendor == PCI_VENDOR_ID_RDC) {
+-		/* Deal with Vortex86SX */
+-		if (pdev->revision == 0x11)
++		if (((pdev->revision == 0x11) || (pdev->revision == 0x13)) &&
++		    (pdev->device == PCI_DEVICE_ID_RDC_D1010)) {
++			/* Deal with Vortex86SX */
+ 			ppi[0] = &info_rdc_11;
+-		else
++			printk(KERN_INFO DRV_NAME
++			       ": Detected Vortex86SX/DX Bug.\n");
++			printk(KERN_INFO DRV_NAME ": Disabling UDMA.\n");
++		} else {
+ 			ppi[0] = &info_rdc;
++		}
+ 	} else {
+ 		/* Force the card into bypass mode if so requested */
+ 		if (it8212_noraid) {
+diff --git a/drivers/ata/pata_rdc.c b/drivers/ata/pata_rdc.c
+index 2b38127..441521c 100644
+--- a/drivers/ata/pata_rdc.c
++++ b/drivers/ata/pata_rdc.c
+@@ -290,6 +290,16 @@ static struct ata_port_info rdc_port_info = {
+ 	.port_ops	= &rdc_pata_ops,
+ };
+ 
++static struct ata_port_info vortex_port_info = {
++	.flags = ATA_FLAG_SLAVE_POSS,
++	.pio_mask = ATA_PIO4,
++	.mwdma_mask = 0,
++	.udma_mask = 0,
++	/* No UDMA */
++	.port_ops	= &rdc_pata_ops,
++};
++
++
+ static struct scsi_host_template rdc_sht = {
+ 	ATA_BMDMA_SHT(DRV_NAME),
+ };
+@@ -322,16 +332,25 @@ static int __devinit rdc_init_one(struct pci_dev *pdev,
+ 
+ 	ata_print_version_once(&pdev->dev, DRV_VERSION);
+ 
+-	port_info[0] = rdc_port_info;
+-	port_info[1] = rdc_port_info;
+-
+-	port_flags = port_info[0].flags;
+-
+ 	/* enable device and prepare host */
+ 	rc = pcim_enable_device(pdev);
+ 	if (rc)
+ 		return rc;
+ 
++	if ((pdev->revision == 0x01) &&
++			(pdev->device ==  PCI_DEVICE_ID_RDC_D1011)) {
++		/* Deal with Vortex86DX */
++		port_info[0] = vortex_port_info;
++		port_info[1] = vortex_port_info;
++		printk(KERN_INFO DRV_NAME ": Detected Vortex86DX Bug.\n");
++		printk(KERN_INFO DRV_NAME ": Disabling UDMA.\n");
++	} else {
++		port_info[0] = rdc_port_info;
++		port_info[1] = rdc_port_info;
++	}
++
++	port_flags = port_info[0].flags;
++
+ 	hpriv = devm_kzalloc(dev, sizeof(*hpriv), GFP_KERNEL);
+ 	if (!hpriv)
+ 		return -ENOMEM;
+diff --git a/drivers/ide/it821x.c b/drivers/ide/it821x.c
+index 2e3169f..82c6bc7 100644
+--- a/drivers/ide/it821x.c
++++ b/drivers/ide/it821x.c
+@@ -581,10 +581,14 @@ static void __devinit init_hwif_it821x(ide_hwif_t *hwif)
+ 	hwif->ultra_mask = ATA_UDMA6;
+ 	hwif->mwdma_mask = ATA_MWDMA2;
+ 
+-	/* Vortex86SX quirk: prevent Ultra-DMA mode to fix BadCRC issue */
++	/* Vortex86SX and Vortex86DX quirk: prevent
++	 * Ultra-DMA mode to fix BadCRC issue when
++	 * using DMA mode */
+ 	if (idev->quirks & QUIRK_VORTEX86) {
+-		if (dev->revision == 0x11)
++		if (((dev->revision == 0x11) || (dev->revision == 0x13))
++				|| (dev->revision == 0x01)) {
+ 			hwif->ultra_mask = 0;
++		}
+ 	}
+ }
+ 
+@@ -680,6 +684,7 @@ static const struct pci_device_id it821x_pci_tbl[] = {
+ 	{ PCI_VDEVICE(ITE, PCI_DEVICE_ID_ITE_8211), 0 },
+ 	{ PCI_VDEVICE(ITE, PCI_DEVICE_ID_ITE_8212), 0 },
+ 	{ PCI_VDEVICE(RDC, PCI_DEVICE_ID_RDC_D1010), QUIRK_VORTEX86 },
++	{ PCI_VDEVICE(RDC, PCI_DEVICE_ID_RDC_D1011), QUIRK_VORTEX86 },
+ 	{ 0, },
+ };
+ 
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index ae96bbe..237da92 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2259,6 +2259,8 @@
+ #define PCI_DEVICE_ID_RDC_R6060		0x6060
+ #define PCI_DEVICE_ID_RDC_R6061		0x6061
+ #define PCI_DEVICE_ID_RDC_D1010		0x1010
++#define PCI_DEVICE_ID_RDC_D1011		0x1011
++#define PCI_DEVICE_ID_RDC_D1012		0x1012
+ 
+ #define PCI_VENDOR_ID_LENOVO		0x17aa
+ 
+-- 
+1.7.6.4
 
