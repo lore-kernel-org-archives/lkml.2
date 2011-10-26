@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933608Ab1JZQIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 12:08:16 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:46871 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984Ab1JZQIP (ORCPT
+	id S933514Ab1JZQRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 12:17:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47577 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932961Ab1JZQRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 12:08:15 -0400
-Message-ID: <1319645292.3321.24.camel@br98xy6r>
-Subject: kdump: No udev events for memory hotplug?
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 26 Oct 2011 18:08:12 +0200
-Organization: IBM
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 26 Oct 2011 12:17:36 -0400
+Date: Wed, 26 Oct 2011 19:15:07 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Youquan Song <youquan.song@intel.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] intr_remapping: Fix section mismatch in ir_dev_scope_init()
+Message-ID: <20111026161507.GB10103@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek and Eric,
+Fix
 
-I noticed that on my system kernel 3.1 *no* udev events for memory
-hotplug are generated. Same on my RHEL6.1.
+Section mismatch in reference from the function ir_dev_scope_init() to the
+function .init.text:dmar_dev_scope_init()
+The function ir_dev_scope_init() references the function __init dmar_dev_scope_init().
 
-# udevadm monitor
-# echo offline > /sys/devices/system/memory/memory4/state
 
--> No event
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-But we need the udev events in order to do a kdump reload for setting up
-the ELF loads correctly.
+---
 
-In my /etc/udev/rules.d/98-kexec.rules there are rules for memory
-hotplug:
-
-SUBSYSTEM=="memory", ACTION=="add", PROGRAM="/etc/init.d/kdump restart"
-SUBSYSTEM=="memory", ACTION=="remove", PROGRAM="/etc/init.d/kdump
-restart"
-
-Perhaps/probably I am missing something?
-
-Michael
-
+diff --git a/drivers/iommu/intr_remapping.c b/drivers/iommu/intr_remapping.c
+index 07c9f18..6777ca0 100644
+--- a/drivers/iommu/intr_remapping.c
++++ b/drivers/iommu/intr_remapping.c
+@@ -773,7 +773,7 @@ int __init parse_ioapics_under_ir(void)
+ 	return ir_supported;
+ }
+ 
+-int ir_dev_scope_init(void)
++int __init ir_dev_scope_init(void)
+ {
+ 	if (!intr_remapping_enabled)
+ 		return 0;
 
