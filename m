@@ -1,174 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab1JZAXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 20:23:31 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60802
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753344Ab1JZAXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 20:23:30 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        dmitry.torokhov@gmail.com, joe@perches.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 3/6] Staging: hv: mousevsc: Inline the code for reportdesc_callback()
-Date: Tue, 25 Oct 2011 17:19:49 -0700
-Message-Id: <1319588392-9982-3-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1319588392-9982-1-git-send-email-kys@microsoft.com>
-References: <1319588311-9935-1-git-send-email-kys@microsoft.com>
- <1319588392-9982-1-git-send-email-kys@microsoft.com>
+	id S1754167Ab1JZA3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 20:29:07 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52520 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab1JZA3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Oct 2011 20:29:04 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EA7543E.7050009@jp.fujitsu.com>
+Date: Wed, 26 Oct 2011 09:28:46 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PCI <linux-pci@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] PCI / ACPI: Make acpiphp ignore root bridges using PCIe
+ native hotplug
+References: <201110220043.38635.rjw@sisk.pl> <4EA6B538.7020401@jp.fujitsu.com> <201110251525.27446.rjw@sisk.pl>
+In-Reply-To: <201110251525.27446.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inline the code for reportdesc_callback() as this function is called from
-mousevsc_probe(). As part of this, cleanup the code in reportdesc_callback().
+(2011/10/25 22:25), Rafael J. Wysocki wrote:
+> On Tuesday, October 25, 2011, Kenji Kaneshige wrote:
+>> Looks good.
+>> This is also needed for SHPC native hotplug.
+> 
+> I don't think so, we still leave the SHPC _OSC for the driver to take care
+> of (which may not be the right thing, but I don't feel confident enough to
+> decide :-)).
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hv_mouse.c |   93 +++++++++++++++++++++++-----------------
- 1 files changed, 53 insertions(+), 40 deletions(-)
+I think of the case that acpiphp driver is loaded after shpchp driver is unloaded.
+Once native hotplug control is granted to OS, there is no way to return the control
+to firmware. So once shpchp gets the native hotplug control on a given root bridge,
+acpiphp should not try to handle the hotplug slots under it.
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 0a5676c..ed071b8 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -451,54 +451,34 @@ static int mousevsc_hid_open(struct hid_device *hid)
- 	return 0;
- }
- 
-+static int mousevsc_hid_start(struct hid_device *hid)
-+{
-+	return 0;
-+}
-+
- static void mousevsc_hid_close(struct hid_device *hid)
- {
- }
- 
-+static void mousevsc_hid_stop(struct hid_device *hid)
-+{
-+}
-+
- static struct hid_ll_driver mousevsc_ll_driver = {
- 	.open = mousevsc_hid_open,
- 	.close = mousevsc_hid_close,
-+	.start = mousevsc_hid_start,
-+	.stop = mousevsc_hid_stop,
- };
- 
- static struct hid_driver mousevsc_hid_driver;
- 
--static void reportdesc_callback(struct hv_device *dev, void *packet, u32 len)
--{
--	struct hid_device *hid_dev;
--	struct mousevsc_dev *input_device = hv_get_drvdata(dev);
--
--	hid_dev = hid_allocate_device();
--	if (IS_ERR(hid_dev))
--		return;
--
--	hid_dev->ll_driver = &mousevsc_ll_driver;
--	hid_dev->driver = &mousevsc_hid_driver;
--
--	if (hid_parse_report(hid_dev, packet, len))
--		return;
--
--	hid_dev->bus = BUS_VIRTUAL;
--	hid_dev->vendor = input_device->hid_dev_info.vendor;
--	hid_dev->product = input_device->hid_dev_info.product;
--	hid_dev->version = input_device->hid_dev_info.version;
--
--	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
--
--	if (!hidinput_connect(hid_dev, 0)) {
--		hid_dev->claimed |= HID_CLAIMED_INPUT;
--
--		input_device->connected = true;
--
--	}
--
--	input_device->hid_device = hid_dev;
--}
--
- static int mousevsc_probe(struct hv_device *device,
- 			const struct hv_vmbus_device_id *dev_id)
- {
- 	int ret = 0;
- 	struct mousevsc_dev *input_dev;
-+	struct hid_device *hid_dev;
- 
- 	input_dev = alloc_input_device(device);
- 
-@@ -524,23 +504,56 @@ static int mousevsc_probe(struct hv_device *device,
- 
- 	ret = mousevsc_connect_to_vsp(device);
- 
--	if (ret != 0) {
--		vmbus_close(device->channel);
--		free_input_device(input_dev);
--		return ret;
--	}
--
-+	if (ret != 0)
-+		goto probe_err0;
- 
- 	/* workaround SA-167 */
- 	if (input_dev->report_desc[14] == 0x25)
- 		input_dev->report_desc[14] = 0x29;
- 
--	reportdesc_callback(device, input_dev->report_desc,
--			    input_dev->report_desc_size);
-+	hid_dev = hid_allocate_device();
-+	if (IS_ERR(hid_dev)) {
-+		ret = PTR_ERR(hid_dev);
-+		goto probe_err0;
-+	}
-+
-+	hid_dev->ll_driver = &mousevsc_ll_driver;
-+	hid_dev->driver = &mousevsc_hid_driver;
-+	hid_dev->bus = BUS_VIRTUAL;
-+	hid_dev->vendor = input_dev->hid_dev_info.vendor;
-+	hid_dev->product = input_dev->hid_dev_info.product;
-+	hid_dev->version = input_dev->hid_dev_info.version;
-+	input_dev->hid_device = hid_dev;
-+
-+	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
-+
-+	ret = hid_parse_report(hid_dev, input_dev->report_desc,
-+				input_dev->report_desc_size);
-+
-+	if (ret) {
-+		hid_err(hid_dev, "parse failed\n");
-+		goto probe_err1;
-+	}
-+
-+	ret = hid_hw_start(hid_dev, HID_CONNECT_HIDINPUT | HID_CONNECT_HIDDEV);
- 
-+	if (ret) {
-+		hid_err(hid_dev, "hw start failed\n");
-+		goto probe_err1;
-+	}
-+
-+	input_dev->connected = true;
- 	input_dev->init_complete = true;
- 
- 	return ret;
-+
-+probe_err1:
-+	hid_destroy_device(hid_dev);
-+
-+probe_err0:
-+	vmbus_close(device->channel);
-+	free_input_device(input_dev);
-+	return ret;
- }
- 
- 
--- 
-1.7.4.1
+Regards,
+Kenji Kaneshige
+
+
+> 
+> Thanks,
+> Rafael
+> 
+> 
+>> (2011/10/22 7:43), Rafael J. Wysocki wrote:
+>>> From: Rafael J. Wysocki<rjw@sisk.pl>
+>>>
+>>> If the kernel has requested control of the PCIe native hotplug
+>>> feature for a given root complex, the acpiphp driver should not try
+>>> to handle that root complex and it should leave it to pciehp.
+>>> Failing to do so causes problems to happen if acpiphp is loaded
+>>> before pciehp on such systems.
+>>>
+>>> To address this issue make find_root_bridges() ignore PCIe root
+>>> complexes with PCIe native hotplug enabled and make add_bridge()
+>>> return error code if PCIe native hotplug is enabled for the given
+>>> root port.  This causes acpiphp to refuse to load if PCIe native
+>>> hotplug is enabled for all complexes and to refuse binding to
+>>> the root complexes with PCIe native hotplug is enabled.
+>>>
+>>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+>>> ---
+>>>    drivers/pci/hotplug/acpiphp_glue.c |   29 ++++++++++++++++++++++++-----
+>>>    1 file changed, 24 insertions(+), 5 deletions(-)
+>>>
+>>> Index: linux/drivers/pci/hotplug/acpiphp_glue.c
+>>> ===================================================================
+>>> --- linux.orig/drivers/pci/hotplug/acpiphp_glue.c
+>>> +++ linux/drivers/pci/hotplug/acpiphp_glue.c
+>>> @@ -458,8 +458,17 @@ static int add_bridge(acpi_handle handle
+>>>    {
+>>>    	acpi_status status;
+>>>    	unsigned long long tmp;
+>>> +	struct acpi_pci_root *root;
+>>>    	acpi_handle dummy_handle;
+>>>
+>>> +	/*
+>>> +	 * We shouldn't use this bridge if PCIe native hotplug control has been
+>>> +	 * granted by the BIOS for it.
+>>> +	 */
+>>> +	root = acpi_pci_find_root(handle);
+>>> +	if (root&&   (root->osc_control_set&   OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
+>>> +		return -ENODEV;
+>>> +
+>>>    	/* if the bridge doesn't have _STA, we assume it is always there */
+>>>    	status = acpi_get_handle(handle, "_STA",&dummy_handle);
+>>>    	if (ACPI_SUCCESS(status)) {
+>>> @@ -1297,13 +1306,23 @@ static void handle_hotplug_event_func(ac
+>>>    static acpi_status
+>>>    find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+>>>    {
+>>> +	struct acpi_pci_root *root;
+>>>    	int *count = (int *)context;
+>>>
+>>> -	if (acpi_is_root_bridge(handle)) {
+>>> -		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+>>> -				handle_hotplug_event_bridge, NULL);
+>>> -			(*count)++;
+>>> -	}
+>>> +	if (!acpi_is_root_bridge(handle))
+>>> +		return AE_OK;
+>>> +
+>>> +	root = acpi_pci_find_root(handle);
+>>> +	if (!root)
+>>> +		return AE_OK;
+>>> +
+>>> +	if (root->osc_control_set&   OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
+>>> +		return AE_OK;
+>>> +
+>>> +	(*count)++;
+>>> +	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+>>> +				    handle_hotplug_event_bridge, NULL);
+>>> +
+>>>    	return AE_OK ;
+>>>    }
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>>
+>>
+> 
+> 
 
