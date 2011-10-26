@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1JZAmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 20:42:11 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:49039 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754074Ab1JZAmK (ORCPT
+	id S1754237Ab1JZAqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 20:46:36 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59049 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab1JZAqf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 20:42:10 -0400
-Message-ID: <4EA75759.3050900@xenotime.net>
-Date: Tue, 25 Oct 2011 17:42:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	Tue, 25 Oct 2011 20:46:35 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-crypto@vger.kernel.org
-Subject: Re: linux-next: Tree for Oct 25 (crypto)
-References: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
-In-Reply-To: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
+In-Reply-To: <1316804080-6396-1-git-send-email-venki@google.com>
+References: <1316804080-6396-1-git-send-email-venki@google.com>
+Date: Wed, 26 Oct 2011 08:46:34 +0800
+Message-ID: <CAGjg+kH577VE4cyq5zVNR962S6xbGCNnGS0w6N1DVuOppL3Khw@mail.gmail.com>
+Subject: Re: [RFC] Introduce greedy hrtimer walk on idle
+From: alex shi <lkml.alex@gmail.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, "Chen, Tim C" <tim.c.chen@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/11 02:36, Stephen Rothwell wrote:
-> Hi all,
-
-
-When CONFIG_NET is not enabled:
-
-ERROR: "nla_put" [crypto/rng.ko] undefined!
-ERROR: "nla_put" [crypto/pcompress.ko] undefined!
-ERROR: "netlink_kernel_release" [crypto/crypto_user.ko] undefined!
-ERROR: "netlink_kernel_create" [crypto/crypto_user.ko] undefined!
-ERROR: "init_net" [crypto/crypto_user.ko] undefined!
-ERROR: "netlink_unicast" [crypto/crypto_user.ko] undefined!
-ERROR: "__alloc_skb" [crypto/crypto_user.ko] undefined!
-ERROR: "skb_trim" [crypto/crypto_user.ko] undefined!
-ERROR: "skb_put" [crypto/crypto_user.ko] undefined!
-ERROR: "netlink_dump_start" [crypto/crypto_user.ko] undefined!
-ERROR: "nla_put" [crypto/crypto_user.ko] undefined!
-ERROR: "netlink_rcv_skb" [crypto/crypto_user.ko] undefined!
-ERROR: "nla_put" [crypto/crypto_hash.ko] undefined!
-ERROR: "nla_put" [crypto/crypto_blkcipher.ko] undefined!
-ERROR: "nla_put" [crypto/aead.ko] undefined!
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> ---
+>  arch/x86/kernel/process_64.c |    2 +
+>  include/linux/hrtimer.h      |   14 ++++
+>  include/linux/sched.h        |    1 +
+>  include/linux/timerqueue.h   |   11 +++
+>  kernel/hrtimer.c             |  175 +++++++++++++++++++++++++++++++++++++-----
+>  kernel/sched.c               |    2 +
+>  kernel/sysctl.c              |    7 ++
+>  7 files changed, 191 insertions(+), 21 deletions(-)
+>
+Hi, venki, what version of thia patch against? I want to test the
+power consumption for your patch.
