@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab1JZOYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:24:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47953 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933120Ab1JZOYg (ORCPT
+	id S933183Ab1JZO2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:28:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49652 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932772Ab1JZO2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:24:36 -0400
-Date: Wed, 26 Oct 2011 15:23:01 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        Jiri Pirko <jpirko@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [GIT PATCH] big staging merge for 3.2
-Message-ID: <20111026142301.GA4732@marke.airties>
-References: <20111026120725.GA23142@kroah.com>
- <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
+	Wed, 26 Oct 2011 10:28:19 -0400
+Message-ID: <4EA818ED.9000006@windriver.com>
+Date: Wed, 26 Oct 2011 10:27:57 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olof Johansson <olof@lixom.net>
+CC: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next failure on tegra due to conflicts between PPI and
+ irq domain patches and irq.h->module.h include removal
+References: <CAOesGMhqRg29tq5Cw03UQMzGs_6nc3YA9UE6Cvps_0q7h5OeZw@mail.gmail.com>	<4EA73171.5020207@gmail.com> <CAOesGMiCvFypQ6MbkTARxH3i3YTgYqSVcUwXe=2tdqSqufXtzg@mail.gmail.com>
+In-Reply-To: <CAOesGMiCvFypQ6MbkTARxH3i3YTgYqSVcUwXe=2tdqSqufXtzg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 03:59:40PM +0200, Linus Torvalds wrote:
-> On Wed, Oct 26, 2011 at 2:07 PM, Greg KH <greg@kroah.com> wrote:
-> >
-> > Here is the big staging merge for 3.2
-> >
-> > Note, I ended up merging this with your 3.1 release to resolve a merge
-> > issue with one of the comedi drivers to fix a build issue.  If you want
-> > me to redo the tree without this merge, I'll be glad to do so and let
-> > you do it :)
+On 11-10-25 06:01 PM, Olof Johansson wrote:
+> On Tue, Oct 25, 2011 at 3:00 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> Olof,
+>>
+>> On 10/25/2011 04:48 PM, Olof Johansson wrote:
+>>> Hi,
+>>>
+>>> Looks like Marc added new references to irq_start in his PPI patch,
+>>> and Rob removed it in parallel. Also, irq_offset is no longer
+>>> available. Looks like you need to respin your patch, Marc.
+>>>
+>>> arch/arm/common/gic.c: In function 'gic_dist_init':
+>>> arch/arm/common/gic.c:290: error: 'irq_start' undeclared (first use in
+>>> this function)
+>>> arch/arm/common/gic.c:290: error: (Each undeclared identifier is
+>>> reported only once
+>>> arch/arm/common/gic.c:290: error: for each function it appears in.)
+>>> arch/arm/common/gic.c:296: error: 'struct gic_chip_data' has no member
+>>> named 'irq_offset'
+>>
+>> I fixed this and sent a pull request yesterday to Arnd.
 > 
-> I don't hate merges that make sense, and that one looks fine. You
-> picked a logical merge point, and you wrote a merge message that
-> explains it. No problem.
+> Ah, oops, forgot to check for already-posted-patches. :) Excellent.
 > 
-> > There's a lot of patches in here, and the overall diff is quite
-> > impressive:
-> >  834 files changed, 103718 insertions(+), 230262 deletions(-)
 > 
-> Hmm... I only get
+>>> The second error is because of the change from Paul that removes
+>>> module.h from irq.h:
+>>>
+>>> arch/arm/common/gic.c: In function 'gic_init':
+>>> arch/arm/common/gic.c:620: error: 'THIS_MODULE' undeclared (first use
+>>> in this function)
+>>>
+>>> Looks odd that I should need to include module.h on my own just to use
+>>> irq defines. Paul?
+>>>
+>>
+>> THIS_MODULE is needed by irq.h itself in irq_alloc_descs, so it probably
+>> needs to be added back.
 > 
->  725 files changed, 103936 insertions(+), 180480 deletions(-)
-> 
-> Which is still good, but nothing like your numbers. Where did you find
-> the extra 50k lines?
-> 
-> > All patches have been in the -next releases for a while now.
-> 
-> So I got several conflicts with the networking tree. Most of them were
-> trivial (eg driver removal conflicting with somebody trying to fix up
-> the now dead driver), but I really hope somebody looks at the
-> resulting drivers/staging/et131x/et131x.c file.
-> 
-> That driver wasn't removed, it was consolidated as one big file, and
-> so the fixes to the original files needed to be resolved. I tried to
-> do that correctly, but there's the skb_frag_dma_map() change and the
-> removal of .ndo_set_multicast_list, and while I think I did it right,
-> I really want somebody who knows that code to double check me.
-> 
-> Appropriate people to do that added to the cc,
-> 
->                  Linus
+> Well, the new export.h that defines THIS_MODULE probably needs to be
+> added to irq.h, yes.
 
-Hi Linus,
+No.  The whole point of the commit was to avoid nested includes
+as per the commit log:
 
-The code changes look good, but it also needs the removal of a NETDEV_1000 dependency in the Kconfig file.
+    Also convert the irq_alloc_descs variants to macros, since all
+    they really do is is call the __irq_alloc_descs primitive.
+    This avoids including export.h and no debug info is lost.
 
-I sent a patch for these changes yesterday, you can find it here :
-http://www.spinics.net/lists/netdev/msg177938.html
+If your file is relating to modular usage such that it is a modular
+provider of interrupt sources and hence uses "THIS_MODULE", then it
+will need export.h in the future. And that macro has nothing whatsoever
+to do with any irq defines; it is used all over the kernel to tie
+structures back to a (possibly modular) code block, just as per the
+use case here in irq.h is.
 
-It's practically identical to your fixes, except for the Kconfig change.
+Thanks,
+Paul.
 
-Cheers,
 
-Mark
+> 
+> 
+> -Olof
