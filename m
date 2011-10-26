@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab1JZIfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 04:35:30 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:43441 "EHLO smtp.gentoo.org"
+	id S932510Ab1JZIgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 04:36:50 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:46560 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932382Ab1JZIf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 04:35:29 -0400
+	id S932450Ab1JZIgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 04:36:49 -0400
 From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH 00/15] Blackfin updates for 3.2-rc0
-Date: Wed, 26 Oct 2011 04:34:56 -0400
-Message-Id: <1319618096-11377-1-git-send-email-vapier@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Wed, 26 Oct 2011 04:36:17 -0400
+Message-Id: <1319618177-21960-1-git-send-email-vapier@gentoo.org>
 X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1319618096-11377-1-git-send-email-vapier@gentoo.org>
+References: <1319618096-11377-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mostly board clean ups, but there's a fix or two slipped in for fun.
-Overall, tame tame stuff.
+The following changes since commit 7670c7010c7b367ca40c3aba02afb36149764a6e:
+
+  Merge branch 'for-linus' of git://github.com/gregungerer/m68knommu (2011-10-25 16:25:48 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
 Lars-Peter Clausen (3):
-  Blackfin: bf537-stamp: register adau1701 codec and asoc machine
-    driver
-  Blackfin: bf537-stamp: Register adav801 codec and ASoC machine driver
-  Blackfin: bf537-stamp: register ASoC EVAL-ADAU1373 board driver
+      Blackfin: bf537-stamp: register adau1701 codec and asoc machine driver
+      Blackfin: bf537-stamp: Register adav801 codec and ASoC machine driver
+      Blackfin: bf537-stamp: register ASoC EVAL-ADAU1373 board driver
 
 Michael Hennerich (1):
-  Blackfin: boards: clean up i2c_board_info
+      Blackfin: boards: clean up i2c_board_info
 
 Mike Frysinger (2):
-  Blackfin: SMP: convert to common asm-generic/atomic.h
-  Blackfin: merge asm/mutex.h into kbuild too
+      Blackfin: SMP: convert to common asm-generic/atomic.h
+      Blackfin: merge asm/mutex.h into kbuild too
 
 Mikhail Gruzdev (1):
-  Blackfin: fix sparse warnings in copy_to/from_user
+      Blackfin: fix sparse warnings in copy_to/from_user
 
 Paul Bolle (1):
-  Blackfin: drop unused Kconfig symbol
+      Blackfin: drop unused Kconfig symbol
 
 Scott Jiang (2):
-  Blackfin: bf537-stamp: fix ad1836 name
-  Blackfin: bf537-stamp: fix ad73311 codec config macro
+      Blackfin: bf537-stamp: fix ad1836 name
+      Blackfin: bf537-stamp: fix ad73311 codec config macro
 
 Sonic Zhang (2):
-  Blackfin: bf548-ezkit: update defconfig
-  Blackfin: kgdb_test: rework code to avoid -O0 usage
+      Blackfin: bf548-ezkit: update defconfig
+      Blackfin: kgdb_test: rework code to avoid -O0 usage
 
 Steven Miao (1):
-  Blackfin: SMP: fix scheduling deadlock
+      Blackfin: SMP: fix scheduling deadlock
 
 Thomas Gleixner (1):
-  Blackfin: H8606: fixup bogus ioresource init
+      Blackfin: H8606: fixup bogus ioresource init
 
 Yong Zhang (1):
-  Blackfin: irq: remove IRQF_DISABLED
+      Blackfin: irq: remove IRQF_DISABLED
 
  arch/blackfin/Kconfig                       |    4 -
  arch/blackfin/configs/BF548-EZKIT_defconfig |   13 +---
@@ -75,7 +82,3 @@ Yong Zhang (1):
  arch/blackfin/mach-common/smp.c             |    7 ++-
  18 files changed, 85 insertions(+), 164 deletions(-)
  delete mode 100644 arch/blackfin/include/asm/mutex.h
-
--- 
-1.7.6.1
-
