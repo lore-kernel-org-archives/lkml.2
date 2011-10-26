@@ -1,29 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab1JZHx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 03:53:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34030 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab1JZHxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 03:53:55 -0400
+	id S1754897Ab1JZILK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 04:11:10 -0400
+Received: from brick.kernel.dk ([87.104.106.3]:39428 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754838Ab1JZILI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 04:11:08 -0400
+Message-ID: <4EA7C094.8000204@kernel.dk>
+Date: Wed, 26 Oct 2011 10:11:00 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1319606151-29707-1-git-send-email-sonic.adi@gmail.com>
-References: <1319606151-29707-1-git-send-email-sonic.adi@gmail.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 26 Oct 2011 03:53:35 -0400
-X-Google-Sender-Auth: 5oFYuylPVu4ccXAu1_KKLi_Z8B0
-Message-ID: <CAJaTeTqsjjjS=Myt_gfPzOfF4mzqZ1pz2NJE95Gq6g_O0aOijA@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [PATCH] mutex:SMP:bf561:Run smp memory
- barrier after take atomic lock in mutex_fastpath APIs.
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, uclinux-dist-devel@blackfin.uclinux.org,
-        LKML <linux-kernel@vger.kernel.org>
+To: Tejun Heo <tj@kernel.org>
+CC: vgoyal@redhat.com, jgarzik@pobox.com, davem@davemloft.net,
+        hch@infradead.org, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] block: allow blk_execute_rq_nowait() to be called
+ from IRQ context
+References: <1319590927-15791-1-git-send-email-tj@kernel.org> <1319590927-15791-3-git-send-email-tj@kernel.org>
+In-Reply-To: <1319590927-15791-3-git-send-email-tj@kernel.org>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-unfortunately, this is incorrect.  please see the thread:
-https://lkml.org/lkml/2011/5/29/233
--mike
+On 2011-10-26 03:02, Tejun Heo wrote:
+> Currently blk_execute_rq_nowait() directly calls __blk_run_queue() and
+> thus must be called from sleepable context.  This patch updates the
+> function such that it can be called from non-sleepable context and
+> schedules async execution in such cases.  This will be used to
+> unexport elv_add_request().
+> 
+> While at it, add FIXME comment for REQ_TYPE_PM_RESUME special case.
+> 
+> -v2: hch pointed out that blk_execute_rq_nowait() can be hot path for
+>      some drivers.  Retained direct execution from sleepable context.
+
+Ugh, this looks nasty:
+
+> +	bool may_sleep = !preempt_count() && !irqs_disabled();
+
+please don't ever do that. Pass the context in instead.
+
+> +	/*
+> +	 * Some drivers beat this path pretty hard.  As an optimization, if
+> +	 * we're being called from sleepable context, run @q directly.
+> +	 */
+> +	if (may_sleep) {
+> +		__blk_run_queue(q);
+> +		/*
+> +		 * The queue is stopped so it won't be run.
+> +		 * FIXME: Please kill me along with REQ_TYPE_PM_RESUME.
+> +		 */
+> +		if (rq->cmd_type == REQ_TYPE_PM_RESUME)
+> +			q->request_fn(q);
+
+This is very nasty as well.
+
+-- 
+Jens Axboe
+
