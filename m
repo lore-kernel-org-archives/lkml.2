@@ -1,141 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab1JZU3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 16:29:03 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62410 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab1JZU3B convert rfc822-to-8bit (ORCPT
+	id S1752694Ab1JZUaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 16:30:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35978 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab1JZUaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 16:29:01 -0400
+	Wed, 26 Oct 2011 16:30:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=MsUHoGEyVdbfuQvivpxUuUjFA1QzUAxQV7Vybp3Syiq4lFDLUOy6uim75GF7OZ2s/
+	zWicdBjzEhn0T0C00Fd/g==
+Date: Wed, 26 Oct 2011 13:30:07 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Wolfram Sang <w.sang@pengutronix.de>
+cc: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] checkpatch: improve error message for p1-check
+In-Reply-To: <1319027583-17842-1-git-send-email-w.sang@pengutronix.de>
+Message-ID: <alpine.DEB.2.00.1110261329240.23111@chino.kir.corp.google.com>
+References: <1319027583-17842-1-git-send-email-w.sang@pengutronix.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAEwRVpN8o_end=NJzTHS5p=u1O8vQ+PenAzGoFMfx7Ore73-Rw@mail.gmail.com>
-References: <CAAfyv36xXQpmDy4Lo2ut+-i2ussgBcmQ+hpQuSEupKxbLubo=g@mail.gmail.com>
-	<CAEwRVpN8o_end=NJzTHS5p=u1O8vQ+PenAzGoFMfx7Ore73-Rw@mail.gmail.com>
-Date: Wed, 26 Oct 2011 22:29:00 +0200
-Message-ID: <CAAfyv37K2wsjiehY89sjcsZeU6Qci+i8thi+2pX1OO9=2dcLTA@mail.gmail.com>
-Subject: Re: stable kernel releases
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Teck Choon Giam <giamteckchoon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 12:13 AM, Teck Choon Giam
-<giamteckchoon@gmail.com> wrote:
-> On Tue, Oct 25, 2011 at 3:41 AM, Belisko Marek <marek.belisko@gmail.com> wrote:
->> Is there another git  location for stable kernels?
->> Like 2.6.39, 2.6.38? Kernel org still missing that part.
->
-> Isn't it all in
-> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-> ?
-Thanks that's the link I need ;)
->
-> $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-> $ cd linux-stable
-> $ git branch -a
->  remotes/origin/HEAD -> origin/master
->  remotes/origin/linux-2.6.11.y
->  remotes/origin/linux-2.6.12.y
->  remotes/origin/linux-2.6.13.y
->  remotes/origin/linux-2.6.14.y
->  remotes/origin/linux-2.6.15.y
->  remotes/origin/linux-2.6.16.y
->  remotes/origin/linux-2.6.17.y
->  remotes/origin/linux-2.6.18.y
->  remotes/origin/linux-2.6.19.y
->  remotes/origin/linux-2.6.20.y
->  remotes/origin/linux-2.6.21.y
->  remotes/origin/linux-2.6.22.y
->  remotes/origin/linux-2.6.23.y
->  remotes/origin/linux-2.6.24.y
->  remotes/origin/linux-2.6.25.y
->  remotes/origin/linux-2.6.26.y
->  remotes/origin/linux-2.6.27.y
->  remotes/origin/linux-2.6.28.y
->  remotes/origin/linux-2.6.29.y
->  remotes/origin/linux-2.6.30.y
->  remotes/origin/linux-2.6.31.y
->  remotes/origin/linux-2.6.32.y
->  remotes/origin/linux-2.6.33.y
->  remotes/origin/linux-2.6.34.y
->  remotes/origin/linux-2.6.35.y
->  remotes/origin/linux-2.6.36.y
->  remotes/origin/linux-2.6.37.y
->  remotes/origin/linux-2.6.38.y
->  remotes/origin/linux-2.6.39.y
->  remotes/origin/linux-3.0.y
->  remotes/origin/linux-3.1.y
->  remotes/origin/master
->
-> Like if you want 2.6.32 for example:
->
-> $ git checkout -b linux-2.6.32.y --track remotes/origin/linux-2.6.32.y
-> $ git log -1
-> commit b0b3e41f6fe88a15bd27f73f6fabef48e0fea2f0
-> Author: Greg Kroah-Hartman <gregkh@suse.de>
-> Date:   Mon Aug 29 14:31:54 2011 -0700
->
->    Linux 2.6.32.46
->
-> If you want tags just:
->
-> $ git fetch --tags -v
-> SNAP
->  = [up to date]      v2.6.38    -> v2.6.38
->  = [up to date]      v2.6.38-rc1 -> v2.6.38-rc1
->  = [up to date]      v2.6.38-rc2 -> v2.6.38-rc2
->  = [up to date]      v2.6.38-rc3 -> v2.6.38-rc3
->  = [up to date]      v2.6.38-rc4 -> v2.6.38-rc4
->  = [up to date]      v2.6.38-rc5 -> v2.6.38-rc5
->  = [up to date]      v2.6.38-rc6 -> v2.6.38-rc6
->  = [up to date]      v2.6.38-rc7 -> v2.6.38-rc7
->  = [up to date]      v2.6.38-rc8 -> v2.6.38-rc8
->  = [up to date]      v2.6.38.1  -> v2.6.38.1
->  = [up to date]      v2.6.38.2  -> v2.6.38.2
->  = [up to date]      v2.6.38.3  -> v2.6.38.3
->  = [up to date]      v2.6.38.4  -> v2.6.38.4
->  = [up to date]      v2.6.38.5  -> v2.6.38.5
->  = [up to date]      v2.6.38.6  -> v2.6.38.6
->  = [up to date]      v2.6.38.7  -> v2.6.38.7
->  = [up to date]      v2.6.38.8  -> v2.6.38.8
->  = [up to date]      v2.6.39    -> v2.6.39
->  = [up to date]      v2.6.39-rc1 -> v2.6.39-rc1
->  = [up to date]      v2.6.39-rc2 -> v2.6.39-rc2
->  = [up to date]      v2.6.39-rc3 -> v2.6.39-rc3
->  = [up to date]      v2.6.39-rc4 -> v2.6.39-rc4
->  = [up to date]      v2.6.39-rc5 -> v2.6.39-rc5
->  = [up to date]      v2.6.39-rc6 -> v2.6.39-rc6
->  = [up to date]      v2.6.39-rc7 -> v2.6.39-rc7
->  = [up to date]      v2.6.39.1  -> v2.6.39.1
->  = [up to date]      v2.6.39.2  -> v2.6.39.2
->  = [up to date]      v2.6.39.3  -> v2.6.39.3
->  = [up to date]      v2.6.39.4  -> v2.6.39.4
-> SNAP
->
-> Hope this is what you are looking for?
->
-> Thanks.
->
-> Kindest regards,
-> Giam Teck Choon
->
+On Wed, 19 Oct 2011, Wolfram Sang wrote:
 
-regards,
+> The old error message was not precise. State now explicitly that the
+> prefix exists as a file/directory. Also change the conclusion ("appears
+> to be") into an instruction ("make sure").
+> 
 
-marek
+Why can't we suppress this warning unless both prefixes appear as files or 
+directories in the cwd?  ('a' and 'b' if using git format-patch)
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> Cc: Andy Whitcroft <apw@canonical.com>
+> ---
+>  scripts/checkpatch.pl |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 3dfc471..4bb4f88 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1506,7 +1506,7 @@ sub process {
+>  			if (!$file && $tree && $p1_prefix ne '' &&
+>  			    -e "$root/$p1_prefix") {
+>  				WARN("PATCH_PREFIX",
+> -				     "patch prefix '$p1_prefix' exists, appears to be a -p0 patch\n");
+> +				     "patch prefix '$p1_prefix' exists as file/directory. Make sure this isn't a -p0 patch\n");
+>  			}
+>  
+>  			if ($realfile =~ m@^include/asm/@) {
