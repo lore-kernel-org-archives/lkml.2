@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1JZVPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 17:15:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36826 "EHLO
+	id S1752939Ab1JZVPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 17:15:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36831 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab1JZVPK (ORCPT
+	with ESMTP id S1752808Ab1JZVPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 17:15:10 -0400
+	Wed, 26 Oct 2011 17:15:12 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
@@ -14,9 +14,9 @@ Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
         Chase Douglas <chase.douglas@canonical.com>,
         Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] Input: ALPS - Add protocol version field in alps_model_info
-Date: Wed, 26 Oct 2011 16:14:37 -0500
-Message-Id: <1319663681-11244-4-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH 4/7] Input: ALPS - Remove assumptions about packet size
+Date: Wed, 26 Oct 2011 16:14:38 -0500
+Message-Id: <1319663681-11244-5-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
 References: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
@@ -24,108 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for adding support for more ALPS protocol versions,
-add a field for the protocol version to the model info instead of
-using a field in the flags. OLDPROTO and !OLDPROTO are now called
-version 1 and version 2, repsectively.
+In preparation for version 4 protocol support, which has 8-byte
+data packets, remove all hard-coded assumptions about packet size
+and use psmouse->pktsize instead.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/input/mouse/alps.c |   47 +++++++++++++++++++++----------------------
- drivers/input/mouse/alps.h |    4 +++
- 2 files changed, 27 insertions(+), 24 deletions(-)
+ drivers/input/mouse/alps.c |   27 ++++++++++++++++++---------
+ 1 files changed, 18 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index ad15e7c..572cb21 100644
+index 572cb21..14d1f64 100644
 --- a/drivers/input/mouse/alps.c
 +++ b/drivers/input/mouse/alps.c
-@@ -30,7 +30,6 @@
- #define dbg(format, arg...) do {} while (0)
- #endif
+@@ -315,7 +315,7 @@ static void alps_flush_packet(unsigned long data)
  
--#define ALPS_OLDPROTO		0x01	/* old style input */
- #define ALPS_DUALPOINT		0x02	/* touchpad has trackstick */
- #define ALPS_PASS		0x04	/* device has a pass-through port */
+ 	serio_pause_rx(psmouse->ps2dev.serio);
  
-@@ -42,30 +41,30 @@
- 					   6-byte ALPS packet */
+-	if (psmouse->pktcnt == 6) {
++	if (psmouse->pktcnt == psmouse->pktsize) {
  
- static const struct alps_model_info alps_model_data[] = {
--	{ { 0x32, 0x02, 0x14 },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Toshiba Salellite Pro M10 */
--	{ { 0x33, 0x02, 0x0a },	0x88, 0xf8, ALPS_OLDPROTO },		  /* UMAX-530T */
--	{ { 0x53, 0x02, 0x0a },	0xf8, 0xf8, 0 },
--	{ { 0x53, 0x02, 0x14 },	0xf8, 0xf8, 0 },
--	{ { 0x60, 0x03, 0xc8 }, 0xf8, 0xf8, 0 },			  /* HP ze1115 */
--	{ { 0x63, 0x02, 0x0a },	0xf8, 0xf8, 0 },
--	{ { 0x63, 0x02, 0x14 },	0xf8, 0xf8, 0 },
--	{ { 0x63, 0x02, 0x28 },	0xf8, 0xf8, ALPS_FW_BK_2 },		  /* Fujitsu Siemens S6010 */
--	{ { 0x63, 0x02, 0x3c },	0x8f, 0x8f, ALPS_WHEEL },		  /* Toshiba Satellite S2400-103 */
--	{ { 0x63, 0x02, 0x50 },	0xef, 0xef, ALPS_FW_BK_1 },		  /* NEC Versa L320 */
--	{ { 0x63, 0x02, 0x64 },	0xf8, 0xf8, 0 },
--	{ { 0x63, 0x03, 0xc8 }, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D800 */
--	{ { 0x73, 0x00, 0x0a },	0xf8, 0xf8, ALPS_DUALPOINT },		  /* ThinkPad R61 8918-5QG */
--	{ { 0x73, 0x02, 0x0a },	0xf8, 0xf8, 0 },
--	{ { 0x73, 0x02, 0x14 },	0xf8, 0xf8, ALPS_FW_BK_2 },		  /* Ahtec Laptop */
--	{ { 0x20, 0x02, 0x0e },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* XXX */
--	{ { 0x22, 0x02, 0x0a },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT },
--	{ { 0x22, 0x02, 0x14 }, 0xff, 0xff, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D600 */
-+	{ { 0x32, 0x02, 0x14 },	ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Toshiba Salellite Pro M10 */
-+	{ { 0x33, 0x02, 0x0a },	ALPS_PROTO_V1, 0x88, 0xf8, 0 },				 /* UMAX-530T */
-+	{ { 0x53, 0x02, 0x0a },	ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-+	{ { 0x53, 0x02, 0x14 },	ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-+	{ { 0x60, 0x03, 0xc8 }, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },				 /* HP ze1115 */
-+	{ { 0x63, 0x02, 0x0a },	ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-+	{ { 0x63, 0x02, 0x14 },	ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-+	{ { 0x63, 0x02, 0x28 },	ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_FW_BK_2 },		 /* Fujitsu Siemens S6010 */
-+	{ { 0x63, 0x02, 0x3c },	ALPS_PROTO_V2, 0x8f, 0x8f, ALPS_WHEEL },		 /* Toshiba Satellite S2400-103 */
-+	{ { 0x63, 0x02, 0x50 },	ALPS_PROTO_V2, 0xef, 0xef, ALPS_FW_BK_1 },		 /* NEC Versa L320 */
-+	{ { 0x63, 0x02, 0x64 },	ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-+	{ { 0x63, 0x03, 0xc8 }, ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D800 */
-+	{ { 0x73, 0x00, 0x0a },	ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_DUALPOINT },		 /* ThinkPad R61 8918-5QG */
-+	{ { 0x73, 0x02, 0x0a },	ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-+	{ { 0x73, 0x02, 0x14 },	ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_FW_BK_2 },		 /* Ahtec Laptop */
-+	{ { 0x20, 0x02, 0x0e },	ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* XXX */
-+	{ { 0x22, 0x02, 0x0a },	ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT },
-+	{ { 0x22, 0x02, 0x14 }, ALPS_PROTO_V2, 0xff, 0xff, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D600 */
- 	/* Dell Latitude E5500, E6400, E6500, Precision M4400 */
--	{ { 0x62, 0x02, 0x14 }, 0xcf, 0xcf,
-+	{ { 0x62, 0x02, 0x14 }, ALPS_PROTO_V2, 0xcf, 0xcf,
- 		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },
--	{ { 0x73, 0x02, 0x50 }, 0xcf, 0xcf, ALPS_FOUR_BUTTONS },	  /* Dell Vostro 1400 */
--	{ { 0x52, 0x01, 0x14 }, 0xff, 0xff,
--		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },	  /* Toshiba Tecra A11-11L */
-+	{ { 0x73, 0x02, 0x50 }, ALPS_PROTO_V2, 0xcf, 0xcf, ALPS_FOUR_BUTTONS },		 /* Dell Vostro 1400 */
-+	{ { 0x52, 0x01, 0x14 }, ALPS_PROTO_V2, 0xff, 0xff,
-+		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },			 /* Toshiba Tecra A11-11L */
- };
+ 		/*
+ 		 * We did not any more data in reasonable amount of time.
+@@ -365,15 +365,15 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
+ 		return PSMOUSE_BAD_DATA;
+ 	}
  
- /*
-@@ -119,7 +118,7 @@ static void alps_process_packet(struct psmouse *psmouse)
- 	int x, y, z, ges, fin, left, right, middle;
- 	int back = 0, forward = 0;
+-	/* Bytes 2 - 6 should have 0 in the highest bit */
+-	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= 6 &&
++	/* Bytes 2 - pktsize should have 0 in the highest bit */
++	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
+ 	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
+ 		dbg("refusing packet[%i] = %x\n",
+ 		    psmouse->pktcnt - 1, psmouse->packet[psmouse->pktcnt - 1]);
+ 		return PSMOUSE_BAD_DATA;
+ 	}
  
--	if (model->flags & ALPS_OLDPROTO) {
-+	if (model->proto_version == ALPS_PROTO_V1) {
- 		left = packet[2] & 0x10;
- 		right = packet[2] & 0x08;
- 		middle = 0;
-diff --git a/drivers/input/mouse/alps.h b/drivers/input/mouse/alps.h
-index 904ed8b..4ce9bba 100644
---- a/drivers/input/mouse/alps.h
-+++ b/drivers/input/mouse/alps.h
-@@ -12,8 +12,12 @@
- #ifndef _ALPS_H
- #define _ALPS_H
- 
-+#define ALPS_PROTO_V1	0
-+#define ALPS_PROTO_V2	1
+-	if (psmouse->pktcnt == 6) {
++	if (psmouse->pktcnt == psmouse->pktsize) {
+ 		alps_process_packet(psmouse);
+ 		return PSMOUSE_FULL_PACKET;
+ 	}
+@@ -531,8 +531,13 @@ static int alps_tap_mode(struct psmouse *psmouse, int enable)
+ static int alps_poll(struct psmouse *psmouse)
+ {
+ 	struct alps_data *priv = psmouse->private;
+-	unsigned char buf[6];
++	unsigned char *buf;
+ 	bool poll_failed;
++	int ret = -1;
 +
- struct alps_model_info {
-         unsigned char signature[3];
-+	unsigned char proto_version;
-         unsigned char byte0, mask0;
-         unsigned char flags;
- };
++	buf = kmalloc(psmouse->pktsize, GFP_KERNEL);
++	if (!buf)
++		return -1;
+ 
+ 	if (priv->i->flags & ALPS_PASS)
+ 		alps_passthrough_mode(psmouse, true);
+@@ -544,18 +549,22 @@ static int alps_poll(struct psmouse *psmouse)
+ 		alps_passthrough_mode(psmouse, false);
+ 
+ 	if (poll_failed || (buf[0] & priv->i->mask0) != priv->i->byte0)
+-		return -1;
++		goto out;
+ 
+ 	if ((psmouse->badbyte & 0xc8) == 0x08) {
+ /*
+  * Poll the track stick ...
+  */
+ 		if (ps2_command(&psmouse->ps2dev, buf, PSMOUSE_CMD_POLL | (3 << 8)))
+-			return -1;
++			goto out;
+ 	}
+ 
+-	memcpy(psmouse->packet, buf, sizeof(buf));
+-	return 0;
++	memcpy(psmouse->packet, buf, psmouse->pktsize);
++	ret = 0;
++
++out:
++	kfree(buf);
++	return ret;
+ }
+ 
+ static int alps_hw_init(struct psmouse *psmouse)
 -- 
 1.7.5.4
 
