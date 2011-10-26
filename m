@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab1JZPB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 11:01:59 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:42991 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933103Ab1JZPB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 11:01:57 -0400
-Message-ID: <4EA820D3.7010100@atmel.com>
-Date: Wed, 26 Oct 2011 17:01:39 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S933261Ab1JZPFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 11:05:20 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44718 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933064Ab1JZPFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 11:05:19 -0400
+Date: Wed, 26 Oct 2011 17:03:44 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] core/locking changes for v3.2
+Message-ID: <20111026150344.GA25000@elte.hu>
+References: <20111026132500.GA23461@elte.hu>
+ <CA+55aFw84RRBxT0QwDT6dg94OqreS8vwMq7Qog+o0QXqR8vgEA@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        cavokz@gmail.com
-Subject: Re: [GIT PATCH] TTY/serial driver patches for 3.2
-References: <20111026114236.GA22180@kroah.com> <CA+55aFycM+nHxJNnFSjEXQvZkeBfHu161ePC0=7sWKZR1toQNA@mail.gmail.com> <20111026133438.GA26336@suse.de>
-In-Reply-To: <20111026133438.GA26336@suse.de>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFw84RRBxT0QwDT6dg94OqreS8vwMq7Qog+o0QXqR8vgEA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2011 03:34 PM, Greg KH :
-> On Wed, Oct 26, 2011 at 03:18:21PM +0200, Linus Torvalds wrote:
->> On Wed, Oct 26, 2011 at 1:42 PM, Greg KH <gregkh@suse.de> wrote:
->>>
->>> The one in 8250_pci.c is trivial to fix, the atmel_serial one isn't as
->>> easy, but I'm sure you can figure it out :)  If you want me to do the
->>> merge for it, I'll be glad to do so, just let me know.
->>
->> So I figured it out, but please double-check, especially since it
->> seems to be some arm-only driver that I can't even compile-test my
->> resolution.
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Wed, Oct 26, 2011 at 3:25 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > Note, you will get a conflict in kernel/posix-cpu-timers.c, which i
+> > resolved in -tip the following way:
+> >
+> >        raw_spin_lock_irqsave(&cputimer->lock, flags);
+> >        if (!cputimer->running) {
+> >                cputimer->running = 1;
+> >                /*
+> >                 * The POSIX timer interface allows for absolute time expiry
+> >                 * values through the TIMER_ABSTIME flag, therefore we have
+> >                 * to synchronize the timer to the clock every time we start
+> >                 * it.
+> >                 */
+> >                thread_group_cputime(tsk, &sum);
+> >                update_gt_cputime(&cputimer->cputime, &sum);
+> >        }
+> >        *times = cputimer->cputime;
+> >        raw_spin_unlock_irqrestore(&cputimer->lock, flags);
 > 
-> I think it looks correct, but yeah, as I can't build it either, it's
-> tough to tell.
-> 
-> Nicolas, can you verify that Linus's merge was done correctly?  If not,
-> can you send a patch?  It is commit
-> efb8d21b2c6db3497655cc6a033ae8a9883e4063 in Linus's tree right now.
+> That seems like a completely bogus resolution. You are 
+> re-introducing the incorrect ABBA nesting of cputimer->lock and 
+> rq->lock, and basically undoing commit bcd5cff7216f.
 
-Yes, I have verified Linus's merge and it is correct.
+oh, i quoted the resolution from the pre-ABBA-fix tree :-/
 
-Stephen hit this merge conflict in linux-next yesterday and I sent the
-fixup as "[PATCH] tty/serial: atmel_serial: fixup merge conflict".
-Anyway, sorry for the noise it has produced...
+The one in tip:master is:
 
-For the functions and macros that has been highlighted by Domenico in
-his attempt to compile the atmel_serial driver, they shall come with
-"device tree" git tree pull.
+void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+{
+	struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
+	struct task_cputime sum;
+	unsigned long flags;
 
-Best regards,
--- 
-Nicolas Ferre
+	if (!cputimer->running) {
+		/*
+		 * The POSIX timer interface allows for absolute time expiry
+		 * values through the TIMER_ABSTIME flag, therefore we have
+		 * to synchronize the timer to the clock every time we start
+		 * it.
+		 */
+		thread_group_cputime(tsk, &sum);
+		raw_spin_lock_irqsave(&cputimer->lock, flags);
+		cputimer->running = 1;
+		update_gt_cputime(&cputimer->cputime, &sum);
+	} else
+		raw_spin_lock_irqsave(&cputimer->lock, flags);
+	*times = cputimer->cputime;
+	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
+}
+
+Good thing you double checked it.
+
+Thanks,
+
+	Ingo
