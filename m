@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1JZDbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 23:31:48 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:46029 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab1JZDbr (ORCPT
+	id S1754753Ab1JZDja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 23:39:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40921 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab1JZDj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 23:31:47 -0400
-Message-ID: <4EA77F13.7000807@panasas.com>
-Date: Tue, 25 Oct 2011 20:31:31 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>
-Subject: Re: nfsd (and lock) changes for 3.2
-References: <20111025121924.GA15662@fieldses.org> <4EA77B78.6080706@panasas.com>
-In-Reply-To: <4EA77B78.6080706@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Oct 2011 23:39:29 -0400
+From: furat.afram@gmail.com
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Cc: Furat Afram <furat.afram@gmail.com>
+Subject: [PATCH 1/1] perf probe:fix sigsegv in adding nonexistent event
+Date: Tue, 25 Oct 2011 20:39:05 -0700
+Message-Id: <1319600345-29311-1-git-send-email-furat.afram@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2011 08:16 PM, Boaz Harrosh wrote:
-> On 10/25/2011 05:19 AM, J. Bruce Fields wrote:
->> Changes for nfsd (and also a few file-locking changes) are available in
->> the git repository at:
->>
->> 	git://linux-nfs.org/~bfields/linux.git for-3.2
->>
->> This is the same tree I've always used--I assume you believe it's mine
->> without a need for signing anything.  Feel free to tell me otherwise.
->>
-> 
-> <Snip>
-> 
->>
->> Boaz Harrosh (1):
->>       nfsd4: fix failure to end nfsd4 grace period
->>
-> 
-> Bruce hi.
-> 
-> As I recall this failure I have experienced in early stages of the
-> 3.1-rcX series. I admit that I always run with Benny's pnfs tree,
-> but I do not think it is patches that Benny added from the 3.2 set
-> I think it is breakage introduced by the 3.1 merge window.
-> 
-> Therefor I think that this patch must be sent to Stable@ otherwise
-> surly 3.1 Kernel users are to hit it. (You can escapee it)
-> 
+From: Furat Afram <furat.afram@gmail.com>
 
-Rrrr spell checker for you. Above should be (You can't escape it)
+pref probe crashes when trying to add nonexistent event
 
-Boaz
-> Though it has been pulled to Linus tree, without the CC: stable@kernel
-> I think you can just send the patch to <stable@kernel.org> and it
-> will be included.
-> 
-> (What other 3.1 bug fixes are missing)
-> 
-> Thanks
-> Boaz
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Furat Afram <furat.afram@gmail.com>
+---
+ tools/perf/util/symbol.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 40eeaf0..ad0c79b 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -636,14 +636,18 @@ static int dso__load_all_kallsyms(struct dso *dso, const char *filename,
+ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+ 			       symbol_filter_t filter)
+ {
+-	struct map_groups *kmaps = map__kmap(map)->kmaps;
+-	struct machine *machine = kmaps->machine;
++	struct map_groups *kmaps;
++	struct machine *machine;
+ 	struct map *curr_map = map;
+ 	struct symbol *pos;
+ 	int count = 0, moved = 0;	
+ 	struct rb_root *root = &dso->symbols[map->type];
+ 	struct rb_node *next = rb_first(root);
+ 	int kernel_range = 0;
++	kmaps = map__kmap(map)->kmaps;
++	if (kmaps == NULL)
++		return -1;
++	machine = kmaps->machine;
+ 
+ 	while (next) {
+ 		char *module;
+-- 
+1.7.6.4
 
