@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab1JZN05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 09:26:57 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34110 "EHLO mx2.mail.elte.hu"
+	id S933129Ab1JZNbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 09:31:15 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40605 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932833Ab1JZN0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 09:26:54 -0400
-Date: Wed, 26 Oct 2011 15:25:00 +0200
+	id S932833Ab1JZNbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 09:31:12 -0400
+Date: Wed, 26 Oct 2011 15:29:15 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] core/locking changes for v3.2
-Message-ID: <20111026132500.GA23461@elte.hu>
+Subject: [GIT PULL] RCU changes for v3.2
+Message-ID: <20111026132915.GA24631@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -33,4699 +33,3881 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest core-locking-for-linus git tree from:
+Please pull the latest core-rcu-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-rcu-for-linus
 
-These changes of annotating certain low level (mostly hw related) 
-locks as raw do not impact lockdep coverage, the before/after vmlinux 
-size with PROVE_LOCKING=y on x86 defconfig is:
-
-    text	   data	    bss	     dec	    hex	filename
-10762222	1058192	9605120	21425534	146ed7e	vmlinux.orig
-10762222	1058192	9605120	21425534	146ed7e	vmlinux.new
-
-Note, you will get a conflict in kernel/posix-cpu-timers.c, which i 
-resolved in -tip the following way:
-
-	raw_spin_lock_irqsave(&cputimer->lock, flags);
-	if (!cputimer->running) {
-		cputimer->running = 1;
-		/*
-		 * The POSIX timer interface allows for absolute time expiry
-		 * values through the TIMER_ABSTIME flag, therefore we have
-		 * to synchronize the timer to the clock every time we start
-		 * it.
-		 */
-		thread_group_cputime(tsk, &sum);
-		update_gt_cputime(&cputimer->cputime, &sum);
-	}
-	*times = cputimer->cputime;
-	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
-
-Thanks,
+ Thanks,
 
 	Ingo
 
 ------------------>
+Andi Kleen (1):
+      rcu: Fix mismatched variable in rcutree_trace.c
+
+Eric Dumazet (2):
+      rcu: Use kthread_create_on_node()
+      rcu: Make rcu_assign_pointer() unconditionally insert a memory barrier
+
+Michal Hocko (1):
+      rcu: Not necessary to pass rcu_read_lock_held() to rcu_dereference_protected()
+
 Mike Galbraith (1):
-      locking, drivers/dca: Annotate dca_lock as raw
+      rcu: Wire up RCU_BOOST_PRIO for rcutree
 
-Peter Zijlstra (1):
-      lockdep: Comment all warnings
+Paul E. McKenney (38):
+      rcu: Update documentation to flag RCU_BOOST trace information
+      rcu: Restore checks for blocking in RCU read-side critical sections
+      rcu: Move rcu_head definition to types.h
+      rcu: Update rcutorture documentation
+      rcu: Abstract common code for RCU grace-period-wait primitives
+      rcu: Catch rcutorture up to new RCU API additions
+      rcu: Fix RCU's NMI documentation
+      rcu: Drive configuration directly from SMP and PREEMPT
+      rcu: Don't destroy rcu_torture_boost() callback until it is done
+      rcu: Add event-tracing for RCU callback invocation
+      rcu: Event-trace markers for computing RCU CPU utilization
+      rcu: Put names into TINY_RCU structures under RCU_TRACE
+      rcu: Add RCU type to callback-invocation tracing
+      rcu: Update comments to reflect softirqs vs. kthreads
+      rcu: Move RCU_BOOST declarations to allow compiler checking
+      rcu: Add event-trace markers to TREE_RCU kthreads
+      rcu: Make TINY_RCU also use softirq for RCU_BOOST=n
+      rcu: Add grace-period, quiescent-state, and call_rcu trace events
+      rcu: Simplify quiescent-state accounting
+      rcu: Update documentation for additional RCU lockdep functions
+      rcu: Remove unused and redundant interfaces
+      rcu: Allow rcutorture's stat_interval parameter to be changed at runtime
+      rcu: Document interpretation of RCU-lockdep splats
+      rcu: Eliminate in_irq() checks in rcu_enter_nohz()
+      rcu: Make rcu_implicit_dynticks_qs() locals be correct size
+      rcu: Improve rcu_assign_pointer() and RCU_INIT_POINTER() documentation
+      rcu: Move __rcu_read_unlock()'s barrier() within if-statement
+      rcu: Dump local stack if cannot dump all CPUs' stacks
+      rcu: Prevent early boot set_need_resched() from __rcu_pending()
+      rcu: Simplify unboosting checks
+      rcu: Prohibit grace periods during early boot
+      rcu: Suppress NMI backtraces when stall ends before dump
+      rcu: Avoid having just-onlined CPU resched itself when RCU is idle
+      rcu: Permit rt_mutex_unlock() with irqs disabled
+      rcu: Make rcu_torture_fqs() exit loops at end of test
+      rcu: Make rcu_torture_boost() exit loops at end of test
+      rcu: Remove rcu_needs_cpu_flush() to avoid false quiescent states
+      rcu: Move propagation of ->completed from rcu_start_gp() to rcu_report_qs_rsp()
 
-Shan Hai (1):
-      locking, lib/atomic64: Annotate atomic64_lock::lock as raw
+Shaohua Li (1):
+      rcu: Avoid unnecessary self-wakeup of per-CPU kthreads
 
-Thomas Gleixner (22):
-      rtmutex: Cleanup the debug code
-      locking, kprobes: Annotate the hash locks and kretprobe.lock as raw
-      locking, percpu_counter: Annotate ::lock as raw
-      locking, sched, cgroups: Annotate release_list_lock as raw
-      locking, lib/proportions: Annotate prop_local_percpu::lock as raw
-      locking, tracing: Annotate tracing locks as raw
-      locking, printk: Annotate logbuf_lock as raw
-      locking, sched: Annotate thread_group_cputimer as raw
-      locking, semaphores: Annotate inner lock as raw
-      locking, rwsem: Annotate inner lock as raw
-      locking, timer_stats: Annotate table_lock as raw
-      locking, latencytop: Annotate latency_lock as raw
-      locking, video: Annotate vga console lock as raw
-      locking, oprofile: Annotate oprofilefs lock as raw
-      locking, ACPI: Annotate c3_lock as raw
-      locking, x86: mce: Annotate cmci_discover_lock as raw
-      locking, powerpc: Annotate uic->lock as raw
-      locking, ARM: Annotate low level hw locks as raw
-      locking, x86, iommu: Annotate iommu->register_lock as raw
-      locking, x86, iommu: Annotate irq_2_ir_lock as raw
-      locking, x86, iommu: Annotate qi->q_lock as raw
-      rtmutex: Add missing rcu_read_unlock() in debug_rt_mutex_print_deadlock()
-
-Uwe Kleine-König (1):
-      locking, dma, ipu: Annotate bank_lock as raw
-
-Yong Zhang (1):
-      lib: atomic64: Change the type of local lock to raw_spinlock_t
+Shi, Alex (1):
+      nohz: Remove nohz_cpu_mask
 
 
- arch/arm/common/gic.c                            |   26 ++--
- arch/arm/include/asm/dma.h                       |    6 +-
- arch/arm/include/asm/mmu.h                       |    4 +-
- arch/arm/kernel/dma.c                            |    2 +-
- arch/arm/kernel/smp.c                            |    6 +-
- arch/arm/kernel/traps.c                          |   20 ++--
- arch/arm/mach-footbridge/include/mach/hardware.h |    2 +-
- arch/arm/mach-footbridge/netwinder-hw.c          |   14 +-
- arch/arm/mach-footbridge/netwinder-leds.c        |   10 +-
- arch/arm/mach-integrator/core.c                  |    6 +-
- arch/arm/mach-integrator/pci_v3.c                |   14 +-
- arch/arm/mach-ixp4xx/common-pci.c                |   22 ++--
- arch/arm/mach-shark/leds.c                       |    6 +-
- arch/arm/mm/cache-l2x0.c                         |   46 +++---
- arch/arm/mm/context.c                            |   14 +-
- arch/arm/mm/copypage-v4mc.c                      |    6 +-
- arch/arm/mm/copypage-v6.c                        |   10 +-
- arch/arm/mm/copypage-xscale.c                    |    6 +-
- arch/powerpc/sysdev/uic.c                        |   24 ++--
- arch/x86/kernel/cpu/mcheck/mce_intel.c           |   10 +-
- arch/x86/oprofile/nmi_int.c                      |    4 +-
- drivers/acpi/processor_idle.c                    |   10 +-
- drivers/dca/dca-core.c                           |   78 ++++++-----
- drivers/dma/ipu/ipu_irq.c                        |   48 ++++----
- drivers/iommu/dmar.c                             |   48 ++++----
- drivers/iommu/intel-iommu.c                      |   36 +++---
- drivers/iommu/intr_remapping.c                   |   40 +++---
- drivers/oprofile/event_buffer.c                  |    4 +-
- drivers/oprofile/oprofile_perf.c                 |    4 +-
- drivers/oprofile/oprofilefs.c                    |    6 +-
- drivers/video/console/vgacon.c                   |   42 +++---
- include/linux/init_task.h                        |    2 +-
- include/linux/intel-iommu.h                      |    4 +-
- include/linux/kprobes.h                          |    2 +-
- include/linux/oprofile.h                         |    2 +-
- include/linux/percpu_counter.h                   |    2 +-
- include/linux/proportions.h                      |    6 +-
- include/linux/ratelimit.h                        |    6 +-
- include/linux/rwsem-spinlock.h                   |    2 +-
- include/linux/rwsem.h                            |   10 +-
- include/linux/sched.h                            |    4 +-
- include/linux/semaphore.h                        |    4 +-
- kernel/cgroup.c                                  |   18 ++--
- kernel/kprobes.c                                 |   34 +++---
- kernel/latencytop.c                              |   14 +-
- kernel/lockdep.c                                 |  156 ++++++++++++++++++++--
- kernel/posix-cpu-timers.c                        |   12 +-
- kernel/printk.c                                  |   46 +++---
- kernel/rtmutex-debug.c                           |   77 ++---------
- kernel/sched_stats.h                             |   12 +-
- kernel/semaphore.c                               |   28 ++--
- kernel/time/timer_stats.c                        |    6 +-
- kernel/trace/ring_buffer.c                       |   52 ++++----
- kernel/trace/trace.c                             |   10 +-
- kernel/trace/trace_irqsoff.c                     |    6 +-
- lib/atomic64.c                                   |   66 +++++-----
- lib/percpu_counter.c                             |   18 ++--
- lib/proportions.c                                |   12 +-
- lib/ratelimit.c                                  |    4 +-
- lib/rwsem-spinlock.c                             |   38 +++---
- lib/rwsem.c                                      |   14 +-
- 61 files changed, 669 insertions(+), 572 deletions(-)
+ Documentation/RCU/NMI-RCU.txt       |    2 +-
+ Documentation/RCU/lockdep-splat.txt |  110 +++++++++
+ Documentation/RCU/lockdep.txt       |   34 ++-
+ Documentation/RCU/torture.txt       |  137 ++++++++---
+ Documentation/RCU/trace.txt         |   38 ++--
+ include/linux/lockdep.h             |    2 +-
+ include/linux/rcupdate.h            |  300 +++++++++++-------------
+ include/linux/rcutiny.h             |   20 ++-
+ include/linux/rcutree.h             |    2 +
+ include/linux/sched.h               |    4 -
+ include/linux/types.h               |   10 +
+ include/trace/events/rcu.h          |  459 +++++++++++++++++++++++++++++++++++
+ init/Kconfig                        |    6 +-
+ kernel/lockdep.c                    |   84 ++++---
+ kernel/pid.c                        |    4 +-
+ kernel/rcu.h                        |   85 +++++++
+ kernel/rcupdate.c                   |   26 ++-
+ kernel/rcutiny.c                    |  117 ++-------
+ kernel/rcutiny_plugin.h             |  134 +++++++----
+ kernel/rcutorture.c                 |   77 +++----
+ kernel/rcutree.c                    |  290 ++++++++++++++--------
+ kernel/rcutree.h                    |   17 +-
+ kernel/rcutree_plugin.h             |  150 +++++++-----
+ kernel/rcutree_trace.c              |   13 +-
+ kernel/rtmutex.c                    |    8 +
+ kernel/sched.c                      |   13 +-
+ kernel/time/tick-sched.c            |    6 -
+ 27 files changed, 1489 insertions(+), 659 deletions(-)
+ create mode 100644 Documentation/RCU/lockdep-splat.txt
+ create mode 100644 include/trace/events/rcu.h
+ create mode 100644 kernel/rcu.h
 
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 3227ca9..6fba8bd 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -33,7 +33,7 @@
- #include <asm/mach/irq.h>
- #include <asm/hardware/gic.h>
- 
--static DEFINE_SPINLOCK(irq_controller_lock);
-+static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- 
- /* Address of GIC 0 CPU interface */
- void __iomem *gic_cpu_base_addr __read_mostly;
-@@ -82,30 +82,30 @@ static void gic_mask_irq(struct irq_data *d)
- {
- 	u32 mask = 1 << (d->irq % 32);
- 
--	spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&irq_controller_lock);
- 	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_CLEAR + (gic_irq(d) / 32) * 4);
- 	if (gic_arch_extn.irq_mask)
- 		gic_arch_extn.irq_mask(d);
--	spin_unlock(&irq_controller_lock);
-+	raw_spin_unlock(&irq_controller_lock);
- }
- 
- static void gic_unmask_irq(struct irq_data *d)
- {
- 	u32 mask = 1 << (d->irq % 32);
- 
--	spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&irq_controller_lock);
- 	if (gic_arch_extn.irq_unmask)
- 		gic_arch_extn.irq_unmask(d);
- 	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_SET + (gic_irq(d) / 32) * 4);
--	spin_unlock(&irq_controller_lock);
-+	raw_spin_unlock(&irq_controller_lock);
- }
- 
- static void gic_eoi_irq(struct irq_data *d)
- {
- 	if (gic_arch_extn.irq_eoi) {
--		spin_lock(&irq_controller_lock);
-+		raw_spin_lock(&irq_controller_lock);
- 		gic_arch_extn.irq_eoi(d);
--		spin_unlock(&irq_controller_lock);
-+		raw_spin_unlock(&irq_controller_lock);
- 	}
- 
- 	writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_EOI);
-@@ -129,7 +129,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
- 	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
- 		return -EINVAL;
- 
--	spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&irq_controller_lock);
- 
- 	if (gic_arch_extn.irq_set_type)
- 		gic_arch_extn.irq_set_type(d, type);
-@@ -154,7 +154,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
- 	if (enabled)
- 		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
- 
--	spin_unlock(&irq_controller_lock);
-+	raw_spin_unlock(&irq_controller_lock);
- 
- 	return 0;
- }
-@@ -182,10 +182,10 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
- 	mask = 0xff << shift;
- 	bit = 1 << (cpu + shift);
- 
--	spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&irq_controller_lock);
- 	val = readl_relaxed(reg) & ~mask;
- 	writel_relaxed(val | bit, reg);
--	spin_unlock(&irq_controller_lock);
-+	raw_spin_unlock(&irq_controller_lock);
- 
- 	return IRQ_SET_MASK_OK;
- }
-@@ -215,9 +215,9 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
- 
- 	chained_irq_enter(chip, desc);
- 
--	spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&irq_controller_lock);
- 	status = readl_relaxed(chip_data->cpu_base + GIC_CPU_INTACK);
--	spin_unlock(&irq_controller_lock);
-+	raw_spin_unlock(&irq_controller_lock);
- 
- 	gic_irq = (status & 0x3ff);
- 	if (gic_irq == 1023)
-diff --git a/arch/arm/include/asm/dma.h b/arch/arm/include/asm/dma.h
-index 628670e..69a5b0b 100644
---- a/arch/arm/include/asm/dma.h
-+++ b/arch/arm/include/asm/dma.h
-@@ -34,18 +34,18 @@
- #define DMA_MODE_CASCADE 0xc0
- #define DMA_AUTOINIT	 0x10
- 
--extern spinlock_t  dma_spin_lock;
-+extern raw_spinlock_t  dma_spin_lock;
- 
- static inline unsigned long claim_dma_lock(void)
- {
- 	unsigned long flags;
--	spin_lock_irqsave(&dma_spin_lock, flags);
-+	raw_spin_lock_irqsave(&dma_spin_lock, flags);
- 	return flags;
- }
- 
- static inline void release_dma_lock(unsigned long flags)
- {
--	spin_unlock_irqrestore(&dma_spin_lock, flags);
-+	raw_spin_unlock_irqrestore(&dma_spin_lock, flags);
- }
- 
- /* Clear the 'DMA Pointer Flip Flop'.
-diff --git a/arch/arm/include/asm/mmu.h b/arch/arm/include/asm/mmu.h
-index b4ffe9d..1496565 100644
---- a/arch/arm/include/asm/mmu.h
-+++ b/arch/arm/include/asm/mmu.h
-@@ -6,7 +6,7 @@
- typedef struct {
- #ifdef CONFIG_CPU_HAS_ASID
- 	unsigned int id;
--	spinlock_t id_lock;
-+	raw_spinlock_t id_lock;
- #endif
- 	unsigned int kvm_seq;
- } mm_context_t;
-@@ -16,7 +16,7 @@ typedef struct {
- 
- /* init_mm.context.id_lock should be initialized. */
- #define INIT_MM_CONTEXT(name)                                                 \
--	.context.id_lock    = __SPIN_LOCK_UNLOCKED(name.context.id_lock),
-+	.context.id_lock    = __RAW_SPIN_LOCK_UNLOCKED(name.context.id_lock),
- #else
- #define ASID(mm)	(0)
- #endif
-diff --git a/arch/arm/kernel/dma.c b/arch/arm/kernel/dma.c
-index 2c4a185..7b829d9 100644
---- a/arch/arm/kernel/dma.c
-+++ b/arch/arm/kernel/dma.c
-@@ -23,7 +23,7 @@
- 
- #include <asm/mach/dma.h>
- 
--DEFINE_SPINLOCK(dma_spin_lock);
-+DEFINE_RAW_SPINLOCK(dma_spin_lock);
- EXPORT_SYMBOL(dma_spin_lock);
- 
- static dma_t *dma_chan[MAX_DMA_CHANNELS];
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index d88ff02..4e76e0c 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -538,7 +538,7 @@ static void percpu_timer_stop(void)
- }
- #endif
- 
--static DEFINE_SPINLOCK(stop_lock);
-+static DEFINE_RAW_SPINLOCK(stop_lock);
- 
- /*
-  * ipi_cpu_stop - handle IPI from smp_send_stop()
-@@ -547,10 +547,10 @@ static void ipi_cpu_stop(unsigned int cpu)
- {
- 	if (system_state == SYSTEM_BOOTING ||
- 	    system_state == SYSTEM_RUNNING) {
--		spin_lock(&stop_lock);
-+		raw_spin_lock(&stop_lock);
- 		printk(KERN_CRIT "CPU%u: stopping\n", cpu);
- 		dump_stack();
--		spin_unlock(&stop_lock);
-+		raw_spin_unlock(&stop_lock);
- 	}
- 
- 	set_cpu_online(cpu, false);
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index bc9f9da..81cc05a 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -255,7 +255,7 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
- 	return ret;
- }
- 
--static DEFINE_SPINLOCK(die_lock);
-+static DEFINE_RAW_SPINLOCK(die_lock);
- 
- /*
-  * This function is protected against re-entrancy.
-@@ -267,7 +267,7 @@ void die(const char *str, struct pt_regs *regs, int err)
- 
- 	oops_enter();
- 
--	spin_lock_irq(&die_lock);
-+	raw_spin_lock_irq(&die_lock);
- 	console_verbose();
- 	bust_spinlocks(1);
- 	ret = __die(str, err, thread, regs);
-@@ -277,7 +277,7 @@ void die(const char *str, struct pt_regs *regs, int err)
- 
- 	bust_spinlocks(0);
- 	add_taint(TAINT_DIE);
--	spin_unlock_irq(&die_lock);
-+	raw_spin_unlock_irq(&die_lock);
- 	oops_exit();
- 
- 	if (in_interrupt())
-@@ -302,24 +302,24 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
- }
- 
- static LIST_HEAD(undef_hook);
--static DEFINE_SPINLOCK(undef_lock);
-+static DEFINE_RAW_SPINLOCK(undef_lock);
- 
- void register_undef_hook(struct undef_hook *hook)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&undef_lock, flags);
-+	raw_spin_lock_irqsave(&undef_lock, flags);
- 	list_add(&hook->node, &undef_hook);
--	spin_unlock_irqrestore(&undef_lock, flags);
-+	raw_spin_unlock_irqrestore(&undef_lock, flags);
- }
- 
- void unregister_undef_hook(struct undef_hook *hook)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&undef_lock, flags);
-+	raw_spin_lock_irqsave(&undef_lock, flags);
- 	list_del(&hook->node);
--	spin_unlock_irqrestore(&undef_lock, flags);
-+	raw_spin_unlock_irqrestore(&undef_lock, flags);
- }
- 
- static int call_undef_hook(struct pt_regs *regs, unsigned int instr)
-@@ -328,12 +328,12 @@ static int call_undef_hook(struct pt_regs *regs, unsigned int instr)
- 	unsigned long flags;
- 	int (*fn)(struct pt_regs *regs, unsigned int instr) = NULL;
- 
--	spin_lock_irqsave(&undef_lock, flags);
-+	raw_spin_lock_irqsave(&undef_lock, flags);
- 	list_for_each_entry(hook, &undef_hook, node)
- 		if ((instr & hook->instr_mask) == hook->instr_val &&
- 		    (regs->ARM_cpsr & hook->cpsr_mask) == hook->cpsr_val)
- 			fn = hook->fn;
--	spin_unlock_irqrestore(&undef_lock, flags);
-+	raw_spin_unlock_irqrestore(&undef_lock, flags);
- 
- 	return fn ? fn(regs, instr) : 1;
- }
-diff --git a/arch/arm/mach-footbridge/include/mach/hardware.h b/arch/arm/mach-footbridge/include/mach/hardware.h
-index 15d5498..e3d6cca 100644
---- a/arch/arm/mach-footbridge/include/mach/hardware.h
-+++ b/arch/arm/mach-footbridge/include/mach/hardware.h
-@@ -93,7 +93,7 @@
- #define CPLD_FLASH_WR_ENABLE	1
- 
- #ifndef __ASSEMBLY__
--extern spinlock_t nw_gpio_lock;
-+extern raw_spinlock_t nw_gpio_lock;
- extern void nw_gpio_modify_op(unsigned int mask, unsigned int set);
- extern void nw_gpio_modify_io(unsigned int mask, unsigned int in);
- extern unsigned int nw_gpio_read(void);
-diff --git a/arch/arm/mach-footbridge/netwinder-hw.c b/arch/arm/mach-footbridge/netwinder-hw.c
-index 06e514f..5b73190 100644
---- a/arch/arm/mach-footbridge/netwinder-hw.c
-+++ b/arch/arm/mach-footbridge/netwinder-hw.c
-@@ -68,7 +68,7 @@ static inline void wb977_ww(int reg, int val)
- /*
-  * This is a lock for accessing ports GP1_IO_BASE and GP2_IO_BASE
-  */
--DEFINE_SPINLOCK(nw_gpio_lock);
-+DEFINE_RAW_SPINLOCK(nw_gpio_lock);
- EXPORT_SYMBOL(nw_gpio_lock);
- 
- static unsigned int current_gpio_op;
-@@ -327,9 +327,9 @@ static inline void wb977_init_gpio(void)
- 	/*
- 	 * Set Group1/Group2 outputs
- 	 */
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_gpio_modify_op(-1, GPIO_RED_LED | GPIO_FAN);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- }
- 
- /*
-@@ -390,9 +390,9 @@ static void __init cpld_init(void)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(-1, CPLD_UNMUTE | CPLD_7111_DISABLE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- }
- 
- static unsigned char rwa_unlock[] __initdata =
-@@ -616,9 +616,9 @@ static int __init nw_hw_init(void)
- 		cpld_init();
- 		rwa010_init();
- 
--		spin_lock_irqsave(&nw_gpio_lock, flags);
-+		raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 		nw_gpio_modify_op(GPIO_RED_LED|GPIO_GREEN_LED, DEFAULT_LEDS);
--		spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+		raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- 	}
- 	return 0;
- }
-diff --git a/arch/arm/mach-footbridge/netwinder-leds.c b/arch/arm/mach-footbridge/netwinder-leds.c
-index 00269fe..e57102e 100644
---- a/arch/arm/mach-footbridge/netwinder-leds.c
-+++ b/arch/arm/mach-footbridge/netwinder-leds.c
-@@ -31,13 +31,13 @@
- static char led_state;
- static char hw_led_state;
- 
--static DEFINE_SPINLOCK(leds_lock);
-+static DEFINE_RAW_SPINLOCK(leds_lock);
- 
- static void netwinder_leds_event(led_event_t evt)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&leds_lock, flags);
-+	raw_spin_lock_irqsave(&leds_lock, flags);
- 
- 	switch (evt) {
- 	case led_start:
-@@ -117,12 +117,12 @@ static void netwinder_leds_event(led_event_t evt)
- 		break;
- 	}
- 
--	spin_unlock_irqrestore(&leds_lock, flags);
-+	raw_spin_unlock_irqrestore(&leds_lock, flags);
- 
- 	if  (led_state & LED_STATE_ENABLED) {
--		spin_lock_irqsave(&nw_gpio_lock, flags);
-+		raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 		nw_gpio_modify_op(GPIO_RED_LED | GPIO_GREEN_LED, hw_led_state);
--		spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+		raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- 	}
- }
- 
-diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
-index 77315b9..0c20cf6 100644
---- a/arch/arm/mach-integrator/core.c
-+++ b/arch/arm/mach-integrator/core.c
-@@ -205,7 +205,7 @@ static struct amba_pl010_data integrator_uart_data = {
- 
- #define CM_CTRL	IO_ADDRESS(INTEGRATOR_HDR_CTRL)
- 
--static DEFINE_SPINLOCK(cm_lock);
-+static DEFINE_RAW_SPINLOCK(cm_lock);
- 
- /**
-  * cm_control - update the CM_CTRL register.
-@@ -217,10 +217,10 @@ void cm_control(u32 mask, u32 set)
- 	unsigned long flags;
- 	u32 val;
- 
--	spin_lock_irqsave(&cm_lock, flags);
-+	raw_spin_lock_irqsave(&cm_lock, flags);
- 	val = readl(CM_CTRL) & ~mask;
- 	writel(val | set, CM_CTRL);
--	spin_unlock_irqrestore(&cm_lock, flags);
-+	raw_spin_unlock_irqrestore(&cm_lock, flags);
- }
- 
- EXPORT_SYMBOL(cm_control);
-diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
-index dd56bfb..56c3062 100644
---- a/arch/arm/mach-integrator/pci_v3.c
-+++ b/arch/arm/mach-integrator/pci_v3.c
-@@ -164,7 +164,7 @@
-  *	 7:2	register number
-  *  
-  */
--static DEFINE_SPINLOCK(v3_lock);
-+static DEFINE_RAW_SPINLOCK(v3_lock);
- 
- #define PCI_BUS_NONMEM_START	0x00000000
- #define PCI_BUS_NONMEM_SIZE	SZ_256M
-@@ -285,7 +285,7 @@ static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
- 	unsigned long flags;
- 	u32 v;
- 
--	spin_lock_irqsave(&v3_lock, flags);
-+	raw_spin_lock_irqsave(&v3_lock, flags);
- 	addr = v3_open_config_window(bus, devfn, where);
- 
- 	switch (size) {
-@@ -303,7 +303,7 @@ static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
- 	}
- 
- 	v3_close_config_window();
--	spin_unlock_irqrestore(&v3_lock, flags);
-+	raw_spin_unlock_irqrestore(&v3_lock, flags);
- 
- 	*val = v;
- 	return PCIBIOS_SUCCESSFUL;
-@@ -315,7 +315,7 @@ static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
- 	unsigned long addr;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&v3_lock, flags);
-+	raw_spin_lock_irqsave(&v3_lock, flags);
- 	addr = v3_open_config_window(bus, devfn, where);
- 
- 	switch (size) {
-@@ -336,7 +336,7 @@ static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
- 	}
- 
- 	v3_close_config_window();
--	spin_unlock_irqrestore(&v3_lock, flags);
-+	raw_spin_unlock_irqrestore(&v3_lock, flags);
- 
- 	return PCIBIOS_SUCCESSFUL;
- }
-@@ -515,7 +515,7 @@ void __init pci_v3_preinit(void)
- 	hook_fault_code(8, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
- 	hook_fault_code(10, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
- 
--	spin_lock_irqsave(&v3_lock, flags);
-+	raw_spin_lock_irqsave(&v3_lock, flags);
- 
- 	/*
- 	 * Unlock V3 registers, but only if they were previously locked.
-@@ -588,7 +588,7 @@ void __init pci_v3_preinit(void)
- 		printk(KERN_ERR "PCI: unable to grab PCI error "
- 		       "interrupt: %d\n", ret);
- 
--	spin_unlock_irqrestore(&v3_lock, flags);
-+	raw_spin_unlock_irqrestore(&v3_lock, flags);
- }
- 
- void __init pci_v3_postinit(void)
-diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
-index 2131832..1b5fe87 100644
---- a/arch/arm/mach-ixp4xx/common-pci.c
-+++ b/arch/arm/mach-ixp4xx/common-pci.c
-@@ -54,7 +54,7 @@ unsigned long ixp4xx_pci_reg_base = 0;
-  * these transactions are atomic or we will end up
-  * with corrupt data on the bus or in a driver.
-  */
--static DEFINE_SPINLOCK(ixp4xx_pci_lock);
-+static DEFINE_RAW_SPINLOCK(ixp4xx_pci_lock);
- 
- /*
-  * Read from PCI config space
-@@ -62,10 +62,10 @@ static DEFINE_SPINLOCK(ixp4xx_pci_lock);
- static void crp_read(u32 ad_cbe, u32 *data)
- {
- 	unsigned long flags;
--	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
-+	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
- 	*PCI_CRP_AD_CBE = ad_cbe;
- 	*data = *PCI_CRP_RDATA;
--	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
-+	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
- }
- 
- /*
-@@ -74,10 +74,10 @@ static void crp_read(u32 ad_cbe, u32 *data)
- static void crp_write(u32 ad_cbe, u32 data)
- { 
- 	unsigned long flags;
--	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
-+	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
- 	*PCI_CRP_AD_CBE = CRP_AD_CBE_WRITE | ad_cbe;
- 	*PCI_CRP_WDATA = data;
--	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
-+	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
- }
- 
- static inline int check_master_abort(void)
-@@ -101,7 +101,7 @@ int ixp4xx_pci_read_errata(u32 addr, u32 cmd, u32* data)
- 	int retval = 0;
- 	int i;
- 
--	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
-+	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
- 
- 	*PCI_NP_AD = addr;
- 
-@@ -118,7 +118,7 @@ int ixp4xx_pci_read_errata(u32 addr, u32 cmd, u32* data)
- 	if(check_master_abort())
- 		retval = 1;
- 
--	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
-+	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
- 	return retval;
- }
- 
-@@ -127,7 +127,7 @@ int ixp4xx_pci_read_no_errata(u32 addr, u32 cmd, u32* data)
- 	unsigned long flags;
- 	int retval = 0;
- 
--	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
-+	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
- 
- 	*PCI_NP_AD = addr;
- 
-@@ -140,7 +140,7 @@ int ixp4xx_pci_read_no_errata(u32 addr, u32 cmd, u32* data)
- 	if(check_master_abort())
- 		retval = 1;
- 
--	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
-+	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
- 	return retval;
- }
- 
-@@ -149,7 +149,7 @@ int ixp4xx_pci_write(u32 addr, u32 cmd, u32 data)
- 	unsigned long flags;
- 	int retval = 0;
- 
--	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
-+	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
- 
- 	*PCI_NP_AD = addr;
- 
-@@ -162,7 +162,7 @@ int ixp4xx_pci_write(u32 addr, u32 cmd, u32 data)
- 	if(check_master_abort())
- 		retval = 1;
- 
--	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
-+	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
- 	return retval;
- }
- 
-diff --git a/arch/arm/mach-shark/leds.c b/arch/arm/mach-shark/leds.c
-index c9e32de..ccd4918 100644
---- a/arch/arm/mach-shark/leds.c
-+++ b/arch/arm/mach-shark/leds.c
-@@ -36,7 +36,7 @@ static char led_state;
- static short hw_led_state;
- static short saved_state;
- 
--static DEFINE_SPINLOCK(leds_lock);
-+static DEFINE_RAW_SPINLOCK(leds_lock);
- 
- short sequoia_read(int addr) {
-   outw(addr,0x24);
-@@ -52,7 +52,7 @@ static void sequoia_leds_event(led_event_t evt)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&leds_lock, flags);
-+	raw_spin_lock_irqsave(&leds_lock, flags);
- 
- 	hw_led_state = sequoia_read(0x09);
- 
-@@ -144,7 +144,7 @@ static void sequoia_leds_event(led_event_t evt)
- 	if  (led_state & LED_STATE_ENABLED)
- 		sequoia_write(hw_led_state,0x09);
- 
--	spin_unlock_irqrestore(&leds_lock, flags);
-+	raw_spin_unlock_irqrestore(&leds_lock, flags);
- }
- 
- static int __init leds_init(void)
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 9ecfdb5..3255c51 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -26,7 +26,7 @@
- #define CACHE_LINE_SIZE		32
- 
- static void __iomem *l2x0_base;
--static DEFINE_SPINLOCK(l2x0_lock);
-+static DEFINE_RAW_SPINLOCK(l2x0_lock);
- static uint32_t l2x0_way_mask;	/* Bitmask of active ways */
- static uint32_t l2x0_size;
- 
-@@ -115,9 +115,9 @@ static void l2x0_cache_sync(void)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	cache_sync();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void __l2x0_flush_all(void)
-@@ -134,9 +134,9 @@ static void l2x0_flush_all(void)
- 	unsigned long flags;
- 
- 	/* clean all ways */
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	__l2x0_flush_all();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void l2x0_clean_all(void)
-@@ -144,11 +144,11 @@ static void l2x0_clean_all(void)
- 	unsigned long flags;
- 
- 	/* clean all ways */
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	writel_relaxed(l2x0_way_mask, l2x0_base + L2X0_CLEAN_WAY);
- 	cache_wait_way(l2x0_base + L2X0_CLEAN_WAY, l2x0_way_mask);
- 	cache_sync();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void l2x0_inv_all(void)
-@@ -156,13 +156,13 @@ static void l2x0_inv_all(void)
- 	unsigned long flags;
- 
- 	/* invalidate all ways */
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	/* Invalidating when L2 is enabled is a nono */
- 	BUG_ON(readl(l2x0_base + L2X0_CTRL) & 1);
- 	writel_relaxed(l2x0_way_mask, l2x0_base + L2X0_INV_WAY);
- 	cache_wait_way(l2x0_base + L2X0_INV_WAY, l2x0_way_mask);
- 	cache_sync();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void l2x0_inv_range(unsigned long start, unsigned long end)
-@@ -170,7 +170,7 @@ static void l2x0_inv_range(unsigned long start, unsigned long end)
- 	void __iomem *base = l2x0_base;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	if (start & (CACHE_LINE_SIZE - 1)) {
- 		start &= ~(CACHE_LINE_SIZE - 1);
- 		debug_writel(0x03);
-@@ -195,13 +195,13 @@ static void l2x0_inv_range(unsigned long start, unsigned long end)
- 		}
- 
- 		if (blk_end < end) {
--			spin_unlock_irqrestore(&l2x0_lock, flags);
--			spin_lock_irqsave(&l2x0_lock, flags);
-+			raw_spin_unlock_irqrestore(&l2x0_lock, flags);
-+			raw_spin_lock_irqsave(&l2x0_lock, flags);
- 		}
- 	}
- 	cache_wait(base + L2X0_INV_LINE_PA, 1);
- 	cache_sync();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void l2x0_clean_range(unsigned long start, unsigned long end)
-@@ -214,7 +214,7 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
- 		return;
- 	}
- 
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	start &= ~(CACHE_LINE_SIZE - 1);
- 	while (start < end) {
- 		unsigned long blk_end = start + min(end - start, 4096UL);
-@@ -225,13 +225,13 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
- 		}
- 
- 		if (blk_end < end) {
--			spin_unlock_irqrestore(&l2x0_lock, flags);
--			spin_lock_irqsave(&l2x0_lock, flags);
-+			raw_spin_unlock_irqrestore(&l2x0_lock, flags);
-+			raw_spin_lock_irqsave(&l2x0_lock, flags);
- 		}
- 	}
- 	cache_wait(base + L2X0_CLEAN_LINE_PA, 1);
- 	cache_sync();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void l2x0_flush_range(unsigned long start, unsigned long end)
-@@ -244,7 +244,7 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
- 		return;
- 	}
- 
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	start &= ~(CACHE_LINE_SIZE - 1);
- 	while (start < end) {
- 		unsigned long blk_end = start + min(end - start, 4096UL);
-@@ -257,24 +257,24 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
- 		debug_writel(0x00);
- 
- 		if (blk_end < end) {
--			spin_unlock_irqrestore(&l2x0_lock, flags);
--			spin_lock_irqsave(&l2x0_lock, flags);
-+			raw_spin_unlock_irqrestore(&l2x0_lock, flags);
-+			raw_spin_lock_irqsave(&l2x0_lock, flags);
- 		}
- 	}
- 	cache_wait(base + L2X0_CLEAN_INV_LINE_PA, 1);
- 	cache_sync();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void l2x0_disable(void)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&l2x0_lock, flags);
-+	raw_spin_lock_irqsave(&l2x0_lock, flags);
- 	__l2x0_flush_all();
- 	writel_relaxed(0, l2x0_base + L2X0_CTRL);
- 	dsb();
--	spin_unlock_irqrestore(&l2x0_lock, flags);
-+	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
- }
- 
- static void __init l2x0_unlock(__u32 cache_id)
-diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index b0ee9ba..93aac068 100644
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -16,7 +16,7 @@
- #include <asm/mmu_context.h>
- #include <asm/tlbflush.h>
- 
--static DEFINE_SPINLOCK(cpu_asid_lock);
-+static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
- unsigned int cpu_last_asid = ASID_FIRST_VERSION;
- #ifdef CONFIG_SMP
- DEFINE_PER_CPU(struct mm_struct *, current_mm);
-@@ -31,7 +31,7 @@ DEFINE_PER_CPU(struct mm_struct *, current_mm);
- void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
- {
- 	mm->context.id = 0;
--	spin_lock_init(&mm->context.id_lock);
-+	raw_spin_lock_init(&mm->context.id_lock);
- }
- 
- static void flush_context(void)
-@@ -58,7 +58,7 @@ static void set_mm_context(struct mm_struct *mm, unsigned int asid)
- 	 * the broadcast. This function is also called via IPI so the
- 	 * mm->context.id_lock has to be IRQ-safe.
- 	 */
--	spin_lock_irqsave(&mm->context.id_lock, flags);
-+	raw_spin_lock_irqsave(&mm->context.id_lock, flags);
- 	if (likely((mm->context.id ^ cpu_last_asid) >> ASID_BITS)) {
- 		/*
- 		 * Old version of ASID found. Set the new one and
-@@ -67,7 +67,7 @@ static void set_mm_context(struct mm_struct *mm, unsigned int asid)
- 		mm->context.id = asid;
- 		cpumask_clear(mm_cpumask(mm));
- 	}
--	spin_unlock_irqrestore(&mm->context.id_lock, flags);
-+	raw_spin_unlock_irqrestore(&mm->context.id_lock, flags);
- 
- 	/*
- 	 * Set the mm_cpumask(mm) bit for the current CPU.
-@@ -117,7 +117,7 @@ void __new_context(struct mm_struct *mm)
- {
- 	unsigned int asid;
- 
--	spin_lock(&cpu_asid_lock);
-+	raw_spin_lock(&cpu_asid_lock);
- #ifdef CONFIG_SMP
- 	/*
- 	 * Check the ASID again, in case the change was broadcast from
-@@ -125,7 +125,7 @@ void __new_context(struct mm_struct *mm)
- 	 */
- 	if (unlikely(((mm->context.id ^ cpu_last_asid) >> ASID_BITS) == 0)) {
- 		cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
--		spin_unlock(&cpu_asid_lock);
-+		raw_spin_unlock(&cpu_asid_lock);
- 		return;
- 	}
- #endif
-@@ -153,5 +153,5 @@ void __new_context(struct mm_struct *mm)
- 	}
- 
- 	set_mm_context(mm, asid);
--	spin_unlock(&cpu_asid_lock);
-+	raw_spin_unlock(&cpu_asid_lock);
- }
-diff --git a/arch/arm/mm/copypage-v4mc.c b/arch/arm/mm/copypage-v4mc.c
-index b806151..7d0a8c2 100644
---- a/arch/arm/mm/copypage-v4mc.c
-+++ b/arch/arm/mm/copypage-v4mc.c
-@@ -30,7 +30,7 @@
- #define minicache_pgprot __pgprot(L_PTE_PRESENT | L_PTE_YOUNG | \
- 				  L_PTE_MT_MINICACHE)
- 
--static DEFINE_SPINLOCK(minicache_lock);
-+static DEFINE_RAW_SPINLOCK(minicache_lock);
- 
- /*
-  * ARMv4 mini-dcache optimised copy_user_highpage
-@@ -76,14 +76,14 @@ void v4_mc_copy_user_highpage(struct page *to, struct page *from,
- 	if (!test_and_set_bit(PG_dcache_clean, &from->flags))
- 		__flush_dcache_page(page_mapping(from), from);
- 
--	spin_lock(&minicache_lock);
-+	raw_spin_lock(&minicache_lock);
- 
- 	set_pte_ext(TOP_PTE(0xffff8000), pfn_pte(page_to_pfn(from), minicache_pgprot), 0);
- 	flush_tlb_kernel_page(0xffff8000);
- 
- 	mc_copy_user_page((void *)0xffff8000, kto);
- 
--	spin_unlock(&minicache_lock);
-+	raw_spin_unlock(&minicache_lock);
- 
- 	kunmap_atomic(kto, KM_USER1);
- }
-diff --git a/arch/arm/mm/copypage-v6.c b/arch/arm/mm/copypage-v6.c
-index 63cca00..3d9a155 100644
---- a/arch/arm/mm/copypage-v6.c
-+++ b/arch/arm/mm/copypage-v6.c
-@@ -27,7 +27,7 @@
- #define from_address	(0xffff8000)
- #define to_address	(0xffffc000)
- 
--static DEFINE_SPINLOCK(v6_lock);
-+static DEFINE_RAW_SPINLOCK(v6_lock);
- 
- /*
-  * Copy the user page.  No aliasing to deal with so we can just
-@@ -88,7 +88,7 @@ static void v6_copy_user_highpage_aliasing(struct page *to,
- 	 * Now copy the page using the same cache colour as the
- 	 * pages ultimate destination.
- 	 */
--	spin_lock(&v6_lock);
-+	raw_spin_lock(&v6_lock);
- 
- 	set_pte_ext(TOP_PTE(from_address) + offset, pfn_pte(page_to_pfn(from), PAGE_KERNEL), 0);
- 	set_pte_ext(TOP_PTE(to_address) + offset, pfn_pte(page_to_pfn(to), PAGE_KERNEL), 0);
-@@ -101,7 +101,7 @@ static void v6_copy_user_highpage_aliasing(struct page *to,
- 
- 	copy_page((void *)kto, (void *)kfrom);
- 
--	spin_unlock(&v6_lock);
-+	raw_spin_unlock(&v6_lock);
- }
- 
- /*
-@@ -121,13 +121,13 @@ static void v6_clear_user_highpage_aliasing(struct page *page, unsigned long vad
- 	 * Now clear the page using the same cache colour as
- 	 * the pages ultimate destination.
- 	 */
--	spin_lock(&v6_lock);
-+	raw_spin_lock(&v6_lock);
- 
- 	set_pte_ext(TOP_PTE(to_address) + offset, pfn_pte(page_to_pfn(page), PAGE_KERNEL), 0);
- 	flush_tlb_kernel_page(to);
- 	clear_page((void *)to);
- 
--	spin_unlock(&v6_lock);
-+	raw_spin_unlock(&v6_lock);
- }
- 
- struct cpu_user_fns v6_user_fns __initdata = {
-diff --git a/arch/arm/mm/copypage-xscale.c b/arch/arm/mm/copypage-xscale.c
-index 649bbcd..610c24c 100644
---- a/arch/arm/mm/copypage-xscale.c
-+++ b/arch/arm/mm/copypage-xscale.c
-@@ -32,7 +32,7 @@
- #define minicache_pgprot __pgprot(L_PTE_PRESENT | L_PTE_YOUNG | \
- 				  L_PTE_MT_MINICACHE)
- 
--static DEFINE_SPINLOCK(minicache_lock);
-+static DEFINE_RAW_SPINLOCK(minicache_lock);
- 
- /*
-  * XScale mini-dcache optimised copy_user_highpage
-@@ -98,14 +98,14 @@ void xscale_mc_copy_user_highpage(struct page *to, struct page *from,
- 	if (!test_and_set_bit(PG_dcache_clean, &from->flags))
- 		__flush_dcache_page(page_mapping(from), from);
- 
--	spin_lock(&minicache_lock);
-+	raw_spin_lock(&minicache_lock);
- 
- 	set_pte_ext(TOP_PTE(COPYPAGE_MINICACHE), pfn_pte(page_to_pfn(from), minicache_pgprot), 0);
- 	flush_tlb_kernel_page(COPYPAGE_MINICACHE);
- 
- 	mc_copy_user_page((void *)COPYPAGE_MINICACHE, kto);
- 
--	spin_unlock(&minicache_lock);
-+	raw_spin_unlock(&minicache_lock);
- 
- 	kunmap_atomic(kto, KM_USER1);
- }
-diff --git a/arch/powerpc/sysdev/uic.c b/arch/powerpc/sysdev/uic.c
-index 984cd20..3330fec 100644
---- a/arch/powerpc/sysdev/uic.c
-+++ b/arch/powerpc/sysdev/uic.c
-@@ -47,7 +47,7 @@ struct uic {
- 	int index;
- 	int dcrbase;
- 
--	spinlock_t lock;
-+	raw_spinlock_t lock;
- 
- 	/* The remapper for this UIC */
- 	struct irq_host	*irqhost;
-@@ -61,14 +61,14 @@ static void uic_unmask_irq(struct irq_data *d)
- 	u32 er, sr;
- 
- 	sr = 1 << (31-src);
--	spin_lock_irqsave(&uic->lock, flags);
-+	raw_spin_lock_irqsave(&uic->lock, flags);
- 	/* ack level-triggered interrupts here */
- 	if (irqd_is_level_type(d))
- 		mtdcr(uic->dcrbase + UIC_SR, sr);
- 	er = mfdcr(uic->dcrbase + UIC_ER);
- 	er |= sr;
- 	mtdcr(uic->dcrbase + UIC_ER, er);
--	spin_unlock_irqrestore(&uic->lock, flags);
-+	raw_spin_unlock_irqrestore(&uic->lock, flags);
- }
- 
- static void uic_mask_irq(struct irq_data *d)
-@@ -78,11 +78,11 @@ static void uic_mask_irq(struct irq_data *d)
- 	unsigned long flags;
- 	u32 er;
- 
--	spin_lock_irqsave(&uic->lock, flags);
-+	raw_spin_lock_irqsave(&uic->lock, flags);
- 	er = mfdcr(uic->dcrbase + UIC_ER);
- 	er &= ~(1 << (31 - src));
- 	mtdcr(uic->dcrbase + UIC_ER, er);
--	spin_unlock_irqrestore(&uic->lock, flags);
-+	raw_spin_unlock_irqrestore(&uic->lock, flags);
- }
- 
- static void uic_ack_irq(struct irq_data *d)
-@@ -91,9 +91,9 @@ static void uic_ack_irq(struct irq_data *d)
- 	unsigned int src = irqd_to_hwirq(d);
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&uic->lock, flags);
-+	raw_spin_lock_irqsave(&uic->lock, flags);
- 	mtdcr(uic->dcrbase + UIC_SR, 1 << (31-src));
--	spin_unlock_irqrestore(&uic->lock, flags);
-+	raw_spin_unlock_irqrestore(&uic->lock, flags);
- }
- 
- static void uic_mask_ack_irq(struct irq_data *d)
-@@ -104,7 +104,7 @@ static void uic_mask_ack_irq(struct irq_data *d)
- 	u32 er, sr;
- 
- 	sr = 1 << (31-src);
--	spin_lock_irqsave(&uic->lock, flags);
-+	raw_spin_lock_irqsave(&uic->lock, flags);
- 	er = mfdcr(uic->dcrbase + UIC_ER);
- 	er &= ~sr;
- 	mtdcr(uic->dcrbase + UIC_ER, er);
-@@ -118,7 +118,7 @@ static void uic_mask_ack_irq(struct irq_data *d)
- 	 */
- 	if (!irqd_is_level_type(d))
- 		mtdcr(uic->dcrbase + UIC_SR, sr);
--	spin_unlock_irqrestore(&uic->lock, flags);
-+	raw_spin_unlock_irqrestore(&uic->lock, flags);
- }
- 
- static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
-@@ -152,7 +152,7 @@ static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
- 
- 	mask = ~(1 << (31 - src));
- 
--	spin_lock_irqsave(&uic->lock, flags);
-+	raw_spin_lock_irqsave(&uic->lock, flags);
- 	tr = mfdcr(uic->dcrbase + UIC_TR);
- 	pr = mfdcr(uic->dcrbase + UIC_PR);
- 	tr = (tr & mask) | (trigger << (31-src));
-@@ -161,7 +161,7 @@ static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
- 	mtdcr(uic->dcrbase + UIC_PR, pr);
- 	mtdcr(uic->dcrbase + UIC_TR, tr);
- 
--	spin_unlock_irqrestore(&uic->lock, flags);
-+	raw_spin_unlock_irqrestore(&uic->lock, flags);
- 
- 	return 0;
- }
-@@ -254,7 +254,7 @@ static struct uic * __init uic_init_one(struct device_node *node)
- 	if (! uic)
- 		return NULL; /* FIXME: panic? */
- 
--	spin_lock_init(&uic->lock);
-+	raw_spin_lock_init(&uic->lock);
- 	indexp = of_get_property(node, "cell-index", &len);
- 	if (!indexp || (len != sizeof(u32))) {
- 		printk(KERN_ERR "uic: Device node %s has missing or invalid "
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 8694ef56..38e49bc 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
-  * cmci_discover_lock protects against parallel discovery attempts
-  * which could race against each other.
-  */
--static DEFINE_SPINLOCK(cmci_discover_lock);
-+static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
- 
- #define CMCI_THRESHOLD 1
- 
-@@ -85,7 +85,7 @@ static void cmci_discover(int banks, int boot)
- 	int hdr = 0;
- 	int i;
- 
--	spin_lock_irqsave(&cmci_discover_lock, flags);
-+	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
- 	for (i = 0; i < banks; i++) {
- 		u64 val;
- 
-@@ -116,7 +116,7 @@ static void cmci_discover(int banks, int boot)
- 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
- 		}
- 	}
--	spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
- 	if (hdr)
- 		printk(KERN_CONT "\n");
- }
-@@ -150,7 +150,7 @@ void cmci_clear(void)
- 
- 	if (!cmci_supported(&banks))
- 		return;
--	spin_lock_irqsave(&cmci_discover_lock, flags);
-+	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
- 	for (i = 0; i < banks; i++) {
- 		if (!test_bit(i, __get_cpu_var(mce_banks_owned)))
- 			continue;
-@@ -160,7 +160,7 @@ void cmci_clear(void)
- 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
- 		__clear_bit(i, __get_cpu_var(mce_banks_owned));
- 	}
--	spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
- }
- 
- /*
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 68894fd..96646b3 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -355,10 +355,10 @@ static void nmi_cpu_setup(void *dummy)
- 	int cpu = smp_processor_id();
- 	struct op_msrs *msrs = &per_cpu(cpu_msrs, cpu);
- 	nmi_cpu_save_registers(msrs);
--	spin_lock(&oprofilefs_lock);
-+	raw_spin_lock(&oprofilefs_lock);
- 	model->setup_ctrs(model, msrs);
- 	nmi_cpu_setup_mux(cpu, msrs);
--	spin_unlock(&oprofilefs_lock);
-+	raw_spin_unlock(&oprofilefs_lock);
- 	per_cpu(saved_lvtpc, cpu) = apic_read(APIC_LVTPC);
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
- }
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index 431ab11..3e05314 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -852,7 +852,7 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
- }
- 
- static int c3_cpu_count;
--static DEFINE_SPINLOCK(c3_lock);
-+static DEFINE_RAW_SPINLOCK(c3_lock);
- 
- /**
-  * acpi_idle_enter_bm - enters C3 with proper BM handling
-@@ -930,12 +930,12 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
- 	 * without doing anything.
- 	 */
- 	if (pr->flags.bm_check && pr->flags.bm_control) {
--		spin_lock(&c3_lock);
-+		raw_spin_lock(&c3_lock);
- 		c3_cpu_count++;
- 		/* Disable bus master arbitration when all CPUs are in C3 */
- 		if (c3_cpu_count == num_online_cpus())
- 			acpi_write_bit_register(ACPI_BITREG_ARB_DISABLE, 1);
--		spin_unlock(&c3_lock);
-+		raw_spin_unlock(&c3_lock);
- 	} else if (!pr->flags.bm_check) {
- 		ACPI_FLUSH_CPU_CACHE();
- 	}
-@@ -944,10 +944,10 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
- 
- 	/* Re-enable bus master arbitration */
- 	if (pr->flags.bm_check && pr->flags.bm_control) {
--		spin_lock(&c3_lock);
-+		raw_spin_lock(&c3_lock);
- 		acpi_write_bit_register(ACPI_BITREG_ARB_DISABLE, 0);
- 		c3_cpu_count--;
--		spin_unlock(&c3_lock);
-+		raw_spin_unlock(&c3_lock);
- 	}
- 	kt2 = ktime_get_real();
- 	idle_time_ns = ktime_to_ns(ktime_sub(kt2, kt1));
-diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
-index 4abd089..25ec0bb 100644
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -35,7 +35,7 @@ MODULE_VERSION(DCA_VERSION);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Intel Corporation");
- 
--static DEFINE_SPINLOCK(dca_lock);
-+static DEFINE_RAW_SPINLOCK(dca_lock);
- 
- static LIST_HEAD(dca_domains);
- 
-@@ -101,10 +101,10 @@ static void unregister_dca_providers(void)
- 
- 	INIT_LIST_HEAD(&unregistered_providers);
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 
- 	if (list_empty(&dca_domains)) {
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return;
- 	}
- 
-@@ -116,7 +116,7 @@ static void unregister_dca_providers(void)
- 
- 	dca_free_domain(domain);
- 
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	list_for_each_entry_safe(dca, _dca, &unregistered_providers, node) {
- 		dca_sysfs_remove_provider(dca);
-@@ -144,13 +144,8 @@ static struct dca_domain *dca_get_domain(struct device *dev)
- 	domain = dca_find_domain(rc);
- 
- 	if (!domain) {
--		if (dca_provider_ioat_ver_3_0(dev) && !list_empty(&dca_domains)) {
-+		if (dca_provider_ioat_ver_3_0(dev) && !list_empty(&dca_domains))
- 			dca_providers_blocked = 1;
--		} else {
--			domain = dca_allocate_domain(rc);
--			if (domain)
--				list_add(&domain->node, &dca_domains);
--		}
- 	}
- 
- 	return domain;
-@@ -198,19 +193,19 @@ int dca_add_requester(struct device *dev)
- 	if (!dev)
- 		return -EFAULT;
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 
- 	/* check if the requester has not been added already */
- 	dca = dca_find_provider_by_dev(dev);
- 	if (dca) {
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return -EEXIST;
- 	}
- 
- 	pci_rc = dca_pci_rc_from_dev(dev);
- 	domain = dca_find_domain(pci_rc);
- 	if (!domain) {
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return -ENODEV;
- 	}
- 
-@@ -220,17 +215,17 @@ int dca_add_requester(struct device *dev)
- 			break;
- 	}
- 
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	if (slot < 0)
- 		return slot;
- 
- 	err = dca_sysfs_add_req(dca, dev, slot);
- 	if (err) {
--		spin_lock_irqsave(&dca_lock, flags);
-+		raw_spin_lock_irqsave(&dca_lock, flags);
- 		if (dca == dca_find_provider_by_dev(dev))
- 			dca->ops->remove_requester(dca, dev);
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return err;
- 	}
- 
-@@ -251,14 +246,14 @@ int dca_remove_requester(struct device *dev)
- 	if (!dev)
- 		return -EFAULT;
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 	dca = dca_find_provider_by_dev(dev);
- 	if (!dca) {
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return -ENODEV;
- 	}
- 	slot = dca->ops->remove_requester(dca, dev);
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	if (slot < 0)
- 		return slot;
-@@ -280,16 +275,16 @@ u8 dca_common_get_tag(struct device *dev, int cpu)
- 	u8 tag;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 
- 	dca = dca_find_provider_by_dev(dev);
- 	if (!dca) {
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return -ENODEV;
- 	}
- 	tag = dca->ops->get_tag(dca, dev, cpu);
- 
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 	return tag;
- }
- 
-@@ -360,36 +355,51 @@ int register_dca_provider(struct dca_provider *dca, struct device *dev)
- {
- 	int err;
- 	unsigned long flags;
--	struct dca_domain *domain;
-+	struct dca_domain *domain, *newdomain = NULL;
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 	if (dca_providers_blocked) {
--		spin_unlock_irqrestore(&dca_lock, flags);
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
- 		return -ENODEV;
- 	}
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	err = dca_sysfs_add_provider(dca, dev);
- 	if (err)
- 		return err;
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 	domain = dca_get_domain(dev);
- 	if (!domain) {
-+		struct pci_bus *rc;
+diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
+index bf82851..687777f 100644
+--- a/Documentation/RCU/NMI-RCU.txt
++++ b/Documentation/RCU/NMI-RCU.txt
+@@ -95,7 +95,7 @@ not to return until all ongoing NMI handlers exit.  It is therefore safe
+ to free up the handler's data as soon as synchronize_sched() returns.
+ 
+ Important note: for this to work, the architecture in question must
+-invoke irq_enter() and irq_exit() on NMI entry and exit, respectively.
++invoke nmi_enter() and nmi_exit() on NMI entry and exit, respectively.
+ 
+ 
+ Answer to Quick Quiz
+diff --git a/Documentation/RCU/lockdep-splat.txt b/Documentation/RCU/lockdep-splat.txt
+new file mode 100644
+index 0000000..bf90611
+--- /dev/null
++++ b/Documentation/RCU/lockdep-splat.txt
+@@ -0,0 +1,110 @@
++Lockdep-RCU was added to the Linux kernel in early 2010
++(http://lwn.net/Articles/371986/).  This facility checks for some common
++misuses of the RCU API, most notably using one of the rcu_dereference()
++family to access an RCU-protected pointer without the proper protection.
++When such misuse is detected, an lockdep-RCU splat is emitted.
 +
- 		if (dca_providers_blocked) {
--			spin_unlock_irqrestore(&dca_lock, flags);
-+			raw_spin_unlock_irqrestore(&dca_lock, flags);
- 			dca_sysfs_remove_provider(dca);
- 			unregister_dca_providers();
--		} else {
--			spin_unlock_irqrestore(&dca_lock, flags);
-+			return -ENODEV;
-+		}
++The usual cause of a lockdep-RCU slat is someone accessing an
++RCU-protected data structure without either (1) being in the right kind of
++RCU read-side critical section or (2) holding the right update-side lock.
++This problem can therefore be serious: it might result in random memory
++overwriting or worse.  There can of course be false positives, this
++being the real world and all that.
 +
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		rc = dca_pci_rc_from_dev(dev);
-+		newdomain = dca_allocate_domain(rc);
-+		if (!newdomain)
-+			return -ENODEV;
-+		raw_spin_lock_irqsave(&dca_lock, flags);
-+		/* Recheck, we might have raced after dropping the lock */
-+		domain = dca_get_domain(dev);
-+		if (!domain) {
-+			domain = newdomain;
-+			newdomain = NULL;
-+			list_add(&domain->node, &dca_domains);
- 		}
--		return -ENODEV;
- 	}
- 	list_add(&dca->node, &domain->dca_providers);
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	blocking_notifier_call_chain(&dca_provider_chain,
- 				     DCA_PROVIDER_ADD, NULL);
-+	kfree(newdomain);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(register_dca_provider);
-@@ -407,7 +417,7 @@ void unregister_dca_provider(struct dca_provider *dca, struct device *dev)
- 	blocking_notifier_call_chain(&dca_provider_chain,
- 				     DCA_PROVIDER_REMOVE, NULL);
- 
--	spin_lock_irqsave(&dca_lock, flags);
-+	raw_spin_lock_irqsave(&dca_lock, flags);
- 
- 	list_del(&dca->node);
- 
-@@ -416,7 +426,7 @@ void unregister_dca_provider(struct dca_provider *dca, struct device *dev)
- 	if (list_empty(&domain->dca_providers))
- 		dca_free_domain(domain);
- 
--	spin_unlock_irqrestore(&dca_lock, flags);
-+	raw_spin_unlock_irqrestore(&dca_lock, flags);
- 
- 	dca_sysfs_remove_provider(dca);
- }
-diff --git a/drivers/dma/ipu/ipu_irq.c b/drivers/dma/ipu/ipu_irq.c
-index ab8a4ef..a71f55e 100644
---- a/drivers/dma/ipu/ipu_irq.c
-+++ b/drivers/dma/ipu/ipu_irq.c
-@@ -81,7 +81,7 @@ static struct ipu_irq_map irq_map[CONFIG_MX3_IPU_IRQS];
- /* Protects allocations from the above array of maps */
- static DEFINE_MUTEX(map_lock);
- /* Protects register accesses and individual mappings */
--static DEFINE_SPINLOCK(bank_lock);
-+static DEFINE_RAW_SPINLOCK(bank_lock);
- 
- static struct ipu_irq_map *src2map(unsigned int src)
- {
-@@ -101,11 +101,11 @@ static void ipu_irq_unmask(struct irq_data *d)
- 	uint32_t reg;
- 	unsigned long lock_flags;
- 
--	spin_lock_irqsave(&bank_lock, lock_flags);
-+	raw_spin_lock_irqsave(&bank_lock, lock_flags);
- 
- 	bank = map->bank;
- 	if (!bank) {
--		spin_unlock_irqrestore(&bank_lock, lock_flags);
-+		raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- 		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
- 		return;
- 	}
-@@ -114,7 +114,7 @@ static void ipu_irq_unmask(struct irq_data *d)
- 	reg |= (1UL << (map->source & 31));
- 	ipu_write_reg(bank->ipu, reg, bank->control);
- 
--	spin_unlock_irqrestore(&bank_lock, lock_flags);
-+	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- }
- 
- static void ipu_irq_mask(struct irq_data *d)
-@@ -124,11 +124,11 @@ static void ipu_irq_mask(struct irq_data *d)
- 	uint32_t reg;
- 	unsigned long lock_flags;
- 
--	spin_lock_irqsave(&bank_lock, lock_flags);
-+	raw_spin_lock_irqsave(&bank_lock, lock_flags);
- 
- 	bank = map->bank;
- 	if (!bank) {
--		spin_unlock_irqrestore(&bank_lock, lock_flags);
-+		raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- 		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
- 		return;
- 	}
-@@ -137,7 +137,7 @@ static void ipu_irq_mask(struct irq_data *d)
- 	reg &= ~(1UL << (map->source & 31));
- 	ipu_write_reg(bank->ipu, reg, bank->control);
- 
--	spin_unlock_irqrestore(&bank_lock, lock_flags);
-+	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- }
- 
- static void ipu_irq_ack(struct irq_data *d)
-@@ -146,17 +146,17 @@ static void ipu_irq_ack(struct irq_data *d)
- 	struct ipu_irq_bank *bank;
- 	unsigned long lock_flags;
- 
--	spin_lock_irqsave(&bank_lock, lock_flags);
-+	raw_spin_lock_irqsave(&bank_lock, lock_flags);
- 
- 	bank = map->bank;
- 	if (!bank) {
--		spin_unlock_irqrestore(&bank_lock, lock_flags);
-+		raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- 		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
- 		return;
- 	}
- 
- 	ipu_write_reg(bank->ipu, 1UL << (map->source & 31), bank->status);
--	spin_unlock_irqrestore(&bank_lock, lock_flags);
-+	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- }
- 
- /**
-@@ -172,11 +172,11 @@ bool ipu_irq_status(unsigned int irq)
- 	unsigned long lock_flags;
- 	bool ret;
- 
--	spin_lock_irqsave(&bank_lock, lock_flags);
-+	raw_spin_lock_irqsave(&bank_lock, lock_flags);
- 	bank = map->bank;
- 	ret = bank && ipu_read_reg(bank->ipu, bank->status) &
- 		(1UL << (map->source & 31));
--	spin_unlock_irqrestore(&bank_lock, lock_flags);
-+	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- 
- 	return ret;
- }
-@@ -213,10 +213,10 @@ int ipu_irq_map(unsigned int source)
- 		if (irq_map[i].source < 0) {
- 			unsigned long lock_flags;
- 
--			spin_lock_irqsave(&bank_lock, lock_flags);
-+			raw_spin_lock_irqsave(&bank_lock, lock_flags);
- 			irq_map[i].source = source;
- 			irq_map[i].bank = irq_bank + source / 32;
--			spin_unlock_irqrestore(&bank_lock, lock_flags);
-+			raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- 
- 			ret = irq_map[i].irq;
- 			pr_debug("IPU: mapped source %u to IRQ %u\n",
-@@ -252,10 +252,10 @@ int ipu_irq_unmap(unsigned int source)
- 			pr_debug("IPU: unmapped source %u from IRQ %u\n",
- 				 source, irq_map[i].irq);
- 
--			spin_lock_irqsave(&bank_lock, lock_flags);
-+			raw_spin_lock_irqsave(&bank_lock, lock_flags);
- 			irq_map[i].source = -EINVAL;
- 			irq_map[i].bank = NULL;
--			spin_unlock_irqrestore(&bank_lock, lock_flags);
-+			raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
- 
- 			ret = 0;
- 			break;
-@@ -276,7 +276,7 @@ static void ipu_irq_err(unsigned int irq, struct irq_desc *desc)
- 	for (i = IPU_IRQ_NR_FN_BANKS; i < IPU_IRQ_NR_BANKS; i++) {
- 		struct ipu_irq_bank *bank = irq_bank + i;
- 
--		spin_lock(&bank_lock);
-+		raw_spin_lock(&bank_lock);
- 		status = ipu_read_reg(ipu, bank->status);
- 		/*
- 		 * Don't think we have to clear all interrupts here, they will
-@@ -284,18 +284,18 @@ static void ipu_irq_err(unsigned int irq, struct irq_desc *desc)
- 		 * might want to clear unhandled interrupts after the loop...
- 		 */
- 		status &= ipu_read_reg(ipu, bank->control);
--		spin_unlock(&bank_lock);
-+		raw_spin_unlock(&bank_lock);
- 		while ((line = ffs(status))) {
- 			struct ipu_irq_map *map;
- 
- 			line--;
- 			status &= ~(1UL << line);
- 
--			spin_lock(&bank_lock);
-+			raw_spin_lock(&bank_lock);
- 			map = src2map(32 * i + line);
- 			if (map)
- 				irq = map->irq;
--			spin_unlock(&bank_lock);
-+			raw_spin_unlock(&bank_lock);
- 
- 			if (!map) {
- 				pr_err("IPU: Interrupt on unmapped source %u bank %d\n",
-@@ -317,22 +317,22 @@ static void ipu_irq_fn(unsigned int irq, struct irq_desc *desc)
- 	for (i = 0; i < IPU_IRQ_NR_FN_BANKS; i++) {
- 		struct ipu_irq_bank *bank = irq_bank + i;
- 
--		spin_lock(&bank_lock);
-+		raw_spin_lock(&bank_lock);
- 		status = ipu_read_reg(ipu, bank->status);
- 		/* Not clearing all interrupts, see above */
- 		status &= ipu_read_reg(ipu, bank->control);
--		spin_unlock(&bank_lock);
-+		raw_spin_unlock(&bank_lock);
- 		while ((line = ffs(status))) {
- 			struct ipu_irq_map *map;
- 
- 			line--;
- 			status &= ~(1UL << line);
- 
--			spin_lock(&bank_lock);
-+			raw_spin_lock(&bank_lock);
- 			map = src2map(32 * i + line);
- 			if (map)
- 				irq = map->irq;
--			spin_unlock(&bank_lock);
-+			raw_spin_unlock(&bank_lock);
- 
- 			if (!map) {
- 				pr_err("IPU: Interrupt on unmapped source %u bank %d\n",
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 3dc9bef..388a118 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -800,7 +800,7 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
- 		(unsigned long long)iommu->cap,
- 		(unsigned long long)iommu->ecap);
- 
--	spin_lock_init(&iommu->register_lock);
-+	raw_spin_lock_init(&iommu->register_lock);
- 
- 	drhd->iommu = iommu;
- 	return 0;
-@@ -921,11 +921,11 @@ int qi_submit_sync(struct qi_desc *desc, struct intel_iommu *iommu)
- restart:
- 	rc = 0;
- 
--	spin_lock_irqsave(&qi->q_lock, flags);
-+	raw_spin_lock_irqsave(&qi->q_lock, flags);
- 	while (qi->free_cnt < 3) {
--		spin_unlock_irqrestore(&qi->q_lock, flags);
-+		raw_spin_unlock_irqrestore(&qi->q_lock, flags);
- 		cpu_relax();
--		spin_lock_irqsave(&qi->q_lock, flags);
-+		raw_spin_lock_irqsave(&qi->q_lock, flags);
- 	}
- 
- 	index = qi->free_head;
-@@ -965,15 +965,15 @@ restart:
- 		if (rc)
- 			break;
- 
--		spin_unlock(&qi->q_lock);
-+		raw_spin_unlock(&qi->q_lock);
- 		cpu_relax();
--		spin_lock(&qi->q_lock);
-+		raw_spin_lock(&qi->q_lock);
- 	}
- 
- 	qi->desc_status[index] = QI_DONE;
- 
- 	reclaim_free_desc(qi);
--	spin_unlock_irqrestore(&qi->q_lock, flags);
-+	raw_spin_unlock_irqrestore(&qi->q_lock, flags);
- 
- 	if (rc == -EAGAIN)
- 		goto restart;
-@@ -1062,7 +1062,7 @@ void dmar_disable_qi(struct intel_iommu *iommu)
- 	if (!ecap_qis(iommu->ecap))
- 		return;
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 
- 	sts =  dmar_readq(iommu->reg + DMAR_GSTS_REG);
- 	if (!(sts & DMA_GSTS_QIES))
-@@ -1082,7 +1082,7 @@ void dmar_disable_qi(struct intel_iommu *iommu)
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG, readl,
- 		      !(sts & DMA_GSTS_QIES), sts);
- end:
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- }
- 
- /*
-@@ -1097,7 +1097,7 @@ static void __dmar_enable_qi(struct intel_iommu *iommu)
- 	qi->free_head = qi->free_tail = 0;
- 	qi->free_cnt = QI_LENGTH;
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 
- 	/* write zero to the tail reg */
- 	writel(0, iommu->reg + DMAR_IQT_REG);
-@@ -1110,7 +1110,7 @@ static void __dmar_enable_qi(struct intel_iommu *iommu)
- 	/* Make sure hardware complete it */
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG, readl, (sts & DMA_GSTS_QIES), sts);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- }
- 
- /*
-@@ -1159,7 +1159,7 @@ int dmar_enable_qi(struct intel_iommu *iommu)
- 	qi->free_head = qi->free_tail = 0;
- 	qi->free_cnt = QI_LENGTH;
- 
--	spin_lock_init(&qi->q_lock);
-+	raw_spin_lock_init(&qi->q_lock);
- 
- 	__dmar_enable_qi(iommu);
- 
-@@ -1225,11 +1225,11 @@ void dmar_msi_unmask(struct irq_data *data)
- 	unsigned long flag;
- 
- 	/* unmask it */
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	writel(0, iommu->reg + DMAR_FECTL_REG);
- 	/* Read a reg to force flush the post write */
- 	readl(iommu->reg + DMAR_FECTL_REG);
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- void dmar_msi_mask(struct irq_data *data)
-@@ -1238,11 +1238,11 @@ void dmar_msi_mask(struct irq_data *data)
- 	struct intel_iommu *iommu = irq_data_get_irq_handler_data(data);
- 
- 	/* mask it */
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	writel(DMA_FECTL_IM, iommu->reg + DMAR_FECTL_REG);
- 	/* Read a reg to force flush the post write */
- 	readl(iommu->reg + DMAR_FECTL_REG);
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- void dmar_msi_write(int irq, struct msi_msg *msg)
-@@ -1250,11 +1250,11 @@ void dmar_msi_write(int irq, struct msi_msg *msg)
- 	struct intel_iommu *iommu = irq_get_handler_data(irq);
- 	unsigned long flag;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	writel(msg->data, iommu->reg + DMAR_FEDATA_REG);
- 	writel(msg->address_lo, iommu->reg + DMAR_FEADDR_REG);
- 	writel(msg->address_hi, iommu->reg + DMAR_FEUADDR_REG);
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- void dmar_msi_read(int irq, struct msi_msg *msg)
-@@ -1262,11 +1262,11 @@ void dmar_msi_read(int irq, struct msi_msg *msg)
- 	struct intel_iommu *iommu = irq_get_handler_data(irq);
- 	unsigned long flag;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	msg->data = readl(iommu->reg + DMAR_FEDATA_REG);
- 	msg->address_lo = readl(iommu->reg + DMAR_FEADDR_REG);
- 	msg->address_hi = readl(iommu->reg + DMAR_FEUADDR_REG);
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- static int dmar_fault_do_one(struct intel_iommu *iommu, int type,
-@@ -1303,7 +1303,7 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
- 	u32 fault_status;
- 	unsigned long flag;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	fault_status = readl(iommu->reg + DMAR_FSTS_REG);
- 	if (fault_status)
- 		printk(KERN_ERR "DRHD: handling fault status reg %x\n",
-@@ -1342,7 +1342,7 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
- 		writel(DMA_FRCD_F, iommu->reg + reg +
- 			fault_index * PRIMARY_FAULT_REG_LEN + 12);
- 
--		spin_unlock_irqrestore(&iommu->register_lock, flag);
-+		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- 
- 		dmar_fault_do_one(iommu, type, fault_reason,
- 				source_id, guest_addr);
-@@ -1350,14 +1350,14 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
- 		fault_index++;
- 		if (fault_index >= cap_num_fault_regs(iommu->cap))
- 			fault_index = 0;
--		spin_lock_irqsave(&iommu->register_lock, flag);
-+		raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	}
- clear_rest:
- 	/* clear all the other faults */
- 	fault_status = readl(iommu->reg + DMAR_FSTS_REG);
- 	writel(fault_status, iommu->reg + DMAR_FSTS_REG);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- 	return IRQ_HANDLED;
- }
- 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c621c98..bf4a63c 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -932,7 +932,7 @@ static void iommu_set_root_entry(struct intel_iommu *iommu)
- 
- 	addr = iommu->root_entry;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	dmar_writeq(iommu->reg + DMAR_RTADDR_REG, virt_to_phys(addr));
- 
- 	writel(iommu->gcmd | DMA_GCMD_SRTP, iommu->reg + DMAR_GCMD_REG);
-@@ -941,7 +941,7 @@ static void iommu_set_root_entry(struct intel_iommu *iommu)
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (sts & DMA_GSTS_RTPS), sts);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- static void iommu_flush_write_buffer(struct intel_iommu *iommu)
-@@ -952,14 +952,14 @@ static void iommu_flush_write_buffer(struct intel_iommu *iommu)
- 	if (!rwbf_quirk && !cap_rwbf(iommu->cap))
- 		return;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	writel(iommu->gcmd | DMA_GCMD_WBF, iommu->reg + DMAR_GCMD_REG);
- 
- 	/* Make sure hardware complete it */
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (!(val & DMA_GSTS_WBFS)), val);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- /* return value determine if we need a write buffer flush */
-@@ -986,14 +986,14 @@ static void __iommu_flush_context(struct intel_iommu *iommu,
- 	}
- 	val |= DMA_CCMD_ICC;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	dmar_writeq(iommu->reg + DMAR_CCMD_REG, val);
- 
- 	/* Make sure hardware complete it */
- 	IOMMU_WAIT_OP(iommu, DMAR_CCMD_REG,
- 		dmar_readq, (!(val & DMA_CCMD_ICC)), val);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
- /* return value determine if we need a write buffer flush */
-@@ -1032,7 +1032,7 @@ static void __iommu_flush_iotlb(struct intel_iommu *iommu, u16 did,
- 	if (cap_write_drain(iommu->cap))
- 		val |= DMA_TLB_WRITE_DRAIN;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	/* Note: Only uses first TLB reg currently */
- 	if (val_iva)
- 		dmar_writeq(iommu->reg + tlb_offset, val_iva);
-@@ -1042,7 +1042,7 @@ static void __iommu_flush_iotlb(struct intel_iommu *iommu, u16 did,
- 	IOMMU_WAIT_OP(iommu, tlb_offset + 8,
- 		dmar_readq, (!(val & DMA_TLB_IVT)), val);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- 
- 	/* check IOTLB invalidation granularity */
- 	if (DMA_TLB_IAIG(val) == 0)
-@@ -1158,7 +1158,7 @@ static void iommu_disable_protect_mem_regions(struct intel_iommu *iommu)
- 	u32 pmen;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 	pmen = readl(iommu->reg + DMAR_PMEN_REG);
- 	pmen &= ~DMA_PMEN_EPM;
- 	writel(pmen, iommu->reg + DMAR_PMEN_REG);
-@@ -1167,7 +1167,7 @@ static void iommu_disable_protect_mem_regions(struct intel_iommu *iommu)
- 	IOMMU_WAIT_OP(iommu, DMAR_PMEN_REG,
- 		readl, !(pmen & DMA_PMEN_PRS), pmen);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- }
- 
- static int iommu_enable_translation(struct intel_iommu *iommu)
-@@ -1175,7 +1175,7 @@ static int iommu_enable_translation(struct intel_iommu *iommu)
- 	u32 sts;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 	iommu->gcmd |= DMA_GCMD_TE;
- 	writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
- 
-@@ -1183,7 +1183,7 @@ static int iommu_enable_translation(struct intel_iommu *iommu)
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (sts & DMA_GSTS_TES), sts);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- 	return 0;
- }
- 
-@@ -1192,7 +1192,7 @@ static int iommu_disable_translation(struct intel_iommu *iommu)
- 	u32 sts;
- 	unsigned long flag;
- 
--	spin_lock_irqsave(&iommu->register_lock, flag);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 	iommu->gcmd &= ~DMA_GCMD_TE;
- 	writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
- 
-@@ -1200,7 +1200,7 @@ static int iommu_disable_translation(struct intel_iommu *iommu)
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (!(sts & DMA_GSTS_TES)), sts);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flag);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- 	return 0;
- }
- 
-@@ -3320,7 +3320,7 @@ static int iommu_suspend(void)
- 	for_each_active_iommu(iommu, drhd) {
- 		iommu_disable_translation(iommu);
- 
--		spin_lock_irqsave(&iommu->register_lock, flag);
-+		raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 
- 		iommu->iommu_state[SR_DMAR_FECTL_REG] =
- 			readl(iommu->reg + DMAR_FECTL_REG);
-@@ -3331,7 +3331,7 @@ static int iommu_suspend(void)
- 		iommu->iommu_state[SR_DMAR_FEUADDR_REG] =
- 			readl(iommu->reg + DMAR_FEUADDR_REG);
- 
--		spin_unlock_irqrestore(&iommu->register_lock, flag);
-+		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- 	}
- 	return 0;
- 
-@@ -3358,7 +3358,7 @@ static void iommu_resume(void)
- 
- 	for_each_active_iommu(iommu, drhd) {
- 
--		spin_lock_irqsave(&iommu->register_lock, flag);
-+		raw_spin_lock_irqsave(&iommu->register_lock, flag);
- 
- 		writel(iommu->iommu_state[SR_DMAR_FECTL_REG],
- 			iommu->reg + DMAR_FECTL_REG);
-@@ -3369,7 +3369,7 @@ static void iommu_resume(void)
- 		writel(iommu->iommu_state[SR_DMAR_FEUADDR_REG],
- 			iommu->reg + DMAR_FEUADDR_REG);
- 
--		spin_unlock_irqrestore(&iommu->register_lock, flag);
-+		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
- 	}
- 
- 	for_each_active_iommu(iommu, drhd)
-diff --git a/drivers/iommu/intr_remapping.c b/drivers/iommu/intr_remapping.c
-index 1a89d4a..73a9034 100644
---- a/drivers/iommu/intr_remapping.c
-+++ b/drivers/iommu/intr_remapping.c
-@@ -45,7 +45,7 @@ static __init int setup_intremap(char *str)
- }
- early_param("intremap", setup_intremap);
- 
--static DEFINE_SPINLOCK(irq_2_ir_lock);
-+static DEFINE_RAW_SPINLOCK(irq_2_ir_lock);
- 
- static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
- {
-@@ -62,12 +62,12 @@ int get_irte(int irq, struct irte *entry)
- 	if (!entry || !irq_iommu)
- 		return -1;
- 
--	spin_lock_irqsave(&irq_2_ir_lock, flags);
-+	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 
- 	index = irq_iommu->irte_index + irq_iommu->sub_handle;
- 	*entry = *(irq_iommu->iommu->ir_table->base + index);
- 
--	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 	return 0;
- }
- 
-@@ -101,7 +101,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 		return -1;
- 	}
- 
--	spin_lock_irqsave(&irq_2_ir_lock, flags);
-+	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 	do {
- 		for (i = index; i < index + count; i++)
- 			if  (table->base[i].present)
-@@ -113,7 +113,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 		index = (index + count) % INTR_REMAP_TABLE_ENTRIES;
- 
- 		if (index == start_index) {
--			spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+			raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 			printk(KERN_ERR "can't allocate an IRTE\n");
- 			return -1;
- 		}
-@@ -127,7 +127,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 	irq_iommu->sub_handle = 0;
- 	irq_iommu->irte_mask = mask;
- 
--	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 
- 	return index;
- }
-@@ -152,10 +152,10 @@ int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- 	if (!irq_iommu)
- 		return -1;
- 
--	spin_lock_irqsave(&irq_2_ir_lock, flags);
-+	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 	*sub_handle = irq_iommu->sub_handle;
- 	index = irq_iommu->irte_index;
--	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 	return index;
- }
- 
-@@ -167,14 +167,14 @@ int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- 	if (!irq_iommu)
- 		return -1;
- 
--	spin_lock_irqsave(&irq_2_ir_lock, flags);
-+	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index = index;
- 	irq_iommu->sub_handle = subhandle;
- 	irq_iommu->irte_mask = 0;
- 
--	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 
- 	return 0;
- }
-@@ -190,7 +190,7 @@ int modify_irte(int irq, struct irte *irte_modified)
- 	if (!irq_iommu)
- 		return -1;
- 
--	spin_lock_irqsave(&irq_2_ir_lock, flags);
-+	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 
- 	iommu = irq_iommu->iommu;
- 
-@@ -202,7 +202,7 @@ int modify_irte(int irq, struct irte *irte_modified)
- 	__iommu_flush_cache(iommu, irte, sizeof(*irte));
- 
- 	rc = qi_flush_iec(iommu, index, 0);
--	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 
- 	return rc;
- }
-@@ -270,7 +270,7 @@ int free_irte(int irq)
- 	if (!irq_iommu)
- 		return -1;
- 
--	spin_lock_irqsave(&irq_2_ir_lock, flags);
-+	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 
- 	rc = clear_entries(irq_iommu);
- 
-@@ -279,7 +279,7 @@ int free_irte(int irq)
- 	irq_iommu->sub_handle = 0;
- 	irq_iommu->irte_mask = 0;
- 
--	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
- 
- 	return rc;
- }
-@@ -409,7 +409,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
- 
- 	addr = virt_to_phys((void *)iommu->ir_table->base);
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 
- 	dmar_writeq(iommu->reg + DMAR_IRTA_REG,
- 		    (addr) | IR_X2APIC_MODE(mode) | INTR_REMAP_TABLE_REG_SIZE);
-@@ -420,7 +420,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
- 
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (sts & DMA_GSTS_IRTPS), sts);
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- 
- 	/*
- 	 * global invalidation of interrupt entry cache before enabling
-@@ -428,7 +428,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
- 	 */
- 	qi_global_iec(iommu);
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 
- 	/* Enable interrupt-remapping */
- 	iommu->gcmd |= DMA_GCMD_IRE;
-@@ -437,7 +437,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
- 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
- 		      readl, (sts & DMA_GSTS_IRES), sts);
- 
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- }
- 
- 
-@@ -485,7 +485,7 @@ static void iommu_disable_intr_remapping(struct intel_iommu *iommu)
- 	 */
- 	qi_global_iec(iommu);
- 
--	spin_lock_irqsave(&iommu->register_lock, flags);
-+	raw_spin_lock_irqsave(&iommu->register_lock, flags);
- 
- 	sts = dmar_readq(iommu->reg + DMAR_GSTS_REG);
- 	if (!(sts & DMA_GSTS_IRES))
-@@ -498,7 +498,7 @@ static void iommu_disable_intr_remapping(struct intel_iommu *iommu)
- 		      readl, !(sts & DMA_GSTS_IRES), sts);
- 
- end:
--	spin_unlock_irqrestore(&iommu->register_lock, flags);
-+	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
- }
- 
- int __init intr_remapping_supported(void)
-diff --git a/drivers/oprofile/event_buffer.c b/drivers/oprofile/event_buffer.c
-index dd87e86..c0cc4e7 100644
---- a/drivers/oprofile/event_buffer.c
-+++ b/drivers/oprofile/event_buffer.c
-@@ -82,10 +82,10 @@ int alloc_event_buffer(void)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&oprofilefs_lock, flags);
-+	raw_spin_lock_irqsave(&oprofilefs_lock, flags);
- 	buffer_size = oprofile_buffer_size;
- 	buffer_watershed = oprofile_buffer_watershed;
--	spin_unlock_irqrestore(&oprofilefs_lock, flags);
-+	raw_spin_unlock_irqrestore(&oprofilefs_lock, flags);
- 
- 	if (buffer_watershed >= buffer_size)
- 		return -EINVAL;
-diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-index 94796f3..da14432 100644
---- a/drivers/oprofile/oprofile_perf.c
-+++ b/drivers/oprofile/oprofile_perf.c
-@@ -160,9 +160,9 @@ static int oprofile_perf_create_files(struct super_block *sb, struct dentry *roo
- 
- static int oprofile_perf_setup(void)
- {
--	spin_lock(&oprofilefs_lock);
-+	raw_spin_lock(&oprofilefs_lock);
- 	op_perf_setup();
--	spin_unlock(&oprofilefs_lock);
-+	raw_spin_unlock(&oprofilefs_lock);
- 	return 0;
- }
- 
-diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
-index e9ff6f7..d0de6cc 100644
---- a/drivers/oprofile/oprofilefs.c
-+++ b/drivers/oprofile/oprofilefs.c
-@@ -21,7 +21,7 @@
- 
- #define OPROFILEFS_MAGIC 0x6f70726f
- 
--DEFINE_SPINLOCK(oprofilefs_lock);
-+DEFINE_RAW_SPINLOCK(oprofilefs_lock);
- 
- static struct inode *oprofilefs_get_inode(struct super_block *sb, int mode)
- {
-@@ -76,9 +76,9 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
- 	if (copy_from_user(tmpbuf, buf, count))
- 		return -EFAULT;
- 
--	spin_lock_irqsave(&oprofilefs_lock, flags);
-+	raw_spin_lock_irqsave(&oprofilefs_lock, flags);
- 	*val = simple_strtoul(tmpbuf, NULL, 0);
--	spin_unlock_irqrestore(&oprofilefs_lock, flags);
-+	raw_spin_unlock_irqrestore(&oprofilefs_lock, flags);
- 	return 0;
- }
- 
-diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
-index 915fd74..d449a74 100644
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -50,7 +50,7 @@
- #include <video/vga.h>
- #include <asm/io.h>
- 
--static DEFINE_SPINLOCK(vga_lock);
-+static DEFINE_RAW_SPINLOCK(vga_lock);
- static int cursor_size_lastfrom;
- static int cursor_size_lastto;
- static u32 vgacon_xres;
-@@ -157,7 +157,7 @@ static inline void write_vga(unsigned char reg, unsigned int val)
- 	 * ddprintk might set the console position from interrupt
- 	 * handlers, thus the write has to be IRQ-atomic.
- 	 */
--	spin_lock_irqsave(&vga_lock, flags);
-+	raw_spin_lock_irqsave(&vga_lock, flags);
- 
- #ifndef SLOW_VGA
- 	v1 = reg + (val & 0xff00);
-@@ -170,7 +170,7 @@ static inline void write_vga(unsigned char reg, unsigned int val)
- 	outb_p(reg + 1, vga_video_port_reg);
- 	outb_p(val & 0xff, vga_video_port_val);
- #endif
--	spin_unlock_irqrestore(&vga_lock, flags);
-+	raw_spin_unlock_irqrestore(&vga_lock, flags);
- }
- 
- static inline void vga_set_mem_top(struct vc_data *c)
-@@ -664,7 +664,7 @@ static void vgacon_set_cursor_size(int xpos, int from, int to)
- 	cursor_size_lastfrom = from;
- 	cursor_size_lastto = to;
- 
--	spin_lock_irqsave(&vga_lock, flags);
-+	raw_spin_lock_irqsave(&vga_lock, flags);
- 	if (vga_video_type >= VIDEO_TYPE_VGAC) {
- 		outb_p(VGA_CRTC_CURSOR_START, vga_video_port_reg);
- 		curs = inb_p(vga_video_port_val);
-@@ -682,7 +682,7 @@ static void vgacon_set_cursor_size(int xpos, int from, int to)
- 	outb_p(curs, vga_video_port_val);
- 	outb_p(VGA_CRTC_CURSOR_END, vga_video_port_reg);
- 	outb_p(cure, vga_video_port_val);
--	spin_unlock_irqrestore(&vga_lock, flags);
-+	raw_spin_unlock_irqrestore(&vga_lock, flags);
- }
- 
- static void vgacon_cursor(struct vc_data *c, int mode)
-@@ -757,7 +757,7 @@ static int vgacon_doresize(struct vc_data *c,
- 	unsigned int scanlines = height * c->vc_font.height;
- 	u8 scanlines_lo = 0, r7 = 0, vsync_end = 0, mode, max_scan;
- 
--	spin_lock_irqsave(&vga_lock, flags);
-+	raw_spin_lock_irqsave(&vga_lock, flags);
- 
- 	vgacon_xres = width * VGA_FONTWIDTH;
- 	vgacon_yres = height * c->vc_font.height;
-@@ -808,7 +808,7 @@ static int vgacon_doresize(struct vc_data *c,
- 		outb_p(vsync_end, vga_video_port_val);
- 	}
- 
--	spin_unlock_irqrestore(&vga_lock, flags);
-+	raw_spin_unlock_irqrestore(&vga_lock, flags);
- 	return 0;
- }
- 
-@@ -891,11 +891,11 @@ static void vga_vesa_blank(struct vgastate *state, int mode)
- {
- 	/* save original values of VGA controller registers */
- 	if (!vga_vesa_blanked) {
--		spin_lock_irq(&vga_lock);
-+		raw_spin_lock_irq(&vga_lock);
- 		vga_state.SeqCtrlIndex = vga_r(state->vgabase, VGA_SEQ_I);
- 		vga_state.CrtCtrlIndex = inb_p(vga_video_port_reg);
- 		vga_state.CrtMiscIO = vga_r(state->vgabase, VGA_MIS_R);
--		spin_unlock_irq(&vga_lock);
-+		raw_spin_unlock_irq(&vga_lock);
- 
- 		outb_p(0x00, vga_video_port_reg);	/* HorizontalTotal */
- 		vga_state.HorizontalTotal = inb_p(vga_video_port_val);
-@@ -918,7 +918,7 @@ static void vga_vesa_blank(struct vgastate *state, int mode)
- 
- 	/* assure that video is enabled */
- 	/* "0x20" is VIDEO_ENABLE_bit in register 01 of sequencer */
--	spin_lock_irq(&vga_lock);
-+	raw_spin_lock_irq(&vga_lock);
- 	vga_wseq(state->vgabase, VGA_SEQ_CLOCK_MODE, vga_state.ClockingMode | 0x20);
- 
- 	/* test for vertical retrace in process.... */
-@@ -954,13 +954,13 @@ static void vga_vesa_blank(struct vgastate *state, int mode)
- 	/* restore both index registers */
- 	vga_w(state->vgabase, VGA_SEQ_I, vga_state.SeqCtrlIndex);
- 	outb_p(vga_state.CrtCtrlIndex, vga_video_port_reg);
--	spin_unlock_irq(&vga_lock);
-+	raw_spin_unlock_irq(&vga_lock);
- }
- 
- static void vga_vesa_unblank(struct vgastate *state)
- {
- 	/* restore original values of VGA controller registers */
--	spin_lock_irq(&vga_lock);
-+	raw_spin_lock_irq(&vga_lock);
- 	vga_w(state->vgabase, VGA_MIS_W, vga_state.CrtMiscIO);
- 
- 	outb_p(0x00, vga_video_port_reg);	/* HorizontalTotal */
-@@ -985,7 +985,7 @@ static void vga_vesa_unblank(struct vgastate *state)
- 	/* restore index/control registers */
- 	vga_w(state->vgabase, VGA_SEQ_I, vga_state.SeqCtrlIndex);
- 	outb_p(vga_state.CrtCtrlIndex, vga_video_port_reg);
--	spin_unlock_irq(&vga_lock);
-+	raw_spin_unlock_irq(&vga_lock);
- }
- 
- static void vga_pal_blank(struct vgastate *state)
-@@ -1104,7 +1104,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
- 		charmap += 4 * cmapsz;
++So let's look at an example RCU lockdep splat from 3.0-rc5, one that
++has long since been fixed:
++
++===============================
++[ INFO: suspicious RCU usage. ]
++-------------------------------
++block/cfq-iosched.c:2776 suspicious rcu_dereference_protected() usage!
++
++other info that might help us debug this:
++
++
++rcu_scheduler_active = 1, debug_locks = 0
++3 locks held by scsi_scan_6/1552:
++ #0:  (&shost->scan_mutex){+.+.+.}, at: [<ffffffff8145efca>]
++scsi_scan_host_selected+0x5a/0x150
++ #1:  (&eq->sysfs_lock){+.+...}, at: [<ffffffff812a5032>]
++elevator_exit+0x22/0x60
++ #2:  (&(&q->__queue_lock)->rlock){-.-...}, at: [<ffffffff812b6233>]
++cfq_exit_queue+0x43/0x190
++
++stack backtrace:
++Pid: 1552, comm: scsi_scan_6 Not tainted 3.0.0-rc5 #17
++Call Trace:
++ [<ffffffff810abb9b>] lockdep_rcu_dereference+0xbb/0xc0
++ [<ffffffff812b6139>] __cfq_exit_single_io_context+0xe9/0x120
++ [<ffffffff812b626c>] cfq_exit_queue+0x7c/0x190
++ [<ffffffff812a5046>] elevator_exit+0x36/0x60
++ [<ffffffff812a802a>] blk_cleanup_queue+0x4a/0x60
++ [<ffffffff8145cc09>] scsi_free_queue+0x9/0x10
++ [<ffffffff81460944>] __scsi_remove_device+0x84/0xd0
++ [<ffffffff8145dca3>] scsi_probe_and_add_lun+0x353/0xb10
++ [<ffffffff817da069>] ? error_exit+0x29/0xb0
++ [<ffffffff817d98ed>] ? _raw_spin_unlock_irqrestore+0x3d/0x80
++ [<ffffffff8145e722>] __scsi_scan_target+0x112/0x680
++ [<ffffffff812c690d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
++ [<ffffffff817da069>] ? error_exit+0x29/0xb0
++ [<ffffffff812bcc60>] ? kobject_del+0x40/0x40
++ [<ffffffff8145ed16>] scsi_scan_channel+0x86/0xb0
++ [<ffffffff8145f0b0>] scsi_scan_host_selected+0x140/0x150
++ [<ffffffff8145f149>] do_scsi_scan_host+0x89/0x90
++ [<ffffffff8145f170>] do_scan_async+0x20/0x160
++ [<ffffffff8145f150>] ? do_scsi_scan_host+0x90/0x90
++ [<ffffffff810975b6>] kthread+0xa6/0xb0
++ [<ffffffff817db154>] kernel_thread_helper+0x4/0x10
++ [<ffffffff81066430>] ? finish_task_switch+0x80/0x110
++ [<ffffffff817d9c04>] ? retint_restore_args+0xe/0xe
++ [<ffffffff81097510>] ? __init_kthread_worker+0x70/0x70
++ [<ffffffff817db150>] ? gs_change+0xb/0xb
++
++Line 2776 of block/cfq-iosched.c in v3.0-rc5 is as follows:
++
++	if (rcu_dereference(ioc->ioc_data) == cic) {
++
++This form says that it must be in a plain vanilla RCU read-side critical
++section, but the "other info" list above shows that this is not the
++case.  Instead, we hold three locks, one of which might be RCU related.
++And maybe that lock really does protect this reference.  If so, the fix
++is to inform RCU, perhaps by changing __cfq_exit_single_io_context() to
++take the struct request_queue "q" from cfq_exit_queue() as an argument,
++which would permit us to invoke rcu_dereference_protected as follows:
++
++	if (rcu_dereference_protected(ioc->ioc_data,
++				      lockdep_is_held(&q->queue_lock)) == cic) {
++
++With this change, there would be no lockdep-RCU splat emitted if this
++code was invoked either from within an RCU read-side critical section
++or with the ->queue_lock held.  In particular, this would have suppressed
++the above lockdep-RCU splat because ->queue_lock is held (see #2 in the
++list above).
++
++On the other hand, perhaps we really do need an RCU read-side critical
++section.  In this case, the critical section must span the use of the
++return value from rcu_dereference(), or at least until there is some
++reference count incremented or some such.  One way to handle this is to
++add rcu_read_lock() and rcu_read_unlock() as follows:
++
++	rcu_read_lock();
++	if (rcu_dereference(ioc->ioc_data) == cic) {
++		spin_lock(&ioc->lock);
++		rcu_assign_pointer(ioc->ioc_data, NULL);
++		spin_unlock(&ioc->lock);
++	}
++	rcu_read_unlock();
++
++With this change, the rcu_dereference() is always within an RCU
++read-side critical section, which again would have suppressed the
++above lockdep-RCU splat.
++
++But in this particular case, we don't actually deference the pointer
++returned from rcu_dereference().  Instead, that pointer is just compared
++to the cic pointer, which means that the rcu_dereference() can be replaced
++by rcu_access_pointer() as follows:
++
++	if (rcu_access_pointer(ioc->ioc_data) == cic) {
++
++Because it is legal to invoke rcu_access_pointer() without protection,
++this change would also suppress the above lockdep-RCU splat.
+diff --git a/Documentation/RCU/lockdep.txt b/Documentation/RCU/lockdep.txt
+index d7a49b2..a102d4b 100644
+--- a/Documentation/RCU/lockdep.txt
++++ b/Documentation/RCU/lockdep.txt
+@@ -32,9 +32,27 @@ checking of rcu_dereference() primitives:
+ 	srcu_dereference(p, sp):
+ 		Check for SRCU read-side critical section.
+ 	rcu_dereference_check(p, c):
+-		Use explicit check expression "c".  This is useful in
+-		code that is invoked by both readers and updaters.
+-	rcu_dereference_raw(p)
++		Use explicit check expression "c" along with
++		rcu_read_lock_held().  This is useful in code that is
++		invoked by both RCU readers and updaters.
++	rcu_dereference_bh_check(p, c):
++		Use explicit check expression "c" along with
++		rcu_read_lock_bh_held().  This is useful in code that
++		is invoked by both RCU-bh readers and updaters.
++	rcu_dereference_sched_check(p, c):
++		Use explicit check expression "c" along with
++		rcu_read_lock_sched_held().  This is useful in code that
++		is invoked by both RCU-sched readers and updaters.
++	srcu_dereference_check(p, c):
++		Use explicit check expression "c" along with
++		srcu_read_lock_held()().  This is useful in code that
++		is invoked by both SRCU readers and updaters.
++	rcu_dereference_index_check(p, c):
++		Use explicit check expression "c", but the caller
++		must supply one of the rcu_read_lock_held() functions.
++		This is useful in code that uses RCU-protected arrays
++		that is invoked by both RCU readers and updaters.
++	rcu_dereference_raw(p):
+ 		Don't check.  (Use sparingly, if at all.)
+ 	rcu_dereference_protected(p, c):
+ 		Use explicit check expression "c", and omit all barriers
+@@ -48,13 +66,11 @@ checking of rcu_dereference() primitives:
+ 		value of the pointer itself, for example, against NULL.
+ 
+ The rcu_dereference_check() check expression can be any boolean
+-expression, but would normally include one of the rcu_read_lock_held()
+-family of functions and a lockdep expression.  However, any boolean
+-expression can be used.  For a moderately ornate example, consider
+-the following:
++expression, but would normally include a lockdep expression.  However,
++any boolean expression can be used.  For a moderately ornate example,
++consider the following:
+ 
+ 	file = rcu_dereference_check(fdt->fd[fd],
+-				     rcu_read_lock_held() ||
+ 				     lockdep_is_held(&files->file_lock) ||
+ 				     atomic_read(&files->count) == 1);
+ 
+@@ -62,7 +78,7 @@ This expression picks up the pointer "fdt->fd[fd]" in an RCU-safe manner,
+ and, if CONFIG_PROVE_RCU is configured, verifies that this expression
+ is used in:
+ 
+-1.	An RCU read-side critical section, or
++1.	An RCU read-side critical section (implicit), or
+ 2.	with files->file_lock held, or
+ 3.	on an unshared files_struct.
+ 
+diff --git a/Documentation/RCU/torture.txt b/Documentation/RCU/torture.txt
+index 5d90167..783d6c1 100644
+--- a/Documentation/RCU/torture.txt
++++ b/Documentation/RCU/torture.txt
+@@ -42,7 +42,7 @@ fqs_holdoff	Holdoff time (in microseconds) between consecutive calls
+ fqs_stutter	Wait time (in seconds) between consecutive bursts
+ 		of calls to force_quiescent_state().
+ 
+-irqreaders	Says to invoke RCU readers from irq level.  This is currently
++irqreader	Says to invoke RCU readers from irq level.  This is currently
+ 		done via timers.  Defaults to "1" for variants of RCU that
+ 		permit this.  (Or, more accurately, variants of RCU that do
+ 		-not- permit this know to ignore this variable.)
+@@ -79,19 +79,68 @@ stutter		The length of time to run the test before pausing for this
+ 		Specifying "stutter=0" causes the test to run continuously
+ 		without pausing, which is the old default behavior.
+ 
++test_boost	Whether or not to test the ability of RCU to do priority
++		boosting.  Defaults to "test_boost=1", which performs
++		RCU priority-inversion testing only if the selected
++		RCU implementation supports priority boosting.  Specifying
++		"test_boost=0" never performs RCU priority-inversion
++		testing.  Specifying "test_boost=2" performs RCU
++		priority-inversion testing even if the selected RCU
++		implementation does not support RCU priority boosting,
++		which can be used to test rcutorture's ability to
++		carry out RCU priority-inversion testing.
++
++test_boost_interval
++		The number of seconds in an RCU priority-inversion test
++		cycle.	Defaults to "test_boost_interval=7".  It is
++		usually wise for this value to be relatively prime to
++		the value selected for "stutter".
++
++test_boost_duration
++		The number of seconds to do RCU priority-inversion testing
++		within any given "test_boost_interval".  Defaults to
++		"test_boost_duration=4".
++
+ test_no_idle_hz	Whether or not to test the ability of RCU to operate in
+ 		a kernel that disables the scheduling-clock interrupt to
+ 		idle CPUs.  Boolean parameter, "1" to test, "0" otherwise.
+ 		Defaults to omitting this test.
+ 
+-torture_type	The type of RCU to test: "rcu" for the rcu_read_lock() API,
+-		"rcu_sync" for rcu_read_lock() with synchronous reclamation,
+-		"rcu_bh" for the rcu_read_lock_bh() API, "rcu_bh_sync" for
+-		rcu_read_lock_bh() with synchronous reclamation, "srcu" for
+-		the "srcu_read_lock()" API, "sched" for the use of
+-		preempt_disable() together with synchronize_sched(),
+-		and "sched_expedited" for the use of preempt_disable()
+-		with synchronize_sched_expedited().
++torture_type	The type of RCU to test, with string values as follows:
++
++		"rcu":  rcu_read_lock(), rcu_read_unlock() and call_rcu().
++
++		"rcu_sync":  rcu_read_lock(), rcu_read_unlock(), and
++			synchronize_rcu().
++
++		"rcu_expedited": rcu_read_lock(), rcu_read_unlock(), and
++			synchronize_rcu_expedited().
++
++		"rcu_bh": rcu_read_lock_bh(), rcu_read_unlock_bh(), and
++			call_rcu_bh().
++
++		"rcu_bh_sync": rcu_read_lock_bh(), rcu_read_unlock_bh(),
++			and synchronize_rcu_bh().
++
++		"rcu_bh_expedited": rcu_read_lock_bh(), rcu_read_unlock_bh(),
++			and synchronize_rcu_bh_expedited().
++
++		"srcu": srcu_read_lock(), srcu_read_unlock() and
++			synchronize_srcu().
++
++		"srcu_expedited": srcu_read_lock(), srcu_read_unlock() and
++			synchronize_srcu_expedited().
++
++		"sched": preempt_disable(), preempt_enable(), and
++			call_rcu_sched().
++
++		"sched_sync": preempt_disable(), preempt_enable(), and
++			synchronize_sched().
++
++		"sched_expedited": preempt_disable(), preempt_enable(), and
++			synchronize_sched_expedited().
++
++		Defaults to "rcu".
+ 
+ verbose		Enable debug printk()s.  Default is disabled.
+ 
+@@ -100,12 +149,12 @@ OUTPUT
+ 
+ The statistics output is as follows:
+ 
+-	rcu-torture: --- Start of test: nreaders=16 stat_interval=0 verbose=0
+-	rcu-torture: rtc: 0000000000000000 ver: 1916 tfle: 0 rta: 1916 rtaf: 0 rtf: 1915
+-	rcu-torture: Reader Pipe:  1466408 9747 0 0 0 0 0 0 0 0 0
+-	rcu-torture: Reader Batch:  1464477 11678 0 0 0 0 0 0 0 0
+-	rcu-torture: Free-Block Circulation:  1915 1915 1915 1915 1915 1915 1915 1915 1915 1915 0
+-	rcu-torture: --- End of test
++	rcu-torture:--- Start of test: nreaders=16 nfakewriters=4 stat_interval=30 verbose=0 test_no_idle_hz=1 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
++	rcu-torture: rtc:           (null) ver: 155441 tfle: 0 rta: 155441 rtaf: 8884 rtf: 155440 rtmbe: 0 rtbke: 0 rtbre: 0 rtbf: 0 rtb: 0 nt: 3055767
++	rcu-torture: Reader Pipe:  727860534 34213 0 0 0 0 0 0 0 0 0
++	rcu-torture: Reader Batch:  727877838 17003 0 0 0 0 0 0 0 0 0
++	rcu-torture: Free-Block Circulation:  155440 155440 155440 155440 155440 155440 155440 155440 155440 155440 0
++	rcu-torture:--- End of test: SUCCESS: nreaders=16 nfakewriters=4 stat_interval=30 verbose=0 test_no_idle_hz=1 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4
+ 
+ The command "dmesg | grep torture:" will extract this information on
+ most systems.  On more esoteric configurations, it may be necessary to
+@@ -113,26 +162,55 @@ use other commands to access the output of the printk()s used by
+ the RCU torture test.  The printk()s use KERN_ALERT, so they should
+ be evident.  ;-)
+ 
++The first and last lines show the rcutorture module parameters, and the
++last line shows either "SUCCESS" or "FAILURE", based on rcutorture's
++automatic determination as to whether RCU operated correctly.
++
+ The entries are as follows:
+ 
+ o	"rtc": The hexadecimal address of the structure currently visible
+ 	to readers.
+ 
+-o	"ver": The number of times since boot that the rcutw writer task
++o	"ver": The number of times since boot that the RCU writer task
+ 	has changed the structure visible to readers.
+ 
+ o	"tfle": If non-zero, indicates that the "torture freelist"
+-	containing structure to be placed into the "rtc" area is empty.
++	containing structures to be placed into the "rtc" area is empty.
+ 	This condition is important, since it can fool you into thinking
+ 	that RCU is working when it is not.  :-/
+ 
+ o	"rta": Number of structures allocated from the torture freelist.
+ 
+ o	"rtaf": Number of allocations from the torture freelist that have
+-	failed due to the list being empty.
++	failed due to the list being empty.  It is not unusual for this
++	to be non-zero, but it is bad for it to be a large fraction of
++	the value indicated by "rta".
+ 
+ o	"rtf": Number of frees into the torture freelist.
+ 
++o	"rtmbe": A non-zero value indicates that rcutorture believes that
++	rcu_assign_pointer() and rcu_dereference() are not working
++	correctly.  This value should be zero.
++
++o	"rtbke": rcutorture was unable to create the real-time kthreads
++	used to force RCU priority inversion.  This value should be zero.
++
++o	"rtbre": Although rcutorture successfully created the kthreads
++	used to force RCU priority inversion, it was unable to set them
++	to the real-time priority level of 1.  This value should be zero.
++
++o	"rtbf": The number of times that RCU priority boosting failed
++	to resolve RCU priority inversion.
++
++o	"rtb": The number of times that rcutorture attempted to force
++	an RCU priority inversion condition.  If you are testing RCU
++	priority boosting via the "test_boost" module parameter, this
++	value should be non-zero.
++
++o	"nt": The number of times rcutorture ran RCU read-side code from
++	within a timer handler.  This value should be non-zero only
++	if you specified the "irqreader" module parameter.
++
+ o	"Reader Pipe": Histogram of "ages" of structures seen by readers.
+ 	If any entries past the first two are non-zero, RCU is broken.
+ 	And rcutorture prints the error flag string "!!!" to make sure
+@@ -162,26 +240,15 @@ o	"Free-Block Circulation": Shows the number of torture structures
+ 	somehow gets incremented farther than it should.
+ 
+ Different implementations of RCU can provide implementation-specific
+-additional information.  For example, SRCU provides the following:
++additional information.  For example, SRCU provides the following
++additional line:
+ 
+-	srcu-torture: rtc: f8cf46a8 ver: 355 tfle: 0 rta: 356 rtaf: 0 rtf: 346 rtmbe: 0
+-	srcu-torture: Reader Pipe:  559738 939 0 0 0 0 0 0 0 0 0
+-	srcu-torture: Reader Batch:  560434 243 0 0 0 0 0 0 0 0
+-	srcu-torture: Free-Block Circulation:  355 354 353 352 351 350 349 348 347 346 0
+ 	srcu-torture: per-CPU(idx=1): 0(0,1) 1(0,1) 2(0,0) 3(0,1)
+ 
+-The first four lines are similar to those for RCU.  The last line shows
+-the per-CPU counter state.  The numbers in parentheses are the values
+-of the "old" and "current" counters for the corresponding CPU.  The
+-"idx" value maps the "old" and "current" values to the underlying array,
+-and is useful for debugging.
+-
+-Similarly, sched_expedited RCU provides the following:
+-
+-	sched_expedited-torture: rtc: d0000000016c1880 ver: 1090796 tfle: 0 rta: 1090796 rtaf: 0 rtf: 1090787 rtmbe: 0 nt: 27713319
+-	sched_expedited-torture: Reader Pipe:  12660320201 95875 0 0 0 0 0 0 0 0 0
+-	sched_expedited-torture: Reader Batch:  12660424885 0 0 0 0 0 0 0 0 0 0
+-	sched_expedited-torture: Free-Block Circulation:  1090795 1090795 1090794 1090793 1090792 1090791 1090790 1090789 1090788 1090787 0
++This line shows the per-CPU counter state.  The numbers in parentheses are
++the values of the "old" and "current" counters for the corresponding CPU.
++The "idx" value maps the "old" and "current" values to the underlying
++array, and is useful for debugging.
+ 
+ 
+ USAGE
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index 8173cec..aaf65f6 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -33,23 +33,23 @@ rcu/rcuboost:
+ The output of "cat rcu/rcudata" looks as follows:
+ 
+ rcu_sched:
+-  0 c=20972 g=20973 pq=1 pqc=20972 qp=0 dt=545/1/0 df=50 of=0 ri=0 ql=163 qs=NRW. kt=0/W/0 ktl=ebc3 b=10 ci=153737 co=0 ca=0
+-  1 c=20972 g=20973 pq=1 pqc=20972 qp=0 dt=967/1/0 df=58 of=0 ri=0 ql=634 qs=NRW. kt=0/W/1 ktl=58c b=10 ci=191037 co=0 ca=0
+-  2 c=20972 g=20973 pq=1 pqc=20972 qp=0 dt=1081/1/0 df=175 of=0 ri=0 ql=74 qs=N.W. kt=0/W/2 ktl=da94 b=10 ci=75991 co=0 ca=0
+-  3 c=20942 g=20943 pq=1 pqc=20942 qp=1 dt=1846/0/0 df=404 of=0 ri=0 ql=0 qs=.... kt=0/W/3 ktl=d1cd b=10 ci=72261 co=0 ca=0
+-  4 c=20972 g=20973 pq=1 pqc=20972 qp=0 dt=369/1/0 df=83 of=0 ri=0 ql=48 qs=N.W. kt=0/W/4 ktl=e0e7 b=10 ci=128365 co=0 ca=0
+-  5 c=20972 g=20973 pq=1 pqc=20972 qp=0 dt=381/1/0 df=64 of=0 ri=0 ql=169 qs=NRW. kt=0/W/5 ktl=fb2f b=10 ci=164360 co=0 ca=0
+-  6 c=20972 g=20973 pq=1 pqc=20972 qp=0 dt=1037/1/0 df=183 of=0 ri=0 ql=62 qs=N.W. kt=0/W/6 ktl=d2ad b=10 ci=65663 co=0 ca=0
+-  7 c=20897 g=20897 pq=1 pqc=20896 qp=0 dt=1572/0/0 df=382 of=0 ri=0 ql=0 qs=.... kt=0/W/7 ktl=cf15 b=10 ci=75006 co=0 ca=0
++  0 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=545/1/0 df=50 of=0 ri=0 ql=163 qs=NRW. kt=0/W/0 ktl=ebc3 b=10 ci=153737 co=0 ca=0
++  1 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=967/1/0 df=58 of=0 ri=0 ql=634 qs=NRW. kt=0/W/1 ktl=58c b=10 ci=191037 co=0 ca=0
++  2 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=1081/1/0 df=175 of=0 ri=0 ql=74 qs=N.W. kt=0/W/2 ktl=da94 b=10 ci=75991 co=0 ca=0
++  3 c=20942 g=20943 pq=1 pgp=20942 qp=1 dt=1846/0/0 df=404 of=0 ri=0 ql=0 qs=.... kt=0/W/3 ktl=d1cd b=10 ci=72261 co=0 ca=0
++  4 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=369/1/0 df=83 of=0 ri=0 ql=48 qs=N.W. kt=0/W/4 ktl=e0e7 b=10 ci=128365 co=0 ca=0
++  5 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=381/1/0 df=64 of=0 ri=0 ql=169 qs=NRW. kt=0/W/5 ktl=fb2f b=10 ci=164360 co=0 ca=0
++  6 c=20972 g=20973 pq=1 pgp=20973 qp=0 dt=1037/1/0 df=183 of=0 ri=0 ql=62 qs=N.W. kt=0/W/6 ktl=d2ad b=10 ci=65663 co=0 ca=0
++  7 c=20897 g=20897 pq=1 pgp=20896 qp=0 dt=1572/0/0 df=382 of=0 ri=0 ql=0 qs=.... kt=0/W/7 ktl=cf15 b=10 ci=75006 co=0 ca=0
+ rcu_bh:
+-  0 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=545/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/0 ktl=ebc3 b=10 ci=0 co=0 ca=0
+-  1 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=967/1/0 df=3 of=0 ri=1 ql=0 qs=.... kt=0/W/1 ktl=58c b=10 ci=151 co=0 ca=0
+-  2 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=1081/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/2 ktl=da94 b=10 ci=0 co=0 ca=0
+-  3 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=1846/0/0 df=8 of=0 ri=1 ql=0 qs=.... kt=0/W/3 ktl=d1cd b=10 ci=0 co=0 ca=0
+-  4 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=369/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/4 ktl=e0e7 b=10 ci=0 co=0 ca=0
+-  5 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=381/1/0 df=4 of=0 ri=1 ql=0 qs=.... kt=0/W/5 ktl=fb2f b=10 ci=0 co=0 ca=0
+-  6 c=1480 g=1480 pq=1 pqc=1479 qp=0 dt=1037/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/6 ktl=d2ad b=10 ci=0 co=0 ca=0
+-  7 c=1474 g=1474 pq=1 pqc=1473 qp=0 dt=1572/0/0 df=8 of=0 ri=1 ql=0 qs=.... kt=0/W/7 ktl=cf15 b=10 ci=0 co=0 ca=0
++  0 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=545/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/0 ktl=ebc3 b=10 ci=0 co=0 ca=0
++  1 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=967/1/0 df=3 of=0 ri=1 ql=0 qs=.... kt=0/W/1 ktl=58c b=10 ci=151 co=0 ca=0
++  2 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=1081/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/2 ktl=da94 b=10 ci=0 co=0 ca=0
++  3 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=1846/0/0 df=8 of=0 ri=1 ql=0 qs=.... kt=0/W/3 ktl=d1cd b=10 ci=0 co=0 ca=0
++  4 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=369/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/4 ktl=e0e7 b=10 ci=0 co=0 ca=0
++  5 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=381/1/0 df=4 of=0 ri=1 ql=0 qs=.... kt=0/W/5 ktl=fb2f b=10 ci=0 co=0 ca=0
++  6 c=1480 g=1480 pq=1 pgp=1480 qp=0 dt=1037/1/0 df=6 of=0 ri=1 ql=0 qs=.... kt=0/W/6 ktl=d2ad b=10 ci=0 co=0 ca=0
++  7 c=1474 g=1474 pq=1 pgp=1473 qp=0 dt=1572/0/0 df=8 of=0 ri=1 ql=0 qs=.... kt=0/W/7 ktl=cf15 b=10 ci=0 co=0 ca=0
+ 
+ The first section lists the rcu_data structures for rcu_sched, the second
+ for rcu_bh.  Note that CONFIG_TREE_PREEMPT_RCU kernels will have an
+@@ -84,7 +84,7 @@ o	"pq" indicates that this CPU has passed through a quiescent state
+ 	CPU has not yet reported that fact, (2) some other CPU has not
+ 	yet reported for this grace period, or (3) both.
+ 
+-o	"pqc" indicates which grace period the last-observed quiescent
++o	"pgp" indicates which grace period the last-observed quiescent
+ 	state for this CPU corresponds to.  This is important for handling
+ 	the race between CPU 0 reporting an extended dynticks-idle
+ 	quiescent state for CPU 1 and CPU 1 suddenly waking up and
+@@ -184,10 +184,14 @@ o	"kt" is the per-CPU kernel-thread state.  The digit preceding
+ 	The number after the final slash is the CPU that the kthread
+ 	is actually running on.
+ 
++	This field is displayed only for CONFIG_RCU_BOOST kernels.
++
+ o	"ktl" is the low-order 16 bits (in hexadecimal) of the count of
+ 	the number of times that this CPU's per-CPU kthread has gone
+ 	through its loop servicing invoke_rcu_cpu_kthread() requests.
+ 
++	This field is displayed only for CONFIG_RCU_BOOST kernels.
++
+ o	"b" is the batch limit for this CPU.  If more than this number
+ 	of RCU callbacks is ready to invoke, then the remainder will
+ 	be deferred.
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index ef820a3..b6a56e3 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -548,7 +548,7 @@ do {									\
  #endif
  
--	spin_lock_irq(&vga_lock);
-+	raw_spin_lock_irq(&vga_lock);
- 	/* First, the Sequencer */
- 	vga_wseq(state->vgabase, VGA_SEQ_RESET, 0x1);
- 	/* CPU writes only to map 2 */
-@@ -1120,7 +1120,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
- 	vga_wgfx(state->vgabase, VGA_GFX_MODE, 0x00);
- 	/* map start at A000:0000 */
- 	vga_wgfx(state->vgabase, VGA_GFX_MISC, 0x00);
--	spin_unlock_irq(&vga_lock);
-+	raw_spin_unlock_irq(&vga_lock);
+ #ifdef CONFIG_PROVE_RCU
+-extern void lockdep_rcu_dereference(const char *file, const int line);
++void lockdep_rcu_suspicious(const char *file, const int line, const char *s);
+ #endif
  
- 	if (arg) {
- 		if (set)
-@@ -1147,7 +1147,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
- 		}
- 	}
+ #endif /* __LINUX_LOCKDEP_H */
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 8f4f881..2cf4226 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -33,6 +33,7 @@
+ #ifndef __LINUX_RCUPDATE_H
+ #define __LINUX_RCUPDATE_H
  
--	spin_lock_irq(&vga_lock);
-+	raw_spin_lock_irq(&vga_lock);
- 	/* First, the sequencer, Synchronous reset */
- 	vga_wseq(state->vgabase, VGA_SEQ_RESET, 0x01);	
- 	/* CPU writes to maps 0 and 1 */
-@@ -1186,7 +1186,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
- 		inb_p(video_port_status);
- 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
- 	}
--	spin_unlock_irq(&vga_lock);
-+	raw_spin_unlock_irq(&vga_lock);
- 	return 0;
- }
++#include <linux/types.h>
+ #include <linux/cache.h>
+ #include <linux/spinlock.h>
+ #include <linux/threads.h>
+@@ -64,32 +65,74 @@ static inline void rcutorture_record_progress(unsigned long vernum)
+ #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+ #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
  
-@@ -1211,26 +1211,26 @@ static int vgacon_adjust_height(struct vc_data *vc, unsigned fontheight)
- 	   registers; they are write-only on EGA, but it appears that they
- 	   are all don't care bits on EGA, so I guess it doesn't matter. */
- 
--	spin_lock_irq(&vga_lock);
-+	raw_spin_lock_irq(&vga_lock);
- 	outb_p(0x07, vga_video_port_reg);	/* CRTC overflow register */
- 	ovr = inb_p(vga_video_port_val);
- 	outb_p(0x09, vga_video_port_reg);	/* Font size register */
- 	fsr = inb_p(vga_video_port_val);
--	spin_unlock_irq(&vga_lock);
-+	raw_spin_unlock_irq(&vga_lock);
- 
- 	vde = maxscan & 0xff;	/* Vertical display end reg */
- 	ovr = (ovr & 0xbd) +	/* Overflow register */
- 	    ((maxscan & 0x100) >> 7) + ((maxscan & 0x200) >> 3);
- 	fsr = (fsr & 0xe0) + (fontheight - 1);	/*  Font size register */
- 
--	spin_lock_irq(&vga_lock);
-+	raw_spin_lock_irq(&vga_lock);
- 	outb_p(0x07, vga_video_port_reg);	/* CRTC overflow register */
- 	outb_p(ovr, vga_video_port_val);
- 	outb_p(0x09, vga_video_port_reg);	/* Font size */
- 	outb_p(fsr, vga_video_port_val);
- 	outb_p(0x12, vga_video_port_reg);	/* Vertical display limit */
- 	outb_p(vde, vga_video_port_val);
--	spin_unlock_irq(&vga_lock);
-+	raw_spin_unlock_irq(&vga_lock);
- 	vga_video_font_height = fontheight;
- 
- 	for (i = 0; i < MAX_NR_CONSOLES; i++) {
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index d14e058..08ffab0 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -42,7 +42,7 @@ extern struct fs_struct init_fs;
- 	.cputimer	= { 						\
- 		.cputime = INIT_CPUTIME,				\
- 		.running = 0,						\
--		.lock = __SPIN_LOCK_UNLOCKED(sig.cputimer.lock),	\
-+		.lock = __RAW_SPIN_LOCK_UNLOCKED(sig.cputimer.lock),	\
- 	},								\
- 	.cred_guard_mutex =						\
- 		 __MUTEX_INITIALIZER(sig.cred_guard_mutex),		\
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index 9310c69..8b9b5d3 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -271,7 +271,7 @@ struct qi_desc {
- };
- 
- struct q_inval {
--	spinlock_t      q_lock;
-+	raw_spinlock_t  q_lock;
- 	struct qi_desc  *desc;          /* invalidation queue */
- 	int             *desc_status;   /* desc status */
- 	int             free_head;      /* first free entry */
-@@ -311,7 +311,7 @@ struct intel_iommu {
- 	u64		cap;
- 	u64		ecap;
- 	u32		gcmd; /* Holds TE, EAFL. Don't need SRTP, SFL, WBF */
--	spinlock_t	register_lock; /* protect register handling */
-+	raw_spinlock_t	register_lock; /* protect register handling */
- 	int		seq_id;	/* sequence id of the iommu */
- 	int		agaw; /* agaw of this iommu */
- 	int		msagaw; /* max sagaw of this iommu */
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index dd7c12e..dce6e4d 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -181,7 +181,7 @@ struct kretprobe {
- 	int nmissed;
- 	size_t data_size;
- 	struct hlist_head free_instances;
--	spinlock_t lock;
-+	raw_spinlock_t lock;
- };
- 
- struct kretprobe_instance {
-diff --git a/include/linux/oprofile.h b/include/linux/oprofile.h
-index 49c8727..a4c5624 100644
---- a/include/linux/oprofile.h
-+++ b/include/linux/oprofile.h
-@@ -166,7 +166,7 @@ ssize_t oprofilefs_ulong_to_user(unsigned long val, char __user * buf, size_t co
- int oprofilefs_ulong_from_user(unsigned long * val, char const __user * buf, size_t count);
- 
- /** lock for read/write safety */
--extern spinlock_t oprofilefs_lock;
-+extern raw_spinlock_t oprofilefs_lock;
- 
++/* Exported common interfaces */
++
++#ifdef CONFIG_PREEMPT_RCU
++
  /**
-  * Add the contents of a circular buffer to the event buffer.
-diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-index 5edc901..b9df9ed 100644
---- a/include/linux/percpu_counter.h
-+++ b/include/linux/percpu_counter.h
-@@ -16,7 +16,7 @@
- #ifdef CONFIG_SMP
- 
- struct percpu_counter {
--	spinlock_t lock;
-+	raw_spinlock_t lock;
- 	s64 count;
- #ifdef CONFIG_HOTPLUG_CPU
- 	struct list_head list;	/* All percpu_counters are on a list */
-diff --git a/include/linux/proportions.h b/include/linux/proportions.h
-index cf793bb..ef35bb7 100644
---- a/include/linux/proportions.h
-+++ b/include/linux/proportions.h
-@@ -58,7 +58,7 @@ struct prop_local_percpu {
- 	 */
- 	int shift;
- 	unsigned long period;
--	spinlock_t lock;		/* protect the snapshot state */
-+	raw_spinlock_t lock;		/* protect the snapshot state */
- };
- 
- int prop_local_init_percpu(struct prop_local_percpu *pl);
-@@ -106,11 +106,11 @@ struct prop_local_single {
- 	 */
- 	unsigned long period;
- 	int shift;
--	spinlock_t lock;		/* protect the snapshot state */
-+	raw_spinlock_t lock;		/* protect the snapshot state */
- };
- 
- #define INIT_PROP_LOCAL_SINGLE(name)			\
--{	.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
-+{	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
- }
- 
- int prop_local_init_single(struct prop_local_single *pl);
-diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
-index 2f00715..e11ccb4 100644
---- a/include/linux/ratelimit.h
-+++ b/include/linux/ratelimit.h
-@@ -8,7 +8,7 @@
- #define DEFAULT_RATELIMIT_BURST		10
- 
- struct ratelimit_state {
--	spinlock_t	lock;		/* protect the state */
-+	raw_spinlock_t	lock;		/* protect the state */
- 
- 	int		interval;
- 	int		burst;
-@@ -20,7 +20,7 @@ struct ratelimit_state {
- #define DEFINE_RATELIMIT_STATE(name, interval_init, burst_init)		\
- 									\
- 	struct ratelimit_state name = {					\
--		.lock		= __SPIN_LOCK_UNLOCKED(name.lock),	\
-+		.lock		= __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
- 		.interval	= interval_init,			\
- 		.burst		= burst_init,				\
- 	}
-@@ -28,7 +28,7 @@ struct ratelimit_state {
- static inline void ratelimit_state_init(struct ratelimit_state *rs,
- 					int interval, int burst)
- {
--	spin_lock_init(&rs->lock);
-+	raw_spin_lock_init(&rs->lock);
- 	rs->interval = interval;
- 	rs->burst = burst;
- 	rs->printed = 0;
-diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
-index 3470124..d5b13bc 100644
---- a/include/linux/rwsem-spinlock.h
-+++ b/include/linux/rwsem-spinlock.h
-@@ -22,7 +22,7 @@
+- * struct rcu_head - callback structure for use with RCU
+- * @next: next update requests in a list
+- * @func: actual update function to call after the grace period.
++ * call_rcu() - Queue an RCU callback for invocation after a grace period.
++ * @head: structure to be used for queueing the RCU updates.
++ * @func: actual callback function to be invoked after the grace period
++ *
++ * The callback function will be invoked some time after a full grace
++ * period elapses, in other words after all pre-existing RCU read-side
++ * critical sections have completed.  However, the callback function
++ * might well execute concurrently with RCU read-side critical sections
++ * that started after call_rcu() was invoked.  RCU read-side critical
++ * sections are delimited by rcu_read_lock() and rcu_read_unlock(),
++ * and may be nested.
   */
- struct rw_semaphore {
- 	__s32			activity;
--	spinlock_t		wait_lock;
-+	raw_spinlock_t		wait_lock;
- 	struct list_head	wait_list;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map dep_map;
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 6a67414..63d4065 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -25,7 +25,7 @@ struct rw_semaphore;
- /* All arch specific implementations share the same struct */
- struct rw_semaphore {
- 	long			count;
--	spinlock_t		wait_lock;
-+	raw_spinlock_t		wait_lock;
- 	struct list_head	wait_list;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
-@@ -56,9 +56,11 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
- # define __RWSEM_DEP_MAP_INIT(lockname)
- #endif
+-struct rcu_head {
+-	struct rcu_head *next;
+-	void (*func)(struct rcu_head *head);
+-};
++extern void call_rcu(struct rcu_head *head,
++			      void (*func)(struct rcu_head *head));
  
--#define __RWSEM_INITIALIZER(name) \
--	{ RWSEM_UNLOCKED_VALUE, __SPIN_LOCK_UNLOCKED(name.wait_lock),	\
--	  LIST_HEAD_INIT((name).wait_list) __RWSEM_DEP_MAP_INIT(name) }
-+#define __RWSEM_INITIALIZER(name)			\
-+	{ RWSEM_UNLOCKED_VALUE,				\
-+	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
-+	  LIST_HEAD_INIT((name).wait_list)		\
-+	  __RWSEM_DEP_MAP_INIT(name) }
+-/* Exported common interfaces */
++#else /* #ifdef CONFIG_PREEMPT_RCU */
++
++/* In classic RCU, call_rcu() is just call_rcu_sched(). */
++#define	call_rcu	call_rcu_sched
++
++#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
++
++/**
++ * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
++ * @head: structure to be used for queueing the RCU updates.
++ * @func: actual callback function to be invoked after the grace period
++ *
++ * The callback function will be invoked some time after a full grace
++ * period elapses, in other words after all currently executing RCU
++ * read-side critical sections have completed. call_rcu_bh() assumes
++ * that the read-side critical sections end on completion of a softirq
++ * handler. This means that read-side critical sections in process
++ * context must not be interrupted by softirqs. This interface is to be
++ * used when most of the read-side critical sections are in softirq context.
++ * RCU read-side critical sections are delimited by :
++ *  - rcu_read_lock() and  rcu_read_unlock(), if in interrupt context.
++ *  OR
++ *  - rcu_read_lock_bh() and rcu_read_unlock_bh(), if in process context.
++ *  These may be nested.
++ */
++extern void call_rcu_bh(struct rcu_head *head,
++			void (*func)(struct rcu_head *head));
++
++/**
++ * call_rcu_sched() - Queue an RCU for invocation after sched grace period.
++ * @head: structure to be used for queueing the RCU updates.
++ * @func: actual callback function to be invoked after the grace period
++ *
++ * The callback function will be invoked some time after a full grace
++ * period elapses, in other words after all currently executing RCU
++ * read-side critical sections have completed. call_rcu_sched() assumes
++ * that the read-side critical sections end on enabling of preemption
++ * or on voluntary preemption.
++ * RCU read-side critical sections are delimited by :
++ *  - rcu_read_lock_sched() and  rcu_read_unlock_sched(),
++ *  OR
++ *  anything that disables preemption.
++ *  These may be nested.
++ */
+ extern void call_rcu_sched(struct rcu_head *head,
+ 			   void (*func)(struct rcu_head *rcu));
+-extern void synchronize_sched(void);
+-extern void rcu_barrier_bh(void);
+-extern void rcu_barrier_sched(void);
+-
+-static inline void __rcu_read_lock_bh(void)
+-{
+-	local_bh_disable();
+-}
  
- #define DECLARE_RWSEM(name) \
- 	struct rw_semaphore name = __RWSEM_INITIALIZER(name)
+-static inline void __rcu_read_unlock_bh(void)
+-{
+-	local_bh_enable();
+-}
++extern void synchronize_sched(void);
+ 
+ #ifdef CONFIG_PREEMPT_RCU
+ 
+@@ -152,6 +195,15 @@ static inline void rcu_exit_nohz(void)
+ 
+ #endif /* #else #ifdef CONFIG_NO_HZ */
+ 
++/*
++ * Infrastructure to implement the synchronize_() primitives in
++ * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
++ */
++
++typedef void call_rcu_func_t(struct rcu_head *head,
++			     void (*func)(struct rcu_head *head));
++void wait_rcu_gp(call_rcu_func_t crf);
++
+ #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+ #include <linux/rcutree.h>
+ #elif defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
+@@ -297,19 +349,31 @@ extern int rcu_my_thread_group_empty(void);
+ /**
+  * rcu_lockdep_assert - emit lockdep splat if specified condition not met
+  * @c: condition to check
++ * @s: informative message
+  */
+-#define rcu_lockdep_assert(c)						\
++#define rcu_lockdep_assert(c, s)					\
+ 	do {								\
+ 		static bool __warned;					\
+ 		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
+ 			__warned = true;				\
+-			lockdep_rcu_dereference(__FILE__, __LINE__);	\
++			lockdep_rcu_suspicious(__FILE__, __LINE__, s);	\
+ 		}							\
+ 	} while (0)
+ 
++#define rcu_sleep_check()						\
++	do {								\
++		rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map),	\
++				   "Illegal context switch in RCU-bh"	\
++				   " read-side critical section");	\
++		rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),	\
++				   "Illegal context switch in RCU-sched"\
++				   " read-side critical section");	\
++	} while (0)
++
+ #else /* #ifdef CONFIG_PROVE_RCU */
+ 
+-#define rcu_lockdep_assert(c) do { } while (0)
++#define rcu_lockdep_assert(c, s) do { } while (0)
++#define rcu_sleep_check() do { } while (0)
+ 
+ #endif /* #else #ifdef CONFIG_PROVE_RCU */
+ 
+@@ -338,14 +402,16 @@ extern int rcu_my_thread_group_empty(void);
+ #define __rcu_dereference_check(p, c, space) \
+ 	({ \
+ 		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+-		rcu_lockdep_assert(c); \
++		rcu_lockdep_assert(c, "suspicious rcu_dereference_check()" \
++				      " usage"); \
+ 		rcu_dereference_sparse(p, space); \
+ 		smp_read_barrier_depends(); \
+ 		((typeof(*p) __force __kernel *)(_________p1)); \
+ 	})
+ #define __rcu_dereference_protected(p, c, space) \
+ 	({ \
+-		rcu_lockdep_assert(c); \
++		rcu_lockdep_assert(c, "suspicious rcu_dereference_protected()" \
++				      " usage"); \
+ 		rcu_dereference_sparse(p, space); \
+ 		((typeof(*p) __force __kernel *)(p)); \
+ 	})
+@@ -359,15 +425,15 @@ extern int rcu_my_thread_group_empty(void);
+ #define __rcu_dereference_index_check(p, c) \
+ 	({ \
+ 		typeof(p) _________p1 = ACCESS_ONCE(p); \
+-		rcu_lockdep_assert(c); \
++		rcu_lockdep_assert(c, \
++				   "suspicious rcu_dereference_index_check()" \
++				   " usage"); \
+ 		smp_read_barrier_depends(); \
+ 		(_________p1); \
+ 	})
+ #define __rcu_assign_pointer(p, v, space) \
+ 	({ \
+-		if (!__builtin_constant_p(v) || \
+-		    ((v) != NULL)) \
+-			smp_wmb(); \
++		smp_wmb(); \
+ 		(p) = (typeof(*v) __force space *)(v); \
+ 	})
+ 
+@@ -500,26 +566,6 @@ extern int rcu_my_thread_group_empty(void);
+ #define rcu_dereference_protected(p, c) \
+ 	__rcu_dereference_protected((p), (c), __rcu)
+ 
+-/**
+- * rcu_dereference_bh_protected() - fetch RCU-bh pointer when updates prevented
+- * @p: The pointer to read, prior to dereferencing
+- * @c: The conditions under which the dereference will take place
+- *
+- * This is the RCU-bh counterpart to rcu_dereference_protected().
+- */
+-#define rcu_dereference_bh_protected(p, c) \
+-	__rcu_dereference_protected((p), (c), __rcu)
+-
+-/**
+- * rcu_dereference_sched_protected() - fetch RCU-sched pointer when updates prevented
+- * @p: The pointer to read, prior to dereferencing
+- * @c: The conditions under which the dereference will take place
+- *
+- * This is the RCU-sched counterpart to rcu_dereference_protected().
+- */
+-#define rcu_dereference_sched_protected(p, c) \
+-	__rcu_dereference_protected((p), (c), __rcu)
+-
+ 
+ /**
+  * rcu_dereference() - fetch RCU-protected pointer for dereferencing
+@@ -630,7 +676,7 @@ static inline void rcu_read_unlock(void)
+  */
+ static inline void rcu_read_lock_bh(void)
+ {
+-	__rcu_read_lock_bh();
++	local_bh_disable();
+ 	__acquire(RCU_BH);
+ 	rcu_read_acquire_bh();
+ }
+@@ -644,7 +690,7 @@ static inline void rcu_read_unlock_bh(void)
+ {
+ 	rcu_read_release_bh();
+ 	__release(RCU_BH);
+-	__rcu_read_unlock_bh();
++	local_bh_enable();
+ }
+ 
+ /**
+@@ -698,11 +744,18 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+  * any prior initialization.  Returns the value assigned.
+  *
+  * Inserts memory barriers on architectures that require them
+- * (pretty much all of them other than x86), and also prevents
+- * the compiler from reordering the code that initializes the
+- * structure after the pointer assignment.  More importantly, this
+- * call documents which pointers will be dereferenced by RCU read-side
+- * code.
++ * (which is most of them), and also prevents the compiler from
++ * reordering the code that initializes the structure after the pointer
++ * assignment.  More importantly, this call documents which pointers
++ * will be dereferenced by RCU read-side code.
++ *
++ * In some special cases, you may use RCU_INIT_POINTER() instead
++ * of rcu_assign_pointer().  RCU_INIT_POINTER() is a bit faster due
++ * to the fact that it does not constrain either the CPU or the compiler.
++ * That said, using RCU_INIT_POINTER() when you should have used
++ * rcu_assign_pointer() is a very bad thing that results in
++ * impossible-to-diagnose memory corruption.  So please be careful.
++ * See the RCU_INIT_POINTER() comment header for details.
+  */
+ #define rcu_assign_pointer(p, v) \
+ 	__rcu_assign_pointer((p), (v), __rcu)
+@@ -710,105 +763,38 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+ /**
+  * RCU_INIT_POINTER() - initialize an RCU protected pointer
+  *
+- * Initialize an RCU-protected pointer in such a way to avoid RCU-lockdep
+- * splats.
++ * Initialize an RCU-protected pointer in special cases where readers
++ * do not need ordering constraints on the CPU or the compiler.  These
++ * special cases are:
++ *
++ * 1.	This use of RCU_INIT_POINTER() is NULLing out the pointer -or-
++ * 2.	The caller has taken whatever steps are required to prevent
++ *	RCU readers from concurrently accessing this pointer -or-
++ * 3.	The referenced data structure has already been exposed to
++ *	readers either at compile time or via rcu_assign_pointer() -and-
++ *	a.	You have not made -any- reader-visible changes to
++ *		this structure since then -or-
++ *	b.	It is OK for readers accessing this structure from its
++ *		new location to see the old state of the structure.  (For
++ *		example, the changes were to statistical counters or to
++ *		other state where exact synchronization is not required.)
++ *
++ * Failure to follow these rules governing use of RCU_INIT_POINTER() will
++ * result in impossible-to-diagnose memory corruption.  As in the structures
++ * will look OK in crash dumps, but any concurrent RCU readers might
++ * see pre-initialized values of the referenced data structure.  So
++ * please be very careful how you use RCU_INIT_POINTER()!!!
++ *
++ * If you are creating an RCU-protected linked structure that is accessed
++ * by a single external-to-structure RCU-protected pointer, then you may
++ * use RCU_INIT_POINTER() to initialize the internal RCU-protected
++ * pointers, but you must use rcu_assign_pointer() to initialize the
++ * external-to-structure pointer -after- you have completely initialized
++ * the reader-accessible portions of the linked structure.
+  */
+ #define RCU_INIT_POINTER(p, v) \
+ 		p = (typeof(*v) __force __rcu *)(v)
+ 
+-/* Infrastructure to implement the synchronize_() primitives. */
+-
+-struct rcu_synchronize {
+-	struct rcu_head head;
+-	struct completion completion;
+-};
+-
+-extern void wakeme_after_rcu(struct rcu_head  *head);
+-
+-#ifdef CONFIG_PREEMPT_RCU
+-
+-/**
+- * call_rcu() - Queue an RCU callback for invocation after a grace period.
+- * @head: structure to be used for queueing the RCU updates.
+- * @func: actual callback function to be invoked after the grace period
+- *
+- * The callback function will be invoked some time after a full grace
+- * period elapses, in other words after all pre-existing RCU read-side
+- * critical sections have completed.  However, the callback function
+- * might well execute concurrently with RCU read-side critical sections
+- * that started after call_rcu() was invoked.  RCU read-side critical
+- * sections are delimited by rcu_read_lock() and rcu_read_unlock(),
+- * and may be nested.
+- */
+-extern void call_rcu(struct rcu_head *head,
+-			      void (*func)(struct rcu_head *head));
+-
+-#else /* #ifdef CONFIG_PREEMPT_RCU */
+-
+-/* In classic RCU, call_rcu() is just call_rcu_sched(). */
+-#define	call_rcu	call_rcu_sched
+-
+-#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
+-
+-/**
+- * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
+- * @head: structure to be used for queueing the RCU updates.
+- * @func: actual callback function to be invoked after the grace period
+- *
+- * The callback function will be invoked some time after a full grace
+- * period elapses, in other words after all currently executing RCU
+- * read-side critical sections have completed. call_rcu_bh() assumes
+- * that the read-side critical sections end on completion of a softirq
+- * handler. This means that read-side critical sections in process
+- * context must not be interrupted by softirqs. This interface is to be
+- * used when most of the read-side critical sections are in softirq context.
+- * RCU read-side critical sections are delimited by :
+- *  - rcu_read_lock() and  rcu_read_unlock(), if in interrupt context.
+- *  OR
+- *  - rcu_read_lock_bh() and rcu_read_unlock_bh(), if in process context.
+- *  These may be nested.
+- */
+-extern void call_rcu_bh(struct rcu_head *head,
+-			void (*func)(struct rcu_head *head));
+-
+-/*
+- * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
+- * by call_rcu() and rcu callback execution, and are therefore not part of the
+- * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
+- */
+-
+-#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+-# define STATE_RCU_HEAD_READY	0
+-# define STATE_RCU_HEAD_QUEUED	1
+-
+-extern struct debug_obj_descr rcuhead_debug_descr;
+-
+-static inline void debug_rcu_head_queue(struct rcu_head *head)
+-{
+-	WARN_ON_ONCE((unsigned long)head & 0x3);
+-	debug_object_activate(head, &rcuhead_debug_descr);
+-	debug_object_active_state(head, &rcuhead_debug_descr,
+-				  STATE_RCU_HEAD_READY,
+-				  STATE_RCU_HEAD_QUEUED);
+-}
+-
+-static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+-{
+-	debug_object_active_state(head, &rcuhead_debug_descr,
+-				  STATE_RCU_HEAD_QUEUED,
+-				  STATE_RCU_HEAD_READY);
+-	debug_object_deactivate(head, &rcuhead_debug_descr);
+-}
+-#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+-static inline void debug_rcu_head_queue(struct rcu_head *head)
+-{
+-}
+-
+-static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+-{
+-}
+-#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+-
+ static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+ {
+ 	return offset < 4096;
+@@ -827,18 +813,6 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+ 	call_rcu(head, (rcu_callback)offset);
+ }
+ 
+-extern void kfree(const void *);
+-
+-static inline void __rcu_reclaim(struct rcu_head *head)
+-{
+-	unsigned long offset = (unsigned long)head->func;
+-
+-	if (__is_kfree_rcu_offset(offset))
+-		kfree((void *)head - offset);
+-	else
+-		head->func(head);
+-}
+-
+ /**
+  * kfree_rcu() - kfree an object after a grace period.
+  * @ptr:	pointer to kfree
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index 52b3e02..00b7a5e 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -27,9 +27,23 @@
+ 
+ #include <linux/cache.h>
+ 
++#ifdef CONFIG_RCU_BOOST
+ static inline void rcu_init(void)
+ {
+ }
++#else /* #ifdef CONFIG_RCU_BOOST */
++void rcu_init(void);
++#endif /* #else #ifdef CONFIG_RCU_BOOST */
++
++static inline void rcu_barrier_bh(void)
++{
++	wait_rcu_gp(call_rcu_bh);
++}
++
++static inline void rcu_barrier_sched(void)
++{
++	wait_rcu_gp(call_rcu_sched);
++}
+ 
+ #ifdef CONFIG_TINY_RCU
+ 
+@@ -45,9 +59,13 @@ static inline void rcu_barrier(void)
+ 
+ #else /* #ifdef CONFIG_TINY_RCU */
+ 
+-void rcu_barrier(void);
+ void synchronize_rcu_expedited(void);
+ 
++static inline void rcu_barrier(void)
++{
++	wait_rcu_gp(call_rcu);
++}
++
+ #endif /* #else #ifdef CONFIG_TINY_RCU */
+ 
+ static inline void synchronize_rcu_bh(void)
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index e65d066..6745846 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -67,6 +67,8 @@ static inline void synchronize_rcu_bh_expedited(void)
+ }
+ 
+ extern void rcu_barrier(void);
++extern void rcu_barrier_bh(void);
++extern void rcu_barrier_sched(void);
+ 
+ extern unsigned long rcutorture_testseq;
+ extern unsigned long rcutorture_vernum;
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4ac2c05..e672236 100644
+index 4ac2c05..acca435 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -510,7 +510,7 @@ struct task_cputime {
- struct thread_group_cputimer {
- 	struct task_cputime cputime;
- 	int running;
--	spinlock_t lock;
-+	raw_spinlock_t lock;
+@@ -270,7 +270,6 @@ extern void init_idle_bootup_task(struct task_struct *idle);
+ 
+ extern int runqueue_is_locked(int cpu);
+ 
+-extern cpumask_var_t nohz_cpu_mask;
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+ extern void select_nohz_load_balancer(int stop_tick);
+ extern int get_nohz_timer_target(void);
+@@ -1260,9 +1259,6 @@ struct task_struct {
+ #ifdef CONFIG_PREEMPT_RCU
+ 	int rcu_read_lock_nesting;
+ 	char rcu_read_unlock_special;
+-#if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU)
+-	int rcu_boosted;
+-#endif /* #if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU) */
+ 	struct list_head rcu_node_entry;
+ #endif /* #ifdef CONFIG_PREEMPT_RCU */
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 176da8c..57a9723 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -238,6 +238,16 @@ struct ustat {
+ 	char			f_fpack[6];
  };
  
- #include <linux/rwsem.h>
-@@ -2566,7 +2566,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
++/**
++ * struct rcu_head - callback structure for use with RCU
++ * @next: next update requests in a list
++ * @func: actual update function to call after the grace period.
++ */
++struct rcu_head {
++	struct rcu_head *next;
++	void (*func)(struct rcu_head *head);
++};
++
+ #endif	/* __KERNEL__ */
+ #endif /*  __ASSEMBLY__ */
+ #endif /* _LINUX_TYPES_H */
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+new file mode 100644
+index 0000000..669fbd6
+--- /dev/null
++++ b/include/trace/events/rcu.h
+@@ -0,0 +1,459 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM rcu
++
++#if !defined(_TRACE_RCU_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_RCU_H
++
++#include <linux/tracepoint.h>
++
++/*
++ * Tracepoint for start/end markers used for utilization calculations.
++ * By convention, the string is of the following forms:
++ *
++ * "Start <activity>" -- Mark the start of the specified activity,
++ *			 such as "context switch".  Nesting is permitted.
++ * "End <activity>" -- Mark the end of the specified activity.
++ *
++ * An "@" character within "<activity>" is a comment character: Data
++ * reduction scripts will ignore the "@" and the remainder of the line.
++ */
++TRACE_EVENT(rcu_utilization,
++
++	TP_PROTO(char *s),
++
++	TP_ARGS(s),
++
++	TP_STRUCT__entry(
++		__field(char *, s)
++	),
++
++	TP_fast_assign(
++		__entry->s = s;
++	),
++
++	TP_printk("%s", __entry->s)
++);
++
++#ifdef CONFIG_RCU_TRACE
++
++#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
++
++/*
++ * Tracepoint for grace-period events: starting and ending a grace
++ * period ("start" and "end", respectively), a CPU noting the start
++ * of a new grace period or the end of an old grace period ("cpustart"
++ * and "cpuend", respectively), a CPU passing through a quiescent
++ * state ("cpuqs"), a CPU coming online or going offline ("cpuonl"
++ * and "cpuofl", respectively), and a CPU being kicked for being too
++ * long in dyntick-idle mode ("kick").
++ */
++TRACE_EVENT(rcu_grace_period,
++
++	TP_PROTO(char *rcuname, unsigned long gpnum, char *gpevent),
++
++	TP_ARGS(rcuname, gpnum, gpevent),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(char *, gpevent)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->gpevent = gpevent;
++	),
++
++	TP_printk("%s %lu %s",
++		  __entry->rcuname, __entry->gpnum, __entry->gpevent)
++);
++
++/*
++ * Tracepoint for grace-period-initialization events.  These are
++ * distinguished by the type of RCU, the new grace-period number, the
++ * rcu_node structure level, the starting and ending CPU covered by the
++ * rcu_node structure, and the mask of CPUs that will be waited for.
++ * All but the type of RCU are extracted from the rcu_node structure.
++ */
++TRACE_EVENT(rcu_grace_period_init,
++
++	TP_PROTO(char *rcuname, unsigned long gpnum, u8 level,
++		 int grplo, int grphi, unsigned long qsmask),
++
++	TP_ARGS(rcuname, gpnum, level, grplo, grphi, qsmask),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(u8, level)
++		__field(int, grplo)
++		__field(int, grphi)
++		__field(unsigned long, qsmask)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->level = level;
++		__entry->grplo = grplo;
++		__entry->grphi = grphi;
++		__entry->qsmask = qsmask;
++	),
++
++	TP_printk("%s %lu %u %d %d %lx",
++		  __entry->rcuname, __entry->gpnum, __entry->level,
++		  __entry->grplo, __entry->grphi, __entry->qsmask)
++);
++
++/*
++ * Tracepoint for tasks blocking within preemptible-RCU read-side
++ * critical sections.  Track the type of RCU (which one day might
++ * include SRCU), the grace-period number that the task is blocking
++ * (the current or the next), and the task's PID.
++ */
++TRACE_EVENT(rcu_preempt_task,
++
++	TP_PROTO(char *rcuname, int pid, unsigned long gpnum),
++
++	TP_ARGS(rcuname, pid, gpnum),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(int, pid)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->pid = pid;
++	),
++
++	TP_printk("%s %lu %d",
++		  __entry->rcuname, __entry->gpnum, __entry->pid)
++);
++
++/*
++ * Tracepoint for tasks that blocked within a given preemptible-RCU
++ * read-side critical section exiting that critical section.  Track the
++ * type of RCU (which one day might include SRCU) and the task's PID.
++ */
++TRACE_EVENT(rcu_unlock_preempted_task,
++
++	TP_PROTO(char *rcuname, unsigned long gpnum, int pid),
++
++	TP_ARGS(rcuname, gpnum, pid),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(int, pid)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->pid = pid;
++	),
++
++	TP_printk("%s %lu %d", __entry->rcuname, __entry->gpnum, __entry->pid)
++);
++
++/*
++ * Tracepoint for quiescent-state-reporting events.  These are
++ * distinguished by the type of RCU, the grace-period number, the
++ * mask of quiescent lower-level entities, the rcu_node structure level,
++ * the starting and ending CPU covered by the rcu_node structure, and
++ * whether there are any blocked tasks blocking the current grace period.
++ * All but the type of RCU are extracted from the rcu_node structure.
++ */
++TRACE_EVENT(rcu_quiescent_state_report,
++
++	TP_PROTO(char *rcuname, unsigned long gpnum,
++		 unsigned long mask, unsigned long qsmask,
++		 u8 level, int grplo, int grphi, int gp_tasks),
++
++	TP_ARGS(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(unsigned long, mask)
++		__field(unsigned long, qsmask)
++		__field(u8, level)
++		__field(int, grplo)
++		__field(int, grphi)
++		__field(u8, gp_tasks)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->mask = mask;
++		__entry->qsmask = qsmask;
++		__entry->level = level;
++		__entry->grplo = grplo;
++		__entry->grphi = grphi;
++		__entry->gp_tasks = gp_tasks;
++	),
++
++	TP_printk("%s %lu %lx>%lx %u %d %d %u",
++		  __entry->rcuname, __entry->gpnum,
++		  __entry->mask, __entry->qsmask, __entry->level,
++		  __entry->grplo, __entry->grphi, __entry->gp_tasks)
++);
++
++/*
++ * Tracepoint for quiescent states detected by force_quiescent_state().
++ * These trace events include the type of RCU, the grace-period number
++ * that was blocked by the CPU, the CPU itself, and the type of quiescent
++ * state, which can be "dti" for dyntick-idle mode, "ofl" for CPU offline,
++ * or "kick" when kicking a CPU that has been in dyntick-idle mode for
++ * too long.
++ */
++TRACE_EVENT(rcu_fqs,
++
++	TP_PROTO(char *rcuname, unsigned long gpnum, int cpu, char *qsevent),
++
++	TP_ARGS(rcuname, gpnum, cpu, qsevent),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(unsigned long, gpnum)
++		__field(int, cpu)
++		__field(char *, qsevent)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->gpnum = gpnum;
++		__entry->cpu = cpu;
++		__entry->qsevent = qsevent;
++	),
++
++	TP_printk("%s %lu %d %s",
++		  __entry->rcuname, __entry->gpnum,
++		  __entry->cpu, __entry->qsevent)
++);
++
++#endif /* #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU) */
++
++/*
++ * Tracepoint for dyntick-idle entry/exit events.  These take a string
++ * as argument: "Start" for entering dyntick-idle mode and "End" for
++ * leaving it.
++ */
++TRACE_EVENT(rcu_dyntick,
++
++	TP_PROTO(char *polarity),
++
++	TP_ARGS(polarity),
++
++	TP_STRUCT__entry(
++		__field(char *, polarity)
++	),
++
++	TP_fast_assign(
++		__entry->polarity = polarity;
++	),
++
++	TP_printk("%s", __entry->polarity)
++);
++
++/*
++ * Tracepoint for the registration of a single RCU callback function.
++ * The first argument is the type of RCU, the second argument is
++ * a pointer to the RCU callback itself, and the third element is the
++ * new RCU callback queue length for the current CPU.
++ */
++TRACE_EVENT(rcu_callback,
++
++	TP_PROTO(char *rcuname, struct rcu_head *rhp, long qlen),
++
++	TP_ARGS(rcuname, rhp, qlen),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(void *, rhp)
++		__field(void *, func)
++		__field(long, qlen)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->rhp = rhp;
++		__entry->func = rhp->func;
++		__entry->qlen = qlen;
++	),
++
++	TP_printk("%s rhp=%p func=%pf %ld",
++		  __entry->rcuname, __entry->rhp, __entry->func, __entry->qlen)
++);
++
++/*
++ * Tracepoint for the registration of a single RCU callback of the special
++ * kfree() form.  The first argument is the RCU type, the second argument
++ * is a pointer to the RCU callback, the third argument is the offset
++ * of the callback within the enclosing RCU-protected data structure,
++ * and the fourth argument is the new RCU callback queue length for the
++ * current CPU.
++ */
++TRACE_EVENT(rcu_kfree_callback,
++
++	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset,
++		 long qlen),
++
++	TP_ARGS(rcuname, rhp, offset, qlen),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(void *, rhp)
++		__field(unsigned long, offset)
++		__field(long, qlen)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->rhp = rhp;
++		__entry->offset = offset;
++		__entry->qlen = qlen;
++	),
++
++	TP_printk("%s rhp=%p func=%ld %ld",
++		  __entry->rcuname, __entry->rhp, __entry->offset,
++		  __entry->qlen)
++);
++
++/*
++ * Tracepoint for marking the beginning rcu_do_batch, performed to start
++ * RCU callback invocation.  The first argument is the RCU flavor,
++ * the second is the total number of callbacks (including those that
++ * are not yet ready to be invoked), and the third argument is the
++ * current RCU-callback batch limit.
++ */
++TRACE_EVENT(rcu_batch_start,
++
++	TP_PROTO(char *rcuname, long qlen, int blimit),
++
++	TP_ARGS(rcuname, qlen, blimit),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(long, qlen)
++		__field(int, blimit)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->qlen = qlen;
++		__entry->blimit = blimit;
++	),
++
++	TP_printk("%s CBs=%ld bl=%d",
++		  __entry->rcuname, __entry->qlen, __entry->blimit)
++);
++
++/*
++ * Tracepoint for the invocation of a single RCU callback function.
++ * The first argument is the type of RCU, and the second argument is
++ * a pointer to the RCU callback itself.
++ */
++TRACE_EVENT(rcu_invoke_callback,
++
++	TP_PROTO(char *rcuname, struct rcu_head *rhp),
++
++	TP_ARGS(rcuname, rhp),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(void *, rhp)
++		__field(void *, func)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->rhp = rhp;
++		__entry->func = rhp->func;
++	),
++
++	TP_printk("%s rhp=%p func=%pf",
++		  __entry->rcuname, __entry->rhp, __entry->func)
++);
++
++/*
++ * Tracepoint for the invocation of a single RCU callback of the special
++ * kfree() form.  The first argument is the RCU flavor, the second
++ * argument is a pointer to the RCU callback, and the third argument
++ * is the offset of the callback within the enclosing RCU-protected
++ * data structure.
++ */
++TRACE_EVENT(rcu_invoke_kfree_callback,
++
++	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset),
++
++	TP_ARGS(rcuname, rhp, offset),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(void *, rhp)
++		__field(unsigned long, offset)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->rhp = rhp;
++		__entry->offset	= offset;
++	),
++
++	TP_printk("%s rhp=%p func=%ld",
++		  __entry->rcuname, __entry->rhp, __entry->offset)
++);
++
++/*
++ * Tracepoint for exiting rcu_do_batch after RCU callbacks have been
++ * invoked.  The first argument is the name of the RCU flavor and
++ * the second argument is number of callbacks actually invoked.
++ */
++TRACE_EVENT(rcu_batch_end,
++
++	TP_PROTO(char *rcuname, int callbacks_invoked),
++
++	TP_ARGS(rcuname, callbacks_invoked),
++
++	TP_STRUCT__entry(
++		__field(char *, rcuname)
++		__field(int, callbacks_invoked)
++	),
++
++	TP_fast_assign(
++		__entry->rcuname = rcuname;
++		__entry->callbacks_invoked = callbacks_invoked;
++	),
++
++	TP_printk("%s CBs-invoked=%d",
++		  __entry->rcuname, __entry->callbacks_invoked)
++);
++
++#else /* #ifdef CONFIG_RCU_TRACE */
++
++#define trace_rcu_grace_period(rcuname, gpnum, gpevent) do { } while (0)
++#define trace_rcu_grace_period_init(rcuname, gpnum, level, grplo, grphi, qsmask) do { } while (0)
++#define trace_rcu_preempt_task(rcuname, pid, gpnum) do { } while (0)
++#define trace_rcu_unlock_preempted_task(rcuname, gpnum, pid) do { } while (0)
++#define trace_rcu_quiescent_state_report(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks) do { } while (0)
++#define trace_rcu_fqs(rcuname, gpnum, cpu, qsevent) do { } while (0)
++#define trace_rcu_dyntick(polarity) do { } while (0)
++#define trace_rcu_callback(rcuname, rhp, qlen) do { } while (0)
++#define trace_rcu_kfree_callback(rcuname, rhp, offset, qlen) do { } while (0)
++#define trace_rcu_batch_start(rcuname, qlen, blimit) do { } while (0)
++#define trace_rcu_invoke_callback(rcuname, rhp) do { } while (0)
++#define trace_rcu_invoke_kfree_callback(rcuname, rhp, offset) do { } while (0)
++#define trace_rcu_batch_end(rcuname, callbacks_invoked) do { } while (0)
++
++#endif /* #else #ifdef CONFIG_RCU_TRACE */
++
++#endif /* _TRACE_RCU_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/init/Kconfig b/init/Kconfig
+index d627783..dc7e27b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -391,7 +391,7 @@ config TREE_RCU
  
- static inline void thread_group_cputime_init(struct signal_struct *sig)
- {
--	spin_lock_init(&sig->cputimer.lock);
-+	raw_spin_lock_init(&sig->cputimer.lock);
- }
+ config TREE_PREEMPT_RCU
+ 	bool "Preemptible tree-based hierarchical RCU"
+-	depends on PREEMPT
++	depends on PREEMPT && SMP
+ 	help
+ 	  This option selects the RCU implementation that is
+ 	  designed for very large SMP systems with hundreds or
+@@ -401,7 +401,7 @@ config TREE_PREEMPT_RCU
  
- /*
-diff --git a/include/linux/semaphore.h b/include/linux/semaphore.h
-index 39fa049..dc368b8 100644
---- a/include/linux/semaphore.h
-+++ b/include/linux/semaphore.h
-@@ -14,14 +14,14 @@
+ config TINY_RCU
+ 	bool "UP-only small-memory-footprint RCU"
+-	depends on !SMP
++	depends on !PREEMPT && !SMP
+ 	help
+ 	  This option selects the RCU implementation that is
+ 	  designed for UP systems from which real-time response
+@@ -410,7 +410,7 @@ config TINY_RCU
  
- /* Please don't access any members of this structure directly */
- struct semaphore {
--	spinlock_t		lock;
-+	raw_spinlock_t		lock;
- 	unsigned int		count;
- 	struct list_head	wait_list;
- };
- 
- #define __SEMAPHORE_INITIALIZER(name, n)				\
- {									\
--	.lock		= __SPIN_LOCK_UNLOCKED((name).lock),		\
-+	.lock		= __RAW_SPIN_LOCK_UNLOCKED((name).lock),	\
- 	.count		= n,						\
- 	.wait_list	= LIST_HEAD_INIT((name).wait_list),		\
- }
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1d2b6ce..453100a 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -265,7 +265,7 @@ list_for_each_entry(_root, &roots, root_list)
- /* the list of cgroups eligible for automatic release. Protected by
-  * release_list_lock */
- static LIST_HEAD(release_list);
--static DEFINE_SPINLOCK(release_list_lock);
-+static DEFINE_RAW_SPINLOCK(release_list_lock);
- static void cgroup_release_agent(struct work_struct *work);
- static DECLARE_WORK(release_agent_work, cgroup_release_agent);
- static void check_for_release(struct cgroup *cgrp);
-@@ -4014,11 +4014,11 @@ again:
- 	finish_wait(&cgroup_rmdir_waitq, &wait);
- 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 
--	spin_lock(&release_list_lock);
-+	raw_spin_lock(&release_list_lock);
- 	set_bit(CGRP_REMOVED, &cgrp->flags);
- 	if (!list_empty(&cgrp->release_list))
- 		list_del_init(&cgrp->release_list);
--	spin_unlock(&release_list_lock);
-+	raw_spin_unlock(&release_list_lock);
- 
- 	cgroup_lock_hierarchy(cgrp->root);
- 	/* delete this cgroup from parent->children */
-@@ -4671,13 +4671,13 @@ static void check_for_release(struct cgroup *cgrp)
- 		 * already queued for a userspace notification, queue
- 		 * it now */
- 		int need_schedule_work = 0;
--		spin_lock(&release_list_lock);
-+		raw_spin_lock(&release_list_lock);
- 		if (!cgroup_is_removed(cgrp) &&
- 		    list_empty(&cgrp->release_list)) {
- 			list_add(&cgrp->release_list, &release_list);
- 			need_schedule_work = 1;
- 		}
--		spin_unlock(&release_list_lock);
-+		raw_spin_unlock(&release_list_lock);
- 		if (need_schedule_work)
- 			schedule_work(&release_agent_work);
- 	}
-@@ -4729,7 +4729,7 @@ static void cgroup_release_agent(struct work_struct *work)
- {
- 	BUG_ON(work != &release_agent_work);
- 	mutex_lock(&cgroup_mutex);
--	spin_lock(&release_list_lock);
-+	raw_spin_lock(&release_list_lock);
- 	while (!list_empty(&release_list)) {
- 		char *argv[3], *envp[3];
- 		int i;
-@@ -4738,7 +4738,7 @@ static void cgroup_release_agent(struct work_struct *work)
- 						    struct cgroup,
- 						    release_list);
- 		list_del_init(&cgrp->release_list);
--		spin_unlock(&release_list_lock);
-+		raw_spin_unlock(&release_list_lock);
- 		pathbuf = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 		if (!pathbuf)
- 			goto continue_free;
-@@ -4768,9 +4768,9 @@ static void cgroup_release_agent(struct work_struct *work)
-  continue_free:
- 		kfree(pathbuf);
- 		kfree(agentbuf);
--		spin_lock(&release_list_lock);
-+		raw_spin_lock(&release_list_lock);
- 	}
--	spin_unlock(&release_list_lock);
-+	raw_spin_unlock(&release_list_lock);
- 	mutex_unlock(&cgroup_mutex);
- }
- 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index b30fd54..2f193d0 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -78,10 +78,10 @@ static bool kprobes_all_disarmed;
- static DEFINE_MUTEX(kprobe_mutex);
- static DEFINE_PER_CPU(struct kprobe *, kprobe_instance) = NULL;
- static struct {
--	spinlock_t lock ____cacheline_aligned_in_smp;
-+	raw_spinlock_t lock ____cacheline_aligned_in_smp;
- } kretprobe_table_locks[KPROBE_TABLE_SIZE];
- 
--static spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
-+static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
- {
- 	return &(kretprobe_table_locks[hash].lock);
- }
-@@ -1013,9 +1013,9 @@ void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
- 	hlist_del(&ri->hlist);
- 	INIT_HLIST_NODE(&ri->hlist);
- 	if (likely(rp)) {
--		spin_lock(&rp->lock);
-+		raw_spin_lock(&rp->lock);
- 		hlist_add_head(&ri->hlist, &rp->free_instances);
--		spin_unlock(&rp->lock);
-+		raw_spin_unlock(&rp->lock);
- 	} else
- 		/* Unregistering */
- 		hlist_add_head(&ri->hlist, head);
-@@ -1026,19 +1026,19 @@ void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
- __acquires(hlist_lock)
- {
- 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
--	spinlock_t *hlist_lock;
-+	raw_spinlock_t *hlist_lock;
- 
- 	*head = &kretprobe_inst_table[hash];
- 	hlist_lock = kretprobe_table_lock_ptr(hash);
--	spin_lock_irqsave(hlist_lock, *flags);
-+	raw_spin_lock_irqsave(hlist_lock, *flags);
- }
- 
- static void __kprobes kretprobe_table_lock(unsigned long hash,
- 	unsigned long *flags)
- __acquires(hlist_lock)
- {
--	spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
--	spin_lock_irqsave(hlist_lock, *flags);
-+	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
-+	raw_spin_lock_irqsave(hlist_lock, *flags);
- }
- 
- void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
-@@ -1046,18 +1046,18 @@ void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
- __releases(hlist_lock)
- {
- 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
--	spinlock_t *hlist_lock;
-+	raw_spinlock_t *hlist_lock;
- 
- 	hlist_lock = kretprobe_table_lock_ptr(hash);
--	spin_unlock_irqrestore(hlist_lock, *flags);
-+	raw_spin_unlock_irqrestore(hlist_lock, *flags);
- }
- 
- static void __kprobes kretprobe_table_unlock(unsigned long hash,
-        unsigned long *flags)
- __releases(hlist_lock)
- {
--	spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
--	spin_unlock_irqrestore(hlist_lock, *flags);
-+	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
-+	raw_spin_unlock_irqrestore(hlist_lock, *flags);
- }
- 
- /*
-@@ -1663,12 +1663,12 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 
- 	/*TODO: consider to only swap the RA after the last pre_handler fired */
- 	hash = hash_ptr(current, KPROBE_HASH_BITS);
--	spin_lock_irqsave(&rp->lock, flags);
-+	raw_spin_lock_irqsave(&rp->lock, flags);
- 	if (!hlist_empty(&rp->free_instances)) {
- 		ri = hlist_entry(rp->free_instances.first,
- 				struct kretprobe_instance, hlist);
- 		hlist_del(&ri->hlist);
--		spin_unlock_irqrestore(&rp->lock, flags);
-+		raw_spin_unlock_irqrestore(&rp->lock, flags);
- 
- 		ri->rp = rp;
- 		ri->task = current;
-@@ -1685,7 +1685,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 		kretprobe_table_unlock(hash, &flags);
- 	} else {
- 		rp->nmissed++;
--		spin_unlock_irqrestore(&rp->lock, flags);
-+		raw_spin_unlock_irqrestore(&rp->lock, flags);
- 	}
- 	return 0;
- }
-@@ -1721,7 +1721,7 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
- 		rp->maxactive = num_possible_cpus();
- #endif
- 	}
--	spin_lock_init(&rp->lock);
-+	raw_spin_lock_init(&rp->lock);
- 	INIT_HLIST_HEAD(&rp->free_instances);
- 	for (i = 0; i < rp->maxactive; i++) {
- 		inst = kmalloc(sizeof(struct kretprobe_instance) +
-@@ -1959,7 +1959,7 @@ static int __init init_kprobes(void)
- 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
- 		INIT_HLIST_HEAD(&kprobe_table[i]);
- 		INIT_HLIST_HEAD(&kretprobe_inst_table[i]);
--		spin_lock_init(&(kretprobe_table_locks[i].lock));
-+		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
- 	}
- 
- 	/*
-diff --git a/kernel/latencytop.c b/kernel/latencytop.c
-index 376066e..4ac8ebf 100644
---- a/kernel/latencytop.c
-+++ b/kernel/latencytop.c
-@@ -58,7 +58,7 @@
- #include <linux/list.h>
- #include <linux/stacktrace.h>
- 
--static DEFINE_SPINLOCK(latency_lock);
-+static DEFINE_RAW_SPINLOCK(latency_lock);
- 
- #define MAXLR 128
- static struct latency_record latency_record[MAXLR];
-@@ -72,19 +72,19 @@ void clear_all_latency_tracing(struct task_struct *p)
- 	if (!latencytop_enabled)
- 		return;
- 
--	spin_lock_irqsave(&latency_lock, flags);
-+	raw_spin_lock_irqsave(&latency_lock, flags);
- 	memset(&p->latency_record, 0, sizeof(p->latency_record));
- 	p->latency_record_count = 0;
--	spin_unlock_irqrestore(&latency_lock, flags);
-+	raw_spin_unlock_irqrestore(&latency_lock, flags);
- }
- 
- static void clear_global_latency_tracing(void)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&latency_lock, flags);
-+	raw_spin_lock_irqsave(&latency_lock, flags);
- 	memset(&latency_record, 0, sizeof(latency_record));
--	spin_unlock_irqrestore(&latency_lock, flags);
-+	raw_spin_unlock_irqrestore(&latency_lock, flags);
- }
- 
- static void __sched
-@@ -190,7 +190,7 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
- 	lat.max = usecs;
- 	store_stacktrace(tsk, &lat);
- 
--	spin_lock_irqsave(&latency_lock, flags);
-+	raw_spin_lock_irqsave(&latency_lock, flags);
- 
- 	account_global_scheduler_latency(tsk, &lat);
- 
-@@ -231,7 +231,7 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
- 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
- 
- out_unlock:
--	spin_unlock_irqrestore(&latency_lock, flags);
-+	raw_spin_unlock_irqrestore(&latency_lock, flags);
- }
- 
- static int lstats_show(struct seq_file *m, void *v)
+ config TINY_PREEMPT_RCU
+ 	bool "Preemptible UP-only small-memory-footprint RCU"
+-	depends on !SMP && PREEMPT
++	depends on PREEMPT && !SMP
+ 	help
+ 	  This option selects the RCU implementation that is designed
+ 	  for real-time UP systems.  This option greatly reduces the
 diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 91d67ce..c081fa9 100644
+index 91d67ce..1e48f1c 100644
 --- a/kernel/lockdep.c
 +++ b/kernel/lockdep.c
-@@ -96,8 +96,13 @@ static int graph_lock(void)
+@@ -1129,10 +1129,11 @@ print_circular_bug_header(struct lock_list *entry, unsigned int depth,
+ 	if (debug_locks_silent)
+ 		return 0;
  
- static inline int graph_unlock(void)
+-	printk("\n=======================================================\n");
+-	printk(  "[ INFO: possible circular locking dependency detected ]\n");
++	printk("\n");
++	printk("======================================================\n");
++	printk("[ INFO: possible circular locking dependency detected ]\n");
+ 	print_kernel_version();
+-	printk(  "-------------------------------------------------------\n");
++	printk("-------------------------------------------------------\n");
+ 	printk("%s/%d is trying to acquire lock:\n",
+ 		curr->comm, task_pid_nr(curr));
+ 	print_lock(check_src);
+@@ -1463,11 +1464,12 @@ print_bad_irq_dependency(struct task_struct *curr,
+ 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
+ 		return 0;
+ 
+-	printk("\n======================================================\n");
+-	printk(  "[ INFO: %s-safe -> %s-unsafe lock order detected ]\n",
++	printk("\n");
++	printk("======================================================\n");
++	printk("[ INFO: %s-safe -> %s-unsafe lock order detected ]\n",
+ 		irqclass, irqclass);
+ 	print_kernel_version();
+-	printk(  "------------------------------------------------------\n");
++	printk("------------------------------------------------------\n");
+ 	printk("%s/%d [HC%u[%lu]:SC%u[%lu]:HE%u:SE%u] is trying to acquire:\n",
+ 		curr->comm, task_pid_nr(curr),
+ 		curr->hardirq_context, hardirq_count() >> HARDIRQ_SHIFT,
+@@ -1692,10 +1694,11 @@ print_deadlock_bug(struct task_struct *curr, struct held_lock *prev,
+ 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
+ 		return 0;
+ 
+-	printk("\n=============================================\n");
+-	printk(  "[ INFO: possible recursive locking detected ]\n");
++	printk("\n");
++	printk("=============================================\n");
++	printk("[ INFO: possible recursive locking detected ]\n");
+ 	print_kernel_version();
+-	printk(  "---------------------------------------------\n");
++	printk("---------------------------------------------\n");
+ 	printk("%s/%d is trying to acquire lock:\n",
+ 		curr->comm, task_pid_nr(curr));
+ 	print_lock(next);
+@@ -2177,10 +2180,11 @@ print_usage_bug(struct task_struct *curr, struct held_lock *this,
+ 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
+ 		return 0;
+ 
+-	printk("\n=================================\n");
+-	printk(  "[ INFO: inconsistent lock state ]\n");
++	printk("\n");
++	printk("=================================\n");
++	printk("[ INFO: inconsistent lock state ]\n");
+ 	print_kernel_version();
+-	printk(  "---------------------------------\n");
++	printk("---------------------------------\n");
+ 
+ 	printk("inconsistent {%s} -> {%s} usage.\n",
+ 		usage_str[prev_bit], usage_str[new_bit]);
+@@ -2241,10 +2245,11 @@ print_irq_inversion_bug(struct task_struct *curr,
+ 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
+ 		return 0;
+ 
+-	printk("\n=========================================================\n");
+-	printk(  "[ INFO: possible irq lock inversion dependency detected ]\n");
++	printk("\n");
++	printk("=========================================================\n");
++	printk("[ INFO: possible irq lock inversion dependency detected ]\n");
+ 	print_kernel_version();
+-	printk(  "---------------------------------------------------------\n");
++	printk("---------------------------------------------------------\n");
+ 	printk("%s/%d just changed the state of lock:\n",
+ 		curr->comm, task_pid_nr(curr));
+ 	print_lock(this);
+@@ -3065,9 +3070,10 @@ print_unlock_inbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
+ 	if (debug_locks_silent)
+ 		return 0;
+ 
+-	printk("\n=====================================\n");
+-	printk(  "[ BUG: bad unlock balance detected! ]\n");
+-	printk(  "-------------------------------------\n");
++	printk("\n");
++	printk("=====================================\n");
++	printk("[ BUG: bad unlock balance detected! ]\n");
++	printk("-------------------------------------\n");
+ 	printk("%s/%d is trying to release lock (",
+ 		curr->comm, task_pid_nr(curr));
+ 	print_lockdep_cache(lock);
+@@ -3478,9 +3484,10 @@ print_lock_contention_bug(struct task_struct *curr, struct lockdep_map *lock,
+ 	if (debug_locks_silent)
+ 		return 0;
+ 
+-	printk("\n=================================\n");
+-	printk(  "[ BUG: bad contention detected! ]\n");
+-	printk(  "---------------------------------\n");
++	printk("\n");
++	printk("=================================\n");
++	printk("[ BUG: bad contention detected! ]\n");
++	printk("---------------------------------\n");
+ 	printk("%s/%d is trying to contend lock (",
+ 		curr->comm, task_pid_nr(curr));
+ 	print_lockdep_cache(lock);
+@@ -3839,9 +3846,10 @@ print_freed_lock_bug(struct task_struct *curr, const void *mem_from,
+ 	if (debug_locks_silent)
+ 		return;
+ 
+-	printk("\n=========================\n");
+-	printk(  "[ BUG: held lock freed! ]\n");
+-	printk(  "-------------------------\n");
++	printk("\n");
++	printk("=========================\n");
++	printk("[ BUG: held lock freed! ]\n");
++	printk("-------------------------\n");
+ 	printk("%s/%d is freeing memory %p-%p, with a lock still held there!\n",
+ 		curr->comm, task_pid_nr(curr), mem_from, mem_to-1);
+ 	print_lock(hlock);
+@@ -3895,9 +3903,10 @@ static void print_held_locks_bug(struct task_struct *curr)
+ 	if (debug_locks_silent)
+ 		return;
+ 
+-	printk("\n=====================================\n");
+-	printk(  "[ BUG: lock held at task exit time! ]\n");
+-	printk(  "-------------------------------------\n");
++	printk("\n");
++	printk("=====================================\n");
++	printk("[ BUG: lock held at task exit time! ]\n");
++	printk("-------------------------------------\n");
+ 	printk("%s/%d is exiting with locks still held!\n",
+ 		curr->comm, task_pid_nr(curr));
+ 	lockdep_print_held_locks(curr);
+@@ -3991,16 +4000,17 @@ void lockdep_sys_exit(void)
+ 	if (unlikely(curr->lockdep_depth)) {
+ 		if (!debug_locks_off())
+ 			return;
+-		printk("\n================================================\n");
+-		printk(  "[ BUG: lock held when returning to user space! ]\n");
+-		printk(  "------------------------------------------------\n");
++		printk("\n");
++		printk("================================================\n");
++		printk("[ BUG: lock held when returning to user space! ]\n");
++		printk("------------------------------------------------\n");
+ 		printk("%s/%d is leaving the kernel with locks still held!\n",
+ 				curr->comm, curr->pid);
+ 		lockdep_print_held_locks(curr);
+ 	}
+ }
+ 
+-void lockdep_rcu_dereference(const char *file, const int line)
++void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
  {
--	if (debug_locks && !arch_spin_is_locked(&lockdep_lock))
-+	if (debug_locks && !arch_spin_is_locked(&lockdep_lock)) {
-+		/*
-+		 * The lockdep graph lock isn't locked while we expect it to
-+		 * be, we're confused now, bye!
-+		 */
- 		return DEBUG_LOCKS_WARN_ON(1);
+ 	struct task_struct *curr = current;
+ 
+@@ -4009,15 +4019,15 @@ void lockdep_rcu_dereference(const char *file, const int line)
+ 		return;
+ #endif /* #ifdef CONFIG_PROVE_RCU_REPEATEDLY */
+ 	/* Note: the following can be executed concurrently, so be careful. */
+-	printk("\n===================================================\n");
+-	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
+-	printk(  "---------------------------------------------------\n");
+-	printk("%s:%d invoked rcu_dereference_check() without protection!\n",
+-			file, line);
++	printk("\n");
++	printk("===============================\n");
++	printk("[ INFO: suspicious RCU usage. ]\n");
++	printk("-------------------------------\n");
++	printk("%s:%d %s!\n", file, line, s);
+ 	printk("\nother info that might help us debug this:\n\n");
+ 	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
+ 	lockdep_print_held_locks(curr);
+ 	printk("\nstack backtrace:\n");
+ 	dump_stack();
+ }
+-EXPORT_SYMBOL_GPL(lockdep_rcu_dereference);
++EXPORT_SYMBOL_GPL(lockdep_rcu_suspicious);
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e432057..8cafe7e 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -418,7 +418,9 @@ EXPORT_SYMBOL(pid_task);
+  */
+ struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
+ {
+-	rcu_lockdep_assert(rcu_read_lock_held());
++	rcu_lockdep_assert(rcu_read_lock_held(),
++			   "find_task_by_pid_ns() needs rcu_read_lock()"
++			   " protection");
+ 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
+ }
+ 
+diff --git a/kernel/rcu.h b/kernel/rcu.h
+new file mode 100644
+index 0000000..f600868
+--- /dev/null
++++ b/kernel/rcu.h
+@@ -0,0 +1,85 @@
++/*
++ * Read-Copy Update definitions shared among RCU implementations.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright IBM Corporation, 2011
++ *
++ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
++ */
++
++#ifndef __LINUX_RCU_H
++#define __LINUX_RCU_H
++
++#ifdef CONFIG_RCU_TRACE
++#define RCU_TRACE(stmt) stmt
++#else /* #ifdef CONFIG_RCU_TRACE */
++#define RCU_TRACE(stmt)
++#endif /* #else #ifdef CONFIG_RCU_TRACE */
++
++/*
++ * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
++ * by call_rcu() and rcu callback execution, and are therefore not part of the
++ * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
++ */
++
++#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++# define STATE_RCU_HEAD_READY	0
++# define STATE_RCU_HEAD_QUEUED	1
++
++extern struct debug_obj_descr rcuhead_debug_descr;
++
++static inline void debug_rcu_head_queue(struct rcu_head *head)
++{
++	WARN_ON_ONCE((unsigned long)head & 0x3);
++	debug_object_activate(head, &rcuhead_debug_descr);
++	debug_object_active_state(head, &rcuhead_debug_descr,
++				  STATE_RCU_HEAD_READY,
++				  STATE_RCU_HEAD_QUEUED);
++}
++
++static inline void debug_rcu_head_unqueue(struct rcu_head *head)
++{
++	debug_object_active_state(head, &rcuhead_debug_descr,
++				  STATE_RCU_HEAD_QUEUED,
++				  STATE_RCU_HEAD_READY);
++	debug_object_deactivate(head, &rcuhead_debug_descr);
++}
++#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
++static inline void debug_rcu_head_queue(struct rcu_head *head)
++{
++}
++
++static inline void debug_rcu_head_unqueue(struct rcu_head *head)
++{
++}
++#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
++
++extern void kfree(const void *);
++
++static inline void __rcu_reclaim(char *rn, struct rcu_head *head)
++{
++	unsigned long offset = (unsigned long)head->func;
++
++	if (__is_kfree_rcu_offset(offset)) {
++		RCU_TRACE(trace_rcu_invoke_kfree_callback(rn, head, offset));
++		kfree((void *)head - offset);
++	} else {
++		RCU_TRACE(trace_rcu_invoke_callback(rn, head));
++		head->func(head);
++	}
++}
++
++#endif /* __LINUX_RCU_H */
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index ddddb32..ca0d23b 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -46,6 +46,11 @@
+ #include <linux/module.h>
+ #include <linux/hardirq.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/rcu.h>
++
++#include "rcu.h"
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ static struct lock_class_key rcu_lock_key;
+ struct lockdep_map rcu_lock_map =
+@@ -94,11 +99,16 @@ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
+ 
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
++struct rcu_synchronize {
++	struct rcu_head head;
++	struct completion completion;
++};
++
+ /*
+  * Awaken the corresponding synchronize_rcu() instance now that a
+  * grace period has elapsed.
+  */
+-void wakeme_after_rcu(struct rcu_head  *head)
++static void wakeme_after_rcu(struct rcu_head  *head)
+ {
+ 	struct rcu_synchronize *rcu;
+ 
+@@ -106,6 +116,20 @@ void wakeme_after_rcu(struct rcu_head  *head)
+ 	complete(&rcu->completion);
+ }
+ 
++void wait_rcu_gp(call_rcu_func_t crf)
++{
++	struct rcu_synchronize rcu;
++
++	init_rcu_head_on_stack(&rcu.head);
++	init_completion(&rcu.completion);
++	/* Will wake me after RCU finished. */
++	crf(&rcu.head, wakeme_after_rcu);
++	/* Wait for it. */
++	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
++}
++EXPORT_SYMBOL_GPL(wait_rcu_gp);
++
+ #ifdef CONFIG_PROVE_RCU
+ /*
+  * wrapper function to avoid #include problems.
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 7bbac7d..da775c8 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -37,16 +37,17 @@
+ #include <linux/cpu.h>
+ #include <linux/prefetch.h>
+ 
+-/* Controls for rcu_kthread() kthread, replacing RCU_SOFTIRQ used previously. */
+-static struct task_struct *rcu_kthread_task;
+-static DECLARE_WAIT_QUEUE_HEAD(rcu_kthread_wq);
+-static unsigned long have_rcu_kthread_work;
++#ifdef CONFIG_RCU_TRACE
++#include <trace/events/rcu.h>
++#endif /* #else #ifdef CONFIG_RCU_TRACE */
++
++#include "rcu.h"
+ 
+ /* Forward declarations for rcutiny_plugin.h. */
+ struct rcu_ctrlblk;
+-static void invoke_rcu_kthread(void);
+-static void rcu_process_callbacks(struct rcu_ctrlblk *rcp);
+-static int rcu_kthread(void *arg);
++static void invoke_rcu_callbacks(void);
++static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp);
++static void rcu_process_callbacks(struct softirq_action *unused);
+ static void __call_rcu(struct rcu_head *head,
+ 		       void (*func)(struct rcu_head *rcu),
+ 		       struct rcu_ctrlblk *rcp);
+@@ -96,16 +97,6 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
+ }
+ 
+ /*
+- * Wake up rcu_kthread() to process callbacks now eligible for invocation
+- * or to boost readers.
+- */
+-static void invoke_rcu_kthread(void)
+-{
+-	have_rcu_kthread_work = 1;
+-	wake_up(&rcu_kthread_wq);
+-}
+-
+-/*
+  * Record an rcu quiescent state.  And an rcu_bh quiescent state while we
+  * are at it, given that any rcu quiescent state is also an rcu_bh
+  * quiescent state.  Use "+" instead of "||" to defeat short circuiting.
+@@ -117,7 +108,7 @@ void rcu_sched_qs(int cpu)
+ 	local_irq_save(flags);
+ 	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
+ 	    rcu_qsctr_help(&rcu_bh_ctrlblk))
+-		invoke_rcu_kthread();
++		invoke_rcu_callbacks();
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -130,7 +121,7 @@ void rcu_bh_qs(int cpu)
+ 
+ 	local_irq_save(flags);
+ 	if (rcu_qsctr_help(&rcu_bh_ctrlblk))
+-		invoke_rcu_kthread();
++		invoke_rcu_callbacks();
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -154,18 +145,23 @@ void rcu_check_callbacks(int cpu, int user)
+  * Invoke the RCU callbacks on the specified rcu_ctrlkblk structure
+  * whose grace period has elapsed.
+  */
+-static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
++static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ {
++	char *rn = NULL;
+ 	struct rcu_head *next, *list;
+ 	unsigned long flags;
+ 	RCU_TRACE(int cb_count = 0);
+ 
+ 	/* If no RCU callbacks ready to invoke, just return. */
+-	if (&rcp->rcucblist == rcp->donetail)
++	if (&rcp->rcucblist == rcp->donetail) {
++		RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
++		RCU_TRACE(trace_rcu_batch_end(rcp->name, 0));
+ 		return;
 +	}
  
- 	current->lockdep_recursion--;
- 	arch_spin_unlock(&lockdep_lock);
-@@ -134,6 +139,9 @@ static struct lock_class lock_classes[MAX_LOCKDEP_KEYS];
- static inline struct lock_class *hlock_class(struct held_lock *hlock)
+ 	/* Move the ready-to-invoke callbacks to a local list. */
+ 	local_irq_save(flags);
++	RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
+ 	list = rcp->rcucblist;
+ 	rcp->rcucblist = *rcp->donetail;
+ 	*rcp->donetail = NULL;
+@@ -176,49 +172,26 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ 	local_irq_restore(flags);
+ 
+ 	/* Invoke the callbacks on the local list. */
++	RCU_TRACE(rn = rcp->name);
+ 	while (list) {
+ 		next = list->next;
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
+ 		local_bh_disable();
+-		__rcu_reclaim(list);
++		__rcu_reclaim(rn, list);
+ 		local_bh_enable();
+ 		list = next;
+ 		RCU_TRACE(cb_count++);
+ 	}
+ 	RCU_TRACE(rcu_trace_sub_qlen(rcp, cb_count));
++	RCU_TRACE(trace_rcu_batch_end(rcp->name, cb_count));
+ }
+ 
+-/*
+- * This kthread invokes RCU callbacks whose grace periods have
+- * elapsed.  It is awakened as needed, and takes the place of the
+- * RCU_SOFTIRQ that was used previously for this purpose.
+- * This is a kthread, but it is never stopped, at least not until
+- * the system goes down.
+- */
+-static int rcu_kthread(void *arg)
++static void rcu_process_callbacks(struct softirq_action *unused)
  {
- 	if (!hlock->class_idx) {
-+		/*
-+		 * Someone passed in garbage, we give up.
-+		 */
- 		DEBUG_LOCKS_WARN_ON(1);
- 		return NULL;
- 	}
-@@ -687,6 +695,10 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
- 	 */
- 	list_for_each_entry(class, hash_head, hash_entry) {
- 		if (class->key == key) {
-+			/*
-+			 * Huh! same key, different name? Did someone trample
-+			 * on some memory? We're most confused.
-+			 */
- 			WARN_ON_ONCE(class->name != lock->name);
- 			return class;
- 		}
-@@ -800,6 +812,10 @@ out_unlock_set:
- 	else if (subclass < NR_LOCKDEP_CACHING_CLASSES)
- 		lock->class_cache[subclass] = class;
- 
-+	/*
-+	 * Hash collision, did we smoke some? We found a class with a matching
-+	 * hash but the subclass -- which is hashed in -- didn't match.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(class->subclass != subclass))
- 		return NULL;
- 
-@@ -926,7 +942,7 @@ static inline void mark_lock_accessed(struct lock_list *lock,
- 	unsigned long nr;
- 
- 	nr = lock - list_entries;
--	WARN_ON(nr >= nr_list_entries);
-+	WARN_ON(nr >= nr_list_entries); /* Out-of-bounds, input fail */
- 	lock->parent = parent;
- 	lock->class->dep_gen_id = lockdep_dependency_gen_id;
- }
-@@ -936,7 +952,7 @@ static inline unsigned long lock_accessed(struct lock_list *lock)
- 	unsigned long nr;
- 
- 	nr = lock - list_entries;
--	WARN_ON(nr >= nr_list_entries);
-+	WARN_ON(nr >= nr_list_entries); /* Out-of-bounds, input fail */
- 	return lock->class->dep_gen_id == lockdep_dependency_gen_id;
- }
- 
-@@ -1196,6 +1212,9 @@ static noinline int print_bfs_bug(int ret)
- 	if (!debug_locks_off_graph_unlock())
- 		return 0;
- 
-+	/*
-+	 * Breadth-first-search failed, graph got corrupted?
-+	 */
- 	WARN(1, "lockdep bfs error:%d\n", ret);
- 
- 	return 0;
-@@ -1944,6 +1963,11 @@ out_bug:
- 	if (!debug_locks_off_graph_unlock())
- 		return 0;
- 
-+	/*
-+	 * Clearly we all shouldn't be here, but since we made it we
-+	 * can reliable say we messed up our state. See the above two
-+	 * gotos for reasons why we could possibly end up here.
-+	 */
- 	WARN_ON(1);
- 
- 	return 0;
-@@ -1975,6 +1999,11 @@ static inline int lookup_chain_cache(struct task_struct *curr,
- 	struct held_lock *hlock_curr, *hlock_next;
- 	int i, j;
- 
-+	/*
-+	 * We might need to take the graph lock, ensure we've got IRQs
-+	 * disabled to make this an IRQ-safe lock.. for recursion reasons
-+	 * lockdep won't complain about its own locking errors.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return 0;
- 	/*
-@@ -2126,6 +2155,10 @@ static void check_chain_key(struct task_struct *curr)
- 		hlock = curr->held_locks + i;
- 		if (chain_key != hlock->prev_chain_key) {
- 			debug_locks_off();
-+			/*
-+			 * We got mighty confused, our chain keys don't match
-+			 * with what we expect, someone trample on our task state?
-+			 */
- 			WARN(1, "hm#1, depth: %u [%u], %016Lx != %016Lx\n",
- 				curr->lockdep_depth, i,
- 				(unsigned long long)chain_key,
-@@ -2133,6 +2166,9 @@ static void check_chain_key(struct task_struct *curr)
- 			return;
- 		}
- 		id = hlock->class_idx - 1;
-+		/*
-+		 * Whoops ran out of static storage again?
-+		 */
- 		if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
- 			return;
- 
-@@ -2144,6 +2180,10 @@ static void check_chain_key(struct task_struct *curr)
- 	}
- 	if (chain_key != curr->curr_chain_key) {
- 		debug_locks_off();
-+		/*
-+		 * More smoking hash instead of calculating it, damn see these
-+		 * numbers float.. I bet that a pink elephant stepped on my memory.
-+		 */
- 		WARN(1, "hm#2, depth: %u [%u], %016Lx != %016Lx\n",
- 			curr->lockdep_depth, i,
- 			(unsigned long long)chain_key,
-@@ -2525,12 +2565,24 @@ void trace_hardirqs_on_caller(unsigned long ip)
- 		return;
- 	}
- 
-+	/*
-+	 * We're enabling irqs and according to our state above irqs weren't
-+	 * already enabled, yet we find the hardware thinks they are in fact
-+	 * enabled.. someone messed up their IRQ state tracing.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return;
- 
-+	/*
-+	 * See the fine text that goes along with this variable definition.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
- 		return;
- 
-+	/*
-+	 * Can't allow enabling interrupts while in an interrupt handler,
-+	 * that's general bad form and such. Recursion, limited stack etc..
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
- 		return;
- 
-@@ -2558,6 +2610,10 @@ void trace_hardirqs_off_caller(unsigned long ip)
- 	if (unlikely(!debug_locks || current->lockdep_recursion))
- 		return;
- 
-+	/*
-+	 * So we're supposed to get called after you mask local IRQs, but for
-+	 * some reason the hardware doesn't quite think you did a proper job.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return;
- 
-@@ -2590,6 +2646,10 @@ void trace_softirqs_on(unsigned long ip)
- 	if (unlikely(!debug_locks || current->lockdep_recursion))
- 		return;
- 
-+	/*
-+	 * We fancy IRQs being disabled here, see softirq.c, avoids
-+	 * funny state and nesting things.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return;
- 
-@@ -2626,6 +2686,9 @@ void trace_softirqs_off(unsigned long ip)
- 	if (unlikely(!debug_locks || current->lockdep_recursion))
- 		return;
- 
-+	/*
-+	 * We fancy IRQs being disabled here, see softirq.c
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return;
- 
-@@ -2637,6 +2700,9 @@ void trace_softirqs_off(unsigned long ip)
- 		curr->softirq_disable_ip = ip;
- 		curr->softirq_disable_event = ++curr->irq_events;
- 		debug_atomic_inc(softirqs_off_events);
-+		/*
-+		 * Whoops, we wanted softirqs off, so why aren't they?
-+		 */
- 		DEBUG_LOCKS_WARN_ON(!softirq_count());
- 	} else
- 		debug_atomic_inc(redundant_softirqs_off);
-@@ -2661,6 +2727,9 @@ static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
- 	if (!(gfp_mask & __GFP_FS))
- 		return;
- 
-+	/*
-+	 * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
- 		return;
- 
-@@ -2773,13 +2842,13 @@ static int separate_irq_context(struct task_struct *curr,
- 	return 0;
- }
- 
--#else
-+#else /* defined(CONFIG_TRACE_IRQFLAGS) && defined(CONFIG_PROVE_LOCKING) */
- 
- static inline
- int mark_lock_irq(struct task_struct *curr, struct held_lock *this,
- 		enum lock_usage_bit new_bit)
- {
--	WARN_ON(1);
-+	WARN_ON(1); /* Impossible innit? when we don't have TRACE_IRQFLAG */
- 	return 1;
- }
- 
-@@ -2799,7 +2868,7 @@ void lockdep_trace_alloc(gfp_t gfp_mask)
- {
- }
- 
--#endif
-+#endif /* defined(CONFIG_TRACE_IRQFLAGS) && defined(CONFIG_PROVE_LOCKING) */
- 
- /*
-  * Mark a lock with a usage bit, and validate the state transition:
-@@ -2880,6 +2949,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 	lock->cpu = raw_smp_processor_id();
- #endif
- 
-+	/*
-+	 * Can't be having no nameless bastards around this place!
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!name)) {
- 		lock->name = "NULL";
- 		return;
-@@ -2887,6 +2959,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 
- 	lock->name = name;
- 
-+	/*
-+	 * No key, no joy, we need to hash something.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!key))
- 		return;
- 	/*
-@@ -2894,6 +2969,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 	 */
- 	if (!static_obj(key)) {
- 		printk("BUG: key %p not in .data!\n", key);
-+		/*
-+		 * What it says above ^^^^^, I suggest you read it.
-+		 */
- 		DEBUG_LOCKS_WARN_ON(1);
- 		return;
- 	}
-@@ -2932,6 +3010,11 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 	if (unlikely(!debug_locks))
- 		return 0;
- 
-+	/*
-+	 * Lockdep should run with IRQs disabled, otherwise we could
-+	 * get an interrupt which would want to take locks, which would
-+	 * end up in lockdep and have you got a head-ache already?
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return 0;
- 
-@@ -2963,6 +3046,9 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 	 * dependency checks are done)
- 	 */
- 	depth = curr->lockdep_depth;
-+	/*
-+	 * Ran out of static storage for our per-task lock stack again have we?
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(depth >= MAX_LOCK_DEPTH))
- 		return 0;
- 
-@@ -2981,6 +3067,10 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 	}
- 
- 	hlock = curr->held_locks + depth;
-+	/*
-+	 * Plain impossible, we just registered it and checked it weren't no
-+	 * NULL like.. I bet this mushroom I ate was good!
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!class))
- 		return 0;
- 	hlock->class_idx = class_idx;
-@@ -3015,11 +3105,17 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 	 * the hash, not class->key.
- 	 */
- 	id = class - lock_classes;
-+	/*
-+	 * Whoops, we did it again.. ran straight out of our static allocation.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
- 		return 0;
- 
- 	chain_key = curr->curr_chain_key;
- 	if (!depth) {
-+		/*
-+		 * How can we have a chain hash when we ain't got no keys?!
-+		 */
- 		if (DEBUG_LOCKS_WARN_ON(chain_key != 0))
- 			return 0;
- 		chain_head = 1;
-@@ -3091,6 +3187,9 @@ static int check_unlock(struct task_struct *curr, struct lockdep_map *lock,
- {
- 	if (unlikely(!debug_locks))
- 		return 0;
-+	/*
-+	 * Lockdep should run with IRQs disabled, recursion, head-ache, etc..
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return 0;
- 
-@@ -3120,6 +3219,11 @@ static int match_held_lock(struct held_lock *hlock, struct lockdep_map *lock)
- 		if (!class)
- 			return 0;
- 
-+		/*
-+		 * References, but not a lock we're actually ref-counting?
-+		 * State got messed up, follow the sites that change ->references
-+		 * and try to make sense of it.
-+		 */
- 		if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
- 			return 0;
- 
-@@ -3142,6 +3246,10 @@ __lock_set_class(struct lockdep_map *lock, const char *name,
- 	int i;
- 
- 	depth = curr->lockdep_depth;
-+	/*
-+	 * This function is about (re)setting the class of a held lock,
-+	 * yet we're not actually holding any locks. Naughty user!
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!depth))
- 		return 0;
- 
-@@ -3177,6 +3285,10 @@ found_it:
- 			return 0;
- 	}
- 
-+	/*
-+	 * I took it apart and put it back together again, except now I have
-+	 * these 'spare' parts.. where shall I put them.
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth))
- 		return 0;
- 	return 1;
-@@ -3201,6 +3313,10 @@ lock_release_non_nested(struct task_struct *curr,
- 	 * of held locks:
- 	 */
- 	depth = curr->lockdep_depth;
-+	/*
-+	 * So we're all set to release this lock.. wait what lock? We don't
-+	 * own any locks, you've been drinking again?
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!depth))
- 		return 0;
- 
-@@ -3253,6 +3369,10 @@ found_it:
- 			return 0;
- 	}
- 
-+	/*
-+	 * We had N bottles of beer on the wall, we drank one, but now
-+	 * there's not N-1 bottles of beer left on the wall...
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth - 1))
- 		return 0;
- 	return 1;
-@@ -3283,6 +3403,9 @@ static int lock_release_nested(struct task_struct *curr,
- 		return lock_release_non_nested(curr, lock, ip);
- 	curr->lockdep_depth--;
- 
-+	/*
-+	 * No more locks, but somehow we've got hash left over, who left it?
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!depth && (hlock->prev_chain_key != 0)))
- 		return 0;
- 
-@@ -3365,10 +3488,13 @@ static void check_flags(unsigned long flags)
- 	 * check if not in hardirq contexts:
- 	 */
- 	if (!hardirq_count()) {
--		if (softirq_count())
-+		if (softirq_count()) {
-+			/* like the above, but with softirqs */
- 			DEBUG_LOCKS_WARN_ON(current->softirqs_enabled);
--		else
-+		} else {
-+			/* lick the above, does it taste good? */
- 			DEBUG_LOCKS_WARN_ON(!current->softirqs_enabled);
-+		}
- 	}
- 
- 	if (!debug_locks)
-@@ -3506,6 +3632,10 @@ __lock_contended(struct lockdep_map *lock, unsigned long ip)
- 	int i, contention_point, contending_point;
- 
- 	depth = curr->lockdep_depth;
-+	/*
-+	 * Whee, we contended on this lock, except it seems we're not
-+	 * actually trying to acquire anything much at all..
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!depth))
- 		return;
- 
-@@ -3555,6 +3685,10 @@ __lock_acquired(struct lockdep_map *lock, unsigned long ip)
- 	int i, cpu;
- 
- 	depth = curr->lockdep_depth;
-+	/*
-+	 * Yay, we acquired ownership of this lock we didn't try to
-+	 * acquire, how the heck did that happen?
-+	 */
- 	if (DEBUG_LOCKS_WARN_ON(!depth))
- 		return;
- 
-@@ -3759,8 +3893,12 @@ void lockdep_reset_lock(struct lockdep_map *lock)
- 				match |= class == lock->class_cache[j];
- 
- 			if (unlikely(match)) {
--				if (debug_locks_off_graph_unlock())
-+				if (debug_locks_off_graph_unlock()) {
-+					/*
-+					 * We all just reset everything, how did it match?
-+					 */
- 					WARN_ON(1);
-+				}
- 				goto out_restore;
- 			}
- 		}
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 58f405b..41440cc 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -274,7 +274,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
- 	struct task_cputime sum;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cputimer->lock, flags);
-+	raw_spin_lock_irqsave(&cputimer->lock, flags);
- 	if (!cputimer->running) {
- 		cputimer->running = 1;
- 		/*
-@@ -287,7 +287,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
- 		update_gt_cputime(&cputimer->cputime, &sum);
- 	}
- 	*times = cputimer->cputime;
--	spin_unlock_irqrestore(&cputimer->lock, flags);
-+	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
+-	unsigned long work;
+-	unsigned long morework;
+-	unsigned long flags;
+-
+-	for (;;) {
+-		wait_event_interruptible(rcu_kthread_wq,
+-					 have_rcu_kthread_work != 0);
+-		morework = rcu_boost();
+-		local_irq_save(flags);
+-		work = have_rcu_kthread_work;
+-		have_rcu_kthread_work = morework;
+-		local_irq_restore(flags);
+-		if (work) {
+-			rcu_process_callbacks(&rcu_sched_ctrlblk);
+-			rcu_process_callbacks(&rcu_bh_ctrlblk);
+-			rcu_preempt_process_callbacks();
+-		}
+-		schedule_timeout_interruptible(1); /* Leave CPU for others. */
+-	}
+-
+-	return 0;  /* Not reached, but needed to shut gcc up. */
++	__rcu_process_callbacks(&rcu_sched_ctrlblk);
++	__rcu_process_callbacks(&rcu_bh_ctrlblk);
++	rcu_preempt_process_callbacks();
  }
  
  /*
-@@ -997,9 +997,9 @@ static void stop_process_timers(struct signal_struct *sig)
- 	struct thread_group_cputimer *cputimer = &sig->cputimer;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cputimer->lock, flags);
-+	raw_spin_lock_irqsave(&cputimer->lock, flags);
- 	cputimer->running = 0;
--	spin_unlock_irqrestore(&cputimer->lock, flags);
-+	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
+@@ -280,45 +253,3 @@ void call_rcu_bh(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+ 	__call_rcu(head, func, &rcu_bh_ctrlblk);
  }
+ EXPORT_SYMBOL_GPL(call_rcu_bh);
+-
+-void rcu_barrier_bh(void)
+-{
+-	struct rcu_synchronize rcu;
+-
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	/* Will wake me after RCU finished. */
+-	call_rcu_bh(&rcu.head, wakeme_after_rcu);
+-	/* Wait for it. */
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
+-}
+-EXPORT_SYMBOL_GPL(rcu_barrier_bh);
+-
+-void rcu_barrier_sched(void)
+-{
+-	struct rcu_synchronize rcu;
+-
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	/* Will wake me after RCU finished. */
+-	call_rcu_sched(&rcu.head, wakeme_after_rcu);
+-	/* Wait for it. */
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
+-}
+-EXPORT_SYMBOL_GPL(rcu_barrier_sched);
+-
+-/*
+- * Spawn the kthread that invokes RCU callbacks.
+- */
+-static int __init rcu_spawn_kthreads(void)
+-{
+-	struct sched_param sp;
+-
+-	rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
+-	sp.sched_priority = RCU_BOOST_PRIO;
+-	sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
+-	return 0;
+-}
+-early_initcall(rcu_spawn_kthreads);
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index f259c67..02aa713 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -26,29 +26,26 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
  
- static u32 onecputick;
-@@ -1289,9 +1289,9 @@ static inline int fastpath_timer_check(struct task_struct *tsk)
- 	if (sig->cputimer.running) {
- 		struct task_cputime group_sample;
+-#ifdef CONFIG_RCU_TRACE
+-#define RCU_TRACE(stmt)	stmt
+-#else /* #ifdef CONFIG_RCU_TRACE */
+-#define RCU_TRACE(stmt)
+-#endif /* #else #ifdef CONFIG_RCU_TRACE */
+-
+ /* Global control variables for rcupdate callback mechanism. */
+ struct rcu_ctrlblk {
+ 	struct rcu_head *rcucblist;	/* List of pending callbacks (CBs). */
+ 	struct rcu_head **donetail;	/* ->next pointer of last "done" CB. */
+ 	struct rcu_head **curtail;	/* ->next pointer of last CB. */
+ 	RCU_TRACE(long qlen);		/* Number of pending CBs. */
++	RCU_TRACE(char *name);		/* Name of RCU type. */
+ };
  
--		spin_lock(&sig->cputimer.lock);
-+		raw_spin_lock(&sig->cputimer.lock);
- 		group_sample = sig->cputimer.cputime;
--		spin_unlock(&sig->cputimer.lock);
-+		raw_spin_unlock(&sig->cputimer.lock);
+ /* Definition for rcupdate control block. */
+ static struct rcu_ctrlblk rcu_sched_ctrlblk = {
+ 	.donetail	= &rcu_sched_ctrlblk.rcucblist,
+ 	.curtail	= &rcu_sched_ctrlblk.rcucblist,
++	RCU_TRACE(.name = "rcu_sched")
+ };
  
- 		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
- 			return 1;
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 28a40d8..b7da183 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -100,7 +100,7 @@ static int console_locked, console_suspended;
-  * It is also used in interesting ways to provide interlocking in
-  * console_unlock();.
-  */
--static DEFINE_SPINLOCK(logbuf_lock);
-+static DEFINE_RAW_SPINLOCK(logbuf_lock);
+ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
+ 	.donetail	= &rcu_bh_ctrlblk.rcucblist,
+ 	.curtail	= &rcu_bh_ctrlblk.rcucblist,
++	RCU_TRACE(.name = "rcu_bh")
+ };
  
- #define LOG_BUF_MASK (log_buf_len-1)
- #define LOG_BUF(idx) (log_buf[(idx) & LOG_BUF_MASK])
-@@ -212,7 +212,7 @@ void __init setup_log_buf(int early)
- 		return;
- 	}
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+@@ -131,6 +128,7 @@ static struct rcu_preempt_ctrlblk rcu_preempt_ctrlblk = {
+ 	.rcb.curtail = &rcu_preempt_ctrlblk.rcb.rcucblist,
+ 	.nexttail = &rcu_preempt_ctrlblk.rcb.rcucblist,
+ 	.blkd_tasks = LIST_HEAD_INIT(rcu_preempt_ctrlblk.blkd_tasks),
++	RCU_TRACE(.rcb.name = "rcu_preempt")
+ };
  
--	spin_lock_irqsave(&logbuf_lock, flags);
-+	raw_spin_lock_irqsave(&logbuf_lock, flags);
- 	log_buf_len = new_log_buf_len;
- 	log_buf = new_log_buf;
- 	new_log_buf_len = 0;
-@@ -230,7 +230,7 @@ void __init setup_log_buf(int early)
- 	log_start -= offset;
- 	con_start -= offset;
- 	log_end -= offset;
--	spin_unlock_irqrestore(&logbuf_lock, flags);
-+	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
- 	pr_info("log_buf_len: %d\n", log_buf_len);
- 	pr_info("early log buf free: %d(%d%%)\n",
-@@ -365,18 +365,18 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 		if (error)
- 			goto out;
- 		i = 0;
--		spin_lock_irq(&logbuf_lock);
-+		raw_spin_lock_irq(&logbuf_lock);
- 		while (!error && (log_start != log_end) && i < len) {
- 			c = LOG_BUF(log_start);
- 			log_start++;
--			spin_unlock_irq(&logbuf_lock);
-+			raw_spin_unlock_irq(&logbuf_lock);
- 			error = __put_user(c,buf);
- 			buf++;
- 			i++;
- 			cond_resched();
--			spin_lock_irq(&logbuf_lock);
-+			raw_spin_lock_irq(&logbuf_lock);
- 		}
--		spin_unlock_irq(&logbuf_lock);
-+		raw_spin_unlock_irq(&logbuf_lock);
- 		if (!error)
- 			error = i;
- 		break;
-@@ -399,7 +399,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 		count = len;
- 		if (count > log_buf_len)
- 			count = log_buf_len;
--		spin_lock_irq(&logbuf_lock);
-+		raw_spin_lock_irq(&logbuf_lock);
- 		if (count > logged_chars)
- 			count = logged_chars;
- 		if (do_clear)
-@@ -416,12 +416,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 			if (j + log_buf_len < log_end)
- 				break;
- 			c = LOG_BUF(j);
--			spin_unlock_irq(&logbuf_lock);
-+			raw_spin_unlock_irq(&logbuf_lock);
- 			error = __put_user(c,&buf[count-1-i]);
- 			cond_resched();
--			spin_lock_irq(&logbuf_lock);
-+			raw_spin_lock_irq(&logbuf_lock);
- 		}
--		spin_unlock_irq(&logbuf_lock);
-+		raw_spin_unlock_irq(&logbuf_lock);
- 		if (error)
- 			break;
- 		error = i;
-@@ -689,7 +689,7 @@ static void zap_locks(void)
- 	oops_timestamp = jiffies;
- 
- 	/* If a crash is occurring, make sure we can't deadlock */
--	spin_lock_init(&logbuf_lock);
-+	raw_spin_lock_init(&logbuf_lock);
- 	/* And make sure that we print immediately */
- 	sema_init(&console_sem, 1);
- }
-@@ -802,9 +802,9 @@ static int console_trylock_for_printk(unsigned int cpu)
- 		}
- 	}
- 	printk_cpu = UINT_MAX;
--	spin_unlock(&logbuf_lock);
- 	if (wake)
- 		up(&console_sem);
-+	raw_spin_unlock(&logbuf_lock);
- 	return retval;
- }
- static const char recursion_bug_msg [] =
-@@ -864,7 +864,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- 	}
- 
- 	lockdep_off();
--	spin_lock(&logbuf_lock);
-+	raw_spin_lock(&logbuf_lock);
- 	printk_cpu = this_cpu;
- 
- 	if (recursion_bug) {
-@@ -1257,14 +1257,14 @@ void console_unlock(void)
- 
- again:
- 	for ( ; ; ) {
--		spin_lock_irqsave(&logbuf_lock, flags);
-+		raw_spin_lock_irqsave(&logbuf_lock, flags);
- 		wake_klogd |= log_start - log_end;
- 		if (con_start == log_end)
- 			break;			/* Nothing to print */
- 		_con_start = con_start;
- 		_log_end = log_end;
- 		con_start = log_end;		/* Flush */
--		spin_unlock(&logbuf_lock);
-+		raw_spin_unlock(&logbuf_lock);
- 		stop_critical_timings();	/* don't trace print latency */
- 		call_console_drivers(_con_start, _log_end);
- 		start_critical_timings();
-@@ -1276,7 +1276,7 @@ again:
- 	if (unlikely(exclusive_console))
- 		exclusive_console = NULL;
- 
--	spin_unlock(&logbuf_lock);
-+	raw_spin_unlock(&logbuf_lock);
- 
- 	up(&console_sem);
- 
-@@ -1286,13 +1286,13 @@ again:
- 	 * there's a new owner and the console_unlock() from them will do the
- 	 * flush, no worries.
- 	 */
--	spin_lock(&logbuf_lock);
-+	raw_spin_lock(&logbuf_lock);
- 	if (con_start != log_end)
- 		retry = 1;
--	spin_unlock_irqrestore(&logbuf_lock, flags);
- 	if (retry && console_trylock())
- 		goto again;
- 
-+	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 	if (wake_klogd)
- 		wake_up_klogd();
- }
-@@ -1522,9 +1522,9 @@ void register_console(struct console *newcon)
- 		 * console_unlock(); will print out the buffered messages
- 		 * for us.
- 		 */
--		spin_lock_irqsave(&logbuf_lock, flags);
-+		raw_spin_lock_irqsave(&logbuf_lock, flags);
- 		con_start = log_start;
--		spin_unlock_irqrestore(&logbuf_lock, flags);
-+		raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 		/*
- 		 * We're about to replay the log buffer.  Only do this to the
- 		 * just-registered console to avoid excessive message spam to
-@@ -1731,10 +1731,10 @@ void kmsg_dump(enum kmsg_dump_reason reason)
- 	/* Theoretically, the log could move on after we do this, but
- 	   there's not a lot we can do about that. The new messages
- 	   will overwrite the start of what we dump. */
--	spin_lock_irqsave(&logbuf_lock, flags);
-+	raw_spin_lock_irqsave(&logbuf_lock, flags);
- 	end = log_end & LOG_BUF_MASK;
- 	chars = logged_chars;
--	spin_unlock_irqrestore(&logbuf_lock, flags);
-+	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
- 	if (chars > end) {
- 		s1 = log_buf + log_buf_len - chars + end;
-diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
-index 3c7cbc2..a2e7e72 100644
---- a/kernel/rtmutex-debug.c
-+++ b/kernel/rtmutex-debug.c
-@@ -29,61 +29,6 @@
+ static int rcu_preempted_readers_exp(void);
+@@ -247,6 +245,13 @@ static void show_tiny_preempt_stats(struct seq_file *m)
  
  #include "rtmutex_common.h"
  
--# define TRACE_WARN_ON(x)			WARN_ON(x)
--# define TRACE_BUG_ON(x)			BUG_ON(x)
--
--# define TRACE_OFF()						\
--do {								\
--	if (rt_trace_on) {					\
--		rt_trace_on = 0;				\
--		console_verbose();				\
--		if (raw_spin_is_locked(&current->pi_lock))	\
--			raw_spin_unlock(&current->pi_lock);	\
--	}							\
--} while (0)
--
--# define TRACE_OFF_NOLOCK()					\
--do {								\
--	if (rt_trace_on) {					\
--		rt_trace_on = 0;				\
--		console_verbose();				\
--	}							\
--} while (0)
--
--# define TRACE_BUG_LOCKED()			\
--do {						\
--	TRACE_OFF();				\
--	BUG();					\
--} while (0)
--
--# define TRACE_WARN_ON_LOCKED(c)		\
--do {						\
--	if (unlikely(c)) {			\
--		TRACE_OFF();			\
--		WARN_ON(1);			\
--	}					\
--} while (0)
--
--# define TRACE_BUG_ON_LOCKED(c)			\
--do {						\
--	if (unlikely(c))			\
--		TRACE_BUG_LOCKED();		\
--} while (0)
--
--#ifdef CONFIG_SMP
--# define SMP_TRACE_BUG_ON_LOCKED(c)	TRACE_BUG_ON_LOCKED(c)
--#else
--# define SMP_TRACE_BUG_ON_LOCKED(c)	do { } while (0)
--#endif
++#define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
++
++/* Controls for rcu_kthread() kthread. */
++static struct task_struct *rcu_kthread_task;
++static DECLARE_WAIT_QUEUE_HEAD(rcu_kthread_wq);
++static unsigned long have_rcu_kthread_work;
++
+ /*
+  * Carry out RCU priority boosting on the task indicated by ->boost_tasks,
+  * and advance ->boost_tasks to the next task in the ->blkd_tasks list.
+@@ -334,7 +339,7 @@ static int rcu_initiate_boost(void)
+ 		if (rcu_preempt_ctrlblk.exp_tasks == NULL)
+ 			rcu_preempt_ctrlblk.boost_tasks =
+ 				rcu_preempt_ctrlblk.gp_tasks;
+-		invoke_rcu_kthread();
++		invoke_rcu_callbacks();
+ 	} else
+ 		RCU_TRACE(rcu_initiate_boost_trace());
+ 	return 1;
+@@ -353,14 +358,6 @@ static void rcu_preempt_boost_start_gp(void)
+ #else /* #ifdef CONFIG_RCU_BOOST */
+ 
+ /*
+- * If there is no RCU priority boosting, we don't boost.
+- */
+-static int rcu_boost(void)
+-{
+-	return 0;
+-}
 -
 -/*
-- * deadlock detection flag. We turn it off when we detect
-- * the first problem because we dont want to recurse back
-- * into the tracing code when doing error printk or
-- * executing a BUG():
-- */
--static int rt_trace_on = 1;
+  * If there is no RCU priority boosting, we don't initiate boosting,
+  * but we do indicate whether there are blocked readers blocking the
+  * current grace period.
+@@ -427,7 +424,7 @@ static void rcu_preempt_cpu_qs(void)
+ 
+ 	/* If there are done callbacks, cause them to be invoked. */
+ 	if (*rcu_preempt_ctrlblk.rcb.donetail != NULL)
+-		invoke_rcu_kthread();
++		invoke_rcu_callbacks();
+ }
+ 
+ /*
+@@ -648,7 +645,7 @@ static void rcu_preempt_check_callbacks(void)
+ 		rcu_preempt_cpu_qs();
+ 	if (&rcu_preempt_ctrlblk.rcb.rcucblist !=
+ 	    rcu_preempt_ctrlblk.rcb.donetail)
+-		invoke_rcu_kthread();
++		invoke_rcu_callbacks();
+ 	if (rcu_preempt_gp_in_progress() &&
+ 	    rcu_cpu_blocking_cur_gp() &&
+ 	    rcu_preempt_running_reader())
+@@ -674,7 +671,7 @@ static void rcu_preempt_remove_callbacks(struct rcu_ctrlblk *rcp)
+  */
+ static void rcu_preempt_process_callbacks(void)
+ {
+-	rcu_process_callbacks(&rcu_preempt_ctrlblk.rcb);
++	__rcu_process_callbacks(&rcu_preempt_ctrlblk.rcb);
+ }
+ 
+ /*
+@@ -697,20 +694,6 @@ void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+ }
+ EXPORT_SYMBOL_GPL(call_rcu);
+ 
+-void rcu_barrier(void)
+-{
+-	struct rcu_synchronize rcu;
 -
- static void printk_task(struct task_struct *p)
- {
- 	if (p)
-@@ -111,8 +56,8 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
- 
- void rt_mutex_debug_task_free(struct task_struct *task)
- {
--	WARN_ON(!plist_head_empty(&task->pi_waiters));
--	WARN_ON(task->pi_blocked_on);
-+	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
-+	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
- }
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	/* Will wake me after RCU finished. */
+-	call_rcu(&rcu.head, wakeme_after_rcu);
+-	/* Wait for it. */
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
+-}
+-EXPORT_SYMBOL_GPL(rcu_barrier);
+-
+ /*
+  * synchronize_rcu - wait until a grace period has elapsed.
+  *
+@@ -864,15 +847,6 @@ static void show_tiny_preempt_stats(struct seq_file *m)
+ #endif /* #ifdef CONFIG_RCU_TRACE */
  
  /*
-@@ -125,7 +70,7 @@ void debug_rt_mutex_deadlock(int detect, struct rt_mutex_waiter *act_waiter,
- {
- 	struct task_struct *task;
+- * Because preemptible RCU does not exist, it is never necessary to
+- * boost preempted RCU readers.
+- */
+-static int rcu_boost(void)
+-{
+-	return 0;
+-}
+-
+-/*
+  * Because preemptible RCU does not exist, it never has any callbacks
+  * to check.
+  */
+@@ -898,6 +872,78 @@ static void rcu_preempt_process_callbacks(void)
  
--	if (!rt_trace_on || detect || !act_waiter)
-+	if (!debug_locks || detect || !act_waiter)
- 		return;
+ #endif /* #else #ifdef CONFIG_TINY_PREEMPT_RCU */
  
- 	task = rt_mutex_owner(act_waiter->lock);
-@@ -139,7 +84,7 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
- {
- 	struct task_struct *task;
- 
--	if (!waiter->deadlock_lock || !rt_trace_on)
-+	if (!waiter->deadlock_lock || !debug_locks)
- 		return;
- 
- 	rcu_read_lock();
-@@ -149,7 +94,10 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
- 		return;
- 	}
- 
--	TRACE_OFF_NOLOCK();
-+	if (!debug_locks_off()) {
-+		rcu_read_unlock();
-+		return;
++#ifdef CONFIG_RCU_BOOST
++
++/*
++ * Wake up rcu_kthread() to process callbacks now eligible for invocation
++ * or to boost readers.
++ */
++static void invoke_rcu_callbacks(void)
++{
++	have_rcu_kthread_work = 1;
++	wake_up(&rcu_kthread_wq);
++}
++
++/*
++ * This kthread invokes RCU callbacks whose grace periods have
++ * elapsed.  It is awakened as needed, and takes the place of the
++ * RCU_SOFTIRQ that is used for this purpose when boosting is disabled.
++ * This is a kthread, but it is never stopped, at least not until
++ * the system goes down.
++ */
++static int rcu_kthread(void *arg)
++{
++	unsigned long work;
++	unsigned long morework;
++	unsigned long flags;
++
++	for (;;) {
++		wait_event_interruptible(rcu_kthread_wq,
++					 have_rcu_kthread_work != 0);
++		morework = rcu_boost();
++		local_irq_save(flags);
++		work = have_rcu_kthread_work;
++		have_rcu_kthread_work = morework;
++		local_irq_restore(flags);
++		if (work)
++			rcu_process_callbacks(NULL);
++		schedule_timeout_interruptible(1); /* Leave CPU for others. */
 +	}
++
++	return 0;  /* Not reached, but needed to shut gcc up. */
++}
++
++/*
++ * Spawn the kthread that invokes RCU callbacks.
++ */
++static int __init rcu_spawn_kthreads(void)
++{
++	struct sched_param sp;
++
++	rcu_kthread_task = kthread_run(rcu_kthread, NULL, "rcu_kthread");
++	sp.sched_priority = RCU_BOOST_PRIO;
++	sched_setscheduler_nocheck(rcu_kthread_task, SCHED_FIFO, &sp);
++	return 0;
++}
++early_initcall(rcu_spawn_kthreads);
++
++#else /* #ifdef CONFIG_RCU_BOOST */
++
++/*
++ * Start up softirq processing of callbacks.
++ */
++void invoke_rcu_callbacks(void)
++{
++	raise_softirq(RCU_SOFTIRQ);
++}
++
++void rcu_init(void)
++{
++	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
++}
++
++#endif /* #else #ifdef CONFIG_RCU_BOOST */
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ #include <linux/kernel_stat.h>
  
- 	printk("\n============================================\n");
- 	printk(  "[ BUG: circular locking deadlock detected! ]\n");
-@@ -180,7 +128,6 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
+@@ -913,12 +959,6 @@ void __init rcu_scheduler_starting(void)
  
- 	printk("[ turning off deadlock detection."
- 	       "Please report this trace. ]\n\n");
--	local_irq_disable();
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+-#ifdef CONFIG_RCU_BOOST
+-#define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
+-#else /* #ifdef CONFIG_RCU_BOOST */
+-#define RCU_BOOST_PRIO 1
+-#endif /* #else #ifdef CONFIG_RCU_BOOST */
+-
+ #ifdef CONFIG_RCU_TRACE
+ 
+ #ifdef CONFIG_RCU_BOOST
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index 98f51b1..764825c 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -73,7 +73,7 @@ module_param(nreaders, int, 0444);
+ MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
+ module_param(nfakewriters, int, 0444);
+ MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
+-module_param(stat_interval, int, 0444);
++module_param(stat_interval, int, 0644);
+ MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
+ module_param(verbose, bool, 0444);
+ MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+@@ -480,30 +480,6 @@ static void rcu_bh_torture_deferred_free(struct rcu_torture *p)
+ 	call_rcu_bh(&p->rtort_rcu, rcu_torture_cb);
  }
  
- void debug_rt_mutex_lock(struct rt_mutex *lock)
-@@ -189,7 +136,7 @@ void debug_rt_mutex_lock(struct rt_mutex *lock)
+-struct rcu_bh_torture_synchronize {
+-	struct rcu_head head;
+-	struct completion completion;
+-};
+-
+-static void rcu_bh_torture_wakeme_after_cb(struct rcu_head *head)
+-{
+-	struct rcu_bh_torture_synchronize *rcu;
+-
+-	rcu = container_of(head, struct rcu_bh_torture_synchronize, head);
+-	complete(&rcu->completion);
+-}
+-
+-static void rcu_bh_torture_synchronize(void)
+-{
+-	struct rcu_bh_torture_synchronize rcu;
+-
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	call_rcu_bh(&rcu.head, rcu_bh_torture_wakeme_after_cb);
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
+-}
+-
+ static struct rcu_torture_ops rcu_bh_ops = {
+ 	.init		= NULL,
+ 	.cleanup	= NULL,
+@@ -512,7 +488,7 @@ static struct rcu_torture_ops rcu_bh_ops = {
+ 	.readunlock	= rcu_bh_torture_read_unlock,
+ 	.completed	= rcu_bh_torture_completed,
+ 	.deferred_free	= rcu_bh_torture_deferred_free,
+-	.sync		= rcu_bh_torture_synchronize,
++	.sync		= synchronize_rcu_bh,
+ 	.cb_barrier	= rcu_barrier_bh,
+ 	.fqs		= rcu_bh_force_quiescent_state,
+ 	.stats		= NULL,
+@@ -528,7 +504,7 @@ static struct rcu_torture_ops rcu_bh_sync_ops = {
+ 	.readunlock	= rcu_bh_torture_read_unlock,
+ 	.completed	= rcu_bh_torture_completed,
+ 	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= rcu_bh_torture_synchronize,
++	.sync		= synchronize_rcu_bh,
+ 	.cb_barrier	= NULL,
+ 	.fqs		= rcu_bh_force_quiescent_state,
+ 	.stats		= NULL,
+@@ -536,6 +512,22 @@ static struct rcu_torture_ops rcu_bh_sync_ops = {
+ 	.name		= "rcu_bh_sync"
+ };
  
- void debug_rt_mutex_unlock(struct rt_mutex *lock)
- {
--	TRACE_WARN_ON_LOCKED(rt_mutex_owner(lock) != current);
-+	DEBUG_LOCKS_WARN_ON(rt_mutex_owner(lock) != current);
- }
- 
- void
-@@ -199,7 +146,7 @@ debug_rt_mutex_proxy_lock(struct rt_mutex *lock, struct task_struct *powner)
- 
- void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
- {
--	TRACE_WARN_ON_LOCKED(!rt_mutex_owner(lock));
-+	DEBUG_LOCKS_WARN_ON(!rt_mutex_owner(lock));
- }
- 
- void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
-@@ -213,8 +160,8 @@ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
- void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
- {
- 	put_pid(waiter->deadlock_task_pid);
--	TRACE_WARN_ON(!plist_node_empty(&waiter->list_entry));
--	TRACE_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
-+	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
-+	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
- 	memset(waiter, 0x22, sizeof(*waiter));
- }
- 
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 331e01b..87f9e36 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -282,10 +282,10 @@ static inline void account_group_user_time(struct task_struct *tsk,
- 	if (!cputimer->running)
- 		return;
- 
--	spin_lock(&cputimer->lock);
-+	raw_spin_lock(&cputimer->lock);
- 	cputimer->cputime.utime =
- 		cputime_add(cputimer->cputime.utime, cputime);
--	spin_unlock(&cputimer->lock);
-+	raw_spin_unlock(&cputimer->lock);
- }
- 
- /**
-@@ -306,10 +306,10 @@ static inline void account_group_system_time(struct task_struct *tsk,
- 	if (!cputimer->running)
- 		return;
- 
--	spin_lock(&cputimer->lock);
-+	raw_spin_lock(&cputimer->lock);
- 	cputimer->cputime.stime =
- 		cputime_add(cputimer->cputime.stime, cputime);
--	spin_unlock(&cputimer->lock);
-+	raw_spin_unlock(&cputimer->lock);
- }
- 
- /**
-@@ -330,7 +330,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
- 	if (!cputimer->running)
- 		return;
- 
--	spin_lock(&cputimer->lock);
-+	raw_spin_lock(&cputimer->lock);
- 	cputimer->cputime.sum_exec_runtime += ns;
--	spin_unlock(&cputimer->lock);
-+	raw_spin_unlock(&cputimer->lock);
- }
-diff --git a/kernel/semaphore.c b/kernel/semaphore.c
-index 94a62c0..d831841 100644
---- a/kernel/semaphore.c
-+++ b/kernel/semaphore.c
-@@ -54,12 +54,12 @@ void down(struct semaphore *sem)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->lock, flags);
-+	raw_spin_lock_irqsave(&sem->lock, flags);
- 	if (likely(sem->count > 0))
- 		sem->count--;
- 	else
- 		__down(sem);
--	spin_unlock_irqrestore(&sem->lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
- }
- EXPORT_SYMBOL(down);
- 
-@@ -77,12 +77,12 @@ int down_interruptible(struct semaphore *sem)
- 	unsigned long flags;
- 	int result = 0;
- 
--	spin_lock_irqsave(&sem->lock, flags);
-+	raw_spin_lock_irqsave(&sem->lock, flags);
- 	if (likely(sem->count > 0))
- 		sem->count--;
- 	else
- 		result = __down_interruptible(sem);
--	spin_unlock_irqrestore(&sem->lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
- 
- 	return result;
- }
-@@ -103,12 +103,12 @@ int down_killable(struct semaphore *sem)
- 	unsigned long flags;
- 	int result = 0;
- 
--	spin_lock_irqsave(&sem->lock, flags);
-+	raw_spin_lock_irqsave(&sem->lock, flags);
- 	if (likely(sem->count > 0))
- 		sem->count--;
- 	else
- 		result = __down_killable(sem);
--	spin_unlock_irqrestore(&sem->lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
- 
- 	return result;
- }
-@@ -132,11 +132,11 @@ int down_trylock(struct semaphore *sem)
- 	unsigned long flags;
- 	int count;
- 
--	spin_lock_irqsave(&sem->lock, flags);
-+	raw_spin_lock_irqsave(&sem->lock, flags);
- 	count = sem->count - 1;
- 	if (likely(count >= 0))
- 		sem->count = count;
--	spin_unlock_irqrestore(&sem->lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
- 
- 	return (count < 0);
- }
-@@ -157,12 +157,12 @@ int down_timeout(struct semaphore *sem, long jiffies)
- 	unsigned long flags;
- 	int result = 0;
- 
--	spin_lock_irqsave(&sem->lock, flags);
-+	raw_spin_lock_irqsave(&sem->lock, flags);
- 	if (likely(sem->count > 0))
- 		sem->count--;
- 	else
- 		result = __down_timeout(sem, jiffies);
--	spin_unlock_irqrestore(&sem->lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
- 
- 	return result;
- }
-@@ -179,12 +179,12 @@ void up(struct semaphore *sem)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->lock, flags);
-+	raw_spin_lock_irqsave(&sem->lock, flags);
- 	if (likely(list_empty(&sem->wait_list)))
- 		sem->count++;
- 	else
- 		__up(sem);
--	spin_unlock_irqrestore(&sem->lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
- }
- EXPORT_SYMBOL(up);
- 
-@@ -217,9 +217,9 @@ static inline int __sched __down_common(struct semaphore *sem, long state,
- 		if (timeout <= 0)
- 			goto timed_out;
- 		__set_task_state(task, state);
--		spin_unlock_irq(&sem->lock);
-+		raw_spin_unlock_irq(&sem->lock);
- 		timeout = schedule_timeout(timeout);
--		spin_lock_irq(&sem->lock);
-+		raw_spin_lock_irq(&sem->lock);
- 		if (waiter.up)
- 			return 0;
- 	}
-diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
-index a5d0a3a..0b537f2 100644
---- a/kernel/time/timer_stats.c
-+++ b/kernel/time/timer_stats.c
-@@ -81,7 +81,7 @@ struct entry {
++static struct rcu_torture_ops rcu_bh_expedited_ops = {
++	.init		= rcu_sync_torture_init,
++	.cleanup	= NULL,
++	.readlock	= rcu_bh_torture_read_lock,
++	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
++	.readunlock	= rcu_bh_torture_read_unlock,
++	.completed	= rcu_bh_torture_completed,
++	.deferred_free	= rcu_sync_torture_deferred_free,
++	.sync		= synchronize_rcu_bh_expedited,
++	.cb_barrier	= NULL,
++	.fqs		= rcu_bh_force_quiescent_state,
++	.stats		= NULL,
++	.irq_capable	= 1,
++	.name		= "rcu_bh_expedited"
++};
++
  /*
-  * Spinlock protecting the tables - not taken during lookup:
+  * Definitions for srcu torture testing.
   */
--static DEFINE_SPINLOCK(table_lock);
-+static DEFINE_RAW_SPINLOCK(table_lock);
- 
- /*
-  * Per-CPU lookup locks for fast hash lookup:
-@@ -188,7 +188,7 @@ static struct entry *tstat_lookup(struct entry *entry, char *comm)
- 	prev = NULL;
- 	curr = *head;
- 
--	spin_lock(&table_lock);
-+	raw_spin_lock(&table_lock);
- 	/*
- 	 * Make sure we have not raced with another CPU:
- 	 */
-@@ -215,7 +215,7 @@ static struct entry *tstat_lookup(struct entry *entry, char *comm)
- 			*head = curr;
- 	}
-  out_unlock:
--	spin_unlock(&table_lock);
-+	raw_spin_unlock(&table_lock);
- 
- 	return curr;
- }
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 731201b..f2f821a 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -478,7 +478,7 @@ struct ring_buffer_per_cpu {
- 	int				cpu;
- 	atomic_t			record_disabled;
- 	struct ring_buffer		*buffer;
--	spinlock_t			reader_lock;	/* serialize readers */
-+	raw_spinlock_t			reader_lock;	/* serialize readers */
- 	arch_spinlock_t			lock;
- 	struct lock_class_key		lock_key;
- 	struct list_head		*pages;
-@@ -1062,7 +1062,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
- 
- 	cpu_buffer->cpu = cpu;
- 	cpu_buffer->buffer = buffer;
--	spin_lock_init(&cpu_buffer->reader_lock);
-+	raw_spin_lock_init(&cpu_buffer->reader_lock);
- 	lockdep_set_class(&cpu_buffer->reader_lock, buffer->reader_lock_key);
- 	cpu_buffer->lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
- 
-@@ -1259,7 +1259,7 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
- 	struct list_head *p;
- 	unsigned i;
- 
--	spin_lock_irq(&cpu_buffer->reader_lock);
-+	raw_spin_lock_irq(&cpu_buffer->reader_lock);
- 	rb_head_page_deactivate(cpu_buffer);
- 
- 	for (i = 0; i < nr_pages; i++) {
-@@ -1277,7 +1277,7 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
- 	rb_check_pages(cpu_buffer);
- 
- out:
--	spin_unlock_irq(&cpu_buffer->reader_lock);
-+	raw_spin_unlock_irq(&cpu_buffer->reader_lock);
+@@ -659,11 +651,6 @@ static void rcu_sched_torture_deferred_free(struct rcu_torture *p)
+ 	call_rcu_sched(&p->rtort_rcu, rcu_torture_cb);
  }
  
- static void
-@@ -1288,7 +1288,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 	struct list_head *p;
- 	unsigned i;
+-static void sched_torture_synchronize(void)
+-{
+-	synchronize_sched();
+-}
+-
+ static struct rcu_torture_ops sched_ops = {
+ 	.init		= rcu_sync_torture_init,
+ 	.cleanup	= NULL,
+@@ -672,7 +659,7 @@ static struct rcu_torture_ops sched_ops = {
+ 	.readunlock	= sched_torture_read_unlock,
+ 	.completed	= rcu_no_completed,
+ 	.deferred_free	= rcu_sched_torture_deferred_free,
+-	.sync		= sched_torture_synchronize,
++	.sync		= synchronize_sched,
+ 	.cb_barrier	= rcu_barrier_sched,
+ 	.fqs		= rcu_sched_force_quiescent_state,
+ 	.stats		= NULL,
+@@ -688,7 +675,7 @@ static struct rcu_torture_ops sched_sync_ops = {
+ 	.readunlock	= sched_torture_read_unlock,
+ 	.completed	= rcu_no_completed,
+ 	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= sched_torture_synchronize,
++	.sync		= synchronize_sched,
+ 	.cb_barrier	= NULL,
+ 	.fqs		= rcu_sched_force_quiescent_state,
+ 	.stats		= NULL,
+@@ -754,7 +741,7 @@ static int rcu_torture_boost(void *arg)
+ 	do {
+ 		/* Wait for the next test interval. */
+ 		oldstarttime = boost_starttime;
+-		while (jiffies - oldstarttime > ULONG_MAX / 2) {
++		while (ULONG_CMP_LT(jiffies, oldstarttime)) {
+ 			schedule_timeout_uninterruptible(1);
+ 			rcu_stutter_wait("rcu_torture_boost");
+ 			if (kthread_should_stop() ||
+@@ -765,7 +752,7 @@ static int rcu_torture_boost(void *arg)
+ 		/* Do one boost-test interval. */
+ 		endtime = oldstarttime + test_boost_duration * HZ;
+ 		call_rcu_time = jiffies;
+-		while (jiffies - endtime > ULONG_MAX / 2) {
++		while (ULONG_CMP_LT(jiffies, endtime)) {
+ 			/* If we don't have a callback in flight, post one. */
+ 			if (!rbi.inflight) {
+ 				smp_mb(); /* RCU core before ->inflight = 1. */
+@@ -792,7 +779,8 @@ static int rcu_torture_boost(void *arg)
+ 		 * interval.  Besides, we are running at RT priority,
+ 		 * so delays should be relatively rare.
+ 		 */
+-		while (oldstarttime == boost_starttime) {
++		while (oldstarttime == boost_starttime &&
++		       !kthread_should_stop()) {
+ 			if (mutex_trylock(&boost_mutex)) {
+ 				boost_starttime = jiffies +
+ 						  test_boost_interval * HZ;
+@@ -809,11 +797,11 @@ checkwait:	rcu_stutter_wait("rcu_torture_boost");
  
--	spin_lock_irq(&cpu_buffer->reader_lock);
-+	raw_spin_lock_irq(&cpu_buffer->reader_lock);
- 	rb_head_page_deactivate(cpu_buffer);
- 
- 	for (i = 0; i < nr_pages; i++) {
-@@ -1303,7 +1303,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 	rb_check_pages(cpu_buffer);
- 
- out:
--	spin_unlock_irq(&cpu_buffer->reader_lock);
-+	raw_spin_unlock_irq(&cpu_buffer->reader_lock);
- }
- 
- /**
-@@ -2804,9 +2804,9 @@ void ring_buffer_iter_reset(struct ring_buffer_iter *iter)
- 
- 	cpu_buffer = iter->cpu_buffer;
- 
--	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
- 	rb_iter_reset(iter);
--	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- }
- EXPORT_SYMBOL_GPL(ring_buffer_iter_reset);
- 
-@@ -3265,12 +3265,12 @@ ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts,
-  again:
- 	local_irq_save(flags);
- 	if (dolock)
--		spin_lock(&cpu_buffer->reader_lock);
-+		raw_spin_lock(&cpu_buffer->reader_lock);
- 	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
- 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
- 		rb_advance_reader(cpu_buffer);
- 	if (dolock)
--		spin_unlock(&cpu_buffer->reader_lock);
-+		raw_spin_unlock(&cpu_buffer->reader_lock);
- 	local_irq_restore(flags);
- 
- 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
-@@ -3295,9 +3295,9 @@ ring_buffer_iter_peek(struct ring_buffer_iter *iter, u64 *ts)
- 	unsigned long flags;
- 
-  again:
--	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
- 	event = rb_iter_peek(iter, ts);
--	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
- 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
- 		goto again;
-@@ -3337,7 +3337,7 @@ ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts,
- 	cpu_buffer = buffer->buffers[cpu];
- 	local_irq_save(flags);
- 	if (dolock)
--		spin_lock(&cpu_buffer->reader_lock);
-+		raw_spin_lock(&cpu_buffer->reader_lock);
- 
- 	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
- 	if (event) {
-@@ -3346,7 +3346,7 @@ ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts,
- 	}
- 
- 	if (dolock)
--		spin_unlock(&cpu_buffer->reader_lock);
-+		raw_spin_unlock(&cpu_buffer->reader_lock);
- 	local_irq_restore(flags);
- 
-  out:
-@@ -3438,11 +3438,11 @@ ring_buffer_read_start(struct ring_buffer_iter *iter)
- 
- 	cpu_buffer = iter->cpu_buffer;
- 
--	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
- 	arch_spin_lock(&cpu_buffer->lock);
- 	rb_iter_reset(iter);
- 	arch_spin_unlock(&cpu_buffer->lock);
--	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- }
- EXPORT_SYMBOL_GPL(ring_buffer_read_start);
- 
-@@ -3477,7 +3477,7 @@ ring_buffer_read(struct ring_buffer_iter *iter, u64 *ts)
- 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-  again:
- 	event = rb_iter_peek(iter, ts);
- 	if (!event)
-@@ -3488,7 +3488,7 @@ ring_buffer_read(struct ring_buffer_iter *iter, u64 *ts)
- 
- 	rb_advance_iter(iter);
-  out:
--	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
- 	return event;
- }
-@@ -3557,7 +3557,7 @@ void ring_buffer_reset_cpu(struct ring_buffer *buffer, int cpu)
- 
- 	atomic_inc(&cpu_buffer->record_disabled);
- 
--	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
- 
- 	if (RB_WARN_ON(cpu_buffer, local_read(&cpu_buffer->committing)))
- 		goto out;
-@@ -3569,7 +3569,7 @@ void ring_buffer_reset_cpu(struct ring_buffer *buffer, int cpu)
- 	arch_spin_unlock(&cpu_buffer->lock);
- 
-  out:
--	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
- 	atomic_dec(&cpu_buffer->record_disabled);
- }
-@@ -3607,10 +3607,10 @@ int ring_buffer_empty(struct ring_buffer *buffer)
- 		cpu_buffer = buffer->buffers[cpu];
- 		local_irq_save(flags);
- 		if (dolock)
--			spin_lock(&cpu_buffer->reader_lock);
-+			raw_spin_lock(&cpu_buffer->reader_lock);
- 		ret = rb_per_cpu_empty(cpu_buffer);
- 		if (dolock)
--			spin_unlock(&cpu_buffer->reader_lock);
-+			raw_spin_unlock(&cpu_buffer->reader_lock);
- 		local_irq_restore(flags);
- 
- 		if (!ret)
-@@ -3641,10 +3641,10 @@ int ring_buffer_empty_cpu(struct ring_buffer *buffer, int cpu)
- 	cpu_buffer = buffer->buffers[cpu];
- 	local_irq_save(flags);
- 	if (dolock)
--		spin_lock(&cpu_buffer->reader_lock);
-+		raw_spin_lock(&cpu_buffer->reader_lock);
- 	ret = rb_per_cpu_empty(cpu_buffer);
- 	if (dolock)
--		spin_unlock(&cpu_buffer->reader_lock);
-+		raw_spin_unlock(&cpu_buffer->reader_lock);
- 	local_irq_restore(flags);
- 
- 	return ret;
-@@ -3841,7 +3841,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
- 	if (!bpage)
- 		goto out;
- 
--	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
-+	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
- 
- 	reader = rb_get_reader_page(cpu_buffer);
- 	if (!reader)
-@@ -3964,7 +3964,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
- 		memset(&bpage->data[commit], 0, BUF_PAGE_SIZE - commit);
- 
-  out_unlock:
--	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
-+	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
-  out:
- 	return ret;
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e5df02c..0c8bdee 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -341,7 +341,7 @@ unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
- 	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE;
- 
- static int trace_stop_count;
--static DEFINE_SPINLOCK(tracing_start_lock);
-+static DEFINE_RAW_SPINLOCK(tracing_start_lock);
- 
- static void wakeup_work_handler(struct work_struct *work)
- {
-@@ -960,7 +960,7 @@ void tracing_start(void)
- 	if (tracing_disabled)
- 		return;
- 
--	spin_lock_irqsave(&tracing_start_lock, flags);
-+	raw_spin_lock_irqsave(&tracing_start_lock, flags);
- 	if (--trace_stop_count) {
- 		if (trace_stop_count < 0) {
- 			/* Someone screwed up their debugging */
-@@ -985,7 +985,7 @@ void tracing_start(void)
- 
- 	ftrace_start();
-  out:
--	spin_unlock_irqrestore(&tracing_start_lock, flags);
-+	raw_spin_unlock_irqrestore(&tracing_start_lock, flags);
- }
- 
- /**
-@@ -1000,7 +1000,7 @@ void tracing_stop(void)
- 	unsigned long flags;
- 
- 	ftrace_stop();
--	spin_lock_irqsave(&tracing_start_lock, flags);
-+	raw_spin_lock_irqsave(&tracing_start_lock, flags);
- 	if (trace_stop_count++)
- 		goto out;
- 
-@@ -1018,7 +1018,7 @@ void tracing_stop(void)
- 	arch_spin_unlock(&ftrace_max_lock);
- 
-  out:
--	spin_unlock_irqrestore(&tracing_start_lock, flags);
-+	raw_spin_unlock_irqrestore(&tracing_start_lock, flags);
- }
- 
- void trace_stop_cmdline_recording(void);
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 667aa8c..1118621 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -23,7 +23,7 @@ static int				tracer_enabled __read_mostly;
- 
- static DEFINE_PER_CPU(int, tracing_cpu);
- 
--static DEFINE_SPINLOCK(max_trace_lock);
-+static DEFINE_RAW_SPINLOCK(max_trace_lock);
- 
- enum {
- 	TRACER_IRQS_OFF		= (1 << 1),
-@@ -321,7 +321,7 @@ check_critical_timing(struct trace_array *tr,
- 	if (!report_latency(delta))
- 		goto out;
- 
--	spin_lock_irqsave(&max_trace_lock, flags);
-+	raw_spin_lock_irqsave(&max_trace_lock, flags);
- 
- 	/* check if we are still the max latency */
- 	if (!report_latency(delta))
-@@ -344,7 +344,7 @@ check_critical_timing(struct trace_array *tr,
- 	max_sequence++;
- 
- out_unlock:
--	spin_unlock_irqrestore(&max_trace_lock, flags);
-+	raw_spin_unlock_irqrestore(&max_trace_lock, flags);
- 
- out:
- 	data->critical_sequence = max_sequence;
-diff --git a/lib/atomic64.c b/lib/atomic64.c
-index e12ae0d..3975470 100644
---- a/lib/atomic64.c
-+++ b/lib/atomic64.c
-@@ -29,11 +29,11 @@
-  * Ensure each lock is in a separate cacheline.
-  */
- static union {
--	spinlock_t lock;
-+	raw_spinlock_t lock;
- 	char pad[L1_CACHE_BYTES];
- } atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
- 
--static inline spinlock_t *lock_addr(const atomic64_t *v)
-+static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
- {
- 	unsigned long addr = (unsigned long) v;
- 
-@@ -45,12 +45,12 @@ static inline spinlock_t *lock_addr(const atomic64_t *v)
- long long atomic64_read(const atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_read);
-@@ -58,34 +58,34 @@ EXPORT_SYMBOL(atomic64_read);
- void atomic64_set(atomic64_t *v, long long i)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	v->counter = i;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- }
- EXPORT_SYMBOL(atomic64_set);
- 
- void atomic64_add(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	v->counter += a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- }
- EXPORT_SYMBOL(atomic64_add);
- 
- long long atomic64_add_return(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter += a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_add_return);
-@@ -93,23 +93,23 @@ EXPORT_SYMBOL(atomic64_add_return);
- void atomic64_sub(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	v->counter -= a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- }
- EXPORT_SYMBOL(atomic64_sub);
- 
- long long atomic64_sub_return(long long a, atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter -= a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_sub_return);
-@@ -117,14 +117,14 @@ EXPORT_SYMBOL(atomic64_sub_return);
- long long atomic64_dec_if_positive(atomic64_t *v)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter - 1;
- 	if (val >= 0)
- 		v->counter = val;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_dec_if_positive);
-@@ -132,14 +132,14 @@ EXPORT_SYMBOL(atomic64_dec_if_positive);
- long long atomic64_cmpxchg(atomic64_t *v, long long o, long long n)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter;
- 	if (val == o)
- 		v->counter = n;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_cmpxchg);
-@@ -147,13 +147,13 @@ EXPORT_SYMBOL(atomic64_cmpxchg);
- long long atomic64_xchg(atomic64_t *v, long long new)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter;
- 	v->counter = new;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_xchg);
-@@ -161,15 +161,15 @@ EXPORT_SYMBOL(atomic64_xchg);
- int atomic64_add_unless(atomic64_t *v, long long a, long long u)
- {
- 	unsigned long flags;
--	spinlock_t *lock = lock_addr(v);
-+	raw_spinlock_t *lock = lock_addr(v);
- 	int ret = 0;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	if (v->counter != u) {
- 		v->counter += a;
- 		ret = 1;
- 	}
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return ret;
- }
- EXPORT_SYMBOL(atomic64_add_unless);
-@@ -179,7 +179,7 @@ static int init_atomic64_lock(void)
- 	int i;
- 
- 	for (i = 0; i < NR_LOCKS; ++i)
--		spin_lock_init(&atomic64_lock[i].lock);
-+		raw_spin_lock_init(&atomic64_lock[i].lock);
+ 	/* Clean up and exit. */
+ 	VERBOSE_PRINTK_STRING("rcu_torture_boost task stopping");
+-	destroy_rcu_head_on_stack(&rbi.rcu);
+ 	rcutorture_shutdown_absorb("rcu_torture_boost");
+ 	while (!kthread_should_stop() || rbi.inflight)
+ 		schedule_timeout_uninterruptible(1);
+ 	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
++	destroy_rcu_head_on_stack(&rbi.rcu);
  	return 0;
  }
  
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index 28f2c33..f087105 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -59,13 +59,13 @@ void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
- {
- 	int cpu;
+@@ -831,11 +819,13 @@ rcu_torture_fqs(void *arg)
+ 	VERBOSE_PRINTK_STRING("rcu_torture_fqs task started");
+ 	do {
+ 		fqs_resume_time = jiffies + fqs_stutter * HZ;
+-		while (jiffies - fqs_resume_time > LONG_MAX) {
++		while (ULONG_CMP_LT(jiffies, fqs_resume_time) &&
++		       !kthread_should_stop()) {
+ 			schedule_timeout_interruptible(1);
+ 		}
+ 		fqs_burst_remaining = fqs_duration;
+-		while (fqs_burst_remaining > 0) {
++		while (fqs_burst_remaining > 0 &&
++		       !kthread_should_stop()) {
+ 			cur_ops->fqs();
+ 			udelay(fqs_holdoff);
+ 			fqs_burst_remaining -= fqs_holdoff;
+@@ -1280,8 +1270,9 @@ static int rcutorture_booster_init(int cpu)
+ 	/* Don't allow time recalculation while creating a new task. */
+ 	mutex_lock(&boost_mutex);
+ 	VERBOSE_PRINTK_STRING("Creating rcu_torture_boost task");
+-	boost_tasks[cpu] = kthread_create(rcu_torture_boost, NULL,
+-					  "rcu_torture_boost");
++	boost_tasks[cpu] = kthread_create_on_node(rcu_torture_boost, NULL,
++						  cpu_to_node(cpu),
++						  "rcu_torture_boost");
+ 	if (IS_ERR(boost_tasks[cpu])) {
+ 		retval = PTR_ERR(boost_tasks[cpu]);
+ 		VERBOSE_PRINTK_STRING("rcu_torture_boost task create failed");
+@@ -1424,7 +1415,7 @@ rcu_torture_init(void)
+ 	int firsterr = 0;
+ 	static struct rcu_torture_ops *torture_ops[] =
+ 		{ &rcu_ops, &rcu_sync_ops, &rcu_expedited_ops,
+-		  &rcu_bh_ops, &rcu_bh_sync_ops,
++		  &rcu_bh_ops, &rcu_bh_sync_ops, &rcu_bh_expedited_ops,
+ 		  &srcu_ops, &srcu_expedited_ops,
+ 		  &sched_ops, &sched_sync_ops, &sched_expedited_ops, };
  
--	spin_lock(&fbc->lock);
-+	raw_spin_lock(&fbc->lock);
- 	for_each_possible_cpu(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		*pcount = 0;
- 	}
- 	fbc->count = amount;
--	spin_unlock(&fbc->lock);
-+	raw_spin_unlock(&fbc->lock);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ba06207..e234eb9 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -52,13 +52,16 @@
+ #include <linux/prefetch.h>
+ 
+ #include "rcutree.h"
++#include <trace/events/rcu.h>
++
++#include "rcu.h"
+ 
+ /* Data structures. */
+ 
+ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
+ 
+ #define RCU_STATE_INITIALIZER(structname) { \
+-	.level = { &structname.node[0] }, \
++	.level = { &structname##_state.node[0] }, \
+ 	.levelcnt = { \
+ 		NUM_RCU_LVL_0,  /* root of hierarchy. */ \
+ 		NUM_RCU_LVL_1, \
+@@ -69,17 +72,17 @@ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
+ 	.signaled = RCU_GP_IDLE, \
+ 	.gpnum = -300, \
+ 	.completed = -300, \
+-	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname.onofflock), \
+-	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname.fqslock), \
++	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname##_state.onofflock), \
++	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname##_state.fqslock), \
+ 	.n_force_qs = 0, \
+ 	.n_force_qs_ngp = 0, \
+ 	.name = #structname, \
  }
- EXPORT_SYMBOL(percpu_counter_set);
  
-@@ -76,10 +76,10 @@ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
- 	preempt_disable();
- 	count = __this_cpu_read(*fbc->counters) + amount;
- 	if (count >= batch || count <= -batch) {
--		spin_lock(&fbc->lock);
-+		raw_spin_lock(&fbc->lock);
- 		fbc->count += count;
- 		__this_cpu_write(*fbc->counters, 0);
--		spin_unlock(&fbc->lock);
-+		raw_spin_unlock(&fbc->lock);
- 	} else {
- 		__this_cpu_write(*fbc->counters, count);
- 	}
-@@ -96,13 +96,13 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
- 	s64 ret;
- 	int cpu;
+-struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched_state);
++struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched);
+ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
  
--	spin_lock(&fbc->lock);
-+	raw_spin_lock(&fbc->lock);
- 	ret = fbc->count;
- 	for_each_online_cpu(cpu) {
- 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
- 		ret += *pcount;
- 	}
--	spin_unlock(&fbc->lock);
-+	raw_spin_unlock(&fbc->lock);
- 	return ret;
+-struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh_state);
++struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh);
+ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+ 
+ static struct rcu_state *rcu_state;
+@@ -128,8 +131,6 @@ static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
+ static void invoke_rcu_core(void);
+ static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
+ 
+-#define RCU_KTHREAD_PRIO 1	/* RT priority for per-CPU kthreads. */
+-
+ /*
+  * Track the rcutorture test sequence number and the update version
+  * number within a given test.  The rcutorture_testseq is incremented
+@@ -156,33 +157,41 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
+  * Note a quiescent state.  Because we do not need to know
+  * how many quiescent states passed, just if there was at least
+  * one since the start of the grace period, this just sets a flag.
++ * The caller must have disabled preemption.
+  */
+ void rcu_sched_qs(int cpu)
+ {
+ 	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
+ 
+-	rdp->passed_quiesc_completed = rdp->gpnum - 1;
++	rdp->passed_quiesce_gpnum = rdp->gpnum;
+ 	barrier();
+-	rdp->passed_quiesc = 1;
++	if (rdp->passed_quiesce == 0)
++		trace_rcu_grace_period("rcu_sched", rdp->gpnum, "cpuqs");
++	rdp->passed_quiesce = 1;
  }
- EXPORT_SYMBOL(__percpu_counter_sum);
-@@ -110,7 +110,7 @@ EXPORT_SYMBOL(__percpu_counter_sum);
- int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
- 			  struct lock_class_key *key)
+ 
+ void rcu_bh_qs(int cpu)
  {
--	spin_lock_init(&fbc->lock);
-+	raw_spin_lock_init(&fbc->lock);
- 	lockdep_set_class(&fbc->lock, key);
- 	fbc->count = amount;
- 	fbc->counters = alloc_percpu(s32);
-@@ -173,11 +173,11 @@ static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
- 		s32 *pcount;
- 		unsigned long flags;
+ 	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
  
--		spin_lock_irqsave(&fbc->lock, flags);
-+		raw_spin_lock_irqsave(&fbc->lock, flags);
- 		pcount = per_cpu_ptr(fbc->counters, cpu);
- 		fbc->count += *pcount;
- 		*pcount = 0;
--		spin_unlock_irqrestore(&fbc->lock, flags);
-+		raw_spin_unlock_irqrestore(&fbc->lock, flags);
- 	}
- 	mutex_unlock(&percpu_counters_lock);
- #endif
-diff --git a/lib/proportions.c b/lib/proportions.c
-index d50746a..05df848 100644
---- a/lib/proportions.c
-+++ b/lib/proportions.c
-@@ -190,7 +190,7 @@ prop_adjust_shift(int *pl_shift, unsigned long *pl_period, int new_shift)
- 
- int prop_local_init_percpu(struct prop_local_percpu *pl)
- {
--	spin_lock_init(&pl->lock);
-+	raw_spin_lock_init(&pl->lock);
- 	pl->shift = 0;
- 	pl->period = 0;
- 	return percpu_counter_init(&pl->events, 0);
-@@ -226,7 +226,7 @@ void prop_norm_percpu(struct prop_global *pg, struct prop_local_percpu *pl)
- 	if (pl->period == global_period)
- 		return;
- 
--	spin_lock_irqsave(&pl->lock, flags);
-+	raw_spin_lock_irqsave(&pl->lock, flags);
- 	prop_adjust_shift(&pl->shift, &pl->period, pg->shift);
- 
- 	/*
-@@ -247,7 +247,7 @@ void prop_norm_percpu(struct prop_global *pg, struct prop_local_percpu *pl)
- 		percpu_counter_set(&pl->events, 0);
- 
- 	pl->period = global_period;
--	spin_unlock_irqrestore(&pl->lock, flags);
-+	raw_spin_unlock_irqrestore(&pl->lock, flags);
+-	rdp->passed_quiesc_completed = rdp->gpnum - 1;
++	rdp->passed_quiesce_gpnum = rdp->gpnum;
+ 	barrier();
+-	rdp->passed_quiesc = 1;
++	if (rdp->passed_quiesce == 0)
++		trace_rcu_grace_period("rcu_bh", rdp->gpnum, "cpuqs");
++	rdp->passed_quiesce = 1;
  }
  
  /*
-@@ -324,7 +324,7 @@ void prop_fraction_percpu(struct prop_descriptor *pd,
- 
- int prop_local_init_single(struct prop_local_single *pl)
+  * Note a context switch.  This is a quiescent state for RCU-sched,
+  * and requires special handling for preemptible RCU.
++ * The caller must have disabled preemption.
+  */
+ void rcu_note_context_switch(int cpu)
  {
--	spin_lock_init(&pl->lock);
-+	raw_spin_lock_init(&pl->lock);
- 	pl->shift = 0;
- 	pl->period = 0;
- 	pl->events = 0;
-@@ -356,7 +356,7 @@ void prop_norm_single(struct prop_global *pg, struct prop_local_single *pl)
- 	if (pl->period == global_period)
- 		return;
- 
--	spin_lock_irqsave(&pl->lock, flags);
-+	raw_spin_lock_irqsave(&pl->lock, flags);
- 	prop_adjust_shift(&pl->shift, &pl->period, pg->shift);
- 	/*
- 	 * For each missed period, we half the local counter.
-@@ -367,7 +367,7 @@ void prop_norm_single(struct prop_global *pg, struct prop_local_single *pl)
- 	else
- 		pl->events = 0;
- 	pl->period = global_period;
--	spin_unlock_irqrestore(&pl->lock, flags);
-+	raw_spin_unlock_irqrestore(&pl->lock, flags);
++	trace_rcu_utilization("Start context switch");
+ 	rcu_sched_qs(cpu);
+ 	rcu_preempt_note_context_switch(cpu);
++	trace_rcu_utilization("End context switch");
  }
+ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
  
- /*
-diff --git a/lib/ratelimit.c b/lib/ratelimit.c
-index 027a03f..c96d500 100644
---- a/lib/ratelimit.c
-+++ b/lib/ratelimit.c
-@@ -39,7 +39,7 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
- 	 * in addition to the one that will be printed by
- 	 * the entity that is holding the lock already:
+@@ -193,7 +202,7 @@ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ };
+ #endif /* #ifdef CONFIG_NO_HZ */
+ 
+-static int blimit = 10;		/* Maximum callbacks per softirq. */
++static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+ static int qhimark = 10000;	/* If this many pending, ignore blimit. */
+ static int qlowmark = 100;	/* Once only this many pending, use blimit. */
+ 
+@@ -314,6 +323,7 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
+ 	 * trust its state not to change because interrupts are disabled.
  	 */
--	if (!spin_trylock_irqsave(&rs->lock, flags))
-+	if (!raw_spin_trylock_irqsave(&rs->lock, flags))
+ 	if (cpu_is_offline(rdp->cpu)) {
++		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "ofl");
+ 		rdp->offline_fqs++;
+ 		return 1;
+ 	}
+@@ -354,19 +364,13 @@ void rcu_enter_nohz(void)
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
++	trace_rcu_dyntick("Start");
+ 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
+ 	smp_mb__before_atomic_inc();  /* See above. */
+ 	atomic_inc(&rdtp->dynticks);
+ 	smp_mb__after_atomic_inc();  /* Force ordering with next sojourn. */
+ 	WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
+ 	local_irq_restore(flags);
+-
+-	/* If the interrupt queued a callback, get out of dyntick mode. */
+-	if (in_irq() &&
+-	    (__get_cpu_var(rcu_sched_data).nxtlist ||
+-	     __get_cpu_var(rcu_bh_data).nxtlist ||
+-	     rcu_preempt_needs_cpu(smp_processor_id())))
+-		set_need_resched();
+ }
+ 
+ /*
+@@ -391,6 +395,7 @@ void rcu_exit_nohz(void)
+ 	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+ 	smp_mb__after_atomic_inc();  /* See above. */
+ 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
++	trace_rcu_dyntick("End");
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -481,11 +486,11 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
+  */
+ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ {
+-	unsigned long curr;
+-	unsigned long snap;
++	unsigned int curr;
++	unsigned int snap;
+ 
+-	curr = (unsigned long)atomic_add_return(0, &rdp->dynticks->dynticks);
+-	snap = (unsigned long)rdp->dynticks_snap;
++	curr = (unsigned int)atomic_add_return(0, &rdp->dynticks->dynticks);
++	snap = (unsigned int)rdp->dynticks_snap;
+ 
+ 	/*
+ 	 * If the CPU passed through or entered a dynticks idle phase with
+@@ -495,7 +500,8 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
+ 	 * read-side critical section that started before the beginning
+ 	 * of the current RCU grace period.
+ 	 */
+-	if ((curr & 0x1) == 0 || ULONG_CMP_GE(curr, snap + 2)) {
++	if ((curr & 0x1) == 0 || UINT_CMP_GE(curr, snap + 2)) {
++		trace_rcu_fqs(rdp->rsp->name, rdp->gpnum, rdp->cpu, "dti");
+ 		rdp->dynticks_fqs++;
+ 		return 1;
+ 	}
+@@ -537,6 +543,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	int cpu;
+ 	long delta;
+ 	unsigned long flags;
++	int ndetected;
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+ 	/* Only let one CPU complain about others per time interval. */
+@@ -553,7 +560,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	 * Now rat on any tasks that got kicked up to the root rcu_node
+ 	 * due to CPU offlining.
+ 	 */
+-	rcu_print_task_stall(rnp);
++	ndetected = rcu_print_task_stall(rnp);
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ 	/*
+@@ -565,17 +572,22 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	       rsp->name);
+ 	rcu_for_each_leaf_node(rsp, rnp) {
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+-		rcu_print_task_stall(rnp);
++		ndetected += rcu_print_task_stall(rnp);
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		if (rnp->qsmask == 0)
+ 			continue;
+ 		for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
+-			if (rnp->qsmask & (1UL << cpu))
++			if (rnp->qsmask & (1UL << cpu)) {
+ 				printk(" %d", rnp->grplo + cpu);
++				ndetected++;
++			}
+ 	}
+ 	printk("} (detected by %d, t=%ld jiffies)\n",
+ 	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
+-	trigger_all_cpu_backtrace();
++	if (ndetected == 0)
++		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
++	else if (!trigger_all_cpu_backtrace())
++		dump_stack();
+ 
+ 	/* If so configured, complain about tasks blocking the grace period. */
+ 
+@@ -596,7 +608,8 @@ static void print_cpu_stall(struct rcu_state *rsp)
+ 	 */
+ 	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies)\n",
+ 	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start);
+-	trigger_all_cpu_backtrace();
++	if (!trigger_all_cpu_backtrace())
++		dump_stack();
+ 
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
+ 	if (ULONG_CMP_GE(jiffies, rsp->jiffies_stall))
+@@ -678,9 +691,10 @@ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct
+ 		 * go looking for one.
+ 		 */
+ 		rdp->gpnum = rnp->gpnum;
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpustart");
+ 		if (rnp->qsmask & rdp->grpmask) {
+ 			rdp->qs_pending = 1;
+-			rdp->passed_quiesc = 0;
++			rdp->passed_quiesce = 0;
+ 		} else
+ 			rdp->qs_pending = 0;
+ 	}
+@@ -741,6 +755,7 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+ 
+ 		/* Remember that we saw this grace-period completion. */
+ 		rdp->completed = rnp->completed;
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuend");
+ 
+ 		/*
+ 		 * If we were in an extended quiescent state, we may have
+@@ -826,31 +841,31 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+-	if (!cpu_needs_another_gp(rsp, rdp) || rsp->fqs_active) {
+-		if (cpu_needs_another_gp(rsp, rdp))
+-			rsp->fqs_need_gp = 1;
+-		if (rnp->completed == rsp->completed) {
+-			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-			return;
+-		}
+-		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
++	if (!rcu_scheduler_fully_active ||
++	    !cpu_needs_another_gp(rsp, rdp)) {
++		/*
++		 * Either the scheduler hasn't yet spawned the first
++		 * non-idle task or this CPU does not need another
++		 * grace period.  Either way, don't start a new grace
++		 * period.
++		 */
++		raw_spin_unlock_irqrestore(&rnp->lock, flags);
++		return;
++	}
+ 
++	if (rsp->fqs_active) {
+ 		/*
+-		 * Propagate new ->completed value to rcu_node structures
+-		 * so that other CPUs don't have to wait until the start
+-		 * of the next grace period to process their callbacks.
++		 * This CPU needs a grace period, but force_quiescent_state()
++		 * is running.  Tell it to start one on this CPU's behalf.
+ 		 */
+-		rcu_for_each_node_breadth_first(rsp, rnp) {
+-			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
+-			rnp->completed = rsp->completed;
+-			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+-		}
+-		local_irq_restore(flags);
++		rsp->fqs_need_gp = 1;
++		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		return;
+ 	}
+ 
+ 	/* Advance to a new grace period and initialize state. */
+ 	rsp->gpnum++;
++	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
+ 	WARN_ON_ONCE(rsp->signaled == RCU_GP_INIT);
+ 	rsp->signaled = RCU_GP_INIT; /* Hold off force_quiescent_state. */
+ 	rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
+@@ -865,6 +880,9 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 		rsp->signaled = RCU_SIGNAL_INIT; /* force_quiescent_state OK. */
+ 		rcu_start_gp_per_cpu(rsp, rnp, rdp);
+ 		rcu_preempt_boost_start_gp(rnp);
++		trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
++					    rnp->level, rnp->grplo,
++					    rnp->grphi, rnp->qsmask);
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		return;
+ 	}
+@@ -901,6 +919,9 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 		if (rnp == rdp->mynode)
+ 			rcu_start_gp_per_cpu(rsp, rnp, rdp);
+ 		rcu_preempt_boost_start_gp(rnp);
++		trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
++					    rnp->level, rnp->grplo,
++					    rnp->grphi, rnp->qsmask);
+ 		raw_spin_unlock(&rnp->lock);	/* irqs remain disabled. */
+ 	}
+ 
+@@ -922,6 +943,8 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	__releases(rcu_get_root(rsp)->lock)
+ {
+ 	unsigned long gp_duration;
++	struct rcu_node *rnp = rcu_get_root(rsp);
++	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 
+ 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+ 
+@@ -933,7 +956,41 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	gp_duration = jiffies - rsp->gp_start;
+ 	if (gp_duration > rsp->gp_max)
+ 		rsp->gp_max = gp_duration;
+-	rsp->completed = rsp->gpnum;
++
++	/*
++	 * We know the grace period is complete, but to everyone else
++	 * it appears to still be ongoing.  But it is also the case
++	 * that to everyone else it looks like there is nothing that
++	 * they can do to advance the grace period.  It is therefore
++	 * safe for us to drop the lock in order to mark the grace
++	 * period as completed in all of the rcu_node structures.
++	 *
++	 * But if this CPU needs another grace period, it will take
++	 * care of this while initializing the next grace period.
++	 * We use RCU_WAIT_TAIL instead of the usual RCU_DONE_TAIL
++	 * because the callbacks have not yet been advanced: Those
++	 * callbacks are waiting on the grace period that just now
++	 * completed.
++	 */
++	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
++		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
++
++		/*
++		 * Propagate new ->completed value to rcu_node structures
++		 * so that other CPUs don't have to wait until the start
++		 * of the next grace period to process their callbacks.
++		 */
++		rcu_for_each_node_breadth_first(rsp, rnp) {
++			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++			rnp->completed = rsp->gpnum;
++			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++		}
++		rnp = rcu_get_root(rsp);
++		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++	}
++
++	rsp->completed = rsp->gpnum;  /* Declare the grace period complete. */
++	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
+ 	rsp->signaled = RCU_GP_IDLE;
+ 	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
+ }
+@@ -962,6 +1019,10 @@ rcu_report_qs_rnp(unsigned long mask, struct rcu_state *rsp,
+ 			return;
+ 		}
+ 		rnp->qsmask &= ~mask;
++		trace_rcu_quiescent_state_report(rsp->name, rnp->gpnum,
++						 mask, rnp->qsmask, rnp->level,
++						 rnp->grplo, rnp->grphi,
++						 !!rnp->gp_tasks);
+ 		if (rnp->qsmask != 0 || rcu_preempt_blocked_readers_cgp(rnp)) {
+ 
+ 			/* Other bits still set at this level, so done. */
+@@ -1000,7 +1061,7 @@ rcu_report_qs_rnp(unsigned long mask, struct rcu_state *rsp,
+  * based on quiescent states detected in an earlier grace period!
+  */
+ static void
+-rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp, long lastcomp)
++rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp, long lastgp)
+ {
+ 	unsigned long flags;
+ 	unsigned long mask;
+@@ -1008,17 +1069,15 @@ rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp, long las
+ 
+ 	rnp = rdp->mynode;
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
+-	if (lastcomp != rnp->completed) {
++	if (lastgp != rnp->gpnum || rnp->completed == rnp->gpnum) {
+ 
+ 		/*
+-		 * Someone beat us to it for this grace period, so leave.
+-		 * The race with GP start is resolved by the fact that we
+-		 * hold the leaf rcu_node lock, so that the per-CPU bits
+-		 * cannot yet be initialized -- so we would simply find our
+-		 * CPU's bit already cleared in rcu_report_qs_rnp() if this
+-		 * race occurred.
++		 * The grace period in which this quiescent state was
++		 * recorded has ended, so don't report it upwards.
++		 * We will instead need a new quiescent state that lies
++		 * within the current grace period.
+ 		 */
+-		rdp->passed_quiesc = 0;	/* try again later! */
++		rdp->passed_quiesce = 0;	/* need qs for new gp. */
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		return;
+ 	}
+@@ -1062,14 +1121,14 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	 * Was there a quiescent state since the beginning of the grace
+ 	 * period? If no, then exit and wait for the next call.
+ 	 */
+-	if (!rdp->passed_quiesc)
++	if (!rdp->passed_quiesce)
+ 		return;
+ 
+ 	/*
+ 	 * Tell RCU we are done (but rcu_report_qs_rdp() will be the
+ 	 * judge of that).
+ 	 */
+-	rcu_report_qs_rdp(rdp->cpu, rsp, rdp, rdp->passed_quiesc_completed);
++	rcu_report_qs_rdp(rdp->cpu, rsp, rdp, rdp->passed_quiesce_gpnum);
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -1130,11 +1189,20 @@ static void __rcu_offline_cpu(int cpu, struct rcu_state *rsp)
+ 		if (rnp->qsmaskinit != 0) {
+ 			if (rnp != rdp->mynode)
+ 				raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++			else
++				trace_rcu_grace_period(rsp->name,
++						       rnp->gpnum + 1 -
++						       !!(rnp->qsmask & mask),
++						       "cpuofl");
+ 			break;
+ 		}
+-		if (rnp == rdp->mynode)
++		if (rnp == rdp->mynode) {
++			trace_rcu_grace_period(rsp->name,
++					       rnp->gpnum + 1 -
++					       !!(rnp->qsmask & mask),
++					       "cpuofl");
+ 			need_report = rcu_preempt_offline_tasks(rsp, rnp, rdp);
+-		else
++		} else
+ 			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+ 		mask = rnp->grpmask;
+ 		rnp = rnp->parent;
+@@ -1190,17 +1258,22 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int count;
++	int bl, count;
+ 
+ 	/* If no callbacks are ready, just return.*/
+-	if (!cpu_has_callbacks_ready_to_invoke(rdp))
++	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
++		trace_rcu_batch_start(rsp->name, 0, 0);
++		trace_rcu_batch_end(rsp->name, 0);
+ 		return;
++	}
+ 
+ 	/*
+ 	 * Extract the list of ready callbacks, disabling to prevent
+ 	 * races with call_rcu() from interrupt handlers.
+ 	 */
+ 	local_irq_save(flags);
++	bl = rdp->blimit;
++	trace_rcu_batch_start(rsp->name, rdp->qlen, bl);
+ 	list = rdp->nxtlist;
+ 	rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
+ 	*rdp->nxttail[RCU_DONE_TAIL] = NULL;
+@@ -1216,13 +1289,14 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		next = list->next;
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
+-		__rcu_reclaim(list);
++		__rcu_reclaim(rsp->name, list);
+ 		list = next;
+-		if (++count >= rdp->blimit)
++		if (++count >= bl)
+ 			break;
+ 	}
+ 
+ 	local_irq_save(flags);
++	trace_rcu_batch_end(rsp->name, count);
+ 
+ 	/* Update count, and requeue any remaining callbacks. */
+ 	rdp->qlen -= count;
+@@ -1250,7 +1324,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 
+ 	local_irq_restore(flags);
+ 
+-	/* Re-raise the RCU softirq if there are callbacks remaining. */
++	/* Re-invoke RCU core processing if there are callbacks remaining. */
+ 	if (cpu_has_callbacks_ready_to_invoke(rdp))
+ 		invoke_rcu_core();
+ }
+@@ -1258,7 +1332,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ /*
+  * Check to see if this CPU is in a non-context-switch quiescent state
+  * (user mode or idle loop for rcu, non-softirq execution for rcu_bh).
+- * Also schedule the RCU softirq handler.
++ * Also schedule RCU core processing.
+  *
+  * This function must be called with hardirqs disabled.  It is normally
+  * invoked from the scheduling-clock interrupt.  If rcu_pending returns
+@@ -1266,6 +1340,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+  */
+ void rcu_check_callbacks(int cpu, int user)
+ {
++	trace_rcu_utilization("Start scheduler-tick");
+ 	if (user ||
+ 	    (idle_cpu(cpu) && rcu_scheduler_active &&
+ 	     !in_softirq() && hardirq_count() <= (1 << HARDIRQ_SHIFT))) {
+@@ -1299,6 +1374,7 @@ void rcu_check_callbacks(int cpu, int user)
+ 	rcu_preempt_check_callbacks(cpu);
+ 	if (rcu_pending(cpu))
+ 		invoke_rcu_core();
++	trace_rcu_utilization("End scheduler-tick");
+ }
+ 
+ #ifdef CONFIG_SMP
+@@ -1360,10 +1436,14 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
+ 	unsigned long flags;
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+-	if (!rcu_gp_in_progress(rsp))
++	trace_rcu_utilization("Start fqs");
++	if (!rcu_gp_in_progress(rsp)) {
++		trace_rcu_utilization("End fqs");
+ 		return;  /* No grace period in progress, nothing to force. */
++	}
+ 	if (!raw_spin_trylock_irqsave(&rsp->fqslock, flags)) {
+ 		rsp->n_force_qs_lh++; /* Inexact, can lose counts.  Tough! */
++		trace_rcu_utilization("End fqs");
+ 		return;	/* Someone else is already on the job. */
+ 	}
+ 	if (relaxed && ULONG_CMP_GE(rsp->jiffies_force_qs, jiffies))
+@@ -1412,11 +1492,13 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
+ 		raw_spin_unlock(&rsp->fqslock); /* irqs remain disabled */
+ 		rsp->fqs_need_gp = 0;
+ 		rcu_start_gp(rsp, flags); /* releases rnp->lock */
++		trace_rcu_utilization("End fqs");
+ 		return;
+ 	}
+ 	raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
+ unlock_fqs_ret:
+ 	raw_spin_unlock_irqrestore(&rsp->fqslock, flags);
++	trace_rcu_utilization("End fqs");
+ }
+ 
+ #else /* #ifdef CONFIG_SMP */
+@@ -1429,9 +1511,9 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
+ #endif /* #else #ifdef CONFIG_SMP */
+ 
+ /*
+- * This does the RCU processing work from softirq context for the
+- * specified rcu_state and rcu_data structures.  This may be called
+- * only from the CPU to whom the rdp belongs.
++ * This does the RCU core processing work for the specified rcu_state
++ * and rcu_data structures.  This may be called only from the CPU to
++ * whom the rdp belongs.
+  */
+ static void
+ __rcu_process_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
+@@ -1468,24 +1550,24 @@ __rcu_process_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
+ }
+ 
+ /*
+- * Do softirq processing for the current CPU.
++ * Do RCU core processing for the current CPU.
+  */
+ static void rcu_process_callbacks(struct softirq_action *unused)
+ {
++	trace_rcu_utilization("Start RCU core");
+ 	__rcu_process_callbacks(&rcu_sched_state,
+ 				&__get_cpu_var(rcu_sched_data));
+ 	__rcu_process_callbacks(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
+ 	rcu_preempt_process_callbacks();
+-
+-	/* If we are last CPU on way to dyntick-idle mode, accelerate it. */
+-	rcu_needs_cpu_flush();
++	trace_rcu_utilization("End RCU core");
+ }
+ 
+ /*
+- * Wake up the current CPU's kthread.  This replaces raise_softirq()
+- * in earlier versions of RCU.  Note that because we are running on
+- * the current CPU with interrupts disabled, the rcu_cpu_kthread_task
+- * cannot disappear out from under us.
++ * Schedule RCU callback invocation.  If the specified type of RCU
++ * does not support RCU priority boosting, just do a direct call,
++ * otherwise wake up the per-CPU kernel kthread.  Note that because we
++ * are running on the current CPU with interrupts disabled, the
++ * rcu_cpu_kthread_task cannot disappear out from under us.
+  */
+ static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+@@ -1530,6 +1612,12 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	rdp->nxttail[RCU_NEXT_TAIL] = &head->next;
+ 	rdp->qlen++;
+ 
++	if (__is_kfree_rcu_offset((unsigned long)func))
++		trace_rcu_kfree_callback(rsp->name, head, (unsigned long)func,
++					 rdp->qlen);
++	else
++		trace_rcu_callback(rsp->name, head, rdp->qlen);
++
+ 	/* If interrupts were disabled, don't dive into RCU core. */
+ 	if (irqs_disabled_flags(flags)) {
+ 		local_irq_restore(flags);
+@@ -1613,18 +1701,9 @@ EXPORT_SYMBOL_GPL(call_rcu_bh);
+  */
+ void synchronize_sched(void)
+ {
+-	struct rcu_synchronize rcu;
+-
+ 	if (rcu_blocking_is_gp())
+ 		return;
+-
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	/* Will wake me after RCU finished. */
+-	call_rcu_sched(&rcu.head, wakeme_after_rcu);
+-	/* Wait for it. */
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
++	wait_rcu_gp(call_rcu_sched);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched);
+ 
+@@ -1639,18 +1718,9 @@ EXPORT_SYMBOL_GPL(synchronize_sched);
+  */
+ void synchronize_rcu_bh(void)
+ {
+-	struct rcu_synchronize rcu;
+-
+ 	if (rcu_blocking_is_gp())
+ 		return;
+-
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	/* Will wake me after RCU finished. */
+-	call_rcu_bh(&rcu.head, wakeme_after_rcu);
+-	/* Wait for it. */
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
++	wait_rcu_gp(call_rcu_bh);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
+ 
+@@ -1671,7 +1741,8 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	check_cpu_stall(rsp, rdp);
+ 
+ 	/* Is the RCU core waiting for a quiescent state from this CPU? */
+-	if (rdp->qs_pending && !rdp->passed_quiesc) {
++	if (rcu_scheduler_fully_active &&
++	    rdp->qs_pending && !rdp->passed_quiesce) {
+ 
+ 		/*
+ 		 * If force_quiescent_state() coming soon and this CPU
+@@ -1683,7 +1754,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+ 				 jiffies))
+ 			set_need_resched();
+-	} else if (rdp->qs_pending && rdp->passed_quiesc) {
++	} else if (rdp->qs_pending && rdp->passed_quiesce) {
+ 		rdp->n_rp_report_qs++;
+ 		return 1;
+ 	}
+@@ -1846,6 +1917,7 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
+ 	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
+ #endif /* #ifdef CONFIG_NO_HZ */
+ 	rdp->cpu = cpu;
++	rdp->rsp = rsp;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ }
+ 
+@@ -1865,8 +1937,6 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 
+ 	/* Set up local state, ensuring consistent view of global state. */
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
+-	rdp->passed_quiesc = 0;  /* We could be racing with new GP, */
+-	rdp->qs_pending = 1;	 /*  so set up to respond to current GP. */
+ 	rdp->beenonline = 1;	 /* We have now been online. */
+ 	rdp->preemptible = preemptible;
+ 	rdp->qlen_last_fqs_check = 0;
+@@ -1891,9 +1961,17 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 		rnp->qsmaskinit |= mask;
+ 		mask = rnp->grpmask;
+ 		if (rnp == rdp->mynode) {
+-			rdp->gpnum = rnp->completed; /* if GP in progress... */
++			/*
++			 * If there is a grace period in progress, we will
++			 * set up to wait for it next time we run the
++			 * RCU core code.
++			 */
++			rdp->gpnum = rnp->completed;
+ 			rdp->completed = rnp->completed;
+-			rdp->passed_quiesc_completed = rnp->completed - 1;
++			rdp->passed_quiesce = 0;
++			rdp->qs_pending = 0;
++			rdp->passed_quiesce_gpnum = rnp->gpnum - 1;
++			trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuonl");
+ 		}
+ 		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
+ 		rnp = rnp->parent;
+@@ -1919,6 +1997,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+ 	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
+ 	struct rcu_node *rnp = rdp->mynode;
+ 
++	trace_rcu_utilization("Start CPU hotplug");
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+@@ -1954,6 +2033,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+ 	default:
+ 		break;
+ 	}
++	trace_rcu_utilization("End CPU hotplug");
+ 	return NOTIFY_OK;
+ }
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 01b2ccd..849ce9e 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -230,9 +230,9 @@ struct rcu_data {
+ 					/*  in order to detect GP end. */
+ 	unsigned long	gpnum;		/* Highest gp number that this CPU */
+ 					/*  is aware of having started. */
+-	unsigned long	passed_quiesc_completed;
+-					/* Value of completed at time of qs. */
+-	bool		passed_quiesc;	/* User-mode/idle loop etc. */
++	unsigned long	passed_quiesce_gpnum;
++					/* gpnum at time of quiescent state. */
++	bool		passed_quiesce;	/* User-mode/idle loop etc. */
+ 	bool		qs_pending;	/* Core waits for quiesc state. */
+ 	bool		beenonline;	/* CPU online at least once. */
+ 	bool		preemptible;	/* Preemptible RCU? */
+@@ -299,6 +299,7 @@ struct rcu_data {
+ 	unsigned long n_rp_need_nothing;
+ 
+ 	int cpu;
++	struct rcu_state *rsp;
+ };
+ 
+ /* Values for signaled field in struct rcu_state. */
+@@ -417,6 +418,13 @@ extern struct rcu_state rcu_preempt_state;
+ DECLARE_PER_CPU(struct rcu_data, rcu_preempt_data);
+ #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
++#ifdef CONFIG_RCU_BOOST
++DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
++DECLARE_PER_CPU(int, rcu_cpu_kthread_cpu);
++DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
++DECLARE_PER_CPU(char, rcu_cpu_has_work);
++#endif /* #ifdef CONFIG_RCU_BOOST */
++
+ #ifndef RCU_TREE_NONCORE
+ 
+ /* Forward declarations for rcutree_plugin.h */
+@@ -430,7 +438,7 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
+ static void rcu_stop_cpu_kthread(int cpu);
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+ static void rcu_print_detail_task_stall(struct rcu_state *rsp);
+-static void rcu_print_task_stall(struct rcu_node *rnp);
++static int rcu_print_task_stall(struct rcu_node *rnp);
+ static void rcu_preempt_stall_reset(void);
+ static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp);
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -450,7 +458,6 @@ static int rcu_preempt_needs_cpu(int cpu);
+ static void __cpuinit rcu_preempt_init_percpu_data(int cpu);
+ static void rcu_preempt_send_cbs_to_online(void);
+ static void __init __rcu_init_preempt(void);
+-static void rcu_needs_cpu_flush(void);
+ static void rcu_initiate_boost(struct rcu_node *rnp, unsigned long flags);
+ static void rcu_preempt_boost_start_gp(struct rcu_node *rnp);
+ static void invoke_rcu_callbacks_kthread(void);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 8aafbb8..4b9b9f8 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -27,6 +27,14 @@
+ #include <linux/delay.h>
+ #include <linux/stop_machine.h>
+ 
++#define RCU_KTHREAD_PRIO 1
++
++#ifdef CONFIG_RCU_BOOST
++#define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
++#else
++#define RCU_BOOST_PRIO RCU_KTHREAD_PRIO
++#endif
++
+ /*
+  * Check the RCU kernel configuration parameters and print informative
+  * messages about anything out of the ordinary.  If you like #ifdef, you
+@@ -64,7 +72,7 @@ static void __init rcu_bootup_announce_oddness(void)
+ 
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+-struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
++struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt);
+ DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+ static struct rcu_state *rcu_state = &rcu_preempt_state;
+ 
+@@ -122,9 +130,11 @@ static void rcu_preempt_qs(int cpu)
+ {
+ 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
+ 
+-	rdp->passed_quiesc_completed = rdp->gpnum - 1;
++	rdp->passed_quiesce_gpnum = rdp->gpnum;
+ 	barrier();
+-	rdp->passed_quiesc = 1;
++	if (rdp->passed_quiesce == 0)
++		trace_rcu_grace_period("rcu_preempt", rdp->gpnum, "cpuqs");
++	rdp->passed_quiesce = 1;
+ 	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
+ }
+ 
+@@ -190,6 +200,11 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 			if (rnp->qsmask & rdp->grpmask)
+ 				rnp->gp_tasks = &t->rcu_node_entry;
+ 		}
++		trace_rcu_preempt_task(rdp->rsp->name,
++				       t->pid,
++				       (rnp->qsmask & rdp->grpmask)
++				       ? rnp->gpnum
++				       : rnp->gpnum + 1);
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	} else if (t->rcu_read_lock_nesting < 0 &&
+ 		   t->rcu_read_unlock_special) {
+@@ -299,6 +314,9 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ 	int empty_exp;
+ 	unsigned long flags;
+ 	struct list_head *np;
++#ifdef CONFIG_RCU_BOOST
++	struct rt_mutex *rbmp = NULL;
++#endif /* #ifdef CONFIG_RCU_BOOST */
+ 	struct rcu_node *rnp;
+ 	int special;
+ 
+@@ -344,6 +362,9 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ 		smp_mb(); /* ensure expedited fastpath sees end of RCU c-s. */
+ 		np = rcu_next_node_entry(t, rnp);
+ 		list_del_init(&t->rcu_node_entry);
++		t->rcu_blocked_node = NULL;
++		trace_rcu_unlock_preempted_task("rcu_preempt",
++						rnp->gpnum, t->pid);
+ 		if (&t->rcu_node_entry == rnp->gp_tasks)
+ 			rnp->gp_tasks = np;
+ 		if (&t->rcu_node_entry == rnp->exp_tasks)
+@@ -351,30 +372,34 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ #ifdef CONFIG_RCU_BOOST
+ 		if (&t->rcu_node_entry == rnp->boost_tasks)
+ 			rnp->boost_tasks = np;
+-		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
+-		if (t->rcu_boosted) {
+-			special |= RCU_READ_UNLOCK_BOOSTED;
+-			t->rcu_boosted = 0;
++		/* Snapshot/clear ->rcu_boost_mutex with rcu_node lock held. */
++		if (t->rcu_boost_mutex) {
++			rbmp = t->rcu_boost_mutex;
++			t->rcu_boost_mutex = NULL;
+ 		}
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+-		t->rcu_blocked_node = NULL;
+ 
+ 		/*
+ 		 * If this was the last task on the current list, and if
+ 		 * we aren't waiting on any CPUs, report the quiescent state.
+ 		 * Note that rcu_report_unblock_qs_rnp() releases rnp->lock.
+ 		 */
+-		if (empty)
+-			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-		else
++		if (!empty && !rcu_preempt_blocked_readers_cgp(rnp)) {
++			trace_rcu_quiescent_state_report("preempt_rcu",
++							 rnp->gpnum,
++							 0, rnp->qsmask,
++							 rnp->level,
++							 rnp->grplo,
++							 rnp->grphi,
++							 !!rnp->gp_tasks);
+ 			rcu_report_unblock_qs_rnp(rnp, flags);
++		} else
++			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ #ifdef CONFIG_RCU_BOOST
+ 		/* Unboost if we were boosted. */
+-		if (special & RCU_READ_UNLOCK_BOOSTED) {
+-			rt_mutex_unlock(t->rcu_boost_mutex);
+-			t->rcu_boost_mutex = NULL;
+-		}
++		if (rbmp)
++			rt_mutex_unlock(rbmp);
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 
+ 		/*
+@@ -399,10 +424,10 @@ void __rcu_read_unlock(void)
+ {
+ 	struct task_struct *t = current;
+ 
+-	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutree.c */
+ 	if (t->rcu_read_lock_nesting != 1)
+ 		--t->rcu_read_lock_nesting;
+ 	else {
++		barrier();  /* critical section before exit code. */
+ 		t->rcu_read_lock_nesting = INT_MIN;
+ 		barrier();  /* assign before ->rcu_read_unlock_special load */
+ 		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+@@ -466,16 +491,20 @@ static void rcu_print_detail_task_stall(struct rcu_state *rsp)
+  * Scan the current list of tasks blocked within RCU read-side critical
+  * sections, printing out the tid of each.
+  */
+-static void rcu_print_task_stall(struct rcu_node *rnp)
++static int rcu_print_task_stall(struct rcu_node *rnp)
+ {
+ 	struct task_struct *t;
++	int ndetected = 0;
+ 
+ 	if (!rcu_preempt_blocked_readers_cgp(rnp))
+-		return;
++		return 0;
+ 	t = list_entry(rnp->gp_tasks,
+ 		       struct task_struct, rcu_node_entry);
+-	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry)
++	list_for_each_entry_continue(t, &rnp->blkd_tasks, rcu_node_entry) {
+ 		printk(" P%d", t->pid);
++		ndetected++;
++	}
++	return ndetected;
+ }
+ 
+ /*
+@@ -656,18 +685,9 @@ EXPORT_SYMBOL_GPL(call_rcu);
+  */
+ void synchronize_rcu(void)
+ {
+-	struct rcu_synchronize rcu;
+-
+ 	if (!rcu_scheduler_active)
+ 		return;
+-
+-	init_rcu_head_on_stack(&rcu.head);
+-	init_completion(&rcu.completion);
+-	/* Will wake me after RCU finished. */
+-	call_rcu(&rcu.head, wakeme_after_rcu);
+-	/* Wait for it. */
+-	wait_for_completion(&rcu.completion);
+-	destroy_rcu_head_on_stack(&rcu.head);
++	wait_rcu_gp(call_rcu);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_rcu);
+ 
+@@ -968,8 +988,9 @@ static void rcu_print_detail_task_stall(struct rcu_state *rsp)
+  * Because preemptible RCU does not exist, we never have to check for
+  * tasks blocked within RCU read-side critical sections.
+  */
+-static void rcu_print_task_stall(struct rcu_node *rnp)
++static int rcu_print_task_stall(struct rcu_node *rnp)
+ {
++	return 0;
+ }
+ 
+ /*
+@@ -1136,6 +1157,8 @@ static void rcu_initiate_boost_trace(struct rcu_node *rnp)
+ 
+ #endif /* #else #ifdef CONFIG_RCU_TRACE */
+ 
++static struct lock_class_key rcu_boost_class;
++
+ /*
+  * Carry out RCU priority boosting on the task indicated by ->exp_tasks
+  * or ->boost_tasks, advancing the pointer to the next task in the
+@@ -1198,8 +1221,10 @@ static int rcu_boost(struct rcu_node *rnp)
+ 	 */
+ 	t = container_of(tb, struct task_struct, rcu_node_entry);
+ 	rt_mutex_init_proxy_locked(&mtx, t);
++	/* Avoid lockdep false positives.  This rt_mutex is its own thing. */
++	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
++				   "rcu_boost_mutex");
+ 	t->rcu_boost_mutex = &mtx;
+-	t->rcu_boosted = 1;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+ 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+@@ -1228,9 +1253,12 @@ static int rcu_boost_kthread(void *arg)
+ 	int spincnt = 0;
+ 	int more2boost;
+ 
++	trace_rcu_utilization("Start boost kthread@init");
+ 	for (;;) {
+ 		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
++		trace_rcu_utilization("End boost kthread@rcu_wait");
+ 		rcu_wait(rnp->boost_tasks || rnp->exp_tasks);
++		trace_rcu_utilization("Start boost kthread@rcu_wait");
+ 		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
+ 		more2boost = rcu_boost(rnp);
+ 		if (more2boost)
+@@ -1238,11 +1266,14 @@ static int rcu_boost_kthread(void *arg)
+ 		else
+ 			spincnt = 0;
+ 		if (spincnt > 10) {
++			trace_rcu_utilization("End boost kthread@rcu_yield");
+ 			rcu_yield(rcu_boost_kthread_timer, (unsigned long)rnp);
++			trace_rcu_utilization("Start boost kthread@rcu_yield");
+ 			spincnt = 0;
+ 		}
+ 	}
+ 	/* NOTREACHED */
++	trace_rcu_utilization("End boost kthread@notreached");
+ 	return 0;
+ }
+ 
+@@ -1291,11 +1322,9 @@ static void invoke_rcu_callbacks_kthread(void)
+ 
+ 	local_irq_save(flags);
+ 	__this_cpu_write(rcu_cpu_has_work, 1);
+-	if (__this_cpu_read(rcu_cpu_kthread_task) == NULL) {
+-		local_irq_restore(flags);
+-		return;
+-	}
+-	wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
++	if (__this_cpu_read(rcu_cpu_kthread_task) != NULL &&
++	    current != __this_cpu_read(rcu_cpu_kthread_task))
++		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -1343,13 +1372,13 @@ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+ 	if (rnp->boost_kthread_task != NULL)
  		return 0;
- 
- 	if (!rs->begin)
-@@ -60,7 +60,7 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
- 		rs->missed++;
- 		ret = 0;
- 	}
--	spin_unlock_irqrestore(&rs->lock, flags);
-+	raw_spin_unlock_irqrestore(&rs->lock, flags);
- 
- 	return ret;
- }
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index ffc9fc7..f2393c2 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -22,9 +22,9 @@ int rwsem_is_locked(struct rw_semaphore *sem)
- 	int ret = 1;
- 	unsigned long flags;
- 
--	if (spin_trylock_irqsave(&sem->wait_lock, flags)) {
-+	if (raw_spin_trylock_irqsave(&sem->wait_lock, flags)) {
- 		ret = (sem->activity != 0);
--		spin_unlock_irqrestore(&sem->wait_lock, flags);
-+		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 	}
- 	return ret;
- }
-@@ -44,7 +44,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	lockdep_init_map(&sem->dep_map, name, key, 0);
- #endif
- 	sem->activity = 0;
--	spin_lock_init(&sem->wait_lock);
-+	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
- }
- EXPORT_SYMBOL(__init_rwsem);
-@@ -145,12 +145,12 @@ void __sched __down_read(struct rw_semaphore *sem)
- 	struct task_struct *tsk;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
- 		sem->activity++;
--		spin_unlock_irqrestore(&sem->wait_lock, flags);
-+		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 		goto out;
- 	}
- 
-@@ -165,7 +165,7 @@ void __sched __down_read(struct rw_semaphore *sem)
- 	list_add_tail(&waiter.list, &sem->wait_list);
- 
- 	/* we don't need to touch the semaphore struct anymore */
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	/* wait to be given the lock */
- 	for (;;) {
-@@ -189,7 +189,7 @@ int __down_read_trylock(struct rw_semaphore *sem)
- 	int ret = 0;
- 
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
-@@ -197,7 +197,7 @@ int __down_read_trylock(struct rw_semaphore *sem)
- 		ret = 1;
- 	}
- 
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	return ret;
- }
-@@ -212,12 +212,12 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
- 	struct task_struct *tsk;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
- 		sem->activity = -1;
--		spin_unlock_irqrestore(&sem->wait_lock, flags);
-+		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 		goto out;
- 	}
- 
-@@ -232,7 +232,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
- 	list_add_tail(&waiter.list, &sem->wait_list);
- 
- 	/* we don't need to touch the semaphore struct anymore */
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	/* wait to be given the lock */
- 	for (;;) {
-@@ -260,7 +260,7 @@ int __down_write_trylock(struct rw_semaphore *sem)
- 	unsigned long flags;
- 	int ret = 0;
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
- 		/* granted */
-@@ -268,7 +268,7 @@ int __down_write_trylock(struct rw_semaphore *sem)
- 		ret = 1;
- 	}
- 
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	return ret;
- }
-@@ -280,12 +280,12 @@ void __up_read(struct rw_semaphore *sem)
+ 	t = kthread_create(rcu_boost_kthread, (void *)rnp,
+-			   "rcub%d", rnp_index);
++			   "rcub/%d", rnp_index);
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
+ 	rnp->boost_kthread_task = t;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-	sp.sched_priority = RCU_KTHREAD_PRIO;
++	sp.sched_priority = RCU_BOOST_PRIO;
+ 	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+ 	wake_up_process(t); /* get to TASK_INTERRUPTIBLE quickly. */
+ 	return 0;
+@@ -1444,6 +1473,7 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
  {
- 	unsigned long flags;
+ 	struct sched_param sp;
+ 	struct timer_list yield_timer;
++	int prio = current->rt_priority;
  
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 	setup_timer_on_stack(&yield_timer, f, arg);
+ 	mod_timer(&yield_timer, jiffies + 2);
+@@ -1451,7 +1481,8 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
+ 	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+ 	set_user_nice(current, 19);
+ 	schedule();
+-	sp.sched_priority = RCU_KTHREAD_PRIO;
++	set_user_nice(current, 0);
++	sp.sched_priority = prio;
+ 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+ 	del_timer(&yield_timer);
+ }
+@@ -1489,7 +1520,8 @@ static int rcu_cpu_kthread_should_stop(int cpu)
  
- 	if (--sem->activity == 0 && !list_empty(&sem->wait_list))
- 		sem = __rwsem_wake_one_writer(sem);
+ /*
+  * Per-CPU kernel thread that invokes RCU callbacks.  This replaces the
+- * earlier RCU softirq.
++ * RCU softirq used in flavors and configurations of RCU that do not
++ * support RCU priority boosting.
+  */
+ static int rcu_cpu_kthread(void *arg)
+ {
+@@ -1500,9 +1532,12 @@ static int rcu_cpu_kthread(void *arg)
+ 	char work;
+ 	char *workp = &per_cpu(rcu_cpu_has_work, cpu);
  
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
++	trace_rcu_utilization("Start CPU kthread@init");
+ 	for (;;) {
+ 		*statusp = RCU_KTHREAD_WAITING;
++		trace_rcu_utilization("End CPU kthread@rcu_wait");
+ 		rcu_wait(*workp != 0 || kthread_should_stop());
++		trace_rcu_utilization("Start CPU kthread@rcu_wait");
+ 		local_bh_disable();
+ 		if (rcu_cpu_kthread_should_stop(cpu)) {
+ 			local_bh_enable();
+@@ -1523,11 +1558,14 @@ static int rcu_cpu_kthread(void *arg)
+ 			spincnt = 0;
+ 		if (spincnt > 10) {
+ 			*statusp = RCU_KTHREAD_YIELDING;
++			trace_rcu_utilization("End CPU kthread@rcu_yield");
+ 			rcu_yield(rcu_cpu_kthread_timer, (unsigned long)cpu);
++			trace_rcu_utilization("Start CPU kthread@rcu_yield");
+ 			spincnt = 0;
+ 		}
+ 	}
+ 	*statusp = RCU_KTHREAD_STOPPED;
++	trace_rcu_utilization("End CPU kthread@term");
+ 	return 0;
+ }
+ 
+@@ -1560,7 +1598,10 @@ static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
+ 	if (!rcu_scheduler_fully_active ||
+ 	    per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
+ 		return 0;
+-	t = kthread_create(rcu_cpu_kthread, (void *)(long)cpu, "rcuc%d", cpu);
++	t = kthread_create_on_node(rcu_cpu_kthread,
++				   (void *)(long)cpu,
++				   cpu_to_node(cpu),
++				   "rcuc/%d", cpu);
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	if (cpu_online(cpu))
+@@ -1669,7 +1710,7 @@ static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
+ 		return 0;
+ 	if (rnp->node_kthread_task == NULL) {
+ 		t = kthread_create(rcu_node_kthread, (void *)rnp,
+-				   "rcun%d", rnp_index);
++				   "rcun/%d", rnp_index);
+ 		if (IS_ERR(t))
+ 			return PTR_ERR(t);
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+@@ -1907,15 +1948,6 @@ int rcu_needs_cpu(int cpu)
+ 	return rcu_needs_cpu_quick_check(cpu);
+ }
+ 
+-/*
+- * Check to see if we need to continue a callback-flush operations to
+- * allow the last CPU to enter dyntick-idle mode.  But fast dyntick-idle
+- * entry is not configured, so we never do need to.
+- */
+-static void rcu_needs_cpu_flush(void)
+-{
+-}
+-
+ #else /* #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+ 
+ #define RCU_NEEDS_CPU_FLUSHES 5
+@@ -1991,20 +2023,4 @@ int rcu_needs_cpu(int cpu)
+ 	return c;
+ }
+ 
+-/*
+- * Check to see if we need to continue a callback-flush operations to
+- * allow the last CPU to enter dyntick-idle mode.
+- */
+-static void rcu_needs_cpu_flush(void)
+-{
+-	int cpu = smp_processor_id();
+-	unsigned long flags;
+-
+-	if (per_cpu(rcu_dyntick_drain, cpu) <= 0)
+-		return;
+-	local_irq_save(flags);
+-	(void)rcu_needs_cpu(cpu);
+-	local_irq_restore(flags);
+-}
+-
+ #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index 3b0c098..9feffa4 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -48,11 +48,6 @@
+ 
+ #ifdef CONFIG_RCU_BOOST
+ 
+-DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
+-DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_cpu);
+-DECLARE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
+-DECLARE_PER_CPU(char, rcu_cpu_has_work);
+-
+ static char convert_kthread_status(unsigned int kthread_status)
+ {
+ 	if (kthread_status > RCU_KTHREAD_MAX)
+@@ -66,11 +61,11 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ {
+ 	if (!rdp->beenonline)
+ 		return;
+-	seq_printf(m, "%3d%cc=%lu g=%lu pq=%d pqc=%lu qp=%d",
++	seq_printf(m, "%3d%cc=%lu g=%lu pq=%d pgp=%lu qp=%d",
+ 		   rdp->cpu,
+ 		   cpu_is_offline(rdp->cpu) ? '!' : ' ',
+ 		   rdp->completed, rdp->gpnum,
+-		   rdp->passed_quiesc, rdp->passed_quiesc_completed,
++		   rdp->passed_quiesce, rdp->passed_quiesce_gpnum,
+ 		   rdp->qs_pending);
+ #ifdef CONFIG_NO_HZ
+ 	seq_printf(m, " dt=%d/%d/%d df=%lu",
+@@ -144,7 +139,7 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
+ 		   rdp->cpu,
+ 		   cpu_is_offline(rdp->cpu) ? "\"N\"" : "\"Y\"",
+ 		   rdp->completed, rdp->gpnum,
+-		   rdp->passed_quiesc, rdp->passed_quiesc_completed,
++		   rdp->passed_quiesce, rdp->passed_quiesce_gpnum,
+ 		   rdp->qs_pending);
+ #ifdef CONFIG_NO_HZ
+ 	seq_printf(m, ",%d,%d,%d,%lu",
+@@ -175,7 +170,7 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
+ 
+ static int show_rcudata_csv(struct seq_file *m, void *unused)
+ {
+-	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pqc\",\"pq\",");
++	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pgp\",\"pq\",");
+ #ifdef CONFIG_NO_HZ
+ 	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
+ #endif /* #ifdef CONFIG_NO_HZ */
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 255e166..5e8d9cc 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -579,6 +579,7 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 		    struct rt_mutex_waiter *waiter)
+ {
+ 	int ret = 0;
++	int was_disabled;
+ 
+ 	for (;;) {
+ 		/* Try to acquire the lock: */
+@@ -601,10 +602,17 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 
+ 		raw_spin_unlock(&lock->wait_lock);
+ 
++		was_disabled = irqs_disabled();
++		if (was_disabled)
++			local_irq_enable();
++
+ 		debug_rt_mutex_print_deadlock(waiter);
+ 
+ 		schedule_rt_mutex(lock);
+ 
++		if (was_disabled)
++			local_irq_disable();
++
+ 		raw_spin_lock(&lock->wait_lock);
+ 		set_current_state(state);
+ 	}
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ec5f472..3e55256 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4237,6 +4237,7 @@ static inline void schedule_debug(struct task_struct *prev)
+ 	 */
+ 	if (unlikely(in_atomic_preempt_off() && !prev->exit_state))
+ 		__schedule_bug(prev);
++	rcu_sleep_check();
+ 
+ 	profile_hit(SCHED_PROFILING, __builtin_return_address(0));
+ 
+@@ -5979,15 +5980,6 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
  }
  
  /*
-@@ -295,13 +295,13 @@ void __up_write(struct rw_semaphore *sem)
+- * In a system that switches off the HZ timer nohz_cpu_mask
+- * indicates which cpus entered this state. This is used
+- * in the rcu update to wait only for active cpus. For system
+- * which do not switch off the HZ timer nohz_cpu_mask should
+- * always be CPU_BITS_NONE.
+- */
+-cpumask_var_t nohz_cpu_mask;
+-
+-/*
+  * Increase the granularity value when there are more CPUs,
+  * because with more CPUs the 'effective latency' as visible
+  * to users decreases. But the relationship is not linear,
+@@ -8199,8 +8191,6 @@ void __init sched_init(void)
+ 	 */
+ 	current->sched_class = &fair_sched_class;
+ 
+-	/* Allocate the nohz_cpu_mask if CONFIG_CPUMASK_OFFSTACK */
+-	zalloc_cpumask_var(&nohz_cpu_mask, GFP_NOWAIT);
+ #ifdef CONFIG_SMP
+ 	zalloc_cpumask_var(&sched_domains_tmpmask, GFP_NOWAIT);
+ #ifdef CONFIG_NO_HZ
+@@ -8230,6 +8220,7 @@ void __might_sleep(const char *file, int line, int preempt_offset)
  {
+ 	static unsigned long prev_jiffy;	/* ratelimiting */
+ 
++	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
+ 	if ((preempt_count_equals(preempt_offset) && !irqs_disabled()) ||
+ 	    system_state != SYSTEM_RUNNING || oops_in_progress)
+ 		return;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d5097c4..eb98e55 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -139,7 +139,6 @@ static void tick_nohz_update_jiffies(ktime_t now)
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
  	unsigned long flags;
  
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+-	cpumask_clear_cpu(cpu, nohz_cpu_mask);
+ 	ts->idle_waketime = now;
  
- 	sem->activity = 0;
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, 1);
+ 	local_irq_save(flags);
+@@ -389,9 +388,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		else
+ 			expires.tv64 = KTIME_MAX;
  
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- }
+-		if (delta_jiffies > 1)
+-			cpumask_set_cpu(cpu, nohz_cpu_mask);
+-
+ 		/* Skip reprogram of event if its not changed */
+ 		if (ts->tick_stopped && ktime_equal(expires, dev->next_event))
+ 			goto out;
+@@ -441,7 +437,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		 * softirq.
+ 		 */
+ 		tick_do_update_jiffies64(ktime_get());
+-		cpumask_clear_cpu(cpu, nohz_cpu_mask);
+ 	}
+ 	raise_softirq_irqoff(TIMER_SOFTIRQ);
+ out:
+@@ -524,7 +519,6 @@ void tick_nohz_restart_sched_tick(void)
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
+-	cpumask_clear_cpu(cpu, nohz_cpu_mask);
  
- /*
-@@ -312,12 +312,12 @@ void __downgrade_write(struct rw_semaphore *sem)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	sem->activity = 1;
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, 0);
- 
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- }
- 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index aa7c305..410aa11 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -22,7 +22,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
- 	lockdep_init_map(&sem->dep_map, name, key, 0);
- #endif
- 	sem->count = RWSEM_UNLOCKED_VALUE;
--	spin_lock_init(&sem->wait_lock);
-+	raw_spin_lock_init(&sem->wait_lock);
- 	INIT_LIST_HEAD(&sem->wait_list);
- }
- 
-@@ -180,7 +180,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
- 	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 
- 	/* set up my own style of waitqueue */
--	spin_lock_irq(&sem->wait_lock);
-+	raw_spin_lock_irq(&sem->wait_lock);
- 	waiter.task = tsk;
- 	waiter.flags = flags;
- 	get_task_struct(tsk);
-@@ -204,7 +204,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
- 		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
- 
--	spin_unlock_irq(&sem->wait_lock);
-+	raw_spin_unlock_irq(&sem->wait_lock);
- 
- 	/* wait to be given the lock */
- 	for (;;) {
-@@ -245,13 +245,13 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	/* do nothing if list empty */
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
- 
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	return sem;
- }
-@@ -265,13 +265,13 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sem->wait_lock, flags);
-+	raw_spin_lock_irqsave(&sem->wait_lock, flags);
- 
- 	/* do nothing if list empty */
- 	if (!list_empty(&sem->wait_list))
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
- 
--	spin_unlock_irqrestore(&sem->wait_lock, flags);
-+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
- 	return sem;
- }
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	/*
