@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1JZW1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 18:27:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25284 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab1JZW1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 18:27:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208,223";a="68309621"
-Subject: Re: 3.1-rc9 and 3.1 wifi problem , problem continues with 3.1
-From: wwguy <wey-yi.w.guy@intel.com>
-To: werner <w.landgraf@ru.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "dave.taht@gmail.com" <dave.taht@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "arend@broadcom.com" <arend@broadcom.com>,
-        "toralf.foerster@gmx.de" <toralf.foerster@gmx.de>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "larry.finger@gmail.com" <larry.finger@gmail.com>
-In-Reply-To: <web-633781994@zbackend1.aha.ru>
-References: <web-633781994@zbackend1.aha.ru>
-Content-Type: multipart/mixed; boundary="=-ifsGQZZ21yoKllp1JE/N"
-Date: Wed, 26 Oct 2011 15:21:22 -0700
-Message-ID: <1319667682.14693.29.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753321Ab1JZW2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 18:28:55 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:52663 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab1JZW2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 18:28:54 -0400
+Subject: Re: [PATCH V1 02/17] ext4: Add the basic function for inline data support.
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <aedilger@gmail.com>
+In-Reply-To: <4EA81B50.1060802@tao.ma>
+Date: Wed, 26 Oct 2011 16:28:42 -0600
+Cc: linux-ext4@vger.kernel.org, tytso@mit.edu, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <DACDC44B-F60E-493E-9C15-67EDFCDFD34D@dilger.ca>
+References: <4EA7B788.3040503@tao.ma> <1319614468-11227-1-git-send-email-tm@tao.ma> <1319614468-11227-2-git-send-email-tm@tao.ma> <E38E92E9-2937-47BA-A9F4-B1F75C9FDE4A@dilger.ca> <4EA81B50.1060802@tao.ma>
+To: Tao Ma <tm@tao.ma>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-ifsGQZZ21yoKllp1JE/N
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-On Wed, 2011-10-26 at 14:47 -0700, werner wrote:
-> As reported, with 3.1-rc9 the wifi of a friend's laptop 
-> didnt work at all.  With 3.0.4 it's working normally.
+On 2011-10-26, at 8:38 AM, Tao Ma wrote:
+> On 10/26/2011 04:36 PM, Andreas Dilger wrote:
+>> On 2011-10-26, at 1:34 AM, Tao Ma wrote:
+>>> +void ext4_write_inline_data(struct inode *inode, struct ext4_iloc *iloc,
+>>> +			    void *buffer, loff_t pos, unsigned len)
+>>> +{
+>>> +	header = IHDR(inode, ext4_raw_inode(iloc));
+>>> +	entry = (struct ext4_xattr_entry *)((void *)ext4_raw_inode(iloc) +
+>>> +					    EXT4_I(inode)->i_inline_off);
+>>> +	memcpy((void *)IFIRST(header) + le16_to_cpu(entry->e_value_offs) + pos,
+>>> +	       buffer + pos, len);
+>>> +}
+>>> +
+>>> +int ext4_init_inline_data(handle_t *handle, struct inode *inode,
+>>> +			  struct ext4_iloc *iloc)
+>>> +{
+>>> +	size = ext4_get_max_inline_size(inode);
+>>> +	value = kzalloc(size, GFP_NOFS);
+>>> +	if (!value)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	error = ext4_xattr_ibody_set(handle, inode, &i, &is);
+>>> +}
+>> 
+>> Since file data is changed very rarely, instead of consuming the full
+>> xattr space that may not be needed, wouldn't it be better to change
+>> ext4_write_inline_data() to just to the ext4_xattr_ibody_set() to save
+>> the exact-sized buffer into the xattr?  That will allow other xattrs
+>> to be stored in this space as well as the inline data.
 > 
-> The problem continues with 3.1
-> 
-> Now I take some files for identify the problem.  Below see 
-> lsmod and dmesg , and enclosed is hwinfo and syslog of 
-> that laptop as it was running with 3.1 just as wifi didn't 
-> work.      For comparison, on syslog you can see the 
-> previous boots (I separated them by blank lines), all with 
-> 3.0.4 , when wifi was working.
-> 
-> I hope that's now enough information to fix that problem.
-> 
-> 
-> Werner Landgraf
+> I am just worried about the cpu usage. You know, the xattr values in
+> ext4 has to be packed so if we change the content of an inline file
+> frequently(say append), the inline xattr value will be removed and added
+> frequently which should consume much cpu cycles.  What's more, the other
+> xattr values has to be moved also if they are not aligned to the end of
+> the inode. I am not sure whether it is good for performance or not.
+
+I'd also guess it isn't the most CPU efficient mechanism, but the main
+question is whether this extra CPU usage is even noticeable compared
+to the IO time?  Even with the added CPU usage, there is a dramatic
+reduction in the IO (no external block to write), so it would always
+be a net win to do it that way.
+
+> Another side effect is that we have to write the whole inline data every
+> time as a new xattr value replace every time while the current solution
+> just needs to memcpy the appended bytes.
+
+What about only storing a new xattr if the file size is increasing, or
+when it is truncated to zero?  If the write is <= existing xattr size
+then it can use the same mechanism as today (inline overwrite of the
+xattr buffer, and update of the xattr checksum).  That avoids overhead
+for the case of repeatedly writing a small same-size value into the file.
+If some application is appending 1 byte at a time to a file, I think
+the CPU overhead in the xattr code is the least of their worries.
+
+The main reason I don't like to consume all of the xattr space right
+away is that this will cause OTHER xattrs to immediately be pushed
+into the external xattr block (e.g. selinux, security, etc) and then
+we will be even worse off than before (file data in inode, xattr in
+external block, and added complexity for no benefit).
+
+Cheers, Andreas
 
 
-could you try this test patch
-
-Thanks
-Wey
-
---=-ifsGQZZ21yoKllp1JE/N
-Content-Disposition: attachment; filename="0001-iwlwifi-allow-pci_enable_msi-fail.patch"
-Content-Type: text/x-patch; name="0001-iwlwifi-allow-pci_enable_msi-fail.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 64a1b22cc9d179d69c66b23619691ba2a13ee646 Mon Sep 17 00:00:00 2001
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Date: Wed, 26 Oct 2011 15:15:38 -0700
-Subject: [PATCH 1/1] iwlwifi: allow pci_enable_msi fail
-
-Continue the init process even fail to enable msi
-
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
----
- drivers/net/wireless/iwlwifi/iwl-pci.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/iwl-pci.c b/drivers/net/wireless/iwlwifi/iwl-pci.c
-index 35d4551..911186f 100644
---- a/drivers/net/wireless/iwlwifi/iwl-pci.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-pci.c
-@@ -429,10 +429,9 @@ static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	pci_write_config_byte(pdev, PCI_CFG_RETRY_TIMEOUT, 0x00);
- 
- 	err = pci_enable_msi(pdev);
--	if (err) {
--		dev_printk(KERN_ERR, &pdev->dev, "pci_enable_msi failed");
--		goto out_iounmap;
--	}
-+	if (err)
-+		dev_printk(KERN_ERR, &pdev->dev,
-+			"pci_enable_msi failed(0X%x)", err);
- 
- 	/* TODO: Move this away, not needed if not MSI */
- 	/* enable rfkill interrupt: hw bug w/a */
--- 
-1.7.0.4
 
 
---=-ifsGQZZ21yoKllp1JE/N--
 
