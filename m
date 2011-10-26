@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1JZT3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 15:29:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33561 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1JZT3h (ORCPT
+	id S1752082Ab1JZTav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 15:30:51 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42708 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab1JZTau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 15:29:37 -0400
-Date: Wed, 26 Oct 2011 12:29:31 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/13] block: make ioc get/put interface more
- conventional and fix race on alloction
-Message-ID: <20111026192917.GC24261@google.com>
-References: <1319593719-19132-1-git-send-email-tj@kernel.org>
- <1319593719-19132-5-git-send-email-tj@kernel.org>
- <20111026160101.GB355@redhat.com>
+	Wed, 26 Oct 2011 15:30:50 -0400
+Date: Wed, 26 Oct 2011 15:30:38 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the moduleh tree with the xen-two
+ tree
+Message-ID: <20111026193038.GA6385@windriver.com>
+References: <20111025193442.66255eed8e72d5e88cce192f@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111026160101.GB355@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111025193442.66255eed8e72d5e88cce192f@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+[linux-next: manual merge of the moduleh tree with the xen-two tree] On 25/10/2011 (Tue 19:34) Stephen Rothwell wrote:
 
-On Wed, Oct 26, 2011 at 12:01:01PM -0400, Vivek Goyal wrote:
-> We really don't need to create a new io context here if it is not present.
-> cgroup_changed is set so that reference to old sync cfqq is dropped and
-> a new one is assigned when new IO comes in. Given the fact that io context
-> is not even present for the task being attached, there is no way there
-> is associated cic and associated cfqq. So no need to set changed_cgroup=1.
+> Hi Paul,
 > 
-> Will it make sense to pass in additional parameter to get_task_io_context()
-> so that it takes a reference if ioc exists otherwise returns NULL. Or may
-> be another variant of get_task_io_context() function.
+> Today's linux-next merge of the moduleh tree got a conflict in
+> drivers/xen/xen-selfballoon.c between commit 38a1ed4f039d ("xen: Fix
+> selfballooning and ensure it doesn't go too far") from the xen-two tree
+> and commit 29ff02027c68 ("xen: fix implicit stat.h/module.h include usage
+> in xen-selfballoon.c") from the moduleh tree.
 > 
-> This is a minor issue though. Will just avoid creating iocontext memory
-> for task if one is not using CFQ in the system.
-
-Yeah, something like GFP_NOALLOC would have been nice for cases like
-this.  That said, adding another param or API for this doesn't sound
-too hot to me.  It's an extremely marginal optimization.  Let's just
-let it be.
-
-> > +extern char __blk_test_mode[2];
-> > +#define blk_test_mode	(__blk_test_mode[0])
-> > +
+> I fixed it up (see below) and can carry the fix as necessary.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> Looks like leftover of your testing code.
+> diff --cc drivers/xen/xen-selfballoon.c
+> index d93c708,e21e3ce..0000000
+> --- a/drivers/xen/xen-selfballoon.c
+> +++ b/drivers/xen/xen-selfballoon.c
+> @@@ -68,8 -68,8 +68,10 @@@
+>    */
+>   
+>   #include <linux/kernel.h>
+>  +#include <linux/bootmem.h>
+>  +#include <linux/swap.h>
+> + #include <linux/stat.h>
+> + #include <linux/module.h>
+>   #include <linux/mm.h>
+>   #include <linux/mman.h>
+>   #include <linux/module.h>
 
-Heh... what does that doing there? :) Will update the patch & git
-tree.
+Thanks, Stephen.
 
-Thanks.
+I'll just drop the module.h commit, since there is clearly two module.h
+listings above, as 4fec0e0bde09095b6349dc6206dbf19cebcd0a7e from
+v3.1-rc3 and forward added the last line above.  The stat.h addition,
+while correct, isn't critical, since module.h has to include stat.h
 
--- 
-tejun
+Paul.
