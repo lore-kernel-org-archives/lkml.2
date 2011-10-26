@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933882Ab1JZRvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:51:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54962 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933734Ab1JZRso (ORCPT
+	id S933733Ab1JZR6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:58:14 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51676 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932795Ab1JZR6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:48:44 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/11] perf hists browser: Use K_TIMER
-Date: Wed, 26 Oct 2011 15:48:31 -0200
-Message-Id: <1319651314-29404-9-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1319651314-29404-1-git-send-email-acme@infradead.org>
-References: <1319651314-29404-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 26 Oct 2011 13:58:13 -0400
+Message-ID: <1319651860.23224.3.camel@work-vm>
+Subject: Re: [PATCH 6/8] clocksource: m86k: Convert to
+ clocksource_register_hz/khz
+From: john stultz <johnstul@us.ibm.com>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        lkml <linux-kernel@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Date: Wed, 26 Oct 2011 10:57:40 -0700
+In-Reply-To: <4EA79629.3040403@snapgear.com>
+References: <4ea6fbe8.43310e0a.592c.5416SMTPIN_ADDED@mx.google.com>
+	 <CAMuHMdWVdaq+uuCLxuN0EsmJiQdyr9xWpqg6oAeHg3NP_u2V8g@mail.gmail.com>
+	 <1319568370.17505.21.camel@work-vm> <4EA79629.3040403@snapgear.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11102617-5518-0000-0000-0000000FBF83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Wed, 2011-10-26 at 15:10 +1000, Greg Ungerer wrote:
+> Hi John,
+> 
+> On 26/10/11 04:46, john stultz wrote:
+> > Updated to merge the valid bits of the two m68k patches.
+> >
+> > This converts the m86k clocksources to use clocksource_register_hz/khz
+> >
+> > This is untested, so any assistance in testing would be appreciated!
+> 
+> This looks good. I test compiled across all targets these files affect.
+> And run tested on ColdFire/5208 (which uses pit.c).
 
-In the switch case entry for the timer routine.
+Thanks for testing! I really appreciate it!
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ypw3i9kmxoq28skx7jy914it@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/hists.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> > CC: Geert Uytterhoeven<geert@linux-m68k.org>
+> > CC: Greg Ungerer<gerg@uclinux.org>
+> > Signed-off-by: John Stultz<johnstul@us.ibm.com>
+> 
+> Acked-by: Greg Ungerer <gerg@uclinux.org>
+> 
+> Do you want me to push these via the m68knommu git tree?
 
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 4663dcb..44210d4 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -314,8 +314,7 @@ static int hist_browser__run(struct hist_browser *self, const char *ev_name,
- 		key = ui_browser__run(&self->b, delay_secs);
- 
- 		switch (key) {
--		case -1:
--			/* FIXME we need to check if it was es.reason == NEWT_EXIT_TIMER */
-+		case K_TIMER:
- 			timer(arg);
- 			ui_browser__update_nr_entries(&self->b, self->hists->nr_entries);
- 			hists__browser_title(self->hists, title, sizeof(title),
-@@ -914,7 +913,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 					"C             Collapse all callchains\n"
- 					"E             Expand all callchains\n"
- 					"d             Zoom into current DSO\n"
--					"t             Zoom into current Thread\n");
-+					"t             Zoom into current Thread");
- 			continue;
- 		case K_ENTER:
- 		case K_RIGHT:
--- 
-1.6.2.5
+I'd prefer it go through either one of the m68k trees.
+
+thanks
+-john
 
