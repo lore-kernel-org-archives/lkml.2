@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab1JZHev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 03:34:51 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:47855 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754655Ab1JZHet (ORCPT
+	id S932177Ab1JZHe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 03:34:57 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36475 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754838Ab1JZHez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 03:34:49 -0400
+	Wed, 26 Oct 2011 03:34:55 -0400
 From: Tao Ma <tm@tao.ma>
 To: linux-ext4@vger.kernel.org
 Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, adilger@dilger.ca
-Subject: [PATCH V1 01/17] ext4: Move extra inode read to a new function.
-Date: Wed, 26 Oct 2011 15:34:12 +0800
-Message-Id: <1319614468-11227-1-git-send-email-tm@tao.ma>
+Subject: [PATCH V1 03/17] ext4: Add read support for inline data.
+Date: Wed, 26 Oct 2011 15:34:14 +0800
+Message-Id: <1319614468-11227-3-git-send-email-tm@tao.ma>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <4EA7B788.3040503@tao.ma>
+In-Reply-To: <1319614468-11227-1-git-send-email-tm@tao.ma>
 References: <4EA7B788.3040503@tao.ma>
+ <1319614468-11227-1-git-send-email-tm@tao.ma>
 X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,54 +24,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tao Ma <boyu.mt@taobao.com>
 
-Currently, in ext4_iget we do a simple check to see whether
-there does exists some information starting from the end
-of i_extra_size. With inline data added, this procedure
-is more complicated. So move it to a new function named
-ext4_iget_extra_inode.
+Let readpage and readpages handle the case when we
+want to read an inlined file.
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: Tao Ma <boyu.mt@taobao.comc.
 ---
- fs/ext4/inode.c |   19 ++++++++++++-------
- 1 files changed, 12 insertions(+), 7 deletions(-)
+ fs/ext4/inode.c |   68 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 68 insertions(+), 0 deletions(-)
 
 diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 986e238..6638f0e 100644
+index 017e119..2fa8cf4 100644
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -3384,6 +3384,16 @@ static blkcnt_t ext4_inode_blocks(struct ext4_inode *raw_inode,
- 	}
+@@ -540,6 +540,9 @@ static int _ext4_get_block(struct inode *inode, sector_t iblock,
+ 	int ret = 0, started = 0;
+ 	int dio_credits;
+ 
++	if (ext4_has_inline_data(inode))
++		return -ERANGE;
++
+ 	map.m_lblk = iblock;
+ 	map.m_len = bh->b_size >> inode->i_blkbits;
+ 
+@@ -2483,6 +2486,12 @@ static sector_t ext4_bmap(struct address_space *mapping, sector_t block)
+ 	journal_t *journal;
+ 	int err;
+ 
++	/*
++	 * XXX: Can we arrive here for a inline file? Maybe not.
++	 */
++	if (ext4_has_inline_data(inode))
++		return 0;
++
+ 	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY) &&
+ 			test_opt(inode->i_sb, DELALLOC)) {
+ 		/*
+@@ -2526,9 +2535,58 @@ static sector_t ext4_bmap(struct address_space *mapping, sector_t block)
+ 	return generic_block_bmap(mapping, block, ext4_get_block);
  }
  
-+static inline void ext4_iget_extra_inode(struct inode *inode,
-+					 struct ext4_inode *raw_inode,
-+					 struct ext4_inode_info *ei)
++static int ext4_read_inline_page(struct inode *inode, struct page *page)
 +{
-+	__le32 *magic = (void *)raw_inode +
-+			EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize;
-+	if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
-+		ext4_set_inode_state(inode, EXT4_STATE_XATTR);
++	void *kaddr;
++	loff_t size;
++	int ret;
++	struct ext4_iloc iloc;
++
++	BUG_ON(!PageLocked(page));
++	BUG_ON(!ext4_has_inline_data(inode));
++
++	ret = ext4_get_inode_loc(inode, &iloc);
++	if (ret)
++		return ret;
++
++	size = i_size_read(inode);
++
++	if (size > PAGE_CACHE_SIZE ||
++	    size > ext4_get_max_inline_size(inode)) {
++		ext4_error_inode(inode, __func__, __LINE__, 0,
++			"bad size %ld for a inline file", (long)size);
++		return -EROFS;
++	}
++
++	kaddr = kmap_atomic(page, KM_USER0);
++	ext4_read_inline_data(inode, &iloc, kaddr, size);
++	flush_dcache_page(page);
++	kunmap_atomic(kaddr, KM_USER0);
++	SetPageUptodate(page);
++
++	brelse(iloc.bh);
++	return 0;
 +}
 +
- struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
++static int ext4_readpage_inline(struct inode *inode, struct page *page)
++{
++	int ret;
++
++	ret = ext4_read_inline_page(inode, page);
++
++	unlock_page(page);
++	return ret;
++}
++
+ static int ext4_readpage(struct file *file, struct page *page)
  {
- 	struct ext4_iloc iloc;
-@@ -3494,13 +3504,8 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 			/* The extra space is currently unused. Use it. */
- 			ei->i_extra_isize = sizeof(struct ext4_inode) -
- 					    EXT4_GOOD_OLD_INODE_SIZE;
--		} else {
--			__le32 *magic = (void *)raw_inode +
--					EXT4_GOOD_OLD_INODE_SIZE +
--					ei->i_extra_isize;
--			if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
--				ext4_set_inode_state(inode, EXT4_STATE_XATTR);
--		}
-+		} else
-+			ext4_iget_extra_inode(inode, raw_inode, ei);
- 	} else
- 		ei->i_extra_isize = 0;
++	struct inode *inode = file->f_mapping->host;
++
+ 	trace_ext4_readpage(page);
++
++	if (ext4_has_inline_data(inode))
++		return ext4_readpage_inline(inode, page);
++
+ 	return mpage_readpage(page, ext4_get_block);
+ }
  
+@@ -2536,6 +2594,12 @@ static int
+ ext4_readpages(struct file *file, struct address_space *mapping,
+ 		struct list_head *pages, unsigned nr_pages)
+ {
++	struct inode *inode = mapping->host;
++
++	/* If the file has inline data, no need to do readpages. */
++	if (ext4_has_inline_data(inode))
++		return 0;
++
+ 	return mpage_readpages(mapping, pages, nr_pages, ext4_get_block);
+ }
+ 
+@@ -2854,6 +2918,10 @@ static ssize_t ext4_direct_IO(int rw, struct kiocb *iocb,
+ 	struct inode *inode = file->f_mapping->host;
+ 	ssize_t ret;
+ 
++	/* Let buffer I/O handle the inline data case. */
++	if (ext4_has_inline_data(inode))
++		return 0;
++
+ 	trace_ext4_direct_IO_enter(inode, offset, iov_length(iov, nr_segs), rw);
+ 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
+ 		ret = ext4_ext_direct_IO(rw, iocb, iov, offset, nr_segs);
 -- 
 1.7.0.4
 
