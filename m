@@ -1,138 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab1JZA3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 20:29:07 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52520 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab1JZA3E (ORCPT
+	id S1754187Ab1JZAca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 20:32:30 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35502 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab1JZAc3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 20:29:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4EA7543E.7050009@jp.fujitsu.com>
-Date: Wed, 26 Oct 2011 09:28:46 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PCI <linux-pci@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH] PCI / ACPI: Make acpiphp ignore root bridges using PCIe
- native hotplug
-References: <201110220043.38635.rjw@sisk.pl> <4EA6B538.7020401@jp.fujitsu.com> <201110251525.27446.rjw@sisk.pl>
-In-Reply-To: <201110251525.27446.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Oct 2011 20:32:29 -0400
+Date: Tue, 25 Oct 2011 20:32:20 -0400 (EDT)
+Message-Id: <20111025.203220.473592143736213946.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 25 Oct 2011 17:32:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/25 22:25), Rafael J. Wysocki wrote:
-> On Tuesday, October 25, 2011, Kenji Kaneshige wrote:
->> Looks good.
->> This is also needed for SHPC native hotplug.
-> 
-> I don't think so, we still leave the SHPC _OSC for the driver to take care
-> of (which may not be the right thing, but I don't feel confident enough to
-> decide :-)).
 
-I think of the case that acpiphp driver is loaded after shpchp driver is unloaded.
-Once native hotplug control is granted to OS, there is no way to return the control
-to firmware. So once shpchp gets the native hotplug control on a given root bridge,
-acpiphp should not try to handle the hotplug slots under it.
+Three bug fixes here, including the sk_clone() error path unlock
+fix from Thomas Gleixner.
 
-Regards,
-Kenji Kaneshige
+As for the wireless warning spew, it is my understanding that person
+most able to fix that bug is in the same room with you right now (hi
+Johannes Berg :-)
 
+Please pull, thanks a lot!
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
->> (2011/10/22 7:43), Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki<rjw@sisk.pl>
->>>
->>> If the kernel has requested control of the PCIe native hotplug
->>> feature for a given root complex, the acpiphp driver should not try
->>> to handle that root complex and it should leave it to pciehp.
->>> Failing to do so causes problems to happen if acpiphp is loaded
->>> before pciehp on such systems.
->>>
->>> To address this issue make find_root_bridges() ignore PCIe root
->>> complexes with PCIe native hotplug enabled and make add_bridge()
->>> return error code if PCIe native hotplug is enabled for the given
->>> root port.  This causes acpiphp to refuse to load if PCIe native
->>> hotplug is enabled for all complexes and to refuse binding to
->>> the root complexes with PCIe native hotplug is enabled.
->>>
->>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
->>> ---
->>>    drivers/pci/hotplug/acpiphp_glue.c |   29 ++++++++++++++++++++++++-----
->>>    1 file changed, 24 insertions(+), 5 deletions(-)
->>>
->>> Index: linux/drivers/pci/hotplug/acpiphp_glue.c
->>> ===================================================================
->>> --- linux.orig/drivers/pci/hotplug/acpiphp_glue.c
->>> +++ linux/drivers/pci/hotplug/acpiphp_glue.c
->>> @@ -458,8 +458,17 @@ static int add_bridge(acpi_handle handle
->>>    {
->>>    	acpi_status status;
->>>    	unsigned long long tmp;
->>> +	struct acpi_pci_root *root;
->>>    	acpi_handle dummy_handle;
->>>
->>> +	/*
->>> +	 * We shouldn't use this bridge if PCIe native hotplug control has been
->>> +	 * granted by the BIOS for it.
->>> +	 */
->>> +	root = acpi_pci_find_root(handle);
->>> +	if (root&&   (root->osc_control_set&   OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
->>> +		return -ENODEV;
->>> +
->>>    	/* if the bridge doesn't have _STA, we assume it is always there */
->>>    	status = acpi_get_handle(handle, "_STA",&dummy_handle);
->>>    	if (ACPI_SUCCESS(status)) {
->>> @@ -1297,13 +1306,23 @@ static void handle_hotplug_event_func(ac
->>>    static acpi_status
->>>    find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->>>    {
->>> +	struct acpi_pci_root *root;
->>>    	int *count = (int *)context;
->>>
->>> -	if (acpi_is_root_bridge(handle)) {
->>> -		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
->>> -				handle_hotplug_event_bridge, NULL);
->>> -			(*count)++;
->>> -	}
->>> +	if (!acpi_is_root_bridge(handle))
->>> +		return AE_OK;
->>> +
->>> +	root = acpi_pci_find_root(handle);
->>> +	if (!root)
->>> +		return AE_OK;
->>> +
->>> +	if (root->osc_control_set&   OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
->>> +		return AE_OK;
->>> +
->>> +	(*count)++;
->>> +	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
->>> +				    handle_hotplug_event_bridge, NULL);
->>> +
->>>    	return AE_OK ;
->>>    }
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->>
->>
-> 
-> 
+The following changes since commit 7670c7010c7b367ca40c3aba02afb36149764a6e:
 
+  Merge branch 'for-linus' of git://github.com/gregungerer/m68knommu (2011-10-25 16:25:48 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+David Woodhouse (1):
+      caif: Fix BUG() with network namespaces
+
+Maciej ¯enczykowski (1):
+      net: make bonding slaves honour master's skb->priority
+
+Thomas Gleixner (1):
+      net: Unlock sock before calling sk_free()
+
+ drivers/net/bonding/bond_main.c |    1 -
+ net/caif/caif_dev.c             |    5 +++--
+ net/core/sock.c                 |    1 +
+ 3 files changed, 4 insertions(+), 3 deletions(-)
