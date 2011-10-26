@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab1JZXet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 19:34:49 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39719 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab1JZXer (ORCPT
+	id S1753485Ab1JZXku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 19:40:50 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43235 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334Ab1JZXkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 19:34:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=mZBLRYXQ2AfvrBfKyq12Qo/qjGRtuK+Sr3f0ymUT9WxKd5lXS1DOa4evbttj/4/x/
-	ZfhSRpT0BcVU6nxvGzyAw==
-Date: Wed, 26 Oct 2011 16:34:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joe Perches <joe@perches.com>
-cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] checkpatch: improve error message for p1-check
-In-Reply-To: <1319670886.21924.22.camel@Joe-Laptop>
-Message-ID: <alpine.DEB.2.00.1110261633190.19579@chino.kir.corp.google.com>
-References: <1319027583-17842-1-git-send-email-w.sang@pengutronix.de> <alpine.DEB.2.00.1110261329240.23111@chino.kir.corp.google.com> <1319669467.21924.18.camel@Joe-Laptop> <alpine.DEB.2.00.1110261607150.6982@chino.kir.corp.google.com>
- <1319670886.21924.22.camel@Joe-Laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 26 Oct 2011 19:40:49 -0400
+Date: Wed, 26 Oct 2011 19:40:45 -0400 (EDT)
+Message-Id: <20111026.194045.2019668159403582571.davem@davemloft.net>
+To: kernel@teksavvy.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: asix usb network driver: nfg
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4EA89972.5060101@teksavvy.com>
+References: <4EA89972.5060101@teksavvy.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 26 Oct 2011 16:40:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Oct 2011, Joe Perches wrote:
+From: Mark Lord <kernel@teksavvy.com>
+Date: Wed, 26 Oct 2011 19:36:18 -0400
 
-> > So we need a combination of the two approaches then, it makes sense to 
-> > only emit the warning if the patched file exists in both prefixes.
+> So, the in-kernel asix driver seems badly broken for a lot of hardware,
+> and the vendor driver also has a slight race somewhere that is cured
+> by enabling debug logging.
 > 
-> I don't think so.  What about something like:
-> 
-> $ diff -urN kernel/foo~ kernel/foo > patch
-> 
-> I think we should only care about the patched file,.
-> 
+> Is there an asix driver maintainer, or anyone else with the time
+> to step up and try to fix these issues?
 
-I mean it only makes sense if both prefixes exist (otherwise patch and 
-git-apply will assume it's not a -p0 patch).
+The issues you speak of are well known for at least two years but
+nobody wants to work on this.
