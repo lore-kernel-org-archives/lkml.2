@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1JZX7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 19:59:16 -0400
+	id S1753578Ab1JZX7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 19:59:33 -0400
 Received: from smtp.outflux.net ([198.145.64.163]:33059 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab1JZX7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 19:59:07 -0400
+	id S1753464Ab1JZX7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 19:59:04 -0400
 X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Oct 2011 19:59:03 EDT
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 1/3] security: Yama LSM
-Date: Wed, 26 Oct 2011 16:49:14 -0700
-Message-Id: <1319672956-17114-2-git-send-email-keescook@chromium.org>
+Subject: [PATCH 3/3] security: Yama: add ptrace relationship tracking interface
+Date: Wed, 26 Oct 2011 16:49:16 -0700
+Message-Id: <1319672956-17114-4-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1319672956-17114-1-git-send-email-keescook@chromium.org>
 References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
@@ -21,489 +21,358 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the Yama Linux Security Module to collect several DAC security
-improvements (symlink, hardlink, and ptrace restrictions) that have existed
-in various forms over the years and have been carried outside the mainline
-kernel by other Linux distributions like Openwall and grsecurity.
-
-As discussed at the Linux Security Summit, I'm resending this patchset
-since it has value to a few distros. It was observed that while Yama is
-not a MAC, this isn't required for an LSM. It has a distinct policy,
-one that enhances DAC security, and that will continue to be its role
-as an LSM.
+Some application suites have external crash handlers that depend
+on being able to use ptrace to generate crash reports (KDE, Wine,
+Chromium, Firefox, etc). Since the inferior process has a defined
+application-specific relationship with the debugger, allow the inferior
+to express that relationship by declaring who can call PTRACE_ATTACH
+against it. The inferior can use prctl() with PR_SET_PTRACER to allow a
+specific PID and its descendants to perform the ptrace instead of only
+a direct ancestor.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
-v6:
- - Fix interaction with overlayfs, thanks to Andy Whitcroft and Leann
-   Ogasawara.
- - Clarify rationale for LSM.
- - Move documentation under security subdirectory.
 v5:
- - resend, with ptrace relationship interface
+ - Use _bh spinlocks, thanks to Ming Lei.
 v4:
- - drop accidentally included fs/exec.c chunk.
+ - make sure to use thread group leader when creating exceptions.
 v3:
- - drop needless cap_ callbacks.
- - fix usage of get_task_comm.
- - drop CONFIG_ of sysctl defaults, as recommended by Andi Kleen.
- - require SYSCTL.
+ - make sure to use thread group leader when searching for exceptions.
 v2:
- - add rcu locking, thanks to Tetsuo Handa.
- - add Documentation/Yama.txt for summary of features.
+ - kmalloc, spinlock init, and doc typo corrections from Tetsuo Handa.
+ - make sure to replace if possible on add, thanks to Eric Paris.
 ---
- Documentation/security/Yama.txt |   91 ++++++++++++++
- security/Kconfig                |    6 +
- security/Makefile               |    2 +
- security/yama/Kconfig           |   14 ++
- security/yama/Makefile          |    3 +
- security/yama/yama_lsm.c        |  250 +++++++++++++++++++++++++++++++++++++++
- 6 files changed, 366 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/security/Yama.txt
- create mode 100644 security/yama/Kconfig
- create mode 100644 security/yama/Makefile
- create mode 100644 security/yama/yama_lsm.c
+ Documentation/security/Yama.txt |   18 +++-
+ include/linux/prctl.h           |    6 +
+ security/yama/yama_lsm.c        |  240 ++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 243 insertions(+), 21 deletions(-)
 
 diff --git a/Documentation/security/Yama.txt b/Documentation/security/Yama.txt
-new file mode 100644
-index 0000000..1916742
---- /dev/null
+index 1916742..9a83aa5 100644
+--- a/Documentation/security/Yama.txt
 +++ b/Documentation/security/Yama.txt
-@@ -0,0 +1,91 @@
-+Yama is a Linux Security Module that collects a number of system-wide DAC
-+security protections that are not handled by the core kernel itself. To
-+select it at boot time, specify "security=yama" (though this will disable
-+any other LSM).
-+
-+Yama is controlled through sysctl in /proc/sys/kernel/yama:
-+
-+- protected_sticky_symlinks
-+- protected_nonaccess_hardlinks
-+- ptrace_scope
-+
-+==============================================================
-+
-+protected_sticky_symlinks:
-+
-+A long-standing class of security issues is the symlink-based
-+time-of-check-time-of-use race, most commonly seen in world-writable
-+directories like /tmp. The common method of exploitation of this flaw
-+is to cross privilege boundaries when following a given symlink (i.e. a
-+root process follows a symlink belonging to another user). For a likely
-+incomplete list of hundreds of examples across the years, please see:
-+http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-+
-+When set to "0", symlink following behavior is unrestricted.
-+
-+When set to "1" symlinks are permitted to be followed only when outside
-+a sticky world-writable directory, or when the uid of the symlink and
-+follower match, or when the directory owner matches the symlink's owner.
-+
-+This protection is based on the restrictions in Openwall and grsecurity.
-+
-+==============================================================
-+
-+protected_nonaccess_hardlinks:
-+
-+Hardlinks can be abused in a similar fashion to symlinks in sticky
-+world-writable directories, but their weakness is not limited to
-+just that scenario. For example, if /etc and /home are on the same
-+partition, a regular user can create a hardlink to /etc/shadow in their
-+home directory. While it retains the original owner and permissions,
-+it is possible for privileged programs that are otherwise symlink-safe
-+to mistakenly access the file through its hardlink. Additionally, a very
-+minor untraceable quota-bypassing local denial of service is possible by
-+an attacker exhausting disk space by filling a world-writable directory
-+with hardlinks.
-+
-+When set to "0", hardlink creation behavior is unrestricted.
-+
-+When set to "1", hardlinks cannot be created to files that a given user
-+would be unable to read and write originally, or are otherwise sensitive.
-+
-+This protection is based on the restrictions in Openwall and grsecurity.
-+
-+==============================================================
-+
-+ptrace_scope:
-+
-+As Linux grows in popularity, it will become a larger target for
-+malware. One particularly troubling weakness of the Linux process
-+interfaces is that a single user is able to examine the memory and
-+running state of any of their processes. For example, if one application
-+(e.g. Pidgin) was compromised, it would be possible for an attacker to
-+attach to other running processes (e.g. Firefox, SSH sessions, GPG agent,
-+etc) to extract additional credentials and continue to expand the scope
-+of their attack without resorting to user-assisted phishing.
-+
-+This is not a theoretical problem. SSH session hijacking
-+(http://www.storm.net.nz/projects/7) and arbitrary code injection
-+(http://c-skills.blogspot.com/2007/05/injectso.html) attacks already
-+exist and remain possible if ptrace is allowed to operate as before.
-+Since ptrace is not commonly used by non-developers and non-admins, system
-+builders should be allowed the option to disable this debugging system.
-+
-+For a solution, some applications use prctl(PR_SET_DUMPABLE, ...) to
-+specifically disallow such ptrace attachment (e.g. ssh-agent), but many
-+do not. A more general solution is to only allow ptrace directly from a
-+parent to a child process (i.e. direct "gdb EXE" and "strace EXE" still
-+work), or with CAP_SYS_PTRACE (i.e. "gdb --pid=PID", and "strace -p PID"
-+still work as root).
-+
-+0 - classic ptrace permissions: a process can PTRACE_ATTACH to any other
-+    process running under the same uid, as long as it is dumpable (i.e.
-+    did not transition uids, start privileged, or have called
-+    prctl(PR_SET_DUMPABLE...) already).
-+
-+1 - restricted ptrace: a process can only call PTRACE_ATTACH on its
-+    descendants when the above classic criteria is also met.
-+
-+This protection is based on the restrictions in grsecurity.
-+
-+==============================================================
-diff --git a/security/Kconfig b/security/Kconfig
-index 51bd5a0..ccc61f8 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -187,6 +187,7 @@ source security/selinux/Kconfig
- source security/smack/Kconfig
- source security/tomoyo/Kconfig
- source security/apparmor/Kconfig
-+source security/yama/Kconfig
+@@ -78,14 +78,26 @@ parent to a child process (i.e. direct "gdb EXE" and "strace EXE" still
+ work), or with CAP_SYS_PTRACE (i.e. "gdb --pid=PID", and "strace -p PID"
+ still work as root).
  
- source security/integrity/Kconfig
- 
-@@ -196,6 +197,7 @@ choice
- 	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
- 	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
- 	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
-+	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
- 	default DEFAULT_SECURITY_DAC
- 
- 	help
-@@ -214,6 +216,9 @@ choice
- 	config DEFAULT_SECURITY_APPARMOR
- 		bool "AppArmor" if SECURITY_APPARMOR=y
- 
-+	config DEFAULT_SECURITY_YAMA
-+		bool "Yama" if SECURITY_YAMA=y
++For software that has defined application-specific relationships
++between a debugging process and its inferior (crash handlers, etc),
++prctl(PR_SET_PTRACER, pid, ...) can be used. An inferior can declare which
++other process (and its descendents) are allowed to call PTRACE_ATTACH
++against it. For example, this is used by KDE, Chromium, and Firefox's
++crash handlers, and by Wine for allowing only Wine processes to ptrace
++each other.
 +
- 	config DEFAULT_SECURITY_DAC
- 		bool "Unix Discretionary Access Controls"
+ 0 - classic ptrace permissions: a process can PTRACE_ATTACH to any other
+     process running under the same uid, as long as it is dumpable (i.e.
+     did not transition uids, start privileged, or have called
+     prctl(PR_SET_DUMPABLE...) already).
  
-@@ -225,6 +230,7 @@ config DEFAULT_SECURITY
- 	default "smack" if DEFAULT_SECURITY_SMACK
- 	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
- 	default "apparmor" if DEFAULT_SECURITY_APPARMOR
-+	default "yama" if DEFAULT_SECURITY_YAMA
- 	default "" if DEFAULT_SECURITY_DAC
+-1 - restricted ptrace: a process can only call PTRACE_ATTACH on its
+-    descendants when the above classic criteria is also met.
++1 - restricted ptrace: a process must have a predefined relationship
++    with the inferior it wants to call PTRACE_ATTACH on. By default,
++    this relationship is that of only its descendants when the above
++    classic criteria is also met. To change the relationship, an
++    inferior can call prctl(PR_SET_PTRACER, debugger, ...) to declare
++    an allowed debugger PID to call PTRACE_ATTACH on the inferior.
  
- endmenu
-diff --git a/security/Makefile b/security/Makefile
-index a5e502f..c26c81e 100644
---- a/security/Makefile
-+++ b/security/Makefile
-@@ -7,6 +7,7 @@ subdir-$(CONFIG_SECURITY_SELINUX)	+= selinux
- subdir-$(CONFIG_SECURITY_SMACK)		+= smack
- subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
- subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
-+subdir-$(CONFIG_SECURITY_YAMA)		+= yama
+-This protection is based on the restrictions in grsecurity.
++The original children-only logic was based on the restrictions in grsecurity.
  
- # always enable default capabilities
- obj-y					+= commoncap.o
-@@ -21,6 +22,7 @@ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
- obj-$(CONFIG_AUDIT)			+= lsm_audit.o
- obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
- obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
-+obj-$(CONFIG_SECURITY_YAMA)		+= yama/built-in.o
- obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
+ ==============================================================
+diff --git a/include/linux/prctl.h b/include/linux/prctl.h
+index a3baeb2..da7837b 100644
+--- a/include/linux/prctl.h
++++ b/include/linux/prctl.h
+@@ -102,4 +102,10 @@
  
- # Object integrity file lists
-diff --git a/security/yama/Kconfig b/security/yama/Kconfig
-new file mode 100644
-index 0000000..1a5d1c1
---- /dev/null
-+++ b/security/yama/Kconfig
-@@ -0,0 +1,14 @@
-+config SECURITY_YAMA
-+	bool "Yama support"
-+	depends on SECURITY
-+	select SECURITYFS
-+	select SECURITY_PATH
-+	default n
-+	help
-+	  This selects Yama, which extends DAC support with additional
-+	  system-wide security settings beyond regular Linux discretionary
-+	  access controls. Currently available are symlink, hardlink, and
-+	  ptrace scope restrictions. Further information can be found in
-+	  Documentation/security/Yama.txt.
-+
-+	  If you are unsure how to answer this question, answer N.
-diff --git a/security/yama/Makefile b/security/yama/Makefile
-new file mode 100644
-index 0000000..8b5e065
---- /dev/null
-+++ b/security/yama/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_SECURITY_YAMA) := yama.o
-+
-+yama-y := yama_lsm.o
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-new file mode 100644
-index 0000000..955e401
---- /dev/null
-+++ b/security/yama/yama_lsm.c
-@@ -0,0 +1,250 @@
+ #define PR_MCE_KILL_GET 34
+ 
 +/*
-+ * Yama Linux Security Module
-+ *
-+ * Author: Kees Cook <kees.cook@canonical.com>
-+ *
-+ * Copyright (C) 2010 Canonical, Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
++ * Set specific pid that is allowed to PTRACE the current task.
++ * A value of 0 mean "no process".
 + */
++#define PR_SET_PTRACER 0x59616d61
 +
-+#include <linux/security.h>
-+#include <linux/sysctl.h>
-+#include <linux/ptrace.h>
-+#include <linux/ratelimit.h>
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index 955e401..a92538c 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -14,15 +14,224 @@
+ #include <linux/security.h>
+ #include <linux/sysctl.h>
+ #include <linux/ptrace.h>
++#include <linux/prctl.h>
+ #include <linux/ratelimit.h>
+ 
+ static int ptrace_scope = 1;
+ static int protected_sticky_symlinks = 1;
+ static int protected_nonaccess_hardlinks = 1;
+ 
++/* describe a PTRACE relationship for potential exception */
++struct ptrace_relation {
++	struct task_struct *tracer;
++	struct task_struct *tracee;
++	struct list_head node;
++};
 +
-+static int ptrace_scope = 1;
-+static int protected_sticky_symlinks = 1;
-+static int protected_nonaccess_hardlinks = 1;
++static LIST_HEAD(ptracer_relations);
++static DEFINE_SPINLOCK(ptracer_relations_lock);
 +
 +/**
-+ * yama_ptrace_access_check - validate PTRACE_ATTACH calls
-+ * @child: child task pointer
-+ * @mode: ptrace attach mode
++ * yama_ptracer_add - add/replace an exception for this tracer/tracee pair
++ * @tracer: the task_struct of the process doing the PTRACE
++ * @tracee: the task_struct of the process to be PTRACEd
 + *
-+ * Returns 0 if following the ptrace is allowed, -ve on error.
++ * Returns 0 if relationship was added, -ve on error.
 + */
-+static int yama_ptrace_access_check(struct task_struct *child,
-+				    unsigned int mode)
++static int yama_ptracer_add(struct task_struct *tracer,
++			    struct task_struct *tracee)
++{
++	int rc = 0;
++	struct ptrace_relation *added;
++	struct ptrace_relation *entry, *relation = NULL;
++
++	added = kmalloc(sizeof(*added), GFP_KERNEL);
++	spin_lock_bh(&ptracer_relations_lock);
++	list_for_each_entry(entry, &ptracer_relations, node)
++		if (entry->tracee == tracee) {
++			relation = entry;
++			break;
++		}
++	if (!relation) {
++		relation = added;
++		if (!relation) {
++			rc = -ENOMEM;
++			goto unlock_out;
++		}
++		relation->tracee = tracee;
++		list_add(&relation->node, &ptracer_relations);
++	}
++	relation->tracer = tracer;
++
++unlock_out:
++	spin_unlock_bh(&ptracer_relations_lock);
++	if (added && added != relation)
++		kfree(added);
++
++	return rc;
++}
++
++/**
++ * yama_ptracer_del - remove exceptions related to the given tasks
++ * @tracer: remove any relation where tracer task matches
++ * @tracee: remove any relation where tracee task matches
++ */
++static void yama_ptracer_del(struct task_struct *tracer,
++			     struct task_struct *tracee)
++{
++	struct ptrace_relation *relation;
++	struct list_head *list, *safe;
++
++	spin_lock_bh(&ptracer_relations_lock);
++	list_for_each_safe(list, safe, &ptracer_relations) {
++		relation = list_entry(list, struct ptrace_relation, node);
++		if (relation->tracee == tracee ||
++		    relation->tracer == tracer) {
++			list_del(&relation->node);
++			kfree(relation);
++		}
++	}
++	spin_unlock_bh(&ptracer_relations_lock);
++}
++
++/**
++ * yama_task_free - check for task_pid to remove from exception list
++ * @task: task being removed
++ */
++static void yama_task_free(struct task_struct *task)
++{
++	yama_ptracer_del(task, task);
++}
++
++/**
++ * yama_task_prctl - check for Yama-specific prctl operations
++ * @option: operation
++ * @arg2: argument
++ * @arg3: argument
++ * @arg4: argument
++ * @arg5: argument
++ *
++ * Return 0 on success, -ve on error.  -ENOSYS is returned when Yama
++ * does not handle the given option.
++ */
++static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
++			   unsigned long arg4, unsigned long arg5)
 +{
 +	int rc;
++	struct task_struct *myself = current;
 +
-+	rc = cap_ptrace_access_check(child, mode);
-+	if (rc != 0)
++	rc = cap_task_prctl(option, arg2, arg3, arg4, arg5);
++	if (rc != -ENOSYS)
 +		return rc;
 +
-+	/* require ptrace target be a child of ptracer on attach */
-+	if (mode == PTRACE_MODE_ATTACH && ptrace_scope &&
-+	    !capable(CAP_SYS_PTRACE)) {
-+		struct task_struct *walker = child;
-+
++	switch (option) {
++	case PR_SET_PTRACER:
 +		rcu_read_lock();
-+		read_lock(&tasklist_lock);
-+		while (walker->pid > 0) {
-+			if (walker == current)
-+				break;
-+			walker = walker->real_parent;
-+		}
-+		if (walker->pid == 0)
-+			rc = -EPERM;
-+		read_unlock(&tasklist_lock);
++		if (!thread_group_leader(myself))
++			myself = myself->group_leader;
++		get_task_struct(myself);
 +		rcu_read_unlock();
-+	}
 +
-+	if (rc) {
-+		char name[sizeof(current->comm)];
-+		printk_ratelimited(KERN_INFO "ptrace of non-child"
-+			" pid %d was attempted by: %s (pid %d)\n",
-+			child->pid,
-+			get_task_comm(name, current),
-+			current->pid);
++		if (arg2 == 0) {
++			yama_ptracer_del(NULL, myself);
++			rc = 0;
++		} else {
++			struct task_struct *tracer;
++
++			rcu_read_lock();
++			tracer = find_task_by_vpid(arg2);
++			if (tracer)
++				get_task_struct(tracer);
++			else
++				rc = -EINVAL;
++			rcu_read_unlock();
++
++			if (tracer) {
++				rc = yama_ptracer_add(tracer, myself);
++				put_task_struct(tracer);
++			}
++		}
++
++		put_task_struct(myself);
++		break;
 +	}
 +
 +	return rc;
 +}
 +
 +/**
-+ * yama_inode_follow_link - check for symlinks in sticky world-writeable dirs
-+ * @dentry: The inode/dentry of the symlink
-+ * @nameidata: The path data of the symlink
++ * task_is_descendant - walk up a process family tree looking for a match
++ * @parent: the process to compare against while walking up from child
++ * @child: the process to start from while looking upwards for parent
 + *
-+ * In the case of the protected_sticky_symlinks sysctl being enabled,
-+ * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
-+ * in a sticky world-writable directory.  This is to protect privileged
-+ * processes from failing races against path names that may change out
-+ * from under them by way of other users creating malicious symlinks.
-+ * It will permit symlinks to only be followed when outside a sticky
-+ * world-writable directory, or when the uid of the symlink and follower
-+ * match, or when the directory owner matches the symlink's owner.
-+ *
-+ * Returns 0 if following the symlink is allowed, -ve on error.
++ * Returns 1 if child is a descendant of parent, 0 if not.
 + */
-+static int yama_inode_follow_link(struct dentry *dentry,
-+				  struct nameidata *nameidata)
++static int task_is_descendant(struct task_struct *parent,
++			      struct task_struct *child)
 +{
 +	int rc = 0;
-+	const struct inode *parent;
-+	const struct inode *inode;
-+	const struct cred *cred;
++	struct task_struct *walker = child;
 +
-+	if (!protected_sticky_symlinks)
++	if (!parent || !child)
 +		return 0;
 +
-+	/* if inode isn't a symlink, don't try to evaluate blocking it */
-+	inode = dentry->d_inode;
-+	if (!S_ISLNK(inode->i_mode))
-+		return 0;
-+
-+	/* owner and follower match? */
-+	cred = current_cred();
-+	if (cred->fsuid == inode->i_uid)
-+		return 0;
-+
-+	/* check parent directory mode and owner */
-+	spin_lock(&dentry->d_lock);
-+	parent = dentry->d_parent->d_inode;
-+	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
-+	    parent->i_uid != inode->i_uid) {
-+		rc = -EACCES;
++	rcu_read_lock();
++	read_lock(&tasklist_lock);
++	if (!thread_group_leader(parent))
++		parent = parent->group_leader;
++	while (walker->pid > 0) {
++		if (!thread_group_leader(walker))
++			walker = walker->group_leader;
++		if (walker == parent) {
++			rc = 1;
++			break;
++		}
++		walker = walker->real_parent;
 +	}
-+	spin_unlock(&dentry->d_lock);
-+
-+	if (rc) {
-+		char name[sizeof(current->comm)];
-+		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
-+			"following attempted in sticky world-writable "
-+			"directory by %s (fsuid %d != %d)\n",
-+			get_task_comm(name, current),
-+			cred->fsuid, inode->i_uid);
-+	}
++	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
 +
 +	return rc;
 +}
 +
-+static int yama_generic_permission(struct inode *inode, int mask)
-+{
-+	int retval;
-+
-+	if (inode->i_op->permission)
-+		retval = inode->i_op->permission(inode, mask);
-+	else
-+		retval = generic_permission(inode, mask);
-+	return retval;
-+}
-+
 +/**
-+ * yama_path_link - verify that hardlinking is allowed
-+ * @old_dentry: the source inode/dentry to hardlink from
-+ * @new_dir: target directory
-+ * @new_dentry: the target inode/dentry to hardlink to
++ * ptracer_exception_found - tracer registered as exception for this tracee
++ * @tracer: the task_struct of the process attempting PTRACE
++ * @tracee: the task_struct of the process to be PTRACEd
 + *
-+ * Block hardlink when all of:
-+ *  - fsuid does not match inode
-+ *  - not CAP_FOWNER
-+ *  - and at least one of:
-+ *    - inode is not a regular file
-+ *    - inode is setuid
-+ *    - inode is setgid and group-exec
-+ *    - access failure for read and write
-+ *
-+ * Returns 0 if successful, -ve on error.
++ * Returns 1 if tracer has is ptracer exception ancestor for tracee.
 + */
-+static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
-+			  struct dentry *new_dentry)
++static int ptracer_exception_found(struct task_struct *tracer,
++				   struct task_struct *tracee)
 +{
 +	int rc = 0;
-+	struct inode *inode = old_dentry->d_inode;
-+	const int mode = inode->i_mode;
-+	const struct cred *cred = current_cred();
++	struct ptrace_relation *relation;
++	struct task_struct *parent = NULL;
 +
-+	if (!protected_nonaccess_hardlinks)
-+		return 0;
++	spin_lock_bh(&ptracer_relations_lock);
 +
-+	if (cred->fsuid != inode->i_uid &&
-+	    (!S_ISREG(mode) || (mode & S_ISUID) ||
-+	     ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP)) ||
-+	     (yama_generic_permission(inode, MAY_READ | MAY_WRITE))) &&
-+	    !capable(CAP_FOWNER)) {
-+		char name[sizeof(current->comm)];
-+		printk_ratelimited(KERN_INFO "non-accessible hardlink"
-+			" creation was attempted by: %s (fsuid %d)\n",
-+			get_task_comm(name, current),
-+			cred->fsuid);
++	rcu_read_lock();
++	read_lock(&tasklist_lock);
++	if (!thread_group_leader(tracee))
++		tracee = tracee->group_leader;
++	list_for_each_entry(relation, &ptracer_relations, node)
++		if (relation->tracee == tracee) {
++			parent = relation->tracer;
++			break;
++		}
++	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
++
++	if (task_is_descendant(parent, tracer))
++		rc = 1;
++	spin_unlock_bh(&ptracer_relations_lock);
++
++	return rc;
++}
++
+ /**
+  * yama_ptrace_access_check - validate PTRACE_ATTACH calls
+- * @child: child task pointer
++ * @child: task that current task is attempting to PTRACE
+  * @mode: ptrace attach mode
+  *
+  * Returns 0 if following the ptrace is allowed, -ve on error.
+@@ -32,27 +241,20 @@ static int yama_ptrace_access_check(struct task_struct *child,
+ {
+ 	int rc;
+ 
++	/* If standard caps disallows it, so does Yama.  We should
++	 * only tighten restrictions further.
++	 */
+ 	rc = cap_ptrace_access_check(child, mode);
+-	if (rc != 0)
++	if (rc)
+ 		return rc;
+ 
+ 	/* require ptrace target be a child of ptracer on attach */
+-	if (mode == PTRACE_MODE_ATTACH && ptrace_scope &&
+-	    !capable(CAP_SYS_PTRACE)) {
+-		struct task_struct *walker = child;
+-
+-		rcu_read_lock();
+-		read_lock(&tasklist_lock);
+-		while (walker->pid > 0) {
+-			if (walker == current)
+-				break;
+-			walker = walker->real_parent;
+-		}
+-		if (walker->pid == 0)
+-			rc = -EPERM;
+-		read_unlock(&tasklist_lock);
+-		rcu_read_unlock();
+-	}
++	if (mode == PTRACE_MODE_ATTACH &&
++	    ptrace_scope &&
++	    !capable(CAP_SYS_PTRACE) &&
++	    !task_is_descendant(current, child) &&
++	    !ptracer_exception_found(current, child))
 +		rc = -EPERM;
-+	}
-+
-+	return rc;
-+}
-+
-+static struct security_operations yama_ops = {
-+	.name =			"yama",
-+
-+	.ptrace_access_check =	yama_ptrace_access_check,
-+	.inode_follow_link =	yama_inode_follow_link,
-+	.path_link =		yama_path_link,
-+};
-+
-+#ifdef CONFIG_SYSCTL
-+static int zero;
-+static int one = 1;
-+
-+struct ctl_path yama_sysctl_path[] = {
-+	{ .procname = "kernel", },
-+	{ .procname = "yama", },
-+	{ }
-+};
-+
-+static struct ctl_table yama_sysctl_table[] = {
-+	{
-+		.procname       = "protected_sticky_symlinks",
-+		.data           = &protected_sticky_symlinks,
-+		.maxlen         = sizeof(int),
-+		.mode           = 0644,
-+		.proc_handler   = proc_dointvec_minmax,
-+		.extra1         = &zero,
-+		.extra2         = &one,
-+	},
-+	{
-+		.procname       = "protected_nonaccess_hardlinks",
-+		.data           = &protected_nonaccess_hardlinks,
-+		.maxlen         = sizeof(int),
-+		.mode           = 0644,
-+		.proc_handler   = proc_dointvec_minmax,
-+		.extra1         = &zero,
-+		.extra2         = &one,
-+	},
-+	{
-+		.procname       = "ptrace_scope",
-+		.data           = &ptrace_scope,
-+		.maxlen         = sizeof(int),
-+		.mode           = 0644,
-+		.proc_handler   = proc_dointvec_minmax,
-+		.extra1         = &zero,
-+		.extra2         = &one,
-+	},
-+	{ }
-+};
-+#endif /* CONFIG_SYSCTL */
-+
-+static __init int yama_init(void)
-+{
-+	if (!security_module_enable(&yama_ops))
-+		return 0;
-+
-+	printk(KERN_INFO "Yama: becoming mindful.\n");
-+
-+	if (register_security(&yama_ops))
-+		panic("Yama: kernel registration failed.\n");
-+
-+#ifdef CONFIG_SYSCTL
-+	if (!register_sysctl_paths(yama_sysctl_path, yama_sysctl_table))
-+		panic("Yama: sysctl registration failed.\n");
-+#endif
-+
-+	return 0;
-+}
-+
-+security_initcall(yama_init);
+ 
+ 	if (rc) {
+ 		char name[sizeof(current->comm)];
+@@ -185,6 +387,8 @@ static struct security_operations yama_ops = {
+ 	.ptrace_access_check =	yama_ptrace_access_check,
+ 	.inode_follow_link =	yama_inode_follow_link,
+ 	.path_link =		yama_path_link,
++	.task_prctl =		yama_task_prctl,
++	.task_free =		yama_task_free,
+ };
+ 
+ #ifdef CONFIG_SYSCTL
 -- 
 1.7.5.4
 
