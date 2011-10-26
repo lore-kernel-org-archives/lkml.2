@@ -1,41 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab1JZUCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 16:02:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5152 "EHLO mga11.intel.com"
+	id S1752456Ab1JZUGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 16:06:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26655 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab1JZUCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 16:02:04 -0400
+	id S1751338Ab1JZUGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 16:06:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,411,1315206000"; 
-   d="scan'208";a="78312285"
-Subject: Re: [Ilw] Re: iwlagn is getting very shaky
+   d="scan'208";a="78313383"
+Subject: Re: wifi iwlagn fails to authenticate after wake from suspend
 From: wwguy <wey-yi.w.guy@intel.com>
-To: Richard Yao <ryao@cs.stonybrook.edu>
-Cc: Norbert Preining <preining@logic.at>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
+To: David Rientjes <rientjes@google.com>, johannes.berg@intel.com
+Cc: Gene Smith <gds@chartertn.net>,
         "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <CABDyM6T-_UWjQtb9E8Yie1kj5UpDHZNRTb13xJBt=YFczbwxZA@mail.gmail.com>
-References: <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
-	 <1319004836.31823.57.camel@wwguy-huron>
-	 <20111020045927.GB23044@gamma.logic.tuwien.ac.at>
-	 <1319119852.2111.2.camel@wwguy-ubuntu>
-	 <20111021012442.GB26758@gamma.logic.tuwien.ac.at>
-	 <alpine.DEB.2.00.1110231424500.17218@chino.kir.corp.google.com>
-	 <20111026025014.GB24956@gamma.logic.tuwien.ac.at>
-	 <1319601333.14693.19.camel@wwguy-ubuntu>
-	 <20111026040332.GF24956@gamma.logic.tuwien.ac.at>
-	 <1319601654.14693.20.camel@wwguy-ubuntu>
-	 <20111026043419.GA30368@gamma.logic.tuwien.ac.at>
-	 <CABDyM6T-_UWjQtb9E8Yie1kj5UpDHZNRTb13xJBt=YFczbwxZA@mail.gmail.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1110252325090.20273@chino.kir.corp.google.com>
+References: <j881g5$tdf$1@dough.gmane.org>
+	 <alpine.DEB.2.00.1110252325090.20273@chino.kir.corp.google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Oct 2011 12:56:05 -0700
-Message-ID: <1319658965.14693.25.camel@wwguy-ubuntu>
+Date: Wed, 26 Oct 2011 13:00:16 -0700
+Message-ID: <1319659216.14693.26.camel@wwguy-ubuntu>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -43,57 +29,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 21:54 -0700, Richard Yao wrote:
-> Dear Norbert,
-> 
-> Try doing "iwconfig wlan0 rts 0". As I said less than an hour ago in
-> my rather lengthy post to the Linux mailing list, that made things
-> better for me, but not perfect.
-> 
-> Speaking of which, that post described my findings on why I was having
-> wireless issues that I did not post several weeks ago because I didn't
-> think anyone would care. Since people do seem to care, I probably
-> should have CCed that email to everyone else that was on people's CC
-> lists, but I am new to mailing lists (and to Linux), so I did not
-> think of it until now.
-> 
-yes we care, sorry to miss your email thread. please provide  more
-information about your issue.
+Johannes, any idea?
 
 Thanks
 Wey
 
+On Tue, 2011-10-25 at 23:27 -0700, David Rientjes wrote:
+> On Wed, 26 Oct 2011, Gene Smith wrote:
 > 
-> On Wed, Oct 26, 2011 at 12:34 AM, Norbert Preining <preining@logic.at> wrote:
-> > On Di, 25 Okt 2011, wwguy wrote:
-> >> > But *I* cannot be sure about it ;-)
-> >> >
-> >> Are you seeing this without suspend/resume?
-> >
-> > Yes. I just shut down and started, and the same happens again. If you
-> > need the dmesg output let me know.
-> >
-> > Best wishes
-> >
-> > Norbert
-> > ------------------------------------------------------------------------
-> > Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> > JAIST, Japan                                 TeX Live & Debian Developer
-> > DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> > ------------------------------------------------------------------------
-> > RUNCORN (n.)
-> > A peeble (q.v.) which is larger that a belper (q.v.)
-> >                        --- Douglas Adams, The Meaning of Liff
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
+> > Now after upgrade to Ubuntu 11.10 when resume from suspend, wifi fails to
+> > reconnect saying waiting for authentication. When I use older kernel, 2.4.38
+> > instead of the new 3.0.0, it still works OK. If using ethernet, after wake
+> > from suspend it always works OK.
+> > 
 > 
-> _______________________________________________
-> ilw mailing list
-> ilw@linux.intel.com
-> http://linux.intel.com/mailman/listinfo/ilw
+> So we need to bisect between 2.4.38 and 3.0.0? :)  I'm running ubuntu 
+> 11.10 on a home laptop so I'll give this a try as well when I can if I can 
+> put up with unity for that long.
+> 
+> > More details on this bug are here
+> > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/880648
+> > and here
+> > https://bugzilla.redhat.com/show_bug.cgi?id=7374
+> > 
+> > Tried new Ubuntu kernel 3.1-rc10 did not help. Did not try an alternate kernel
+> > with Fedora 15.
+> > 
+> > The common failure messages seen with Ubuntu and Fedora is this:
+> > 
+> > <info> (wlan0): device state change: need-auth -> failed (reason 'no-secrets')
+> > [60 120 7]
+> > Oct 24 01:20:00 hplt NetworkManager[1016]: <warn> Activation (wlan0) failed
+> > for access point (dbnet)
+> > 
+> > After this occurs, no further attempt to authenticate wifi occur and a red X
+> > appears over the wifi icon. I must then use ethernet (or reboot).
+> > 
+> 
+> Adding wireless folks to the cc.
 
 
