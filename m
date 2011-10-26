@@ -1,73 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab1JZBqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 21:46:15 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:11048 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754297Ab1JZBqO convert rfc822-to-8bit (ORCPT
+	id S932084Ab1JZBsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 21:48:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53925 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab1JZBsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 21:46:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=szRUuBF/kz2OwpkR3/pViwq3BMlAO2IqehmWEF/M1yjSWyiu1M8CXgWvDHiwagdiz
-	jasinAzjgwsa58fg7XZ1g==
+	Tue, 25 Oct 2011 21:48:10 -0400
+Date: Wed, 26 Oct 2011 09:47:58 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111026014758.GA7195@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1318874090.4172.84.camel@twins>
+ <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>
+ <1318879396.4172.92.camel@twins>
+ <alpine.LFD.2.02.1110172237030.3240@ionos>
+ <alpine.LFD.2.02.1110181037120.3240@ionos>
+ <1318928713.21167.4.camel@twins>
+ <20111018182046.GF1309@hostway.ca>
+ <alpine.LFD.2.02.1110182146440.3240@ionos>
+ <CA+55aFyk50v0hRNbtfF3cskAH7U-yWpHQzA+tRDFZVa6n-F_yw@mail.gmail.com>
+ <20111025152631.GA17008@hostway.ca>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1110251513520.26017@chino.kir.corp.google.com>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
-	<20111025090956.GA10797@suse.de>
-	<alpine.DEB.2.00.1110251513520.26017@chino.kir.corp.google.com>
-Date: Tue, 25 Oct 2011 18:46:10 -0700
-X-Google-Sender-Auth: jUNeSbyWHCxcYJT9VCR9zex6cFc
-Message-ID: <CAMbhsRQ3y2SBwEfjiYgfxz2-h0fgn20mLBYgFuBwGqon0f-a8g@mail.gmail.com>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-From: Colin Cross <ccross@android.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111025152631.GA17008@hostway.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 3:18 PM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 25 Oct 2011, Mel Gorman wrote:
->
->> That said, it will be difficult to remember why checking __GFP_NOFAIL in
->> this case is necessary and someone might "optimitise" it away later. It
->> would be preferable if it was self-documenting. Maybe something like
->> this? (This is totally untested)
->>
->
-> __GFP_NOFAIL _should_ be optimized away in this case because all he's
-> passing is __GFP_WAIT | __GFP_NOFAIL.  That doesn't make any sense unless
-> all you want to do is livelock.
+On Tue, Oct 25, 2011 at 08:26:31AM -0700, Simon Kirby wrote:
+> On Tue, Oct 18, 2011 at 01:12:41PM -0700, Linus Torvalds wrote:
+> 
+> > On Tue, Oct 18, 2011 at 12:48 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > >
+> > > It does not look related.
+> > 
+> > Yeah, the only lock held there seems to be the socket lock, and it
+> > looks like all CPU's are spinning on it.
+> > 
+> > > Could you try to reproduce that problem with
+> > > lockdep enabled? lockdep might make it go away, but it's definitely
+> > > worth a try.
+> > 
+> > And DEBUG_SPINLOCK / DEBUG_SPINLOCK_SLEEP too. Maybe you're triggering
+> > some odd networking thing.  It sounds unlikely, but maybe some error
+> > case you get into doesn't release the socket lock.
+> > 
+> > I think PROVE_LOCKING already enables DEBUG_SPINLOCK, but the sleeping
+> > lock thing is separate, iirc.
+> 
+> I think the config option you were trying to think of is
+> CONFIG_DEBUG_ATOMIC_SLEEP, which enables CONFIG_PREEMPT_COUNT.
+> 
+> By the way, we got this WARN_ON_ONCE while running lockdep elsewhere:
+> 
+>        /*
+>         * We can walk the hash lockfree, because the hash only
+>         * grows, and we are careful when adding entries to the end:
+>         */
+>        list_for_each_entry(class, hash_head, hash_entry) {
+>                if (class->key == key) {
+>                        WARN_ON_ONCE(class->name != lock->name);
 
-__GFP_NOFAIL is not set in the case that I care about.  If my change
-is hit, no forward progress has been made, so I agree it should not
-honor __GFP_NOFAIL.
+Someone has hit this before, maybe you can try the patch in:
+http://marc.info/?l=linux-kernel&m=131919035525533
 
-> __GFP_NOFAIL doesn't mean the page allocator would infinitely loop in all
-> conditions.  That's why GFP_ATOMIC | __GFP_NOFAIL actually fails, and I
-> would argue that __GFP_WAIT | __GFP_NOFAIL should fail as well since it's
-> the exact same condition except doesn't have access to the extra memory
-> reserves.
->
-> Suspend needs to either set __GFP_NORETRY to avoid the livelock if it's
-> going to disable all means of memory reclaiming or freeing in the page
-> allocator.  Or, better yet, just make it GFP_NOWAIT.
->
+Thanks,
+Yong
 
-It would be nice to give compaction and the slab shrinker a chance to
-recover a few pages, both methods will work fine in suspend.
-GFP_NOWAIT will prevent them from ever running, and __GFP_NORETRY will
-give up even if they are making progress but haven't recovered enough
-pages.
+>                        return class;
+>                }
+>        }
+> 
+> [19274.691090] ------------[ cut here ]------------
+> [19274.691107] WARNING: at kernel/lockdep.c:690 __lock_acquire+0xfd6/0x2180()
+> [19274.691112] Hardware name: PowerEdge 2950
+> [19274.691115] Modules linked in: drbd lru_cache cn ipmi_devintf ipmi_si ipmi_msghandler sata_sil24 bnx2
+> [19274.691137] Pid: 4416, comm: heartbeat Not tainted 3.1.0-hw-lockdep+ #52
+> [19274.691141] Call Trace:
+> [19274.691149]  [<ffffffff81098f96>] ? __lock_acquire+0xfd6/0x2180
+> [19274.691156]  [<ffffffff8105c4f0>] warn_slowpath_common+0x80/0xc0
+> [19274.691163]  [<ffffffff8105c545>] warn_slowpath_null+0x15/0x20
+> [19274.691169]  [<ffffffff81098f96>] __lock_acquire+0xfd6/0x2180
+> [19274.691175]  [<ffffffff8109a2e9>] ? lock_release_non_nested+0x1a9/0x340
+> [19274.691181]  [<ffffffff8109a7b9>] lock_acquire+0x109/0x140
+> [19274.691185]  [<ffffffff8104a302>] ? double_rq_lock+0x52/0x80
+> [19274.691191]  [<ffffffff813a4f8a>] ? __delay+0xa/0x10
+> [19274.691197]  [<ffffffff816f55fa>] _raw_spin_lock_nested+0x3a/0x50
+> [19274.691201]  [<ffffffff8104a302>] ? double_rq_lock+0x52/0x80
+> [19274.691205]  [<ffffffff8104a302>] double_rq_lock+0x52/0x80
+> [19274.691210]  [<ffffffff81058167>] load_balance+0x897/0x16e0
+> [19274.691215]  [<ffffffff81058199>] ? load_balance+0x8c9/0x16e0
+> [19274.691219]  [<ffffffff8104d172>] ? update_shares+0xd2/0x150
+> [19274.691226]  [<ffffffff816f2572>] ? __schedule+0x842/0xa20
+> [19274.691232]  [<ffffffff816f2608>] __schedule+0x8d8/0xa20
+> [19274.691238]  [<ffffffff816f2572>] ? __schedule+0x842/0xa20
+> [19274.691243]  [<ffffffff81063e87>] ? local_bh_enable+0xa7/0x110
+> [19274.691249]  [<ffffffff8169c008>] ? unix_stream_recvmsg+0x1d8/0x7f0
+> [19274.691254]  [<ffffffff81614c88>] ? dev_queue_xmit+0x1a8/0x8a0
+> [19274.691258]  [<ffffffff816f282a>] schedule+0x3a/0x60
+> [19274.691265]  [<ffffffff816f4515>] schedule_hrtimeout_range_clock+0x105/0x120
+> [19274.691270]  [<ffffffff81096c9d>] ? trace_hardirqs_on+0xd/0x10
+> [19274.691276]  [<ffffffff81080d89>] ? add_wait_queue+0x49/0x60
+> [19274.691282]  [<ffffffff816f453e>] schedule_hrtimeout_range+0xe/0x10
+> [19274.691291]  [<ffffffff8113dc04>] poll_schedule_timeout+0x44/0x70
+> [19274.691297]  [<ffffffff8113e29c>] do_sys_poll+0x33c/0x4f0
+> [19274.691303]  [<ffffffff8113dcf0>] ? poll_freewait+0xc0/0xc0
+> [19274.691309]  [<ffffffff8113ddf0>] ? __pollwait+0x100/0x100
+> [19274.691317]  [<ffffffff81602c3d>] ? sock_update_classid+0xfd/0x140
+> [19274.691323]  [<ffffffff81602bb0>] ? sock_update_classid+0x70/0x140
+> [19274.691330]  [<ffffffff815ff1f7>] ? sock_recvmsg+0xf7/0x130
+> [19274.691336]  [<ffffffff81098450>] ? __lock_acquire+0x490/0x2180
+> [19274.691343]  [<ffffffff8110427e>] ? might_fault+0x4e/0xa0
+> [19274.691351]  [<ffffffff8101a129>] ? sched_clock+0x9/0x10
+> [19274.691356]  [<ffffffff810944cd>] ? trace_hardirqs_off+0xd/0x10
+> [19274.691363]  [<ffffffff815ffb0b>] ? sys_recvfrom+0xbb/0x120
+> [19274.691370]  [<ffffffff81082540>] ? process_cpu_clock_getres+0x10/0x10
+> [19274.691376]  [<ffffffff8110427e>] ? might_fault+0x4e/0xa0
+> [19274.691383]  [<ffffffff8110427e>] ? might_fault+0x4e/0xa0
+> [19274.691390]  [<ffffffff816fe0ca>] ? sysret_check+0x2e/0x69
+> [19274.691396]  [<ffffffff8113e647>] sys_poll+0x77/0x110
+> [19274.691402]  [<ffffffff816fe092>] system_call_fastpath+0x16/0x1b
+> [19274.691407] ---[ end trace 74fbaae9066aadcc ]---
+> 
+> Simon-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Converting suspend to GFP_NOWAIT would simply be ~GFP_KERNEL instead
-of ~GFP_IOFS in pm_restrict_gfp_mask().
+-- 
+Only stand for myself
