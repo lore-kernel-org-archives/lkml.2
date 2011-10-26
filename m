@@ -1,93 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab1JZGYY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 02:24:24 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:41648 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754009Ab1JZGYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 02:24:23 -0400
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Oct 2011 02:24:23 EDT
-Date: Wed, 26 Oct 2011 02:15:21 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Roland Vossen <rvossen@broadcom.com>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
-	built in-tree
-Message-ID: <20111026061521.GB16408@Krystal>
-References: <1319461948.31243.31.camel@deadeye> <4EA57CBF.2050901@xenotime.net> <87k47tpvvm.fsf@rustcorp.com.au> <20111025153855.GA24779@elliptictech.com> <1319558749.11727.6.camel@deadeye> <20111025165142.GA25354@elliptictech.com> <20111025200455.GA6376@kroah.com> <20111025201723.GA25063@redhat.com> <87zkgoo09f.fsf@rustcorp.com.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754237Ab1JZG02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 02:26:28 -0400
+Received: from dns1.mips.com ([12.201.5.69]:32928 "EHLO dns1.mips.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540Ab1JZG01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 02:26:27 -0400
+Message-ID: <4EA7A7FB.40304@mips.com>
+Date: Wed, 26 Oct 2011 14:26:03 +0800
+From: Deng-Cheng Zhu <dczhu@mips.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH 2/2] tools/perf: Make group_fd static and move its
+ place in __perf_evsel__open()
+References: <1319453820-12992-1-git-send-email-dczhu@mips.com> <1319453820-12992-3-git-send-email-dczhu@mips.com> <20111024140328.GA5770@ghostprotocols.net> <20111025152309.GA7623@ghostprotocols.net>
+In-Reply-To: <20111025152309.GA7623@ghostprotocols.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <87zkgoo09f.fsf@rustcorp.com.au>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 02:03:09 up 566 days, 15:52,  3 users,  load average: 1.03, 0.58,
-	0.25
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
+X-EMS-STAMP: xkOxesOMUwnMNvlMgMbWsQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rusty Russell (rusty@rustcorp.com.au) wrote:
-> On Tue, 25 Oct 2011 16:17:24 -0400, Dave Jones <davej@redhat.com> wrote:
-> > commit 7816c45bf13255157c00fb8aca86cb64d825e878
-> > Author: Roland Vossen <rvossen@broadcom.com>
-> > Date:   Thu Apr 7 11:20:58 2011 +0200
-> > 
-> >     modules: Enabled dynamic debugging for staging modules
-> ...
-> >     
-> >     Signed-off-by: Roland Vossen <rvossen@broadcom.com>
-> >     Acked-by: Jason Baron <jbaron@redhat.com>
-> >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> Greg, you know better.  This is why we have maintainers: I can't track
-> patches I don't see.  Grrr...
-> 
-> > If we want to support out of tree modules with this, should we just nuke the
-> > whole check, or do we still want to prevent certain types of tainted kernels
-> > from using this stuff ?
-> 
-> It goes back to the first implementation of kernel markers.  IIRC, it
-> was to prevent dynamic debug stuff from circumventing licensing, but
-> testing for *any* taint seems overbroad.  Mathieu?
+On 10/25/2011 11:23 PM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Oct 24, 2011 at 12:03:28PM -0200, Arnaldo Carvalho de Melo escreveu:
+>> Em Mon, Oct 24, 2011 at 06:57:00PM +0800, Deng-Cheng Zhu escreveu:
+>>> __perf_evsel__open() is called per event, it does not work for all the
+>>> grouped events at one time. So, currently group_fd will alway be -1 for
+>>> the events in a group. This patch fixes it.
+>>>
+>>> Signed-off-by: Deng-Cheng Zhu<dczhu@mips.com>
+>>> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
+>>> Cc: Paul Mackerras<paulus@samba.org>
+>>> Cc: Ingo Molnar<mingo@elte.hu>
+>>> Cc: Arnaldo Carvalho de Melo<acme@ghostprotocols.net>
+>>> ---
+>>>   tools/perf/util/evsel.c |    3 +--
+>>>   1 files changed, 1 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>>> index e389815..7bd0d9d 100644
+>>> --- a/tools/perf/util/evsel.c
+>>> +++ b/tools/perf/util/evsel.c
+>>> @@ -219,9 +219,8 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>>>   	}
+>>>
+>>>   	for (cpu = 0; cpu<  cpus->nr; cpu++) {
+>>> -		int group_fd = -1;
+>>> -
+>>>   		for (thread = 0; thread<  threads->nr; thread++) {
+>>> +			static int group_fd = -1;
+>>>
+>>>   			if (!evsel->cgrp)
+>>>   				pid = threads->map[thread];
+>>
+>> Lets not do it that way, using statics for this is humm, ugly, IMHO.
+>>
+>> Just pass an integer pointer that is a member of perf_evlist, I'll work
+>> on a patch now.
+>>
+>> Thanks for reporting the bug tho!
+>
+> Can you try this patch?
+>
+> I tested it with:
+>
+> [root@emilia ~]# perf top -e cycles -e instructions --group
+>
+> and
+>
+> [root@emilia ~]# perf record -e cycles -e instructions --group -a sleep 2
+>
 
-This check for tainted modules was first introduced with markers, and
-then used by tracepoints, and then also by dynamic debug. The rationale
-for this check was mainly to ensure that the marker/tracepoint code
-would not trigger a crash when loading a module with incompatible module
-header, originally compiled for an older kernel, into a newer kernel.
-This problem would happen even if the said module does not contain any
-marker/tracepoint, because we happen to try to use fields that are
-non-existent in the module header.
+Your patch does fix the group fd issue. But to get event grouping
+workable, the event state fix is still needed. Please see the discussion
+here: http://www.spinics.net/lists/mips/msg42190.html
 
-AFAIK, dynamic debug use a similar trick that require extra members in
-the module header, so checking that the module header format is
-compatible with the kernel would be enough. Is there a taint flag that
-allows us to check for this more narrowly ? TAINT_FORCED_MODULE would
-probably be the closest one we have now, although we might want to be
-more specific than that.
+With _only_ your patch applied, I tested with the following commands on
+MIPS 74K (4 counters available in total):
 
-Thanks,
+perf stat -g -e 
+L1-dcache-load-misses,cycles,LLC-load-misses,iTLB-loads,instructions 
+find / >/dev/null
 
-Mathieu
+I tried to group up to 5 events in the hope of seeing NOSPC error. But
+the command didn't fail and output:
 
-> 
-> Thanks,
-> Rusty.
-> PS.  Can't see how this related to lockdep either...
+  Performance counter stats for 'find /':
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+            9300823 L1-dcache-load-misses
+      <not counted> cycles
+      <not counted> LLC-load-misses
+      <not counted> iTLB-loads
+      <not counted> instructions
+
+        8.463207591 seconds time elapsed
+
+This is due to the event state check in validate_group() filtering out
+the grouped events in OFF state. They are in OFF state because we are
+running the command with the perf tool as opposed to attaching to an
+existing task:
+
+builtin-stat.c:create_perf_stat_counter():
+
+         if (target_pid == -1 && target_tid == -1) {
+                 attr->disabled = 1;
+                 attr->enable_on_exec = 1;
+         }
+
+I suppose X86 has this issue too -- collect_events() in validate_group()
+won't do real work in the bottom half of the function.
+
+
+Deng-Cheng
