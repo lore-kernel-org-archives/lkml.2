@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab1JZObJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:31:09 -0400
-Received: from seven.medozas.de ([188.40.89.202]:43273 "EHLO seven.medozas.de"
+	id S933248Ab1JZOb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:31:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933096Ab1JZObI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:31:08 -0400
-Date: Wed, 26 Oct 2011 16:31:06 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: NeilBrown <neilb@suse.de>
-cc: Alan Stern <stern@rowland.harvard.edu>,
-        John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lsusd - The Linux SUSpend Daemon
-In-Reply-To: <20111021162340.669742c0@notabene.brown>
-Message-ID: <alpine.LNX.2.01.1110261625370.15209@frira.zrqbmnf.qr>
-References: <20111020111743.13b40558@notabene.brown> <Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org> <20111021162340.669742c0@notabene.brown>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S932772Ab1JZObz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 10:31:55 -0400
+Message-ID: <4EA819CC.100@redhat.com>
+Date: Wed, 26 Oct 2011 16:31:40 +0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mike Frysinger <vapier@gentoo.org>
+CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] [media] v4l2: punt generated pdf files
+References: <1319635477-9383-1-git-send-email-vapier@gentoo.org> <CAMjpGUfEtLSiJoYG+42aFLnx83Zmzd88MAU1DVYXcBxTpo3wSw@mail.gmail.com>
+In-Reply-To: <CAMjpGUfEtLSiJoYG+42aFLnx83Zmzd88MAU1DVYXcBxTpo3wSw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em 26-10-2011 15:33, Mike Frysinger escreveu:
+> On Wed, Oct 26, 2011 at 09:24, Mike Frysinger wrote:
+>> These don't belong in the tree, and we have a .gitignore on them already
+>> (not sure how these slipped in), so punt the compiled files.
+> 
+> hrm, i thought default git send-email/format-patch didn't include
+> binary updates when deleting in the diff.  not sure what's going on
+> here.  i can resend if people want with the -D flag.
 
-On Friday 2011-10-21 07:23, NeilBrown wrote:
->At:
->    git://neil.brown.name/lsusd
->or
->    http://neil.brown.name/git/lsusd
->
->you can find a bunch of proof-of-concept sample code that implements a
->"Linux SUSpend Daemon" with client support library and test programs.
->
->  lsused:
->      lsused (which needs a better name) listens on the socket
->            /var/run/suspend/registration
+Nah, not needed. I'll fix the patch when merging it. I probably won't
+be merging this week, as this notebook has not enough power to compile
+the Kernel (and I received a series of 100+ patches on those days).
 
-(lx)suspd and (lx)susp_eventd?
-NB: The short form of Linux is usually lx (not l). Also, yours would be
-the first I know to explicitly contain l/lx, which I think is rather
-redundant, given I'll never run a type of suspend other than the linux
-one anyway.
+Thanks,
+Mauro
+
