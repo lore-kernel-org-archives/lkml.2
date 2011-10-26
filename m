@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab1JZMeU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 08:34:20 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:55245 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811Ab1JZMeS (ORCPT
+	id S932924Ab1JZMgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 08:36:09 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45964 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932751Ab1JZMgH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 08:34:18 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 26 Oct 2011 14:33:47 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, linux-crypto@vger.kernel.org
-Subject: Re: linux-next: Tree for Oct 25 (crypto)
-Message-ID: <20111026143347.462fea95@stein>
-In-Reply-To: <20111026062717.GA10230@gondor.apana.org.au>
-References: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
-	<4EA75759.3050900@xenotime.net>
-	<20111026062717.GA10230@gondor.apana.org.au>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Oct 2011 08:36:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111026121706.GC23457@suse.de>
+References: <1319548607-28427-1-git-send-email-w.sang@pengutronix.de>
+ <20111025153538.GA13012@google.com> <20111026121706.GC23457@suse.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 26 Oct 2011 14:35:47 +0200
+X-Google-Sender-Auth: 6gCal_oHQzIbeV4EmiVcrj_GBdo
+Message-ID: <CACxGe6st52znT6EPWDoUFE0Pvmr+CodqHCp-D7egZNy2eQL+0g@mail.gmail.com>
+Subject: Re: [PATCH] lib: devres: add convenience function to remap a resource
+To: Greg KH <gregkh@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 26 Herbert Xu wrote:
-> On Tue, Oct 25, 2011 at 05:42:01PM -0700, Randy Dunlap wrote:
-> > On 10/25/11 02:36, Stephen Rothwell wrote:
-> > > Hi all,
-> > 
-> > 
-> > When CONFIG_NET is not enabled:
-> 
-> Thanks, I'll add this patch.
-> 
-> diff --git a/crypto/Kconfig b/crypto/Kconfig
-> index a8442dc..259dea9 100644
-> --- a/crypto/Kconfig
-> +++ b/crypto/Kconfig
-> @@ -103,6 +103,7 @@ config CRYPTO_MANAGER2
->  config CRYPTO_USER
->  	tristate "Userspace cryptographic algorithm configuration"
->  	select CRYPTO_MANAGER
-> +	select NET
->  	help
->  	  Userapace configuration for cryptographic instantiations such as
->  	  cbc(aes).
-> 
-> Cheers,
+On Wed, Oct 26, 2011 at 2:17 PM, Greg KH <gregkh@suse.de> wrote:
+> On Tue, Oct 25, 2011 at 08:35:38AM -0700, Tejun Heo wrote:
+>> On Tue, Oct 25, 2011 at 03:16:47PM +0200, Wolfram Sang wrote:
+>> > Almost every platform_driver does the three steps get_resource,
+>> > request_mem_region, ioremap. This does not only lead to a lot of code
+>> > duplication, but also a huge number of similar error strings and
+>> > inconsistent error codes on failure. So, introduce a helper function
+>> > which simplifies remapping a resource and make it hard to do something
+>> > wrong and add documentation for it.
+>> >
+>> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+>> > Cc: Grant Likely <grant.likely@secretlab.ca>
+>> > Cc: Tejun Heo <tj@kernel.org>
+>> > Cc: Greg KH <gregkh@suse.de>
+>>
+>>  Acked-by: Tejun Heo <tj@kernel.org>
+>>
+>> Greg, can you please take this one?
+>
+> Ok, I'll queue it up after the 3.2 merge window is over, for the 3.3
+> release.
 
-If you do it this way, you also need to select everything on which NET
-depends on.  In v3.1, that would be (only) NLATTR which in turn does not
-depend on anything else.
+You can add my a-b on this one too.
 
-Furthermore, I am noticing in v3.1 that CRYPTO_MANAGER selects
-CRYPTO_MANAGER2 which in turn has the following dependencies:
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-config CRYPTO_MANAGER2
-	def_tristate CRYPTO_MANAGER || (CRYPTO_MANAGER!=n && CRYPTO_ALGAPI=y)
-	select CRYPTO_AEAD2
-	select CRYPTO_HASH2
-	select CRYPTO_BLKCIPHER2
-	select CRYPTO_PCOMP2
-
-I think you need to copy those dependencies into config CRYPTO_MANAGER.
--- 
-Stefan Richter
--=====-==-== =-=- ==-=-
-http://arcgraph.de/sr/
+g.
