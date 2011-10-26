@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933864Ab1JZRuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:50:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54970 "EHLO
+	id S933764Ab1JZRso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:48:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54948 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933776Ab1JZRsp (ORCPT
+	with ESMTP id S932878Ab1JZRsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:48:45 -0400
+	Wed, 26 Oct 2011 13:48:43 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Deng-Cheng Zhu <dczhu@mips.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 00/11] perf/core fixes and improvements
-Date: Wed, 26 Oct 2011 15:48:23 -0200
-Message-Id: <1319651314-29404-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 04/11] perf ui: Reimplement ui_helpline using libslang
+Date: Wed, 26 Oct 2011 15:48:27 -0200
+Message-Id: <1319651314-29404-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1319651314-29404-1-git-send-email-acme@infradead.org>
+References: <1319651314-29404-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-        Please consider pulling from:
+Just another step in stopping the use of libnewt in perf.
 
-git://github.com/acmel/linux.git perf/core
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-gh7e1v2z7pzqmok02r6zvp17@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/helpline.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-	It _almost_ is libnewt free, got preempted now, will continue later.
-
-	Using libnewt ended up being inflexible and since I had to implement
-the ui_browser to work directly with the existing perf hist_entry abstractions,
-namely callchains, I ended up using it for menus and for the annotate browser.
-
-	It got less and less used and finally handling SIGWINCH made me decide
-to work towards using just libslang.
-
-	The abstractions that are being put in place should make it not that
-difficult to have a GUI at some point.
-
-Regards,
-
-- Arnaldo
-
-HEAD now is   a9072bc0b0af991e274b699f17bc50cf201e377b
-Changes since c752d04066a36ae30b29795f3fa3f536292c1f8c:
-
-Arnaldo Carvalho de Melo (11):
-  perf evlist: Fix grouping of multiple events
-  perf ui progress: Reimplement using slang
-  perf ui: Improve handling sigwinch a bit
-  perf ui: Reimplement ui_helpline using libslang
-  perf ui: Reimplement ui__popup_menu using ui__browser
-  perf ui: Reimplement the popup windows using libslang
-  perf ui: Rename ui__warning_paranoid to ui__error_paranoid
-  perf hists browser: Use K_TIMER
-  perf ui browser: No need to switch char sets that often
-  perf ui browser: Handle K_RESIZE in dialog windows
-  perf header: Fix build on old systems
-
- tools/perf/builtin-record.c            |   13 ++-
- tools/perf/builtin-stat.c              |   20 +++-
- tools/perf/builtin-test.c              |    6 +-
- tools/perf/builtin-top.c               |   13 ++-
- tools/perf/util/annotate.c             |    9 +-
- tools/perf/util/debug.c                |    7 +-
- tools/perf/util/debug.h                |   17 +--
- tools/perf/util/evlist.c               |   30 +++++
- tools/perf/util/evlist.h               |    2 +
- tools/perf/util/evsel.c                |   43 ++++++--
- tools/perf/util/evsel.h                |   10 ++-
- tools/perf/util/header.c               |    2 +-
- tools/perf/util/python.c               |   31 +++++-
- tools/perf/util/session.c              |    8 +-
- tools/perf/util/ui/browser.c           |  138 +++++++++++++++---------
- tools/perf/util/ui/browser.h           |    8 ++
- tools/perf/util/ui/browsers/annotate.c |   14 +--
- tools/perf/util/ui/browsers/hists.c    |   27 +++--
- tools/perf/util/ui/helpline.c          |   16 ++-
- tools/perf/util/ui/helpline.h          |    2 +
- tools/perf/util/ui/progress.c          |   65 +++---------
- tools/perf/util/ui/progress.h          |    7 +-
- tools/perf/util/ui/setup.c             |   83 ++++++++++++++-
- tools/perf/util/ui/ui.h                |    3 +
- tools/perf/util/ui/util.c              |  182 +++++++++++++++++++-------------
- tools/perf/util/ui/util.h              |    8 +-
- 26 files changed, 504 insertions(+), 260 deletions(-)
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index f36d2ff..600243d 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -1,20 +1,22 @@
+ #define _GNU_SOURCE
+ #include <stdio.h>
+ #include <stdlib.h>
+-#include <newt.h>
+ 
+ #include "../debug.h"
+ #include "helpline.h"
+ #include "ui.h"
++#include "libslang.h"
+ 
+ void ui_helpline__pop(void)
+ {
+-	newtPopHelpLine();
+ }
+ 
+ void ui_helpline__push(const char *msg)
+ {
+-	newtPushHelpLine(msg);
++	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
++	SLsmg_set_color(0);
++	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
++	SLsmg_refresh();
+ }
+ 
+ void ui_helpline__vpush(const char *fmt, va_list ap)
+@@ -63,7 +65,7 @@ int ui_helpline__show_help(const char *format, va_list ap)
+ 
+ 	if (ui_helpline__last_msg[backlog - 1] == '\n') {
+ 		ui_helpline__puts(ui_helpline__last_msg);
+-		newtRefresh();
++		SLsmg_refresh();
+ 		backlog = 0;
+ 	}
+ 	pthread_mutex_unlock(&ui__lock);
+-- 
+1.6.2.5
 
