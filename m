@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab1JZRPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:15:36 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57077 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969Ab1JZRPe (ORCPT
+	id S933647Ab1JZRS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:18:26 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40374 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933286Ab1JZRSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:15:34 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 26 Oct 2011 19:15:17 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, linux-crypto@vger.kernel.org
-Subject: Re: linux-next: Tree for Oct 25 (crypto)
-Message-ID: <20111026191517.71f3aa93@stein>
-In-Reply-To: <4EA8350D.1080003@xenotime.net>
-References: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au>
-	<4EA75759.3050900@xenotime.net>
-	<20111026062717.GA10230@gondor.apana.org.au>
-	<20111026143347.462fea95@stein>
-	<4EA8350D.1080003@xenotime.net>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Oct 2011 13:18:25 -0400
+MIME-Version: 1.0
+Date: Wed, 26 Oct 2011 19:18:24 +0200
+Message-ID: <CANQUKa2UHBPad2m2EZb0vH0jOOTNU7vHqzuUTTi0vt5AuTpdzA@mail.gmail.com>
+Subject: vga_switcheroo causes system freeze
+From: Wim Goeman <wimgoeman@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 26 Randy Dunlap wrote:
-> On 10/26/11 05:33, Stefan Richter wrote:
-> > On Oct 26 Herbert Xu wrote:
-> >> --- a/crypto/Kconfig
-> >> +++ b/crypto/Kconfig
-> >> @@ -103,6 +103,7 @@ config CRYPTO_MANAGER2
-> >>  config CRYPTO_USER
-> >>  	tristate "Userspace cryptographic algorithm configuration"
-> >>  	select CRYPTO_MANAGER
-> >> +	select NET
-> >>  	help
-> >>  	  Userapace configuration for cryptographic instantiations such as
+Hi,
 
-btw, typo: "Userspace"
+I am working with a new HP PC (dv7) which supports Hybrid Graphics in
+terms of the intel graphics and radeon graphics (as can bee found in
+lspci).
 
-> >>  	  cbc(aes).
-> >>
-> >> Cheers,
-> > 
-> > If you do it this way, you also need to select everything on which NET
-> > depends on.  In v3.1, that would be (only) NLATTR which in turn does not
-> > depend on anything else.
-[...]
-> That's correct, but it's better not to "select" an entire subsystem
-> like NET at all.
+Currently I am only working with the Intel integrated graphics, and
+both adapters are powered on.
 
-I agree; I add to my comment the implication that --- as a rule of thumb
---- "select" should be avoided if the option to be selected has further
-dependencies.
+My goal was to deactivate the intel graphics and activate the radeon
+graphics, as the machine is plugged in to the power supply most of the
+time. To achieve this I tried the following:
 
-A downside of "config A\n depends on B" is of course that potential users
-of option A who are unaware of option B or not interested in B may miss how
-to enable A.  Sometimes, a comment in the Kconfig file can help then.
-Example (from linux-2.6.36/drivers/ieee1394/):
+cat /sys/kernel/debug/vga_switcheroo/switch
+--> shows both cards are powered on and IGD is in use (the intel card)
 
-comment "PCILynx controller requires I2C"
-	depends on IEEE1394 && I2C=n
+echo DIS > /sys/kernel/debug/vga_switcheroo/switch
+--> gives an error message because X is still running
 
-config IEEE1394_PCILYNX
-	tristate "PCILynx controller"
-	depends on PCI && IEEE1394 && I2C
-	select I2C_ALGOBIT
-	help
-	  Say Y here if you have an IEEE-1394 controller with the Texas
-	  Instruments PCILynx chip.
--- 
-Stefan Richter
--=====-==-== =-=- ==-=-
-http://arcgraph.de/sr/
+I kill the X session
+echo DIS > /sys/kernel/debug/vga_switcheroo/switch
+--> The system freezes completely. No warning or error, no blinking
+cursor, nothing. I have to power off using the power button.
+
+Does anyone have a suggestion on what I can try to fix this?
+
+I am posting on the mailing list because the bug tracker seems to be
+down since a few days now.
+
+For more details, please see launchpad bug #881132
+
+Thanks in advance for having a look at this,
+
+Wim
