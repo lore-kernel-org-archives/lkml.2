@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1JZHWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 03:22:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:30607 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab1JZHWQ convert rfc822-to-8bit (ORCPT
+	id S1754450Ab1JZHco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 03:32:44 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:34349 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753123Ab1JZHcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 03:22:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=CE2d3RaaBuS+Nkkr7S/qILkXRh9jjWcK6WumENzgpeaUWwIIpF1OynAnYbHRqyyJ8
-	Y6kpqpOymK3IuWs+OLInQ==
+	Wed, 26 Oct 2011 03:32:43 -0400
+Message-ID: <4EA7B788.3040503@tao.ma>
+Date: Wed, 26 Oct 2011 15:32:24 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1110260006470.23227@chino.kir.corp.google.com>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
-	<20111025090956.GA10797@suse.de>
-	<alpine.DEB.2.00.1110251513520.26017@chino.kir.corp.google.com>
-	<CAMbhsRQ3y2SBwEfjiYgfxz2-h0fgn20mLBYgFuBwGqon0f-a8g@mail.gmail.com>
-	<alpine.DEB.2.00.1110252244270.18661@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1110252311030.20273@chino.kir.corp.google.com>
-	<CAMbhsRS+-jn7d1bTd4F0_RB9860iWjOHLfOkDsqLfWEUbR3TYA@mail.gmail.com>
-	<alpine.DEB.2.00.1110252322220.20273@chino.kir.corp.google.com>
-	<CAMbhsRQdrWRLkj7U-u2AZxM11mSUNj5_1K27g58cMBo1Js1Yeg@mail.gmail.com>
-	<alpine.DEB.2.00.1110252327270.20273@chino.kir.corp.google.com>
-	<CAMbhsRR0z-aJ848gq6ZQATZOgz=EybVsRtaQbjCr42PtCubCzw@mail.gmail.com>
-	<alpine.DEB.2.00.1110252347330.20273@chino.kir.corp.google.com>
-	<CAMbhsRScgfokDOiT7c9RbmqC7E_ZXrwLEYXE7JZWFGoePjAXvg@mail.gmail.com>
-	<alpine.DEB.2.00.1110260006470.23227@chino.kir.corp.google.com>
-Date: Wed, 26 Oct 2011 00:22:14 -0700
-X-Google-Sender-Auth: EmyXQVypg7K_KLZ3umCKfUFvRUc
-Message-ID: <CAMbhsRRZBUcfv5kT4aYm=Z3+kc-usYJVqyc_+1gAEy-4yH_nPQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-From: Colin Cross <ccross@android.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+To: "Ted Ts'o" <tytso@mit.edu>, ext4 development <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: [PATCH V1 00/17] ext4: Add inline data support.
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 12:10 AM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 25 Oct 2011, Colin Cross wrote:
->
->> > gfp_allowed_mask is initialized to GFP_BOOT_MASK to start so that __GFP_FS
->> > is never allowed before the slab allocator is completely initialized, so
->> > you've now implicitly made all early boot allocations to be __GFP_NORETRY
->> > even though they may not pass it.
->>
->> Only before interrupts are enabled, and then isn't it vulnerable to
->> the same livelock?  Interrupts are off, single cpu, kswapd can't run.
->> If an allocation ever failed, which seems unlikely, why would retrying
->> help?
->>
->
-> If you want to claim gfp_allowed_mask as a pm-only entity, then I see no
-> problem with this approach.  However, if gfp_allowed_mask would be allowed
-> to temporarily change after init for another purpose then it would make
-> sense to retry because another allocation with __GFP_FS on another cpu or
-> kswapd could start making progress could allow for future memory freeing.
->
-> The suggestion to add a hook directly into a pm-interface was so that we
-> could isolate it only to suspend and, to me, is the most maintainable
-> solution.
->
+Hi Ted, Andreas and list,
+	This is my 1st attempt to add inline data support to ext4 inode. For
+more information about the background, please refer to the thread
+http://marc.info/?l=linux-ext4&m=131715205428067&w=2
+When I sent out the RFC on Sep.27, Andreas suggested that we can use the
+space of xattr to put inline data. So this is the 1st version using that
+method. It should be easy to change if we decide to use other places in
+inode(e.g the unused extent space) since all the inline data
+manipulation function is wrapped with function like ext4_*_inline_data.
 
-pm_restrict_gfp_mask seems to claim gfp_allowed_mask as owned by pm at runtime:
-"gfp_allowed_mask also should only be modified with pm_mutex held,
-unless the suspend/hibernate code is guaranteed not to run in parallel
-with that modification"
+Currently I use all the space between i_extra_isize and inode_size if
+inode_size = 256. For inode_size > 256, half of that space is used so as
+to leave some space for other xattrs.
 
-I think we've wrapped around to Mel's original patch, which adds a
-pm_suspending() helper that is implemented next to
-pm_restrict_gfp_mask.  His patch puts the check inside
-!did_some_progress instead of should_alloc_retry, which I prefer as it
-at least keeps trying until reclaim isn't working.  Pekka was trying
-to avoid adding pm-specific checks into the allocator, which is why I
-stuck to the symptom (__GFP_FS is clear) rather than the cause (PM).
+This is only a V1 and there are still something to do(e.g. I am thinking
+of using unused extent space), but I'd like to send it out earlier so
+that it can be reviewed ASAP.
+
+Some simple tests shows that with a linux-3.0 vanilla source, the new
+dir can save 1% disk space. For my "/usr", it can save about 3.2%
+spaces. I guess for volume with future bigalloc support, it should save
+more space for us for small dir. I also run some other tests and it
+seems the code is OK for a try. I haven't found a good test cases that
+can test the small file/dir(tens of bytes in my case) performance where
+inline data should have some good number.
+
+Any comments are welcomed.
+
+git diff --stat
+
+fs/ext4/dir.c    |  117 ++++++++++-
+fs/ext4/ext4.h   |   15 +-
+fs/ext4/ialloc.c |    4 +
+fs/ext4/inode.c  |  583 +++++++++++++++++++++++++++++++++++++++++++++++---
+fs/ext4/namei.c  |  629
++++++++++++++++++++++++++++++++++++++++++++++---------
+fs/ext4/xattr.c  |  216 +++++++++++++++++++
+fs/ext4/xattr.h  |   68 ++++++
+7 files changed, 1489 insertions(+), 143 deletions(-)
+
+Thanks
+Tao
