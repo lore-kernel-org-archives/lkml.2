@@ -1,98 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738Ab1JZRem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:34:42 -0400
-Received: from toast.topped-with-meat.com ([204.197.218.159]:48671 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932920Ab1JZRel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:34:41 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933756Ab1JZRf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:35:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31252 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932920Ab1JZRfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 13:35:24 -0400
+Subject: Re: [PATCH] libertas: ensure we clean up a scan request properly
+From: Dan Williams <dcbw@redhat.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: dsd@laptop.org, libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linville@tuxdriver.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Oct 2011 12:35:23 -0500
+In-Reply-To: <20111026101926.48109373@queued.net>
+References: <20111026101926.48109373@queued.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: Russell King <rmk@arm.linux.org.uk>
-X-Fcc: ~/Mail/lkml
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Shuah Khan <shuah.khan@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND] [RFC][PATCH X86_32 1/2]: Call do_notify_resume() with
-	interrupts enabled
-In-Reply-To: Russell King's message of  Wednesday, 26 October 2011 16:10:05 +0100 <20111026151005.GA1413@flint.arm.linux.org.uk>
-References: <20111025141812.GA21225@linux.vnet.ibm.com>
-	<20111025161426.GC17067@redhat.com>
-	<CA+55aFx4g-3yGOgdS-UOGGincbAOgdxwfHCHpd-yVU6-dKwv0w@mail.gmail.com>
-	<20111026151005.GA1413@flint.arm.linux.org.uk>
-X-Windows: flaky and built to stay that way.
-Message-Id: <20111026173438.9007C2C0D7@topped-with-meat.com>
-Date: Wed, 26 Oct 2011 10:34:38 -0700 (PDT)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=fe7WOzsF c=1 sm=1 a=mZZbtzAwqg8A:10
-		a=kj9zAlcOel0A:10 a=fSL0Xm43gfnve0d9cbYA:9 a=wBLEjfIkVQDL_3qIZqgA:7
-		a=CjuIK1q_8ugA:10 a=WkljmVdYkabdwxfqvArNOQ==:117
+Message-ID: <1319650525.8698.11.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I worry about are race condition like the following:
+On Wed, 2011-10-26 at 10:19 -0700, Andres Salomon wrote:
+> Commit 2e30168b ("libertas: terminate scan when stopping interface")
+> adds cleanup code to lbs_eth_stop to call cfg80211_scan_done if there's
+> an outstanding cfg80211_scan_request.  However, it assumes that the
+> scan request was allocated via the cfg80211 stack.  Libertas has
+> its own internal allocation method, kept track of with
+> priv->internal_scan.  This doesn't set scan_req->wiphy, amongst other
+> things, which results in hitting a BUG() when we call cfg80211_scan_done
+> on the request.
 > 
-> syscall enter
+> This provides a function to take care of the low-level scan_req cleanup
+> details.  We simply call that to deal with finishing up scan requests.
+
+Acked-by: Dan Williams <dcbw@redhat.com>
+
+> The bug we were hitting was:
+> 
+> [  964.321495] kernel BUG at net/wireless/core.h:87!
+> [  964.329970] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> [  964.341963] pgd = dcf80000
 > ...
-> syscall returns -ERESTARTNOHAND
-> check for signal
-> 	signal pending, but no handler, setup for restart
-> 	interrupt happens, sets need_resched
-> need_resched set
-> 	switch to another thread
-> ...
-> 	something happens which queues SIGIO
-> 	switch back to this thread
-> check for signal
-> 	signal pending, has handler, but we've setup for a restart
-> return to userspace
-> run SIGIO handler
-> restart syscall
+> [  964.849998] 9fe0: 00000000 beb417b8 4018e280 401e822c 60000010 00000004 00000000 00000000
+> [  964.865007] [<c003104c>] (__bug+0x1c/0x28) from [<c0384ffc>] (cfg80211_scan_done+0x54/0x6c)
+> [  964.895324] [<c0384ffc>] (cfg80211_scan_done+0x54/0x6c) from [<bf028bac>] (lbs_eth_stop+0x10c/0x188 [libertas])
+> [  964.895324] [<bf028bac>] (lbs_eth_stop+0x10c/0x188 [libertas]) from [<c03002a0>] (__dev_close_many+0x94/0xc4)
+> [  964.918995] [<c03002a0>] (__dev_close_many+0x94/0xc4) from [<c030037c>] (dev_close_many+0x78/0xe0)
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  drivers/net/wireless/libertas/cfg.c  |   25 +++++++++++++++++--------
+>  drivers/net/wireless/libertas/cfg.h  |    1 +
+>  drivers/net/wireless/libertas/main.c |    6 ++----
+>  3 files changed, 20 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+> index ff63782..4fcd653 100644
+> --- a/drivers/net/wireless/libertas/cfg.c
+> +++ b/drivers/net/wireless/libertas/cfg.c
+> @@ -728,15 +728,9 @@ static void lbs_scan_worker(struct work_struct *work)
+>  		le16_to_cpu(scan_cmd->hdr.size),
+>  		lbs_ret_scan, 0);
+>  
+> -	if (priv->scan_channel >= priv->scan_req->n_channels) {
+> +	if (priv->scan_channel >= priv->scan_req->n_channels)
+>  		/* Mark scan done */
+> -		if (priv->internal_scan)
+> -			kfree(priv->scan_req);
+> -		else
+> -			cfg80211_scan_done(priv->scan_req, false);
+> -
+> -		priv->scan_req = NULL;
+> -	}
+> +		lbs_scan_done(priv);
+>  
+>  	/* Restart network */
+>  	if (carrier)
+> @@ -774,6 +768,21 @@ static void _internal_start_scan(struct lbs_private *priv, bool internal,
+>  	lbs_deb_leave(LBS_DEB_CFG80211);
+>  }
+>  
+> +/*
+> + * Clean up priv->scan_req.  Should be used to handle the allocation details.
+> + */
+> +void lbs_scan_done(struct lbs_private *priv)
+> +{
+> +	WARN_ON(!priv->scan_req);
+> +
+> +	if (priv->internal_scan)
+> +		kfree(priv->scan_req);
+> +	else
+> +		cfg80211_scan_done(priv->scan_req, false);
+> +
+> +	priv->scan_req = NULL;
+> +}
+> +
+>  static int lbs_cfg_scan(struct wiphy *wiphy,
+>  	struct net_device *dev,
+>  	struct cfg80211_scan_request *request)
+> diff --git a/drivers/net/wireless/libertas/cfg.h b/drivers/net/wireless/libertas/cfg.h
+> index a02ee15..558168c 100644
+> --- a/drivers/net/wireless/libertas/cfg.h
+> +++ b/drivers/net/wireless/libertas/cfg.h
+> @@ -16,6 +16,7 @@ int lbs_reg_notifier(struct wiphy *wiphy,
+>  void lbs_send_disconnect_notification(struct lbs_private *priv);
+>  void lbs_send_mic_failureevent(struct lbs_private *priv, u32 event);
+>  
+> +void lbs_scan_done(struct lbs_private *priv);
+>  void lbs_scan_deinit(struct lbs_private *priv);
+>  int lbs_disconnect(struct lbs_private *priv, u16 reason);
+>  
+> diff --git a/drivers/net/wireless/libertas/main.c b/drivers/net/wireless/libertas/main.c
+> index b03779b..39a6a7a 100644
+> --- a/drivers/net/wireless/libertas/main.c
+> +++ b/drivers/net/wireless/libertas/main.c
+> @@ -255,10 +255,8 @@ static int lbs_eth_stop(struct net_device *dev)
+>  
+>  	lbs_update_mcast(priv);
+>  	cancel_delayed_work_sync(&priv->scan_work);
+> -	if (priv->scan_req) {
+> -		cfg80211_scan_done(priv->scan_req, false);
+> -		priv->scan_req = NULL;
+> -	}
+> +	if (priv->scan_req)
+> +		lbs_scan_done(priv);
+>  
+>  	netif_carrier_off(priv->dev);
+>  
 
-I don't think this is a violation.  That ERESTARTNOHAND referred to
-restarting for the signal that interrupted that first syscall.  That
-decision has already been made.  You can consider that restart already to
-have begun before the second signal arrives.  In essence, it's like the
-first syscall had never been entered, because the user state is already
-rolled back to where the syscall instruction is about to execute (correct
-me if I'm wrong about that).  Then the second signal comes along and
-prevents that instruction from executing.  It's really no different from if
-you had gotten all the way back to user mode, but not yet executed the
-first user instruction (i.e. the syscall instruction), when the second
-signal interrupted the user task.
 
-> However, that doesn't solve the (probably unsolvable) case where an
-> ERESTARTSYS syscall is interrupted by a SA_RESTART-marked handler, and
-> while that handler is running it is then interrupted by a non-SA_RESTART-
-> marked handler.  I think that is far too an obscure case to care about
-> though.
-
-I'm personally for caring about all cases, no matter how obscure.  For that
-particular one, I don't think I see the problem.  I'm probably overlooking
-something.  ERESTARTSYS says that the user state should be rolled back to
-the syscall instruction before the handler setup.  So it's just as if the
-signal had arrived before user mode executed the syscall instruction in the
-first place.  That just affects the sigcontext saved before the handler
-runs.  Nothing about that interacts with further interruptions during the
-handler.  What am I missing?
-
-However, we already have the fundamental constraint that
-ERESTART_RESTARTBLOCK states are lost when a handler runs.
-
-
-Thanks,
-Roland
