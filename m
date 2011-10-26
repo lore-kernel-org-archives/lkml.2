@@ -1,134 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756Ab1JZRf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:35:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31252 "EHLO mx1.redhat.com"
+	id S933768Ab1JZRiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47281 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932920Ab1JZRfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:35:24 -0400
-Subject: Re: [PATCH] libertas: ensure we clean up a scan request properly
-From: Dan Williams <dcbw@redhat.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: dsd@laptop.org, libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linville@tuxdriver.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 26 Oct 2011 12:35:23 -0500
-In-Reply-To: <20111026101926.48109373@queued.net>
-References: <20111026101926.48109373@queued.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1319650525.8698.11.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+	id S932909Ab1JZRix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 13:38:53 -0400
+Date: Wed, 26 Oct 2011 18:54:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, Earl Chew <earl_chew@agilent.com>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] exec: log when wait_for_dump_helpers aborts due to a
+	signal
+Message-ID: <20111026165400.GB18076@redhat.com>
+References: <1319591228-20397-1-git-send-email-msb@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319591228-20397-1-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-26 at 10:19 -0700, Andres Salomon wrote:
-> Commit 2e30168b ("libertas: terminate scan when stopping interface")
-> adds cleanup code to lbs_eth_stop to call cfg80211_scan_done if there's
-> an outstanding cfg80211_scan_request.  However, it assumes that the
-> scan request was allocated via the cfg80211 stack.  Libertas has
-> its own internal allocation method, kept track of with
-> priv->internal_scan.  This doesn't set scan_req->wiphy, amongst other
-> things, which results in hitting a BUG() when we call cfg80211_scan_done
-> on the request.
-> 
-> This provides a function to take care of the low-level scan_req cleanup
-> details.  We simply call that to deal with finishing up scan requests.
+On 10/25, Mandeep Singh Baines wrote:
+>
+> To allow coredump pipe readers to look at /proc/<pid> of the crashing
+> process, the kernel waits for the reader to exit. However, the wait
+> is silently aborted if the crashing process is signalled.
 
-Acked-by: Dan Williams <dcbw@redhat.com>
+Well, yes... But note that this signal_pending() is only used because
+with TIF_SIGPENDING we have the problems anyway.
 
-> The bug we were hitting was:
-> 
-> [  964.321495] kernel BUG at net/wireless/core.h:87!
-> [  964.329970] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> [  964.341963] pgd = dcf80000
-> ...
-> [  964.849998] 9fe0: 00000000 beb417b8 4018e280 401e822c 60000010 00000004 00000000 00000000
-> [  964.865007] [<c003104c>] (__bug+0x1c/0x28) from [<c0384ffc>] (cfg80211_scan_done+0x54/0x6c)
-> [  964.895324] [<c0384ffc>] (cfg80211_scan_done+0x54/0x6c) from [<bf028bac>] (lbs_eth_stop+0x10c/0x188 [libertas])
-> [  964.895324] [<bf028bac>] (lbs_eth_stop+0x10c/0x188 [libertas]) from [<c03002a0>] (__dev_close_many+0x94/0xc4)
-> [  964.918995] [<c03002a0>] (__dev_close_many+0x94/0xc4) from [<c030037c>] (dev_close_many+0x78/0xe0)
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  drivers/net/wireless/libertas/cfg.c  |   25 +++++++++++++++++--------
->  drivers/net/wireless/libertas/cfg.h  |    1 +
->  drivers/net/wireless/libertas/main.c |    6 ++----
->  3 files changed, 20 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
-> index ff63782..4fcd653 100644
-> --- a/drivers/net/wireless/libertas/cfg.c
-> +++ b/drivers/net/wireless/libertas/cfg.c
-> @@ -728,15 +728,9 @@ static void lbs_scan_worker(struct work_struct *work)
->  		le16_to_cpu(scan_cmd->hdr.size),
->  		lbs_ret_scan, 0);
->  
-> -	if (priv->scan_channel >= priv->scan_req->n_channels) {
-> +	if (priv->scan_channel >= priv->scan_req->n_channels)
->  		/* Mark scan done */
-> -		if (priv->internal_scan)
-> -			kfree(priv->scan_req);
-> -		else
-> -			cfg80211_scan_done(priv->scan_req, false);
-> -
-> -		priv->scan_req = NULL;
-> -	}
-> +		lbs_scan_done(priv);
->  
->  	/* Restart network */
->  	if (carrier)
-> @@ -774,6 +768,21 @@ static void _internal_start_scan(struct lbs_private *priv, bool internal,
->  	lbs_deb_leave(LBS_DEB_CFG80211);
->  }
->  
-> +/*
-> + * Clean up priv->scan_req.  Should be used to handle the allocation details.
-> + */
-> +void lbs_scan_done(struct lbs_private *priv)
-> +{
-> +	WARN_ON(!priv->scan_req);
-> +
-> +	if (priv->internal_scan)
-> +		kfree(priv->scan_req);
-> +	else
-> +		cfg80211_scan_done(priv->scan_req, false);
-> +
-> +	priv->scan_req = NULL;
-> +}
-> +
->  static int lbs_cfg_scan(struct wiphy *wiphy,
->  	struct net_device *dev,
->  	struct cfg80211_scan_request *request)
-> diff --git a/drivers/net/wireless/libertas/cfg.h b/drivers/net/wireless/libertas/cfg.h
-> index a02ee15..558168c 100644
-> --- a/drivers/net/wireless/libertas/cfg.h
-> +++ b/drivers/net/wireless/libertas/cfg.h
-> @@ -16,6 +16,7 @@ int lbs_reg_notifier(struct wiphy *wiphy,
->  void lbs_send_disconnect_notification(struct lbs_private *priv);
->  void lbs_send_mic_failureevent(struct lbs_private *priv, u32 event);
->  
-> +void lbs_scan_done(struct lbs_private *priv);
->  void lbs_scan_deinit(struct lbs_private *priv);
->  int lbs_disconnect(struct lbs_private *priv, u16 reason);
->  
-> diff --git a/drivers/net/wireless/libertas/main.c b/drivers/net/wireless/libertas/main.c
-> index b03779b..39a6a7a 100644
-> --- a/drivers/net/wireless/libertas/main.c
-> +++ b/drivers/net/wireless/libertas/main.c
-> @@ -255,10 +255,8 @@ static int lbs_eth_stop(struct net_device *dev)
->  
->  	lbs_update_mcast(priv);
->  	cancel_delayed_work_sync(&priv->scan_work);
-> -	if (priv->scan_req) {
-> -		cfg80211_scan_done(priv->scan_req, false);
-> -		priv->scan_req = NULL;
-> -	}
-> +	if (priv->scan_req)
-> +		lbs_scan_done(priv);
->  
->  	netif_carrier_off(priv->dev);
->  
+Oh. I promise myself I'll make do_coredump() killable and cleanup this
+all every time I look at this code...
 
+> This patch, logs whenever wait_for_dump_helpers is aborted or in order
+> to assist in debugging cases where /proc/<pid> is gone.
+
+I don't really understand why this is useful. The reader process
+can complain if it can't collect the data (say, /proc/pid goes away
+or EOF doesn't come).
+
+
+
+As for the patch itself,
+
+> -	while ((pipe->readers > 1) && (!signal_pending(current))) {
+> +	while (pipe->readers > 1) {
+> +		if (signal_pending(current)) {
+> +			pr_info("wait_for_dump_helpers[%d]: "
+> +				"aborted due to signal\n",
+> +				task_pid_nr(current));
+> +			break;
+> +		}
+> +
+>  		wake_up_interruptible_sync(&pipe->wait);
+
+This can't help in general. If signal_pending() == T, it is quite
+possible that pipe_write() already failed before.
+
+Oleg.
 
