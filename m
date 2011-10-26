@@ -1,1130 +1,4731 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab1JZNZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 09:25:16 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:55768 "EHLO smtp.gentoo.org"
+	id S933119Ab1JZN05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 09:26:57 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34110 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab1JZNZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 09:25:10 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+	id S932833Ab1JZN0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 09:26:54 -0400
+Date: Wed, 26 Oct 2011 15:25:00 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH] [media] v4l2: punt generated pdf files
-Date: Wed, 26 Oct 2011 09:24:37 -0400
-Message-Id: <1319635477-9383-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.6.1
+Subject: [GIT PULL] core/locking changes for v3.2
+Message-ID: <20111026132500.GA23461@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These don't belong in the tree, and we have a .gitignore on them already
-(not sure how these slipped in), so punt the compiled files.
+Linus,
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- Documentation/DocBook/media/dvb/dvbstb.pdf      |  Bin 1881 -> 0 bytes
- Documentation/DocBook/media/v4l/crop.pdf        |  Bin 5846 -> 0 bytes
- Documentation/DocBook/media/v4l/fieldseq_bt.pdf |  Bin 9185 -> 0 bytes
- Documentation/DocBook/media/v4l/fieldseq_tb.pdf |  Bin 9173 -> 0 bytes
- Documentation/DocBook/media/v4l/pipeline.pdf    |  Bin 20276 -> 0 bytes
- Documentation/DocBook/media/v4l/vbi_525.pdf     |  Bin 3395 -> 0 bytes
- Documentation/DocBook/media/v4l/vbi_625.pdf     |  Bin 3683 -> 0 bytes
- Documentation/DocBook/media/v4l/vbi_hsync.pdf   |  Bin 7405 -> 0 bytes
- 8 files changed, 0 insertions(+), 0 deletions(-)
- delete mode 100644 Documentation/DocBook/media/dvb/dvbstb.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/crop.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/fieldseq_bt.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/fieldseq_tb.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/pipeline.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/vbi_525.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/vbi_625.pdf
- delete mode 100644 Documentation/DocBook/media/v4l/vbi_hsync.pdf
+Please pull the latest core-locking-for-linus git tree from:
 
-diff --git a/Documentation/DocBook/media/dvb/dvbstb.pdf b/Documentation/DocBook/media/dvb/dvbstb.pdf
-deleted file mode 100644
-index 0fa75d90c3eba1db9d07611ec6d86b4bc22d7a39..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
 
-literal 1881
-zcmZuydpJ~S7~f|KIaF3y&#K4C@?fQN&X~cZB}}7n$?S|Snrsbom~oj?bIug0wn8kc
-zWK(H-+7OFXF1b{;wC<~xY|>U#(nW~WZi}e>jwUvB&L3ya@BMzi^S<x*e!sC0aCx@a
-zVmrv9p?`lS#D-Cr2n>amE=9a?MF=H>?ExZ0c=B)xSHcJ{TteYoJcy9u&dv}?DRD^z
-z6nX5_Y9GSHLGQwgHP2*P=;idTXWd6~<h$?aYd^{8$w)A~9e2aEL-T3Npvmddb%Xf|
-z-B}EC$(ENFx_(4<4q++#U*3GPbAHFx!KA8@YuN(F;?b%FBThGVjJ^74eX@bj%(pl+
-z;g7K9j01;f#-4n=`LX?gP6wYeno+fN(7d<b_giXE5r9Lt@-5qq6RR(<pi|f)i@1(^
-zt76^r?sXf-NYAh|(){&vll+-ld3E#B=Id|m-|)?d*3Wx|B}AOtcN#NA!v)K*v&qr%
-zR>W$!#yV4l+VuJsHfyS0F>I|H3|KRKl^dOUTN#F#SW3N7%E@zeB}aml^LOx$@x4;l
-z$Miga7-b^cvh@tzmec}wr>kxaq-**<QBg>)INv|U{BBB3W8miN)fpqVgt?)(*X-fi
-zi(mKh<Fea7FR5nS$FAnEWkWu#nw}ncoEgd248j^r1GM*Mwdw5YGXI^KLbzCl7<xq|
-zCAyUyBzZByql^CiA<k@xSFX6e$Ha!0KwVBC{~l?HS&6uCdh|Cs@=J83-D_bFc?f@r
-z*DqhS=Na!m<o=|XixodMGCzGK`a#bb8JZLRkQG*BJ!Uz(e5Ubn3;%fgup-j6v$?c9
-zT}(#hs}__wv${y<c<u3HEftTv!)i;H$DCk=mh)ECd2=03>=wCr*Ut&{YdvqVqPYEf
-zVpGXLbDmwbWtm=<p%~KcWM}v5h4HORrK)osjzLX_KB=)zT?LyQ*2vbKEsV&3qE{M6
-z>@ob5vu8L?<BCT7-c;Q^#TSjw@A72IYVGHcwKcu-m<5@gjB)HwE~jU$UR$Qd!gH>k
-z=@GMTKQ3FDZnE!So@U}Ut9u%kHYG|IG$yt~!`=eqX6co6Zp9Tr2^Pr>SIX1oG_6aL
-z>8!{x5dW4{!d}>&;5FKhnI2?0)T$!GFvB-%8UQ_2YS@@qK6lTHW&ikub+)&Cwmr?t
-z(!`h%TvMdkWM--LBJ$z(UtI%bV^wcP9ES%h&gR^|FH?zc5-#V4Mm_Jm+~Bq)fg_D(
-zo!x-!+&(t;?8ZRX=<`G~&5pXcm0f)<l?|8gmb-KxjXlnNe!7VJ#g{ciVP{=@Wnbsx
-z%TG-Q@>zYCbi>b7z23H?q9Us)w(rixs8{s`?QKWyktZDrE1e8&jE2^H@8wtBJRmb_
-zs~LQBDOMTBh;|-msW9zty=|);ZywjNX%zg0E2Qf42!7FLm_E7mlY=rLHN=`a-hNS=
-za6}*p!4V%^Dwntsk+2vAVLOx!V{B#s1cFLjLBV#k0YHclCkd4@2q%Fx2$V#S2&cpd
-zFb^2<!y_rMe0e10A)<giz?`=X9s$@Gtto_nSs?D<9SD*zZ88&(IxG4MZ%qe?fwbU>
-zyhs@Fl1oWg4AEH&p#T^tsAx%AO-;onscNRXgp!04A@3yKCO@^_;r;bfNkfRQzz4>h
-zoz=p04QeA4IzTi{IHfXC)Vru7<oJG+epLtEBqUC^0r8VZ;H0gPh>$2I5=CefLPV-S
-zirxphYVhrMRWYX&K&z#yAY5s+TqJ-!WCTf(K}z{13U<WUi&3UEXe;nwN=_)ap!HVV
-zB}^3MfZLvlvK&wji2D%IkB25}ja1^n5DH@$gic<tJ)3REhJ#@>hA}a)ZS(~zCNUNh
-zv}qcKvBBI;!%*}C3`IZGLphG1(bKq0d$5PoFuRXoC>WFJ>+Jr=rIZqRIIaYLZ7?E|
-zZ^J>oFd`%fFi`aV!3bXwOu%&O!L;+au-Ix{N2b<Oe&N*vf|mSUTK%5ZA0h$tERvK&
-SNli2nW3y1m!eY5E5Bd)oFwcSj
+These changes of annotating certain low level (mostly hw related) 
+locks as raw do not impact lockdep coverage, the before/after vmlinux 
+size with PROVE_LOCKING=y on x86 defconfig is:
 
-diff --git a/Documentation/DocBook/media/v4l/crop.pdf b/Documentation/DocBook/media/v4l/crop.pdf
-deleted file mode 100644
-index c9fb81cd32f34d2b08cb601f3a1575af77e14275..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+    text	   data	    bss	     dec	    hex	filename
+10762222	1058192	9605120	21425534	146ed7e	vmlinux.orig
+10762222	1058192	9605120	21425534	146ed7e	vmlinux.new
 
-literal 5846
-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
+Note, you will get a conflict in kernel/posix-cpu-timers.c, which i 
+resolved in -tip the following way:
 
-diff --git a/Documentation/DocBook/media/v4l/fieldseq_bt.pdf b/Documentation/DocBook/media/v4l/fieldseq_bt.pdf
-deleted file mode 100644
-index 26598b23f80daf8048fdaa9a83a39a0e8ba12f19..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+	raw_spin_lock_irqsave(&cputimer->lock, flags);
+	if (!cputimer->running) {
+		cputimer->running = 1;
+		/*
+		 * The POSIX timer interface allows for absolute time expiry
+		 * values through the TIMER_ABSTIME flag, therefore we have
+		 * to synchronize the timer to the clock every time we start
+		 * it.
+		 */
+		thread_group_cputime(tsk, &sum);
+		update_gt_cputime(&cputimer->cputime, &sum);
+	}
+	*times = cputimer->cputime;
+	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
 
-literal 9185
-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
-UbNNdS($XYgVM<D-c4n~u2a2_wzyJUM
+Thanks,
 
-diff --git a/Documentation/DocBook/media/v4l/fieldseq_tb.pdf b/Documentation/DocBook/media/v4l/fieldseq_tb.pdf
-deleted file mode 100644
-index 4965b22ddb3a85aa27a4e6f98c931323605dd26e..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+	Ingo
 
-literal 9173
-zcmb_?c|4Tc|M;h(G$~7#tPPPZo|&-?F=571jGaW$7=y_$%#5|Dgpricjmi>I$&w{o
-zMYe2-LP;q_lp-!!it;@V>DImX`}=+W_)M=k&w1Yac`wH~?@88@V5E#zQA5Z!jmBjn
-z)R8D8-SrScM+Y*a_;|29ks1JE4H;2sED8e&8PP~A3V}kVyHRjB1e3*}kh~E=DfuZ@
-z^u7wg$o^@i&rfBpi&#k;=FoS4R4Mb-ywr9%^u3V&?XpCHfMUP9FYmb=N-1i8hI?0`
-z$9FJQ;^@@LOciMSY|0Vp9o`o{U#7<1btFBU(##HBEFG!q4#bZJLM~PGC`^Y`wnox3
-zcFrxEPj!#Vb9l6di>kD}+SAqX%~a2$UIDE$4+G<ZdfX|E)e#DOC6RjPK0dHflSUku
-zAL4IyBM7XvYSH2@;j`kJzuxU~rXX%hM5x-(P|{T}$t>7Vbw?fH?c++>N>hJiEn+QS
-z@=2A)+umsU0$cCO*EYO7f9S9jZ%*xdsnKod8J&po?Tu*w0|pJ9<NmU2Z1S<}N1|V-
-zX-T&fbkFG%lkkCaLBmHn>XE!p<~OFcq>G13Ns!l*HFOD5y#DyDMoDh+5uxYyG;eS5
-z<(l`*gDyD@@^;uOY#j2Dz8xAP={ShnSXtg1gGYX73PJO~lU!|;^5K3g8y!SuA`(R&
-zi5pmHzSw_XYBU4ayYwKHRmR|FnNPm!hNkdKbV@opJ)0dgON?a)_03Kbr7rmnovoOb
-zy2ksk{>@p>KY6!3l$GRHE~pjDJnSG~t(<0j(MVUuF~y5!Y=iSPxrHU7V^tL8WgK;$
-zlEy;9(V11jd8zMQ!wqg!si#k$5D66ESC(XQ-=E<)fmA(5;*M;K1{Rw6Hzx;&<1=|o
-zb2_>V6(Thr>hO?~*QOG6Ii&v}>arGd3dZ?*yYaL06EnJsmqJW#IZ$kPP73AHK1e-r
-zjVA&N@``iVgj04J(`P-4ny;Sc8?yuSH>#vpi1pnq0U$Y-04Uz$fzSqzD;eD#0|g6j
-z9%;vOlSjOVnxuG#a-L--;pIPsI7KnJ2(sIqTKquN)4ll~NZl<x_kNu#4@im-bfA~O
-zz(@7s4xL+JGf7MF#ZB=>+olI|5e|(8bIqH?>hh4bo-BGNB>)d;Q|y%bhO|sJ>Kzoa
-zH^<Ub@V-KizAFRA*6a4qsNiSgb3LP{uT`qH9<0)d%wTe^ihSMJX?aanHQ3Kna7f{E
-z&iK|%7CfZy0#<LO7R0w_Hsf<mjN(BWf!QNt>6jfSyd0!sbT~Ax0zjd01{g1GS4rpm
-zI#cdma4)5?^Qw=E=^J$(E$-k9W^{kSbBoaYnNOH6$950)vBMJ5bh`r8g9H9NuRtz<
-zI@rQHBPOM8(M#3FGNkT@Kf;#>H0vDkYTZ2b&?ccx?Q{l?=YDq%gWEqyXV@|4Tya~+
-z2gjIR7gOMsEK!>~i=o}_ciEasSu?9Z^h$Z&gX|C0<2i0JCU+QkX7uN1=(?*Hf7d7h
-z_%E4m2m9_uhfaj_V-LyI@uDXr>u~(!4t$W8D{v_6Rg<^MrR&Bs)F+=v-lbS>n|TdO
-zUpFqbrSlNaD?HNr@C3~Aa~$a1^Qrc*=jp?hfQC0mHwaiTTI;lyZZ=wbn9I-=@I1r+
-zHQu?72p(l9YE~+?PiGO(%**UUe9s!i$h%G}umU&bKj9y@{KB<I-QLVd@_AnD#X{W(
-zX>=}Z*zhcGOvC5*Akh4Ez>29n5Eb{0KpF9oq(OXgn9i-3ZZo<_cl17ZFOWR}&{y$1
-z87AG5l8%N9^<Drpodqj)JU;^jNgf0Er{zF;(S_GQW+Vf4+@2sV`_dUxnIa{dEo^oV
-zd&WzK|2dRk;(4#r7IOOP*S*1s{U|ju|C?i?TG5muS<=AuMgP2^2+!b~QH3kD5|LMV
-zQ*6L4pk3nJBIWQn^_pc<{=UxaM~b5F#N7kWC*qMY2a;coY}=&oF+1&AwQqWumlbeh
-z)j<0&(=(q&(Fx`f-a-%$<~rmpXe=52O%@(;)_!k+U$K+Ctg@JGJo+BF*vUuVIuP?b
-zTh_64-Z$~;d)sq$^o?e`hz{b2yfJ;3k1i0Y7a^Blanj~;9oc>VeFe)mB0CEP1g=jU
-zlNx84A4l-$PTKn&vXkJ(+~60uj=JV2cug;I+xc8<>5WbNGK-(v0msBUMf3a{CupW8
-z^er#f?Kg0ey>91!_IA!5OP+$Xnh%i<x)}nvJr4JH;}Wc|hYNCNWC~pO-FPAw8>#4U
-zpI32D2I46?BF6f1-5=aQb)#b5@MPgTK+>DY*1cxQX<Bb!s9;+wdc)ERVO!DOW|v|h
-zxT6^%n61Z|`?QZBB~bgk0A+>f6e{qZxOE>;eu!G4tgeMA^L)7gWu%ulivxkMD{QTG
-zf=RU5OC+6uBpkDWC+t+rC2NQ6^(2;+oDE_F1$z=gQ1*~AxLpi*BQe>9mQnPB(FPZQ
-z^*7UjxWeJ6@mIcr*TA!WK6Ci0fYHtrNZ_%#f@Q6ij!!0Uqqex6K#{q^C=1&qr=4n@
-z`{8xpHoNr*+aSHOxmZp`9YPDx`y62**2&r-UtPY%G*s+`&dj6RHR4T}Zj+@ya~9LC
-z?%5Z?wiiXwYLDK+k?EMz&4&N*Jw|bV7TXOr=!a#WA2@)g_`0vkYCM0|>oJm=@gHmX
-zD=P=#;t~N_>YW_~%E7c9|IFA`?jby`fir&I9^^S@7bq3QmBCPYW%d^go_T(2jE~(0
-zMBRtCwt;5Ay^>?mwjlioif42<q(SoWyI^g!`tXHbR~Z$65)76yOS40(;BD8j25cLd
-zLK9#|R(>rd->^r#{$Tr@AJ@kTsZPi}nCrniwc@Uv^R)xPv7d8CB<lt$W8bv*y!|B6
-z{)ShmgISfV71$sp;7^YJRI)j;5HX&md+EN^GmCv57(R2!x)Jk;M7Hnwfj4d<DOm(;
-zFxNYI7_7AifGuU}TJYH3lfIL@Lj7Pvj<{bQEzLuE*p}6daX_DvpX9Y~gTaC&0Gwe$
-zh-Vjm7P5MqL7d7KB9eRj$A$_*ZhKB*>s$iv-S)((<(LgxTMbiHO#PU>SE!%rurI3_
-zMb(&hjt&qs+TY-kyr)m%<HdP#YooXJ^BG^}OJ=%4%KYRhj$bK@Y1s-k`RnzIsm?tw
-zf)@|wj&P2vPnL1sA(Iz{yV#+B+-_UraxrLXmcA>jn&#qj=^g#**M>Tsj<K1$m0y}N
-z$d~GE(}x&7Iqj;lWiK8KxAb@JUYzOZ-<rNKGB)!h&Z2zLr}1mUe9H5&mRh<?^>ZJW
-zZ_^{=o1BmM73+pg)t?&k3k|ItE=FnftiJB778xciWn5m}HQaKv({ORd<z8BP`hm!)
-zI1k}#M;!{b%v&<fJP<7J`0iJ}+t^R#!0EDeqD+Bn6)EhnIc4fXdjI5WyYH3X9;9y4
-zecr#{rD=X*>{XdZ(!C?qA%Ty>s<n0Rd<{MP?MqTXVBGY*y)HLje9R3@uXYZ*TaDZ4
-zeKdq2^ol(*6xea}h~H#aSN3LxuvcG4;GIzB!q>4G%Gj%KvSf)z-|pU#KG?r#xwWC?
-z)Go;$dwTBo$-$mL;jR5gwRct(ZOy0Ov|B*^Ia}WGf?ZWAXveynUq9eK<r3|84n^^C
-z`*ETLGx!t?pMBvcMpFZY_yJS<>x66@>`Q?xNgfo4NO7Z*4Cp~fClo-dYiJ-fP^be4
-zfMig7SV&d)42^)SDNMRQgG^z9)3qgoPPU=2oFH)iMnblfAQm7u3}PAEu)ql$iH79>
-z79%=fN28Zsz=0dWgLfd2iG&a8)(8OlVHT`n`QQ$u0lSb(hB1+lDb<aMbV9&pTO$r2
-zfdqe8<S(qS^dD#bWllVaMWWF?Rz&=;o=9Pl+yDlNUIzT7Tl04Te=P$6Sy&R0XdLc`
-zkxQ%kp~_kl0rOe^C1z=vD_AT7`#TnX{ed(fF)6TPAR9vm2V1<7356CwVNuDXC3g`h
-zOfrM&%c3)oTCj*EcPwFmJE;sN3-3u{AXPDt8R^FyjmAQIsctM!rV|J?tmxN&s;a6;
-z_zT09vG54K2pFQS4kyX-xWe_D3_zu!p}F+c#9)x{cj+ChR&z<$3N<VP3-l~e0qHOm
-zOz|tnvaA(7D^I`)w7~q!cC5@`$;%K7&<az-Pgutf3dAxNUY$B>d38&erQ9|20k=G=
-zj|Xs#kG>C+`t#k!-<1VtKAbEdwksJ3JNuV3`dciPUd>6~lz$JJ0Vp0PWni5$1`U?1
-z0UV`<J^)`gJ(x%}1f<U-!-WKZpaw|3CKRfN=Z{x7-Y^d4L_oVi>Qc%2J{~j*5`}<l
-zSQKx2P(VNgk;-I(<tznyDSQx|2%rY#A$`aI!b1ee5Hf;{q1})fM1;&C3&;|(f~+AM
-z$QH7PNRTT;rqk#?VD$DTL2eKQa);bOK|>x86{11jkPk$Md?8=B=4ljn*7A%2TMGG7
-z7*x6&#DJI(lSX2CLQG#0nF6sORv;bnhx~oqC=4c<&Y(a63QMj67jB9w5)Fs#*Aju>
-ze>i#hO8)DO94z<O(BN0D@E9$1EgbIWW&N~0)mC7yP(ks?4SwEpI8Of3OGqo3Vy=qI
-z$2K5O9YbVh%3r1_zC^B$@jK}n`?b&2OwH$XMO19KlUg()+DL*Ib^VyeK~1dpfc*N{
-z+3Dbi7lJpsZ*RG&b*&>O%x>D}<?PGx`A-y)k}&QE#luo9Bb6<^56*ADXfGMWb&5Sx
-zUoWFYpgi+#PTWMUi@Pg+Z0J09@j0YvNnOU8sONewkaKOK!<*dN9G<p#e7%u;J$Tb&
-z5ry8|%_RxOJ2~9khAGOX#0LRe1_uYn3S~Nu<Kp&T-Jej>Dy3~z+A7s2rKqJYr;Gk*
-zp}AN-w#e0liuIbawQIN)d!_kU+uIAr6-vU3tvxJU1O-#7c4&K;d-{Y7>>uK{@EEt+
-zl=X7^?WV3-5o7o5gN@uC?r8nkor4W+?pIYM+l<Xns!<}f1XZb6In{&<^+D)%Gw#ie
-zL8{CPMX?)H<4zvDiXOaRvi(>*`kP2R+QY&9Kjeqpq_r5EEt&{fa%1zz)2cR!0JS>_
-z`L6vlr$z#;I$aWE6wa|O5K*S6ojd#!J|#H6j$(LKCM{rb=X=&OYWGI-GdQ}Bx-Axd
-zmz%$*nod5`_Mq)fTmQai`>;+NjyuYlBczq~pHW-u{1De=dhmw6!tH5!zr3g|T1qE&
-zTG!WYAI)$tLSP!?Wbn`L$A4R!ea?aL_F$a#*C?+DZiOSgG70|T4hEOH1uRZyiPAoZ
-zeRCoOo=VLtk`#_^47abSyLacnV&-sbr?1wRzzqSfOG)L%%@pr2dHYJwi<bxUx#QxW
-z^ImaJe?Ngs<+#>sAiXw+kF{2oFF4^Tnb^7UskQWsy#E%g!y%3w1>(lh$2Hogi6xR3
-zr{hC*?h7nY_N>rmO+CA>bYHl;+)}VpSvgQi$Zd}FxN=f%>wh%g@D(K`V$3ZhV+uDJ
-z%xPvTR9E{cv?KTpoTCfZ*-sVw5cj3r><`Co<<#99uubx1vyfNDex>7y6%I1(&SzxK
-za*RaP%lrC_M=9`Xmz|2WAN?%s@^VJ5%<VPpXkhtuqqE2JZdmn;U0Hue?fAWmy4jIV
-z%KRx7Qt5i;zSN<|9^q&8qC)u3n@Q_KTpP~pdWk&{N<@D{TRa^g6lJw0Jv+OqL@v0}
-z7`INT@b>INc3tb)PIj-2#QBdhQ9PbHP*$4irn-<3uFdA!n|M$kuDrZ;S)o^S!Li=C
-z$CO)T%SpwF0J`)mPk~8d+yxQQv)bZ(Ou`P+ltXKB-51Y&Q4Jq?KL#~P8O<d>aH$Bs
-zzt%1!$n81d;;`{2q~4ac?$tbJ?1s|agcRD{B^>>bj+Z@T6xBJB+o?7r=~`lb>Zm`b
-z)yaI{m^-32WjBP@qiomhFbl6KdK4!wP~5I3P%5op;5kgW`Ay3~Oy&Dv(@8hpqUe<O
-zZ$zfK^J;H@*mu}P5P3!DuGqc>K^pJl#QdI~q$`1Qwr4KyJMAmWkNLxF%$LKXke0()
-zpodO-kS3WV8a|vgXYgdGFLNPNLa?sD(XapG9UjN{M**7Me}o6+@m$yta>N9xor%(k
-zm)UGQVD$8?&fM7wgF}bAM#KUIAM%*$$J7`cJ55+s;8xk!#I18wR!AnCL!009c76Rx
-zgcOHCSeEeYtFN9Dp&MTmG~uTc0-Uf-`dAbFO}SD@$;VR&^37W2{i=k9SrUTB+~R<V
-z%*o_YgA@UKOTrUE$IdIY!}2t#@3t1H6Y7HJ%*ONIv~S%RVx{u2j~$Rj-Wj1C_At#N
-zu)r|fZ2X>lSWI1FlK)yxCML8BUBKDoS8P6Z*vjQ`P1weHYo4*2vT7IRrQiD5y?-8m
-z>fKFeZTlEW1d8Um%`YJ_Mlw6C9^ZCwSKH8w2g2qT)dDlFWm+)qs24id2UxyHUga(Q
-z-IBb(`;^Rc+E3V@x3m#^x+Gj!ZNB4)hX1*>0mZj(&l>qA81Is(a-JL;8I-$MQEuZo
-z*fZYRUwLx)rO=7<c@FR87TRWuuS>3--t#F>s8v+<*$JQYHn~@Ex?*Nt-n*hE+$NvZ
-zT^=V33J=n6<`JG;|7=D*eYPd5=Hbc8)|Af?cfZJUD)*;{s?A<nsCPOQ;nx@Tu5sVN
-z(-$ArC%!A#e>?2@+T*3i>Vt~68;r`Qn~gSKPHu6QWSS+E=FmRODXDWS1x6Q~_P6L5
-z;p3Vqyoj~tzjD^rK+9mVS+rG9)5N>t@Z7?I;PUcwGIe}@R-Xr>Bl?D%2I6)77T0L$
-z)Ks0qY!71D>zT=9YdmVTU0iSbzWb~>;>L-_idVMlmG0(uMC>Uo+^1AadbX$UPp1h9
-z%(2z3Lt>u>n6m5FDhd+4KIK7eh6*!98_rvpn&2$YD!Bx{FTp!O2<JXY%;f+L?ks-s
-zKF6260*l`!5@U8Zh4bW|$>N_c9>13#>X3J_#ProiCCft$d;6PB?&sv=^->uddaR3C
-zv988j92Y1H`q{cB8!B&Yb~5)qTD4|JkHCCd*Z%KLB8LQP8gI5YT%K`WtCeiE>*1UJ
-z{Y24^66tUI*ow5S8tTTwc5#}XGEojYVy?8VE4F7g%#ioG?oxltqJ|%Nqx^@EKNs(U
-zQt}BglQhH18$-L8O0^e~OXGJpZ{~C}zJGc{%r<MnC`ZD^`sj5H)l?N~m<+^<f0eys
-zN2^bbN~uP_<*F}Mt4eEeiN`)PhIercG_*Wlon!JrQbeL6+0{<n+ob97;{zTui0Oq!
-z@AOZoksKBOuD!Ad<lVe6&eKVT`(E~X+jMCkH_BZjEb1LzbUD%pBmb~*XW2ztqupJ-
-z4NpI!O}`Q1c%s(@vw{aB?cNFX%%yJQ&QB^Y;Sm|#C;H9w{AvT?4|@-o>s!spD+E$Q
-z&L{>xzPhh@>%*NFLlm++LtEOd9V=2*H_4=!scZ;}=ho@WH2%;zP<+bp$@^6wq6_?R
-zME7$WXS9n3xNj@#6sXM0aXp#By;9H=abM$nxh%)$xURBIn&o^=Wm(0+)s?k73G0H{
-z+nqy@O$!`Zs^bSFzUA%@xXJfNs!HzWtAAESs7;6pRcEk{cx;h2sBUz4x5g<X>V2iN
-z2WC38{H6>lNkgJXa!6^jzJi8V_m2IAk%kp|A6of5vbOrwgnfo0#5P>1nz*3xv~15o
-zwU^jx<K28&!B5wzAB;1)q~wS-@vDlur?gp<z9{Z(82%v<e@(zQu4i38vaCy*X=6R4
-zq^g-sKgH)*8G7`dZ`u0w7LZ4SA|vSB`8z6V=@TEH`k3}(w|NDNBlz8>jC<M^_7a0h
-z_YYK#9&8i7R;&~yZs;<uT@r_r-iCA_h<x!XDNf3UzPPR8uS+=9s&uM@C2o6bE4KJu
-zn|?-*Dp6!GqiljRH7rG|_}Mf3`9aAMlTDi*Yh4dyd>QXfq<-yfNn6CtdCpz?WA@N^
-zy2YmW#I*jT*_cEFqNz^oQ9-7ct)=UyJkH6_FHXvZ6OFb+4A?iaH^hC}b%t9|+1FGl
-z=W_D2e7eqC$nbow==C#061P&#)-3wHB=DhjG3^spw@;$N1){%JON##4BN=mR4&i+n
-zC&7Q$NlA2`IX`}6Z)Vk(GS`VqF_$))C><+x68loK(^ma(j*cpIaA3@aL!x}1UFA`Y
-z3tM1!cKu-zG(+xw`+jIcy^Y|fspzS>h_goqNO4`nG<vjM$;J-Z2?Zicrf7p4DLPia
-zVQSU-!=|#1Ey1-DoUc#Sh#lW6GB;9V^<F}(Hv2-PhxU4%HAmy;KGxj3)5|Ak85rgo
-zn{fM2-`ssN`^4R9*Nn`M>(ww%rd>Hnul=+tLTby28ddQ+qwrJ|yDR<;r9t@ddUlX9
-zGR!$5jBS4RT;+khGN;Tje)eK=Q`U%>eUrCv!k4d8J<jqq2}c(Vk~lI)#Om*aRKDW$
-zKd|F-mS)oI%LY#O@$`KAS@#6vI8%*jT7o^Ju%)m?ZGB>m*p4s*8e#CG!@|XqR+R?M
-zL(!IOVFq#7TZnjAS^33`)24&Ti~r&HoT>reo_=pSEM2dEy-2NGy#G4hI}puQ&h}_k
-zEcWNwUT0SjxK?;kSV&ij2h~ScZv4(YIV9ChS8lI55k>UHQ#`3AAq<L5h`B8}#EY!u
-zCbtWR(Ah---42R!5Xo2Bed%{TCKBAKbfxjuW=7I5L6CNkx34$2|09FEX+BKtAYHj7
-z7Hu$x!H^tsiG<~)E9XG8M6&2~nirLY#HeVgpq0_8JCN=SaP<qMGrW*!6%9EclHumA
-zZ4Fu<%L2ihuAC=}<*N-rfq{W4fvPHWh6jY!($a!Z7zl$=1{BK7U>_DKNZE(E4d`1k
-zgzE5<&4;P7WRnWGo<URx2(5yGRurwY1gLZ$B&?X^O7~~!%DJLR6cP#RuB?fnxGSU4
-z6isCm_$aHR$yiqk8skpJpjI^b{$k;8ssIA$QUxvmGi}h;aq}lr7`k%C=5|P9Pdbye
-z+>JnDRn#@)pdTy$FBk-(_3vv3h~>p2!AzS7?(pux1kh8`mBXM=V1=5>7<F5;rZ!qj
-z8>Q|D)(5EY;CEc`yYBx^h12;-MrYW9@Z#L59vC-D0MZ^@Tw%Yes$h_oBo^6|MhT$M
-zkm|}Lny)8GQwRDxqYeaz;1>`4SA9Yx{=dEA?F}a@$(KmfCeX?L-k@`^oA7^3h5uso
-z+{i!8^z~=Zma^TA3{hwl*ditfAR5@|M%H$xGrUP4S4qCUpszt<0arsH(d2MC0Lh}V
-zXcXL1E$P!(%M%(Et_^J($;U%iE=bvp;!g6XvE)F!C^R=F#m|N1ssduS90eK`w>(*5
-zhyD@?W@I=g=!|8lHWa@V@i=cP*^@+}>Cxz95)IC9<bL`63V##0!~hHYDdu0oz61ih
-z0LTF7=N^MYApc9B|DK?~Hde4*>&gYf+vYzu?q7N{E8BqlzwH7FpoInd7K9S6IC+9L
-zT$m_Lj5=Bqtp#cl5P-7%Uvai@)aCyc&lRC`2EhEEDid(%`?EX&!@mbq;b+@6h(U1&
-z4MxyJgSW@!4^l&2T~!_Fj{E^rMQMVTH2gvOtiZ797|=HT9j1yxgNEtvFbr1XAG|0O
-z`X4Y1R_z}!RkRvtZ2m4!6{7}v+JA#-sDsAt-(YC$Kj|=V8~S%TH53}O&wqz$qJEXf
-zVvs<;jsgDL3=*=ThJgOP8WOUm(?O#hZr~xI-9GMg<We&av?vKkCmk(SHLL+a6OT8<
-y7@#!Kn(F!lBSRxKf{~hrD&A0E4fp@2H~{zXnJf~6wG<$%rWy(%D{E+Bg!mtI^`!6s
+------------------>
+Mike Galbraith (1):
+      locking, drivers/dca: Annotate dca_lock as raw
 
-diff --git a/Documentation/DocBook/media/v4l/pipeline.pdf b/Documentation/DocBook/media/v4l/pipeline.pdf
-deleted file mode 100644
-index ee3e37f04b6a788e255ce26d1607e77ba2c119a3..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+Peter Zijlstra (1):
+      lockdep: Comment all warnings
 
-literal 20276
-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
-V%8y_8ZbSy1$UvHzIeI!F{{we5{PX|-
+Shan Hai (1):
+      locking, lib/atomic64: Annotate atomic64_lock::lock as raw
 
-diff --git a/Documentation/DocBook/media/v4l/vbi_525.pdf b/Documentation/DocBook/media/v4l/vbi_525.pdf
-deleted file mode 100644
-index 9e72c25b208db6c7844ed85fe9742324602c0a5c..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+Thomas Gleixner (22):
+      rtmutex: Cleanup the debug code
+      locking, kprobes: Annotate the hash locks and kretprobe.lock as raw
+      locking, percpu_counter: Annotate ::lock as raw
+      locking, sched, cgroups: Annotate release_list_lock as raw
+      locking, lib/proportions: Annotate prop_local_percpu::lock as raw
+      locking, tracing: Annotate tracing locks as raw
+      locking, printk: Annotate logbuf_lock as raw
+      locking, sched: Annotate thread_group_cputimer as raw
+      locking, semaphores: Annotate inner lock as raw
+      locking, rwsem: Annotate inner lock as raw
+      locking, timer_stats: Annotate table_lock as raw
+      locking, latencytop: Annotate latency_lock as raw
+      locking, video: Annotate vga console lock as raw
+      locking, oprofile: Annotate oprofilefs lock as raw
+      locking, ACPI: Annotate c3_lock as raw
+      locking, x86: mce: Annotate cmci_discover_lock as raw
+      locking, powerpc: Annotate uic->lock as raw
+      locking, ARM: Annotate low level hw locks as raw
+      locking, x86, iommu: Annotate iommu->register_lock as raw
+      locking, x86, iommu: Annotate irq_2_ir_lock as raw
+      locking, x86, iommu: Annotate qi->q_lock as raw
+      rtmutex: Add missing rcu_read_unlock() in debug_rt_mutex_print_deadlock()
 
-literal 3395
-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
+Uwe Kleine-König (1):
+      locking, dma, ipu: Annotate bank_lock as raw
 
-diff --git a/Documentation/DocBook/media/v4l/vbi_625.pdf b/Documentation/DocBook/media/v4l/vbi_625.pdf
-deleted file mode 100644
-index 765235e33a4de256a0b3fbf64ffe52946190cac4..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+Yong Zhang (1):
+      lib: atomic64: Change the type of local lock to raw_spinlock_t
 
-literal 3683
-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
-O%*+C6V6bby1N2|1C{8y3
 
-diff --git a/Documentation/DocBook/media/v4l/vbi_hsync.pdf b/Documentation/DocBook/media/v4l/vbi_hsync.pdf
-deleted file mode 100644
-index 200b668189bf1d0761dbcd75f38e43cb4d703a33..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
+ arch/arm/common/gic.c                            |   26 ++--
+ arch/arm/include/asm/dma.h                       |    6 +-
+ arch/arm/include/asm/mmu.h                       |    4 +-
+ arch/arm/kernel/dma.c                            |    2 +-
+ arch/arm/kernel/smp.c                            |    6 +-
+ arch/arm/kernel/traps.c                          |   20 ++--
+ arch/arm/mach-footbridge/include/mach/hardware.h |    2 +-
+ arch/arm/mach-footbridge/netwinder-hw.c          |   14 +-
+ arch/arm/mach-footbridge/netwinder-leds.c        |   10 +-
+ arch/arm/mach-integrator/core.c                  |    6 +-
+ arch/arm/mach-integrator/pci_v3.c                |   14 +-
+ arch/arm/mach-ixp4xx/common-pci.c                |   22 ++--
+ arch/arm/mach-shark/leds.c                       |    6 +-
+ arch/arm/mm/cache-l2x0.c                         |   46 +++---
+ arch/arm/mm/context.c                            |   14 +-
+ arch/arm/mm/copypage-v4mc.c                      |    6 +-
+ arch/arm/mm/copypage-v6.c                        |   10 +-
+ arch/arm/mm/copypage-xscale.c                    |    6 +-
+ arch/powerpc/sysdev/uic.c                        |   24 ++--
+ arch/x86/kernel/cpu/mcheck/mce_intel.c           |   10 +-
+ arch/x86/oprofile/nmi_int.c                      |    4 +-
+ drivers/acpi/processor_idle.c                    |   10 +-
+ drivers/dca/dca-core.c                           |   78 ++++++-----
+ drivers/dma/ipu/ipu_irq.c                        |   48 ++++----
+ drivers/iommu/dmar.c                             |   48 ++++----
+ drivers/iommu/intel-iommu.c                      |   36 +++---
+ drivers/iommu/intr_remapping.c                   |   40 +++---
+ drivers/oprofile/event_buffer.c                  |    4 +-
+ drivers/oprofile/oprofile_perf.c                 |    4 +-
+ drivers/oprofile/oprofilefs.c                    |    6 +-
+ drivers/video/console/vgacon.c                   |   42 +++---
+ include/linux/init_task.h                        |    2 +-
+ include/linux/intel-iommu.h                      |    4 +-
+ include/linux/kprobes.h                          |    2 +-
+ include/linux/oprofile.h                         |    2 +-
+ include/linux/percpu_counter.h                   |    2 +-
+ include/linux/proportions.h                      |    6 +-
+ include/linux/ratelimit.h                        |    6 +-
+ include/linux/rwsem-spinlock.h                   |    2 +-
+ include/linux/rwsem.h                            |   10 +-
+ include/linux/sched.h                            |    4 +-
+ include/linux/semaphore.h                        |    4 +-
+ kernel/cgroup.c                                  |   18 ++--
+ kernel/kprobes.c                                 |   34 +++---
+ kernel/latencytop.c                              |   14 +-
+ kernel/lockdep.c                                 |  156 ++++++++++++++++++++--
+ kernel/posix-cpu-timers.c                        |   12 +-
+ kernel/printk.c                                  |   46 +++---
+ kernel/rtmutex-debug.c                           |   77 ++---------
+ kernel/sched_stats.h                             |   12 +-
+ kernel/semaphore.c                               |   28 ++--
+ kernel/time/timer_stats.c                        |    6 +-
+ kernel/trace/ring_buffer.c                       |   52 ++++----
+ kernel/trace/trace.c                             |   10 +-
+ kernel/trace/trace_irqsoff.c                     |    6 +-
+ lib/atomic64.c                                   |   66 +++++-----
+ lib/percpu_counter.c                             |   18 ++--
+ lib/proportions.c                                |   12 +-
+ lib/ratelimit.c                                  |    4 +-
+ lib/rwsem-spinlock.c                             |   38 +++---
+ lib/rwsem.c                                      |   14 +-
+ 61 files changed, 669 insertions(+), 572 deletions(-)
 
-literal 7405
-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
-Z)<*{hlj6^0trDJuCm<vxbxd^;{{w1gP%Que
-
--- 
-1.7.6.1
-
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index 3227ca9..6fba8bd 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -33,7 +33,7 @@
+ #include <asm/mach/irq.h>
+ #include <asm/hardware/gic.h>
+ 
+-static DEFINE_SPINLOCK(irq_controller_lock);
++static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+ 
+ /* Address of GIC 0 CPU interface */
+ void __iomem *gic_cpu_base_addr __read_mostly;
+@@ -82,30 +82,30 @@ static void gic_mask_irq(struct irq_data *d)
+ {
+ 	u32 mask = 1 << (d->irq % 32);
+ 
+-	spin_lock(&irq_controller_lock);
++	raw_spin_lock(&irq_controller_lock);
+ 	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_CLEAR + (gic_irq(d) / 32) * 4);
+ 	if (gic_arch_extn.irq_mask)
+ 		gic_arch_extn.irq_mask(d);
+-	spin_unlock(&irq_controller_lock);
++	raw_spin_unlock(&irq_controller_lock);
+ }
+ 
+ static void gic_unmask_irq(struct irq_data *d)
+ {
+ 	u32 mask = 1 << (d->irq % 32);
+ 
+-	spin_lock(&irq_controller_lock);
++	raw_spin_lock(&irq_controller_lock);
+ 	if (gic_arch_extn.irq_unmask)
+ 		gic_arch_extn.irq_unmask(d);
+ 	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_SET + (gic_irq(d) / 32) * 4);
+-	spin_unlock(&irq_controller_lock);
++	raw_spin_unlock(&irq_controller_lock);
+ }
+ 
+ static void gic_eoi_irq(struct irq_data *d)
+ {
+ 	if (gic_arch_extn.irq_eoi) {
+-		spin_lock(&irq_controller_lock);
++		raw_spin_lock(&irq_controller_lock);
+ 		gic_arch_extn.irq_eoi(d);
+-		spin_unlock(&irq_controller_lock);
++		raw_spin_unlock(&irq_controller_lock);
+ 	}
+ 
+ 	writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_EOI);
+@@ -129,7 +129,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+ 	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
+ 		return -EINVAL;
+ 
+-	spin_lock(&irq_controller_lock);
++	raw_spin_lock(&irq_controller_lock);
+ 
+ 	if (gic_arch_extn.irq_set_type)
+ 		gic_arch_extn.irq_set_type(d, type);
+@@ -154,7 +154,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+ 	if (enabled)
+ 		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
+ 
+-	spin_unlock(&irq_controller_lock);
++	raw_spin_unlock(&irq_controller_lock);
+ 
+ 	return 0;
+ }
+@@ -182,10 +182,10 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+ 	mask = 0xff << shift;
+ 	bit = 1 << (cpu + shift);
+ 
+-	spin_lock(&irq_controller_lock);
++	raw_spin_lock(&irq_controller_lock);
+ 	val = readl_relaxed(reg) & ~mask;
+ 	writel_relaxed(val | bit, reg);
+-	spin_unlock(&irq_controller_lock);
++	raw_spin_unlock(&irq_controller_lock);
+ 
+ 	return IRQ_SET_MASK_OK;
+ }
+@@ -215,9 +215,9 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
+ 
+ 	chained_irq_enter(chip, desc);
+ 
+-	spin_lock(&irq_controller_lock);
++	raw_spin_lock(&irq_controller_lock);
+ 	status = readl_relaxed(chip_data->cpu_base + GIC_CPU_INTACK);
+-	spin_unlock(&irq_controller_lock);
++	raw_spin_unlock(&irq_controller_lock);
+ 
+ 	gic_irq = (status & 0x3ff);
+ 	if (gic_irq == 1023)
+diff --git a/arch/arm/include/asm/dma.h b/arch/arm/include/asm/dma.h
+index 628670e..69a5b0b 100644
+--- a/arch/arm/include/asm/dma.h
++++ b/arch/arm/include/asm/dma.h
+@@ -34,18 +34,18 @@
+ #define DMA_MODE_CASCADE 0xc0
+ #define DMA_AUTOINIT	 0x10
+ 
+-extern spinlock_t  dma_spin_lock;
++extern raw_spinlock_t  dma_spin_lock;
+ 
+ static inline unsigned long claim_dma_lock(void)
+ {
+ 	unsigned long flags;
+-	spin_lock_irqsave(&dma_spin_lock, flags);
++	raw_spin_lock_irqsave(&dma_spin_lock, flags);
+ 	return flags;
+ }
+ 
+ static inline void release_dma_lock(unsigned long flags)
+ {
+-	spin_unlock_irqrestore(&dma_spin_lock, flags);
++	raw_spin_unlock_irqrestore(&dma_spin_lock, flags);
+ }
+ 
+ /* Clear the 'DMA Pointer Flip Flop'.
+diff --git a/arch/arm/include/asm/mmu.h b/arch/arm/include/asm/mmu.h
+index b4ffe9d..1496565 100644
+--- a/arch/arm/include/asm/mmu.h
++++ b/arch/arm/include/asm/mmu.h
+@@ -6,7 +6,7 @@
+ typedef struct {
+ #ifdef CONFIG_CPU_HAS_ASID
+ 	unsigned int id;
+-	spinlock_t id_lock;
++	raw_spinlock_t id_lock;
+ #endif
+ 	unsigned int kvm_seq;
+ } mm_context_t;
+@@ -16,7 +16,7 @@ typedef struct {
+ 
+ /* init_mm.context.id_lock should be initialized. */
+ #define INIT_MM_CONTEXT(name)                                                 \
+-	.context.id_lock    = __SPIN_LOCK_UNLOCKED(name.context.id_lock),
++	.context.id_lock    = __RAW_SPIN_LOCK_UNLOCKED(name.context.id_lock),
+ #else
+ #define ASID(mm)	(0)
+ #endif
+diff --git a/arch/arm/kernel/dma.c b/arch/arm/kernel/dma.c
+index 2c4a185..7b829d9 100644
+--- a/arch/arm/kernel/dma.c
++++ b/arch/arm/kernel/dma.c
+@@ -23,7 +23,7 @@
+ 
+ #include <asm/mach/dma.h>
+ 
+-DEFINE_SPINLOCK(dma_spin_lock);
++DEFINE_RAW_SPINLOCK(dma_spin_lock);
+ EXPORT_SYMBOL(dma_spin_lock);
+ 
+ static dma_t *dma_chan[MAX_DMA_CHANNELS];
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index d88ff02..4e76e0c 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -538,7 +538,7 @@ static void percpu_timer_stop(void)
+ }
+ #endif
+ 
+-static DEFINE_SPINLOCK(stop_lock);
++static DEFINE_RAW_SPINLOCK(stop_lock);
+ 
+ /*
+  * ipi_cpu_stop - handle IPI from smp_send_stop()
+@@ -547,10 +547,10 @@ static void ipi_cpu_stop(unsigned int cpu)
+ {
+ 	if (system_state == SYSTEM_BOOTING ||
+ 	    system_state == SYSTEM_RUNNING) {
+-		spin_lock(&stop_lock);
++		raw_spin_lock(&stop_lock);
+ 		printk(KERN_CRIT "CPU%u: stopping\n", cpu);
+ 		dump_stack();
+-		spin_unlock(&stop_lock);
++		raw_spin_unlock(&stop_lock);
+ 	}
+ 
+ 	set_cpu_online(cpu, false);
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index bc9f9da..81cc05a 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -255,7 +255,7 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
+ 	return ret;
+ }
+ 
+-static DEFINE_SPINLOCK(die_lock);
++static DEFINE_RAW_SPINLOCK(die_lock);
+ 
+ /*
+  * This function is protected against re-entrancy.
+@@ -267,7 +267,7 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 
+ 	oops_enter();
+ 
+-	spin_lock_irq(&die_lock);
++	raw_spin_lock_irq(&die_lock);
+ 	console_verbose();
+ 	bust_spinlocks(1);
+ 	ret = __die(str, err, thread, regs);
+@@ -277,7 +277,7 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 
+ 	bust_spinlocks(0);
+ 	add_taint(TAINT_DIE);
+-	spin_unlock_irq(&die_lock);
++	raw_spin_unlock_irq(&die_lock);
+ 	oops_exit();
+ 
+ 	if (in_interrupt())
+@@ -302,24 +302,24 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
+ }
+ 
+ static LIST_HEAD(undef_hook);
+-static DEFINE_SPINLOCK(undef_lock);
++static DEFINE_RAW_SPINLOCK(undef_lock);
+ 
+ void register_undef_hook(struct undef_hook *hook)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&undef_lock, flags);
++	raw_spin_lock_irqsave(&undef_lock, flags);
+ 	list_add(&hook->node, &undef_hook);
+-	spin_unlock_irqrestore(&undef_lock, flags);
++	raw_spin_unlock_irqrestore(&undef_lock, flags);
+ }
+ 
+ void unregister_undef_hook(struct undef_hook *hook)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&undef_lock, flags);
++	raw_spin_lock_irqsave(&undef_lock, flags);
+ 	list_del(&hook->node);
+-	spin_unlock_irqrestore(&undef_lock, flags);
++	raw_spin_unlock_irqrestore(&undef_lock, flags);
+ }
+ 
+ static int call_undef_hook(struct pt_regs *regs, unsigned int instr)
+@@ -328,12 +328,12 @@ static int call_undef_hook(struct pt_regs *regs, unsigned int instr)
+ 	unsigned long flags;
+ 	int (*fn)(struct pt_regs *regs, unsigned int instr) = NULL;
+ 
+-	spin_lock_irqsave(&undef_lock, flags);
++	raw_spin_lock_irqsave(&undef_lock, flags);
+ 	list_for_each_entry(hook, &undef_hook, node)
+ 		if ((instr & hook->instr_mask) == hook->instr_val &&
+ 		    (regs->ARM_cpsr & hook->cpsr_mask) == hook->cpsr_val)
+ 			fn = hook->fn;
+-	spin_unlock_irqrestore(&undef_lock, flags);
++	raw_spin_unlock_irqrestore(&undef_lock, flags);
+ 
+ 	return fn ? fn(regs, instr) : 1;
+ }
+diff --git a/arch/arm/mach-footbridge/include/mach/hardware.h b/arch/arm/mach-footbridge/include/mach/hardware.h
+index 15d5498..e3d6cca 100644
+--- a/arch/arm/mach-footbridge/include/mach/hardware.h
++++ b/arch/arm/mach-footbridge/include/mach/hardware.h
+@@ -93,7 +93,7 @@
+ #define CPLD_FLASH_WR_ENABLE	1
+ 
+ #ifndef __ASSEMBLY__
+-extern spinlock_t nw_gpio_lock;
++extern raw_spinlock_t nw_gpio_lock;
+ extern void nw_gpio_modify_op(unsigned int mask, unsigned int set);
+ extern void nw_gpio_modify_io(unsigned int mask, unsigned int in);
+ extern unsigned int nw_gpio_read(void);
+diff --git a/arch/arm/mach-footbridge/netwinder-hw.c b/arch/arm/mach-footbridge/netwinder-hw.c
+index 06e514f..5b73190 100644
+--- a/arch/arm/mach-footbridge/netwinder-hw.c
++++ b/arch/arm/mach-footbridge/netwinder-hw.c
+@@ -68,7 +68,7 @@ static inline void wb977_ww(int reg, int val)
+ /*
+  * This is a lock for accessing ports GP1_IO_BASE and GP2_IO_BASE
+  */
+-DEFINE_SPINLOCK(nw_gpio_lock);
++DEFINE_RAW_SPINLOCK(nw_gpio_lock);
+ EXPORT_SYMBOL(nw_gpio_lock);
+ 
+ static unsigned int current_gpio_op;
+@@ -327,9 +327,9 @@ static inline void wb977_init_gpio(void)
+ 	/*
+ 	 * Set Group1/Group2 outputs
+ 	 */
+-	spin_lock_irqsave(&nw_gpio_lock, flags);
++	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
+ 	nw_gpio_modify_op(-1, GPIO_RED_LED | GPIO_FAN);
+-	spin_unlock_irqrestore(&nw_gpio_lock, flags);
++	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+ }
+ 
+ /*
+@@ -390,9 +390,9 @@ static void __init cpld_init(void)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&nw_gpio_lock, flags);
++	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
+ 	nw_cpld_modify(-1, CPLD_UNMUTE | CPLD_7111_DISABLE);
+-	spin_unlock_irqrestore(&nw_gpio_lock, flags);
++	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+ }
+ 
+ static unsigned char rwa_unlock[] __initdata =
+@@ -616,9 +616,9 @@ static int __init nw_hw_init(void)
+ 		cpld_init();
+ 		rwa010_init();
+ 
+-		spin_lock_irqsave(&nw_gpio_lock, flags);
++		raw_spin_lock_irqsave(&nw_gpio_lock, flags);
+ 		nw_gpio_modify_op(GPIO_RED_LED|GPIO_GREEN_LED, DEFAULT_LEDS);
+-		spin_unlock_irqrestore(&nw_gpio_lock, flags);
++		raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+ 	}
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-footbridge/netwinder-leds.c b/arch/arm/mach-footbridge/netwinder-leds.c
+index 00269fe..e57102e 100644
+--- a/arch/arm/mach-footbridge/netwinder-leds.c
++++ b/arch/arm/mach-footbridge/netwinder-leds.c
+@@ -31,13 +31,13 @@
+ static char led_state;
+ static char hw_led_state;
+ 
+-static DEFINE_SPINLOCK(leds_lock);
++static DEFINE_RAW_SPINLOCK(leds_lock);
+ 
+ static void netwinder_leds_event(led_event_t evt)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&leds_lock, flags);
++	raw_spin_lock_irqsave(&leds_lock, flags);
+ 
+ 	switch (evt) {
+ 	case led_start:
+@@ -117,12 +117,12 @@ static void netwinder_leds_event(led_event_t evt)
+ 		break;
+ 	}
+ 
+-	spin_unlock_irqrestore(&leds_lock, flags);
++	raw_spin_unlock_irqrestore(&leds_lock, flags);
+ 
+ 	if  (led_state & LED_STATE_ENABLED) {
+-		spin_lock_irqsave(&nw_gpio_lock, flags);
++		raw_spin_lock_irqsave(&nw_gpio_lock, flags);
+ 		nw_gpio_modify_op(GPIO_RED_LED | GPIO_GREEN_LED, hw_led_state);
+-		spin_unlock_irqrestore(&nw_gpio_lock, flags);
++		raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+ 	}
+ }
+ 
+diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
+index 77315b9..0c20cf6 100644
+--- a/arch/arm/mach-integrator/core.c
++++ b/arch/arm/mach-integrator/core.c
+@@ -205,7 +205,7 @@ static struct amba_pl010_data integrator_uart_data = {
+ 
+ #define CM_CTRL	IO_ADDRESS(INTEGRATOR_HDR_CTRL)
+ 
+-static DEFINE_SPINLOCK(cm_lock);
++static DEFINE_RAW_SPINLOCK(cm_lock);
+ 
+ /**
+  * cm_control - update the CM_CTRL register.
+@@ -217,10 +217,10 @@ void cm_control(u32 mask, u32 set)
+ 	unsigned long flags;
+ 	u32 val;
+ 
+-	spin_lock_irqsave(&cm_lock, flags);
++	raw_spin_lock_irqsave(&cm_lock, flags);
+ 	val = readl(CM_CTRL) & ~mask;
+ 	writel(val | set, CM_CTRL);
+-	spin_unlock_irqrestore(&cm_lock, flags);
++	raw_spin_unlock_irqrestore(&cm_lock, flags);
+ }
+ 
+ EXPORT_SYMBOL(cm_control);
+diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
+index dd56bfb..56c3062 100644
+--- a/arch/arm/mach-integrator/pci_v3.c
++++ b/arch/arm/mach-integrator/pci_v3.c
+@@ -164,7 +164,7 @@
+  *	 7:2	register number
+  *  
+  */
+-static DEFINE_SPINLOCK(v3_lock);
++static DEFINE_RAW_SPINLOCK(v3_lock);
+ 
+ #define PCI_BUS_NONMEM_START	0x00000000
+ #define PCI_BUS_NONMEM_SIZE	SZ_256M
+@@ -285,7 +285,7 @@ static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
+ 	unsigned long flags;
+ 	u32 v;
+ 
+-	spin_lock_irqsave(&v3_lock, flags);
++	raw_spin_lock_irqsave(&v3_lock, flags);
+ 	addr = v3_open_config_window(bus, devfn, where);
+ 
+ 	switch (size) {
+@@ -303,7 +303,7 @@ static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
+ 	}
+ 
+ 	v3_close_config_window();
+-	spin_unlock_irqrestore(&v3_lock, flags);
++	raw_spin_unlock_irqrestore(&v3_lock, flags);
+ 
+ 	*val = v;
+ 	return PCIBIOS_SUCCESSFUL;
+@@ -315,7 +315,7 @@ static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
+ 	unsigned long addr;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&v3_lock, flags);
++	raw_spin_lock_irqsave(&v3_lock, flags);
+ 	addr = v3_open_config_window(bus, devfn, where);
+ 
+ 	switch (size) {
+@@ -336,7 +336,7 @@ static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
+ 	}
+ 
+ 	v3_close_config_window();
+-	spin_unlock_irqrestore(&v3_lock, flags);
++	raw_spin_unlock_irqrestore(&v3_lock, flags);
+ 
+ 	return PCIBIOS_SUCCESSFUL;
+ }
+@@ -515,7 +515,7 @@ void __init pci_v3_preinit(void)
+ 	hook_fault_code(8, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
+ 	hook_fault_code(10, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
+ 
+-	spin_lock_irqsave(&v3_lock, flags);
++	raw_spin_lock_irqsave(&v3_lock, flags);
+ 
+ 	/*
+ 	 * Unlock V3 registers, but only if they were previously locked.
+@@ -588,7 +588,7 @@ void __init pci_v3_preinit(void)
+ 		printk(KERN_ERR "PCI: unable to grab PCI error "
+ 		       "interrupt: %d\n", ret);
+ 
+-	spin_unlock_irqrestore(&v3_lock, flags);
++	raw_spin_unlock_irqrestore(&v3_lock, flags);
+ }
+ 
+ void __init pci_v3_postinit(void)
+diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
+index 2131832..1b5fe87 100644
+--- a/arch/arm/mach-ixp4xx/common-pci.c
++++ b/arch/arm/mach-ixp4xx/common-pci.c
+@@ -54,7 +54,7 @@ unsigned long ixp4xx_pci_reg_base = 0;
+  * these transactions are atomic or we will end up
+  * with corrupt data on the bus or in a driver.
+  */
+-static DEFINE_SPINLOCK(ixp4xx_pci_lock);
++static DEFINE_RAW_SPINLOCK(ixp4xx_pci_lock);
+ 
+ /*
+  * Read from PCI config space
+@@ -62,10 +62,10 @@ static DEFINE_SPINLOCK(ixp4xx_pci_lock);
+ static void crp_read(u32 ad_cbe, u32 *data)
+ {
+ 	unsigned long flags;
+-	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
++	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
+ 	*PCI_CRP_AD_CBE = ad_cbe;
+ 	*data = *PCI_CRP_RDATA;
+-	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
++	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
+ }
+ 
+ /*
+@@ -74,10 +74,10 @@ static void crp_read(u32 ad_cbe, u32 *data)
+ static void crp_write(u32 ad_cbe, u32 data)
+ { 
+ 	unsigned long flags;
+-	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
++	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
+ 	*PCI_CRP_AD_CBE = CRP_AD_CBE_WRITE | ad_cbe;
+ 	*PCI_CRP_WDATA = data;
+-	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
++	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
+ }
+ 
+ static inline int check_master_abort(void)
+@@ -101,7 +101,7 @@ int ixp4xx_pci_read_errata(u32 addr, u32 cmd, u32* data)
+ 	int retval = 0;
+ 	int i;
+ 
+-	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
++	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
+ 
+ 	*PCI_NP_AD = addr;
+ 
+@@ -118,7 +118,7 @@ int ixp4xx_pci_read_errata(u32 addr, u32 cmd, u32* data)
+ 	if(check_master_abort())
+ 		retval = 1;
+ 
+-	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
++	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
+ 	return retval;
+ }
+ 
+@@ -127,7 +127,7 @@ int ixp4xx_pci_read_no_errata(u32 addr, u32 cmd, u32* data)
+ 	unsigned long flags;
+ 	int retval = 0;
+ 
+-	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
++	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
+ 
+ 	*PCI_NP_AD = addr;
+ 
+@@ -140,7 +140,7 @@ int ixp4xx_pci_read_no_errata(u32 addr, u32 cmd, u32* data)
+ 	if(check_master_abort())
+ 		retval = 1;
+ 
+-	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
++	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
+ 	return retval;
+ }
+ 
+@@ -149,7 +149,7 @@ int ixp4xx_pci_write(u32 addr, u32 cmd, u32 data)
+ 	unsigned long flags;
+ 	int retval = 0;
+ 
+-	spin_lock_irqsave(&ixp4xx_pci_lock, flags);
++	raw_spin_lock_irqsave(&ixp4xx_pci_lock, flags);
+ 
+ 	*PCI_NP_AD = addr;
+ 
+@@ -162,7 +162,7 @@ int ixp4xx_pci_write(u32 addr, u32 cmd, u32 data)
+ 	if(check_master_abort())
+ 		retval = 1;
+ 
+-	spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
++	raw_spin_unlock_irqrestore(&ixp4xx_pci_lock, flags);
+ 	return retval;
+ }
+ 
+diff --git a/arch/arm/mach-shark/leds.c b/arch/arm/mach-shark/leds.c
+index c9e32de..ccd4918 100644
+--- a/arch/arm/mach-shark/leds.c
++++ b/arch/arm/mach-shark/leds.c
+@@ -36,7 +36,7 @@ static char led_state;
+ static short hw_led_state;
+ static short saved_state;
+ 
+-static DEFINE_SPINLOCK(leds_lock);
++static DEFINE_RAW_SPINLOCK(leds_lock);
+ 
+ short sequoia_read(int addr) {
+   outw(addr,0x24);
+@@ -52,7 +52,7 @@ static void sequoia_leds_event(led_event_t evt)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&leds_lock, flags);
++	raw_spin_lock_irqsave(&leds_lock, flags);
+ 
+ 	hw_led_state = sequoia_read(0x09);
+ 
+@@ -144,7 +144,7 @@ static void sequoia_leds_event(led_event_t evt)
+ 	if  (led_state & LED_STATE_ENABLED)
+ 		sequoia_write(hw_led_state,0x09);
+ 
+-	spin_unlock_irqrestore(&leds_lock, flags);
++	raw_spin_unlock_irqrestore(&leds_lock, flags);
+ }
+ 
+ static int __init leds_init(void)
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index 9ecfdb5..3255c51 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -26,7 +26,7 @@
+ #define CACHE_LINE_SIZE		32
+ 
+ static void __iomem *l2x0_base;
+-static DEFINE_SPINLOCK(l2x0_lock);
++static DEFINE_RAW_SPINLOCK(l2x0_lock);
+ static uint32_t l2x0_way_mask;	/* Bitmask of active ways */
+ static uint32_t l2x0_size;
+ 
+@@ -115,9 +115,9 @@ static void l2x0_cache_sync(void)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	cache_sync();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void __l2x0_flush_all(void)
+@@ -134,9 +134,9 @@ static void l2x0_flush_all(void)
+ 	unsigned long flags;
+ 
+ 	/* clean all ways */
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	__l2x0_flush_all();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void l2x0_clean_all(void)
+@@ -144,11 +144,11 @@ static void l2x0_clean_all(void)
+ 	unsigned long flags;
+ 
+ 	/* clean all ways */
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	writel_relaxed(l2x0_way_mask, l2x0_base + L2X0_CLEAN_WAY);
+ 	cache_wait_way(l2x0_base + L2X0_CLEAN_WAY, l2x0_way_mask);
+ 	cache_sync();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void l2x0_inv_all(void)
+@@ -156,13 +156,13 @@ static void l2x0_inv_all(void)
+ 	unsigned long flags;
+ 
+ 	/* invalidate all ways */
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	/* Invalidating when L2 is enabled is a nono */
+ 	BUG_ON(readl(l2x0_base + L2X0_CTRL) & 1);
+ 	writel_relaxed(l2x0_way_mask, l2x0_base + L2X0_INV_WAY);
+ 	cache_wait_way(l2x0_base + L2X0_INV_WAY, l2x0_way_mask);
+ 	cache_sync();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void l2x0_inv_range(unsigned long start, unsigned long end)
+@@ -170,7 +170,7 @@ static void l2x0_inv_range(unsigned long start, unsigned long end)
+ 	void __iomem *base = l2x0_base;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	if (start & (CACHE_LINE_SIZE - 1)) {
+ 		start &= ~(CACHE_LINE_SIZE - 1);
+ 		debug_writel(0x03);
+@@ -195,13 +195,13 @@ static void l2x0_inv_range(unsigned long start, unsigned long end)
+ 		}
+ 
+ 		if (blk_end < end) {
+-			spin_unlock_irqrestore(&l2x0_lock, flags);
+-			spin_lock_irqsave(&l2x0_lock, flags);
++			raw_spin_unlock_irqrestore(&l2x0_lock, flags);
++			raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 		}
+ 	}
+ 	cache_wait(base + L2X0_INV_LINE_PA, 1);
+ 	cache_sync();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void l2x0_clean_range(unsigned long start, unsigned long end)
+@@ -214,7 +214,7 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
+ 		return;
+ 	}
+ 
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	start &= ~(CACHE_LINE_SIZE - 1);
+ 	while (start < end) {
+ 		unsigned long blk_end = start + min(end - start, 4096UL);
+@@ -225,13 +225,13 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
+ 		}
+ 
+ 		if (blk_end < end) {
+-			spin_unlock_irqrestore(&l2x0_lock, flags);
+-			spin_lock_irqsave(&l2x0_lock, flags);
++			raw_spin_unlock_irqrestore(&l2x0_lock, flags);
++			raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 		}
+ 	}
+ 	cache_wait(base + L2X0_CLEAN_LINE_PA, 1);
+ 	cache_sync();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void l2x0_flush_range(unsigned long start, unsigned long end)
+@@ -244,7 +244,7 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
+ 		return;
+ 	}
+ 
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	start &= ~(CACHE_LINE_SIZE - 1);
+ 	while (start < end) {
+ 		unsigned long blk_end = start + min(end - start, 4096UL);
+@@ -257,24 +257,24 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
+ 		debug_writel(0x00);
+ 
+ 		if (blk_end < end) {
+-			spin_unlock_irqrestore(&l2x0_lock, flags);
+-			spin_lock_irqsave(&l2x0_lock, flags);
++			raw_spin_unlock_irqrestore(&l2x0_lock, flags);
++			raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 		}
+ 	}
+ 	cache_wait(base + L2X0_CLEAN_INV_LINE_PA, 1);
+ 	cache_sync();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void l2x0_disable(void)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&l2x0_lock, flags);
++	raw_spin_lock_irqsave(&l2x0_lock, flags);
+ 	__l2x0_flush_all();
+ 	writel_relaxed(0, l2x0_base + L2X0_CTRL);
+ 	dsb();
+-	spin_unlock_irqrestore(&l2x0_lock, flags);
++	raw_spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
+ static void __init l2x0_unlock(__u32 cache_id)
+diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
+index b0ee9ba..93aac068 100644
+--- a/arch/arm/mm/context.c
++++ b/arch/arm/mm/context.c
+@@ -16,7 +16,7 @@
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
+ 
+-static DEFINE_SPINLOCK(cpu_asid_lock);
++static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
+ unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+ #ifdef CONFIG_SMP
+ DEFINE_PER_CPU(struct mm_struct *, current_mm);
+@@ -31,7 +31,7 @@ DEFINE_PER_CPU(struct mm_struct *, current_mm);
+ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
+ {
+ 	mm->context.id = 0;
+-	spin_lock_init(&mm->context.id_lock);
++	raw_spin_lock_init(&mm->context.id_lock);
+ }
+ 
+ static void flush_context(void)
+@@ -58,7 +58,7 @@ static void set_mm_context(struct mm_struct *mm, unsigned int asid)
+ 	 * the broadcast. This function is also called via IPI so the
+ 	 * mm->context.id_lock has to be IRQ-safe.
+ 	 */
+-	spin_lock_irqsave(&mm->context.id_lock, flags);
++	raw_spin_lock_irqsave(&mm->context.id_lock, flags);
+ 	if (likely((mm->context.id ^ cpu_last_asid) >> ASID_BITS)) {
+ 		/*
+ 		 * Old version of ASID found. Set the new one and
+@@ -67,7 +67,7 @@ static void set_mm_context(struct mm_struct *mm, unsigned int asid)
+ 		mm->context.id = asid;
+ 		cpumask_clear(mm_cpumask(mm));
+ 	}
+-	spin_unlock_irqrestore(&mm->context.id_lock, flags);
++	raw_spin_unlock_irqrestore(&mm->context.id_lock, flags);
+ 
+ 	/*
+ 	 * Set the mm_cpumask(mm) bit for the current CPU.
+@@ -117,7 +117,7 @@ void __new_context(struct mm_struct *mm)
+ {
+ 	unsigned int asid;
+ 
+-	spin_lock(&cpu_asid_lock);
++	raw_spin_lock(&cpu_asid_lock);
+ #ifdef CONFIG_SMP
+ 	/*
+ 	 * Check the ASID again, in case the change was broadcast from
+@@ -125,7 +125,7 @@ void __new_context(struct mm_struct *mm)
+ 	 */
+ 	if (unlikely(((mm->context.id ^ cpu_last_asid) >> ASID_BITS) == 0)) {
+ 		cpumask_set_cpu(smp_processor_id(), mm_cpumask(mm));
+-		spin_unlock(&cpu_asid_lock);
++		raw_spin_unlock(&cpu_asid_lock);
+ 		return;
+ 	}
+ #endif
+@@ -153,5 +153,5 @@ void __new_context(struct mm_struct *mm)
+ 	}
+ 
+ 	set_mm_context(mm, asid);
+-	spin_unlock(&cpu_asid_lock);
++	raw_spin_unlock(&cpu_asid_lock);
+ }
+diff --git a/arch/arm/mm/copypage-v4mc.c b/arch/arm/mm/copypage-v4mc.c
+index b806151..7d0a8c2 100644
+--- a/arch/arm/mm/copypage-v4mc.c
++++ b/arch/arm/mm/copypage-v4mc.c
+@@ -30,7 +30,7 @@
+ #define minicache_pgprot __pgprot(L_PTE_PRESENT | L_PTE_YOUNG | \
+ 				  L_PTE_MT_MINICACHE)
+ 
+-static DEFINE_SPINLOCK(minicache_lock);
++static DEFINE_RAW_SPINLOCK(minicache_lock);
+ 
+ /*
+  * ARMv4 mini-dcache optimised copy_user_highpage
+@@ -76,14 +76,14 @@ void v4_mc_copy_user_highpage(struct page *to, struct page *from,
+ 	if (!test_and_set_bit(PG_dcache_clean, &from->flags))
+ 		__flush_dcache_page(page_mapping(from), from);
+ 
+-	spin_lock(&minicache_lock);
++	raw_spin_lock(&minicache_lock);
+ 
+ 	set_pte_ext(TOP_PTE(0xffff8000), pfn_pte(page_to_pfn(from), minicache_pgprot), 0);
+ 	flush_tlb_kernel_page(0xffff8000);
+ 
+ 	mc_copy_user_page((void *)0xffff8000, kto);
+ 
+-	spin_unlock(&minicache_lock);
++	raw_spin_unlock(&minicache_lock);
+ 
+ 	kunmap_atomic(kto, KM_USER1);
+ }
+diff --git a/arch/arm/mm/copypage-v6.c b/arch/arm/mm/copypage-v6.c
+index 63cca00..3d9a155 100644
+--- a/arch/arm/mm/copypage-v6.c
++++ b/arch/arm/mm/copypage-v6.c
+@@ -27,7 +27,7 @@
+ #define from_address	(0xffff8000)
+ #define to_address	(0xffffc000)
+ 
+-static DEFINE_SPINLOCK(v6_lock);
++static DEFINE_RAW_SPINLOCK(v6_lock);
+ 
+ /*
+  * Copy the user page.  No aliasing to deal with so we can just
+@@ -88,7 +88,7 @@ static void v6_copy_user_highpage_aliasing(struct page *to,
+ 	 * Now copy the page using the same cache colour as the
+ 	 * pages ultimate destination.
+ 	 */
+-	spin_lock(&v6_lock);
++	raw_spin_lock(&v6_lock);
+ 
+ 	set_pte_ext(TOP_PTE(from_address) + offset, pfn_pte(page_to_pfn(from), PAGE_KERNEL), 0);
+ 	set_pte_ext(TOP_PTE(to_address) + offset, pfn_pte(page_to_pfn(to), PAGE_KERNEL), 0);
+@@ -101,7 +101,7 @@ static void v6_copy_user_highpage_aliasing(struct page *to,
+ 
+ 	copy_page((void *)kto, (void *)kfrom);
+ 
+-	spin_unlock(&v6_lock);
++	raw_spin_unlock(&v6_lock);
+ }
+ 
+ /*
+@@ -121,13 +121,13 @@ static void v6_clear_user_highpage_aliasing(struct page *page, unsigned long vad
+ 	 * Now clear the page using the same cache colour as
+ 	 * the pages ultimate destination.
+ 	 */
+-	spin_lock(&v6_lock);
++	raw_spin_lock(&v6_lock);
+ 
+ 	set_pte_ext(TOP_PTE(to_address) + offset, pfn_pte(page_to_pfn(page), PAGE_KERNEL), 0);
+ 	flush_tlb_kernel_page(to);
+ 	clear_page((void *)to);
+ 
+-	spin_unlock(&v6_lock);
++	raw_spin_unlock(&v6_lock);
+ }
+ 
+ struct cpu_user_fns v6_user_fns __initdata = {
+diff --git a/arch/arm/mm/copypage-xscale.c b/arch/arm/mm/copypage-xscale.c
+index 649bbcd..610c24c 100644
+--- a/arch/arm/mm/copypage-xscale.c
++++ b/arch/arm/mm/copypage-xscale.c
+@@ -32,7 +32,7 @@
+ #define minicache_pgprot __pgprot(L_PTE_PRESENT | L_PTE_YOUNG | \
+ 				  L_PTE_MT_MINICACHE)
+ 
+-static DEFINE_SPINLOCK(minicache_lock);
++static DEFINE_RAW_SPINLOCK(minicache_lock);
+ 
+ /*
+  * XScale mini-dcache optimised copy_user_highpage
+@@ -98,14 +98,14 @@ void xscale_mc_copy_user_highpage(struct page *to, struct page *from,
+ 	if (!test_and_set_bit(PG_dcache_clean, &from->flags))
+ 		__flush_dcache_page(page_mapping(from), from);
+ 
+-	spin_lock(&minicache_lock);
++	raw_spin_lock(&minicache_lock);
+ 
+ 	set_pte_ext(TOP_PTE(COPYPAGE_MINICACHE), pfn_pte(page_to_pfn(from), minicache_pgprot), 0);
+ 	flush_tlb_kernel_page(COPYPAGE_MINICACHE);
+ 
+ 	mc_copy_user_page((void *)COPYPAGE_MINICACHE, kto);
+ 
+-	spin_unlock(&minicache_lock);
++	raw_spin_unlock(&minicache_lock);
+ 
+ 	kunmap_atomic(kto, KM_USER1);
+ }
+diff --git a/arch/powerpc/sysdev/uic.c b/arch/powerpc/sysdev/uic.c
+index 984cd20..3330fec 100644
+--- a/arch/powerpc/sysdev/uic.c
++++ b/arch/powerpc/sysdev/uic.c
+@@ -47,7 +47,7 @@ struct uic {
+ 	int index;
+ 	int dcrbase;
+ 
+-	spinlock_t lock;
++	raw_spinlock_t lock;
+ 
+ 	/* The remapper for this UIC */
+ 	struct irq_host	*irqhost;
+@@ -61,14 +61,14 @@ static void uic_unmask_irq(struct irq_data *d)
+ 	u32 er, sr;
+ 
+ 	sr = 1 << (31-src);
+-	spin_lock_irqsave(&uic->lock, flags);
++	raw_spin_lock_irqsave(&uic->lock, flags);
+ 	/* ack level-triggered interrupts here */
+ 	if (irqd_is_level_type(d))
+ 		mtdcr(uic->dcrbase + UIC_SR, sr);
+ 	er = mfdcr(uic->dcrbase + UIC_ER);
+ 	er |= sr;
+ 	mtdcr(uic->dcrbase + UIC_ER, er);
+-	spin_unlock_irqrestore(&uic->lock, flags);
++	raw_spin_unlock_irqrestore(&uic->lock, flags);
+ }
+ 
+ static void uic_mask_irq(struct irq_data *d)
+@@ -78,11 +78,11 @@ static void uic_mask_irq(struct irq_data *d)
+ 	unsigned long flags;
+ 	u32 er;
+ 
+-	spin_lock_irqsave(&uic->lock, flags);
++	raw_spin_lock_irqsave(&uic->lock, flags);
+ 	er = mfdcr(uic->dcrbase + UIC_ER);
+ 	er &= ~(1 << (31 - src));
+ 	mtdcr(uic->dcrbase + UIC_ER, er);
+-	spin_unlock_irqrestore(&uic->lock, flags);
++	raw_spin_unlock_irqrestore(&uic->lock, flags);
+ }
+ 
+ static void uic_ack_irq(struct irq_data *d)
+@@ -91,9 +91,9 @@ static void uic_ack_irq(struct irq_data *d)
+ 	unsigned int src = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&uic->lock, flags);
++	raw_spin_lock_irqsave(&uic->lock, flags);
+ 	mtdcr(uic->dcrbase + UIC_SR, 1 << (31-src));
+-	spin_unlock_irqrestore(&uic->lock, flags);
++	raw_spin_unlock_irqrestore(&uic->lock, flags);
+ }
+ 
+ static void uic_mask_ack_irq(struct irq_data *d)
+@@ -104,7 +104,7 @@ static void uic_mask_ack_irq(struct irq_data *d)
+ 	u32 er, sr;
+ 
+ 	sr = 1 << (31-src);
+-	spin_lock_irqsave(&uic->lock, flags);
++	raw_spin_lock_irqsave(&uic->lock, flags);
+ 	er = mfdcr(uic->dcrbase + UIC_ER);
+ 	er &= ~sr;
+ 	mtdcr(uic->dcrbase + UIC_ER, er);
+@@ -118,7 +118,7 @@ static void uic_mask_ack_irq(struct irq_data *d)
+ 	 */
+ 	if (!irqd_is_level_type(d))
+ 		mtdcr(uic->dcrbase + UIC_SR, sr);
+-	spin_unlock_irqrestore(&uic->lock, flags);
++	raw_spin_unlock_irqrestore(&uic->lock, flags);
+ }
+ 
+ static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+@@ -152,7 +152,7 @@ static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ 
+ 	mask = ~(1 << (31 - src));
+ 
+-	spin_lock_irqsave(&uic->lock, flags);
++	raw_spin_lock_irqsave(&uic->lock, flags);
+ 	tr = mfdcr(uic->dcrbase + UIC_TR);
+ 	pr = mfdcr(uic->dcrbase + UIC_PR);
+ 	tr = (tr & mask) | (trigger << (31-src));
+@@ -161,7 +161,7 @@ static int uic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ 	mtdcr(uic->dcrbase + UIC_PR, pr);
+ 	mtdcr(uic->dcrbase + UIC_TR, tr);
+ 
+-	spin_unlock_irqrestore(&uic->lock, flags);
++	raw_spin_unlock_irqrestore(&uic->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -254,7 +254,7 @@ static struct uic * __init uic_init_one(struct device_node *node)
+ 	if (! uic)
+ 		return NULL; /* FIXME: panic? */
+ 
+-	spin_lock_init(&uic->lock);
++	raw_spin_lock_init(&uic->lock);
+ 	indexp = of_get_property(node, "cell-index", &len);
+ 	if (!indexp || (len != sizeof(u32))) {
+ 		printk(KERN_ERR "uic: Device node %s has missing or invalid "
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 8694ef56..38e49bc 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
+  * cmci_discover_lock protects against parallel discovery attempts
+  * which could race against each other.
+  */
+-static DEFINE_SPINLOCK(cmci_discover_lock);
++static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
+ 
+ #define CMCI_THRESHOLD 1
+ 
+@@ -85,7 +85,7 @@ static void cmci_discover(int banks, int boot)
+ 	int hdr = 0;
+ 	int i;
+ 
+-	spin_lock_irqsave(&cmci_discover_lock, flags);
++	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++) {
+ 		u64 val;
+ 
+@@ -116,7 +116,7 @@ static void cmci_discover(int banks, int boot)
+ 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ 	if (hdr)
+ 		printk(KERN_CONT "\n");
+ }
+@@ -150,7 +150,7 @@ void cmci_clear(void)
+ 
+ 	if (!cmci_supported(&banks))
+ 		return;
+-	spin_lock_irqsave(&cmci_discover_lock, flags);
++	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++) {
+ 		if (!test_bit(i, __get_cpu_var(mce_banks_owned)))
+ 			continue;
+@@ -160,7 +160,7 @@ void cmci_clear(void)
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		__clear_bit(i, __get_cpu_var(mce_banks_owned));
+ 	}
+-	spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ }
+ 
+ /*
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 68894fd..96646b3 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -355,10 +355,10 @@ static void nmi_cpu_setup(void *dummy)
+ 	int cpu = smp_processor_id();
+ 	struct op_msrs *msrs = &per_cpu(cpu_msrs, cpu);
+ 	nmi_cpu_save_registers(msrs);
+-	spin_lock(&oprofilefs_lock);
++	raw_spin_lock(&oprofilefs_lock);
+ 	model->setup_ctrs(model, msrs);
+ 	nmi_cpu_setup_mux(cpu, msrs);
+-	spin_unlock(&oprofilefs_lock);
++	raw_spin_unlock(&oprofilefs_lock);
+ 	per_cpu(saved_lvtpc, cpu) = apic_read(APIC_LVTPC);
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ }
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 431ab11..3e05314 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -852,7 +852,7 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
+ }
+ 
+ static int c3_cpu_count;
+-static DEFINE_SPINLOCK(c3_lock);
++static DEFINE_RAW_SPINLOCK(c3_lock);
+ 
+ /**
+  * acpi_idle_enter_bm - enters C3 with proper BM handling
+@@ -930,12 +930,12 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
+ 	 * without doing anything.
+ 	 */
+ 	if (pr->flags.bm_check && pr->flags.bm_control) {
+-		spin_lock(&c3_lock);
++		raw_spin_lock(&c3_lock);
+ 		c3_cpu_count++;
+ 		/* Disable bus master arbitration when all CPUs are in C3 */
+ 		if (c3_cpu_count == num_online_cpus())
+ 			acpi_write_bit_register(ACPI_BITREG_ARB_DISABLE, 1);
+-		spin_unlock(&c3_lock);
++		raw_spin_unlock(&c3_lock);
+ 	} else if (!pr->flags.bm_check) {
+ 		ACPI_FLUSH_CPU_CACHE();
+ 	}
+@@ -944,10 +944,10 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
+ 
+ 	/* Re-enable bus master arbitration */
+ 	if (pr->flags.bm_check && pr->flags.bm_control) {
+-		spin_lock(&c3_lock);
++		raw_spin_lock(&c3_lock);
+ 		acpi_write_bit_register(ACPI_BITREG_ARB_DISABLE, 0);
+ 		c3_cpu_count--;
+-		spin_unlock(&c3_lock);
++		raw_spin_unlock(&c3_lock);
+ 	}
+ 	kt2 = ktime_get_real();
+ 	idle_time_ns = ktime_to_ns(ktime_sub(kt2, kt1));
+diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
+index 4abd089..25ec0bb 100644
+--- a/drivers/dca/dca-core.c
++++ b/drivers/dca/dca-core.c
+@@ -35,7 +35,7 @@ MODULE_VERSION(DCA_VERSION);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Intel Corporation");
+ 
+-static DEFINE_SPINLOCK(dca_lock);
++static DEFINE_RAW_SPINLOCK(dca_lock);
+ 
+ static LIST_HEAD(dca_domains);
+ 
+@@ -101,10 +101,10 @@ static void unregister_dca_providers(void)
+ 
+ 	INIT_LIST_HEAD(&unregistered_providers);
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 
+ 	if (list_empty(&dca_domains)) {
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return;
+ 	}
+ 
+@@ -116,7 +116,7 @@ static void unregister_dca_providers(void)
+ 
+ 	dca_free_domain(domain);
+ 
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	list_for_each_entry_safe(dca, _dca, &unregistered_providers, node) {
+ 		dca_sysfs_remove_provider(dca);
+@@ -144,13 +144,8 @@ static struct dca_domain *dca_get_domain(struct device *dev)
+ 	domain = dca_find_domain(rc);
+ 
+ 	if (!domain) {
+-		if (dca_provider_ioat_ver_3_0(dev) && !list_empty(&dca_domains)) {
++		if (dca_provider_ioat_ver_3_0(dev) && !list_empty(&dca_domains))
+ 			dca_providers_blocked = 1;
+-		} else {
+-			domain = dca_allocate_domain(rc);
+-			if (domain)
+-				list_add(&domain->node, &dca_domains);
+-		}
+ 	}
+ 
+ 	return domain;
+@@ -198,19 +193,19 @@ int dca_add_requester(struct device *dev)
+ 	if (!dev)
+ 		return -EFAULT;
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 
+ 	/* check if the requester has not been added already */
+ 	dca = dca_find_provider_by_dev(dev);
+ 	if (dca) {
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return -EEXIST;
+ 	}
+ 
+ 	pci_rc = dca_pci_rc_from_dev(dev);
+ 	domain = dca_find_domain(pci_rc);
+ 	if (!domain) {
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -220,17 +215,17 @@ int dca_add_requester(struct device *dev)
+ 			break;
+ 	}
+ 
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	if (slot < 0)
+ 		return slot;
+ 
+ 	err = dca_sysfs_add_req(dca, dev, slot);
+ 	if (err) {
+-		spin_lock_irqsave(&dca_lock, flags);
++		raw_spin_lock_irqsave(&dca_lock, flags);
+ 		if (dca == dca_find_provider_by_dev(dev))
+ 			dca->ops->remove_requester(dca, dev);
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return err;
+ 	}
+ 
+@@ -251,14 +246,14 @@ int dca_remove_requester(struct device *dev)
+ 	if (!dev)
+ 		return -EFAULT;
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 	dca = dca_find_provider_by_dev(dev);
+ 	if (!dca) {
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return -ENODEV;
+ 	}
+ 	slot = dca->ops->remove_requester(dca, dev);
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	if (slot < 0)
+ 		return slot;
+@@ -280,16 +275,16 @@ u8 dca_common_get_tag(struct device *dev, int cpu)
+ 	u8 tag;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 
+ 	dca = dca_find_provider_by_dev(dev);
+ 	if (!dca) {
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return -ENODEV;
+ 	}
+ 	tag = dca->ops->get_tag(dca, dev, cpu);
+ 
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 	return tag;
+ }
+ 
+@@ -360,36 +355,51 @@ int register_dca_provider(struct dca_provider *dca, struct device *dev)
+ {
+ 	int err;
+ 	unsigned long flags;
+-	struct dca_domain *domain;
++	struct dca_domain *domain, *newdomain = NULL;
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 	if (dca_providers_blocked) {
+-		spin_unlock_irqrestore(&dca_lock, flags);
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 		return -ENODEV;
+ 	}
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	err = dca_sysfs_add_provider(dca, dev);
+ 	if (err)
+ 		return err;
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 	domain = dca_get_domain(dev);
+ 	if (!domain) {
++		struct pci_bus *rc;
++
+ 		if (dca_providers_blocked) {
+-			spin_unlock_irqrestore(&dca_lock, flags);
++			raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 			dca_sysfs_remove_provider(dca);
+ 			unregister_dca_providers();
+-		} else {
+-			spin_unlock_irqrestore(&dca_lock, flags);
++			return -ENODEV;
++		}
++
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
++		rc = dca_pci_rc_from_dev(dev);
++		newdomain = dca_allocate_domain(rc);
++		if (!newdomain)
++			return -ENODEV;
++		raw_spin_lock_irqsave(&dca_lock, flags);
++		/* Recheck, we might have raced after dropping the lock */
++		domain = dca_get_domain(dev);
++		if (!domain) {
++			domain = newdomain;
++			newdomain = NULL;
++			list_add(&domain->node, &dca_domains);
+ 		}
+-		return -ENODEV;
+ 	}
+ 	list_add(&dca->node, &domain->dca_providers);
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	blocking_notifier_call_chain(&dca_provider_chain,
+ 				     DCA_PROVIDER_ADD, NULL);
++	kfree(newdomain);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(register_dca_provider);
+@@ -407,7 +417,7 @@ void unregister_dca_provider(struct dca_provider *dca, struct device *dev)
+ 	blocking_notifier_call_chain(&dca_provider_chain,
+ 				     DCA_PROVIDER_REMOVE, NULL);
+ 
+-	spin_lock_irqsave(&dca_lock, flags);
++	raw_spin_lock_irqsave(&dca_lock, flags);
+ 
+ 	list_del(&dca->node);
+ 
+@@ -416,7 +426,7 @@ void unregister_dca_provider(struct dca_provider *dca, struct device *dev)
+ 	if (list_empty(&domain->dca_providers))
+ 		dca_free_domain(domain);
+ 
+-	spin_unlock_irqrestore(&dca_lock, flags);
++	raw_spin_unlock_irqrestore(&dca_lock, flags);
+ 
+ 	dca_sysfs_remove_provider(dca);
+ }
+diff --git a/drivers/dma/ipu/ipu_irq.c b/drivers/dma/ipu/ipu_irq.c
+index ab8a4ef..a71f55e 100644
+--- a/drivers/dma/ipu/ipu_irq.c
++++ b/drivers/dma/ipu/ipu_irq.c
+@@ -81,7 +81,7 @@ static struct ipu_irq_map irq_map[CONFIG_MX3_IPU_IRQS];
+ /* Protects allocations from the above array of maps */
+ static DEFINE_MUTEX(map_lock);
+ /* Protects register accesses and individual mappings */
+-static DEFINE_SPINLOCK(bank_lock);
++static DEFINE_RAW_SPINLOCK(bank_lock);
+ 
+ static struct ipu_irq_map *src2map(unsigned int src)
+ {
+@@ -101,11 +101,11 @@ static void ipu_irq_unmask(struct irq_data *d)
+ 	uint32_t reg;
+ 	unsigned long lock_flags;
+ 
+-	spin_lock_irqsave(&bank_lock, lock_flags);
++	raw_spin_lock_irqsave(&bank_lock, lock_flags);
+ 
+ 	bank = map->bank;
+ 	if (!bank) {
+-		spin_unlock_irqrestore(&bank_lock, lock_flags);
++		raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ 		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
+ 		return;
+ 	}
+@@ -114,7 +114,7 @@ static void ipu_irq_unmask(struct irq_data *d)
+ 	reg |= (1UL << (map->source & 31));
+ 	ipu_write_reg(bank->ipu, reg, bank->control);
+ 
+-	spin_unlock_irqrestore(&bank_lock, lock_flags);
++	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ }
+ 
+ static void ipu_irq_mask(struct irq_data *d)
+@@ -124,11 +124,11 @@ static void ipu_irq_mask(struct irq_data *d)
+ 	uint32_t reg;
+ 	unsigned long lock_flags;
+ 
+-	spin_lock_irqsave(&bank_lock, lock_flags);
++	raw_spin_lock_irqsave(&bank_lock, lock_flags);
+ 
+ 	bank = map->bank;
+ 	if (!bank) {
+-		spin_unlock_irqrestore(&bank_lock, lock_flags);
++		raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ 		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
+ 		return;
+ 	}
+@@ -137,7 +137,7 @@ static void ipu_irq_mask(struct irq_data *d)
+ 	reg &= ~(1UL << (map->source & 31));
+ 	ipu_write_reg(bank->ipu, reg, bank->control);
+ 
+-	spin_unlock_irqrestore(&bank_lock, lock_flags);
++	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ }
+ 
+ static void ipu_irq_ack(struct irq_data *d)
+@@ -146,17 +146,17 @@ static void ipu_irq_ack(struct irq_data *d)
+ 	struct ipu_irq_bank *bank;
+ 	unsigned long lock_flags;
+ 
+-	spin_lock_irqsave(&bank_lock, lock_flags);
++	raw_spin_lock_irqsave(&bank_lock, lock_flags);
+ 
+ 	bank = map->bank;
+ 	if (!bank) {
+-		spin_unlock_irqrestore(&bank_lock, lock_flags);
++		raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ 		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
+ 		return;
+ 	}
+ 
+ 	ipu_write_reg(bank->ipu, 1UL << (map->source & 31), bank->status);
+-	spin_unlock_irqrestore(&bank_lock, lock_flags);
++	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ }
+ 
+ /**
+@@ -172,11 +172,11 @@ bool ipu_irq_status(unsigned int irq)
+ 	unsigned long lock_flags;
+ 	bool ret;
+ 
+-	spin_lock_irqsave(&bank_lock, lock_flags);
++	raw_spin_lock_irqsave(&bank_lock, lock_flags);
+ 	bank = map->bank;
+ 	ret = bank && ipu_read_reg(bank->ipu, bank->status) &
+ 		(1UL << (map->source & 31));
+-	spin_unlock_irqrestore(&bank_lock, lock_flags);
++	raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ 
+ 	return ret;
+ }
+@@ -213,10 +213,10 @@ int ipu_irq_map(unsigned int source)
+ 		if (irq_map[i].source < 0) {
+ 			unsigned long lock_flags;
+ 
+-			spin_lock_irqsave(&bank_lock, lock_flags);
++			raw_spin_lock_irqsave(&bank_lock, lock_flags);
+ 			irq_map[i].source = source;
+ 			irq_map[i].bank = irq_bank + source / 32;
+-			spin_unlock_irqrestore(&bank_lock, lock_flags);
++			raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ 
+ 			ret = irq_map[i].irq;
+ 			pr_debug("IPU: mapped source %u to IRQ %u\n",
+@@ -252,10 +252,10 @@ int ipu_irq_unmap(unsigned int source)
+ 			pr_debug("IPU: unmapped source %u from IRQ %u\n",
+ 				 source, irq_map[i].irq);
+ 
+-			spin_lock_irqsave(&bank_lock, lock_flags);
++			raw_spin_lock_irqsave(&bank_lock, lock_flags);
+ 			irq_map[i].source = -EINVAL;
+ 			irq_map[i].bank = NULL;
+-			spin_unlock_irqrestore(&bank_lock, lock_flags);
++			raw_spin_unlock_irqrestore(&bank_lock, lock_flags);
+ 
+ 			ret = 0;
+ 			break;
+@@ -276,7 +276,7 @@ static void ipu_irq_err(unsigned int irq, struct irq_desc *desc)
+ 	for (i = IPU_IRQ_NR_FN_BANKS; i < IPU_IRQ_NR_BANKS; i++) {
+ 		struct ipu_irq_bank *bank = irq_bank + i;
+ 
+-		spin_lock(&bank_lock);
++		raw_spin_lock(&bank_lock);
+ 		status = ipu_read_reg(ipu, bank->status);
+ 		/*
+ 		 * Don't think we have to clear all interrupts here, they will
+@@ -284,18 +284,18 @@ static void ipu_irq_err(unsigned int irq, struct irq_desc *desc)
+ 		 * might want to clear unhandled interrupts after the loop...
+ 		 */
+ 		status &= ipu_read_reg(ipu, bank->control);
+-		spin_unlock(&bank_lock);
++		raw_spin_unlock(&bank_lock);
+ 		while ((line = ffs(status))) {
+ 			struct ipu_irq_map *map;
+ 
+ 			line--;
+ 			status &= ~(1UL << line);
+ 
+-			spin_lock(&bank_lock);
++			raw_spin_lock(&bank_lock);
+ 			map = src2map(32 * i + line);
+ 			if (map)
+ 				irq = map->irq;
+-			spin_unlock(&bank_lock);
++			raw_spin_unlock(&bank_lock);
+ 
+ 			if (!map) {
+ 				pr_err("IPU: Interrupt on unmapped source %u bank %d\n",
+@@ -317,22 +317,22 @@ static void ipu_irq_fn(unsigned int irq, struct irq_desc *desc)
+ 	for (i = 0; i < IPU_IRQ_NR_FN_BANKS; i++) {
+ 		struct ipu_irq_bank *bank = irq_bank + i;
+ 
+-		spin_lock(&bank_lock);
++		raw_spin_lock(&bank_lock);
+ 		status = ipu_read_reg(ipu, bank->status);
+ 		/* Not clearing all interrupts, see above */
+ 		status &= ipu_read_reg(ipu, bank->control);
+-		spin_unlock(&bank_lock);
++		raw_spin_unlock(&bank_lock);
+ 		while ((line = ffs(status))) {
+ 			struct ipu_irq_map *map;
+ 
+ 			line--;
+ 			status &= ~(1UL << line);
+ 
+-			spin_lock(&bank_lock);
++			raw_spin_lock(&bank_lock);
+ 			map = src2map(32 * i + line);
+ 			if (map)
+ 				irq = map->irq;
+-			spin_unlock(&bank_lock);
++			raw_spin_unlock(&bank_lock);
+ 
+ 			if (!map) {
+ 				pr_err("IPU: Interrupt on unmapped source %u bank %d\n",
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 3dc9bef..388a118 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -800,7 +800,7 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 		(unsigned long long)iommu->cap,
+ 		(unsigned long long)iommu->ecap);
+ 
+-	spin_lock_init(&iommu->register_lock);
++	raw_spin_lock_init(&iommu->register_lock);
+ 
+ 	drhd->iommu = iommu;
+ 	return 0;
+@@ -921,11 +921,11 @@ int qi_submit_sync(struct qi_desc *desc, struct intel_iommu *iommu)
+ restart:
+ 	rc = 0;
+ 
+-	spin_lock_irqsave(&qi->q_lock, flags);
++	raw_spin_lock_irqsave(&qi->q_lock, flags);
+ 	while (qi->free_cnt < 3) {
+-		spin_unlock_irqrestore(&qi->q_lock, flags);
++		raw_spin_unlock_irqrestore(&qi->q_lock, flags);
+ 		cpu_relax();
+-		spin_lock_irqsave(&qi->q_lock, flags);
++		raw_spin_lock_irqsave(&qi->q_lock, flags);
+ 	}
+ 
+ 	index = qi->free_head;
+@@ -965,15 +965,15 @@ restart:
+ 		if (rc)
+ 			break;
+ 
+-		spin_unlock(&qi->q_lock);
++		raw_spin_unlock(&qi->q_lock);
+ 		cpu_relax();
+-		spin_lock(&qi->q_lock);
++		raw_spin_lock(&qi->q_lock);
+ 	}
+ 
+ 	qi->desc_status[index] = QI_DONE;
+ 
+ 	reclaim_free_desc(qi);
+-	spin_unlock_irqrestore(&qi->q_lock, flags);
++	raw_spin_unlock_irqrestore(&qi->q_lock, flags);
+ 
+ 	if (rc == -EAGAIN)
+ 		goto restart;
+@@ -1062,7 +1062,7 @@ void dmar_disable_qi(struct intel_iommu *iommu)
+ 	if (!ecap_qis(iommu->ecap))
+ 		return;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 
+ 	sts =  dmar_readq(iommu->reg + DMAR_GSTS_REG);
+ 	if (!(sts & DMA_GSTS_QIES))
+@@ -1082,7 +1082,7 @@ void dmar_disable_qi(struct intel_iommu *iommu)
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG, readl,
+ 		      !(sts & DMA_GSTS_QIES), sts);
+ end:
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ }
+ 
+ /*
+@@ -1097,7 +1097,7 @@ static void __dmar_enable_qi(struct intel_iommu *iommu)
+ 	qi->free_head = qi->free_tail = 0;
+ 	qi->free_cnt = QI_LENGTH;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 
+ 	/* write zero to the tail reg */
+ 	writel(0, iommu->reg + DMAR_IQT_REG);
+@@ -1110,7 +1110,7 @@ static void __dmar_enable_qi(struct intel_iommu *iommu)
+ 	/* Make sure hardware complete it */
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG, readl, (sts & DMA_GSTS_QIES), sts);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ }
+ 
+ /*
+@@ -1159,7 +1159,7 @@ int dmar_enable_qi(struct intel_iommu *iommu)
+ 	qi->free_head = qi->free_tail = 0;
+ 	qi->free_cnt = QI_LENGTH;
+ 
+-	spin_lock_init(&qi->q_lock);
++	raw_spin_lock_init(&qi->q_lock);
+ 
+ 	__dmar_enable_qi(iommu);
+ 
+@@ -1225,11 +1225,11 @@ void dmar_msi_unmask(struct irq_data *data)
+ 	unsigned long flag;
+ 
+ 	/* unmask it */
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	writel(0, iommu->reg + DMAR_FECTL_REG);
+ 	/* Read a reg to force flush the post write */
+ 	readl(iommu->reg + DMAR_FECTL_REG);
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ void dmar_msi_mask(struct irq_data *data)
+@@ -1238,11 +1238,11 @@ void dmar_msi_mask(struct irq_data *data)
+ 	struct intel_iommu *iommu = irq_data_get_irq_handler_data(data);
+ 
+ 	/* mask it */
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	writel(DMA_FECTL_IM, iommu->reg + DMAR_FECTL_REG);
+ 	/* Read a reg to force flush the post write */
+ 	readl(iommu->reg + DMAR_FECTL_REG);
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ void dmar_msi_write(int irq, struct msi_msg *msg)
+@@ -1250,11 +1250,11 @@ void dmar_msi_write(int irq, struct msi_msg *msg)
+ 	struct intel_iommu *iommu = irq_get_handler_data(irq);
+ 	unsigned long flag;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	writel(msg->data, iommu->reg + DMAR_FEDATA_REG);
+ 	writel(msg->address_lo, iommu->reg + DMAR_FEADDR_REG);
+ 	writel(msg->address_hi, iommu->reg + DMAR_FEUADDR_REG);
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ void dmar_msi_read(int irq, struct msi_msg *msg)
+@@ -1262,11 +1262,11 @@ void dmar_msi_read(int irq, struct msi_msg *msg)
+ 	struct intel_iommu *iommu = irq_get_handler_data(irq);
+ 	unsigned long flag;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	msg->data = readl(iommu->reg + DMAR_FEDATA_REG);
+ 	msg->address_lo = readl(iommu->reg + DMAR_FEADDR_REG);
+ 	msg->address_hi = readl(iommu->reg + DMAR_FEUADDR_REG);
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ static int dmar_fault_do_one(struct intel_iommu *iommu, int type,
+@@ -1303,7 +1303,7 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
+ 	u32 fault_status;
+ 	unsigned long flag;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	fault_status = readl(iommu->reg + DMAR_FSTS_REG);
+ 	if (fault_status)
+ 		printk(KERN_ERR "DRHD: handling fault status reg %x\n",
+@@ -1342,7 +1342,7 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
+ 		writel(DMA_FRCD_F, iommu->reg + reg +
+ 			fault_index * PRIMARY_FAULT_REG_LEN + 12);
+ 
+-		spin_unlock_irqrestore(&iommu->register_lock, flag);
++		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ 
+ 		dmar_fault_do_one(iommu, type, fault_reason,
+ 				source_id, guest_addr);
+@@ -1350,14 +1350,14 @@ irqreturn_t dmar_fault(int irq, void *dev_id)
+ 		fault_index++;
+ 		if (fault_index >= cap_num_fault_regs(iommu->cap))
+ 			fault_index = 0;
+-		spin_lock_irqsave(&iommu->register_lock, flag);
++		raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	}
+ clear_rest:
+ 	/* clear all the other faults */
+ 	fault_status = readl(iommu->reg + DMAR_FSTS_REG);
+ 	writel(fault_status, iommu->reg + DMAR_FSTS_REG);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ 	return IRQ_HANDLED;
+ }
+ 
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index c621c98..bf4a63c 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -932,7 +932,7 @@ static void iommu_set_root_entry(struct intel_iommu *iommu)
+ 
+ 	addr = iommu->root_entry;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	dmar_writeq(iommu->reg + DMAR_RTADDR_REG, virt_to_phys(addr));
+ 
+ 	writel(iommu->gcmd | DMA_GCMD_SRTP, iommu->reg + DMAR_GCMD_REG);
+@@ -941,7 +941,7 @@ static void iommu_set_root_entry(struct intel_iommu *iommu)
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, (sts & DMA_GSTS_RTPS), sts);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ static void iommu_flush_write_buffer(struct intel_iommu *iommu)
+@@ -952,14 +952,14 @@ static void iommu_flush_write_buffer(struct intel_iommu *iommu)
+ 	if (!rwbf_quirk && !cap_rwbf(iommu->cap))
+ 		return;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	writel(iommu->gcmd | DMA_GCMD_WBF, iommu->reg + DMAR_GCMD_REG);
+ 
+ 	/* Make sure hardware complete it */
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, (!(val & DMA_GSTS_WBFS)), val);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ /* return value determine if we need a write buffer flush */
+@@ -986,14 +986,14 @@ static void __iommu_flush_context(struct intel_iommu *iommu,
+ 	}
+ 	val |= DMA_CCMD_ICC;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	dmar_writeq(iommu->reg + DMAR_CCMD_REG, val);
+ 
+ 	/* Make sure hardware complete it */
+ 	IOMMU_WAIT_OP(iommu, DMAR_CCMD_REG,
+ 		dmar_readq, (!(val & DMA_CCMD_ICC)), val);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ }
+ 
+ /* return value determine if we need a write buffer flush */
+@@ -1032,7 +1032,7 @@ static void __iommu_flush_iotlb(struct intel_iommu *iommu, u16 did,
+ 	if (cap_write_drain(iommu->cap))
+ 		val |= DMA_TLB_WRITE_DRAIN;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	/* Note: Only uses first TLB reg currently */
+ 	if (val_iva)
+ 		dmar_writeq(iommu->reg + tlb_offset, val_iva);
+@@ -1042,7 +1042,7 @@ static void __iommu_flush_iotlb(struct intel_iommu *iommu, u16 did,
+ 	IOMMU_WAIT_OP(iommu, tlb_offset + 8,
+ 		dmar_readq, (!(val & DMA_TLB_IVT)), val);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ 
+ 	/* check IOTLB invalidation granularity */
+ 	if (DMA_TLB_IAIG(val) == 0)
+@@ -1158,7 +1158,7 @@ static void iommu_disable_protect_mem_regions(struct intel_iommu *iommu)
+ 	u32 pmen;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 	pmen = readl(iommu->reg + DMAR_PMEN_REG);
+ 	pmen &= ~DMA_PMEN_EPM;
+ 	writel(pmen, iommu->reg + DMAR_PMEN_REG);
+@@ -1167,7 +1167,7 @@ static void iommu_disable_protect_mem_regions(struct intel_iommu *iommu)
+ 	IOMMU_WAIT_OP(iommu, DMAR_PMEN_REG,
+ 		readl, !(pmen & DMA_PMEN_PRS), pmen);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ }
+ 
+ static int iommu_enable_translation(struct intel_iommu *iommu)
+@@ -1175,7 +1175,7 @@ static int iommu_enable_translation(struct intel_iommu *iommu)
+ 	u32 sts;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 	iommu->gcmd |= DMA_GCMD_TE;
+ 	writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+ 
+@@ -1183,7 +1183,7 @@ static int iommu_enable_translation(struct intel_iommu *iommu)
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, (sts & DMA_GSTS_TES), sts);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ 	return 0;
+ }
+ 
+@@ -1192,7 +1192,7 @@ static int iommu_disable_translation(struct intel_iommu *iommu)
+ 	u32 sts;
+ 	unsigned long flag;
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flag);
++	raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 	iommu->gcmd &= ~DMA_GCMD_TE;
+ 	writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+ 
+@@ -1200,7 +1200,7 @@ static int iommu_disable_translation(struct intel_iommu *iommu)
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, (!(sts & DMA_GSTS_TES)), sts);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flag);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ 	return 0;
+ }
+ 
+@@ -3320,7 +3320,7 @@ static int iommu_suspend(void)
+ 	for_each_active_iommu(iommu, drhd) {
+ 		iommu_disable_translation(iommu);
+ 
+-		spin_lock_irqsave(&iommu->register_lock, flag);
++		raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 
+ 		iommu->iommu_state[SR_DMAR_FECTL_REG] =
+ 			readl(iommu->reg + DMAR_FECTL_REG);
+@@ -3331,7 +3331,7 @@ static int iommu_suspend(void)
+ 		iommu->iommu_state[SR_DMAR_FEUADDR_REG] =
+ 			readl(iommu->reg + DMAR_FEUADDR_REG);
+ 
+-		spin_unlock_irqrestore(&iommu->register_lock, flag);
++		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ 	}
+ 	return 0;
+ 
+@@ -3358,7 +3358,7 @@ static void iommu_resume(void)
+ 
+ 	for_each_active_iommu(iommu, drhd) {
+ 
+-		spin_lock_irqsave(&iommu->register_lock, flag);
++		raw_spin_lock_irqsave(&iommu->register_lock, flag);
+ 
+ 		writel(iommu->iommu_state[SR_DMAR_FECTL_REG],
+ 			iommu->reg + DMAR_FECTL_REG);
+@@ -3369,7 +3369,7 @@ static void iommu_resume(void)
+ 		writel(iommu->iommu_state[SR_DMAR_FEUADDR_REG],
+ 			iommu->reg + DMAR_FEUADDR_REG);
+ 
+-		spin_unlock_irqrestore(&iommu->register_lock, flag);
++		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
+ 	}
+ 
+ 	for_each_active_iommu(iommu, drhd)
+diff --git a/drivers/iommu/intr_remapping.c b/drivers/iommu/intr_remapping.c
+index 1a89d4a..73a9034 100644
+--- a/drivers/iommu/intr_remapping.c
++++ b/drivers/iommu/intr_remapping.c
+@@ -45,7 +45,7 @@ static __init int setup_intremap(char *str)
+ }
+ early_param("intremap", setup_intremap);
+ 
+-static DEFINE_SPINLOCK(irq_2_ir_lock);
++static DEFINE_RAW_SPINLOCK(irq_2_ir_lock);
+ 
+ static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
+ {
+@@ -62,12 +62,12 @@ int get_irte(int irq, struct irte *entry)
+ 	if (!entry || !irq_iommu)
+ 		return -1;
+ 
+-	spin_lock_irqsave(&irq_2_ir_lock, flags);
++	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 
+ 	index = irq_iommu->irte_index + irq_iommu->sub_handle;
+ 	*entry = *(irq_iommu->iommu->ir_table->base + index);
+ 
+-	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 	return 0;
+ }
+ 
+@@ -101,7 +101,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 		return -1;
+ 	}
+ 
+-	spin_lock_irqsave(&irq_2_ir_lock, flags);
++	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 	do {
+ 		for (i = index; i < index + count; i++)
+ 			if  (table->base[i].present)
+@@ -113,7 +113,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 		index = (index + count) % INTR_REMAP_TABLE_ENTRIES;
+ 
+ 		if (index == start_index) {
+-			spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++			raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 			printk(KERN_ERR "can't allocate an IRTE\n");
+ 			return -1;
+ 		}
+@@ -127,7 +127,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 	irq_iommu->sub_handle = 0;
+ 	irq_iommu->irte_mask = mask;
+ 
+-	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 
+ 	return index;
+ }
+@@ -152,10 +152,10 @@ int map_irq_to_irte_handle(int irq, u16 *sub_handle)
+ 	if (!irq_iommu)
+ 		return -1;
+ 
+-	spin_lock_irqsave(&irq_2_ir_lock, flags);
++	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 	*sub_handle = irq_iommu->sub_handle;
+ 	index = irq_iommu->irte_index;
+-	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 	return index;
+ }
+ 
+@@ -167,14 +167,14 @@ int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
+ 	if (!irq_iommu)
+ 		return -1;
+ 
+-	spin_lock_irqsave(&irq_2_ir_lock, flags);
++	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 
+ 	irq_iommu->iommu = iommu;
+ 	irq_iommu->irte_index = index;
+ 	irq_iommu->sub_handle = subhandle;
+ 	irq_iommu->irte_mask = 0;
+ 
+-	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 
+ 	return 0;
+ }
+@@ -190,7 +190,7 @@ int modify_irte(int irq, struct irte *irte_modified)
+ 	if (!irq_iommu)
+ 		return -1;
+ 
+-	spin_lock_irqsave(&irq_2_ir_lock, flags);
++	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 
+ 	iommu = irq_iommu->iommu;
+ 
+@@ -202,7 +202,7 @@ int modify_irte(int irq, struct irte *irte_modified)
+ 	__iommu_flush_cache(iommu, irte, sizeof(*irte));
+ 
+ 	rc = qi_flush_iec(iommu, index, 0);
+-	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 
+ 	return rc;
+ }
+@@ -270,7 +270,7 @@ int free_irte(int irq)
+ 	if (!irq_iommu)
+ 		return -1;
+ 
+-	spin_lock_irqsave(&irq_2_ir_lock, flags);
++	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 
+ 	rc = clear_entries(irq_iommu);
+ 
+@@ -279,7 +279,7 @@ int free_irte(int irq)
+ 	irq_iommu->sub_handle = 0;
+ 	irq_iommu->irte_mask = 0;
+ 
+-	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
++	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 
+ 	return rc;
+ }
+@@ -409,7 +409,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
+ 
+ 	addr = virt_to_phys((void *)iommu->ir_table->base);
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 
+ 	dmar_writeq(iommu->reg + DMAR_IRTA_REG,
+ 		    (addr) | IR_X2APIC_MODE(mode) | INTR_REMAP_TABLE_REG_SIZE);
+@@ -420,7 +420,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
+ 
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, (sts & DMA_GSTS_IRTPS), sts);
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ 
+ 	/*
+ 	 * global invalidation of interrupt entry cache before enabling
+@@ -428,7 +428,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
+ 	 */
+ 	qi_global_iec(iommu);
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 
+ 	/* Enable interrupt-remapping */
+ 	iommu->gcmd |= DMA_GCMD_IRE;
+@@ -437,7 +437,7 @@ static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
+ 	IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+ 		      readl, (sts & DMA_GSTS_IRES), sts);
+ 
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ }
+ 
+ 
+@@ -485,7 +485,7 @@ static void iommu_disable_intr_remapping(struct intel_iommu *iommu)
+ 	 */
+ 	qi_global_iec(iommu);
+ 
+-	spin_lock_irqsave(&iommu->register_lock, flags);
++	raw_spin_lock_irqsave(&iommu->register_lock, flags);
+ 
+ 	sts = dmar_readq(iommu->reg + DMAR_GSTS_REG);
+ 	if (!(sts & DMA_GSTS_IRES))
+@@ -498,7 +498,7 @@ static void iommu_disable_intr_remapping(struct intel_iommu *iommu)
+ 		      readl, !(sts & DMA_GSTS_IRES), sts);
+ 
+ end:
+-	spin_unlock_irqrestore(&iommu->register_lock, flags);
++	raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+ }
+ 
+ int __init intr_remapping_supported(void)
+diff --git a/drivers/oprofile/event_buffer.c b/drivers/oprofile/event_buffer.c
+index dd87e86..c0cc4e7 100644
+--- a/drivers/oprofile/event_buffer.c
++++ b/drivers/oprofile/event_buffer.c
+@@ -82,10 +82,10 @@ int alloc_event_buffer(void)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&oprofilefs_lock, flags);
++	raw_spin_lock_irqsave(&oprofilefs_lock, flags);
+ 	buffer_size = oprofile_buffer_size;
+ 	buffer_watershed = oprofile_buffer_watershed;
+-	spin_unlock_irqrestore(&oprofilefs_lock, flags);
++	raw_spin_unlock_irqrestore(&oprofilefs_lock, flags);
+ 
+ 	if (buffer_watershed >= buffer_size)
+ 		return -EINVAL;
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index 94796f3..da14432 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -160,9 +160,9 @@ static int oprofile_perf_create_files(struct super_block *sb, struct dentry *roo
+ 
+ static int oprofile_perf_setup(void)
+ {
+-	spin_lock(&oprofilefs_lock);
++	raw_spin_lock(&oprofilefs_lock);
+ 	op_perf_setup();
+-	spin_unlock(&oprofilefs_lock);
++	raw_spin_unlock(&oprofilefs_lock);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
+index e9ff6f7..d0de6cc 100644
+--- a/drivers/oprofile/oprofilefs.c
++++ b/drivers/oprofile/oprofilefs.c
+@@ -21,7 +21,7 @@
+ 
+ #define OPROFILEFS_MAGIC 0x6f70726f
+ 
+-DEFINE_SPINLOCK(oprofilefs_lock);
++DEFINE_RAW_SPINLOCK(oprofilefs_lock);
+ 
+ static struct inode *oprofilefs_get_inode(struct super_block *sb, int mode)
+ {
+@@ -76,9 +76,9 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
+ 	if (copy_from_user(tmpbuf, buf, count))
+ 		return -EFAULT;
+ 
+-	spin_lock_irqsave(&oprofilefs_lock, flags);
++	raw_spin_lock_irqsave(&oprofilefs_lock, flags);
+ 	*val = simple_strtoul(tmpbuf, NULL, 0);
+-	spin_unlock_irqrestore(&oprofilefs_lock, flags);
++	raw_spin_unlock_irqrestore(&oprofilefs_lock, flags);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
+index 915fd74..d449a74 100644
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -50,7 +50,7 @@
+ #include <video/vga.h>
+ #include <asm/io.h>
+ 
+-static DEFINE_SPINLOCK(vga_lock);
++static DEFINE_RAW_SPINLOCK(vga_lock);
+ static int cursor_size_lastfrom;
+ static int cursor_size_lastto;
+ static u32 vgacon_xres;
+@@ -157,7 +157,7 @@ static inline void write_vga(unsigned char reg, unsigned int val)
+ 	 * ddprintk might set the console position from interrupt
+ 	 * handlers, thus the write has to be IRQ-atomic.
+ 	 */
+-	spin_lock_irqsave(&vga_lock, flags);
++	raw_spin_lock_irqsave(&vga_lock, flags);
+ 
+ #ifndef SLOW_VGA
+ 	v1 = reg + (val & 0xff00);
+@@ -170,7 +170,7 @@ static inline void write_vga(unsigned char reg, unsigned int val)
+ 	outb_p(reg + 1, vga_video_port_reg);
+ 	outb_p(val & 0xff, vga_video_port_val);
+ #endif
+-	spin_unlock_irqrestore(&vga_lock, flags);
++	raw_spin_unlock_irqrestore(&vga_lock, flags);
+ }
+ 
+ static inline void vga_set_mem_top(struct vc_data *c)
+@@ -664,7 +664,7 @@ static void vgacon_set_cursor_size(int xpos, int from, int to)
+ 	cursor_size_lastfrom = from;
+ 	cursor_size_lastto = to;
+ 
+-	spin_lock_irqsave(&vga_lock, flags);
++	raw_spin_lock_irqsave(&vga_lock, flags);
+ 	if (vga_video_type >= VIDEO_TYPE_VGAC) {
+ 		outb_p(VGA_CRTC_CURSOR_START, vga_video_port_reg);
+ 		curs = inb_p(vga_video_port_val);
+@@ -682,7 +682,7 @@ static void vgacon_set_cursor_size(int xpos, int from, int to)
+ 	outb_p(curs, vga_video_port_val);
+ 	outb_p(VGA_CRTC_CURSOR_END, vga_video_port_reg);
+ 	outb_p(cure, vga_video_port_val);
+-	spin_unlock_irqrestore(&vga_lock, flags);
++	raw_spin_unlock_irqrestore(&vga_lock, flags);
+ }
+ 
+ static void vgacon_cursor(struct vc_data *c, int mode)
+@@ -757,7 +757,7 @@ static int vgacon_doresize(struct vc_data *c,
+ 	unsigned int scanlines = height * c->vc_font.height;
+ 	u8 scanlines_lo = 0, r7 = 0, vsync_end = 0, mode, max_scan;
+ 
+-	spin_lock_irqsave(&vga_lock, flags);
++	raw_spin_lock_irqsave(&vga_lock, flags);
+ 
+ 	vgacon_xres = width * VGA_FONTWIDTH;
+ 	vgacon_yres = height * c->vc_font.height;
+@@ -808,7 +808,7 @@ static int vgacon_doresize(struct vc_data *c,
+ 		outb_p(vsync_end, vga_video_port_val);
+ 	}
+ 
+-	spin_unlock_irqrestore(&vga_lock, flags);
++	raw_spin_unlock_irqrestore(&vga_lock, flags);
+ 	return 0;
+ }
+ 
+@@ -891,11 +891,11 @@ static void vga_vesa_blank(struct vgastate *state, int mode)
+ {
+ 	/* save original values of VGA controller registers */
+ 	if (!vga_vesa_blanked) {
+-		spin_lock_irq(&vga_lock);
++		raw_spin_lock_irq(&vga_lock);
+ 		vga_state.SeqCtrlIndex = vga_r(state->vgabase, VGA_SEQ_I);
+ 		vga_state.CrtCtrlIndex = inb_p(vga_video_port_reg);
+ 		vga_state.CrtMiscIO = vga_r(state->vgabase, VGA_MIS_R);
+-		spin_unlock_irq(&vga_lock);
++		raw_spin_unlock_irq(&vga_lock);
+ 
+ 		outb_p(0x00, vga_video_port_reg);	/* HorizontalTotal */
+ 		vga_state.HorizontalTotal = inb_p(vga_video_port_val);
+@@ -918,7 +918,7 @@ static void vga_vesa_blank(struct vgastate *state, int mode)
+ 
+ 	/* assure that video is enabled */
+ 	/* "0x20" is VIDEO_ENABLE_bit in register 01 of sequencer */
+-	spin_lock_irq(&vga_lock);
++	raw_spin_lock_irq(&vga_lock);
+ 	vga_wseq(state->vgabase, VGA_SEQ_CLOCK_MODE, vga_state.ClockingMode | 0x20);
+ 
+ 	/* test for vertical retrace in process.... */
+@@ -954,13 +954,13 @@ static void vga_vesa_blank(struct vgastate *state, int mode)
+ 	/* restore both index registers */
+ 	vga_w(state->vgabase, VGA_SEQ_I, vga_state.SeqCtrlIndex);
+ 	outb_p(vga_state.CrtCtrlIndex, vga_video_port_reg);
+-	spin_unlock_irq(&vga_lock);
++	raw_spin_unlock_irq(&vga_lock);
+ }
+ 
+ static void vga_vesa_unblank(struct vgastate *state)
+ {
+ 	/* restore original values of VGA controller registers */
+-	spin_lock_irq(&vga_lock);
++	raw_spin_lock_irq(&vga_lock);
+ 	vga_w(state->vgabase, VGA_MIS_W, vga_state.CrtMiscIO);
+ 
+ 	outb_p(0x00, vga_video_port_reg);	/* HorizontalTotal */
+@@ -985,7 +985,7 @@ static void vga_vesa_unblank(struct vgastate *state)
+ 	/* restore index/control registers */
+ 	vga_w(state->vgabase, VGA_SEQ_I, vga_state.SeqCtrlIndex);
+ 	outb_p(vga_state.CrtCtrlIndex, vga_video_port_reg);
+-	spin_unlock_irq(&vga_lock);
++	raw_spin_unlock_irq(&vga_lock);
+ }
+ 
+ static void vga_pal_blank(struct vgastate *state)
+@@ -1104,7 +1104,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 		charmap += 4 * cmapsz;
+ #endif
+ 
+-	spin_lock_irq(&vga_lock);
++	raw_spin_lock_irq(&vga_lock);
+ 	/* First, the Sequencer */
+ 	vga_wseq(state->vgabase, VGA_SEQ_RESET, 0x1);
+ 	/* CPU writes only to map 2 */
+@@ -1120,7 +1120,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 	vga_wgfx(state->vgabase, VGA_GFX_MODE, 0x00);
+ 	/* map start at A000:0000 */
+ 	vga_wgfx(state->vgabase, VGA_GFX_MISC, 0x00);
+-	spin_unlock_irq(&vga_lock);
++	raw_spin_unlock_irq(&vga_lock);
+ 
+ 	if (arg) {
+ 		if (set)
+@@ -1147,7 +1147,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 		}
+ 	}
+ 
+-	spin_lock_irq(&vga_lock);
++	raw_spin_lock_irq(&vga_lock);
+ 	/* First, the sequencer, Synchronous reset */
+ 	vga_wseq(state->vgabase, VGA_SEQ_RESET, 0x01);	
+ 	/* CPU writes to maps 0 and 1 */
+@@ -1186,7 +1186,7 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 		inb_p(video_port_status);
+ 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
+ 	}
+-	spin_unlock_irq(&vga_lock);
++	raw_spin_unlock_irq(&vga_lock);
+ 	return 0;
+ }
+ 
+@@ -1211,26 +1211,26 @@ static int vgacon_adjust_height(struct vc_data *vc, unsigned fontheight)
+ 	   registers; they are write-only on EGA, but it appears that they
+ 	   are all don't care bits on EGA, so I guess it doesn't matter. */
+ 
+-	spin_lock_irq(&vga_lock);
++	raw_spin_lock_irq(&vga_lock);
+ 	outb_p(0x07, vga_video_port_reg);	/* CRTC overflow register */
+ 	ovr = inb_p(vga_video_port_val);
+ 	outb_p(0x09, vga_video_port_reg);	/* Font size register */
+ 	fsr = inb_p(vga_video_port_val);
+-	spin_unlock_irq(&vga_lock);
++	raw_spin_unlock_irq(&vga_lock);
+ 
+ 	vde = maxscan & 0xff;	/* Vertical display end reg */
+ 	ovr = (ovr & 0xbd) +	/* Overflow register */
+ 	    ((maxscan & 0x100) >> 7) + ((maxscan & 0x200) >> 3);
+ 	fsr = (fsr & 0xe0) + (fontheight - 1);	/*  Font size register */
+ 
+-	spin_lock_irq(&vga_lock);
++	raw_spin_lock_irq(&vga_lock);
+ 	outb_p(0x07, vga_video_port_reg);	/* CRTC overflow register */
+ 	outb_p(ovr, vga_video_port_val);
+ 	outb_p(0x09, vga_video_port_reg);	/* Font size */
+ 	outb_p(fsr, vga_video_port_val);
+ 	outb_p(0x12, vga_video_port_reg);	/* Vertical display limit */
+ 	outb_p(vde, vga_video_port_val);
+-	spin_unlock_irq(&vga_lock);
++	raw_spin_unlock_irq(&vga_lock);
+ 	vga_video_font_height = fontheight;
+ 
+ 	for (i = 0; i < MAX_NR_CONSOLES; i++) {
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index d14e058..08ffab0 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -42,7 +42,7 @@ extern struct fs_struct init_fs;
+ 	.cputimer	= { 						\
+ 		.cputime = INIT_CPUTIME,				\
+ 		.running = 0,						\
+-		.lock = __SPIN_LOCK_UNLOCKED(sig.cputimer.lock),	\
++		.lock = __RAW_SPIN_LOCK_UNLOCKED(sig.cputimer.lock),	\
+ 	},								\
+ 	.cred_guard_mutex =						\
+ 		 __MUTEX_INITIALIZER(sig.cred_guard_mutex),		\
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index 9310c69..8b9b5d3 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -271,7 +271,7 @@ struct qi_desc {
+ };
+ 
+ struct q_inval {
+-	spinlock_t      q_lock;
++	raw_spinlock_t  q_lock;
+ 	struct qi_desc  *desc;          /* invalidation queue */
+ 	int             *desc_status;   /* desc status */
+ 	int             free_head;      /* first free entry */
+@@ -311,7 +311,7 @@ struct intel_iommu {
+ 	u64		cap;
+ 	u64		ecap;
+ 	u32		gcmd; /* Holds TE, EAFL. Don't need SRTP, SFL, WBF */
+-	spinlock_t	register_lock; /* protect register handling */
++	raw_spinlock_t	register_lock; /* protect register handling */
+ 	int		seq_id;	/* sequence id of the iommu */
+ 	int		agaw; /* agaw of this iommu */
+ 	int		msagaw; /* max sagaw of this iommu */
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index dd7c12e..dce6e4d 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -181,7 +181,7 @@ struct kretprobe {
+ 	int nmissed;
+ 	size_t data_size;
+ 	struct hlist_head free_instances;
+-	spinlock_t lock;
++	raw_spinlock_t lock;
+ };
+ 
+ struct kretprobe_instance {
+diff --git a/include/linux/oprofile.h b/include/linux/oprofile.h
+index 49c8727..a4c5624 100644
+--- a/include/linux/oprofile.h
++++ b/include/linux/oprofile.h
+@@ -166,7 +166,7 @@ ssize_t oprofilefs_ulong_to_user(unsigned long val, char __user * buf, size_t co
+ int oprofilefs_ulong_from_user(unsigned long * val, char const __user * buf, size_t count);
+ 
+ /** lock for read/write safety */
+-extern spinlock_t oprofilefs_lock;
++extern raw_spinlock_t oprofilefs_lock;
+ 
+ /**
+  * Add the contents of a circular buffer to the event buffer.
+diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
+index 5edc901..b9df9ed 100644
+--- a/include/linux/percpu_counter.h
++++ b/include/linux/percpu_counter.h
+@@ -16,7 +16,7 @@
+ #ifdef CONFIG_SMP
+ 
+ struct percpu_counter {
+-	spinlock_t lock;
++	raw_spinlock_t lock;
+ 	s64 count;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	struct list_head list;	/* All percpu_counters are on a list */
+diff --git a/include/linux/proportions.h b/include/linux/proportions.h
+index cf793bb..ef35bb7 100644
+--- a/include/linux/proportions.h
++++ b/include/linux/proportions.h
+@@ -58,7 +58,7 @@ struct prop_local_percpu {
+ 	 */
+ 	int shift;
+ 	unsigned long period;
+-	spinlock_t lock;		/* protect the snapshot state */
++	raw_spinlock_t lock;		/* protect the snapshot state */
+ };
+ 
+ int prop_local_init_percpu(struct prop_local_percpu *pl);
+@@ -106,11 +106,11 @@ struct prop_local_single {
+ 	 */
+ 	unsigned long period;
+ 	int shift;
+-	spinlock_t lock;		/* protect the snapshot state */
++	raw_spinlock_t lock;		/* protect the snapshot state */
+ };
+ 
+ #define INIT_PROP_LOCAL_SINGLE(name)			\
+-{	.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
++{	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
+ }
+ 
+ int prop_local_init_single(struct prop_local_single *pl);
+diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+index 2f00715..e11ccb4 100644
+--- a/include/linux/ratelimit.h
++++ b/include/linux/ratelimit.h
+@@ -8,7 +8,7 @@
+ #define DEFAULT_RATELIMIT_BURST		10
+ 
+ struct ratelimit_state {
+-	spinlock_t	lock;		/* protect the state */
++	raw_spinlock_t	lock;		/* protect the state */
+ 
+ 	int		interval;
+ 	int		burst;
+@@ -20,7 +20,7 @@ struct ratelimit_state {
+ #define DEFINE_RATELIMIT_STATE(name, interval_init, burst_init)		\
+ 									\
+ 	struct ratelimit_state name = {					\
+-		.lock		= __SPIN_LOCK_UNLOCKED(name.lock),	\
++		.lock		= __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
+ 		.interval	= interval_init,			\
+ 		.burst		= burst_init,				\
+ 	}
+@@ -28,7 +28,7 @@ struct ratelimit_state {
+ static inline void ratelimit_state_init(struct ratelimit_state *rs,
+ 					int interval, int burst)
+ {
+-	spin_lock_init(&rs->lock);
++	raw_spin_lock_init(&rs->lock);
+ 	rs->interval = interval;
+ 	rs->burst = burst;
+ 	rs->printed = 0;
+diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
+index 3470124..d5b13bc 100644
+--- a/include/linux/rwsem-spinlock.h
++++ b/include/linux/rwsem-spinlock.h
+@@ -22,7 +22,7 @@
+  */
+ struct rw_semaphore {
+ 	__s32			activity;
+-	spinlock_t		wait_lock;
++	raw_spinlock_t		wait_lock;
+ 	struct list_head	wait_list;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map dep_map;
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 6a67414..63d4065 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -25,7 +25,7 @@ struct rw_semaphore;
+ /* All arch specific implementations share the same struct */
+ struct rw_semaphore {
+ 	long			count;
+-	spinlock_t		wait_lock;
++	raw_spinlock_t		wait_lock;
+ 	struct list_head	wait_list;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+@@ -56,9 +56,11 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ # define __RWSEM_DEP_MAP_INIT(lockname)
+ #endif
+ 
+-#define __RWSEM_INITIALIZER(name) \
+-	{ RWSEM_UNLOCKED_VALUE, __SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+-	  LIST_HEAD_INIT((name).wait_list) __RWSEM_DEP_MAP_INIT(name) }
++#define __RWSEM_INITIALIZER(name)			\
++	{ RWSEM_UNLOCKED_VALUE,				\
++	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
++	  LIST_HEAD_INIT((name).wait_list)		\
++	  __RWSEM_DEP_MAP_INIT(name) }
+ 
+ #define DECLARE_RWSEM(name) \
+ 	struct rw_semaphore name = __RWSEM_INITIALIZER(name)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4ac2c05..e672236 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -510,7 +510,7 @@ struct task_cputime {
+ struct thread_group_cputimer {
+ 	struct task_cputime cputime;
+ 	int running;
+-	spinlock_t lock;
++	raw_spinlock_t lock;
+ };
+ 
+ #include <linux/rwsem.h>
+@@ -2566,7 +2566,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+ 
+ static inline void thread_group_cputime_init(struct signal_struct *sig)
+ {
+-	spin_lock_init(&sig->cputimer.lock);
++	raw_spin_lock_init(&sig->cputimer.lock);
+ }
+ 
+ /*
+diff --git a/include/linux/semaphore.h b/include/linux/semaphore.h
+index 39fa049..dc368b8 100644
+--- a/include/linux/semaphore.h
++++ b/include/linux/semaphore.h
+@@ -14,14 +14,14 @@
+ 
+ /* Please don't access any members of this structure directly */
+ struct semaphore {
+-	spinlock_t		lock;
++	raw_spinlock_t		lock;
+ 	unsigned int		count;
+ 	struct list_head	wait_list;
+ };
+ 
+ #define __SEMAPHORE_INITIALIZER(name, n)				\
+ {									\
+-	.lock		= __SPIN_LOCK_UNLOCKED((name).lock),		\
++	.lock		= __RAW_SPIN_LOCK_UNLOCKED((name).lock),	\
+ 	.count		= n,						\
+ 	.wait_list	= LIST_HEAD_INIT((name).wait_list),		\
+ }
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1d2b6ce..453100a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -265,7 +265,7 @@ list_for_each_entry(_root, &roots, root_list)
+ /* the list of cgroups eligible for automatic release. Protected by
+  * release_list_lock */
+ static LIST_HEAD(release_list);
+-static DEFINE_SPINLOCK(release_list_lock);
++static DEFINE_RAW_SPINLOCK(release_list_lock);
+ static void cgroup_release_agent(struct work_struct *work);
+ static DECLARE_WORK(release_agent_work, cgroup_release_agent);
+ static void check_for_release(struct cgroup *cgrp);
+@@ -4014,11 +4014,11 @@ again:
+ 	finish_wait(&cgroup_rmdir_waitq, &wait);
+ 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
+ 
+-	spin_lock(&release_list_lock);
++	raw_spin_lock(&release_list_lock);
+ 	set_bit(CGRP_REMOVED, &cgrp->flags);
+ 	if (!list_empty(&cgrp->release_list))
+ 		list_del_init(&cgrp->release_list);
+-	spin_unlock(&release_list_lock);
++	raw_spin_unlock(&release_list_lock);
+ 
+ 	cgroup_lock_hierarchy(cgrp->root);
+ 	/* delete this cgroup from parent->children */
+@@ -4671,13 +4671,13 @@ static void check_for_release(struct cgroup *cgrp)
+ 		 * already queued for a userspace notification, queue
+ 		 * it now */
+ 		int need_schedule_work = 0;
+-		spin_lock(&release_list_lock);
++		raw_spin_lock(&release_list_lock);
+ 		if (!cgroup_is_removed(cgrp) &&
+ 		    list_empty(&cgrp->release_list)) {
+ 			list_add(&cgrp->release_list, &release_list);
+ 			need_schedule_work = 1;
+ 		}
+-		spin_unlock(&release_list_lock);
++		raw_spin_unlock(&release_list_lock);
+ 		if (need_schedule_work)
+ 			schedule_work(&release_agent_work);
+ 	}
+@@ -4729,7 +4729,7 @@ static void cgroup_release_agent(struct work_struct *work)
+ {
+ 	BUG_ON(work != &release_agent_work);
+ 	mutex_lock(&cgroup_mutex);
+-	spin_lock(&release_list_lock);
++	raw_spin_lock(&release_list_lock);
+ 	while (!list_empty(&release_list)) {
+ 		char *argv[3], *envp[3];
+ 		int i;
+@@ -4738,7 +4738,7 @@ static void cgroup_release_agent(struct work_struct *work)
+ 						    struct cgroup,
+ 						    release_list);
+ 		list_del_init(&cgrp->release_list);
+-		spin_unlock(&release_list_lock);
++		raw_spin_unlock(&release_list_lock);
+ 		pathbuf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 		if (!pathbuf)
+ 			goto continue_free;
+@@ -4768,9 +4768,9 @@ static void cgroup_release_agent(struct work_struct *work)
+  continue_free:
+ 		kfree(pathbuf);
+ 		kfree(agentbuf);
+-		spin_lock(&release_list_lock);
++		raw_spin_lock(&release_list_lock);
+ 	}
+-	spin_unlock(&release_list_lock);
++	raw_spin_unlock(&release_list_lock);
+ 	mutex_unlock(&cgroup_mutex);
+ }
+ 
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index b30fd54..2f193d0 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -78,10 +78,10 @@ static bool kprobes_all_disarmed;
+ static DEFINE_MUTEX(kprobe_mutex);
+ static DEFINE_PER_CPU(struct kprobe *, kprobe_instance) = NULL;
+ static struct {
+-	spinlock_t lock ____cacheline_aligned_in_smp;
++	raw_spinlock_t lock ____cacheline_aligned_in_smp;
+ } kretprobe_table_locks[KPROBE_TABLE_SIZE];
+ 
+-static spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
++static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+ {
+ 	return &(kretprobe_table_locks[hash].lock);
+ }
+@@ -1013,9 +1013,9 @@ void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
+ 	hlist_del(&ri->hlist);
+ 	INIT_HLIST_NODE(&ri->hlist);
+ 	if (likely(rp)) {
+-		spin_lock(&rp->lock);
++		raw_spin_lock(&rp->lock);
+ 		hlist_add_head(&ri->hlist, &rp->free_instances);
+-		spin_unlock(&rp->lock);
++		raw_spin_unlock(&rp->lock);
+ 	} else
+ 		/* Unregistering */
+ 		hlist_add_head(&ri->hlist, head);
+@@ -1026,19 +1026,19 @@ void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
+ __acquires(hlist_lock)
+ {
+ 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
+-	spinlock_t *hlist_lock;
++	raw_spinlock_t *hlist_lock;
+ 
+ 	*head = &kretprobe_inst_table[hash];
+ 	hlist_lock = kretprobe_table_lock_ptr(hash);
+-	spin_lock_irqsave(hlist_lock, *flags);
++	raw_spin_lock_irqsave(hlist_lock, *flags);
+ }
+ 
+ static void __kprobes kretprobe_table_lock(unsigned long hash,
+ 	unsigned long *flags)
+ __acquires(hlist_lock)
+ {
+-	spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
+-	spin_lock_irqsave(hlist_lock, *flags);
++	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
++	raw_spin_lock_irqsave(hlist_lock, *flags);
+ }
+ 
+ void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
+@@ -1046,18 +1046,18 @@ void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
+ __releases(hlist_lock)
+ {
+ 	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
+-	spinlock_t *hlist_lock;
++	raw_spinlock_t *hlist_lock;
+ 
+ 	hlist_lock = kretprobe_table_lock_ptr(hash);
+-	spin_unlock_irqrestore(hlist_lock, *flags);
++	raw_spin_unlock_irqrestore(hlist_lock, *flags);
+ }
+ 
+ static void __kprobes kretprobe_table_unlock(unsigned long hash,
+        unsigned long *flags)
+ __releases(hlist_lock)
+ {
+-	spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
+-	spin_unlock_irqrestore(hlist_lock, *flags);
++	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
++	raw_spin_unlock_irqrestore(hlist_lock, *flags);
+ }
+ 
+ /*
+@@ -1663,12 +1663,12 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+ 
+ 	/*TODO: consider to only swap the RA after the last pre_handler fired */
+ 	hash = hash_ptr(current, KPROBE_HASH_BITS);
+-	spin_lock_irqsave(&rp->lock, flags);
++	raw_spin_lock_irqsave(&rp->lock, flags);
+ 	if (!hlist_empty(&rp->free_instances)) {
+ 		ri = hlist_entry(rp->free_instances.first,
+ 				struct kretprobe_instance, hlist);
+ 		hlist_del(&ri->hlist);
+-		spin_unlock_irqrestore(&rp->lock, flags);
++		raw_spin_unlock_irqrestore(&rp->lock, flags);
+ 
+ 		ri->rp = rp;
+ 		ri->task = current;
+@@ -1685,7 +1685,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+ 		kretprobe_table_unlock(hash, &flags);
+ 	} else {
+ 		rp->nmissed++;
+-		spin_unlock_irqrestore(&rp->lock, flags);
++		raw_spin_unlock_irqrestore(&rp->lock, flags);
+ 	}
+ 	return 0;
+ }
+@@ -1721,7 +1721,7 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
+ 		rp->maxactive = num_possible_cpus();
+ #endif
+ 	}
+-	spin_lock_init(&rp->lock);
++	raw_spin_lock_init(&rp->lock);
+ 	INIT_HLIST_HEAD(&rp->free_instances);
+ 	for (i = 0; i < rp->maxactive; i++) {
+ 		inst = kmalloc(sizeof(struct kretprobe_instance) +
+@@ -1959,7 +1959,7 @@ static int __init init_kprobes(void)
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		INIT_HLIST_HEAD(&kprobe_table[i]);
+ 		INIT_HLIST_HEAD(&kretprobe_inst_table[i]);
+-		spin_lock_init(&(kretprobe_table_locks[i].lock));
++		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
+ 	}
+ 
+ 	/*
+diff --git a/kernel/latencytop.c b/kernel/latencytop.c
+index 376066e..4ac8ebf 100644
+--- a/kernel/latencytop.c
++++ b/kernel/latencytop.c
+@@ -58,7 +58,7 @@
+ #include <linux/list.h>
+ #include <linux/stacktrace.h>
+ 
+-static DEFINE_SPINLOCK(latency_lock);
++static DEFINE_RAW_SPINLOCK(latency_lock);
+ 
+ #define MAXLR 128
+ static struct latency_record latency_record[MAXLR];
+@@ -72,19 +72,19 @@ void clear_all_latency_tracing(struct task_struct *p)
+ 	if (!latencytop_enabled)
+ 		return;
+ 
+-	spin_lock_irqsave(&latency_lock, flags);
++	raw_spin_lock_irqsave(&latency_lock, flags);
+ 	memset(&p->latency_record, 0, sizeof(p->latency_record));
+ 	p->latency_record_count = 0;
+-	spin_unlock_irqrestore(&latency_lock, flags);
++	raw_spin_unlock_irqrestore(&latency_lock, flags);
+ }
+ 
+ static void clear_global_latency_tracing(void)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&latency_lock, flags);
++	raw_spin_lock_irqsave(&latency_lock, flags);
+ 	memset(&latency_record, 0, sizeof(latency_record));
+-	spin_unlock_irqrestore(&latency_lock, flags);
++	raw_spin_unlock_irqrestore(&latency_lock, flags);
+ }
+ 
+ static void __sched
+@@ -190,7 +190,7 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
+ 	lat.max = usecs;
+ 	store_stacktrace(tsk, &lat);
+ 
+-	spin_lock_irqsave(&latency_lock, flags);
++	raw_spin_lock_irqsave(&latency_lock, flags);
+ 
+ 	account_global_scheduler_latency(tsk, &lat);
+ 
+@@ -231,7 +231,7 @@ __account_scheduler_latency(struct task_struct *tsk, int usecs, int inter)
+ 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
+ 
+ out_unlock:
+-	spin_unlock_irqrestore(&latency_lock, flags);
++	raw_spin_unlock_irqrestore(&latency_lock, flags);
+ }
+ 
+ static int lstats_show(struct seq_file *m, void *v)
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 91d67ce..c081fa9 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -96,8 +96,13 @@ static int graph_lock(void)
+ 
+ static inline int graph_unlock(void)
+ {
+-	if (debug_locks && !arch_spin_is_locked(&lockdep_lock))
++	if (debug_locks && !arch_spin_is_locked(&lockdep_lock)) {
++		/*
++		 * The lockdep graph lock isn't locked while we expect it to
++		 * be, we're confused now, bye!
++		 */
+ 		return DEBUG_LOCKS_WARN_ON(1);
++	}
+ 
+ 	current->lockdep_recursion--;
+ 	arch_spin_unlock(&lockdep_lock);
+@@ -134,6 +139,9 @@ static struct lock_class lock_classes[MAX_LOCKDEP_KEYS];
+ static inline struct lock_class *hlock_class(struct held_lock *hlock)
+ {
+ 	if (!hlock->class_idx) {
++		/*
++		 * Someone passed in garbage, we give up.
++		 */
+ 		DEBUG_LOCKS_WARN_ON(1);
+ 		return NULL;
+ 	}
+@@ -687,6 +695,10 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
+ 	 */
+ 	list_for_each_entry(class, hash_head, hash_entry) {
+ 		if (class->key == key) {
++			/*
++			 * Huh! same key, different name? Did someone trample
++			 * on some memory? We're most confused.
++			 */
+ 			WARN_ON_ONCE(class->name != lock->name);
+ 			return class;
+ 		}
+@@ -800,6 +812,10 @@ out_unlock_set:
+ 	else if (subclass < NR_LOCKDEP_CACHING_CLASSES)
+ 		lock->class_cache[subclass] = class;
+ 
++	/*
++	 * Hash collision, did we smoke some? We found a class with a matching
++	 * hash but the subclass -- which is hashed in -- didn't match.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(class->subclass != subclass))
+ 		return NULL;
+ 
+@@ -926,7 +942,7 @@ static inline void mark_lock_accessed(struct lock_list *lock,
+ 	unsigned long nr;
+ 
+ 	nr = lock - list_entries;
+-	WARN_ON(nr >= nr_list_entries);
++	WARN_ON(nr >= nr_list_entries); /* Out-of-bounds, input fail */
+ 	lock->parent = parent;
+ 	lock->class->dep_gen_id = lockdep_dependency_gen_id;
+ }
+@@ -936,7 +952,7 @@ static inline unsigned long lock_accessed(struct lock_list *lock)
+ 	unsigned long nr;
+ 
+ 	nr = lock - list_entries;
+-	WARN_ON(nr >= nr_list_entries);
++	WARN_ON(nr >= nr_list_entries); /* Out-of-bounds, input fail */
+ 	return lock->class->dep_gen_id == lockdep_dependency_gen_id;
+ }
+ 
+@@ -1196,6 +1212,9 @@ static noinline int print_bfs_bug(int ret)
+ 	if (!debug_locks_off_graph_unlock())
+ 		return 0;
+ 
++	/*
++	 * Breadth-first-search failed, graph got corrupted?
++	 */
+ 	WARN(1, "lockdep bfs error:%d\n", ret);
+ 
+ 	return 0;
+@@ -1944,6 +1963,11 @@ out_bug:
+ 	if (!debug_locks_off_graph_unlock())
+ 		return 0;
+ 
++	/*
++	 * Clearly we all shouldn't be here, but since we made it we
++	 * can reliable say we messed up our state. See the above two
++	 * gotos for reasons why we could possibly end up here.
++	 */
+ 	WARN_ON(1);
+ 
+ 	return 0;
+@@ -1975,6 +1999,11 @@ static inline int lookup_chain_cache(struct task_struct *curr,
+ 	struct held_lock *hlock_curr, *hlock_next;
+ 	int i, j;
+ 
++	/*
++	 * We might need to take the graph lock, ensure we've got IRQs
++	 * disabled to make this an IRQ-safe lock.. for recursion reasons
++	 * lockdep won't complain about its own locking errors.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return 0;
+ 	/*
+@@ -2126,6 +2155,10 @@ static void check_chain_key(struct task_struct *curr)
+ 		hlock = curr->held_locks + i;
+ 		if (chain_key != hlock->prev_chain_key) {
+ 			debug_locks_off();
++			/*
++			 * We got mighty confused, our chain keys don't match
++			 * with what we expect, someone trample on our task state?
++			 */
+ 			WARN(1, "hm#1, depth: %u [%u], %016Lx != %016Lx\n",
+ 				curr->lockdep_depth, i,
+ 				(unsigned long long)chain_key,
+@@ -2133,6 +2166,9 @@ static void check_chain_key(struct task_struct *curr)
+ 			return;
+ 		}
+ 		id = hlock->class_idx - 1;
++		/*
++		 * Whoops ran out of static storage again?
++		 */
+ 		if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
+ 			return;
+ 
+@@ -2144,6 +2180,10 @@ static void check_chain_key(struct task_struct *curr)
+ 	}
+ 	if (chain_key != curr->curr_chain_key) {
+ 		debug_locks_off();
++		/*
++		 * More smoking hash instead of calculating it, damn see these
++		 * numbers float.. I bet that a pink elephant stepped on my memory.
++		 */
+ 		WARN(1, "hm#2, depth: %u [%u], %016Lx != %016Lx\n",
+ 			curr->lockdep_depth, i,
+ 			(unsigned long long)chain_key,
+@@ -2525,12 +2565,24 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 		return;
+ 	}
+ 
++	/*
++	 * We're enabling irqs and according to our state above irqs weren't
++	 * already enabled, yet we find the hardware thinks they are in fact
++	 * enabled.. someone messed up their IRQ state tracing.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return;
+ 
++	/*
++	 * See the fine text that goes along with this variable definition.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
+ 		return;
+ 
++	/*
++	 * Can't allow enabling interrupts while in an interrupt handler,
++	 * that's general bad form and such. Recursion, limited stack etc..
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
+ 		return;
+ 
+@@ -2558,6 +2610,10 @@ void trace_hardirqs_off_caller(unsigned long ip)
+ 	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
+ 
++	/*
++	 * So we're supposed to get called after you mask local IRQs, but for
++	 * some reason the hardware doesn't quite think you did a proper job.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return;
+ 
+@@ -2590,6 +2646,10 @@ void trace_softirqs_on(unsigned long ip)
+ 	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
+ 
++	/*
++	 * We fancy IRQs being disabled here, see softirq.c, avoids
++	 * funny state and nesting things.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return;
+ 
+@@ -2626,6 +2686,9 @@ void trace_softirqs_off(unsigned long ip)
+ 	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
+ 
++	/*
++	 * We fancy IRQs being disabled here, see softirq.c
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return;
+ 
+@@ -2637,6 +2700,9 @@ void trace_softirqs_off(unsigned long ip)
+ 		curr->softirq_disable_ip = ip;
+ 		curr->softirq_disable_event = ++curr->irq_events;
+ 		debug_atomic_inc(softirqs_off_events);
++		/*
++		 * Whoops, we wanted softirqs off, so why aren't they?
++		 */
+ 		DEBUG_LOCKS_WARN_ON(!softirq_count());
+ 	} else
+ 		debug_atomic_inc(redundant_softirqs_off);
+@@ -2661,6 +2727,9 @@ static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
+ 	if (!(gfp_mask & __GFP_FS))
+ 		return;
+ 
++	/*
++	 * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
+ 		return;
+ 
+@@ -2773,13 +2842,13 @@ static int separate_irq_context(struct task_struct *curr,
+ 	return 0;
+ }
+ 
+-#else
++#else /* defined(CONFIG_TRACE_IRQFLAGS) && defined(CONFIG_PROVE_LOCKING) */
+ 
+ static inline
+ int mark_lock_irq(struct task_struct *curr, struct held_lock *this,
+ 		enum lock_usage_bit new_bit)
+ {
+-	WARN_ON(1);
++	WARN_ON(1); /* Impossible innit? when we don't have TRACE_IRQFLAG */
+ 	return 1;
+ }
+ 
+@@ -2799,7 +2868,7 @@ void lockdep_trace_alloc(gfp_t gfp_mask)
+ {
+ }
+ 
+-#endif
++#endif /* defined(CONFIG_TRACE_IRQFLAGS) && defined(CONFIG_PROVE_LOCKING) */
+ 
+ /*
+  * Mark a lock with a usage bit, and validate the state transition:
+@@ -2880,6 +2949,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 	lock->cpu = raw_smp_processor_id();
+ #endif
+ 
++	/*
++	 * Can't be having no nameless bastards around this place!
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!name)) {
+ 		lock->name = "NULL";
+ 		return;
+@@ -2887,6 +2959,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 
+ 	lock->name = name;
+ 
++	/*
++	 * No key, no joy, we need to hash something.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!key))
+ 		return;
+ 	/*
+@@ -2894,6 +2969,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 	 */
+ 	if (!static_obj(key)) {
+ 		printk("BUG: key %p not in .data!\n", key);
++		/*
++		 * What it says above ^^^^^, I suggest you read it.
++		 */
+ 		DEBUG_LOCKS_WARN_ON(1);
+ 		return;
+ 	}
+@@ -2932,6 +3010,11 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 	if (unlikely(!debug_locks))
+ 		return 0;
+ 
++	/*
++	 * Lockdep should run with IRQs disabled, otherwise we could
++	 * get an interrupt which would want to take locks, which would
++	 * end up in lockdep and have you got a head-ache already?
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return 0;
+ 
+@@ -2963,6 +3046,9 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 	 * dependency checks are done)
+ 	 */
+ 	depth = curr->lockdep_depth;
++	/*
++	 * Ran out of static storage for our per-task lock stack again have we?
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(depth >= MAX_LOCK_DEPTH))
+ 		return 0;
+ 
+@@ -2981,6 +3067,10 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 	}
+ 
+ 	hlock = curr->held_locks + depth;
++	/*
++	 * Plain impossible, we just registered it and checked it weren't no
++	 * NULL like.. I bet this mushroom I ate was good!
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!class))
+ 		return 0;
+ 	hlock->class_idx = class_idx;
+@@ -3015,11 +3105,17 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 	 * the hash, not class->key.
+ 	 */
+ 	id = class - lock_classes;
++	/*
++	 * Whoops, we did it again.. ran straight out of our static allocation.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
+ 		return 0;
+ 
+ 	chain_key = curr->curr_chain_key;
+ 	if (!depth) {
++		/*
++		 * How can we have a chain hash when we ain't got no keys?!
++		 */
+ 		if (DEBUG_LOCKS_WARN_ON(chain_key != 0))
+ 			return 0;
+ 		chain_head = 1;
+@@ -3091,6 +3187,9 @@ static int check_unlock(struct task_struct *curr, struct lockdep_map *lock,
+ {
+ 	if (unlikely(!debug_locks))
+ 		return 0;
++	/*
++	 * Lockdep should run with IRQs disabled, recursion, head-ache, etc..
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+ 		return 0;
+ 
+@@ -3120,6 +3219,11 @@ static int match_held_lock(struct held_lock *hlock, struct lockdep_map *lock)
+ 		if (!class)
+ 			return 0;
+ 
++		/*
++		 * References, but not a lock we're actually ref-counting?
++		 * State got messed up, follow the sites that change ->references
++		 * and try to make sense of it.
++		 */
+ 		if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
+ 			return 0;
+ 
+@@ -3142,6 +3246,10 @@ __lock_set_class(struct lockdep_map *lock, const char *name,
+ 	int i;
+ 
+ 	depth = curr->lockdep_depth;
++	/*
++	 * This function is about (re)setting the class of a held lock,
++	 * yet we're not actually holding any locks. Naughty user!
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!depth))
+ 		return 0;
+ 
+@@ -3177,6 +3285,10 @@ found_it:
+ 			return 0;
+ 	}
+ 
++	/*
++	 * I took it apart and put it back together again, except now I have
++	 * these 'spare' parts.. where shall I put them.
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth))
+ 		return 0;
+ 	return 1;
+@@ -3201,6 +3313,10 @@ lock_release_non_nested(struct task_struct *curr,
+ 	 * of held locks:
+ 	 */
+ 	depth = curr->lockdep_depth;
++	/*
++	 * So we're all set to release this lock.. wait what lock? We don't
++	 * own any locks, you've been drinking again?
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!depth))
+ 		return 0;
+ 
+@@ -3253,6 +3369,10 @@ found_it:
+ 			return 0;
+ 	}
+ 
++	/*
++	 * We had N bottles of beer on the wall, we drank one, but now
++	 * there's not N-1 bottles of beer left on the wall...
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth - 1))
+ 		return 0;
+ 	return 1;
+@@ -3283,6 +3403,9 @@ static int lock_release_nested(struct task_struct *curr,
+ 		return lock_release_non_nested(curr, lock, ip);
+ 	curr->lockdep_depth--;
+ 
++	/*
++	 * No more locks, but somehow we've got hash left over, who left it?
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!depth && (hlock->prev_chain_key != 0)))
+ 		return 0;
+ 
+@@ -3365,10 +3488,13 @@ static void check_flags(unsigned long flags)
+ 	 * check if not in hardirq contexts:
+ 	 */
+ 	if (!hardirq_count()) {
+-		if (softirq_count())
++		if (softirq_count()) {
++			/* like the above, but with softirqs */
+ 			DEBUG_LOCKS_WARN_ON(current->softirqs_enabled);
+-		else
++		} else {
++			/* lick the above, does it taste good? */
+ 			DEBUG_LOCKS_WARN_ON(!current->softirqs_enabled);
++		}
+ 	}
+ 
+ 	if (!debug_locks)
+@@ -3506,6 +3632,10 @@ __lock_contended(struct lockdep_map *lock, unsigned long ip)
+ 	int i, contention_point, contending_point;
+ 
+ 	depth = curr->lockdep_depth;
++	/*
++	 * Whee, we contended on this lock, except it seems we're not
++	 * actually trying to acquire anything much at all..
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!depth))
+ 		return;
+ 
+@@ -3555,6 +3685,10 @@ __lock_acquired(struct lockdep_map *lock, unsigned long ip)
+ 	int i, cpu;
+ 
+ 	depth = curr->lockdep_depth;
++	/*
++	 * Yay, we acquired ownership of this lock we didn't try to
++	 * acquire, how the heck did that happen?
++	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!depth))
+ 		return;
+ 
+@@ -3759,8 +3893,12 @@ void lockdep_reset_lock(struct lockdep_map *lock)
+ 				match |= class == lock->class_cache[j];
+ 
+ 			if (unlikely(match)) {
+-				if (debug_locks_off_graph_unlock())
++				if (debug_locks_off_graph_unlock()) {
++					/*
++					 * We all just reset everything, how did it match?
++					 */
+ 					WARN_ON(1);
++				}
+ 				goto out_restore;
+ 			}
+ 		}
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 58f405b..41440cc 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -274,7 +274,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+ 	struct task_cputime sum;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&cputimer->lock, flags);
++	raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 	if (!cputimer->running) {
+ 		cputimer->running = 1;
+ 		/*
+@@ -287,7 +287,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+ 		update_gt_cputime(&cputimer->cputime, &sum);
+ 	}
+ 	*times = cputimer->cputime;
+-	spin_unlock_irqrestore(&cputimer->lock, flags);
++	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
+ }
+ 
+ /*
+@@ -997,9 +997,9 @@ static void stop_process_timers(struct signal_struct *sig)
+ 	struct thread_group_cputimer *cputimer = &sig->cputimer;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&cputimer->lock, flags);
++	raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 	cputimer->running = 0;
+-	spin_unlock_irqrestore(&cputimer->lock, flags);
++	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
+ }
+ 
+ static u32 onecputick;
+@@ -1289,9 +1289,9 @@ static inline int fastpath_timer_check(struct task_struct *tsk)
+ 	if (sig->cputimer.running) {
+ 		struct task_cputime group_sample;
+ 
+-		spin_lock(&sig->cputimer.lock);
++		raw_spin_lock(&sig->cputimer.lock);
+ 		group_sample = sig->cputimer.cputime;
+-		spin_unlock(&sig->cputimer.lock);
++		raw_spin_unlock(&sig->cputimer.lock);
+ 
+ 		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
+ 			return 1;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 28a40d8..b7da183 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -100,7 +100,7 @@ static int console_locked, console_suspended;
+  * It is also used in interesting ways to provide interlocking in
+  * console_unlock();.
+  */
+-static DEFINE_SPINLOCK(logbuf_lock);
++static DEFINE_RAW_SPINLOCK(logbuf_lock);
+ 
+ #define LOG_BUF_MASK (log_buf_len-1)
+ #define LOG_BUF(idx) (log_buf[(idx) & LOG_BUF_MASK])
+@@ -212,7 +212,7 @@ void __init setup_log_buf(int early)
+ 		return;
+ 	}
+ 
+-	spin_lock_irqsave(&logbuf_lock, flags);
++	raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 	log_buf_len = new_log_buf_len;
+ 	log_buf = new_log_buf;
+ 	new_log_buf_len = 0;
+@@ -230,7 +230,7 @@ void __init setup_log_buf(int early)
+ 	log_start -= offset;
+ 	con_start -= offset;
+ 	log_end -= offset;
+-	spin_unlock_irqrestore(&logbuf_lock, flags);
++	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 
+ 	pr_info("log_buf_len: %d\n", log_buf_len);
+ 	pr_info("early log buf free: %d(%d%%)\n",
+@@ -365,18 +365,18 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 		if (error)
+ 			goto out;
+ 		i = 0;
+-		spin_lock_irq(&logbuf_lock);
++		raw_spin_lock_irq(&logbuf_lock);
+ 		while (!error && (log_start != log_end) && i < len) {
+ 			c = LOG_BUF(log_start);
+ 			log_start++;
+-			spin_unlock_irq(&logbuf_lock);
++			raw_spin_unlock_irq(&logbuf_lock);
+ 			error = __put_user(c,buf);
+ 			buf++;
+ 			i++;
+ 			cond_resched();
+-			spin_lock_irq(&logbuf_lock);
++			raw_spin_lock_irq(&logbuf_lock);
+ 		}
+-		spin_unlock_irq(&logbuf_lock);
++		raw_spin_unlock_irq(&logbuf_lock);
+ 		if (!error)
+ 			error = i;
+ 		break;
+@@ -399,7 +399,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 		count = len;
+ 		if (count > log_buf_len)
+ 			count = log_buf_len;
+-		spin_lock_irq(&logbuf_lock);
++		raw_spin_lock_irq(&logbuf_lock);
+ 		if (count > logged_chars)
+ 			count = logged_chars;
+ 		if (do_clear)
+@@ -416,12 +416,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 			if (j + log_buf_len < log_end)
+ 				break;
+ 			c = LOG_BUF(j);
+-			spin_unlock_irq(&logbuf_lock);
++			raw_spin_unlock_irq(&logbuf_lock);
+ 			error = __put_user(c,&buf[count-1-i]);
+ 			cond_resched();
+-			spin_lock_irq(&logbuf_lock);
++			raw_spin_lock_irq(&logbuf_lock);
+ 		}
+-		spin_unlock_irq(&logbuf_lock);
++		raw_spin_unlock_irq(&logbuf_lock);
+ 		if (error)
+ 			break;
+ 		error = i;
+@@ -689,7 +689,7 @@ static void zap_locks(void)
+ 	oops_timestamp = jiffies;
+ 
+ 	/* If a crash is occurring, make sure we can't deadlock */
+-	spin_lock_init(&logbuf_lock);
++	raw_spin_lock_init(&logbuf_lock);
+ 	/* And make sure that we print immediately */
+ 	sema_init(&console_sem, 1);
+ }
+@@ -802,9 +802,9 @@ static int console_trylock_for_printk(unsigned int cpu)
+ 		}
+ 	}
+ 	printk_cpu = UINT_MAX;
+-	spin_unlock(&logbuf_lock);
+ 	if (wake)
+ 		up(&console_sem);
++	raw_spin_unlock(&logbuf_lock);
+ 	return retval;
+ }
+ static const char recursion_bug_msg [] =
+@@ -864,7 +864,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ 	}
+ 
+ 	lockdep_off();
+-	spin_lock(&logbuf_lock);
++	raw_spin_lock(&logbuf_lock);
+ 	printk_cpu = this_cpu;
+ 
+ 	if (recursion_bug) {
+@@ -1257,14 +1257,14 @@ void console_unlock(void)
+ 
+ again:
+ 	for ( ; ; ) {
+-		spin_lock_irqsave(&logbuf_lock, flags);
++		raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 		wake_klogd |= log_start - log_end;
+ 		if (con_start == log_end)
+ 			break;			/* Nothing to print */
+ 		_con_start = con_start;
+ 		_log_end = log_end;
+ 		con_start = log_end;		/* Flush */
+-		spin_unlock(&logbuf_lock);
++		raw_spin_unlock(&logbuf_lock);
+ 		stop_critical_timings();	/* don't trace print latency */
+ 		call_console_drivers(_con_start, _log_end);
+ 		start_critical_timings();
+@@ -1276,7 +1276,7 @@ again:
+ 	if (unlikely(exclusive_console))
+ 		exclusive_console = NULL;
+ 
+-	spin_unlock(&logbuf_lock);
++	raw_spin_unlock(&logbuf_lock);
+ 
+ 	up(&console_sem);
+ 
+@@ -1286,13 +1286,13 @@ again:
+ 	 * there's a new owner and the console_unlock() from them will do the
+ 	 * flush, no worries.
+ 	 */
+-	spin_lock(&logbuf_lock);
++	raw_spin_lock(&logbuf_lock);
+ 	if (con_start != log_end)
+ 		retry = 1;
+-	spin_unlock_irqrestore(&logbuf_lock, flags);
+ 	if (retry && console_trylock())
+ 		goto again;
+ 
++	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 	if (wake_klogd)
+ 		wake_up_klogd();
+ }
+@@ -1522,9 +1522,9 @@ void register_console(struct console *newcon)
+ 		 * console_unlock(); will print out the buffered messages
+ 		 * for us.
+ 		 */
+-		spin_lock_irqsave(&logbuf_lock, flags);
++		raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 		con_start = log_start;
+-		spin_unlock_irqrestore(&logbuf_lock, flags);
++		raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 		/*
+ 		 * We're about to replay the log buffer.  Only do this to the
+ 		 * just-registered console to avoid excessive message spam to
+@@ -1731,10 +1731,10 @@ void kmsg_dump(enum kmsg_dump_reason reason)
+ 	/* Theoretically, the log could move on after we do this, but
+ 	   there's not a lot we can do about that. The new messages
+ 	   will overwrite the start of what we dump. */
+-	spin_lock_irqsave(&logbuf_lock, flags);
++	raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 	end = log_end & LOG_BUF_MASK;
+ 	chars = logged_chars;
+-	spin_unlock_irqrestore(&logbuf_lock, flags);
++	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 
+ 	if (chars > end) {
+ 		s1 = log_buf + log_buf_len - chars + end;
+diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
+index 3c7cbc2..a2e7e72 100644
+--- a/kernel/rtmutex-debug.c
++++ b/kernel/rtmutex-debug.c
+@@ -29,61 +29,6 @@
+ 
+ #include "rtmutex_common.h"
+ 
+-# define TRACE_WARN_ON(x)			WARN_ON(x)
+-# define TRACE_BUG_ON(x)			BUG_ON(x)
+-
+-# define TRACE_OFF()						\
+-do {								\
+-	if (rt_trace_on) {					\
+-		rt_trace_on = 0;				\
+-		console_verbose();				\
+-		if (raw_spin_is_locked(&current->pi_lock))	\
+-			raw_spin_unlock(&current->pi_lock);	\
+-	}							\
+-} while (0)
+-
+-# define TRACE_OFF_NOLOCK()					\
+-do {								\
+-	if (rt_trace_on) {					\
+-		rt_trace_on = 0;				\
+-		console_verbose();				\
+-	}							\
+-} while (0)
+-
+-# define TRACE_BUG_LOCKED()			\
+-do {						\
+-	TRACE_OFF();				\
+-	BUG();					\
+-} while (0)
+-
+-# define TRACE_WARN_ON_LOCKED(c)		\
+-do {						\
+-	if (unlikely(c)) {			\
+-		TRACE_OFF();			\
+-		WARN_ON(1);			\
+-	}					\
+-} while (0)
+-
+-# define TRACE_BUG_ON_LOCKED(c)			\
+-do {						\
+-	if (unlikely(c))			\
+-		TRACE_BUG_LOCKED();		\
+-} while (0)
+-
+-#ifdef CONFIG_SMP
+-# define SMP_TRACE_BUG_ON_LOCKED(c)	TRACE_BUG_ON_LOCKED(c)
+-#else
+-# define SMP_TRACE_BUG_ON_LOCKED(c)	do { } while (0)
+-#endif
+-
+-/*
+- * deadlock detection flag. We turn it off when we detect
+- * the first problem because we dont want to recurse back
+- * into the tracing code when doing error printk or
+- * executing a BUG():
+- */
+-static int rt_trace_on = 1;
+-
+ static void printk_task(struct task_struct *p)
+ {
+ 	if (p)
+@@ -111,8 +56,8 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
+ 
+ void rt_mutex_debug_task_free(struct task_struct *task)
+ {
+-	WARN_ON(!plist_head_empty(&task->pi_waiters));
+-	WARN_ON(task->pi_blocked_on);
++	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
++	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
+ }
+ 
+ /*
+@@ -125,7 +70,7 @@ void debug_rt_mutex_deadlock(int detect, struct rt_mutex_waiter *act_waiter,
+ {
+ 	struct task_struct *task;
+ 
+-	if (!rt_trace_on || detect || !act_waiter)
++	if (!debug_locks || detect || !act_waiter)
+ 		return;
+ 
+ 	task = rt_mutex_owner(act_waiter->lock);
+@@ -139,7 +84,7 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
+ {
+ 	struct task_struct *task;
+ 
+-	if (!waiter->deadlock_lock || !rt_trace_on)
++	if (!waiter->deadlock_lock || !debug_locks)
+ 		return;
+ 
+ 	rcu_read_lock();
+@@ -149,7 +94,10 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
+ 		return;
+ 	}
+ 
+-	TRACE_OFF_NOLOCK();
++	if (!debug_locks_off()) {
++		rcu_read_unlock();
++		return;
++	}
+ 
+ 	printk("\n============================================\n");
+ 	printk(  "[ BUG: circular locking deadlock detected! ]\n");
+@@ -180,7 +128,6 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
+ 
+ 	printk("[ turning off deadlock detection."
+ 	       "Please report this trace. ]\n\n");
+-	local_irq_disable();
+ }
+ 
+ void debug_rt_mutex_lock(struct rt_mutex *lock)
+@@ -189,7 +136,7 @@ void debug_rt_mutex_lock(struct rt_mutex *lock)
+ 
+ void debug_rt_mutex_unlock(struct rt_mutex *lock)
+ {
+-	TRACE_WARN_ON_LOCKED(rt_mutex_owner(lock) != current);
++	DEBUG_LOCKS_WARN_ON(rt_mutex_owner(lock) != current);
+ }
+ 
+ void
+@@ -199,7 +146,7 @@ debug_rt_mutex_proxy_lock(struct rt_mutex *lock, struct task_struct *powner)
+ 
+ void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
+ {
+-	TRACE_WARN_ON_LOCKED(!rt_mutex_owner(lock));
++	DEBUG_LOCKS_WARN_ON(!rt_mutex_owner(lock));
+ }
+ 
+ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
+@@ -213,8 +160,8 @@ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
+ void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	put_pid(waiter->deadlock_task_pid);
+-	TRACE_WARN_ON(!plist_node_empty(&waiter->list_entry));
+-	TRACE_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
++	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
++	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 	memset(waiter, 0x22, sizeof(*waiter));
+ }
+ 
+diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
+index 331e01b..87f9e36 100644
+--- a/kernel/sched_stats.h
++++ b/kernel/sched_stats.h
+@@ -282,10 +282,10 @@ static inline void account_group_user_time(struct task_struct *tsk,
+ 	if (!cputimer->running)
+ 		return;
+ 
+-	spin_lock(&cputimer->lock);
++	raw_spin_lock(&cputimer->lock);
+ 	cputimer->cputime.utime =
+ 		cputime_add(cputimer->cputime.utime, cputime);
+-	spin_unlock(&cputimer->lock);
++	raw_spin_unlock(&cputimer->lock);
+ }
+ 
+ /**
+@@ -306,10 +306,10 @@ static inline void account_group_system_time(struct task_struct *tsk,
+ 	if (!cputimer->running)
+ 		return;
+ 
+-	spin_lock(&cputimer->lock);
++	raw_spin_lock(&cputimer->lock);
+ 	cputimer->cputime.stime =
+ 		cputime_add(cputimer->cputime.stime, cputime);
+-	spin_unlock(&cputimer->lock);
++	raw_spin_unlock(&cputimer->lock);
+ }
+ 
+ /**
+@@ -330,7 +330,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
+ 	if (!cputimer->running)
+ 		return;
+ 
+-	spin_lock(&cputimer->lock);
++	raw_spin_lock(&cputimer->lock);
+ 	cputimer->cputime.sum_exec_runtime += ns;
+-	spin_unlock(&cputimer->lock);
++	raw_spin_unlock(&cputimer->lock);
+ }
+diff --git a/kernel/semaphore.c b/kernel/semaphore.c
+index 94a62c0..d831841 100644
+--- a/kernel/semaphore.c
++++ b/kernel/semaphore.c
+@@ -54,12 +54,12 @@ void down(struct semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->lock, flags);
++	raw_spin_lock_irqsave(&sem->lock, flags);
+ 	if (likely(sem->count > 0))
+ 		sem->count--;
+ 	else
+ 		__down(sem);
+-	spin_unlock_irqrestore(&sem->lock, flags);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ }
+ EXPORT_SYMBOL(down);
+ 
+@@ -77,12 +77,12 @@ int down_interruptible(struct semaphore *sem)
+ 	unsigned long flags;
+ 	int result = 0;
+ 
+-	spin_lock_irqsave(&sem->lock, flags);
++	raw_spin_lock_irqsave(&sem->lock, flags);
+ 	if (likely(sem->count > 0))
+ 		sem->count--;
+ 	else
+ 		result = __down_interruptible(sem);
+-	spin_unlock_irqrestore(&sem->lock, flags);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ 
+ 	return result;
+ }
+@@ -103,12 +103,12 @@ int down_killable(struct semaphore *sem)
+ 	unsigned long flags;
+ 	int result = 0;
+ 
+-	spin_lock_irqsave(&sem->lock, flags);
++	raw_spin_lock_irqsave(&sem->lock, flags);
+ 	if (likely(sem->count > 0))
+ 		sem->count--;
+ 	else
+ 		result = __down_killable(sem);
+-	spin_unlock_irqrestore(&sem->lock, flags);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ 
+ 	return result;
+ }
+@@ -132,11 +132,11 @@ int down_trylock(struct semaphore *sem)
+ 	unsigned long flags;
+ 	int count;
+ 
+-	spin_lock_irqsave(&sem->lock, flags);
++	raw_spin_lock_irqsave(&sem->lock, flags);
+ 	count = sem->count - 1;
+ 	if (likely(count >= 0))
+ 		sem->count = count;
+-	spin_unlock_irqrestore(&sem->lock, flags);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ 
+ 	return (count < 0);
+ }
+@@ -157,12 +157,12 @@ int down_timeout(struct semaphore *sem, long jiffies)
+ 	unsigned long flags;
+ 	int result = 0;
+ 
+-	spin_lock_irqsave(&sem->lock, flags);
++	raw_spin_lock_irqsave(&sem->lock, flags);
+ 	if (likely(sem->count > 0))
+ 		sem->count--;
+ 	else
+ 		result = __down_timeout(sem, jiffies);
+-	spin_unlock_irqrestore(&sem->lock, flags);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ 
+ 	return result;
+ }
+@@ -179,12 +179,12 @@ void up(struct semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->lock, flags);
++	raw_spin_lock_irqsave(&sem->lock, flags);
+ 	if (likely(list_empty(&sem->wait_list)))
+ 		sem->count++;
+ 	else
+ 		__up(sem);
+-	spin_unlock_irqrestore(&sem->lock, flags);
++	raw_spin_unlock_irqrestore(&sem->lock, flags);
+ }
+ EXPORT_SYMBOL(up);
+ 
+@@ -217,9 +217,9 @@ static inline int __sched __down_common(struct semaphore *sem, long state,
+ 		if (timeout <= 0)
+ 			goto timed_out;
+ 		__set_task_state(task, state);
+-		spin_unlock_irq(&sem->lock);
++		raw_spin_unlock_irq(&sem->lock);
+ 		timeout = schedule_timeout(timeout);
+-		spin_lock_irq(&sem->lock);
++		raw_spin_lock_irq(&sem->lock);
+ 		if (waiter.up)
+ 			return 0;
+ 	}
+diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+index a5d0a3a..0b537f2 100644
+--- a/kernel/time/timer_stats.c
++++ b/kernel/time/timer_stats.c
+@@ -81,7 +81,7 @@ struct entry {
+ /*
+  * Spinlock protecting the tables - not taken during lookup:
+  */
+-static DEFINE_SPINLOCK(table_lock);
++static DEFINE_RAW_SPINLOCK(table_lock);
+ 
+ /*
+  * Per-CPU lookup locks for fast hash lookup:
+@@ -188,7 +188,7 @@ static struct entry *tstat_lookup(struct entry *entry, char *comm)
+ 	prev = NULL;
+ 	curr = *head;
+ 
+-	spin_lock(&table_lock);
++	raw_spin_lock(&table_lock);
+ 	/*
+ 	 * Make sure we have not raced with another CPU:
+ 	 */
+@@ -215,7 +215,7 @@ static struct entry *tstat_lookup(struct entry *entry, char *comm)
+ 			*head = curr;
+ 	}
+  out_unlock:
+-	spin_unlock(&table_lock);
++	raw_spin_unlock(&table_lock);
+ 
+ 	return curr;
+ }
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 731201b..f2f821a 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -478,7 +478,7 @@ struct ring_buffer_per_cpu {
+ 	int				cpu;
+ 	atomic_t			record_disabled;
+ 	struct ring_buffer		*buffer;
+-	spinlock_t			reader_lock;	/* serialize readers */
++	raw_spinlock_t			reader_lock;	/* serialize readers */
+ 	arch_spinlock_t			lock;
+ 	struct lock_class_key		lock_key;
+ 	struct list_head		*pages;
+@@ -1062,7 +1062,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
+ 
+ 	cpu_buffer->cpu = cpu;
+ 	cpu_buffer->buffer = buffer;
+-	spin_lock_init(&cpu_buffer->reader_lock);
++	raw_spin_lock_init(&cpu_buffer->reader_lock);
+ 	lockdep_set_class(&cpu_buffer->reader_lock, buffer->reader_lock_key);
+ 	cpu_buffer->lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+ 
+@@ -1259,7 +1259,7 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
+ 	struct list_head *p;
+ 	unsigned i;
+ 
+-	spin_lock_irq(&cpu_buffer->reader_lock);
++	raw_spin_lock_irq(&cpu_buffer->reader_lock);
+ 	rb_head_page_deactivate(cpu_buffer);
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+@@ -1277,7 +1277,7 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
+ 	rb_check_pages(cpu_buffer);
+ 
+ out:
+-	spin_unlock_irq(&cpu_buffer->reader_lock);
++	raw_spin_unlock_irq(&cpu_buffer->reader_lock);
+ }
+ 
+ static void
+@@ -1288,7 +1288,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 	struct list_head *p;
+ 	unsigned i;
+ 
+-	spin_lock_irq(&cpu_buffer->reader_lock);
++	raw_spin_lock_irq(&cpu_buffer->reader_lock);
+ 	rb_head_page_deactivate(cpu_buffer);
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+@@ -1303,7 +1303,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 	rb_check_pages(cpu_buffer);
+ 
+ out:
+-	spin_unlock_irq(&cpu_buffer->reader_lock);
++	raw_spin_unlock_irq(&cpu_buffer->reader_lock);
+ }
+ 
+ /**
+@@ -2804,9 +2804,9 @@ void ring_buffer_iter_reset(struct ring_buffer_iter *iter)
+ 
+ 	cpu_buffer = iter->cpu_buffer;
+ 
+-	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+ 	rb_iter_reset(iter);
+-	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_iter_reset);
+ 
+@@ -3265,12 +3265,12 @@ ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts,
+  again:
+ 	local_irq_save(flags);
+ 	if (dolock)
+-		spin_lock(&cpu_buffer->reader_lock);
++		raw_spin_lock(&cpu_buffer->reader_lock);
+ 	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+ 		rb_advance_reader(cpu_buffer);
+ 	if (dolock)
+-		spin_unlock(&cpu_buffer->reader_lock);
++		raw_spin_unlock(&cpu_buffer->reader_lock);
+ 	local_irq_restore(flags);
+ 
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+@@ -3295,9 +3295,9 @@ ring_buffer_iter_peek(struct ring_buffer_iter *iter, u64 *ts)
+ 	unsigned long flags;
+ 
+  again:
+-	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+ 	event = rb_iter_peek(iter, ts);
+-	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+ 		goto again;
+@@ -3337,7 +3337,7 @@ ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts,
+ 	cpu_buffer = buffer->buffers[cpu];
+ 	local_irq_save(flags);
+ 	if (dolock)
+-		spin_lock(&cpu_buffer->reader_lock);
++		raw_spin_lock(&cpu_buffer->reader_lock);
+ 
+ 	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
+ 	if (event) {
+@@ -3346,7 +3346,7 @@ ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts,
+ 	}
+ 
+ 	if (dolock)
+-		spin_unlock(&cpu_buffer->reader_lock);
++		raw_spin_unlock(&cpu_buffer->reader_lock);
+ 	local_irq_restore(flags);
+ 
+  out:
+@@ -3438,11 +3438,11 @@ ring_buffer_read_start(struct ring_buffer_iter *iter)
+ 
+ 	cpu_buffer = iter->cpu_buffer;
+ 
+-	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+ 	arch_spin_lock(&cpu_buffer->lock);
+ 	rb_iter_reset(iter);
+ 	arch_spin_unlock(&cpu_buffer->lock);
+-	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_read_start);
+ 
+@@ -3477,7 +3477,7 @@ ring_buffer_read(struct ring_buffer_iter *iter, u64 *ts)
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+  again:
+ 	event = rb_iter_peek(iter, ts);
+ 	if (!event)
+@@ -3488,7 +3488,7 @@ ring_buffer_read(struct ring_buffer_iter *iter, u64 *ts)
+ 
+ 	rb_advance_iter(iter);
+  out:
+-	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+ 	return event;
+ }
+@@ -3557,7 +3557,7 @@ void ring_buffer_reset_cpu(struct ring_buffer *buffer, int cpu)
+ 
+ 	atomic_inc(&cpu_buffer->record_disabled);
+ 
+-	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+ 
+ 	if (RB_WARN_ON(cpu_buffer, local_read(&cpu_buffer->committing)))
+ 		goto out;
+@@ -3569,7 +3569,7 @@ void ring_buffer_reset_cpu(struct ring_buffer *buffer, int cpu)
+ 	arch_spin_unlock(&cpu_buffer->lock);
+ 
+  out:
+-	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+ 	atomic_dec(&cpu_buffer->record_disabled);
+ }
+@@ -3607,10 +3607,10 @@ int ring_buffer_empty(struct ring_buffer *buffer)
+ 		cpu_buffer = buffer->buffers[cpu];
+ 		local_irq_save(flags);
+ 		if (dolock)
+-			spin_lock(&cpu_buffer->reader_lock);
++			raw_spin_lock(&cpu_buffer->reader_lock);
+ 		ret = rb_per_cpu_empty(cpu_buffer);
+ 		if (dolock)
+-			spin_unlock(&cpu_buffer->reader_lock);
++			raw_spin_unlock(&cpu_buffer->reader_lock);
+ 		local_irq_restore(flags);
+ 
+ 		if (!ret)
+@@ -3641,10 +3641,10 @@ int ring_buffer_empty_cpu(struct ring_buffer *buffer, int cpu)
+ 	cpu_buffer = buffer->buffers[cpu];
+ 	local_irq_save(flags);
+ 	if (dolock)
+-		spin_lock(&cpu_buffer->reader_lock);
++		raw_spin_lock(&cpu_buffer->reader_lock);
+ 	ret = rb_per_cpu_empty(cpu_buffer);
+ 	if (dolock)
+-		spin_unlock(&cpu_buffer->reader_lock);
++		raw_spin_unlock(&cpu_buffer->reader_lock);
+ 	local_irq_restore(flags);
+ 
+ 	return ret;
+@@ -3841,7 +3841,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 	if (!bpage)
+ 		goto out;
+ 
+-	spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
++	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+ 
+ 	reader = rb_get_reader_page(cpu_buffer);
+ 	if (!reader)
+@@ -3964,7 +3964,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 		memset(&bpage->data[commit], 0, BUF_PAGE_SIZE - commit);
+ 
+  out_unlock:
+-	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
++	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+  out:
+ 	return ret;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e5df02c..0c8bdee 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -341,7 +341,7 @@ unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
+ 	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE;
+ 
+ static int trace_stop_count;
+-static DEFINE_SPINLOCK(tracing_start_lock);
++static DEFINE_RAW_SPINLOCK(tracing_start_lock);
+ 
+ static void wakeup_work_handler(struct work_struct *work)
+ {
+@@ -960,7 +960,7 @@ void tracing_start(void)
+ 	if (tracing_disabled)
+ 		return;
+ 
+-	spin_lock_irqsave(&tracing_start_lock, flags);
++	raw_spin_lock_irqsave(&tracing_start_lock, flags);
+ 	if (--trace_stop_count) {
+ 		if (trace_stop_count < 0) {
+ 			/* Someone screwed up their debugging */
+@@ -985,7 +985,7 @@ void tracing_start(void)
+ 
+ 	ftrace_start();
+  out:
+-	spin_unlock_irqrestore(&tracing_start_lock, flags);
++	raw_spin_unlock_irqrestore(&tracing_start_lock, flags);
+ }
+ 
+ /**
+@@ -1000,7 +1000,7 @@ void tracing_stop(void)
+ 	unsigned long flags;
+ 
+ 	ftrace_stop();
+-	spin_lock_irqsave(&tracing_start_lock, flags);
++	raw_spin_lock_irqsave(&tracing_start_lock, flags);
+ 	if (trace_stop_count++)
+ 		goto out;
+ 
+@@ -1018,7 +1018,7 @@ void tracing_stop(void)
+ 	arch_spin_unlock(&ftrace_max_lock);
+ 
+  out:
+-	spin_unlock_irqrestore(&tracing_start_lock, flags);
++	raw_spin_unlock_irqrestore(&tracing_start_lock, flags);
+ }
+ 
+ void trace_stop_cmdline_recording(void);
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 667aa8c..1118621 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -23,7 +23,7 @@ static int				tracer_enabled __read_mostly;
+ 
+ static DEFINE_PER_CPU(int, tracing_cpu);
+ 
+-static DEFINE_SPINLOCK(max_trace_lock);
++static DEFINE_RAW_SPINLOCK(max_trace_lock);
+ 
+ enum {
+ 	TRACER_IRQS_OFF		= (1 << 1),
+@@ -321,7 +321,7 @@ check_critical_timing(struct trace_array *tr,
+ 	if (!report_latency(delta))
+ 		goto out;
+ 
+-	spin_lock_irqsave(&max_trace_lock, flags);
++	raw_spin_lock_irqsave(&max_trace_lock, flags);
+ 
+ 	/* check if we are still the max latency */
+ 	if (!report_latency(delta))
+@@ -344,7 +344,7 @@ check_critical_timing(struct trace_array *tr,
+ 	max_sequence++;
+ 
+ out_unlock:
+-	spin_unlock_irqrestore(&max_trace_lock, flags);
++	raw_spin_unlock_irqrestore(&max_trace_lock, flags);
+ 
+ out:
+ 	data->critical_sequence = max_sequence;
+diff --git a/lib/atomic64.c b/lib/atomic64.c
+index e12ae0d..3975470 100644
+--- a/lib/atomic64.c
++++ b/lib/atomic64.c
+@@ -29,11 +29,11 @@
+  * Ensure each lock is in a separate cacheline.
+  */
+ static union {
+-	spinlock_t lock;
++	raw_spinlock_t lock;
+ 	char pad[L1_CACHE_BYTES];
+ } atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
+ 
+-static inline spinlock_t *lock_addr(const atomic64_t *v)
++static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
+ {
+ 	unsigned long addr = (unsigned long) v;
+ 
+@@ -45,12 +45,12 @@ static inline spinlock_t *lock_addr(const atomic64_t *v)
+ long long atomic64_read(const atomic64_t *v)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	long long val;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	val = v->counter;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return val;
+ }
+ EXPORT_SYMBOL(atomic64_read);
+@@ -58,34 +58,34 @@ EXPORT_SYMBOL(atomic64_read);
+ void atomic64_set(atomic64_t *v, long long i)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	v->counter = i;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ }
+ EXPORT_SYMBOL(atomic64_set);
+ 
+ void atomic64_add(long long a, atomic64_t *v)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	v->counter += a;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ }
+ EXPORT_SYMBOL(atomic64_add);
+ 
+ long long atomic64_add_return(long long a, atomic64_t *v)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	long long val;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	val = v->counter += a;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return val;
+ }
+ EXPORT_SYMBOL(atomic64_add_return);
+@@ -93,23 +93,23 @@ EXPORT_SYMBOL(atomic64_add_return);
+ void atomic64_sub(long long a, atomic64_t *v)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	v->counter -= a;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ }
+ EXPORT_SYMBOL(atomic64_sub);
+ 
+ long long atomic64_sub_return(long long a, atomic64_t *v)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	long long val;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	val = v->counter -= a;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return val;
+ }
+ EXPORT_SYMBOL(atomic64_sub_return);
+@@ -117,14 +117,14 @@ EXPORT_SYMBOL(atomic64_sub_return);
+ long long atomic64_dec_if_positive(atomic64_t *v)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	long long val;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	val = v->counter - 1;
+ 	if (val >= 0)
+ 		v->counter = val;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return val;
+ }
+ EXPORT_SYMBOL(atomic64_dec_if_positive);
+@@ -132,14 +132,14 @@ EXPORT_SYMBOL(atomic64_dec_if_positive);
+ long long atomic64_cmpxchg(atomic64_t *v, long long o, long long n)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	long long val;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	val = v->counter;
+ 	if (val == o)
+ 		v->counter = n;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return val;
+ }
+ EXPORT_SYMBOL(atomic64_cmpxchg);
+@@ -147,13 +147,13 @@ EXPORT_SYMBOL(atomic64_cmpxchg);
+ long long atomic64_xchg(atomic64_t *v, long long new)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	long long val;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	val = v->counter;
+ 	v->counter = new;
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return val;
+ }
+ EXPORT_SYMBOL(atomic64_xchg);
+@@ -161,15 +161,15 @@ EXPORT_SYMBOL(atomic64_xchg);
+ int atomic64_add_unless(atomic64_t *v, long long a, long long u)
+ {
+ 	unsigned long flags;
+-	spinlock_t *lock = lock_addr(v);
++	raw_spinlock_t *lock = lock_addr(v);
+ 	int ret = 0;
+ 
+-	spin_lock_irqsave(lock, flags);
++	raw_spin_lock_irqsave(lock, flags);
+ 	if (v->counter != u) {
+ 		v->counter += a;
+ 		ret = 1;
+ 	}
+-	spin_unlock_irqrestore(lock, flags);
++	raw_spin_unlock_irqrestore(lock, flags);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(atomic64_add_unless);
+@@ -179,7 +179,7 @@ static int init_atomic64_lock(void)
+ 	int i;
+ 
+ 	for (i = 0; i < NR_LOCKS; ++i)
+-		spin_lock_init(&atomic64_lock[i].lock);
++		raw_spin_lock_init(&atomic64_lock[i].lock);
+ 	return 0;
+ }
+ 
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index 28f2c33..f087105 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -59,13 +59,13 @@ void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
+ {
+ 	int cpu;
+ 
+-	spin_lock(&fbc->lock);
++	raw_spin_lock(&fbc->lock);
+ 	for_each_possible_cpu(cpu) {
+ 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		*pcount = 0;
+ 	}
+ 	fbc->count = amount;
+-	spin_unlock(&fbc->lock);
++	raw_spin_unlock(&fbc->lock);
+ }
+ EXPORT_SYMBOL(percpu_counter_set);
+ 
+@@ -76,10 +76,10 @@ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
+ 	preempt_disable();
+ 	count = __this_cpu_read(*fbc->counters) + amount;
+ 	if (count >= batch || count <= -batch) {
+-		spin_lock(&fbc->lock);
++		raw_spin_lock(&fbc->lock);
+ 		fbc->count += count;
+ 		__this_cpu_write(*fbc->counters, 0);
+-		spin_unlock(&fbc->lock);
++		raw_spin_unlock(&fbc->lock);
+ 	} else {
+ 		__this_cpu_write(*fbc->counters, count);
+ 	}
+@@ -96,13 +96,13 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
+ 	s64 ret;
+ 	int cpu;
+ 
+-	spin_lock(&fbc->lock);
++	raw_spin_lock(&fbc->lock);
+ 	ret = fbc->count;
+ 	for_each_online_cpu(cpu) {
+ 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		ret += *pcount;
+ 	}
+-	spin_unlock(&fbc->lock);
++	raw_spin_unlock(&fbc->lock);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(__percpu_counter_sum);
+@@ -110,7 +110,7 @@ EXPORT_SYMBOL(__percpu_counter_sum);
+ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ 			  struct lock_class_key *key)
+ {
+-	spin_lock_init(&fbc->lock);
++	raw_spin_lock_init(&fbc->lock);
+ 	lockdep_set_class(&fbc->lock, key);
+ 	fbc->count = amount;
+ 	fbc->counters = alloc_percpu(s32);
+@@ -173,11 +173,11 @@ static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
+ 		s32 *pcount;
+ 		unsigned long flags;
+ 
+-		spin_lock_irqsave(&fbc->lock, flags);
++		raw_spin_lock_irqsave(&fbc->lock, flags);
+ 		pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		fbc->count += *pcount;
+ 		*pcount = 0;
+-		spin_unlock_irqrestore(&fbc->lock, flags);
++		raw_spin_unlock_irqrestore(&fbc->lock, flags);
+ 	}
+ 	mutex_unlock(&percpu_counters_lock);
+ #endif
+diff --git a/lib/proportions.c b/lib/proportions.c
+index d50746a..05df848 100644
+--- a/lib/proportions.c
++++ b/lib/proportions.c
+@@ -190,7 +190,7 @@ prop_adjust_shift(int *pl_shift, unsigned long *pl_period, int new_shift)
+ 
+ int prop_local_init_percpu(struct prop_local_percpu *pl)
+ {
+-	spin_lock_init(&pl->lock);
++	raw_spin_lock_init(&pl->lock);
+ 	pl->shift = 0;
+ 	pl->period = 0;
+ 	return percpu_counter_init(&pl->events, 0);
+@@ -226,7 +226,7 @@ void prop_norm_percpu(struct prop_global *pg, struct prop_local_percpu *pl)
+ 	if (pl->period == global_period)
+ 		return;
+ 
+-	spin_lock_irqsave(&pl->lock, flags);
++	raw_spin_lock_irqsave(&pl->lock, flags);
+ 	prop_adjust_shift(&pl->shift, &pl->period, pg->shift);
+ 
+ 	/*
+@@ -247,7 +247,7 @@ void prop_norm_percpu(struct prop_global *pg, struct prop_local_percpu *pl)
+ 		percpu_counter_set(&pl->events, 0);
+ 
+ 	pl->period = global_period;
+-	spin_unlock_irqrestore(&pl->lock, flags);
++	raw_spin_unlock_irqrestore(&pl->lock, flags);
+ }
+ 
+ /*
+@@ -324,7 +324,7 @@ void prop_fraction_percpu(struct prop_descriptor *pd,
+ 
+ int prop_local_init_single(struct prop_local_single *pl)
+ {
+-	spin_lock_init(&pl->lock);
++	raw_spin_lock_init(&pl->lock);
+ 	pl->shift = 0;
+ 	pl->period = 0;
+ 	pl->events = 0;
+@@ -356,7 +356,7 @@ void prop_norm_single(struct prop_global *pg, struct prop_local_single *pl)
+ 	if (pl->period == global_period)
+ 		return;
+ 
+-	spin_lock_irqsave(&pl->lock, flags);
++	raw_spin_lock_irqsave(&pl->lock, flags);
+ 	prop_adjust_shift(&pl->shift, &pl->period, pg->shift);
+ 	/*
+ 	 * For each missed period, we half the local counter.
+@@ -367,7 +367,7 @@ void prop_norm_single(struct prop_global *pg, struct prop_local_single *pl)
+ 	else
+ 		pl->events = 0;
+ 	pl->period = global_period;
+-	spin_unlock_irqrestore(&pl->lock, flags);
++	raw_spin_unlock_irqrestore(&pl->lock, flags);
+ }
+ 
+ /*
+diff --git a/lib/ratelimit.c b/lib/ratelimit.c
+index 027a03f..c96d500 100644
+--- a/lib/ratelimit.c
++++ b/lib/ratelimit.c
+@@ -39,7 +39,7 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
+ 	 * in addition to the one that will be printed by
+ 	 * the entity that is holding the lock already:
+ 	 */
+-	if (!spin_trylock_irqsave(&rs->lock, flags))
++	if (!raw_spin_trylock_irqsave(&rs->lock, flags))
+ 		return 0;
+ 
+ 	if (!rs->begin)
+@@ -60,7 +60,7 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
+ 		rs->missed++;
+ 		ret = 0;
+ 	}
+-	spin_unlock_irqrestore(&rs->lock, flags);
++	raw_spin_unlock_irqrestore(&rs->lock, flags);
+ 
+ 	return ret;
+ }
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index ffc9fc7..f2393c2 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -22,9 +22,9 @@ int rwsem_is_locked(struct rw_semaphore *sem)
+ 	int ret = 1;
+ 	unsigned long flags;
+ 
+-	if (spin_trylock_irqsave(&sem->wait_lock, flags)) {
++	if (raw_spin_trylock_irqsave(&sem->wait_lock, flags)) {
+ 		ret = (sem->activity != 0);
+-		spin_unlock_irqrestore(&sem->wait_lock, flags);
++		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 	}
+ 	return ret;
+ }
+@@ -44,7 +44,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 	lockdep_init_map(&sem->dep_map, name, key, 0);
+ #endif
+ 	sem->activity = 0;
+-	spin_lock_init(&sem->wait_lock);
++	raw_spin_lock_init(&sem->wait_lock);
+ 	INIT_LIST_HEAD(&sem->wait_list);
+ }
+ EXPORT_SYMBOL(__init_rwsem);
+@@ -145,12 +145,12 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 	struct task_struct *tsk;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+ 		sem->activity++;
+-		spin_unlock_irqrestore(&sem->wait_lock, flags);
++		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 		goto out;
+ 	}
+ 
+@@ -165,7 +165,7 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we don't need to touch the semaphore struct anymore */
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
+@@ -189,7 +189,7 @@ int __down_read_trylock(struct rw_semaphore *sem)
+ 	int ret = 0;
+ 
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+@@ -197,7 +197,7 @@ int __down_read_trylock(struct rw_semaphore *sem)
+ 		ret = 1;
+ 	}
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -212,12 +212,12 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	struct task_struct *tsk;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+ 		sem->activity = -1;
+-		spin_unlock_irqrestore(&sem->wait_lock, flags);
++		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 		goto out;
+ 	}
+ 
+@@ -232,7 +232,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we don't need to touch the semaphore struct anymore */
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
+@@ -260,7 +260,7 @@ int __down_write_trylock(struct rw_semaphore *sem)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+ 		/* granted */
+@@ -268,7 +268,7 @@ int __down_write_trylock(struct rw_semaphore *sem)
+ 		ret = 1;
+ 	}
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -280,12 +280,12 @@ void __up_read(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	if (--sem->activity == 0 && !list_empty(&sem->wait_list))
+ 		sem = __rwsem_wake_one_writer(sem);
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ }
+ 
+ /*
+@@ -295,13 +295,13 @@ void __up_write(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	sem->activity = 0;
+ 	if (!list_empty(&sem->wait_list))
+ 		sem = __rwsem_do_wake(sem, 1);
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ }
+ 
+ /*
+@@ -312,12 +312,12 @@ void __downgrade_write(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	sem->activity = 1;
+ 	if (!list_empty(&sem->wait_list))
+ 		sem = __rwsem_do_wake(sem, 0);
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ }
+ 
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index aa7c305..410aa11 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -22,7 +22,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 	lockdep_init_map(&sem->dep_map, name, key, 0);
+ #endif
+ 	sem->count = RWSEM_UNLOCKED_VALUE;
+-	spin_lock_init(&sem->wait_lock);
++	raw_spin_lock_init(&sem->wait_lock);
+ 	INIT_LIST_HEAD(&sem->wait_list);
+ }
+ 
+@@ -180,7 +180,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+ 
+ 	/* set up my own style of waitqueue */
+-	spin_lock_irq(&sem->wait_lock);
++	raw_spin_lock_irq(&sem->wait_lock);
+ 	waiter.task = tsk;
+ 	waiter.flags = flags;
+ 	get_task_struct(tsk);
+@@ -204,7 +204,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
+ 
+-	spin_unlock_irq(&sem->wait_lock);
++	raw_spin_unlock_irq(&sem->wait_lock);
+ 
+ 	/* wait to be given the lock */
+ 	for (;;) {
+@@ -245,13 +245,13 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	/* do nothing if list empty */
+ 	if (!list_empty(&sem->wait_list))
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	return sem;
+ }
+@@ -265,13 +265,13 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sem->wait_lock, flags);
++	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+ 	/* do nothing if list empty */
+ 	if (!list_empty(&sem->wait_list))
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
+ 
+-	spin_unlock_irqrestore(&sem->wait_lock, flags);
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ 
+ 	return sem;
+ }
