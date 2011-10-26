@@ -1,184 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933158Ab1JZNxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 09:53:53 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38347 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932680Ab1JZNxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 09:53:52 -0400
-Date: Wed, 26 Oct 2011 15:52:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf/urgent changes for v3.2
-Message-ID: <20111026135218.GA30512@elte.hu>
+	id S933180Ab1JZNyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 09:54:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52013 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680Ab1JZNyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 09:54:36 -0400
+Date: Wed, 26 Oct 2011 08:54:32 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] toshiba_acpi: Cleanup and TOS1900 device support
+Message-ID: <20111026135432.GA31917@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	Azael Avalos <coproscefalo@gmail.com>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
+ <20110921153137.GA26436@srcf.ucam.org>
+ <20110921161043.GC29983@thinkpad-t410>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110921161043.GC29983@thinkpad-t410>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Sep 21, 2011 at 11:10:44AM -0500, Seth Forshee wrote:
+> On Wed, Sep 21, 2011 at 04:31:37PM +0100, Matthew Garrett wrote:
+> > On Tue, Sep 20, 2011 at 04:55:48PM -0500, Seth Forshee wrote:
+> > > Hi Matthew,
+> > > 
+> > > Please consider merging the following patches. They represent a
+> > > signficant cleanup of toshiba_acpi as well as adding support for SPFC as
+> > > an HCI method. The latter provides basic but functional support for the
+> > > TOS1900 devices found on newer Toshiba models, which will serve as a
+> > > good starting point for further enhancements. I've tried to leave the
+> > > details of the hardware interaction unchanged to reduce the risk of
+> > > regression for machines already supported by the driver.
+> > 
+> > Great. Has this been tested on any older hardware? I'd think that the 
+> > risk of regression is pretty low, but it'd be a nice sanity check. I've 
+> > only got one TOS1800 type around here, and it's a 1.2GHz Pentium M, so 
+> > I'd prefer to have got someone else to do it :)
+> 
+> No, I don't have any older hardware to test on, and I'm pretty sure
+> Azael doesn't either. Not that I want to afflict any additional pain
+> beyond what you already have from dealing with firmware all day ;)
 
-Please pull the latest perf-urgent-for-linus git tree from:
+I managed to find some volunteers with machines that use the GHCI
+interface to do some regression testing for me. They aren't exactly
+older hardware, all of them with TOS6208 and being made within the last
+2 or 3 years. But it's the best I could do.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+None of the machines tested showed any regressions as a result of these
+patches. I also got testing of using the INFO method to read hotkey
+scancodes, and that's working on those machines as well. (I did however
+find that I had to reintroduce the global toshiba_acpi pointer for the
+i8042 filter, since it doesn't have any mechanism for passing private
+data to the callback.)
 
-This is a leftover from before the merge window, not quite making it 
-into v3.1-final.
-
- Thanks,
-
-	Ingo
-
------------------->
-Masami Hiramatsu (1):
-      x86: Fix insn decoder for longer instruction
-
-
- arch/x86/lib/insn.c |   48 +++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 43 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-index 9f33b98..374562e 100644
---- a/arch/x86/lib/insn.c
-+++ b/arch/x86/lib/insn.c
-@@ -22,14 +22,23 @@
- #include <asm/inat.h>
- #include <asm/insn.h>
- 
--#define get_next(t, insn)	\
--	({t r; r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
-+/* Verify next sizeof(t) bytes can be on the same instruction */
-+#define validate_next(t, insn, n)	\
-+	((insn)->next_byte + sizeof(t) + n - (insn)->kaddr <= MAX_INSN_SIZE)
-+
-+#define __get_next(t, insn)	\
-+	({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
-+
-+#define __peek_nbyte_next(t, insn, n)	\
-+	({ t r = *(t*)((insn)->next_byte + n); r; })
- 
--#define peek_next(t, insn)	\
--	({t r; r = *(t*)insn->next_byte; r; })
-+#define get_next(t, insn)	\
-+	({ if (unlikely(!validate_next(t, insn, 0))) goto err_out; __get_next(t, insn); })
- 
- #define peek_nbyte_next(t, insn, n)	\
--	({t r; r = *(t*)((insn)->next_byte + n); r; })
-+	({ if (unlikely(!validate_next(t, insn, n))) goto err_out; __peek_nbyte_next(t, insn, n); })
-+
-+#define peek_next(t, insn)	peek_nbyte_next(t, insn, 0)
- 
- /**
-  * insn_init() - initialize struct insn
-@@ -158,6 +167,8 @@ vex_end:
- 	insn->vex_prefix.got = 1;
- 
- 	prefixes->got = 1;
-+
-+err_out:
- 	return;
- }
- 
-@@ -208,6 +219,9 @@ void insn_get_opcode(struct insn *insn)
- 		insn->attr = 0;	/* This instruction is bad */
- end:
- 	opcode->got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /**
-@@ -241,6 +255,9 @@ void insn_get_modrm(struct insn *insn)
- 	if (insn->x86_64 && inat_is_force64(insn->attr))
- 		insn->opnd_bytes = 8;
- 	modrm->got = 1;
-+
-+err_out:
-+	return;
- }
- 
- 
-@@ -290,6 +307,9 @@ void insn_get_sib(struct insn *insn)
- 		}
- 	}
- 	insn->sib.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- 
-@@ -351,6 +371,9 @@ void insn_get_displacement(struct insn *insn)
- 	}
- out:
- 	insn->displacement.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /* Decode moffset16/32/64 */
-@@ -373,6 +396,9 @@ static void __get_moffset(struct insn *insn)
- 		break;
- 	}
- 	insn->moffset1.got = insn->moffset2.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /* Decode imm v32(Iz) */
-@@ -389,6 +415,9 @@ static void __get_immv32(struct insn *insn)
- 		insn->immediate.nbytes = 4;
- 		break;
- 	}
-+
-+err_out:
-+	return;
- }
- 
- /* Decode imm v64(Iv/Ov) */
-@@ -411,6 +440,9 @@ static void __get_immv(struct insn *insn)
- 		break;
- 	}
- 	insn->immediate1.got = insn->immediate2.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /* Decode ptr16:16/32(Ap) */
-@@ -432,6 +464,9 @@ static void __get_immptr(struct insn *insn)
- 	insn->immediate2.value = get_next(unsigned short, insn);
- 	insn->immediate2.nbytes = 2;
- 	insn->immediate1.got = insn->immediate2.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /**
-@@ -496,6 +531,9 @@ void insn_get_immediate(struct insn *insn)
- 	}
- done:
- 	insn->immediate.got = 1;
-+
-+err_out:
-+	return;
- }
- 
- /**
+Any chance of seeing these patches in 3.2?
