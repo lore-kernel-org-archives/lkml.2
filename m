@@ -1,420 +1,505 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab1JZVaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 17:30:22 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60456 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab1JZVaV (ORCPT
+	id S1752876Ab1JZVbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 17:31:15 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54144 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab1JZVbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 17:30:21 -0400
-Date: Wed, 26 Oct 2011 14:30:15 -0700
+	Wed, 26 Oct 2011 17:31:13 -0400
+Date: Wed, 26 Oct 2011 14:31:07 -0700
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCH UPDATED 04/13] block: make ioc get/put interface more
- conventional and fix race on alloction
-Message-ID: <20111026213015.GH24261@google.com>
+Subject: [PATCH UPDATED 10/13] block, cfq: unlink cfq_io_context's
+ immediately
+Message-ID: <20111026213107.GI24261@google.com>
 References: <1319593719-19132-1-git-send-email-tj@kernel.org>
- <1319593719-19132-5-git-send-email-tj@kernel.org>
+ <1319593719-19132-11-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319593719-19132-5-git-send-email-tj@kernel.org>
+In-Reply-To: <1319593719-19132-11-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignoring copy_io() during fork, io_context can be allocated from two
-places - current_io_context() and set_task_ioprio().  The former is
-always called from local task while the latter can be called from
-different task.  The synchornization between them are peculiar and
-dubious.
+cic is association between io_context and request_queue.  A cic is
+linked from both ioc and q and should be destroyed when either one
+goes away.  As ioc and q both have their own locks, locking becomes a
+bit complex - both orders work for removal from one but not from the
+other.
 
-* current_io_context() doesn't grab task_lock() and assumes that if it
-  saw %NULL ->io_context, it would stay that way until allocation and
-  assignment is complete.  It has smp_wmb() between alloc/init and
-  assignment.
+Currently, cfq tries to circumvent this locking order issue with RCU.
+ioc->lock nests inside queue_lock but the radix tree and cic's are
+also protected by RCU allowing either side to walk their lists without
+grabbing lock.
 
-* set_task_ioprio() grabs task_lock() for assignment and does
-  smp_read_barrier_depends() between "ioc = task->io_context" and "if
-  (ioc)".  Unfortunately, this doesn't achieve anything - the latter
-  is not a dependent load of the former.  ie, if ioc itself were being
-  dereferenced "ioc->xxx", it would mean something (not sure what tho)
-  but as the code currently stands, the dependent read barrier is
-  noop.
+This rather unconventional use of RCU quickly devolves into extremely
+fragile convolution.  e.g. The following is from cfqd going away too
+soon after ioc and q exits raced.
 
-As only one of the the two test-assignment sequences is task_lock()
-protected, the task_lock() can't do much about race between the two.
-Nothing prevents current_io_context() and set_task_ioprio() allocating
-its own ioc for the same task and overwriting the other's.
+ general protection fault: 0000 [#1] PREEMPT SMP
+ CPU 2
+ Modules linked in:
+ [   88.503444]
+ Pid: 599, comm: hexdump Not tainted 3.1.0-rc10-work+ #158 Bochs Bochs
+ RIP: 0010:[<ffffffff81397628>]  [<ffffffff81397628>] cfq_exit_single_io_context+0x58/0xf0
+ ...
+ Call Trace:
+  [<ffffffff81395a4a>] call_for_each_cic+0x5a/0x90
+  [<ffffffff81395ab5>] cfq_exit_io_context+0x15/0x20
+  [<ffffffff81389130>] exit_io_context+0x100/0x140
+  [<ffffffff81098a29>] do_exit+0x579/0x850
+  [<ffffffff81098d5b>] do_group_exit+0x5b/0xd0
+  [<ffffffff81098de7>] sys_exit_group+0x17/0x20
+  [<ffffffff81b02f2b>] system_call_fastpath+0x16/0x1b
 
-Also, set_task_ioprio() can race with exiting task and create a new
-ioc after exit_io_context() is finished.
+The only real hot path here is cic lookup during request
+initialization and avoiding extra locking requires very confined use
+of RCU.  This patch makes cic removal from both ioc and request_queue
+perform double-locking and unlink immediately.
 
-ioc get/put doesn't have any reason to be complex.  The only hot path
-is accessing the existing ioc of %current, which is simple to achieve
-given that ->io_context is never destroyed as long as the task is
-alive.  All other paths can happily go through task_lock() like all
-other task sub structures without impacting anything.
+* From q side, the change is almost trivial as ioc->lock nests inside
+  queue_lock.  It just needs to grab each ioc->lock as it walks
+  cic_list and unlink it.
 
-This patch updates ioc get/put so that it becomes more conventional.
+* From ioc side, it's a bit more difficult because of inversed lock
+  order.  ioc needs its lock to walk its cic_list but can't grab the
+  matching queue_lock and needs to perform unlock-relock dancing.
 
-* alloc_io_context() is replaced with get_task_io_context().  This is
-  the only interface which can acquire access to ioc of another task.
-  On return, the caller has an explicit reference to the object which
-  should be put using put_io_context() afterwards.
+  Unlinking is now wholly done from put_io_context() and fast path is
+  optimized by using the queue_lock the caller already holds, which is
+  by far the most common case.  If the ioc accessed multiple devices,
+  it tries with trylock.  In unlikely cases of fast path failure, it
+  falls back to full double-locking dance from workqueue.
 
-* The functionality of current_io_context() remains the same but when
-  creating a new ioc, it shares the code path with
-  get_task_io_context() and always goes through task_lock().
+Double-locking isn't the prettiest thing in the world but it's *far*
+simpler and more understandable than RCU trick without adding any
+meaningful overhead.
 
-* get_io_context() now means incrementing ref on an ioc which the
-  caller already has access to (be that an explicit refcnt or implicit
-  %current one).
+This still leaves a lot of now unnecessary RCU logics.  Future patches
+will trim them.
 
-* PF_EXITING inhibits creation of new io_context and once
-  exit_io_context() is finished, it's guaranteed that both ioc
-  acquisition functions return %NULL.
-
-* All users are updated.  Most are trivial but
-  smp_read_barrier_depends() removal from cfq_get_io_context() needs a
-  bit of explanation.  I suppose the original intention was to ensure
-  ioc->ioprio is visible when set_task_ioprio() allocates new
-  io_context and installs it; however, this wouldn't have worked
-  because set_task_ioprio() doesn't have wmb between init and install.
-  There are other problems with this which will be fixed in another
-  patch.
-
-* While at it, use NUMA_NO_NODE instead of -1 for wildcard node
-  specification.
-
--v2: Vivek spotted contamination from debug patch.  Removed.
+-v2: Vivek pointed out that cic->q was being dereferenced after
+     cic->release() was called.  Updated to use local variable @this_q
+     instead.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c        |    9 ++--
- block/blk-ioc.c           |   99 ++++++++++++++++++++++++++++++---------------
- block/blk.h               |    1 +
- block/cfq-iosched.c       |   18 ++++----
- fs/ioprio.c               |   21 +--------
- include/linux/iocontext.h |    4 +-
- kernel/fork.c             |    8 ++-
- 7 files changed, 91 insertions(+), 69 deletions(-)
+ block/blk-cgroup.c        |    2 +-
+ block/blk-ioc.c           |  166 +++++++++++++++++++++++++++++++++++++--------
+ block/cfq-iosched.c       |   44 ++----------
+ fs/ioprio.c               |    2 +-
+ include/linux/blkdev.h    |    3 +
+ include/linux/iocontext.h |   12 ++-
+ kernel/fork.c             |    2 +-
+ 7 files changed, 159 insertions(+), 72 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 8f630ce..4b001dc 100644
+index dc00835..2788693 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -1645,11 +1645,12 @@ static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- {
- 	struct io_context *ioc;
- 
--	task_lock(tsk);
--	ioc = tsk->io_context;
--	if (ioc)
-+	/* we don't lose anything even if ioc allocation fails */
-+	ioc = get_task_io_context(tsk, GFP_ATOMIC, NUMA_NO_NODE);
-+	if (ioc) {
- 		ioc->cgroup_changed = 1;
--	task_unlock(tsk);
-+		put_io_context(ioc);
-+	}
+@@ -1649,7 +1649,7 @@ static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 	ioc = get_task_io_context(tsk, GFP_ATOMIC, NUMA_NO_NODE);
+ 	if (ioc) {
+ 		ioc_cgroup_changed(ioc);
+-		put_io_context(ioc);
++		put_io_context(ioc, NULL);
+ 	}
  }
  
- void blkio_policy_register(struct blkio_policy_type *blkiop)
 diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 8bebf06..b13ed96 100644
+index 6f59fba..fb23965 100644
 --- a/block/blk-ioc.c
 +++ b/block/blk-ioc.c
-@@ -16,6 +16,19 @@
-  */
- static struct kmem_cache *iocontext_cachep;
+@@ -29,55 +29,164 @@ void get_io_context(struct io_context *ioc)
+ }
+ EXPORT_SYMBOL(get_io_context);
  
-+/**
-+ * get_io_context - increment reference count to io_context
-+ * @ioc: io_context to get
-+ *
-+ * Increment reference count to @ioc.
+-static void cfq_dtor(struct io_context *ioc)
++/*
++ * Releasing ioc may nest into another put_io_context() leading to nested
++ * fast path release.  As the ioc's can't be the same, this is okay but
++ * makes lockdep whine.  Keep track of nesting and use it as subclass.
 + */
-+void get_io_context(struct io_context *ioc)
-+{
-+	BUG_ON(atomic_long_read(&ioc->refcount) <= 0);
-+	atomic_long_inc(&ioc->refcount);
-+}
-+EXPORT_SYMBOL(get_io_context);
++#ifdef CONFIG_LOCKDEP
++#define ioc_release_depth(q)		((q) ? (q)->ioc_release_depth : 0)
++#define ioc_release_depth_inc(q)	(q)->ioc_release_depth++
++#define ioc_release_depth_dec(q)	(q)->ioc_release_depth--
++#else
++#define ioc_release_depth(q)		0
++#define ioc_release_depth_inc(q)	do { } while (0)
++#define ioc_release_depth_dec(q)	do { } while (0)
++#endif
 +
- static void cfq_dtor(struct io_context *ioc)
++/*
++ * Slow path for ioc release in put_io_context().  Performs double-lock
++ * dancing to unlink all cic's and then frees ioc.
++ */
++static void ioc_release_fn(struct work_struct *work)
  {
- 	if (!hlist_empty(&ioc->cic_list)) {
-@@ -71,6 +84,9 @@ void exit_io_context(struct task_struct *task)
- {
- 	struct io_context *ioc;
+-	if (!hlist_empty(&ioc->cic_list)) {
+-		struct cfq_io_context *cic;
++	struct io_context *ioc = container_of(work, struct io_context,
++					      release_work);
++	struct request_queue *last_q = NULL;
++
++	spin_lock_irq(&ioc->lock);
++
++	while (!hlist_empty(&ioc->cic_list)) {
++		struct cfq_io_context *cic = hlist_entry(ioc->cic_list.first,
++							 struct cfq_io_context,
++							 cic_list);
++		struct request_queue *this_q = cic->q;
++
++		if (this_q != last_q) {
++			/*
++			 * Need to switch to @this_q.  Once we release
++			 * @ioc->lock, it can go away along with @cic.
++			 * Hold on to it.
++			 */
++			__blk_get_queue(this_q);
++
++			/*
++			 * blk_put_queue() might sleep thanks to kobject
++			 * idiocy.  Always release both locks, put and
++			 * restart.
++			 */
++			if (last_q) {
++				spin_unlock(last_q->queue_lock);
++				spin_unlock_irq(&ioc->lock);
++				blk_put_queue(last_q);
++			} else {
++				spin_unlock_irq(&ioc->lock);
++			}
++
++			last_q = this_q;
++			spin_lock_irq(this_q->queue_lock);
++			spin_lock(&ioc->lock);
++			continue;
++		}
++		ioc_release_depth_inc(this_q);
++		cic->exit(cic);
++		cic->release(cic);
++		ioc_release_depth_dec(this_q);
++	}
  
-+	/* PF_EXITING prevents new io_context from being attached to @task */
-+	WARN_ON_ONCE(!(current->flags & PF_EXITING));
+-		cic = hlist_entry(ioc->cic_list.first, struct cfq_io_context,
+-								cic_list);
+-		cic->dtor(ioc);
++	if (last_q) {
++		spin_unlock(last_q->queue_lock);
++		spin_unlock_irq(&ioc->lock);
++		blk_put_queue(last_q);
++	} else {
++		spin_unlock_irq(&ioc->lock);
+ 	}
 +
- 	task_lock(task);
- 	ioc = task->io_context;
- 	task->io_context = NULL;
-@@ -82,7 +98,9 @@ void exit_io_context(struct task_struct *task)
- 	put_io_context(ioc);
++	kmem_cache_free(iocontext_cachep, ioc);
  }
  
--struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
-+static struct io_context *create_task_io_context(struct task_struct *task,
-+						 gfp_t gfp_flags, int node,
-+						 bool take_ref)
+ /**
+  * put_io_context - put a reference of io_context
+  * @ioc: io_context to put
++ * @locked_q: request_queue the caller is holding queue_lock of (hint)
+  *
+  * Decrement reference count of @ioc and release it if the count reaches
+- * zero.
++ * zero.  If the caller is holding queue_lock of a queue, it can indicate
++ * that with @locked_q.  This is an optimization hint and the caller is
++ * allowed to pass in %NULL even when it's holding a queue_lock.
+  */
+-void put_io_context(struct io_context *ioc)
++void put_io_context(struct io_context *ioc, struct request_queue *locked_q)
  {
- 	struct io_context *ioc;
++	struct request_queue *last_q = locked_q;
++	unsigned long flags;
++
+ 	if (ioc == NULL)
+ 		return;
  
-@@ -98,6 +116,20 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
+ 	BUG_ON(atomic_long_read(&ioc->refcount) <= 0);
++	if (locked_q)
++		lockdep_assert_held(locked_q->queue_lock);
+ 
+ 	if (!atomic_long_dec_and_test(&ioc->refcount))
+ 		return;
+ 
+-	rcu_read_lock();
+-	cfq_dtor(ioc);
+-	rcu_read_unlock();
+-
+-	kmem_cache_free(iocontext_cachep, ioc);
+-}
+-EXPORT_SYMBOL(put_io_context);
++	/*
++	 * Destroy @ioc.  This is a bit messy because cic's are chained
++	 * from both ioc and queue, and ioc->lock nests inside queue_lock.
++	 * The inner ioc->lock should be held to walk our cic_list and then
++	 * for each cic the outer matching queue_lock should be grabbed.
++	 * ie. We need to do reverse-order double lock dancing.
++	 *
++	 * Another twist is that we are often called with one of the
++	 * matching queue_locks held as indicated by @locked_q, which
++	 * prevents performing double-lock dance for other queues.
++	 *
++	 * So, we do it in two stages.  The fast path uses the queue_lock
++	 * the caller is holding and, if other queues need to be accessed,
++	 * uses trylock to avoid introducing locking dependency.  This can
++	 * handle most cases, especially if @ioc was performing IO on only
++	 * single device.
++	 *
++	 * If trylock doesn't cut it, we defer to @ioc->release_work which
++	 * can do all the double-locking dancing.
++	 */
++	spin_lock_irqsave_nested(&ioc->lock, flags,
++				 ioc_release_depth(locked_q));
++
++	while (!hlist_empty(&ioc->cic_list)) {
++		struct cfq_io_context *cic = hlist_entry(ioc->cic_list.first,
++							 struct cfq_io_context,
++							 cic_list);
++		struct request_queue *this_q = cic->q;
++
++		if (this_q != last_q) {
++			if (last_q && last_q != locked_q)
++				spin_unlock(last_q->queue_lock);
++			last_q = NULL;
++
++			if (!spin_trylock(this_q->queue_lock))
++				break;
++			last_q = this_q;
++			continue;
++		}
++		ioc_release_depth_inc(this_q);
++		cic->exit(cic);
++		cic->release(cic);
++		ioc_release_depth_dec(this_q);
++	}
+ 
+-static void cfq_exit(struct io_context *ioc)
+-{
+-	rcu_read_lock();
++	if (last_q && last_q != locked_q)
++		spin_unlock(last_q->queue_lock);
+ 
+-	if (!hlist_empty(&ioc->cic_list)) {
+-		struct cfq_io_context *cic;
++	spin_unlock_irqrestore(&ioc->lock, flags);
+ 
+-		cic = hlist_entry(ioc->cic_list.first, struct cfq_io_context,
+-								cic_list);
+-		cic->exit(ioc);
+-	}
+-	rcu_read_unlock();
++	/* if no cic's left, we're done; otherwise, kick release_work */
++	if (hlist_empty(&ioc->cic_list))
++		kmem_cache_free(iocontext_cachep, ioc);
++	else
++		schedule_work(&ioc->release_work);
+ }
++EXPORT_SYMBOL(put_io_context);
+ 
+ /* Called by the exiting task */
+ void exit_io_context(struct task_struct *task)
+@@ -92,10 +201,8 @@ void exit_io_context(struct task_struct *task)
+ 	task->io_context = NULL;
+ 	task_unlock(task);
+ 
+-	if (atomic_dec_and_test(&ioc->nr_tasks))
+-		cfq_exit(ioc);
+-
+-	put_io_context(ioc);
++	atomic_dec(&ioc->nr_tasks);
++	put_io_context(ioc, NULL);
+ }
+ 
+ static struct io_context *create_task_io_context(struct task_struct *task,
+@@ -115,6 +222,7 @@ static struct io_context *create_task_io_context(struct task_struct *task,
+ 	spin_lock_init(&ioc->lock);
  	INIT_RADIX_TREE(&ioc->radix_root, GFP_ATOMIC | __GFP_HIGH);
  	INIT_HLIST_HEAD(&ioc->cic_list);
++	INIT_WORK(&ioc->release_work, ioc_release_fn);
  
-+	/* try to install, somebody might already have beaten us to it */
-+	task_lock(task);
-+
-+	if (!task->io_context && !(task->flags & PF_EXITING)) {
-+		task->io_context = ioc;
-+	} else {
-+		kmem_cache_free(iocontext_cachep, ioc);
-+		ioc = task->io_context;
-+	}
-+
-+	if (ioc && take_ref)
-+		get_io_context(ioc);
-+
-+	task_unlock(task);
- 	return ioc;
- }
- 
-@@ -114,46 +146,47 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
-  */
- struct io_context *current_io_context(gfp_t gfp_flags, int node)
- {
--	struct task_struct *tsk = current;
--	struct io_context *ret;
--
--	ret = tsk->io_context;
--	if (likely(ret))
--		return ret;
--
--	ret = alloc_io_context(gfp_flags, node);
--	if (ret) {
--		/* make sure set_task_ioprio() sees the settings above */
--		smp_wmb();
--		tsk->io_context = ret;
--	}
-+	might_sleep_if(gfp_flags & __GFP_WAIT);
- 
--	return ret;
-+	if (current->io_context)
-+		return current->io_context;
-+
-+	return create_task_io_context(current, gfp_flags, node, false);
- }
-+EXPORT_SYMBOL(current_io_context);
- 
--/*
-- * If the current task has no IO context then create one and initialise it.
-- * If it does have a context, take a ref on it.
-+/**
-+ * get_task_io_context - get io_context of a task
-+ * @task: task of interest
-+ * @gfp_flags: allocation flags, used if allocation is necessary
-+ * @node: allocation node, used if allocation is necessary
-+ *
-+ * Return io_context of @task.  If it doesn't exist, it is created with
-+ * @gfp_flags and @node.  The returned io_context has its reference count
-+ * incremented.
-  *
-- * This is always called in the context of the task which submitted the I/O.
-+ * This function always goes through task_lock() and it's better to use
-+ * current_io_context() + get_io_context() for %current.
-  */
--struct io_context *get_io_context(gfp_t gfp_flags, int node)
-+struct io_context *get_task_io_context(struct task_struct *task,
-+				       gfp_t gfp_flags, int node)
- {
--	struct io_context *ioc = NULL;
--
--	/*
--	 * Check for unlikely race with exiting task. ioc ref count is
--	 * zero when ioc is being detached.
--	 */
--	do {
--		ioc = current_io_context(gfp_flags, node);
--		if (unlikely(!ioc))
--			break;
--	} while (!atomic_long_inc_not_zero(&ioc->refcount));
-+	struct io_context *ioc;
- 
--	return ioc;
-+	might_sleep_if(gfp_flags & __GFP_WAIT);
-+
-+	task_lock(task);
-+	ioc = task->io_context;
-+	if (likely(ioc)) {
-+		get_io_context(ioc);
-+		task_unlock(task);
-+		return ioc;
-+	}
-+	task_unlock(task);
-+
-+	return create_task_io_context(task, gfp_flags, node, true);
- }
--EXPORT_SYMBOL(get_io_context);
-+EXPORT_SYMBOL(get_task_io_context);
- 
- static int __init blk_ioc_init(void)
- {
-diff --git a/block/blk.h b/block/blk.h
-index aae4d88..fc3c41b 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -122,6 +122,7 @@ static inline int blk_should_fake_timeout(struct request_queue *q)
- }
- #endif
- 
-+void get_io_context(struct io_context *ioc);
- struct io_context *current_io_context(gfp_t gfp_flags, int node);
- 
- int ll_back_merge_fn(struct request_queue *q, struct request *req,
+ 	/* try to install, somebody might already have beaten us to it */
+ 	task_lock(task);
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index ec3f5e8b..d42d89c 100644
+index e617b08..6cc6065 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -14,6 +14,7 @@
- #include <linux/rbtree.h>
- #include <linux/ioprio.h>
- #include <linux/blktrace_api.h>
-+#include "blk.h"
- #include "cfq.h"
+@@ -1778,7 +1778,7 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		cfqd->active_queue = NULL;
  
- /*
-@@ -3194,13 +3195,13 @@ static struct cfq_io_context *
- cfq_get_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
- {
- 	struct io_context *ioc = NULL;
--	struct cfq_io_context *cic;
-+	struct cfq_io_context *cic = NULL;
- 
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
- 
--	ioc = get_io_context(gfp_mask, cfqd->queue->node);
-+	ioc = current_io_context(gfp_mask, cfqd->queue->node);
- 	if (!ioc)
--		return NULL;
-+		goto err;
- 
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	if (cic)
-@@ -3211,10 +3212,10 @@ cfq_get_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
- 		goto err;
- 
- 	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
--		goto err_free;
--
-+		goto err;
- out:
--	smp_read_barrier_depends();
-+	get_io_context(ioc);
-+
- 	if (unlikely(ioc->ioprio_changed))
- 		cfq_ioc_set_ioprio(ioc);
- 
-@@ -3223,10 +3224,9 @@ out:
- 		cfq_ioc_set_cgroup(ioc);
- #endif
- 	return cic;
--err_free:
--	cfq_cic_free(cic);
- err:
--	put_io_context(ioc);
-+	if (cic)
-+		cfq_cic_free(cic);
- 	return NULL;
+ 	if (cfqd->active_cic) {
+-		put_io_context(cfqd->active_cic->ioc);
++		put_io_context(cfqd->active_cic->ioc, cfqd->queue);
+ 		cfqd->active_cic = NULL;
+ 	}
+ }
+@@ -2812,38 +2812,6 @@ static void cfq_exit_cic(struct cfq_io_context *cic)
+ 	}
  }
  
-diff --git a/fs/ioprio.c b/fs/ioprio.c
-index 7da2a06..a4cb730 100644
---- a/fs/ioprio.c
-+++ b/fs/ioprio.c
-@@ -47,28 +47,13 @@ int set_task_ioprio(struct task_struct *task, int ioprio)
- 	if (err)
- 		return err;
- 
--	task_lock(task);
--	do {
--		ioc = task->io_context;
--		/* see wmb() in current_io_context() */
+-static void cfq_exit_single_io_context(struct io_context *ioc,
+-				       struct cfq_io_context *cic)
+-{
+-	struct cfq_data *cfqd = cic_to_cfqd(cic);
+-
+-	if (cfqd) {
+-		struct request_queue *q = cfqd->queue;
+-		unsigned long flags;
+-
+-		spin_lock_irqsave(q->queue_lock, flags);
+-
+-		/*
+-		 * Ensure we get a fresh copy of the ->key to prevent
+-		 * race between exiting task and queue
+-		 */
 -		smp_read_barrier_depends();
--		if (ioc)
--			break;
+-		if (cic->key == cfqd)
+-			cfq_exit_cic(cic);
 -
--		ioc = alloc_io_context(GFP_ATOMIC, -1);
--		if (!ioc) {
--			err = -ENOMEM;
--			break;
--		}
--		task->io_context = ioc;
--	} while (1);
+-		spin_unlock_irqrestore(q->queue_lock, flags);
+-	}
+-}
 -
--	if (!err) {
-+	ioc = get_task_io_context(task, GFP_ATOMIC, NUMA_NO_NODE);
-+	if (ioc) {
- 		ioc->ioprio = ioprio;
- 		ioc->ioprio_changed = 1;
-+		put_io_context(ioc);
+-/*
+- * The process that ioc belongs to has exited, we need to clean up
+- * and put the internal structures we have that belongs to that process.
+- */
+-static void cfq_exit_io_context(struct io_context *ioc)
+-{
+-	call_for_each_cic(ioc, cfq_exit_single_io_context);
+-}
+-
+ static struct cfq_io_context *
+ cfq_alloc_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
+ {
+@@ -2855,8 +2823,8 @@ cfq_alloc_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
+ 		cic->ttime.last_end_request = jiffies;
+ 		INIT_LIST_HEAD(&cic->queue_list);
+ 		INIT_HLIST_NODE(&cic->cic_list);
+-		cic->dtor = cfq_free_io_context;
+-		cic->exit = cfq_exit_io_context;
++		cic->exit = cfq_exit_cic;
++		cic->release = cfq_release_cic;
+ 		elv_ioc_count_inc(cfq_ioc_count);
  	}
  
--	task_unlock(task);
+@@ -3726,7 +3694,7 @@ static void cfq_put_request(struct request *rq)
+ 		BUG_ON(!cfqq->allocated[rw]);
+ 		cfqq->allocated[rw]--;
+ 
+-		put_io_context(RQ_CIC(rq)->ioc);
++		put_io_context(RQ_CIC(rq)->ioc, cfqq->cfqd->queue);
+ 
+ 		rq->elevator_private[0] = NULL;
+ 		rq->elevator_private[1] = NULL;
+@@ -3937,8 +3905,12 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 		struct cfq_io_context *cic = list_entry(cfqd->cic_list.next,
+ 							struct cfq_io_context,
+ 							queue_list);
++		struct io_context *ioc = cic->ioc;
+ 
++		spin_lock(&ioc->lock);
+ 		cfq_exit_cic(cic);
++		cfq_release_cic(cic);
++		spin_unlock(&ioc->lock);
+ 	}
+ 
+ 	cfq_put_async_queues(cfqd);
+diff --git a/fs/ioprio.c b/fs/ioprio.c
+index f8d8429..10b88d3 100644
+--- a/fs/ioprio.c
++++ b/fs/ioprio.c
+@@ -50,7 +50,7 @@ int set_task_ioprio(struct task_struct *task, int ioprio)
+ 	ioc = get_task_io_context(task, GFP_ATOMIC, NUMA_NO_NODE);
+ 	if (ioc) {
+ 		ioc_ioprio_changed(ioc, ioprio);
+-		put_io_context(ioc);
++		put_io_context(ioc, NULL);
+ 	}
+ 
  	return err;
- }
- EXPORT_SYMBOL_GPL(set_task_ioprio);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 19037fb..e4c10a0 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -393,6 +393,9 @@ struct request_queue {
+ 	/* Throttle data */
+ 	struct throtl_data *td;
+ #endif
++#ifdef CONFIG_LOCKDEP
++	int			ioc_release_depth;
++#endif
+ };
+ 
+ #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
 diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
-index 8a6ecb66..28bb621 100644
+index 2c2b6da..01e8631 100644
 --- a/include/linux/iocontext.h
 +++ b/include/linux/iocontext.h
-@@ -78,8 +78,8 @@ struct task_struct;
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/radix-tree.h>
+ #include <linux/rcupdate.h>
++#include <linux/workqueue.h>
+ 
+ struct cfq_queue;
+ struct cfq_ttime {
+@@ -33,8 +34,8 @@ struct cfq_io_context {
+ 
+ 	unsigned long changed;
+ 
+-	void (*dtor)(struct io_context *); /* destructor */
+-	void (*exit)(struct io_context *); /* called on task exit */
++	void (*exit)(struct cfq_io_context *);
++	void (*release)(struct cfq_io_context *);
+ 
+ 	struct rcu_head rcu_head;
+ };
+@@ -61,6 +62,8 @@ struct io_context {
+ 	struct radix_tree_root radix_root;
+ 	struct hlist_head cic_list;
+ 	void __rcu *ioc_data;
++
++	struct work_struct release_work;
+ };
+ 
+ static inline struct io_context *ioc_task_link(struct io_context *ioc)
+@@ -79,7 +82,7 @@ static inline struct io_context *ioc_task_link(struct io_context *ioc)
+ 
+ struct task_struct;
  #ifdef CONFIG_BLOCK
- void put_io_context(struct io_context *ioc);
+-void put_io_context(struct io_context *ioc);
++void put_io_context(struct io_context *ioc, struct request_queue *locked_q);
  void exit_io_context(struct task_struct *task);
--struct io_context *get_io_context(gfp_t gfp_flags, int node);
--struct io_context *alloc_io_context(gfp_t gfp_flags, int node);
-+struct io_context *get_task_io_context(struct task_struct *task,
-+				       gfp_t gfp_flags, int node);
+ struct io_context *get_task_io_context(struct task_struct *task,
+ 				       gfp_t gfp_flags, int node);
+@@ -87,7 +90,8 @@ void ioc_ioprio_changed(struct io_context *ioc, int ioprio);
+ void ioc_cgroup_changed(struct io_context *ioc);
  #else
  struct io_context;
- static inline void put_io_context(struct io_context *ioc) { }
+-static inline void put_io_context(struct io_context *ioc) { }
++static inline void put_io_context(struct io_context *ioc,
++				  struct request_queue *locked_q) { }
+ static inline void exit_io_context(struct task_struct *task) { }
+ #endif
+ 
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 8e6b6f4..11da931 100644
+index 11da931..79e2909 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
-@@ -878,6 +878,7 @@ static int copy_io(unsigned long clone_flags, struct task_struct *tsk)
- {
- #ifdef CONFIG_BLOCK
- 	struct io_context *ioc = current->io_context;
-+	struct io_context *new_ioc;
- 
- 	if (!ioc)
- 		return 0;
-@@ -889,11 +890,12 @@ static int copy_io(unsigned long clone_flags, struct task_struct *tsk)
- 		if (unlikely(!tsk->io_context))
- 			return -ENOMEM;
- 	} else if (ioprio_valid(ioc->ioprio)) {
--		tsk->io_context = alloc_io_context(GFP_KERNEL, -1);
--		if (unlikely(!tsk->io_context))
-+		new_ioc = get_task_io_context(tsk, GFP_KERNEL, NUMA_NO_NODE);
-+		if (unlikely(!new_ioc))
+@@ -895,7 +895,7 @@ static int copy_io(unsigned long clone_flags, struct task_struct *tsk)
  			return -ENOMEM;
  
--		tsk->io_context->ioprio = ioc->ioprio;
-+		new_ioc->ioprio = ioc->ioprio;
-+		put_io_context(new_ioc);
+ 		new_ioc->ioprio = ioc->ioprio;
+-		put_io_context(new_ioc);
++		put_io_context(new_ioc, NULL);
  	}
  #endif
  	return 0;
