@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933358Ab1JZP17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 11:27:59 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37321 "EHLO mx2.mail.elte.hu"
+	id S933366Ab1JZP3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 11:29:42 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35867 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933026Ab1JZP16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 11:27:58 -0400
-Date: Wed, 26 Oct 2011 17:26:21 +0200
+	id S933026Ab1JZP3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 11:29:41 -0400
+Date: Wed, 26 Oct 2011 17:28:03 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/geode change for v3.2
-Message-ID: <20111026152621.GA30486@elte.hu>
+Subject: [GIT PULL] x86/hyperv change for v3.2
+Message-ID: <20111026152803.GA31571@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,512 +22,203 @@ X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
 	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
 	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-geode-for-linus git tree from:
+Please pull the latest x86-hyperv-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-geode-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-hyperv-for-linus
 
 
-out-of-topic modifications in x86-geode-for-linus:
---------------------------------------------------
-drivers/leds/Kconfig               # d4f3e35: x86: geode: New PCEngines Alix sy
-drivers/leds/Makefile              # d4f3e35: x86: geode: New PCEngines Alix sy
-drivers/leds/leds-alix2.c          # d4f3e35: x86: geode: New PCEngines Alix sy
+out-of-topic modifications in x86-hyperv-for-linus:
+---------------------------------------------------
+drivers/staging/hv/Makefile        # 6f4151c8: x86: Hyper-V: Integrate the cloc
+drivers/staging/hv/hv_timesource.c # 6f4151c8: x86: Hyper-V: Integrate the cloc
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Ed Wildgoose (1):
-      x86: geode: New PCEngines Alix system driver
+K. Y. Srinivasan (1):
+      x86: Hyper-V: Integrate the clocksource with Hyper-V detection code
 
 
- arch/x86/Kconfig                 |   14 +++
- arch/x86/platform/Makefile       |    1 +
- arch/x86/platform/geode/Makefile |    1 +
- arch/x86/platform/geode/alix.c   |  142 ++++++++++++++++++++++
- drivers/leds/Kconfig             |    8 --
- drivers/leds/Makefile            |    1 -
- drivers/leds/leds-alix2.c        |  239 --------------------------------------
- 7 files changed, 158 insertions(+), 248 deletions(-)
- create mode 100644 arch/x86/platform/geode/Makefile
- create mode 100644 arch/x86/platform/geode/alix.c
- delete mode 100644 drivers/leds/leds-alix2.c
+ arch/x86/kernel/cpu/mshyperv.c     |   23 ++++++++
+ drivers/staging/hv/Makefile        |    2 +-
+ drivers/staging/hv/hv_timesource.c |  101 ------------------------------------
+ 3 files changed, 24 insertions(+), 102 deletions(-)
+ delete mode 100644 drivers/staging/hv/hv_timesource.c
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6a47bb2..8c4e5bc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2064,6 +2064,20 @@ config OLPC_XO15_SCI
- 	   - AC adapter status updates
- 	   - Battery status updates
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index d944bf6..0a630dd 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -11,6 +11,8 @@
+  */
  
-+config ALIX
-+	bool "PCEngines ALIX System Support (LED setup)"
-+	select GPIOLIB
-+	---help---
-+	  This option enables system support for the PCEngines ALIX.
-+	  At present this just sets up LEDs for GPIO control on
-+	  ALIX2/3/6 boards.  However, other system specific setup should
-+	  get added here.
-+
-+	  Note: You must still enable the drivers for GPIO and LED support
-+	  (GPIO_CS5535 & LEDS_GPIO) to actually use the LEDs
-+
-+	  Note: You have to set alix.force=1 for boards with Award BIOS.
-+
- endif # X86_32
+ #include <linux/types.h>
++#include <linux/time.h>
++#include <linux/clocksource.h>
+ #include <linux/module.h>
+ #include <asm/processor.h>
+ #include <asm/hypervisor.h>
+@@ -36,6 +38,25 @@ static bool __init ms_hyperv_platform(void)
+ 		!memcmp("Microsoft Hv", hyp_signature, 12);
+ }
  
- config AMD_NB
-diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
-index 021eee9..8d87439 100644
---- a/arch/x86/platform/Makefile
-+++ b/arch/x86/platform/Makefile
-@@ -1,6 +1,7 @@
- # Platform specific code goes here
- obj-y	+= ce4100/
- obj-y	+= efi/
-+obj-y	+= geode/
- obj-y	+= iris/
- obj-y	+= mrst/
- obj-y	+= olpc/
-diff --git a/arch/x86/platform/geode/Makefile b/arch/x86/platform/geode/Makefile
-new file mode 100644
-index 0000000..07c9cd0
---- /dev/null
-+++ b/arch/x86/platform/geode/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_ALIX)		+= alix.o
-diff --git a/arch/x86/platform/geode/alix.c b/arch/x86/platform/geode/alix.c
-new file mode 100644
-index 0000000..ca19736
---- /dev/null
-+++ b/arch/x86/platform/geode/alix.c
-@@ -0,0 +1,142 @@
-+/*
-+ * System Specific setup for PCEngines ALIX.
-+ * At the moment this means setup of GPIO control of LEDs
-+ * on Alix.2/3/6 boards.
-+ *
-+ *
-+ * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
-+ * Copyright (C) 2011 Ed Wildgoose <kernel@wildgooses.com>
-+ *
-+ * TODO: There are large similarities with leds-net5501.c
-+ * by Alessandro Zummo <a.zummo@towertech.it>
-+ * In the future leds-net5501.c should be migrated over to platform
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+#include <linux/leds.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+
-+#include <asm/geode.h>
-+
-+static int force = 0;
-+module_param(force, bool, 0444);
-+/* FIXME: Award bios is not automatically detected as Alix platform */
-+MODULE_PARM_DESC(force, "Force detection as ALIX.2/ALIX.3 platform");
-+
-+static struct gpio_led alix_leds[] = {
-+	{
-+		.name = "alix:1",
-+		.gpio = 6,
-+		.default_trigger = "default-on",
-+		.active_low = 1,
-+	},
-+	{
-+		.name = "alix:2",
-+		.gpio = 25,
-+		.default_trigger = "default-off",
-+		.active_low = 1,
-+	},
-+	{
-+		.name = "alix:3",
-+		.gpio = 27,
-+		.default_trigger = "default-off",
-+		.active_low = 1,
-+	},
-+};
-+
-+static struct gpio_led_platform_data alix_leds_data = {
-+	.num_leds = ARRAY_SIZE(alix_leds),
-+	.leds = alix_leds,
-+};
-+
-+static struct platform_device alix_leds_dev = {
-+	.name = "leds-gpio",
-+	.id = -1,
-+	.dev.platform_data = &alix_leds_data,
-+};
-+
-+static void __init register_alix(void)
++static cycle_t read_hv_clock(struct clocksource *arg)
 +{
-+	/* Setup LED control through leds-gpio driver */
-+	platform_device_register(&alix_leds_dev);
++	cycle_t current_tick;
++	/*
++	 * Read the partition counter to get the current tick count. This count
++	 * is set to 0 when the partition is created and is incremented in
++	 * 100 nanosecond units.
++	 */
++	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
++	return current_tick;
 +}
 +
-+static int __init alix_present(unsigned long bios_phys,
-+				const char *alix_sig,
-+				size_t alix_sig_len)
-+{
-+	const size_t bios_len = 0x00010000;
-+	const char *bios_virt;
-+	const char *scan_end;
-+	const char *p;
-+	char name[64];
++static struct clocksource hyperv_cs = {
++	.name		= "hyperv_clocksource",
++	.rating		= 400, /* use this when running on Hyperv*/
++	.read		= read_hv_clock,
++	.mask		= CLOCKSOURCE_MASK(64),
++};
 +
-+	if (force) {
-+		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
-+		       "assume system is ALIX.2/ALIX.3\n",
-+		       KBUILD_MODNAME);
-+		return 1;
-+	}
-+
-+	bios_virt = phys_to_virt(bios_phys);
-+	scan_end = bios_virt + bios_len - (alix_sig_len + 2);
-+	for (p = bios_virt; p < scan_end; p++) {
-+		const char *tail;
-+		char *a;
-+
-+		if (memcmp(p, alix_sig, alix_sig_len) != 0)
-+			continue;
-+
-+		memcpy(name, p, sizeof(name));
-+
-+		/* remove the first \0 character from string */
-+		a = strchr(name, '\0');
-+		if (a)
-+			*a = ' ';
-+
-+		/* cut the string at a newline */
-+		a = strchr(name, '\r');
-+		if (a)
-+			*a = '\0';
-+
-+		tail = p + alix_sig_len;
-+		if ((tail[0] == '2' || tail[0] == '3')) {
-+			printk(KERN_INFO
-+			       "%s: system is recognized as \"%s\"\n",
-+			       KBUILD_MODNAME, name);
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __init alix_init(void)
-+{
-+	const char tinybios_sig[] = "PC Engines ALIX.";
-+	const char coreboot_sig[] = "PC Engines\0ALIX.";
-+
-+	if (!is_geode())
-+		return 0;
-+
-+	if (alix_present(0xf0000, tinybios_sig, sizeof(tinybios_sig) - 1) ||
-+	    alix_present(0x500, coreboot_sig, sizeof(coreboot_sig) - 1))
-+		register_alix();
-+
-+	return 0;
-+}
-+
-+module_init(alix_init);
-+
-+MODULE_AUTHOR("Ed Wildgoose <kernel@wildgooses.com>");
-+MODULE_DESCRIPTION("PCEngines ALIX System Setup");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index b591e72..8974d27 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -113,14 +113,6 @@ config LEDS_WRAP
- 	help
- 	  This option enables support for the PCEngines WRAP programmable LEDs.
+ static void __init ms_hyperv_init_platform(void)
+ {
+ 	/*
+@@ -46,6 +67,8 @@ static void __init ms_hyperv_init_platform(void)
  
--config LEDS_ALIX2
--	tristate "LED Support for ALIX.2 and ALIX.3 series"
--	depends on LEDS_CLASS
--	depends on X86 && !GPIO_CS5535 && !CS5535_GPIO
--	help
--	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
--	  You have to set leds-alix2.force=1 for boards with Award BIOS.
--
- config LEDS_COBALT_QUBE
- 	tristate "LED Support for the Cobalt Qube series front LED"
- 	depends on LEDS_CLASS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index bbfd2e3..a0a1b89 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -16,7 +16,6 @@ obj-$(CONFIG_LEDS_AMS_DELTA)		+= leds-ams-delta.o
- obj-$(CONFIG_LEDS_NET48XX)		+= leds-net48xx.o
- obj-$(CONFIG_LEDS_NET5501)		+= leds-net5501.o
- obj-$(CONFIG_LEDS_WRAP)			+= leds-wrap.o
--obj-$(CONFIG_LEDS_ALIX2)		+= leds-alix2.o
- obj-$(CONFIG_LEDS_COBALT_QUBE)		+= leds-cobalt-qube.o
- obj-$(CONFIG_LEDS_COBALT_RAQ)		+= leds-cobalt-raq.o
- obj-$(CONFIG_LEDS_SUNFIRE)		+= leds-sunfire.o
-diff --git a/drivers/leds/leds-alix2.c b/drivers/leds/leds-alix2.c
+ 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+ 	       ms_hyperv.features, ms_hyperv.hints);
++
++	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ }
+ 
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
+index 3004674..14e3c6a 100644
+--- a/drivers/staging/hv/Makefile
++++ b/drivers/staging/hv/Makefile
+@@ -1,4 +1,4 @@
+-obj-$(CONFIG_HYPERV)		+= hv_vmbus.o hv_timesource.o
++obj-$(CONFIG_HYPERV)		+= hv_vmbus.o
+ obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+ obj-$(CONFIG_HYPERV_BLOCK)	+= hv_blkvsc.o
+ obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
+diff --git a/drivers/staging/hv/hv_timesource.c b/drivers/staging/hv/hv_timesource.c
 deleted file mode 100644
-index f59ffad..0000000
---- a/drivers/leds/leds-alix2.c
+index 2b0f9aa..0000000
+--- a/drivers/staging/hv/hv_timesource.c
 +++ /dev/null
-@@ -1,239 +0,0 @@
+@@ -1,101 +0,0 @@
 -/*
-- * LEDs driver for PCEngines ALIX.2 and ALIX.3
+- * A clocksource for Linux running on HyperV.
 - *
-- * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
+- *
+- * Copyright (C) 2010, Novell, Inc.
+- * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+- * NON INFRINGEMENT.  See the GNU General Public License for more
+- * details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+- *
 - */
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 -
--#include <linux/err.h>
--#include <linux/io.h>
--#include <linux/kernel.h>
--#include <linux/leds.h>
+-#include <linux/clocksource.h>
+-#include <linux/init.h>
 -#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/string.h>
 -#include <linux/pci.h>
+-#include <linux/dmi.h>
+-#include <asm/hyperv.h>
+-#include <asm/mshyperv.h>
+-#include <asm/hypervisor.h>
 -
--static int force = 0;
--module_param(force, bool, 0444);
--MODULE_PARM_DESC(force, "Assume system has ALIX.2/ALIX.3 style LEDs");
+-#define HV_CLOCK_SHIFT	22
 -
--#define MSR_LBAR_GPIO		0x5140000C
--#define CS5535_GPIO_SIZE	256
--
--static u32 gpio_base;
--
--static struct pci_device_id divil_pci[] = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_NS,  PCI_DEVICE_ID_NS_CS5535_ISA) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA) },
--	{ } /* NULL entry */
--};
--MODULE_DEVICE_TABLE(pci, divil_pci);
--
--struct alix_led {
--	struct led_classdev cdev;
--	unsigned short port;
--	unsigned int on_value;
--	unsigned int off_value;
--};
--
--static void alix_led_set(struct led_classdev *led_cdev,
--			 enum led_brightness brightness)
+-static cycle_t read_hv_clock(struct clocksource *arg)
 -{
--	struct alix_led *led_dev =
--		container_of(led_cdev, struct alix_led, cdev);
--
--	if (brightness)
--		outl(led_dev->on_value, gpio_base + led_dev->port);
--	else
--		outl(led_dev->off_value, gpio_base + led_dev->port);
+-	cycle_t current_tick;
+-	/*
+-	 * Read the partition counter to get the current tick count. This count
+-	 * is set to 0 when the partition is created and is incremented in
+-	 * 100 nanosecond units.
+-	 */
+-	rdmsrl(HV_X64_MSR_TIME_REF_COUNT, current_tick);
+-	return current_tick;
 -}
 -
--static struct alix_led alix_leds[] = {
+-static struct clocksource hyperv_cs = {
+-	.name           = "hyperv_clocksource",
+-	.rating         = 400, /* use this when running on Hyperv*/
+-	.read           = read_hv_clock,
+-	.mask           = CLOCKSOURCE_MASK(64),
+-	/*
+-	 * The time ref counter in HyperV is in 100ns units.
+-	 * The definition of mult is:
+-	 * mult/2^shift = ns/cyc = 100
+-	 * mult = (100 << shift)
+-	 */
+-	.mult           = (100 << HV_CLOCK_SHIFT),
+-	.shift          = HV_CLOCK_SHIFT,
+-};
+-
+-static const struct dmi_system_id __initconst
+-hv_timesource_dmi_table[] __maybe_unused  = {
 -	{
--		.cdev = {
--			.name = "alix:1",
--			.brightness_set = alix_led_set,
+-		.ident = "Hyper-V",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
 -		},
--		.port = 0x00,
--		.on_value = 1 << 22,
--		.off_value = 1 << 6,
 -	},
--	{
--		.cdev = {
--			.name = "alix:2",
--			.brightness_set = alix_led_set,
--		},
--		.port = 0x80,
--		.on_value = 1 << 25,
--		.off_value = 1 << 9,
--	},
--	{
--		.cdev = {
--			.name = "alix:3",
--			.brightness_set = alix_led_set,
--		},
--		.port = 0x80,
--		.on_value = 1 << 27,
--		.off_value = 1 << 11,
--	},
+-	{ },
 -};
+-MODULE_DEVICE_TABLE(dmi, hv_timesource_dmi_table);
 -
--static int __init alix_led_probe(struct platform_device *pdev)
--{
--	int i;
--	int ret;
--
--	for (i = 0; i < ARRAY_SIZE(alix_leds); i++) {
--		alix_leds[i].cdev.flags |= LED_CORE_SUSPENDRESUME;
--		ret = led_classdev_register(&pdev->dev, &alix_leds[i].cdev);
--		if (ret < 0)
--			goto fail;
--	}
--	return 0;
--
--fail:
--	while (--i >= 0)
--		led_classdev_unregister(&alix_leds[i].cdev);
--	return ret;
--}
--
--static int alix_led_remove(struct platform_device *pdev)
--{
--	int i;
--
--	for (i = 0; i < ARRAY_SIZE(alix_leds); i++)
--		led_classdev_unregister(&alix_leds[i].cdev);
--	return 0;
--}
--
--static struct platform_driver alix_led_driver = {
--	.remove = alix_led_remove,
--	.driver = {
--		.name = KBUILD_MODNAME,
--		.owner = THIS_MODULE,
--	},
+-static const struct pci_device_id __initconst
+-hv_timesource_pci_table[] __maybe_unused = {
+-	{ PCI_DEVICE(0x1414, 0x5353) }, /* VGA compatible controller */
+-	{ 0 }
 -};
+-MODULE_DEVICE_TABLE(pci, hv_timesource_pci_table);
 -
--static int __init alix_present(unsigned long bios_phys,
--				const char *alix_sig,
--				size_t alix_sig_len)
+-
+-static int __init init_hv_clocksource(void)
 -{
--	const size_t bios_len = 0x00010000;
--	const char *bios_virt;
--	const char *scan_end;
--	const char *p;
--	char name[64];
--
--	if (force) {
--		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
--		       "assume system has ALIX.2 style LEDs\n",
--		       KBUILD_MODNAME);
--		return 1;
--	}
--
--	bios_virt = phys_to_virt(bios_phys);
--	scan_end = bios_virt + bios_len - (alix_sig_len + 2);
--	for (p = bios_virt; p < scan_end; p++) {
--		const char *tail;
--		char *a;
--
--		if (memcmp(p, alix_sig, alix_sig_len) != 0)
--			continue;
--
--		memcpy(name, p, sizeof(name));
--
--		/* remove the first \0 character from string */
--		a = strchr(name, '\0');
--		if (a)
--			*a = ' ';
--
--		/* cut the string at a newline */
--		a = strchr(name, '\r');
--		if (a)
--			*a = '\0';
--
--		tail = p + alix_sig_len;
--		if ((tail[0] == '2' || tail[0] == '3')) {
--			printk(KERN_INFO
--			       "%s: system is recognized as \"%s\"\n",
--			       KBUILD_MODNAME, name);
--			return 1;
--		}
--	}
--
--	return 0;
--}
--
--static struct platform_device *pdev;
--
--static int __init alix_pci_led_init(void)
--{
--	u32 low, hi;
--
--	if (pci_dev_present(divil_pci) == 0) {
--		printk(KERN_WARNING KBUILD_MODNAME": DIVIL not found\n");
+-	if ((x86_hyper != &x86_hyper_ms_hyperv) ||
+-		!(ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE))
 -		return -ENODEV;
--	}
 -
--	/* Grab the GPIO I/O range */
--	rdmsr(MSR_LBAR_GPIO, low, hi);
--
--	/* Check the mask and whether GPIO is enabled (sanity check) */
--	if (hi != 0x0000f001) {
--		printk(KERN_WARNING KBUILD_MODNAME": GPIO not enabled\n");
+-	if (!dmi_check_system(hv_timesource_dmi_table))
 -		return -ENODEV;
--	}
 -
--	/* Mask off the IO base address */
--	gpio_base = low & 0x0000ff00;
--
--	if (!request_region(gpio_base, CS5535_GPIO_SIZE, KBUILD_MODNAME)) {
--		printk(KERN_ERR KBUILD_MODNAME": can't allocate I/O for GPIO\n");
--		return -ENODEV;
--	}
--
--	/* Set GPIO function to output */
--	outl(1 << 6, gpio_base + 0x04);
--	outl(1 << 9, gpio_base + 0x84);
--	outl(1 << 11, gpio_base + 0x84);
--
--	return 0;
+-	pr_info("Registering HyperV clock source\n");
+-	return clocksource_register(&hyperv_cs);
 -}
 -
--static int __init alix_led_init(void)
--{
--	int ret = -ENODEV;
--	const char tinybios_sig[] = "PC Engines ALIX.";
--	const char coreboot_sig[] = "PC Engines\0ALIX.";
--
--	if (alix_present(0xf0000, tinybios_sig, sizeof(tinybios_sig) - 1) ||
--	    alix_present(0x500, coreboot_sig, sizeof(coreboot_sig) - 1))
--		ret = alix_pci_led_init();
--
--	if (ret < 0)
--		return ret;
--
--	pdev = platform_device_register_simple(KBUILD_MODNAME, -1, NULL, 0);
--	if (!IS_ERR(pdev)) {
--		ret = platform_driver_probe(&alix_led_driver, alix_led_probe);
--		if (ret)
--			platform_device_unregister(pdev);
--	} else
--		ret = PTR_ERR(pdev);
--
--	return ret;
--}
--
--static void __exit alix_led_exit(void)
--{
--	platform_device_unregister(pdev);
--	platform_driver_unregister(&alix_led_driver);
--	release_region(gpio_base, CS5535_GPIO_SIZE);
--}
--
--module_init(alix_led_init);
--module_exit(alix_led_exit);
--
--MODULE_AUTHOR("Constantin Baranov <const@mimas.ru>");
--MODULE_DESCRIPTION("PCEngines ALIX.2 and ALIX.3 LED driver");
+-module_init(init_hv_clocksource);
+-MODULE_DESCRIPTION("HyperV based clocksource");
+-MODULE_AUTHOR("K. Y. Srinivasan <ksrinivasan@novell.com>");
 -MODULE_LICENSE("GPL");
