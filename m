@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab1JZTzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 15:55:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54365 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab1JZTzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 15:55:12 -0400
-Date: Wed, 26 Oct 2011 12:55:06 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+	id S1752479Ab1JZTzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 15:55:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35689 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401Ab1JZTzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 15:55:53 -0400
+Date: Wed, 26 Oct 2011 15:55:48 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Pavel Machek <pavel@ucw.cz>, trond.myklebust@netapp.com,
+        smfrench@gmail.com, linux-pm@lists.linux-foundation.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, john@calva.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/13] block, cfq: unlink cfq_io_context's immediately
-Message-ID: <20111026195506.GD24261@google.com>
-References: <1319593719-19132-1-git-send-email-tj@kernel.org>
- <1319593719-19132-11-git-send-email-tj@kernel.org>
- <20111026194857.GF355@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111026194857.GF355@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: Re: [PATCH 1/4] freezer: make fake_signal_wake_up wake
+ TASK_KILLABLE tasks too
+Message-ID: <20111026155548.4a7c3dd8@corrin.poochiereds.net>
+In-Reply-To: <201110112114.28478.rjw@sisk.pl>
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+	<20111011061847.GB1377@ucw.cz>
+	<20111011061000.3a3a03fe@tlielax.poochiereds.net>
+	<201110112114.28478.rjw@sisk.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 11 Oct 2011 21:14:28 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-On Wed, Oct 26, 2011 at 03:48:57PM -0400, Vivek Goyal wrote:
-> > +		ioc_release_depth_inc(cic->q);
-> > +		cic->exit(cic);
-> > +		cic->release(cic);
-> > +		ioc_release_depth_dec(cic->q);
+> On Tuesday, October 11, 2011, Jeff Layton wrote:
+> > On Tue, 11 Oct 2011 08:18:48 +0200
+> > Pavel Machek <pavel@ucw.cz> wrote:
+> > 
+> > > 
+> > > Hi!
+> > > 
+> > > > TASK_KILLABLE is often used to put tasks to sleep for quite some time.
+> > > > One of the most common uses is to put tasks to sleep while waiting for
+> > > > replies from a server on a networked filesystem (such as CIFS or NFS).
+> > > > 
+> > > > Unfortunately, fake_signal_wake_up does not currently wake up tasks
+> > > > that are sleeping in TASK_KILLABLE state. This means that even if the
+> > > > code were in place to allow them to freeze while in this sleep, it
+> > > > wouldn't work anyway.
+> > > > 
+> > > > This patch changes this function to wake tasks in this state as well.
+> > > > This should be harmless -- if the code doing the sleeping doesn't have
+> > > > handling to deal with freezer events, it should just go back to sleep.
+> > > 
+> > > I'm pretty sure this will break something; but that does not mean it
+> > > is bad idea, just that it should be merged early and tested a lot.
+> > > 
+> > 
+> > FWIW, I looked at most of the places in the kernel that do
+> > TASK_KILLABLE sleeps and they look like they'll handle this correctly.
+> > The main one I wasn't sure about was mem_cgroup_handle_oom(), but I
+> > think it'll do the right thing too. I certainly could have missed
+> > something though...
+> > 
+> > In any case, would you mind merging this via the linux-pm tree for 3.2?
 > 
-> cic->release(cic) can free the cic? Are we accessing cic after freeing it
-> up in ioc_release_depth_dec(cic->q);
+> I will push it for 3.2.
+> 
 
-As cic is RCU freed and we're running w/ irq disabled, this shouldn't
-blow up, but yeah, I'll update it to use local variable instead.
+Hi Rafael,
 
-Thanks.
+Trond asked if you would also be willing to push patches 3 and 4 in
+this series for 3.2 as well [1]? Note that patch #4 got another revision so
+we'll want to make sure that you get that one. I can resend the
+nfs/sunrpc patches if that will help...
+
+[1]: I think Steve F is going to push patch #2, so that one shouldn't
+be an issue. 
 
 -- 
-tejun
+Jeff Layton <jlayton@redhat.com>
