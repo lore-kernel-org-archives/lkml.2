@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab1JZTmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 15:42:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9047 "EHLO mga09.intel.com"
+	id S1752051Ab1JZTqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 15:46:19 -0400
+Received: from claw.goop.org ([74.207.240.146]:48902 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab1JZTmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 15:42:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="67828549"
-Subject: Re: iwlagn is getting very shaky
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <20111026043419.GA30368@gamma.logic.tuwien.ac.at>
-References: <20111019064628.GA14817@gamma.logic.tuwien.ac.at>
-	 <1319004836.31823.57.camel@wwguy-huron>
-	 <20111020045927.GB23044@gamma.logic.tuwien.ac.at>
-	 <1319119852.2111.2.camel@wwguy-ubuntu>
-	 <20111021012442.GB26758@gamma.logic.tuwien.ac.at>
-	 <alpine.DEB.2.00.1110231424500.17218@chino.kir.corp.google.com>
-	 <20111026025014.GB24956@gamma.logic.tuwien.ac.at>
-	 <1319601333.14693.19.camel@wwguy-ubuntu>
-	 <20111026040332.GF24956@gamma.logic.tuwien.ac.at>
-	 <1319601654.14693.20.camel@wwguy-ubuntu>
-	 <20111026043419.GA30368@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Oct 2011 12:36:54 -0700
-Message-ID: <1319657814.14693.22.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751170Ab1JZTqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 15:46:17 -0400
+Message-ID: <4EA86387.5040108@goop.org>
+Date: Wed, 26 Oct 2011 12:46:15 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        "x86@kernel.org" <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
+        Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Yinghai Lu <yinghai@kernel.org>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC V2 5/5] kvm guest : pv-ticketlocks support for linux
+ guests running on KVM hypervisor
+References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190753.16364.31164.sendpatchset@oc5400248562.ibm.com> <4EA7012B.5040808@goop.org> <4EA85E32.3080107@linux.vnet.ibm.com>
+In-Reply-To: <4EA85E32.3080107@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-25 at 21:34 -0700, Norbert Preining wrote:
-> On Di, 25 Okt 2011, wwguy wrote:
-> > > But *I* cannot be sure about it ;-)
-> > > 
-> > Are you seeing this without suspend/resume?
-> 
-> Yes. I just shut down and started, and the same happens again. If you
-> need the dmesg output let me know.
-> 
+On 10/26/2011 12:23 PM, Raghavendra K T wrote:
+> On 10/26/2011 12:04 AM, Jeremy Fitzhardinge wrote:
+>> On 10/23/2011 12:07 PM, Raghavendra K T wrote:
+>>> This patch extends Linux guests running on KVM hypervisor to support
+>>> +/*
+>>> + * Setup pv_lock_ops to exploit KVM_FEATURE_WAIT_FOR_KICK if present.
+>>> + * This needs to be setup really early in boot, before the first
+>>> call to
+>>> + * spinlock is issued!
+>>
+>> Actually, it doesn't matter that much.  The in-memory format is the same
+>> for regular and PV spinlocks, and the PV paths only come into play if
+>> the "slowpath" flag is set in the lock, which it never will be by the
+>> non-PV code.
+>>
+>> In principle, you could defer initializing PV ticketlocks until some
+>> arbitrarily late point if you notice that the system is oversubscribed
+>> enough to require it.
+>
+> ok.. so this means it will not affect even if it is initialized in
+> middle somewhere, but better to do it before we start seeing lock
+> contention.
 
-please send us the log, but I will be late on response since I am on
-business trip until the end of next week.
+Right.  Or more specifically, lock contention while you have VCPU
+overcommit.
 
-Thanks
-Wey
+> our current aim was to have before any printk happens.
+> So I  'll trim the comment to somethings like :
+>
+> Setup pv_lock_ops to exploit KVM_FEATURE_WAIT_FOR_KICK if present.
+> This needs to be setup early in boot. ?
 
+You can hook the smp_ops.smp_prepare_cpus call and initialize it there. 
+There's no need to add new hook code.
+
+    J
