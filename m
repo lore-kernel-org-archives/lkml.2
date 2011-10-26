@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab1JZIUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 04:20:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14711 "EHLO mga03.intel.com"
+	id S932499Ab1JZIfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 04:35:30 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:43441 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab1JZIU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 04:20:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,408,1315206000"; 
-   d="scan'208";a="30240538"
-From: Andi Kleen <andi@firstfloor.org>
-To: Eial Czerwacki <eial@scalemp.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Shai Fultheim \(Shai\@ScaleMP.com\)" <Shai@scalemp.com>
-Subject: Re: [PATCH] APICID: Avoid false sharing on the read mostly x86_cpu_to_apicid
-References: <4EA66960.7050907@scalemp.com>
-	<9B14D1490DDECA4E974F6B9FC9EBAB3140CD274367@VMBX108.ihostexchange.net>
-	<4EA6A265.1080506@scalemp.com>
-Date: Wed, 26 Oct 2011 01:20:26 -0700
-In-Reply-To: <4EA6A265.1080506@scalemp.com> (Eial Czerwacki's message of "Tue,
-	25 Oct 2011 13:49:57 +0200")
-Message-ID: <m2fwigw4dx.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932382Ab1JZIf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 04:35:29 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 00/15] Blackfin updates for 3.2-rc0
+Date: Wed, 26 Oct 2011 04:34:56 -0400
+Message-Id: <1319618096-11377-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eial Czerwacki <eial@scalemp.com> writes:
+Mostly board clean ups, but there's a fix or two slipped in for fun.
+Overall, tame tame stuff.
 
-> ===================================================================
-> --- a/arch/x86/include/asm/smp.h	2010-06-01 09:56:03.000000000 -0700
-> +++ b/arch/x86/include/asm/smp.h	2010-06-02 15:59:21.000000000 -0700
-> @@ -36,7 +36,8 @@ static inline struct cpumask *cpu_core_m
->   	return per_cpu(cpu_core_map, cpu);
->   }
->
-> -DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
-> +extern u16 x86_cpu_to_apicid[NR_CPUS];
+Lars-Peter Clausen (3):
+  Blackfin: bf537-stamp: register adau1701 codec and asoc machine
+    driver
+  Blackfin: bf537-stamp: Register adav801 codec and ASoC machine driver
+  Blackfin: bf537-stamp: register ASoC EVAL-ADAU1373 board driver
 
-That's a big waste of memory. On a CONFIG_MAX_SMP kernel compiled for
-4096 CPUs you're wasting 8k now on smaller systems. The per cpu
-data only allocates what is needed.
+Michael Hennerich (1):
+  Blackfin: boards: clean up i2c_board_info
 
-NR_CPUS is usually a bad idea and it 
+Mike Frysinger (2):
+  Blackfin: SMP: convert to common asm-generic/atomic.h
+  Blackfin: merge asm/mutex.h into kbuild too
 
-Perhaps need a __read_mostly cache line padded per CPU section instead
-for cases like this.
+Mikhail Gruzdev (1):
+  Blackfin: fix sparse warnings in copy_to/from_user
 
--Andi
+Paul Bolle (1):
+  Blackfin: drop unused Kconfig symbol
+
+Scott Jiang (2):
+  Blackfin: bf537-stamp: fix ad1836 name
+  Blackfin: bf537-stamp: fix ad73311 codec config macro
+
+Sonic Zhang (2):
+  Blackfin: bf548-ezkit: update defconfig
+  Blackfin: kgdb_test: rework code to avoid -O0 usage
+
+Steven Miao (1):
+  Blackfin: SMP: fix scheduling deadlock
+
+Thomas Gleixner (1):
+  Blackfin: H8606: fixup bogus ioresource init
+
+Yong Zhang (1):
+  Blackfin: irq: remove IRQF_DISABLED
+
+ arch/blackfin/Kconfig                       |    4 -
+ arch/blackfin/configs/BF548-EZKIT_defconfig |   13 +---
+ arch/blackfin/include/asm/Kbuild            |    1 +
+ arch/blackfin/include/asm/atomic.h          |  104 +++------------------------
+ arch/blackfin/include/asm/mutex.h           |    1 -
+ arch/blackfin/include/asm/uaccess.h         |    6 +-
+ arch/blackfin/kernel/Makefile               |    2 +-
+ arch/blackfin/kernel/kgdb_test.c            |    3 +-
+ arch/blackfin/kernel/time-ts.c              |    6 +-
+ arch/blackfin/kernel/time.c                 |    1 -
+ arch/blackfin/mach-bf533/boards/H8606.c     |    3 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c |    2 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c |    2 +-
+ arch/blackfin/mach-bf537/boards/stamp.c     |   88 +++++++++++++----------
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c |    2 +-
+ arch/blackfin/mach-bf561/boards/cm_bf561.c  |    2 +-
+ arch/blackfin/mach-bf561/smp.c              |    2 +-
+ arch/blackfin/mach-common/smp.c             |    7 ++-
+ 18 files changed, 85 insertions(+), 164 deletions(-)
+ delete mode 100644 arch/blackfin/include/asm/mutex.h
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.6.1
+
