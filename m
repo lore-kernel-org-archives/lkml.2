@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab1JZHAq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 03:00:46 -0400
-Received: from fep31.mx.upcmail.net ([62.179.121.49]:45816 "EHLO
-	fep31.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab1JZHAp (ORCPT
+	id S1754145Ab1JZHBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 03:01:40 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:54608 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab1JZHBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 03:00:45 -0400
-X-SourceIP: 14.99.27.107
-X-Authenticated-Sender: dorettebidi@hispeed.ch
-Reply-To: <upgrade_001@admin.in.th>
-From: "20GB MAIL BOX" <dorettebidi@hispeed.ch>
-Subject: MAIL BOX
-Date: Wed, 26 Oct 2011 12:30:00 +0530
+	Wed, 26 Oct 2011 03:01:38 -0400
+Message-ID: <4EA7B044.5030200@scalemp.com>
+Date: Wed, 26 Oct 2011 09:01:24 +0200
+From: Eial Czerwacki <eial@scalemp.com>
+Organization: ScaleMP
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101020 Remi/fc8 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: David Rientjes <rientjes@google.com>
+CC: linux-kernel@vger.kernel.org,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: Re: [PATCH] APICID: Avoid false sharing on the read mostly x86_cpu_to_apicid
+References: <4EA66960.7050907@scalemp.com> <9B14D1490DDECA4E974F6B9FC9EBAB3140CD274367@VMBX108.ihostexchange.net> <4EA6A265.1080506@scalemp.com> <alpine.DEB.2.00.1110252318090.20273@chino.kir.corp.google.com> <4EA7AB7C.9080703@scalemp.com> <alpine.DEB.2.00.1110252345260.20273@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110252345260.20273@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111026070003.XISH1538.viefep15-int.chello.at@edge03.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=tHhPqqLi6/fMUoPw+/UDa82ZZvBd3UEz7qBOQRmpXdk= c=1 sm=0 a=Dyoqhi_TatcA:10 a=8EU9Q7FnrCoA:10 a=Qug80CAO9NgA:10 a=Cfj4BQAnxiAA:10 a=yQHh2RQxCKQ-zBuFZUAA:9 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Mailbox has exceeded the storage limit which is 20GB as set by your
-Administrator, you are currently running on 20GB, you may not be able to
-send or receive new mails until you re-validate your mailbox.
+On 10/26/2011 08:47 AM, David Rientjes wrote:
 
-To re-validate your mailbox please
-Enter Username and Password in the column given below to Validate your
-Account
+> On Wed, 26 Oct 2011, Eial Czerwacki wrote:
+> 
+>>>> Signed-off-by: Eial Czerwacki<eial@scalemp.com>
+>>>> Signed-off-by: Shai Fultheim<shai@scalemp.com>
+>>>> Author: Ravikiran Thirumalai<kiran@scalex86.org>
+>>>
+>>> If the author isn't you, then the patch should start with a single line 
+>>> that says "From: name <email>" of the author followed by a blank line.  
+>>> It's also strange that the author doesn't have a sign-off line.
+>>>
+>>
+>>
+>> the author is mentioned after the last sign-off.
+>>
+> 
+> That's not the way it's done, as I said, the patch needs to start with a 
+> single line like this:
+> 
+> From: Ravikiran Thirumalai <kiran@scalex86.org>
+> 
+> ...
+> 
+> and if that person signed it off, then it needs to appear as
+> 
+> Signed-off-by: ...
+> 
+> as the first one in the chain.  Please see part 15 of section 1 of 
+> Documentation/SubmittingPatches.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Username....................
-Password.....................
-Date of Birth................
-Thanks,
-ADMIN DESK
+
+sure, thanks got the info
+
+
+Eial.
