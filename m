@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab1JZRBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:01:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55509 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932953Ab1JZRBi (ORCPT
+	id S933432Ab1JZRNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:13:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32835 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932931Ab1JZRNa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:01:38 -0400
-Date: Wed, 26 Oct 2011 15:01:33 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: furat.afram@gmail.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] perf probe:fix sigsegv in adding nonexistent event
-Message-ID: <20111026170133.GD9467@ghostprotocols.net>
-References: <1319600345-29311-1-git-send-email-furat.afram@gmail.com>
+	Wed, 26 Oct 2011 13:13:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=xlwAHVCNMwtWBjI2RyzaDgYNq0RD7JD5EwHCP27EblFvmXk33h+l0AigEq8DwpzQJ
+	SCxEW/ZKAXhQLaEqgDgDg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319600345-29311-1-git-send-email-furat.afram@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGjg+kH577VE4cyq5zVNR962S6xbGCNnGS0w6N1DVuOppL3Khw@mail.gmail.com>
+References: <1316804080-6396-1-git-send-email-venki@google.com>
+	<CAGjg+kH577VE4cyq5zVNR962S6xbGCNnGS0w6N1DVuOppL3Khw@mail.gmail.com>
+Date: Wed, 26 Oct 2011 10:13:27 -0700
+Message-ID: <CABeCy1Y_OXPJkca6dRvK4-PCfKH8wD_2Aq-9r-JyBBSCetrsOw@mail.gmail.com>
+Subject: Re: [RFC] Introduce greedy hrtimer walk on idle
+From: Venki Pallipadi <venki@google.com>
+To: alex shi <lkml.alex@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, "Chen, Tim C" <tim.c.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 25, 2011 at 08:39:05PM -0700, furat.afram@gmail.com escreveu:
-> From: Furat Afram <furat.afram@gmail.com>
-> 
-> pref probe crashes when trying to add nonexistent event
+On Tue, Oct 25, 2011 at 5:46 PM, alex shi <lkml.alex@gmail.com> wrote:
+>>
+>> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+>> ---
+>>  arch/x86/kernel/process_64.c |    2 +
+>>  include/linux/hrtimer.h      |   14 ++++
+>>  include/linux/sched.h        |    1 +
+>>  include/linux/timerqueue.h   |   11 +++
+>>  kernel/hrtimer.c             |  175 +++++++++++++++++++++++++++++++++++++-----
+>>  kernel/sched.c               |    2 +
+>>  kernel/sysctl.c              |    7 ++
+>>  7 files changed, 191 insertions(+), 21 deletions(-)
+>>
+> Hi, venki, what version of thia patch against? I want to test the
+> power consumption for your patch.
 
-Can you provide a backtrace of such crash? I'm having difficulty to
-figure out how the patch provided will fix perf probe.
+Hi Alex,
 
-- Arnaldo
- 
-> Signed-off-by: Furat Afram <furat.afram@gmail.com>
-> ---
->  tools/perf/util/symbol.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index 40eeaf0..ad0c79b 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -636,14 +636,18 @@ static int dso__load_all_kallsyms(struct dso *dso, const char *filename,
->  static int dso__split_kallsyms(struct dso *dso, struct map *map,
->  			       symbol_filter_t filter)
->  {
-> -	struct map_groups *kmaps = map__kmap(map)->kmaps;
-> -	struct machine *machine = kmaps->machine;
-> +	struct map_groups *kmaps;
-> +	struct machine *machine;
->  	struct map *curr_map = map;
->  	struct symbol *pos;
->  	int count = 0, moved = 0;	
->  	struct rb_root *root = &dso->symbols[map->type];
->  	struct rb_node *next = rb_first(root);
->  	int kernel_range = 0;
-> +	kmaps = map__kmap(map)->kmaps;
-> +	if (kmaps == NULL)
-> +		return -1;
-> +	machine = kmaps->machine;
->  
->  	while (next) {
->  		char *module;
-> -- 
-> 1.7.6.4
+It should apply cleanly over 3.0. Thanks for testing the patch..
+
+-Venki
