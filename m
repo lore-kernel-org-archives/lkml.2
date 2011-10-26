@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1JZXOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 19:14:48 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38522 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753181Ab1JZXOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 19:14:47 -0400
-Message-ID: <1319670886.21924.22.camel@Joe-Laptop>
-Subject: Re: [PATCH] checkpatch: improve error message for p1-check
-From: Joe Perches <joe@perches.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Andy Whitcroft <apw@canonical.com>
-Date: Wed, 26 Oct 2011 16:14:46 -0700
-In-Reply-To: <alpine.DEB.2.00.1110261607150.6982@chino.kir.corp.google.com>
-References: <1319027583-17842-1-git-send-email-w.sang@pengutronix.de>
-	 <alpine.DEB.2.00.1110261329240.23111@chino.kir.corp.google.com>
-	 <1319669467.21924.18.camel@Joe-Laptop>
-	 <alpine.DEB.2.00.1110261607150.6982@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753439Ab1JZXO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 19:14:56 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41902 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab1JZXOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 19:14:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <B4E6F7EB08816A4692C7420D7E8F8CBD16EC546E@ORSMSX101.amr.corp.intel.com>
+References: <B4E6F7EB08816A4692C7420D7E8F8CBD16EC546E@ORSMSX101.amr.corp.intel.com>
+Date: Thu, 27 Oct 2011 01:14:53 +0200
+Message-ID: <CAFLxGvzDvd+jR2Tsv1XVBdfzo9GF5AgPD=wdkUoskyFhLUnj-g@mail.gmail.com>
+Subject: Re: FATAL: kenrel too old - message
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Hebenstreit, Michael" <michael.hebenstreit@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-26 at 16:08 -0700, David Rientjes wrote:
-> On Wed, 26 Oct 2011, Joe Perches wrote:
-> > > > The old error message was not precise. State now explicitly that the
-> > > > prefix exists as a file/directory. Also change the conclusion ("appears
-> > > > to be") into an instruction ("make sure").
-> > > Why can't we suppress this warning unless both prefixes appear as files or 
-> > > directories in the cwd?  ('a' and 'b' if using git format-patch)
-> > I sent a suggested patch that checked $root/$patched_file
-> > https://lkml.org/lkml/2011/10/19/257
-> So we need a combination of the two approaches then, it makes sense to 
-> only emit the warning if the patched file exists in both prefixes.
+On Thu, Oct 27, 2011 at 1:04 AM, Hebenstreit, Michael
+<michael.hebenstreit@intel.com> wrote:
+> Can someone explain me why even an ldd on a dynamic executable gives a "kernel too old"? I understand that linking to a gcc that does not support the kernel causes this problem at runtime, but why does ldd fail? Are there other ways to diagnose this?
+>
 
-I don't think so.  What about something like:
+Because ldd executes the binary to get it's dependencies.
+It's just a bash script.
 
-$ diff -urN kernel/foo~ kernel/foo > patch
-
-I think we should only care about the patched file,.
-
+-- 
+Thanks,
+//richard
