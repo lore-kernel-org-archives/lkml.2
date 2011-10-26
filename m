@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870Ab1JZMU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 08:20:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33374 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932751Ab1JZMUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 08:20:55 -0400
-Date: Wed, 26 Oct 2011 14:17:06 +0200
-From: Greg KH <gregkh@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] lib: devres: add convenience function to remap a resource
-Message-ID: <20111026121706.GC23457@suse.de>
-References: <1319548607-28427-1-git-send-email-w.sang@pengutronix.de>
- <20111025153538.GA13012@google.com>
+	id S932903Ab1JZM2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 08:28:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52915 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932831Ab1JZM2i convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 08:28:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111025153538.GA13012@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFkjPTkD+Ld8mhAdNZe_RbZaVZjDT+w61FhswzMQok3T2RbmYg@mail.gmail.com>
+References: <CAFkjPT=KcY=YH=Vy+ikyzEe26pwZ3RQ8T=pf+3oGvgECkX7sPw@mail.gmail.com>
+ <CA+55aFyRpjKrjOkiwUDKb_madynN71neUzCjNVt-TPzsRbEcOQ@mail.gmail.com> <CAFkjPTkD+Ld8mhAdNZe_RbZaVZjDT+w61FhswzMQok3T2RbmYg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 26 Oct 2011 14:28:15 +0200
+X-Google-Sender-Auth: hKRmn8vIfEGasIFrFTGBq8Zcs8s
+Message-ID: <CA+55aFxQJBcdOqY_dekYiouVM_udb-4D2f_1n2WrGRdRfx=HPw@mail.gmail.com>
+Subject: Re: [GIT PULL] 9p changes fro merge window
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 08:35:38AM -0700, Tejun Heo wrote:
-> On Tue, Oct 25, 2011 at 03:16:47PM +0200, Wolfram Sang wrote:
-> > Almost every platform_driver does the three steps get_resource,
-> > request_mem_region, ioremap. This does not only lead to a lot of code
-> > duplication, but also a huge number of similar error strings and
-> > inconsistent error codes on failure. So, introduce a helper function
-> > which simplifies remapping a resource and make it hard to do something
-> > wrong and add documentation for it.
-> > 
-> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Greg KH <gregkh@suse.de>
-> 
->  Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Greg, can you please take this one?
+On Tue, Oct 25, 2011 at 10:14 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+>>
+>> (Also, I'm only seeing about half the patches mentioned in linux-next. Hmm?)
+>>
+>
+> okay.  that's weird.  I thought linux-next has been pulling from my
+> github tree (I sent an updated URL some time back).  I guess I never
+> really checked to make sure he was getting the updated files.  I'll
+> rectify this as well.
 
-Ok, I'll queue it up after the 3.2 merge window is over, for the 3.3
-release.
+This turns out to be just me being stupid. I just checked the changes
+in fs/9p, and not net/9p, so I didn't find Dan Carpenters patches in
+net. And because you had rebased them, I was looking at that (partial)
+shortlog when comparing, rather than the full one.
 
-thanks,
+Anyway, pulled now. I do wish people didn't rebase so much, it makes
+all the commits different in linux-next wrt what I actually end up
+getting..
 
-greg k-h
+                Linus
