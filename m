@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab1JZEwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 00:52:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:41336 "EHLO ozlabs.org"
+	id S1753891Ab1JZEv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 00:51:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:38675 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752446Ab1JZEv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752459Ab1JZEv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Oct 2011 00:51:56 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>,
-        Roland Vossen <rvossen@broadcom.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not built in-tree
-In-Reply-To: <20111025201723.GA25063@redhat.com>
-References: <1319461948.31243.31.camel@deadeye> <4EA57CBF.2050901@xenotime.net> <87k47tpvvm.fsf@rustcorp.com.au> <20111025153855.GA24779@elliptictech.com> <1319558749.11727.6.camel@deadeye> <20111025165142.GA25354@elliptictech.com> <20111025200455.GA6376@kroah.com> <20111025201723.GA25063@redhat.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        "Michael S.Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH v3] virtio: Add platform bus driver for memory mapped virtio device
+In-Reply-To: <1319461560.3668.16.camel@hornet.cambridge.arm.com>
+References: <1317841030-17758-1-git-send-email-pawel.moll@arm.com> <1317919843-8343-1-git-send-email-pawel.moll@arm.com> <1317921230.28696.102.camel@hornet.cambridge.arm.com> <87lisjq6tu.fsf@rustcorp.com.au> <1318931075.3146.285.camel@hornet.cambridge.arm.com> <87ty75adtb.fsf@rustcorp.com.au> <1319219844.5094.16.camel@hornet.cambridge.arm.com> <87wrbv15lp.fsf@rustcorp.com.au> <1319461560.3668.16.camel@hornet.cambridge.arm.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 26 Oct 2011 14:46:44 +1030
-Message-ID: <87zkgoo09f.fsf@rustcorp.com.au>
+Date: Wed, 26 Oct 2011 14:36:47 +1030
+Message-ID: <871uu0pfag.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Oct 2011 16:17:24 -0400, Dave Jones <davej@redhat.com> wrote:
-> commit 7816c45bf13255157c00fb8aca86cb64d825e878
-> Author: Roland Vossen <rvossen@broadcom.com>
-> Date:   Thu Apr 7 11:20:58 2011 +0200
+On Mon, 24 Oct 2011 14:06:00 +0100, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Mon, 2011-10-24 at 03:33 +0100, Rusty Russell wrote:
+> > No, that's it I think.  Please send a diff for the documentation, since
+> > I'm updating the LyX master and I've already applied your previous
+> > version.
 > 
->     modules: Enabled dynamic debugging for staging modules
-...
->     
->     Signed-off-by: Roland Vossen <rvossen@broadcom.com>
->     Acked-by: Jason Baron <jbaron@redhat.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Here it goes (below).
 
-Greg, you know better.  This is why we have maintainers: I can't track
-patches I don't see.  Grrr...
+I've applied the corresponding changes to the latest version of the
+virtio pci draft spec (0.9.2).  Please check it's accurate...
 
-> If we want to support out of tree modules with this, should we just nuke the
-> whole check, or do we still want to prevent certain types of tainted kernels
-> from using this stuff ?
+Direct link to version with change tracking:
 
-It goes back to the first implementation of kernel markers.  IIRC, it
-was to prevent dynamic debug stuff from circumventing licensing, but
-testing for *any* taint seems overbroad.  Mathieu?
+http://ozlabs.org/~rusty/virtio-spec/virtio-0.9.2-vs-0.9.1.pdf
 
-Thanks,
+Thanks!
 Rusty.
-PS.  Can't see how this related to lockdep either...
