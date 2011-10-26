@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933768Ab1JZRiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:38:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47281 "EHLO mx1.redhat.com"
+	id S933783Ab1JZRjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:39:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50610 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932909Ab1JZRix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:38:53 -0400
-Date: Wed, 26 Oct 2011 18:54:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, Earl Chew <earl_chew@agilent.com>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] exec: log when wait_for_dump_helpers aborts due to a
-	signal
-Message-ID: <20111026165400.GB18076@redhat.com>
-References: <1319591228-20397-1-git-send-email-msb@chromium.org>
+	id S933636Ab1JZRjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 13:39:32 -0400
+Date: Wed, 26 Oct 2011 13:20:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, jgarzik@pobox.com, davem@davemloft.net, hch@infradead.org,
+        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] block: add blk_queue_dead()
+Message-ID: <20111026172049.GD355@redhat.com>
+References: <1319590927-15791-1-git-send-email-tj@kernel.org>
+ <1319590927-15791-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319591228-20397-1-git-send-email-msb@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1319590927-15791-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25, Mandeep Singh Baines wrote:
->
-> To allow coredump pipe readers to look at /proc/<pid> of the crashing
-> process, the kernel waits for the reader to exit. However, the wait
-> is silently aborted if the crashing process is signalled.
+On Tue, Oct 25, 2011 at 06:02:05PM -0700, Tejun Heo wrote:
+> There are a number of QUEUE_FLAG_DEAD tests.  Add blk_queue_dead()
+> macro and use it.
+> 
+> This patch doesn't introduce any functional difference.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> ---
+>  block/blk-core.c       |    6 +++---
+>  block/blk-exec.c       |    2 +-
+>  block/blk-sysfs.c      |    4 ++--
+>  block/blk-throttle.c   |    4 ++--
+>  block/blk.h            |    2 +-
+>  include/linux/blkdev.h |    1 +
+>  6 files changed, 10 insertions(+), 9 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 1efb943..7d39897 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -603,7 +603,7 @@ EXPORT_SYMBOL(blk_init_allocated_queue_node);
+>  
+>  int blk_get_queue(struct request_queue *q)
+>  {
+> -	if (likely(!test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
+> +	if (likely(!blk_queue_dead(q))) {
+>  		kobject_get(&q->kobj);
+>  		return 0;
 
-Well, yes... But note that this signal_pending() is only used because
-with TIF_SIGPENDING we have the problems anyway.
+I thought DEAD flag is now synchronized with queue lock. So the protocol
+is that caller should be holding queue lock here first?
 
-Oh. I promise myself I'll make do_coredump() killable and cleanup this
-all every time I look at this code...
-
-> This patch, logs whenever wait_for_dump_helpers is aborted or in order
-> to assist in debugging cases where /proc/<pid> is gone.
-
-I don't really understand why this is useful. The reader process
-can complain if it can't collect the data (say, /proc/pid goes away
-or EOF doesn't come).
-
-
-
-As for the patch itself,
-
-> -	while ((pipe->readers > 1) && (!signal_pending(current))) {
-> +	while (pipe->readers > 1) {
-> +		if (signal_pending(current)) {
-> +			pr_info("wait_for_dump_helpers[%d]: "
-> +				"aborted due to signal\n",
-> +				task_pid_nr(current));
-> +			break;
-> +		}
-> +
->  		wake_up_interruptible_sync(&pipe->wait);
-
-This can't help in general. If signal_pending() == T, it is quite
-possible that pipe_write() already failed before.
-
-Oleg.
-
+Thanks
+Vivek
