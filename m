@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab1JZUVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 16:21:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46738 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab1JZUVs (ORCPT
+	id S1752180Ab1JZU0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 16:26:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34754 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1JZU0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 16:21:48 -0400
-Subject: Re: [Regression] Laptop screen dark when lid closed and
- reopened.with 3.1
-From: Kamal Mostafa <kamal@canonical.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Alex Davis <alex14641@yahoo.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mjg@redhat.com" <mjg@redhat.com>
-In-Reply-To: <yunmxcnhjlh.fsf@aiko.keithp.com>
-References: <1316478488.72684.YahooMailNeo@web130114.mail.mud.yahoo.com>
-	 <1316868946.61433.YahooMailNeo@web130123.mail.mud.yahoo.com>
-	 <yunvcsim1wk.fsf@aiko.keithp.com>
-	 <1316877222.89367.YahooMailNeo@web130124.mail.mud.yahoo.com>
-	 <yunsjnln8it.fsf@aiko.keithp.com>
-	 <1316957004.77729.YahooMailNeo@web130108.mail.mud.yahoo.com>
-	 <1317583219.81808.YahooMailNeo@web130113.mail.mud.yahoo.com>
-	 <1319599156.52195.YahooMailNeo@web130106.mail.mud.yahoo.com>
-	 <yunmxcnhjlh.fsf@aiko.keithp.com>
-Content-Type: multipart/signed; micalg="pgp-sha256"; protocol="application/pgp-signature"; boundary="=-TyRt3KIMCmAdy4fELz7H"
-Date: Wed, 26 Oct 2011 13:21:40 -0700
-Message-ID: <1319660500.4206.120.camel@fourier>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Wed, 26 Oct 2011 16:26:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=vCnQs4nYfgVreoXEIZcD6MBt+cXsVviTBOEIMOBht7QJ0stC6u/7GmyWbQcOnsSrH
+	rAHZYR8qlOO4HLR7eQw6A==
+Date: Wed, 26 Oct 2011 13:26:02 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Philipp Herz - Profihost AG <p.herz@profihost.ag>
+cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Vanilla-Kernel 3 - page allocation failure
+In-Reply-To: <4EA506B9.4030604@profihost.ag>
+Message-ID: <alpine.DEB.2.00.1110261322460.23111@chino.kir.corp.google.com>
+References: <4E9D53FF.7090609@profihost.ag> <m2ipnmz49x.fsf@firstfloor.org> <alpine.DEB.2.00.1110181848150.12850@chino.kir.corp.google.com> <4EA506B9.4030604@profihost.ag>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 24 Oct 2011, Philipp Herz - Profihost AG wrote:
 
---=-TyRt3KIMCmAdy4fELz7H
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> we have recompiled the kernel of one machine with CONFIG_SLUB instead of
+> CONFIG_SLAB, but it is showing similar message.
+> 
+> Now it's showing failure at "order:5, mode:0x4020".
+> 
+> Call trace can be found at:
+> * http://pastebin.com/uGJiwvG1
+> 
+> Comparing kernel 2.6.32 (mm/page_alloc.c) there seams to be the same way of
+> dealing with page allocation.
+> 
+> Do you have an idea why these (warning) messages do never appear running
+> 2.6.32?
+> 
 
-On Wed, 2011-10-26 at 08:13 -0700, Keith Packard wrote:
-> On Tue, 25 Oct 2011 20:19:16 -0700 (PDT), Alex Davis <alex14641@yahoo.com=
-> wrote:
->=20
-> > At the request of Kamal Mostafa, an Ubuntu kernel developer, I am resub=
-mitting this patch which fixes my backlight issue.
-> > It seem that there are a number of people with different machines that =
-have this problem:
->=20
-> We have a patch that should land in a 3.1 stable release that should
-> resolve this issue; can you test that?
->=20
-> commit f52c619a590fa75276c07dfcaf380dee53e4ea4c
-> Author: Takashi Iwai <tiwai@suse.de>
-> Date:   Fri Oct 14 11:45:40 2011 +0200
->=20
->     drm/i915/panel: Always record the backlight level again (but cleverly=
-)
+Do you have CONFIG_COMPACTION enabled?  Perhaps this is a difference in 
+the deprecation of lumpy reclaim between 2.6.35 and 2.6.38 and 
+defragmentation being done by memory compaction instead.
 
-That patch (f52c619a) does not fix the problem on my Dell Studio 1558.
-
-Alex's proposed patch -- removing the intel_panel_set_backlight(dev, 0)
-call from intel_panel_disable_backlight -- does fix the problem
-completely for me.
-
-Please forgive the silly question, but why does
-intel_panel_disable_backlight even want to set the brightness to 0
-anyway?...  Its only caller is just about to turn off power to the
-panel.
-
-Is that call to intel_panel_{,actually_}set_backlight(dev, 0) really
-necessary or useful on *any* systems?
-
- -Kamal
-
-
---=-TyRt3KIMCmAdy4fELz7H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCAAGBQJOqGvRAAoJEOf3EFVUCeQiDhoP/3XOqPvJr9zou+vWw0QN+ltH
-L5g7Xl25bKBn0VCl+Wx5hzuhPHdjUqwMnkdvZiG1kI8PhqjRFb6Vnb2DZTJz2+Xf
-EBrolfaeWvCrEzEkHDOnEWZoGs3HpzONcA8gCJ4fI0+5w2mL/Qnb5enLU/IjaGPe
-AuKEmaA6pGrQOnjUIqmyPeoAKICBm9mLitlkyMRvXR09oa+PR+U2SJiwgQWV8QcN
-dBSeX/kvaJpB32L/LnYDb52h1R1FFcKWVX8MBY5vFRgEwMmtudmwvUvd/pqI2Xw/
-viRxSB6t9oB4yaQaFE1sQwfBanLH/McVCn6y/U7Rw3wX4eeROiTyoSeEI0DLwqCA
-iSURSDSrJPJee/sfQlxnrBMxVydo1RVdx2EZ3kUJgwTzO5CYbxyymzFvWcJQAQb6
-NFuKnUx1hUhB84pvUu/aNDmXn9ZlMOPyxoEIqPH0W9NeOxS2/A5BerLWlwiieFYb
-w5Vn3BHJ75W2Pvj3q1zBu0+JHvxO0EZb0C2mT43rVwReWClKcmEYNG802PNfxqdo
-LxX8SmiQb1E9i4LhTdlP1dfIplGdRPgdvdWUr04IkjAiJF6Ev+655oAbNefjDUsL
-wNR2lF1L/JqsZ4DPU0ZN3x7DtNpCIrbBduyms34aTn+7KJjjRxJL7OxO1KxsKJWl
-8kzy/vbQdaLEEgMINOkO
-=581J
------END PGP SIGNATURE-----
-
---=-TyRt3KIMCmAdy4fELz7H--
-
+It won't be triggered synchronously in this context since it's a 
+GFP_ATOMIC allocation, which is why it emits a page allocation failure in 
+the first place, but it will show whether defragmentation is the issue or 
+you're just simply low on memory.
