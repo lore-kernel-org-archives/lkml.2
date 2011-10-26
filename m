@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab1JZKKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 06:10:42 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40768 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1JZKKl (ORCPT
+	id S932690Ab1JZKMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 06:12:50 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65330 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647Ab1JZKMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 06:10:41 -0400
+	Wed, 26 Oct 2011 06:12:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
-References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
-	<CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
-Date: Wed, 26 Oct 2011 15:40:40 +0530
-Message-ID: <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
-Subject: Re: Multi-partition block layer behaviour
-From: Tiju Jacob <jacobtiju@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D16D3BA94A82@NWD2CMBX1.ad.analog.com>
+References: <1319606151-29707-1-git-send-email-sonic.adi@gmail.com>
+ <CAJaTeTqsjjjS=Myt_gfPzOfF4mzqZ1pz2NJE95Gq6g_O0aOijA@mail.gmail.com> <DB904C5425BA6F4E8424B3B51A1414D16D3BA94A82@NWD2CMBX1.ad.analog.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 26 Oct 2011 06:12:29 -0400
+X-Google-Sender-Auth: L9cNM3cZFemNqPZBaGfDFV8WjJA
+Message-ID: <CAJaTeTpbeAmTXX_Tf7WnGha9o-3u47Y3GABzkqk11ECk72HLXw@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [PATCH] mutex:SMP:bf561:Run smp memory
+ barrier after take atomic lock in mutex_fastpath APIs.
+To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Cc: Sonic Zhang <sonic.adi@gmail.com>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> 1. When an I/O request is made to the filesystem, process 'A' acquires
->> a mutex FS lock and a mutex block driver lock.
->>
->> 2. Process 'B' tries to acquire the mutex FS lock, which is not
->> available. Hence, it goes to sleep. Due to the new plugging mechanism,
->> before going to sleep, shcedule() is invoked which disables preemption
->> and the context becomes atomic. In schedule(), the newly added
->> blk_flush_plug_list() is invoked which unplugs the block driver.
->>
->> 3) During unplug operation the block driver tries to acquire the mutex
->> lock which fails, because the lock was held by process 'A'. Previous
->> invocation of scheudle() in step 2 has already made the context as
->> atomic, hence the error "Schedule while atomic" occured.
-> if blk_flush_plug_list() is called in schedule(), it will use
-> blk_run_queue_async
-> to unplug the queue. This runs in a workqueue. So how could this happen?
->
+On Wed, Oct 26, 2011 at 04:53, Zhang, Sonic wrote:
+> Our SMP atomic implementation doesn't include memory barrier. Is it a better way to add barrier there?
 
-The call stack goes as follows:
+i'll have to re-read the thread myself, but i thought the conclusions
+of that thread were implemented in the Blackfin tree now
 
->From schedule() it calls blk_schedule_flush_plug()  and
-blk_flush_plug_list() gets invoked.
-
-In blk_flush_plug_list() queue_unplugged() does not get invoked. Hence
- blk_run_queue_async is not called.
-Instead __elv_add_request() is invoked with ELEVATOR_INSERT_SORT_MERGE
-flag and the flag gets reassigned to ELEVATOR_INSERT_BACK.
-	
-In ELEVATOR_INSERT_BACK, __blk_run_queue() gets invoked and calls request_fn().
-
-Thanks,
---TJ
+so if the conclusion was we needed barriers in the atomic funcs, and
+we don't have them now, then that probably is the way to go instead
+... but i'll have to review things in depth later
+-mike
