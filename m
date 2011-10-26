@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933828Ab1JZRtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:49:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37751 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933786Ab1JZRsq (ORCPT
+	id S933853Ab1JZRts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:49:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54971 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933778Ab1JZRsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Oct 2011 13:48:46 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/11] perf ui progress: Reimplement using slang
-Date: Wed, 26 Oct 2011 15:48:25 -0200
-Message-Id: <1319651314-29404-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/11] perf ui browser: Handle K_RESIZE in dialog windows
+Date: Wed, 26 Oct 2011 15:48:33 -0200
+Message-Id: <1319651314-29404-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1319651314-29404-1-git-send-email-acme@infradead.org>
 References: <1319651314-29404-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,7 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Just another step in stopping the use of libnewt in perf.
+Just provide wrappers for things like ui__warning, ui__dialog_yesno and
+if they return K_RESIZE, refresh dimensions, redraw the entries, etc.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -37,177 +38,343 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vkb9jh5kkzl5ep3puoatd6an@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-3ih7hyk9weryxaxb501sfq4u@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/debug.h       |   12 +------
- tools/perf/util/session.c     |    8 +----
- tools/perf/util/ui/progress.c |   64 ++++++++++------------------------------
- tools/perf/util/ui/progress.h |    7 +---
- 4 files changed, 22 insertions(+), 69 deletions(-)
+ tools/perf/util/debug.c             |    7 +++--
+ tools/perf/util/debug.h             |    6 ++--
+ tools/perf/util/ui/browser.c        |   40 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/ui/browser.h        |    5 ++++
+ tools/perf/util/ui/browsers/hists.c |   22 +++++++++++++------
+ tools/perf/util/ui/helpline.c       |    6 +++++
+ tools/perf/util/ui/helpline.h       |    2 +
+ tools/perf/util/ui/util.c           |   27 ++++++++++++++---------
+ tools/perf/util/ui/util.h           |    5 ++-
+ 9 files changed, 94 insertions(+), 26 deletions(-)
 
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 5563403..26817da 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -47,19 +47,20 @@ int dump_printf(const char *fmt, ...)
+ }
+ 
+ #ifdef NO_NEWT_SUPPORT
+-void ui__warning(const char *format, ...)
++int ui__warning(const char *format, ...)
+ {
+ 	va_list args;
+ 
+ 	va_start(args, format);
+ 	vfprintf(stderr, format, args);
+ 	va_end(args);
++	return 0;
+ }
+ #endif
+ 
+-void ui__error_paranoid(void)
++int ui__error_paranoid(void)
+ {
+-	ui__error("Permission error - are you root?\n"
++	return ui__error("Permission error - are you root?\n"
+ 		    "Consider tweaking /proc/sys/kernel/perf_event_paranoid:\n"
+ 		    " -1 - Not paranoid at all\n"
+ 		    "  0 - Disallow raw tracepoint access for unpriv\n"
 diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index fd53db4..510adac 100644
+index 16cc752..f2ce88d 100644
 --- a/tools/perf/util/debug.h
 +++ b/tools/perf/util/debug.h
-@@ -19,16 +19,8 @@ static inline int ui_helpline__show_help(const char *format __used, va_list ap _
- 	return 0;
- }
- 
--static inline struct ui_progress *ui_progress__new(const char *title __used,
--						   u64 total __used)
--{
--	return (struct ui_progress *)1;
--}
--
--static inline void ui_progress__update(struct ui_progress *self __used,
--				       u64 curr __used) {}
--
--static inline void ui_progress__delete(struct ui_progress *self __used) {}
-+static inline void ui_progress__update(u64 curr __used, u64 total __used,
-+				       const char *title __used) {}
- #else
+@@ -27,10 +27,10 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
  extern char ui_helpline__last_msg[];
  int ui_helpline__show_help(const char *format, va_list ap);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 20e011c..91c6442 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1012,7 +1012,6 @@ int __perf_session__process_events(struct perf_session *session,
+ #include "ui/progress.h"
+-void ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
++int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ #endif
+ 
+-void ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+-void ui__error_paranoid(void);
++int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
++int ui__error_paranoid(void);
+ 
+ #endif	/* __PERF_DEBUG_H */
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 8607efa..d2051be 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -169,6 +169,46 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
+ 	self->x = 0;
+ }
+ 
++void ui_browser__handle_resize(struct ui_browser *browser)
++{
++	ui__refresh_dimensions(false);
++	ui_browser__show(browser, browser->title, ui_helpline__current);
++	ui_browser__refresh(browser);
++}
++
++int ui_browser__warning(struct ui_browser *browser, const char *format, ...)
++{
++	va_list args;
++	int key;
++
++	va_start(args, format);
++	while ((key = __ui__warning("Warning!", format, args)) == K_RESIZE)
++		ui_browser__handle_resize(browser);
++	va_end(args);
++
++	return key;
++}
++
++int ui_browser__help_window(struct ui_browser *browser, const char *text)
++{
++	int key;
++
++	while ((key = ui__help_window(text)) == K_RESIZE)
++		ui_browser__handle_resize(browser);
++
++	return key;
++}
++
++bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text)
++{
++	int key;
++
++	while ((key = ui__dialog_yesno(text)) == K_RESIZE)
++		ui_browser__handle_resize(browser);
++
++	return key == K_ENTER || toupper(key) == 'Y';
++}
++
+ void ui_browser__reset_index(struct ui_browser *self)
  {
- 	u64 head, page_offset, file_offset, file_pos, progress_next;
- 	int err, mmap_prot, mmap_flags, map_idx = 0;
--	struct ui_progress *progress;
- 	size_t	page_size, mmap_size;
- 	char *buf, *mmaps[8];
- 	union perf_event *event;
-@@ -1030,9 +1029,6 @@ int __perf_session__process_events(struct perf_session *session,
- 		file_size = data_offset + data_size;
+ 	self->index = self->top_idx = 0;
+diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
+index 81a8d2a..fb1c598 100644
+--- a/tools/perf/util/ui/browser.h
++++ b/tools/perf/util/ui/browser.h
+@@ -43,6 +43,11 @@ void ui_browser__hide(struct ui_browser *self);
+ int ui_browser__refresh(struct ui_browser *self);
+ int ui_browser__run(struct ui_browser *browser, int delay_secs);
+ void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries);
++void ui_browser__handle_resize(struct ui_browser *browser);
++
++int ui_browser__warning(struct ui_browser *browser, const char *format, ...);
++int ui_browser__help_window(struct ui_browser *browser, const char *text);
++bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text);
  
- 	progress_next = file_size / 16;
--	progress = ui_progress__new("Processing events...", file_size);
--	if (progress == NULL)
--		return -1;
+ void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence);
+ unsigned int ui_browser__argv_refresh(struct ui_browser *browser);
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 44210d4..b8733c0 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -17,6 +17,7 @@
+ #include "../browser.h"
+ #include "../helpline.h"
+ #include "../util.h"
++#include "../ui.h"
+ #include "map.h"
  
- 	mmap_size = session->mmap_window;
- 	if (mmap_size > file_size)
-@@ -1095,7 +1091,8 @@ more:
+ struct hist_browser {
+@@ -882,7 +883,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			goto out_free_stack;
+ 		case 'a':
+ 			if (!browser->has_symbols) {
+-				ui__warning(
++				ui_browser__warning(&browser->b,
+ 			"Annotation is only available for symbolic views, "
+ 			"include \"sym\" in --sort to use it.");
+ 				continue;
+@@ -900,7 +901,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		case K_F1:
+ 		case 'h':
+ 		case '?':
+-			ui__help_window("h/?/F1        Show this window\n"
++			ui_browser__help_window(&browser->b,
++					"h/?/F1        Show this window\n"
+ 					"UP/DOWN/PGUP\n"
+ 					"PGDN/SPACE    Navigate\n"
+ 					"q/ESC/CTRL+C  Exit browser\n\n"
+@@ -939,7 +941,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		}
+ 		case K_ESC:
+ 			if (!left_exits &&
+-			    !ui__dialog_yesno("Do you really want to exit?"))
++			    !ui_browser__dialog_yesno(&browser->b,
++					       "Do you really want to exit?"))
+ 				continue;
+ 			/* Fall thru */
+ 		case 'q':
+@@ -992,6 +995,7 @@ add_exit_option:
  
- 	if (file_pos >= progress_next) {
- 		progress_next += file_size / 16;
--		ui_progress__update(progress, file_pos);
-+		ui_progress__update(file_pos, file_size,
-+				    "Processing events...");
+ 		if (choice == annotate) {
+ 			struct hist_entry *he;
++			int err;
+ do_annotate:
+ 			he = hist_browser__selected_entry(browser);
+ 			if (he == NULL)
+@@ -1000,10 +1004,12 @@ do_annotate:
+ 			 * Don't let this be freed, say, by hists__decay_entry.
+ 			 */
+ 			he->used = true;
+-			hist_entry__tui_annotate(he, evsel->idx, nr_events,
+-						 timer, arg, delay_secs);
++			err = hist_entry__tui_annotate(he, evsel->idx, nr_events,
++						       timer, arg, delay_secs);
+ 			he->used = false;
+ 			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
++			if (err)
++				ui_browser__handle_resize(&browser->b);
+ 		} else if (choice == browse_map)
+ 			map__browse(browser->selection->map);
+ 		else if (choice == zoom_dso) {
+@@ -1132,7 +1138,8 @@ browse_hists:
+ 					pos = list_entry(pos->node.prev, struct perf_evsel, node);
+ 				goto browse_hists;
+ 			case K_ESC:
+-				if (!ui__dialog_yesno("Do you really want to exit?"))
++				if (!ui_browser__dialog_yesno(&menu->b,
++						"Do you really want to exit?"))
+ 					continue;
+ 				/* Fall thru */
+ 			case 'q':
+@@ -1144,7 +1151,8 @@ browse_hists:
+ 		case K_LEFT:
+ 			continue;
+ 		case K_ESC:
+-			if (!ui__dialog_yesno("Do you really want to exit?"))
++			if (!ui_browser__dialog_yesno(&menu->b,
++					       "Do you really want to exit?"))
+ 				continue;
+ 			/* Fall thru */
+ 		case 'q':
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index 600243d..6ef3c56 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -1,6 +1,7 @@
+ #define _GNU_SOURCE
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ 
+ #include "../debug.h"
+ #include "helpline.h"
+@@ -11,12 +12,17 @@ void ui_helpline__pop(void)
+ {
+ }
+ 
++char ui_helpline__current[512];
++
+ void ui_helpline__push(const char *msg)
+ {
++	const size_t sz = sizeof(ui_helpline__current);
++
+ 	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
+ 	SLsmg_set_color(0);
+ 	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
+ 	SLsmg_refresh();
++	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
+ }
+ 
+ void ui_helpline__vpush(const char *fmt, va_list ap)
+diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
+index fdcbc02..7bab6b3 100644
+--- a/tools/perf/util/ui/helpline.h
++++ b/tools/perf/util/ui/helpline.h
+@@ -11,4 +11,6 @@ void ui_helpline__vpush(const char *fmt, va_list ap);
+ void ui_helpline__fpush(const char *fmt, ...);
+ void ui_helpline__puts(const char *msg);
+ 
++extern char ui_helpline__current[];
++
+ #endif /* _PERF_UI_HELPLINE_H_ */
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+index ef9b793..45daa7c 100644
+--- a/tools/perf/util/ui/util.c
++++ b/tools/perf/util/ui/util.c
+@@ -121,43 +121,48 @@ int ui__help_window(const char *text)
+ 	return ui__question_window("Help", text, "Press any key...", 0);
+ }
+ 
+-bool ui__dialog_yesno(const char *msg)
++int ui__dialog_yesno(const char *msg)
+ {
+-	int answer = ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+-
+-	return answer == K_ENTER;
++	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+ }
+ 
+-static void __ui__warning(const char *title, const char *format, va_list args)
++int __ui__warning(const char *title, const char *format, va_list args)
+ {
+ 	char *s;
+ 
+ 	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
++		int key;
++
+ 		pthread_mutex_lock(&ui__lock);
+-		ui__question_window(title, s, "Press any key...", 0);
++		key = ui__question_window(title, s, "Press any key...", 0);
+ 		pthread_mutex_unlock(&ui__lock);
+ 		free(s);
+-		return;
++		return key;
  	}
  
- 	if (file_pos < file_size)
-@@ -1106,7 +1103,6 @@ more:
- 	session->ordered_samples.next_flush = ULLONG_MAX;
- 	flush_sample_queue(session, ops);
- out_err:
--	ui_progress__delete(progress);
- 	perf_session__warn_about_errors(session, ops);
- 	perf_session_free_sample_buffers(session);
- 	return err;
-diff --git a/tools/perf/util/ui/progress.c b/tools/perf/util/ui/progress.c
-index d7fc399..68d2c54 100644
---- a/tools/perf/util/ui/progress.c
-+++ b/tools/perf/util/ui/progress.c
-@@ -1,60 +1,28 @@
--#include <stdlib.h>
--#include <newt.h>
- #include "../cache.h"
- #include "progress.h"
-+#include "libslang.h"
-+#include "ui.h"
-+#include "browser.h"
- 
--struct ui_progress {
--	newtComponent form, scale;
--};
--
--struct ui_progress *ui_progress__new(const char *title, u64 total)
--{
--	struct ui_progress *self = malloc(sizeof(*self));
--
--	if (self != NULL) {
--		int cols;
--
--		if (use_browser <= 0)
--			return self;
--		newtGetScreenSize(&cols, NULL);
--		cols -= 4;
--		newtCenteredWindow(cols, 1, title);
--		self->form  = newtForm(NULL, NULL, 0);
--		if (self->form == NULL)
--			goto out_free_self;
--		self->scale = newtScale(0, 0, cols, total);
--		if (self->scale == NULL)
--			goto out_free_form;
--		newtFormAddComponent(self->form, self->scale);
--		newtRefresh();
--	}
--
--	return self;
--
--out_free_form:
--	newtFormDestroy(self->form);
--out_free_self:
--	free(self);
--	return NULL;
--}
--
--void ui_progress__update(struct ui_progress *self, u64 curr)
-+void ui_progress__update(u64 curr, u64 total, const char *title)
- {
-+	int bar, y;
- 	/*
- 	 * FIXME: We should have a per UI backend way of showing progress,
- 	 * stdio will just show a percentage as NN%, etc.
- 	 */
- 	if (use_browser <= 0)
- 		return;
--	newtScaleSet(self->scale, curr);
--	newtRefresh();
--}
- 
--void ui_progress__delete(struct ui_progress *self)
--{
--	if (use_browser > 0) {
--		newtFormDestroy(self->form);
--		newtPopWindow();
--	}
--	free(self);
-+	pthread_mutex_lock(&ui__lock);
-+	y = SLtt_Screen_Rows / 2 - 2;
-+	SLsmg_set_color(0);
-+	SLsmg_draw_box(y, 0, 3, SLtt_Screen_Cols);
-+	SLsmg_gotorc(y++, 1);
-+	SLsmg_write_string((char *)title);
-+	SLsmg_set_color(HE_COLORSET_SELECTED);
-+	bar = ((SLtt_Screen_Cols - 2) * curr) / total;
-+	SLsmg_fill_region(y, 1, 1, bar, ' ');
-+	SLsmg_refresh();
-+	pthread_mutex_unlock(&ui__lock);
+ 	fprintf(stderr, "%s:\n", title);
+ 	vfprintf(stderr, format, args);
++	return K_ESC;
  }
-diff --git a/tools/perf/util/ui/progress.h b/tools/perf/util/ui/progress.h
-index a3820a0..d9c205b 100644
---- a/tools/perf/util/ui/progress.h
-+++ b/tools/perf/util/ui/progress.h
-@@ -1,11 +1,8 @@
- #ifndef _PERF_UI_PROGRESS_H_
- #define _PERF_UI_PROGRESS_H_ 1
  
--struct ui_progress;
-+#include <../types.h>
+-void ui__warning(const char *format, ...)
++int ui__warning(const char *format, ...)
+ {
++	int key;
+ 	va_list args;
  
--struct ui_progress *ui_progress__new(const char *title, u64 total);
--void ui_progress__delete(struct ui_progress *self);
--
--void ui_progress__update(struct ui_progress *self, u64 curr);
-+void ui_progress__update(u64 curr, u64 total, const char *title);
+ 	va_start(args, format);
+-	__ui__warning("Warning", format, args);
++	key = __ui__warning("Warning", format, args);
+ 	va_end(args);
++	return key;
+ }
  
- #endif
+-void ui__error(const char *format, ...)
++int ui__error(const char *format, ...)
+ {
++	int key;
+ 	va_list args;
+ 
+ 	va_start(args, format);
+-	__ui__warning("Error", format, args);
++	key = __ui__warning("Error", format, args);
+ 	va_end(args);
++	return key;
+ }
+diff --git a/tools/perf/util/ui/util.h b/tools/perf/util/ui/util.h
+index 9a25538..2d1738b 100644
+--- a/tools/perf/util/ui/util.h
++++ b/tools/perf/util/ui/util.h
+@@ -1,13 +1,14 @@
+ #ifndef _PERF_UI_UTIL_H_
+ #define _PERF_UI_UTIL_H_ 1
+ 
+-#include <stdbool.h>
++#include <stdarg.h>
+ 
+ int ui__getch(int delay_secs);
+ int ui__popup_menu(int argc, char * const argv[]);
+ int ui__help_window(const char *text);
+-bool ui__dialog_yesno(const char *msg);
++int ui__dialog_yesno(const char *msg);
+ int ui__question_window(const char *title, const char *text,
+ 			const char *exit_msg, int delay_secs);
++int __ui__warning(const char *title, const char *format, va_list args);
+ 
+ #endif /* _PERF_UI_UTIL_H_ */
 -- 
 1.6.2.5
 
