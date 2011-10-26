@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab1JZILK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 04:11:10 -0400
-Received: from brick.kernel.dk ([87.104.106.3]:39428 "EHLO kernel.dk"
+	id S932490Ab1JZINO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 04:13:14 -0400
+Received: from brick.kernel.dk ([87.104.106.3]:39482 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838Ab1JZILI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 04:11:08 -0400
-Message-ID: <4EA7C094.8000204@kernel.dk>
-Date: Wed, 26 Oct 2011 10:11:00 +0200
+	id S932142Ab1JZINM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 04:13:12 -0400
+Message-ID: <4EA7C0D5.7020406@kernel.dk>
+Date: Wed, 26 Oct 2011 10:12:05 +0200
 From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: vgoyal@redhat.com, jgarzik@pobox.com, davem@davemloft.net,
         hch@infradead.org, ctalbott@google.com, rni@google.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] block: allow blk_execute_rq_nowait() to be called
- from IRQ context
-References: <1319590927-15791-1-git-send-email-tj@kernel.org> <1319590927-15791-3-git-send-email-tj@kernel.org>
-In-Reply-To: <1319590927-15791-3-git-send-email-tj@kernel.org>
+Subject: Re: [PATCH 1/6] block, sx8: kill blk_insert_request()
+References: <1319590927-15791-1-git-send-email-tj@kernel.org> <1319590927-15791-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1319590927-15791-2-git-send-email-tj@kernel.org>
 X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -26,37 +25,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 2011-10-26 03:02, Tejun Heo wrote:
-> Currently blk_execute_rq_nowait() directly calls __blk_run_queue() and
-> thus must be called from sleepable context.  This patch updates the
-> function such that it can be called from non-sleepable context and
-> schedules async execution in such cases.  This will be used to
-> unexport elv_add_request().
+> The only user left for blk_insert_request() is sx8 and it can be
+> trivially switched to use blk_execute_rq_nowait() - special requests
+> aren't included in io stat and sx8 doesn't use block layer tagging.
+> Switch sx8 and kill blk_insert_requeset().
 > 
-> While at it, add FIXME comment for REQ_TYPE_PM_RESUME special case.
-> 
-> -v2: hch pointed out that blk_execute_rq_nowait() can be hot path for
->      some drivers.  Retained direct execution from sleepable context.
+> This patch doesn't introduce any functional difference.
 
-Ugh, this looks nasty:
-
-> +	bool may_sleep = !preempt_count() && !irqs_disabled();
-
-please don't ever do that. Pass the context in instead.
-
-> +	/*
-> +	 * Some drivers beat this path pretty hard.  As an optimization, if
-> +	 * we're being called from sleepable context, run @q directly.
-> +	 */
-> +	if (may_sleep) {
-> +		__blk_run_queue(q);
-> +		/*
-> +		 * The queue is stopped so it won't be run.
-> +		 * FIXME: Please kill me along with REQ_TYPE_PM_RESUME.
-> +		 */
-> +		if (rq->cmd_type == REQ_TYPE_PM_RESUME)
-> +			q->request_fn(q);
-
-This is very nasty as well.
+Applied.
 
 -- 
 Jens Axboe
