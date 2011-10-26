@@ -1,89 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab1JZPNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 11:13:22 -0400
-Received: from home.keithp.com ([63.227.221.253]:49076 "EHLO keithp.com"
+	id S933306Ab1JZPOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 11:14:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35680 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933076Ab1JZPNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 11:13:21 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Alex Davis <alex14641@yahoo.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mjg\@redhat.com" <mjg@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: Re: [Regression] Laptop screen dark when lid closed and reopened.with 3.1
-In-Reply-To: <1319599156.52195.YahooMailNeo@web130106.mail.mud.yahoo.com>
-References: <1316478488.72684.YahooMailNeo@web130114.mail.mud.yahoo.com> <1316868946.61433.YahooMailNeo@web130123.mail.mud.yahoo.com> <yunvcsim1wk.fsf@aiko.keithp.com> <1316877222.89367.YahooMailNeo@web130124.mail.mud.yahoo.com> <yunsjnln8it.fsf@aiko.keithp.com> <1316957004.77729.YahooMailNeo@web130108.mail.mud.yahoo.com> <1317583219.81808.YahooMailNeo@web130113.mail.mud.yahoo.com> <1319599156.52195.YahooMailNeo@web130106.mail.mud.yahoo.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 26 Oct 2011 08:13:14 -0700
-Message-ID: <yunmxcnhjlh.fsf@aiko.keithp.com>
+	id S933076Ab1JZPOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 11:14:03 -0400
+Date: Wed, 26 Oct 2011 17:12:21 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/asm changes for v3.2
+Message-ID: <20111026151221.GA26844@elte.hu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Linus,
 
-On Tue, 25 Oct 2011 20:19:16 -0700 (PDT), Alex Davis <alex14641@yahoo.com> =
-wrote:
+Please pull the latest x86-asm-for-linus git tree from:
 
-> At the request of Kamal Mostafa, an Ubuntu kernel developer, I am resubmi=
-tting this patch which fixes my backlight issue.
-> It seem that there are a number of people with different machines that ha=
-ve this problem:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-asm-for-linus
 
-We have a patch that should land in a 3.1 stable release that should
-resolve this issue; can you test that?
+ Thanks,
 
-commit f52c619a590fa75276c07dfcaf380dee53e4ea4c
-Author: Takashi Iwai <tiwai@suse.de>
-Date:   Fri Oct 14 11:45:40 2011 +0200
+	Ingo
 
-    drm/i915/panel: Always record the backlight level again (but cleverly)
-=20=20=20=20
-    The commit 47356eb67285014527a5ab87543ba1fae3d1e10a introduced a
-    mechanism to record the backlight level only at disabling time, but it
-    also introduced a regression.  Since intel_lvds_enable() may be called
-    without disabling (e.g. intel_lvds_commit() calls it unconditionally),
-    the backlight gets back to the last recorded value.  For example, this
-    happens when you dim the backlight, close the lid and open the lid,
-    then the backlight suddenly goes to the brightest.
-=20=20=20=20
-    This patch fixes the bug by recording the backlight level always
-    when changed via intel_panel_set_backlight().  And,
-    intel_panel_{enable|disable}_backlight() call the internal function not
-    to update the recorded level wrongly.
-=20=20=20=20
-    Cc: <stable@kernel.org>
-    Signed-off-by: Takashi Iwai <tiwai@suse.de>
-    Reviewed-by: Keith Packard <keithp@keithp.com>
-    Signed-off-by: Keith Packard <keithp@keithp.com>
+------------------>
+Jan Beulich (2):
+      x86-64: Don't apply destructive erratum workaround on unaffected CPUs
+      x86-64: Fix CFI data for interrupt frames
 
 
-=2D-=20
-keith.packard@intel.com
+ arch/x86/include/asm/dwarf2.h |    2 ++
+ arch/x86/kernel/entry_64.S    |   14 +++++++++-----
+ arch/x86/mm/fault.c           |    8 +++++++-
+ 3 files changed, 18 insertions(+), 6 deletions(-)
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTqgjijYtFsjWk68qAQjxABAAmbHALMgA+nCjzvK1p346Ef92oricjz3Z
-KBpbBWQPilBmjYJz7C51D4cYdTPv+IKgy8tQGtSk8Hf046iw2kounhF21NLTPAy7
-+z+TnsgA6kJpQehiE0jTzbVz16JhE7MyT+0Mjye+/DuUnVbTefbTpOrLLijsuxz5
-Y61G4yojaxrv7LXwfPh90AC68sOEzUriko23RrWMt3OcwXBEGmh6uFITjM91w3Zd
-9QC5ZOpsJ0OcFuJf2Jht9Hbjca/VdIOvPjSnHSnx65H6gFgaXxGJhhHry4kQQB1E
-MOlrF/Bo1ZgmFBndFnUm0Pd4ZAGRxpYGoiM2ZF+QolTSoX/QRb51j9vn9sRt2ily
-QwbgqUleFmHaV7bL4YGq/6VnVn4xsZExwFkMvu9vmwDaKzXaD9+vXwh85B9iYLl5
-AEMTG5OC61ofYgJLJsZu39m5MTZyVT5ZavkQmrmLVE3OhS5Pm/4vpjJkvjhSQ5WX
-uIUXVJ8Drgt3U1Ft9ds1uS5Ugndtnu9eS1DsIalZ+nSDQNHkljq8esCByEfSJobz
-3bz2Hvnbf5UiWeRJpjGfM5/qaYG5YtFNK2RVwVXzMMbqKMKrKHO2xobTmufH8lRT
-+VVD4YgCA7NtH4nav1HP1dfm/0+IAE1mifJ9s1udtof2vorU2IDJ9eNdVYVKHlve
-j/lInyCLW6M=
-=Yzq6
------END PGP SIGNATURE-----
---=-=-=--
+diff --git a/arch/x86/include/asm/dwarf2.h b/arch/x86/include/asm/dwarf2.h
+index 3260991..f6f1598 100644
+--- a/arch/x86/include/asm/dwarf2.h
++++ b/arch/x86/include/asm/dwarf2.h
+@@ -27,6 +27,7 @@
+ #define CFI_REMEMBER_STATE	.cfi_remember_state
+ #define CFI_RESTORE_STATE	.cfi_restore_state
+ #define CFI_UNDEFINED		.cfi_undefined
++#define CFI_ESCAPE		.cfi_escape
+ 
+ #ifdef CONFIG_AS_CFI_SIGNAL_FRAME
+ #define CFI_SIGNAL_FRAME	.cfi_signal_frame
+@@ -68,6 +69,7 @@
+ #define CFI_REMEMBER_STATE	cfi_ignore
+ #define CFI_RESTORE_STATE	cfi_ignore
+ #define CFI_UNDEFINED		cfi_ignore
++#define CFI_ESCAPE		cfi_ignore
+ #define CFI_SIGNAL_FRAME	cfi_ignore
+ 
+ #endif
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 6419bb0..faf8d5e 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -331,10 +331,15 @@ ENDPROC(native_usergs_sysret64)
+ 1:	incl PER_CPU_VAR(irq_count)
+ 	jne 2f
+ 	mov PER_CPU_VAR(irq_stack_ptr),%rsp
+-	EMPTY_FRAME 0
++	CFI_DEF_CFA_REGISTER	rsi
+ 
+ 2:	/* Store previous stack value */
+ 	pushq %rsi
++	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
++			0x77 /* DW_OP_breg7 */, 0, \
++			0x06 /* DW_OP_deref */, \
++			0x08 /* DW_OP_const1u */, SS+8-RBP, \
++			0x22 /* DW_OP_plus */
+ 	/* We entered an interrupt context - irqs are off: */
+ 	TRACE_IRQS_OFF
+ 	.endm
+@@ -788,7 +793,6 @@ END(interrupt)
+ 	subq $ORIG_RAX-RBP, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
+ 	SAVE_ARGS_IRQ
+-	PARTIAL_FRAME 0
+ 	call \func
+ 	.endm
+ 
+@@ -813,10 +817,10 @@ ret_from_intr:
+ 
+ 	/* Restore saved previous stack */
+ 	popq %rsi
+-	leaq 16(%rsi), %rsp
+-
++	CFI_DEF_CFA_REGISTER	rsi
++	leaq ARGOFFSET-RBP(%rsi), %rsp
+ 	CFI_DEF_CFA_REGISTER	rsp
+-	CFI_ADJUST_CFA_OFFSET	-16
++	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
+ 
+ exit_intr:
+ 	GET_THREAD_INFO(%rcx)
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 0d17c8c..9c7378d 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -420,12 +420,14 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_CPU_SUP_AMD
+ static const char errata93_warning[] =
+ KERN_ERR 
+ "******* Your BIOS seems to not contain a fix for K8 errata #93\n"
+ "******* Working around it, but it may cause SEGVs or burn power.\n"
+ "******* Please consider a BIOS update.\n"
+ "******* Disabling USB legacy in the BIOS may also help.\n";
++#endif
+ 
+ /*
+  * No vm86 mode in 64-bit mode:
+@@ -505,7 +507,11 @@ bad:
+  */
+ static int is_errata93(struct pt_regs *regs, unsigned long address)
+ {
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) && defined(CONFIG_CPU_SUP_AMD)
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD
++	    || boot_cpu_data.x86 != 0xf)
++		return 0;
++
+ 	if (address != regs->ip)
+ 		return 0;
+ 
