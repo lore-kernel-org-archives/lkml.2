@@ -1,97 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab1JZGgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 02:36:50 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17321 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab1JZGgt convert rfc822-to-8bit (ORCPT
+	id S1752335Ab1JZGlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 02:41:08 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:59601 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab1JZGlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 02:36:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=V6fXzcwcbhWjLLd54dRsKHSh5dCQJ+xX6zADrBI11+dN6wQhrNoIsJvlhKX9MV3P8
-	wqprLd1GWnlT1QLJdZVhQ==
+	Wed, 26 Oct 2011 02:41:06 -0400
+Message-ID: <4EA7AB7C.9080703@scalemp.com>
+Date: Wed, 26 Oct 2011 08:41:00 +0200
+From: Eial Czerwacki <eial@scalemp.com>
+Organization: ScaleMP
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101020 Remi/fc8 Thunderbird/3.1.5
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1110252327270.20273@chino.kir.corp.google.com>
-References: <1319524789-22818-1-git-send-email-ccross@android.com>
-	<20111025090956.GA10797@suse.de>
-	<alpine.DEB.2.00.1110251513520.26017@chino.kir.corp.google.com>
-	<CAMbhsRQ3y2SBwEfjiYgfxz2-h0fgn20mLBYgFuBwGqon0f-a8g@mail.gmail.com>
-	<alpine.DEB.2.00.1110252244270.18661@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1110252311030.20273@chino.kir.corp.google.com>
-	<CAMbhsRS+-jn7d1bTd4F0_RB9860iWjOHLfOkDsqLfWEUbR3TYA@mail.gmail.com>
-	<alpine.DEB.2.00.1110252322220.20273@chino.kir.corp.google.com>
-	<CAMbhsRQdrWRLkj7U-u2AZxM11mSUNj5_1K27g58cMBo1Js1Yeg@mail.gmail.com>
-	<alpine.DEB.2.00.1110252327270.20273@chino.kir.corp.google.com>
-Date: Tue, 25 Oct 2011 23:36:44 -0700
-X-Google-Sender-Auth: XxgmYGKJ18Vkb5zqF26Kg_l5D6M
-Message-ID: <CAMbhsRR0z-aJ848gq6ZQATZOgz=EybVsRtaQbjCr42PtCubCzw@mail.gmail.com>
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-From: Colin Cross <ccross@android.com>
 To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: Re: [PATCH] APICID: Avoid false sharing on the read mostly x86_cpu_to_apicid
+References: <4EA66960.7050907@scalemp.com> <9B14D1490DDECA4E974F6B9FC9EBAB3140CD274367@VMBX108.ihostexchange.net> <4EA6A265.1080506@scalemp.com> <alpine.DEB.2.00.1110252318090.20273@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110252318090.20273@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 11:33 PM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 25 Oct 2011, Colin Cross wrote:
->
->> Makes sense.  What about this?  Official patch to follow.
+On 10/26/2011 08:21 AM, David Rientjes wrote:
+
+> On Tue, 25 Oct 2011, Eial Czerwacki wrote:
+> 
+>> Avoid false sharing on the read mostly x86_cpu_to_apicid by moving it to
+>> __read_mostly section.
+> 
+> x86_cpu_to_apicid used to be in .init.data and now it's never freed after 
+> boot?
+> 
+>> The per-cpu area is write and read and this symbol shows up high on ipi
+>> intensive/x86_cpu_to_apicid load.
 >>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index fef8dc3..59cd4ff 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -1786,6 +1786,13 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
->>                 return 0;
+>> Signed-off-by: Eial Czerwacki<eial@scalemp.com>
+>> Signed-off-by: Shai Fultheim<shai@scalemp.com>
+>> Author: Ravikiran Thirumalai<kiran@scalex86.org>
+> 
+> If the author isn't you, then the patch should start with a single line 
+> that says "From: name <email>" of the author followed by a blank line.  
+> It's also strange that the author doesn't have a sign-off line.
+> 
+
+
+the author is mentioned after the last sign-off.
+
+> Your email client also has corrupted the inline patch, please see 
+> Documentation/email-clients.txt.
+> 
+
+
+thanks for the tips, I hope it is ok now.
+
+> And, finally, please send this to the x86 maintainers once fixed.  See 
+> ./scripts/get_maintainers.pl <your patch>.
+> 
+
+
+sure.
+
+>> Index: b/arch/x86/include/asm/smp.h
+>> ===================================================================
+>> --- a/arch/x86/include/asm/smp.h	2010-06-01 09:56:03.000000000 -0700
+>> +++ b/arch/x86/include/asm/smp.h	2010-06-02 15:59:21.000000000 -0700
+>> @@ -36,7 +36,8 @@ static inline struct cpumask *cpu_core_m
+>>   	return per_cpu(cpu_core_map, cpu);
+>>   }
 >>
->>         /*
->> +        * If PM has disabled I/O, OOM is disabled and reclaim is unlikely
->> +        * to make any progress.  To prevent a livelock, don't retry.
->> +        */
->> +       if (!(gfp_allowed_mask & __GFP_FS))
->> +               return 0;
+>> -DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
+>> +extern u16 x86_cpu_to_apicid[NR_CPUS];
 >> +
->> +       /*
->>          * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
->>          * means __GFP_NOFAIL, but that may not be true in other
->>          * implementations.
->
-> Eek, this is precisely what we don't want and is functionally the same as
-> what you initially proposed except it doesn't care about __GFP_NOFAIL.
+>>   DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
+>>
+>>   /* Static state in head.S used to set up a CPU */
+>> @@ -142,7 +143,7 @@ void native_send_call_func_ipi(const str
+>>   void native_send_call_func_single_ipi(int cpu);
+>>
+>>   void smp_store_cpu_info(int id);
+>> -#define cpu_physical_id(cpu)	per_cpu(x86_cpu_to_apicid, cpu)
+>> +#define cpu_physical_id(cpu)	x86_cpu_to_apicid[cpu]
+>>
+>>   /* We don't mark CPUs online until __cpu_up(), so we need another measure */
+>>   static inline int num_booting_cpus(void)
+>> Index: b/arch/x86/kernel/acpi/boot.c
+>> ===================================================================
+>> --- a/arch/x86/kernel/acpi/boot.c	2010-06-01 09:56:03.000000000 -0700
+>> +++ b/arch/x86/kernel/acpi/boot.c	2010-06-02 15:59:21.000000000 -0700
+>> @@ -568,7 +568,7 @@ EXPORT_SYMBOL(acpi_map_lsapic);
+>>
+>>   int acpi_unmap_lsapic(int cpu)
+>>   {
+>> -	per_cpu(x86_cpu_to_apicid, cpu) = -1;
+>> +	x86_cpu_to_apicid[cpu] = -1;
+>>   	set_cpu_present(cpu, false);
+>>   	num_processors--;
+>>
+> 
+> Shouldn't this be BAD_APICID?  Not sure where we check for -1.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-This is checking against gfp_allowed_mask, not gfp_mask.
 
-> You're trying to address a suspend issue where nothing on the system can
-> logically make progress because __GFP_FS seriously restricts the ability
-> of reclaim to do anything useful if it doesn't succeed the first time and
-> kswapd isn't effective.  That's why I suggested a hook into
-> pm_restrict_gfp_mask() to set a variable and then treat it exactly as
-> __GFP_NORETRY in should_alloc_retry().
->
-> Consider if nobody is using suspend and they are allocating with GFP_NOFS.
-> There's potentially a lot of candidates:
->
->        $ grep -r GFP_NOFS * | wc -l
->        1016
->
-> and now we've just introduced a regression where the allocation would
-> eventually succeed because of either kswapd, a backing device that is no
-> longer congested, or an allocation on another cpu in a context where
-> direct reclaim can be more aggressive or the oom killer can at least free
-> some memory.
->
-> So you definitely want to localize your change to only suspend and
-> pm_restrict_gfp_mask() is a very easy way to do it.  So I'd suggest adding
-> a static bool that can be tested in should_alloc_retry() and identify such
-> situations and tag it as __read_mostly.
->
+I'll check the rest of your comments.
+
+Thanks,
+
+Eial.
