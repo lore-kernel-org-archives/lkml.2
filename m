@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab1JZOFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:05:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40370 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab1JZOFO convert rfc822-to-8bit (ORCPT
+	id S933168Ab1JZON3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:13:29 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54018 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991Ab1JZON2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:05:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwHw=xSdk7VtHCiVKzfzvGS=d8hXwwfaPEcU=P6PDarsA@mail.gmail.com>
-References: <CAFkjPT=KcY=YH=Vy+ikyzEe26pwZ3RQ8T=pf+3oGvgECkX7sPw@mail.gmail.com>
-	<CA+55aFyRpjKrjOkiwUDKb_madynN71neUzCjNVt-TPzsRbEcOQ@mail.gmail.com>
-	<CAFkjPTkD+Ld8mhAdNZe_RbZaVZjDT+w61FhswzMQok3T2RbmYg@mail.gmail.com>
-	<CA+55aFxQJBcdOqY_dekYiouVM_udb-4D2f_1n2WrGRdRfx=HPw@mail.gmail.com>
-	<FC179A32-61E1-4B40-AE58-724D255586F8@gmail.com>
-	<CA+55aFwHw=xSdk7VtHCiVKzfzvGS=d8hXwwfaPEcU=P6PDarsA@mail.gmail.com>
-Date: Wed, 26 Oct 2011 16:05:13 +0200
-X-Google-Sender-Auth: -VZHzHJs6b5aro_xBxbIPUUYcRo
-Message-ID: <CAMuHMdU71jN=SWUU7O-Cq7ZtCi9r+3fhih72gBRPscagkGipjQ@mail.gmail.com>
-Subject: Re: [GIT PULL] 9p changes fro merge window
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Oct 2011 10:13:28 -0400
+Message-ID: <1319638397.6637.2.camel@phoenix>
+Subject: [PATCH] ASoC: tlv320aic3x: Use snd_soc_update_bits for
+ read-modify-write
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jarkko Nikula <jhnikula@gmail.com>,
+        Vladimir Barinov <vbarinov@embeddedalley.com>,
+        alsa-devel@alsa-project.org
+Date: Wed, 26 Oct 2011 22:13:17 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 14:58, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Oct 26, 2011 at 2:48 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
->> What's the preferred maintainer workflow?  I had been fetching and then rebasing, which seemed to keep my shortlog clean of merge commits and the outstanding patches towards the top.  Should I just be pulling from upstream and not caring about the merge commits?
->
-> Hell no.
->
-> Why do you pull from upstream? What does that add to *your*
-> development? Don't do it. Pick a place to start, and just develop
-> things. Ask me to pull.
->
-> No merge commits, no rebases, no nothing. JUST ACTUAL WORK. It also
-> keeps the history clean, and means that what people test (in
-> linux-next _and_ in your own internal testing) is actually what you
-> ask me to pull, rather than something else.
+Use snd_soc_update_bits for read-modify-write register access instead of
+open-coding it using snd_soc_read and snd_soc_write
 
-That works if what you do is "small" and "fast".
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/tlv320aic3x.c |   41 +++++++++++++--------------------------
+ 1 files changed, 14 insertions(+), 27 deletions(-)
 
-"small":
-  - There are no conflicts with anyone else who is e.g. restructuring
-part of the tree,
-  - You do not want to early submit parts that should go in through a different
-    maintainer as soon as they're ready (and thus they disappear from
-your patchset
-    when you rebase),
+diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
+index 7a49390..a77f6ea 100644
+--- a/sound/soc/codecs/tlv320aic3x.c
++++ b/sound/soc/codecs/tlv320aic3x.c
+@@ -833,7 +833,6 @@ static int aic3x_hw_params(struct snd_pcm_substream *substream,
+ 	int codec_clk = 0, bypass_pll = 0, fsref, last_clk = 0;
+ 	u8 data, j, r, p, pll_q, pll_p = 1, pll_r = 1, pll_j = 1;
+ 	u16 d, pll_d = 1;
+-	u8 reg;
+ 	int clk;
+ 
+ 	/* select data word length */
+@@ -869,14 +868,13 @@ static int aic3x_hw_params(struct snd_pcm_substream *substream,
+ 		snd_soc_write(codec, AIC3X_PLL_PROGA_REG, pll_q << PLLQ_SHIFT);
+ 		snd_soc_write(codec, AIC3X_GPIOB_REG, CODEC_CLKIN_CLKDIV);
+ 		/* disable PLL if it is bypassed */
+-		reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
+-		snd_soc_write(codec, AIC3X_PLL_PROGA_REG, reg & ~PLL_ENABLE);
++		snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG, PLL_ENABLE, 0);
+ 
+ 	} else {
+ 		snd_soc_write(codec, AIC3X_GPIOB_REG, CODEC_CLKIN_PLLDIV);
+ 		/* enable PLL when it is used */
+-		reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
+-		snd_soc_write(codec, AIC3X_PLL_PROGA_REG, reg | PLL_ENABLE);
++		snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG,
++				    PLL_ENABLE, PLL_ENABLE);
+ 	}
+ 
+ 	/* Route Left DAC to left channel input and
+@@ -1155,7 +1153,6 @@ static int aic3x_set_bias_level(struct snd_soc_codec *codec,
+ 				enum snd_soc_bias_level level)
+ {
+ 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
+-	u8 reg;
+ 
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+@@ -1164,9 +1161,8 @@ static int aic3x_set_bias_level(struct snd_soc_codec *codec,
+ 		if (codec->dapm.bias_level == SND_SOC_BIAS_STANDBY &&
+ 		    aic3x->master) {
+ 			/* enable pll */
+-			reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
+-			snd_soc_write(codec, AIC3X_PLL_PROGA_REG,
+-				      reg | PLL_ENABLE);
++			snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG,
++					    PLL_ENABLE, PLL_ENABLE);
+ 		}
+ 		break;
+ 	case SND_SOC_BIAS_STANDBY:
+@@ -1175,9 +1171,8 @@ static int aic3x_set_bias_level(struct snd_soc_codec *codec,
+ 		if (codec->dapm.bias_level == SND_SOC_BIAS_PREPARE &&
+ 		    aic3x->master) {
+ 			/* disable pll */
+-			reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
+-			snd_soc_write(codec, AIC3X_PLL_PROGA_REG,
+-				      reg & ~PLL_ENABLE);
++			snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG,
++					    PLL_ENABLE, 0);
+ 		}
+ 		break;
+ 	case SND_SOC_BIAS_OFF:
+@@ -1294,7 +1289,6 @@ static int aic3x_resume(struct snd_soc_codec *codec)
+ static int aic3x_init(struct snd_soc_codec *codec)
+ {
+ 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
+-	int reg;
+ 
+ 	snd_soc_write(codec, AIC3X_PAGE_SELECT, PAGE0_SELECT);
+ 	snd_soc_write(codec, AIC3X_RESET, SOFT_RESET);
+@@ -1316,20 +1310,13 @@ static int aic3x_init(struct snd_soc_codec *codec)
+ 	snd_soc_write(codec, DACR1_2_MONOLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
+ 
+ 	/* unmute all outputs */
+-	reg = snd_soc_read(codec, LLOPM_CTRL);
+-	snd_soc_write(codec, LLOPM_CTRL, reg | UNMUTE);
+-	reg = snd_soc_read(codec, RLOPM_CTRL);
+-	snd_soc_write(codec, RLOPM_CTRL, reg | UNMUTE);
+-	reg = snd_soc_read(codec, MONOLOPM_CTRL);
+-	snd_soc_write(codec, MONOLOPM_CTRL, reg | UNMUTE);
+-	reg = snd_soc_read(codec, HPLOUT_CTRL);
+-	snd_soc_write(codec, HPLOUT_CTRL, reg | UNMUTE);
+-	reg = snd_soc_read(codec, HPROUT_CTRL);
+-	snd_soc_write(codec, HPROUT_CTRL, reg | UNMUTE);
+-	reg = snd_soc_read(codec, HPLCOM_CTRL);
+-	snd_soc_write(codec, HPLCOM_CTRL, reg | UNMUTE);
+-	reg = snd_soc_read(codec, HPRCOM_CTRL);
+-	snd_soc_write(codec, HPRCOM_CTRL, reg | UNMUTE);
++	snd_soc_update_bits(codec, LLOPM_CTRL, UNMUTE, UNMUTE);
++	snd_soc_update_bits(codec, RLOPM_CTRL, UNMUTE, UNMUTE);
++	snd_soc_update_bits(codec, MONOLOPM_CTRL, UNMUTE, UNMUTE);
++	snd_soc_update_bits(codec, HPLOUT_CTRL, UNMUTE, UNMUTE);
++	snd_soc_update_bits(codec, HPROUT_CTRL, UNMUTE, UNMUTE);
++	snd_soc_update_bits(codec, HPLCOM_CTRL, UNMUTE, UNMUTE);
++	snd_soc_update_bits(codec, HPRCOM_CTRL, UNMUTE, UNMUTE);
+ 
+ 	/* ADC default volume and unmute */
+ 	snd_soc_write(codec, LADC_VOL, DEFAULT_GAIN);
+-- 
+1.7.5.4
 
-"fast":
-  - You started working on it after the last merge window, and not 3
-releases ago.
 
-If the above are not true, it's a hell of work to keep track of
-everything without
-rebasing. Not to mention that the reviewers don't like seeing patches that apply
-to obsolete trees.
 
-And of course I don't want to bother you with fixing the merge
-conflicts that happen
-when I would ask to pull e.g. the m68k genirq conversion based on the
-state of your
-tree when I started working on it ;-)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
