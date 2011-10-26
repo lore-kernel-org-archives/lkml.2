@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311Ab1JZPQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 11:16:42 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40923 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933076Ab1JZPQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 11:16:41 -0400
-Date: Wed, 26 Oct 2011 17:14:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cleanups changes for v3.2
-Message-ID: <20111026151458.GA27748@elte.hu>
+	id S933322Ab1JZPSQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 11:18:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58048 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933076Ab1JZPSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 11:18:14 -0400
+Date: Wed, 26 Oct 2011 18:18:00 +0300 (EEST)
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+X-X-Sender: penberg@tux.localdomain
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org, cl@linux.com
+cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] slab changes for v3.2
+Message-ID: <alpine.LFD.2.02.1110261817200.2567@tux.localdomain>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Linus,
 
-Please pull the latest x86-cleanups-for-linus git tree from:
+Please pull the latest slab tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cleanups-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
 
- Thanks,
+There's fixes, optimizations, and cleanups in the tree. The most interesting
+ones are:
 
-	Ingo
+   - SLUB per-CPU partial list optimization from Christoph Lameter
 
------------------->
-Andy Lutomirski (1):
-      x86-64, unistd: Remove bogus __IGNORE_getcpu
+   - /proc/slabinfo access restriction from Vasiliy Kulikov
 
-Jesper Juhl (1):
-      x86, cleanup: Remove unneeded version.h include from arch/x86/
+Please note that the latter changes ABI to require root access that was agreed
+to by almost everybody.
 
-Zhao Jin (1):
-      x86, mm, trivial: Remove unnecessary get_order() in free_thread_info()
+ 			Pekka
 
+The following changes since commit 3cfef9524677a4ecb392d6fbffe6ebce6302f1d4:
 
- arch/x86/include/asm/unistd_64.h |    1 -
- arch/x86/kernel/process.c        |    2 +-
- arch/x86/mm/mmio-mod.c           |    1 -
- 3 files changed, 1 insertions(+), 3 deletions(-)
+   Merge branch 'core-locking-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2011-10-26 16:17:32 +0200)
 
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index d92641c..940d720 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -624,7 +624,6 @@ __SYSCALL(__NR_vmsplice, sys_vmsplice)
- __SYSCALL(__NR_move_pages, sys_move_pages)
- #define __NR_utimensat				280
- __SYSCALL(__NR_utimensat, sys_utimensat)
--#define __IGNORE_getcpu		/* implemented as a vsyscall */
- #define __NR_epoll_pwait			281
- __SYSCALL(__NR_epoll_pwait, sys_epoll_pwait)
- #define __NR_signalfd				282
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e7e3b01..b9b3b1a 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -49,7 +49,7 @@ void free_thread_xstate(struct task_struct *tsk)
- void free_thread_info(struct thread_info *ti)
- {
- 	free_thread_xstate(ti->task);
--	free_pages((unsigned long)ti, get_order(THREAD_SIZE));
-+	free_pages((unsigned long)ti, THREAD_ORDER);
- }
- 
- void arch_task_cache_init(void)
-diff --git a/arch/x86/mm/mmio-mod.c b/arch/x86/mm/mmio-mod.c
-index 67421f3..de54b9b 100644
---- a/arch/x86/mm/mmio-mod.c
-+++ b/arch/x86/mm/mmio-mod.c
-@@ -29,7 +29,6 @@
- #include <linux/slab.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
--#include <linux/version.h>
- #include <linux/kallsyms.h>
- #include <asm/pgtable.h>
- #include <linux/mmiotrace.h>
+are available in the git repository at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+
+Alex Shi (2):
+       slub: correct comments error for per cpu partial
+       slub: Discard slab page when node partial > minimum partial number
+
+Alex,Shi (1):
+       slub: Code optimization in get_partial_node()
+
+Christoph Lameter (7):
+       slub: free slabs without holding locks
+       slub: Remove useless statements in __slab_alloc
+       slub: Prepare inuse field in new_slab()
+       slub: pass kmem_cache_cpu pointer to get_partial()
+       slub: return object pointer from get_partial() / new_slab().
+       slub: per cpu cache for partial pages
+       slub: update slabinfo tools to report per cpu partial list statistics
+
+Jason Liu (1):
+       slub: doc: update the slabinfo.c file path
+
+Pekka Enberg (2):
+       Merge branch 'slab/urgent' into slab/next
+       Merge branches 'slab/next' and 'slub/partial' into slab/for-linus
+
+Sebastian Andrzej Siewior (2):
+       slab: use print_hex_dump
+       slub: use print_hex_dump
+
+Shaohua Li (1):
+       slub: explicitly document position of inserting slab to partial list
+
+Thomas Jarosch (1):
+       tools, slub: Fix off-by-one buffer corruption after readlink() call
+
+Vasiliy Kulikov (1):
+       mm: restrict access to slab files under procfs and sysfs
+
+  Documentation/vm/00-INDEX |    2 -
+  include/linux/mm_types.h  |   14 +-
+  include/linux/slub_def.h  |    4 +
+  mm/slab.c                 |   19 +-
+  mm/slub.c                 |  558 +++++++++++++++++++++++++++++++--------------
+  tools/slub/slabinfo.c     |   10 +-
+  6 files changed, 425 insertions(+), 182 deletions(-)
