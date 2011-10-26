@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933264Ab1JZOfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:35:21 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51060 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932772Ab1JZOfU convert rfc822-to-8bit (ORCPT
+	id S933271Ab1JZOi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:38:27 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:43379 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933120Ab1JZOiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:35:20 -0400
+	Wed, 26 Oct 2011 10:38:25 -0400
+Message-ID: <4EA81B50.1060802@tao.ma>
+Date: Wed, 26 Oct 2011 22:38:08 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-Originating-IP: [85.13.70.251]
-In-Reply-To: <4EA818ED.9000006@windriver.com>
-References: <CAOesGMhqRg29tq5Cw03UQMzGs_6nc3YA9UE6Cvps_0q7h5OeZw@mail.gmail.com>
-	<4EA73171.5020207@gmail.com>
-	<CAOesGMiCvFypQ6MbkTARxH3i3YTgYqSVcUwXe=2tdqSqufXtzg@mail.gmail.com>
-	<4EA818ED.9000006@windriver.com>
-Date: Wed, 26 Oct 2011 07:35:19 -0700
-Message-ID: <CAOesGMgB0nVqaxAvuEa2auJ0rBBYQ4fDbG82MwXApYHtt8=Y+g@mail.gmail.com>
-Subject: Re: linux-next failure on tegra due to conflicts between PPI and irq
- domain patches and irq.h->module.h include removal
-From: Olof Johansson <olof@lixom.net>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: Andreas Dilger <adilger@dilger.ca>
+CC: linux-ext4@vger.kernel.org, tytso@mit.edu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1 02/17] ext4: Add the basic function for inline data
+ support.
+References: <4EA7B788.3040503@tao.ma> <1319614468-11227-1-git-send-email-tm@tao.ma> <1319614468-11227-2-git-send-email-tm@tao.ma> <E38E92E9-2937-47BA-A9F4-B1F75C9FDE4A@dilger.ca>
+In-Reply-To: <E38E92E9-2937-47BA-A9F4-B1F75C9FDE4A@dilger.ca>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.12.149 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 7:27 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On 11-10-25 06:01 PM, Olof Johansson wrote:
->> On Tue, Oct 25, 2011 at 3:00 PM, Rob Herring <robherring2@gmail.com> wrote:
->>> Olof,
->>>
->>> On 10/25/2011 04:48 PM, Olof Johansson wrote:
->>>> Hi,
->>>>
->>>> Looks like Marc added new references to irq_start in his PPI patch,
->>>> and Rob removed it in parallel. Also, irq_offset is no longer
->>>> available. Looks like you need to respin your patch, Marc.
->>>>
->>>> arch/arm/common/gic.c: In function 'gic_dist_init':
->>>> arch/arm/common/gic.c:290: error: 'irq_start' undeclared (first use in
->>>> this function)
->>>> arch/arm/common/gic.c:290: error: (Each undeclared identifier is
->>>> reported only once
->>>> arch/arm/common/gic.c:290: error: for each function it appears in.)
->>>> arch/arm/common/gic.c:296: error: 'struct gic_chip_data' has no member
->>>> named 'irq_offset'
->>>
->>> I fixed this and sent a pull request yesterday to Arnd.
+On 10/26/2011 04:36 PM, Andreas Dilger wrote:
+> On 2011-10-26, at 1:34 AM, Tao Ma wrote:
+>> Implement inline data with xattr. This idea is inspired by Andreas.
+>> So now we use "system.data" to store xattr.  For inode_size = 256,
+>> currently we uses all the space between i_extra_isize and inode_size.
+>> For inode_size > 256, we use half of that space.
 >>
->> Ah, oops, forgot to check for already-posted-patches. :) Excellent.
->>
->>
->>>> The second error is because of the change from Paul that removes
->>>> module.h from irq.h:
->>>>
->>>> arch/arm/common/gic.c: In function 'gic_init':
->>>> arch/arm/common/gic.c:620: error: 'THIS_MODULE' undeclared (first use
->>>> in this function)
->>>>
->>>> Looks odd that I should need to include module.h on my own just to use
->>>> irq defines. Paul?
->>>>
->>>
->>> THIS_MODULE is needed by irq.h itself in irq_alloc_descs, so it probably
->>> needs to be added back.
->>
->> Well, the new export.h that defines THIS_MODULE probably needs to be
->> added to irq.h, yes.
->
-> No.  The whole point of the commit was to avoid nested includes
-> as per the commit log:
->
->    Also convert the irq_alloc_descs variants to macros, since all
->    they really do is is call the __irq_alloc_descs primitive.
->    This avoids including export.h and no debug info is lost.
->
-> If your file is relating to modular usage such that it is a modular
-> provider of interrupt sources and hence uses "THIS_MODULE", then it
-> will need export.h in the future. And that macro has nothing whatsoever
-> to do with any irq defines; it is used all over the kernel to tie
-> structures back to a (possibly modular) code block, just as per the
-> use case here in irq.h is.
+>> +#define EXT4_XATTR_SYSTEM_DATA_NAME		"data"
+> 
+> Did you check whether the "data" string takes 4 bytes or 8 in the
+> xattr header?  I believe it is storing the NUL termination (and
+> the code is using "sizeof(EXT4_XATTR_SYSTEM_DATA_NAME)" = 5), so
+> I believe it will round up to the next 4-byte boundary.  Using a
+> 3-byte name will save a bit of space, like "system.dat".
+Actually it will takes 4 bytes instead of 8, since in
+ext4_xattr_set_entry it uses memcpy to copy the name with namelen
+initialized with strlen("data"). So "data" is fine here. As for the
+calculation of max_inline_size, yes, it uses
+sizeof(EXT4_XATTR_SYSTEM_DATA_NAME) which should be changed to strlen.
+Thanks for the advice.
+> 
+>> +void ext4_write_inline_data(struct inode *inode, struct ext4_iloc *iloc,
+>> +			    void *buffer, loff_t pos, unsigned len)
+>> +{
+>> +	header = IHDR(inode, ext4_raw_inode(iloc));
+>> +	entry = (struct ext4_xattr_entry *)((void *)ext4_raw_inode(iloc) +
+>> +					    EXT4_I(inode)->i_inline_off);
+>> +	memcpy((void *)IFIRST(header) + le16_to_cpu(entry->e_value_offs) + pos,
+>> +	       buffer + pos, len);
+>> +}
+>> +
+>> +int ext4_init_inline_data(handle_t *handle, struct inode *inode,
+>> +			  struct ext4_iloc *iloc)
+>> +{
+>> +	size = ext4_get_max_inline_size(inode);
+>> +	value = kzalloc(size, GFP_NOFS);
+>> +	if (!value)
+>> +		return -ENOMEM;
+>> +
+>> +	error = ext4_xattr_ibody_set(handle, inode, &i, &is);
+>> +}
+> 
+> Since file data is changed very rarely, instead of consuming the full
+> xattr space that may not be needed, wouldn't it be better to change
+> ext4_write_inline_data() to just to the ext4_xattr_ibody_set() to save
+> the exact-sized buffer into the xattr?  That will allow other xattrs
+> to be stored in this space as well as the inline data.
+I am just worried about the cpu usage. You know, the xattr values in
+ext4 has to be packed so if we change the content of an inline file
+frequently(say append), the inline xattr value will be removed and added
+frequently which should consume much cpu cycles. What's more, the other
+xattr values has to be moved also if they are not aligned to the end of
+the inode. I am not sure whether it is good for performance or not.
+Another side effect is that we have to write the whole inline data every
+time as a new xattr value replace every time while the current solution
+just needs to memcpy the appended bytes.
 
-I strongly disagree.
-
-Why should I have to include export.h to a file that is not ever going
-to be built as a module just because I need to include irq.h? That's
-nonsense. If irq.h needs it, it should include it on its own.
-
-
--Olof
+Thanks
+Tao
