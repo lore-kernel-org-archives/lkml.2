@@ -1,54 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab1JZRS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:18:26 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40374 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933286Ab1JZRSZ (ORCPT
+	id S933660Ab1JZRT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:19:29 -0400
+Received: from lunge.queued.net ([173.255.254.236]:42276 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932945Ab1JZRT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:18:25 -0400
-MIME-Version: 1.0
-Date: Wed, 26 Oct 2011 19:18:24 +0200
-Message-ID: <CANQUKa2UHBPad2m2EZb0vH0jOOTNU7vHqzuUTTi0vt5AuTpdzA@mail.gmail.com>
-Subject: vga_switcheroo causes system freeze
-From: Wim Goeman <wimgoeman@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Oct 2011 13:19:28 -0400
+Date: Wed, 26 Oct 2011 10:19:26 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Dan Williams <dcbw@redhat.com>
+Cc: linville@tuxdriver.com, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dsd@laptop.org
+Subject: [PATCH] libertas: ensure we clean up a scan request properly
+Message-ID: <20111026101926.48109373@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit 2e30168b ("libertas: terminate scan when stopping interface")
+adds cleanup code to lbs_eth_stop to call cfg80211_scan_done if there's
+an outstanding cfg80211_scan_request.  However, it assumes that the
+scan request was allocated via the cfg80211 stack.  Libertas has
+its own internal allocation method, kept track of with
+priv->internal_scan.  This doesn't set scan_req->wiphy, amongst other
+things, which results in hitting a BUG() when we call cfg80211_scan_done
+on the request.
 
-I am working with a new HP PC (dv7) which supports Hybrid Graphics in
-terms of the intel graphics and radeon graphics (as can bee found in
-lspci).
+This provides a function to take care of the low-level scan_req cleanup
+details.  We simply call that to deal with finishing up scan requests.
 
-Currently I am only working with the Intel integrated graphics, and
-both adapters are powered on.
+The bug we were hitting was:
 
-My goal was to deactivate the intel graphics and activate the radeon
-graphics, as the machine is plugged in to the power supply most of the
-time. To achieve this I tried the following:
+[  964.321495] kernel BUG at net/wireless/core.h:87!
+[  964.329970] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[  964.341963] pgd = dcf80000
+...
+[  964.849998] 9fe0: 00000000 beb417b8 4018e280 401e822c 60000010 00000004 00000000 00000000
+[  964.865007] [<c003104c>] (__bug+0x1c/0x28) from [<c0384ffc>] (cfg80211_scan_done+0x54/0x6c)
+[  964.895324] [<c0384ffc>] (cfg80211_scan_done+0x54/0x6c) from [<bf028bac>] (lbs_eth_stop+0x10c/0x188 [libertas])
+[  964.895324] [<bf028bac>] (lbs_eth_stop+0x10c/0x188 [libertas]) from [<c03002a0>] (__dev_close_many+0x94/0xc4)
+[  964.918995] [<c03002a0>] (__dev_close_many+0x94/0xc4) from [<c030037c>] (dev_close_many+0x78/0xe0)
 
-cat /sys/kernel/debug/vga_switcheroo/switch
---> shows both cards are powered on and IGD is in use (the intel card)
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/net/wireless/libertas/cfg.c  |   25 +++++++++++++++++--------
+ drivers/net/wireless/libertas/cfg.h  |    1 +
+ drivers/net/wireless/libertas/main.c |    6 ++----
+ 3 files changed, 20 insertions(+), 12 deletions(-)
 
-echo DIS > /sys/kernel/debug/vga_switcheroo/switch
---> gives an error message because X is still running
+diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+index ff63782..4fcd653 100644
+--- a/drivers/net/wireless/libertas/cfg.c
++++ b/drivers/net/wireless/libertas/cfg.c
+@@ -728,15 +728,9 @@ static void lbs_scan_worker(struct work_struct *work)
+ 		le16_to_cpu(scan_cmd->hdr.size),
+ 		lbs_ret_scan, 0);
+ 
+-	if (priv->scan_channel >= priv->scan_req->n_channels) {
++	if (priv->scan_channel >= priv->scan_req->n_channels)
+ 		/* Mark scan done */
+-		if (priv->internal_scan)
+-			kfree(priv->scan_req);
+-		else
+-			cfg80211_scan_done(priv->scan_req, false);
+-
+-		priv->scan_req = NULL;
+-	}
++		lbs_scan_done(priv);
+ 
+ 	/* Restart network */
+ 	if (carrier)
+@@ -774,6 +768,21 @@ static void _internal_start_scan(struct lbs_private *priv, bool internal,
+ 	lbs_deb_leave(LBS_DEB_CFG80211);
+ }
+ 
++/*
++ * Clean up priv->scan_req.  Should be used to handle the allocation details.
++ */
++void lbs_scan_done(struct lbs_private *priv)
++{
++	WARN_ON(!priv->scan_req);
++
++	if (priv->internal_scan)
++		kfree(priv->scan_req);
++	else
++		cfg80211_scan_done(priv->scan_req, false);
++
++	priv->scan_req = NULL;
++}
++
+ static int lbs_cfg_scan(struct wiphy *wiphy,
+ 	struct net_device *dev,
+ 	struct cfg80211_scan_request *request)
+diff --git a/drivers/net/wireless/libertas/cfg.h b/drivers/net/wireless/libertas/cfg.h
+index a02ee15..558168c 100644
+--- a/drivers/net/wireless/libertas/cfg.h
++++ b/drivers/net/wireless/libertas/cfg.h
+@@ -16,6 +16,7 @@ int lbs_reg_notifier(struct wiphy *wiphy,
+ void lbs_send_disconnect_notification(struct lbs_private *priv);
+ void lbs_send_mic_failureevent(struct lbs_private *priv, u32 event);
+ 
++void lbs_scan_done(struct lbs_private *priv);
+ void lbs_scan_deinit(struct lbs_private *priv);
+ int lbs_disconnect(struct lbs_private *priv, u16 reason);
+ 
+diff --git a/drivers/net/wireless/libertas/main.c b/drivers/net/wireless/libertas/main.c
+index b03779b..39a6a7a 100644
+--- a/drivers/net/wireless/libertas/main.c
++++ b/drivers/net/wireless/libertas/main.c
+@@ -255,10 +255,8 @@ static int lbs_eth_stop(struct net_device *dev)
+ 
+ 	lbs_update_mcast(priv);
+ 	cancel_delayed_work_sync(&priv->scan_work);
+-	if (priv->scan_req) {
+-		cfg80211_scan_done(priv->scan_req, false);
+-		priv->scan_req = NULL;
+-	}
++	if (priv->scan_req)
++		lbs_scan_done(priv);
+ 
+ 	netif_carrier_off(priv->dev);
+ 
+-- 
+1.7.2.5
 
-I kill the X session
-echo DIS > /sys/kernel/debug/vga_switcheroo/switch
---> The system freezes completely. No warning or error, no blinking
-cursor, nothing. I have to power off using the power button.
-
-Does anyone have a suggestion on what I can try to fix this?
-
-I am posting on the mailing list because the bug tracker seems to be
-down since a few days now.
-
-For more details, please see launchpad bug #881132
-
-Thanks in advance for having a look at this,
-
-Wim
