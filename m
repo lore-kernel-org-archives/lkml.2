@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219Ab1JZPAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 11:00:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34873 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933103Ab1JZPAw (ORCPT
+	id S933258Ab1JZPB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 11:01:59 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:42991 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933103Ab1JZPB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 11:00:52 -0400
-Date: Wed, 26 Oct 2011 16:00:50 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kyle Manna <kyle.manna@fuel7.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v2 1/6] mfd: TPS65910: Handle non-existent devices
-Message-ID: <20111026150050.GA13365@opensource.wolfsonmicro.com>
-References: <1319475964-10841-1-git-send-email-kyle.manna@fuel7.com> <1319475964-10841-2-git-send-email-kyle.manna@fuel7.com> <20111025071417.GE2919@opensource.wolfsonmicro.com> <4EA6D14D.6060800@fuel7.com> <20111025160117.GA634@sirena.org.uk> <4EA6E1B6.9050608@fuel7.com>
+	Wed, 26 Oct 2011 11:01:57 -0400
+Message-ID: <4EA820D3.7010100@atmel.com>
+Date: Wed, 26 Oct 2011 17:01:39 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA6E1B6.9050608@fuel7.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Greg KH <gregkh@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        cavokz@gmail.com
+Subject: Re: [GIT PATCH] TTY/serial driver patches for 3.2
+References: <20111026114236.GA22180@kroah.com> <CA+55aFycM+nHxJNnFSjEXQvZkeBfHu161ePC0=7sWKZR1toQNA@mail.gmail.com> <20111026133438.GA26336@suse.de>
+In-Reply-To: <20111026133438.GA26336@suse.de>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 11:20:06AM -0500, Kyle Manna wrote:
+On 10/26/2011 03:34 PM, Greg KH :
+> On Wed, Oct 26, 2011 at 03:18:21PM +0200, Linus Torvalds wrote:
+>> On Wed, Oct 26, 2011 at 1:42 PM, Greg KH <gregkh@suse.de> wrote:
+>>>
+>>> The one in 8250_pci.c is trivial to fix, the atmel_serial one isn't as
+>>> easy, but I'm sure you can figure it out :)  If you want me to do the
+>>> merge for it, I'll be glad to do so, just let me know.
+>>
+>> So I figured it out, but please double-check, especially since it
+>> seems to be some arm-only driver that I can't even compile-test my
+>> resolution.
+> 
+> I think it looks correct, but yeah, as I can't build it either, it's
+> tough to tell.
+> 
+> Nicolas, can you verify that Linus's merge was done correctly?  If not,
+> can you send a patch?  It is commit
+> efb8d21b2c6db3497655cc6a033ae8a9883e4063 in Linus's tree right now.
 
-> Should I submit an entire updated patch series or just submit a single  
-> patch in reply to this?  Did you have any other comments on the rest of  
-> the series?
+Yes, I have verified Linus's merge and it is correct.
 
-I commented on some of the other patches at the same time I followed up
-to this one...
+Stephen hit this merge conflict in linux-next yesterday and I sent the
+fixup as "[PATCH] tty/serial: atmel_serial: fixup merge conflict".
+Anyway, sorry for the noise it has produced...
+
+For the functions and macros that has been highlighted by Domenico in
+his attempt to compile the atmel_serial driver, they shall come with
+"device tree" git tree pull.
+
+Best regards,
+-- 
+Nicolas Ferre
