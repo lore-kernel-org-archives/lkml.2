@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab1JZOb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:31:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932772Ab1JZObz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:31:55 -0400
-Message-ID: <4EA819CC.100@redhat.com>
-Date: Wed, 26 Oct 2011 16:31:40 +0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] [media] v4l2: punt generated pdf files
-References: <1319635477-9383-1-git-send-email-vapier@gentoo.org> <CAMjpGUfEtLSiJoYG+42aFLnx83Zmzd88MAU1DVYXcBxTpo3wSw@mail.gmail.com>
-In-Reply-To: <CAMjpGUfEtLSiJoYG+42aFLnx83Zmzd88MAU1DVYXcBxTpo3wSw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933254Ab1JZOeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:34:14 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:56321 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932772Ab1JZOeN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 10:34:13 -0400
+Message-ID: <1319639649.3321.11.camel@br98xy6r>
+Subject: [PATCH] kdump: Fix crash_kexec - smp_send_stop race in panic
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: akpm@linux-foundation.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Oct 2011 16:34:09 +0200
+Organization: IBM
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-10-2011 15:33, Mike Frysinger escreveu:
-> On Wed, Oct 26, 2011 at 09:24, Mike Frysinger wrote:
->> These don't belong in the tree, and we have a .gitignore on them already
->> (not sure how these slipped in), so punt the compiled files.
-> 
-> hrm, i thought default git send-email/format-patch didn't include
-> binary updates when deleting in the diff.  not sure what's going on
-> here.  i can resend if people want with the -D flag.
+Hello Andrew,
 
-Nah, not needed. I'll fix the patch when merging it. I probably won't
-be merging this week, as this notebook has not enough power to compile
-the Kernel (and I received a series of 100+ patches on those days).
+After the discussion with Eric and Vivek the following patch
+seems to be a good solution to me. Could you accept this patch?
 
-Thanks,
-Mauro
+When two CPUs call panic at the same time there is a
+possible race condition that can stop kdump. The first
+CPU calls crash_kexec() and the second CPU calls
+smp_send_stop() in panic() before crash_kexec() finished
+on the first CPU. So the second CPU stops the first CPU
+and therefore kdump fails:
+
+1st CPU:
+panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
+
+2nd CPU:
+panic()->crash_kexec()->kexec_mutex already held by 1st CPU
+       ->smp_send_stop()-> stop 1st CPU (stop kdump)
+
+This patch fixes the problem by introducing a spinlock in
+panic that allows only one CPU to process crash_kexec() and
+the subsequent panic code.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ kernel/panic.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
+  */
+ NORET_TYPE void panic(const char * fmt, ...)
+ {
++	static DEFINE_SPINLOCK(panic_lock);
+ 	static char buf[1024];
+ 	va_list args;
+ 	long i, i_next = 0;
+@@ -82,6 +83,13 @@ NORET_TYPE void panic(const char * fmt,
+ #endif
+ 
+ 	/*
++	 * Only one CPU is allowed to execute the panic code from here. For
++	 * multiple parallel invocations of panic all other CPUs will wait on
++	 * the panic_lock. They are stopped afterwards by smp_send_stop().
++	 */
++	spin_lock(&panic_lock);
++
++	/*
+ 	 * If we have crashed and we have a crash kernel loaded let it handle
+ 	 * everything else.
+ 	 * Do we want to call this before we try to display a message?
+
 
