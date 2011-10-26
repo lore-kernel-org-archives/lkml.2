@@ -1,129 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab1JZX76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 19:59:58 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:33059 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753415Ab1JZX7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 19:59:03 -0400
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Oct 2011 19:59:03 EDT
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 2/3] security: create task_free security callback
-Date: Wed, 26 Oct 2011 16:49:15 -0700
-Message-Id: <1319672956-17114-3-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1319672956-17114-1-git-send-email-keescook@chromium.org>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1753618Ab1JZX7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 19:59:44 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41914 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753589Ab1JZX7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 19:59:43 -0400
+Message-ID: <1319673581.21924.31.camel@Joe-Laptop>
+Subject: Re: [PATCH 1/6] Staging: hv: mousevsc: Make  boolean states  boolean
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, dmitry.torokhov@gmail.com,
+        ohering@suse.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.osdl.org, devel@linuxdriverproject.org
+Date: Wed, 26 Oct 2011 16:59:41 -0700
+In-Reply-To: <20111026235054.GA31883@suse.de>
+References: <1319588311-9935-1-git-send-email-kys@microsoft.com>
+	 <1319588392-9982-1-git-send-email-kys@microsoft.com>
+	 <1319587427.14932.7.camel@Joe-Laptop> <20111026060742.GA19973@suse.de>
+	 <1319669211.21924.16.camel@Joe-Laptop> <20111026235054.GA31883@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current LSM interface to cred_free is not sufficient for allowing
-an LSM to track the life and death of a task. This patch adds the
-task_free hook so that an LSM can clean up resources on task death.
+On Thu, 2011-10-27 at 01:50 +0200, Greg KH wrote:
+> On Wed, Oct 26, 2011 at 03:46:51PM -0700, Joe Perches wrote:
+> > On Wed, 2011-10-26 at 08:07 +0200, Greg KH wrote:
+> > > On Tue, Oct 25, 2011 at 05:03:47PM -0700, Joe Perches wrote:
+> > > > On Tue, 2011-10-25 at 17:19 -0700, K. Y. Srinivasan wrote:
+> > > > > Make some state that is boolean in nature, a boolean variable.
+> > > > []
+> > > > > diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+> > > > []
+> > > > @@ -148,7 +148,7 @@ struct  mousevsc_prt_msg {
+> > > > >   */
+> > > > >  struct mousevsc_dev {
+> > > > >  	struct hv_device	*device;
+> > > > > -	unsigned char		init_complete;
+> > > > > +	bool			init_complete;
+> > > > >  	struct mousevsc_prt_msg	protocol_req;
+> > > > >  	struct mousevsc_prt_msg	protocol_resp;
+> > > > >  	/* Synchronize the request/response if needed */
+> > > > > @@ -159,7 +159,7 @@ struct mousevsc_dev {
+> > > > >  	unsigned char		*report_desc;
+> > > > >  	u32			report_desc_size;
+> > > > >  	struct hv_input_dev_info hid_dev_info;
+> > > > > -	int			connected;
+> > > > > +	bool			connected;
+> > > > >  	struct hid_device       *hid_device;
+> > > > >  };
+> > > > One of the bools should be moved to be adjacent to the other.
+> > > For a mouse driver, it really doesn't matter.
+> > 'course it doesn't matter, just like whitespace
+> > doesn't matter.  It's just done for form's sake.
+> Not at all.
+> Whitespace does matter, there is documented proof of that.
+> The fact that you want to move a bool to a different part of a structure
+> really is only your personal choice.  It doesn't matter for size or
+> layout to make this code work better at all to do this.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- include/linux/security.h |    9 +++++++++
- kernel/fork.c            |    1 +
- security/capability.c    |    4 ++++
- security/security.c      |    5 +++++
- 4 files changed, 19 insertions(+), 0 deletions(-)
+Just as what you suggest is your opinion.
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 19d8e04..256befc 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -650,6 +650,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	manual page for definitions of the @clone_flags.
-  *	@clone_flags contains the flags indicating what should be shared.
-  *	Return 0 if permission is granted.
-+ * @task_free:
-+ *	@task task being freed
-+ *	Handle release of task-related resources. (Note that this can be called
-+ *  from interrupt context.)
-  * @cred_alloc_blank:
-  *	@cred points to the credentials.
-  *	@gfp indicates the atomicity of any memory allocations.
-@@ -1500,6 +1504,7 @@ struct security_operations {
- 	int (*dentry_open) (struct file *file, const struct cred *cred);
- 
- 	int (*task_create) (unsigned long clone_flags);
-+	void (*task_free) (struct task_struct *task);
- 	int (*cred_alloc_blank) (struct cred *cred, gfp_t gfp);
- 	void (*cred_free) (struct cred *cred);
- 	int (*cred_prepare)(struct cred *new, const struct cred *old,
-@@ -1762,6 +1767,7 @@ int security_file_send_sigiotask(struct task_struct *tsk,
- int security_file_receive(struct file *file);
- int security_dentry_open(struct file *file, const struct cred *cred);
- int security_task_create(unsigned long clone_flags);
-+void security_task_free(struct task_struct *task);
- int security_cred_alloc_blank(struct cred *cred, gfp_t gfp);
- void security_cred_free(struct cred *cred);
- int security_prepare_creds(struct cred *new, const struct cred *old, gfp_t gfp);
-@@ -2273,6 +2279,9 @@ static inline int security_task_create(unsigned long clone_flags)
- 	return 0;
- }
- 
-+static inline void security_task_free(struct task_struct *task)
-+{ }
-+
- static inline int security_cred_alloc_blank(struct cred *cred, gfp_t gfp)
- {
- 	return 0;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8e6b6f4..6371378 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -190,6 +190,7 @@ void __put_task_struct(struct task_struct *tsk)
- 	WARN_ON(atomic_read(&tsk->usage));
- 	WARN_ON(tsk == current);
- 
-+	security_task_free(tsk);
- 	exit_creds(tsk);
- 	delayacct_tsk_free(tsk);
- 	put_signal_struct(tsk->signal);
-diff --git a/security/capability.c b/security/capability.c
-index 2984ea4..e4206b5 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -359,6 +359,9 @@ static int cap_task_create(unsigned long clone_flags)
- 	return 0;
- }
- 
-+static void cap_task_free(struct task_struct *task)
-+{ }
-+
- static int cap_cred_alloc_blank(struct cred *cred, gfp_t gfp)
- {
- 	return 0;
-@@ -955,6 +958,7 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, file_receive);
- 	set_to_cap_if_null(ops, dentry_open);
- 	set_to_cap_if_null(ops, task_create);
-+	set_to_cap_if_null(ops, task_free);
- 	set_to_cap_if_null(ops, cred_alloc_blank);
- 	set_to_cap_if_null(ops, cred_free);
- 	set_to_cap_if_null(ops, cred_prepare);
-diff --git a/security/security.c b/security/security.c
-index 0c6cc69..49a7227 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -749,6 +749,11 @@ int security_task_create(unsigned long clone_flags)
- 	return security_ops->task_create(clone_flags);
- }
- 
-+void security_task_free(struct task_struct *task)
-+{
-+	security_ops->task_free(task);
-+}
-+
- int security_cred_alloc_blank(struct cred *cred, gfp_t gfp)
- {
- 	return security_ops->cred_alloc_blank(cred, gfp);
--- 
-1.7.5.4
+Whether or not 4 or 8 extra/wasted bytes in
+a struct is important or not is arguable.
+
+I think disaggregating bools is akin to
+disaggregating bitfields.
+
+Not necessarily wrong, just odd.
+
+cheers, Joe
 
