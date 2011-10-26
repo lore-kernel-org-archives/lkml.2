@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590Ab1JZQBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 12:01:23 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60221 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933042Ab1JZQBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 12:01:22 -0400
-Date: Wed, 26 Oct 2011 17:59:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S933595Ab1JZQEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 12:04:24 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:57664 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933019Ab1JZQEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 12:04:23 -0400
+Date: Thu, 27 Oct 2011 03:04:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/vdso changes for v3.2
-Message-ID: <20111026155939.GA5928@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Subject: Re: kgdb-next temporarily moved to github
+Message-Id: <20111027030408.491e95ae8d0177a6b15e8306@canb.auug.org.au>
+In-Reply-To: <4EA5EC67.8000401@windriver.com>
+References: <4EA5EC67.8000401@windriver.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Oct_2011_03_04_08_+1100_Ou3R3gl9vb4L_glo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+--Signature=_Thu__27_Oct_2011_03_04_08_+1100_Ou3R3gl9vb4L_glo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull the latest x86-vdso-for-linus git tree from:
+Hi Jason,
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-vdso-for-linus
+On Mon, 24 Oct 2011 17:53:27 -0500 Jason Wessel <jason.wessel@windriver.com=
+> wrote:
+>
+> I have not been able to get my kernel.org account re-activated as of yet,
+> so I need to move the public dev tree to a different location until that
+> is resolved.
+>=20
+> Can you please point the linux-next kgdb contribution to:
+>=20
+> git://github.com/jwessel/linux-kgdb.git  kgdb-next
 
- Thanks,
+I have switched to that now.  Please let me know if/when you move back to
+kernel.org.
 
-	Ingo
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
------------------->
-Cesar Eduardo Barros (1):
-      x86-64, doc: Remove int 0xcc from entry_64.S documentation
+--Signature=_Thu__27_Oct_2011_03_04_08_+1100_Ou3R3gl9vb4L_glo
+Content-Type: application/pgp-signature
 
-H. Peter Anvin (1):
-      x86, vsyscall: Add missing <asm/fixmap.h> to arch/x86/mm/fault.c
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJOqC94AAoJEECxmPOUX5FEzzIP/3YCI1dOfMYEVqLrpM0YTGtH
+/x7BE5C75Gj9di3TI3qDilWadqvECOVaIIOFcx+ncgfoc0KjbB+7jpk4MkmKKp0W
+zm776LhsuYLHOnhNsJ90gJaoA5ka55CJgNfvjwm2CfJUdBAy2rVm1Ulj3YizCj5M
+P1pqVuItP3xmLsIg76xqPS7S6YXINT4fxuCoST/pY7Lz3DxlgVSHXSeynGsLQBUa
+3BBNtQMEEWdXh+nMOoK9auRNBvyt5wM9irEwMnuqKuAGdPwayZ18FyTzOktUnp2D
+pUSqR+lVBWKfycC+yxe1v/TvmdTX+dlI8rE7lEYDaAoEB5PppsIkAEzS0xyXlIRI
+oPzzBSd+OeuRA0TUxLnAAW26Jl/A8dghFP7qX64PbRLjNM2Cy7zR3QJyuB1LXeZR
+4j0wQOrPxQZARX0i5v6WNJx0lbBQXNvlcnvRaO4stOO0cCNddQ85Gc2tUPE6ECE3
+S31oqirZv/nGh/PJaIBrsQ0waUoEqoZbNGZUGY+vEZ/iolP/yCxZDWEc20eNk4EW
+LNLbteGkRoyU8bglOnHGHDe5Itx5hvLvMuBPX1jMzJcrlU3UAS5YDH3xojx4QGZL
+RV0KpjZZPjq1Pnngtv5Rt3x67K4eRAd4r0ZPC/F1zkCCNSSRKBUP+h4/CFZaCfiQ
+OUyeOgObbjMznNBVaKWK
+=gQrL
+-----END PGP SIGNATURE-----
 
- Documentation/x86/entry_64.txt |    3 ---
- arch/x86/mm/fault.c            |    1 +
- 2 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
-index 7869f14..bc7226e 100644
---- a/Documentation/x86/entry_64.txt
-+++ b/Documentation/x86/entry_64.txt
-@@ -27,9 +27,6 @@ Some of these entries are:
-    magically-generated functions that make their way to do_IRQ with
-    the interrupt number as a parameter.
- 
-- - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
--   vsyscall emulation.
--
-  - APIC interrupts: Various special-purpose interrupts for things
-    like TLB shootdown.
- 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 247aae3..f2d4c9d 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -17,6 +17,7 @@
- #include <asm/traps.h>			/* dotraplinkage, ...		*/
- #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
- #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
-+#include <asm/fixmap.h>			/* VSYSCALL_START		*/
- 
- /*
-  * Page fault error code bits:
+--Signature=_Thu__27_Oct_2011_03_04_08_+1100_Ou3R3gl9vb4L_glo--
