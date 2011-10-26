@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab1JZTyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 15:54:47 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33716 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab1JZTyp (ORCPT
+	id S1752463Ab1JZTzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 15:55:14 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54365 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab1JZTzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 15:54:45 -0400
-Message-ID: <4EA86598.1060604@linux.vnet.ibm.com>
-Date: Thu, 27 Oct 2011 01:25:04 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
+	Wed, 26 Oct 2011 15:55:12 -0400
+Date: Wed, 26 Oct 2011 12:55:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/13] block, cfq: unlink cfq_io_context's immediately
+Message-ID: <20111026195506.GD24261@google.com>
+References: <1319593719-19132-1-git-send-email-tj@kernel.org>
+ <1319593719-19132-11-git-send-email-tj@kernel.org>
+ <20111026194857.GF355@redhat.com>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
-        Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xen <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 5/5] kvm guest : pv-ticketlocks support for linux
- guests running on KVM hypervisor
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190753.16364.31164.sendpatchset@oc5400248562.ibm.com> <4EA7012B.5040808@goop.org> <4EA85E32.3080107@linux.vnet.ibm.com> <4EA86387.5040108@goop.org>
-In-Reply-To: <4EA86387.5040108@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111026194857.GF355@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2011 01:16 AM, Jeremy Fitzhardinge wrote:
-> On 10/26/2011 12:23 PM, Raghavendra K T wrote:
->> On 10/26/2011 12:04 AM, Jeremy Fitzhardinge wrote:
->>> On 10/23/2011 12:07 PM, Raghavendra K T wrote:
->
->> our current aim was to have before any printk happens.
->> So I  'll trim the comment to somethings like :
->>
->> Setup pv_lock_ops to exploit KVM_FEATURE_WAIT_FOR_KICK if present.
->> This needs to be setup early in boot. ?
->
-> You can hook the smp_ops.smp_prepare_cpus call and initialize it there.
-> There's no need to add new hook code.
->
+Hello,
 
-Ok.. Thanks for pointer. 'll check on that.
+On Wed, Oct 26, 2011 at 03:48:57PM -0400, Vivek Goyal wrote:
+> > +		ioc_release_depth_inc(cic->q);
+> > +		cic->exit(cic);
+> > +		cic->release(cic);
+> > +		ioc_release_depth_dec(cic->q);
+> 
+> cic->release(cic) can free the cic? Are we accessing cic after freeing it
+> up in ioc_release_depth_dec(cic->q);
 
->      J
->
+As cic is RCU freed and we're running w/ irq disabled, this shouldn't
+blow up, but yeah, I'll update it to use local variable instead.
 
+Thanks.
+
+-- 
+tejun
