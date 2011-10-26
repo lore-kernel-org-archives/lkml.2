@@ -1,136 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab1JZLk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 07:40:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33726 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932772Ab1JZLkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 07:40:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Subject: Re: [PATCH] PCI / ACPI: Make acpiphp ignore root bridges using PCIe native hotplug
-Date: Wed, 26 Oct 2011 13:42:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PCI <linux-pci@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201110220043.38635.rjw@sisk.pl> <201110251525.27446.rjw@sisk.pl> <4EA7543E.7050009@jp.fujitsu.com>
-In-Reply-To: <4EA7543E.7050009@jp.fujitsu.com>
+	id S932822Ab1JZLmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 07:42:50 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53269 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932772Ab1JZLmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 07:42:46 -0400
+X-Sasl-enc: hegBbBN9qmev9OzAky5RWKe8X2hCMd6zddmgDWb+4i7k 1319629365
+Date: Wed, 26 Oct 2011 13:42:36 +0200
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/serial driver patches for 3.2
+Message-ID: <20111026114236.GA22180@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110261342.51843.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 26, 2011, Kenji Kaneshige wrote:
-> (2011/10/25 22:25), Rafael J. Wysocki wrote:
-> > On Tuesday, October 25, 2011, Kenji Kaneshige wrote:
-> >> Looks good.
-> >> This is also needed for SHPC native hotplug.
-> > 
-> > I don't think so, we still leave the SHPC _OSC for the driver to take care
-> > of (which may not be the right thing, but I don't feel confident enough to
-> > decide :-)).
-> 
-> I think of the case that acpiphp driver is loaded after shpchp driver is unloaded.
-> Once native hotplug control is granted to OS, there is no way to return the control
-> to firmware. So once shpchp gets the native hotplug control on a given root bridge,
-> acpiphp should not try to handle the hotplug slots under it.
 
-Good point, but that would be a separate patch I think?
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Rafael
+Here is the tty/serial driver patchset for the 3.2 tree.
+
+Nothing major here, with a lot of good cleanup of the tty layer from
+Jiri Slaby, and some driver updates and additions.
+
+Note, you will get a merge error in the following files when merging
+with your tree:
+	drivers/tty/serial/8250_pci.c
+	drivers/tty/serial/atmel_serial.c
+
+The one in 8250_pci.c is trivial to fix, the atmel_serial one isn't as
+easy, but I'm sure you can figure it out :)  If you want me to do the
+merge for it, I'll be glad to do so, just let me know.
+
+Please pull from:
+	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git tty-next
+
+All of these patches have been in the -mm and -next trees for a while.
+
+Patches will be sent to the linux-serial mailing list, if anyone wants
+to see them.
+
+thanks,
+
+greg k-h
+
+------------
 
 
-> >> (2011/10/22 7:43), Rafael J. Wysocki wrote:
-> >>> From: Rafael J. Wysocki<rjw@sisk.pl>
-> >>>
-> >>> If the kernel has requested control of the PCIe native hotplug
-> >>> feature for a given root complex, the acpiphp driver should not try
-> >>> to handle that root complex and it should leave it to pciehp.
-> >>> Failing to do so causes problems to happen if acpiphp is loaded
-> >>> before pciehp on such systems.
-> >>>
-> >>> To address this issue make find_root_bridges() ignore PCIe root
-> >>> complexes with PCIe native hotplug enabled and make add_bridge()
-> >>> return error code if PCIe native hotplug is enabled for the given
-> >>> root port.  This causes acpiphp to refuse to load if PCIe native
-> >>> hotplug is enabled for all complexes and to refuse binding to
-> >>> the root complexes with PCIe native hotplug is enabled.
-> >>>
-> >>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
-> >>> ---
-> >>>    drivers/pci/hotplug/acpiphp_glue.c |   29 ++++++++++++++++++++++++-----
-> >>>    1 file changed, 24 insertions(+), 5 deletions(-)
-> >>>
-> >>> Index: linux/drivers/pci/hotplug/acpiphp_glue.c
-> >>> ===================================================================
-> >>> --- linux.orig/drivers/pci/hotplug/acpiphp_glue.c
-> >>> +++ linux/drivers/pci/hotplug/acpiphp_glue.c
-> >>> @@ -458,8 +458,17 @@ static int add_bridge(acpi_handle handle
-> >>>    {
-> >>>    	acpi_status status;
-> >>>    	unsigned long long tmp;
-> >>> +	struct acpi_pci_root *root;
-> >>>    	acpi_handle dummy_handle;
-> >>>
-> >>> +	/*
-> >>> +	 * We shouldn't use this bridge if PCIe native hotplug control has been
-> >>> +	 * granted by the BIOS for it.
-> >>> +	 */
-> >>> +	root = acpi_pci_find_root(handle);
-> >>> +	if (root&&   (root->osc_control_set&   OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-> >>> +		return -ENODEV;
-> >>> +
-> >>>    	/* if the bridge doesn't have _STA, we assume it is always there */
-> >>>    	status = acpi_get_handle(handle, "_STA",&dummy_handle);
-> >>>    	if (ACPI_SUCCESS(status)) {
-> >>> @@ -1297,13 +1306,23 @@ static void handle_hotplug_event_func(ac
-> >>>    static acpi_status
-> >>>    find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
-> >>>    {
-> >>> +	struct acpi_pci_root *root;
-> >>>    	int *count = (int *)context;
-> >>>
-> >>> -	if (acpi_is_root_bridge(handle)) {
-> >>> -		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> >>> -				handle_hotplug_event_bridge, NULL);
-> >>> -			(*count)++;
-> >>> -	}
-> >>> +	if (!acpi_is_root_bridge(handle))
-> >>> +		return AE_OK;
-> >>> +
-> >>> +	root = acpi_pci_find_root(handle);
-> >>> +	if (!root)
-> >>> +		return AE_OK;
-> >>> +
-> >>> +	if (root->osc_control_set&   OSC_PCI_EXPRESS_NATIVE_HP_CONTROL)
-> >>> +		return AE_OK;
-> >>> +
-> >>> +	(*count)++;
-> >>> +	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> >>> +				    handle_hotplug_event_bridge, NULL);
-> >>> +
-> >>>    	return AE_OK ;
-> >>>    }
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>
-> >>
-> >>
-> >>
-> > 
-> > 
-> 
-> 
-> 
+ Documentation/devicetree/bindings/serial/rs485.txt |   31 +
+ .../devicetree/bindings/tty/serial/atmel-usart.txt |   27 +
+ .../bindings/tty/serial/snps-dw-apb-uart.txt       |   25 +
+ Documentation/serial/serial-rs485.txt              |    8 +
+ arch/arm/Kconfig                                   |    1 -
+ arch/arm/mach-s3c64xx/dev-uart.c                   |   60 +--
+ arch/arm/mach-s3c64xx/include/mach/irqs.h          |   30 -
+ arch/arm/mach-s3c64xx/irq.c                        |   25 -
+ arch/arm/plat-s5p/Kconfig                          |    1 -
+ arch/arm/plat-s5p/dev-uart.c                       |   84 +--
+ arch/arm/plat-s5p/include/plat/irqs.h              |   35 -
+ arch/arm/plat-s5p/irq.c                            |   34 -
+ arch/arm/plat-samsung/Kconfig                      |    5 -
+ arch/arm/plat-samsung/Makefile                     |    1 -
+ arch/arm/plat-samsung/include/plat/regs-serial.h   |    5 +
+ arch/arm/plat-samsung/irq-uart.c                   |   96 ---
+ arch/h8300/Kconfig                                 |    2 +-
+ arch/mips/pmc-sierra/msp71xx/msp_serial.c          |   73 ++-
+ arch/powerpc/include/asm/udbg.h                    |    1 +
+ arch/powerpc/kernel/udbg.c                         |    2 +
+ arch/x86/platform/mrst/mrst.c                      |    3 +
+ drivers/isdn/i4l/isdn_tty.c                        |    2 +-
+ drivers/parport/parport_pc.c                       |    3 +
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ drivers/{tty =3D> staging}/serial/68360serial.c      |    0
+ drivers/staging/serial/Kconfig                     |   16 +
+ drivers/staging/serial/Makefile                    |    1 +
+ drivers/staging/serial/TODO                        |    6 +
+ drivers/tty/Kconfig                                |   34 +
+ drivers/tty/Makefile                               |    1 +
+ drivers/tty/amiserial.c                            |   12 +-
+ drivers/tty/cyclades.c                             |   14 +-
+ drivers/tty/ehv_bytechan.c                         |  881 ++++++++++++++++=
+++++
+ drivers/tty/hvc/hvc_console.c                      |    9 +-
+ drivers/tty/hvc/hvc_irq.c                          |    2 +-
+ drivers/tty/hvc/hvcs.c                             |    4 +-
+ drivers/tty/hvc/hvsi.c                             |    2 +-
+ drivers/tty/isicom.c                               |    2 +-
+ drivers/tty/mxser.c                                |   13 +-
+ drivers/tty/n_gsm.c                                |   64 +-
+ drivers/tty/pty.c                                  |   26 +-
+ drivers/tty/serial/68328serial.c                   |   37 +-
+ drivers/tty/serial/68328serial.h                   |    1 -
+ drivers/tty/serial/8250.c                          |  132 ++--
+ drivers/tty/serial/8250_dw.c                       |  194 +++++
+ drivers/tty/serial/8250_pci.c                      |   42 +
+ drivers/tty/serial/Kconfig                         |   30 +-
+ drivers/tty/serial/Makefile                        |    4 +-
+ drivers/tty/serial/altera_jtaguart.c               |    2 +-
+ drivers/tty/serial/altera_uart.c                   |    2 +-
+ drivers/tty/serial/apbuart.c                       |    1 +
+ drivers/tty/serial/atmel_serial.c                  |  129 +++-
+ drivers/tty/serial/bfin_sport_uart.c               |    2 +-
+ drivers/tty/serial/{bfin_5xx.c =3D> bfin_uart.c}     |   65 +-
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c        |    1 +
+ drivers/tty/serial/crisv10.c                       |   30 +-
+ drivers/tty/serial/dz.c                            |    1 +
+ drivers/tty/serial/icom.c                          |    2 +-
+ drivers/tty/serial/imx.c                           |   10 +-
+ drivers/tty/serial/ioc3_serial.c                   |    1 +
+ drivers/tty/serial/ioc4_serial.c                   |    1 +
+ drivers/tty/serial/jsm/jsm.h                       |   10 -
+ drivers/tty/serial/jsm/jsm_driver.c                |   19 -
+ drivers/tty/serial/jsm/jsm_neo.c                   |   29 +-
+ drivers/tty/serial/jsm/jsm_tty.c                   |   94 +--
+ drivers/tty/serial/lantiq.c                        |    6 +-
+ drivers/tty/serial/m32r_sio.c                      |    1 +
+ drivers/tty/serial/max3100.c                       |    2 +
+ drivers/tty/serial/max3107.c                       |    2 +
+ drivers/tty/serial/mcf.c                           |    2 +-
+ drivers/tty/serial/mfd.c                           |   49 ++-
+ drivers/tty/serial/mpc52xx_uart.c                  |    3 +-
+ drivers/tty/serial/mrst_max3110.c                  |  115 ++--
+ drivers/tty/serial/mrst_max3110.h                  |    1 +
+ drivers/tty/serial/msm_serial.c                    |    2 -
+ drivers/tty/serial/msm_serial_hs.c                 |    2 +
+ drivers/tty/serial/mux.c                           |    2 +
+ drivers/tty/serial/nwpserial.c                     |    1 +
+ drivers/tty/serial/pch_uart.c                      |    2 +
+ drivers/tty/serial/pxa.c                           |   20 +
+ drivers/tty/serial/samsung.c                       |  107 +++-
+ drivers/tty/serial/samsung.h                       |    1 +
+ drivers/tty/serial/sb1250-duart.c                  |    1 +
+ drivers/tty/serial/serial_core.c                   |   72 +--
+ drivers/tty/serial/serial_ks8695.c                 |    9 +-
+ drivers/tty/serial/serial_txx9.c                   |    2 +
+ drivers/tty/serial/sh-sci.c                        |    2 +-
+ drivers/tty/serial/sn_console.c                    |    3 +-
+ drivers/tty/serial/timbuart.c                      |    2 +
+ drivers/tty/serial/uartlite.c                      |    1 +
+ drivers/tty/serial/ucc_uart.c                      |    4 +-
+ drivers/tty/serial/xilinx_uartps.c                 |    4 +-
+ drivers/tty/serial/zs.c                            |    1 +
+ drivers/tty/synclink.c                             |    1 -
+ drivers/tty/synclinkmp.c                           |    6 +-
+ drivers/tty/tty_io.c                               |   50 +-
+ drivers/tty/tty_ioctl.c                            |   17 +
+ drivers/tty/tty_ldisc.c                            |    1 -
+ drivers/tty/tty_mutex.c                            |   12 -
+ drivers/tty/tty_port.c                             |    2 +-
+ drivers/tty/vt/keyboard.c                          |    3 +-
+ drivers/tty/vt/selection.c                         |    4 +-
+ drivers/tty/vt/vt.c                                |    2 +-
+ include/linux/serial.h                             |    1 +
+ include/linux/serial_8250.h                        |    2 +
+ include/linux/serial_core.h                        |   10 +-
+ include/linux/serial_reg.h                         |    1 +
+ include/linux/tty.h                                |   26 +-
+ net/irda/ircomm/ircomm_tty.c                       |    2 +-
+ 110 files changed, 2102 insertions(+), 940 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/serial/rs485.txt
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/atmel-usar=
+t.txt
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/snps-dw-ap=
+b-uart.txt
+ delete mode 100644 arch/arm/plat-samsung/irq-uart.c
+ rename drivers/{tty =3D> staging}/serial/68360serial.c (100%)
+ create mode 100644 drivers/staging/serial/Kconfig
+ create mode 100644 drivers/staging/serial/Makefile
+ create mode 100644 drivers/staging/serial/TODO
+ create mode 100644 drivers/tty/ehv_bytechan.c
+ create mode 100644 drivers/tty/serial/8250_dw.c
+ rename drivers/tty/serial/{bfin_5xx.c =3D> bfin_uart.c} (97%)
 
+---------------
+
+Alan Cox (3):
+      n_gsm: update TODO list
+      n_gsm: Send CLD command on exit
+      max3110: Fix up port->tty backreferencing
+
+Alexander Shishkin (1):
+      max3110: add sysrq support
+
+Andi Kleen (1):
+      serial: mfd: Initconst section fixes
+
+Bernhard Roth (1):
+      atmel_serial: RS485: receiving enabled when sending data
+
+Dan Carpenter (1):
+      TTY: snyclinkmp: forever loop in tx_load_dma_buffer()
+
+Dirk Brandewie (1):
+      max3110: wake up fixes
+
+Doug Anderson (1):
+      TTY: serial_core: Fix crash if DCD drop during suspend
+
+Edwin van Vliet (1):
+      drivers/tty/synclink: remove double comment
+
+Feng Tang (1):
+      x86/mrst: Add platform data for Max3110 devices
+
+Geert Uytterhoeven (1):
+      keyboard: Do not include <linux/irq.>
+
+Greg Kroah-Hartman (3):
+      Revert "tty: of_serial: add support for the DesignWare 8250"
+      Revert "tty: serial8250: add helpers for the DesignWare 8250"
+      Revert "TTY: call tty_driver_lookup_tty unconditionally"
+
+Hui Wang (1):
+      serial/imx: support to handle break character
+
+Jamie Iles (9):
+      tty: serial: allow ports to override the irq handler
+      tty: serial8250: allow platforms to override irq handler
+      mips: msp71xx/serial: convert to pr_foo() helpers
+      mips: msp71xx/serial: add workaround for DW UART
+      tty: serial8250: remove UPIO_DWAPB{,32}
+      tty: serial8250: add helpers for the DesignWare 8250
+      tty: of_serial: add support for the DesignWare 8250
+      tty: 8250: export serial8250_handle_irq
+      tty: add a DesignWare 8250 driver
+
+Jiri Kosina (1):
+      parport_pc: release IO region properly if unsupported ITE887x card is=
+ found
+
+Jiri Slaby (18):
+      TTY: serial, remove BTM from wait_until_sent
+      TTY: msm_serial, remove unneeded console set
+      TTY: serial, remove tasklet for tty_wakeup
+      TTY: ami_serial, remove BTM from wait_until_sent
+      TTY: remove tty_locked
+      TTY: mxser+cyclades remove wait_until_sent debug code
+      TTY: serial, use ASYNCB_CLOSING in uart_close
+      TTY: serial, move locking in uart_close
+      TTY: define tty_wait_until_sent_from_close
+      TTY: use tty_wait_until_sent_from_close in tty_port_close_start
+      TTY: use tty_wait_until_sent_from_close in other drivers
+      TTY: serial, remove dead code from 68328
+      TTY: serial, fix includes in some drivers
+      TTY: serial, move 68360 driver to staging
+      TTY: drop driver reference in tty_open fail path
+      TTY: make tty_add_file non-failing
+      TTY: pty, release tty in all ptmx_open fail paths
+      TTY: call tty_driver_lookup_tty unconditionally
+
+Konrad Rzeszutek Wilk (1):
+      8250: ratelimit LSR safety check engaged warning.
+
+Kristen Carlson Accardi (1):
+      hsu: add runtime pm support
+
+Kukjin Kim (1):
+      tty: Add support serial for EXYNOS4212 SoC
+
+Marcus Folkesson (1):
+      serial: pxa: work around for errata #20
+
+Mathias Krause (1):
+      tty: clearify structure initializer in notify_write()
+
+Miche Baker-Harvey (1):
+      hvc_console: display printk messages on console.
+
+Mikhail Kshevetskiy (2):
+      tty/n_gsm: fix a bug in gsm_dlci_data_output (adaption =3D 2 case)
+      tty/n_gsm: avoid fifo overflow in gsm_dlci_data_output
+
+Nicolas Ferre (6):
+      tty/serial: RS485 bindings for device tree
+      tty/serial: atmel_serial: change platform_data variable name
+      tty/serial: atmel_serial: whitespace and braces modifications
+      tty/serial: atmel_serial: auto-enumerate ports
+      tty/serial: atmel_serial: add device tree support
+      tty/serial: atmel_serial: bootconsole removed from auto-enumerates
+
+Nikola Diklic-Perin (1):
+      tty/n_gsm: fix bug in tiocmset
+
+Ning Jiang (1):
+      serial-core: power up uart port early before we do set_termios when r=
+esuming
+
+Nobuhiro Iwamatsu (1):
+      TTY: serial: Move mutex_unlock in uart_close function
+
+Paul Bolle (1):
+      h8300: drivers/serial/Kconfig was moved
+
+Sonic Zhang (3):
+      serial:blackfin: Correct coding style in bfin serial driver.
+      serial:blackfin: rename Blackfin serial driver to bfin_uart.c
+      serial:bfin_uart: Put TX IRQ in individual platform resource.
+
+S=F8ren Holm (1):
+      serial: Support the EFR-register of XR1715x uarts.
+
+Thadeu Lima de Souza Cascardo (3):
+      jsm: remove remaining flip buffer code
+      jsm: remove buggy write queue
+      jsm: print byte we are dequeing
+
+Thomas Abraham (2):
+      serial: samsung: Add unified interrupt handler for s3c64xx and later =
+SoC's
+      ARM: SAMSUNG: Remove uart irq handling from plaform code
+
+Thomas Meyer (1):
+      tty: Support compat_ioctl get/set termios_locked
+
+Timur Tabi (3):
+      tty/powerpc: introduce the ePAPR embedded hypervisor byte channel dri=
+ver
+      tty/powerpc: fix build break with ehv_bytechan.c on allyesconfig
+      drivers/tty: don't use the byte channel handle as a parameter in ehv_=
+bytechan.c
+
+Tomoya MORINAGA (1):
+      8250_pci: Fix kernel panic when pch_uart is disabled
+
+WANG Cong (2):
+      cris: fix a build error in drivers/tty/serial/crisv10.c
+      cris: lower the printk level in cris serial driver
+
+Yong Zhang (1):
+      TTY: irq: Remove IRQF_DISABLED
+
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAk6n8iwACgkQMUfUDdst+yk8HACeNHFjbzDbz5iSaJhAU9vc49vm
+f/QAn1VGXeswrkFYg4Ijk1XRnfxDD3Qv
+=YJQJ
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
