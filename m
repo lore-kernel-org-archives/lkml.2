@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab1JZGVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 02:21:24 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10979 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab1JZGVX convert rfc822-to-8bit (ORCPT
+	id S1754237Ab1JZGVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 02:21:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12958 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1JZGVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 02:21:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 25 Oct 2011 23:21:16 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Chanho Park <chanho61.park@samsung.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Kyungmin Park <kyungmin.park@samsung.com>
-Date: Tue, 25 Oct 2011 23:21:13 -0700
-Subject: RE: [PATCH] drivers: pinctrl: add a pin_base for sparse gpio-ranges
-Thread-Topic: [PATCH] drivers: pinctrl: add a pin_base for sparse gpio-ranges
-Thread-Index: AcyTlt07UXZp9UagRbu8use0Yme9FAAEBtnA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B452D@HQMAIL01.nvidia.com>
-References: <1319602943-17946-1-git-send-email-chanho61.park@samsung.com>
-In-Reply-To: <1319602943-17946-1-git-send-email-chanho61.park@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Oct 2011 02:21:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=hrYsgxcaKd4pwW7RTjbfsjWCD7llt/ZEEY/JvApw/dDjlU1uMjnz2HD2WpFY5DjWC
+	1HU9t0iA2RiVwAhexQ3Mw==
+Date: Tue, 25 Oct 2011 23:21:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Eial Czerwacki <eial@scalemp.com>
+cc: linux-kernel@vger.kernel.org,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: Re: [PATCH] APICID: Avoid false sharing on the read mostly
+ x86_cpu_to_apicid
+In-Reply-To: <4EA6A265.1080506@scalemp.com>
+Message-ID: <alpine.DEB.2.00.1110252318090.20273@chino.kir.corp.google.com>
+References: <4EA66960.7050907@scalemp.com> <9B14D1490DDECA4E974F6B9FC9EBAB3140CD274367@VMBX108.ihostexchange.net> <4EA6A265.1080506@scalemp.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chanho Park wrote at Tuesday, October 25, 2011 10:22 PM:
-> This patch enables mapping a base offset of gpio ranges with
-> a pin offset even if does'nt matched. A base of pinctrl_gpio_range
-> means a base offset of gpio. However, we cannot convert gpio to pin
-> number for sparse gpio ranges just only using a gpio base offset.
-> We can convert a gpio to real pin number(even if not matched) using
-> a new pin_base which means a base pin offset of requested gpio range.
-...
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-...
-> @@ -289,38 +291,12 @@ So this complex system has one pin controller handling two different
->  GPIO chips. Chip a has 16 pins and chip b has 8 pins. They are mapped in
->  the global GPIO pin space at:
+On Tue, 25 Oct 2011, Eial Czerwacki wrote:
+
+> Avoid false sharing on the read mostly x86_cpu_to_apicid by moving it to
+> __read_mostly section.
+
+x86_cpu_to_apicid used to be in .init.data and now it's never freed after 
+boot?
+
+> The per-cpu area is write and read and this symbol shows up high on ipi
+> intensive/x86_cpu_to_apicid load.
 > 
-> -chip a: [32 .. 47]
-> -chip b: [48 .. 55]
-> -
-> -When GPIO-specific functions in the pin control subsystem are called, these
-> -ranges will be used to look up the apropriate pin controller by inspecting
-> -and matching the pin to the pin ranges across all controllers. When a
-> -... [ quit a few lines of documentation removed]
-> -(If the GPIO subsystem is ever refactored to use a local per-GPIO controller
-> -pin space, this mapping will need to be augmented accordingly.)
-> -
-> +chip a:
-> +	gpio-range : [32 .. 47]
-> +	pin-range  : [32 .. 47]
-> +chip b:
-> +	gpio-range : [48 .. 55]
-> +	pin-range  : [64 .. 71]
+> Signed-off-by: Eial Czerwacki<eial@scalemp.com>
+> Signed-off-by: Shai Fultheim<shai@scalemp.com>
+> Author: Ravikiran Thirumalai<kiran@scalex86.org>
 
-I'm all for replacing the example here with something more complete, but
-removing all that text from the documentation doesn't seem right.
+If the author isn't you, then the patch should start with a single line 
+that says "From: name <email>" of the author followed by a blank line.  
+It's also strange that the author doesn't have a sign-off line.
 
-...
-> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-> index 90dd28b..7768e44 100644
-> --- a/include/linux/pinctrl/pinctrl.h
-> +++ b/include/linux/pinctrl/pinctrl.h
-> @@ -127,6 +127,7 @@ struct pinctrl_pin_desc {
->   * @name: a name for the chip in this range
->   * @id: an ID number for the chip in this range
->   * @base: base offset of the GPIO range
-> + * @pin_base: base pin offset of the GPIO range
+Your email client also has corrupted the inline patch, please see 
+Documentation/email-clients.txt.
 
-This may be bike-shedding, but I'd tend to call this "gpio_base", since
-it's the first "gpio" number of this range, not the first "pin" number
-("pins" are used in the pinctrl subsystem, but "gpios" by the GPIO
-Subsystem)
+And, finally, please send this to the x86 maintainers once fixed.  See 
+./scripts/get_maintainers.pl <your patch>.
 
--- 
-nvpublic
+> Index: b/arch/x86/include/asm/smp.h
+> ===================================================================
+> --- a/arch/x86/include/asm/smp.h	2010-06-01 09:56:03.000000000 -0700
+> +++ b/arch/x86/include/asm/smp.h	2010-06-02 15:59:21.000000000 -0700
+> @@ -36,7 +36,8 @@ static inline struct cpumask *cpu_core_m
+>   	return per_cpu(cpu_core_map, cpu);
+>   }
+> 
+> -DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
+> +extern u16 x86_cpu_to_apicid[NR_CPUS];
+> +
+>   DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
+> 
+>   /* Static state in head.S used to set up a CPU */
+> @@ -142,7 +143,7 @@ void native_send_call_func_ipi(const str
+>   void native_send_call_func_single_ipi(int cpu);
+> 
+>   void smp_store_cpu_info(int id);
+> -#define cpu_physical_id(cpu)	per_cpu(x86_cpu_to_apicid, cpu)
+> +#define cpu_physical_id(cpu)	x86_cpu_to_apicid[cpu]
+> 
+>   /* We don't mark CPUs online until __cpu_up(), so we need another measure */
+>   static inline int num_booting_cpus(void)
+> Index: b/arch/x86/kernel/acpi/boot.c
+> ===================================================================
+> --- a/arch/x86/kernel/acpi/boot.c	2010-06-01 09:56:03.000000000 -0700
+> +++ b/arch/x86/kernel/acpi/boot.c	2010-06-02 15:59:21.000000000 -0700
+> @@ -568,7 +568,7 @@ EXPORT_SYMBOL(acpi_map_lsapic);
+> 
+>   int acpi_unmap_lsapic(int cpu)
+>   {
+> -	per_cpu(x86_cpu_to_apicid, cpu) = -1;
+> +	x86_cpu_to_apicid[cpu] = -1;
+>   	set_cpu_present(cpu, false);
+>   	num_processors--;
+> 
 
+Shouldn't this be BAD_APICID?  Not sure where we check for -1.
