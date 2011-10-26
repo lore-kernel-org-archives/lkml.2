@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519Ab1JZQ7C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 12:59:02 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43334 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889Ab1JZQ7A (ORCPT
+	id S933601Ab1JZRBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:01:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55509 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932953Ab1JZRBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 12:59:00 -0400
+	Wed, 26 Oct 2011 13:01:38 -0400
+Date: Wed, 26 Oct 2011 15:01:33 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: furat.afram@gmail.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] perf probe:fix sigsegv in adding nonexistent event
+Message-ID: <20111026170133.GD9467@ghostprotocols.net>
+References: <1319600345-29311-1-git-send-email-furat.afram@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111026135432.GA31917@thinkpad-t410>
-References: <1316555754-25949-1-git-send-email-seth.forshee@canonical.com>
-	<20110921153137.GA26436@srcf.ucam.org>
-	<20110921161043.GC29983@thinkpad-t410>
-	<20111026135432.GA31917@thinkpad-t410>
-Date: Wed, 26 Oct 2011 10:58:58 -0600
-Message-ID: <CAGdLNWGwXGxJmOd8sKtDps2WpgGUGYvuriHjTQqY7kH_v5DtsA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] toshiba_acpi: Cleanup and TOS1900 device support
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319600345-29311-1-git-send-email-furat.afram@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I managed to find some volunteers with machines that use the GHCI
-> interface to do some regression testing for me. They aren't exactly
-> older hardware, all of them with TOS6208 and being made within the last
-> 2 or 3 years. But it's the best I could do.
+Em Tue, Oct 25, 2011 at 08:39:05PM -0700, furat.afram@gmail.com escreveu:
+> From: Furat Afram <furat.afram@gmail.com>
+> 
+> pref probe crashes when trying to add nonexistent event
 
-Great, I was planing on buying an older laptop from eBay, so I could test
-my changes on "older" hardware, I might still get it, "to eat my own
-cookies".
+Can you provide a backtrace of such crash? I'm having difficulty to
+figure out how the patch provided will fix perf probe.
 
->
-> None of the machines tested showed any regressions as a result of these
-> patches. I also got testing of using the INFO method to read hotkey
-> scancodes, and that's working on those machines as well. (I did however
-> find that I had to reintroduce the global toshiba_acpi pointer for the
-> i8042 filter, since it doesn't have any mechanism for passing private
-> data to the callback.)
-
-Great news, hope to see your changes merged Seth
-
-
-Saludos
-Azael
-
-
--- 
--- El mundo apesta y vosotros apestais tambien --
+- Arnaldo
+ 
+> Signed-off-by: Furat Afram <furat.afram@gmail.com>
+> ---
+>  tools/perf/util/symbol.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 40eeaf0..ad0c79b 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -636,14 +636,18 @@ static int dso__load_all_kallsyms(struct dso *dso, const char *filename,
+>  static int dso__split_kallsyms(struct dso *dso, struct map *map,
+>  			       symbol_filter_t filter)
+>  {
+> -	struct map_groups *kmaps = map__kmap(map)->kmaps;
+> -	struct machine *machine = kmaps->machine;
+> +	struct map_groups *kmaps;
+> +	struct machine *machine;
+>  	struct map *curr_map = map;
+>  	struct symbol *pos;
+>  	int count = 0, moved = 0;	
+>  	struct rb_root *root = &dso->symbols[map->type];
+>  	struct rb_node *next = rb_first(root);
+>  	int kernel_range = 0;
+> +	kmaps = map__kmap(map)->kmaps;
+> +	if (kmaps == NULL)
+> +		return -1;
+> +	machine = kmaps->machine;
+>  
+>  	while (next) {
+>  		char *module;
+> -- 
+> 1.7.6.4
