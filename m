@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab1JZBDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 21:03:20 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52210 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab1JZBCR (ORCPT
+	id S1754306Ab1JZBIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 21:08:25 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:2109 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754177Ab1JZBIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 21:02:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com, jgarzik@pobox.com, davem@davemloft.net,
-        hch@infradead.org
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/6] block: allow blk_execute_rq_nowait() to be called from IRQ context
-Date: Tue, 25 Oct 2011 18:02:03 -0700
-Message-Id: <1319590927-15791-3-git-send-email-tj@kernel.org>
+	Tue, 25 Oct 2011 21:08:23 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, Earl Chew <earl_chew@agilent.com>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] exec: log when wait_for_dump_helpers aborts due to a signal
+Date: Tue, 25 Oct 2011 18:07:08 -0700
+Message-Id: <1319591228-20397-1-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1319590927-15791-1-git-send-email-tj@kernel.org>
-References: <1319590927-15791-1-git-send-email-tj@kernel.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently blk_execute_rq_nowait() directly calls __blk_run_queue() and
-thus must be called from sleepable context.  This patch updates the
-function such that it can be called from non-sleepable context and
-schedules async execution in such cases.  This will be used to
-unexport elv_add_request().
+To allow coredump pipe readers to look at /proc/<pid> of the crashing
+process, the kernel waits for the reader to exit. However, the wait
+is silently aborted if the crashing process is signalled.
 
-While at it, add FIXME comment for REQ_TYPE_PM_RESUME special case.
+This patch, logs whenever wait_for_dump_helpers is aborted or in order
+to assist in debugging cases where /proc/<pid> is gone.
 
--v2: hch pointed out that blk_execute_rq_nowait() can be hot path for
-     some drivers.  Retained direct execution from sleepable context.
+Alternatively, we may want to consider not aborting on a signal. You
+could always break the loop by killing the reader process.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>
+Reference: http://crosbug.com/21559
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Earl Chew <earl_chew@agilent.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org
 ---
- block/blk-exec.c |   29 ++++++++++++++++++++++-------
- 1 files changed, 22 insertions(+), 7 deletions(-)
+ fs/exec.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index a1ebceb..b686f2b 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -49,6 +49,8 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
- 			   rq_end_io_fn *done)
- {
- 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
-+	bool may_sleep = !preempt_count() && !irqs_disabled();
-+	unsigned long flags;
+diff --git a/fs/exec.c b/fs/exec.c
+index 25dcbe5..5d4190d 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2030,7 +2030,14 @@ static void wait_for_dump_helpers(struct file *file)
+ 	pipe->readers++;
+ 	pipe->writers--;
  
- 	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
- 		rq->errors = -ENXIO;
-@@ -59,14 +61,27 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
- 
- 	rq->rq_disk = bd_disk;
- 	rq->end_io = done;
--	WARN_ON(irqs_disabled());
--	spin_lock_irq(q->queue_lock);
+-	while ((pipe->readers > 1) && (!signal_pending(current))) {
++	while (pipe->readers > 1) {
++		if (signal_pending(current)) {
++			pr_info("wait_for_dump_helpers[%d]: "
++				"aborted due to signal\n",
++				task_pid_nr(current));
++			break;
++		}
 +
-+	spin_lock_irqsave(q->queue_lock, flags);
- 	__elv_add_request(q, rq, where);
--	__blk_run_queue(q);
--	/* the queue is stopped so it won't be run */
--	if (rq->cmd_type == REQ_TYPE_PM_RESUME)
--		q->request_fn(q);
--	spin_unlock_irq(q->queue_lock);
-+
-+	/*
-+	 * Some drivers beat this path pretty hard.  As an optimization, if
-+	 * we're being called from sleepable context, run @q directly.
-+	 */
-+	if (may_sleep) {
-+		__blk_run_queue(q);
-+		/*
-+		 * The queue is stopped so it won't be run.
-+		 * FIXME: Please kill me along with REQ_TYPE_PM_RESUME.
-+		 */
-+		if (rq->cmd_type == REQ_TYPE_PM_RESUME)
-+			q->request_fn(q);
-+	} else {
-+		blk_run_queue_async(q);
-+	}
-+
-+	spin_unlock_irqrestore(q->queue_lock, flags);
- }
- EXPORT_SYMBOL_GPL(blk_execute_rq_nowait);
- 
+ 		wake_up_interruptible_sync(&pipe->wait);
+ 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 		pipe_wait(pipe);
 -- 
 1.7.3.1
 
