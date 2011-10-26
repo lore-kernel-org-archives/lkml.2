@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab1JZBtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 21:49:18 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:55101 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab1JZBtM (ORCPT
+	id S932110Ab1JZBsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 21:48:55 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42275 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab1JZBsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 21:49:12 -0400
+	Tue, 25 Oct 2011 21:48:54 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/13] block, cfq: kill ioc_gone
-Date: Tue, 25 Oct 2011 18:48:38 -0700
-Message-Id: <1319593719-19132-13-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/13] block: misc ioc cleanups
+Date: Tue, 25 Oct 2011 18:48:29 -0700
+Message-Id: <1319593719-19132-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1319593719-19132-1-git-send-email-tj@kernel.org>
 References: <1319593719-19132-1-git-send-email-tj@kernel.org>
@@ -21,136 +21,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that cic's are immediately unlinked under both locks, there's no
-need to count and drain cic's before module unload.  RCU callback
-completion is waited with rcu_barrier().
+* int return from put_io_context() wasn't used by anybody.  Make it
+  return void like other put functions and docbook-fy the function
+  comment.
 
-While at it, remove residual RCU operations on cic_list.
+* Reorder dummy declarations for !CONFIG_BLOCK case a bit.
+
+* Make alloc_ioc_context() use __GFP_ZERO allocation, take init out of
+  if block and drop 0'ing.
+
+* Docbook-fy current_io_context() comment.
+
+This patch doesn't introduce any functional change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/cfq-iosched.c      |   43 +++++--------------------------------------
- include/linux/elevator.h |   17 -----------------
- 2 files changed, 5 insertions(+), 55 deletions(-)
+ block/blk-ioc.c           |   72 ++++++++++++++++++++++----------------------
+ include/linux/iocontext.h |   12 ++-----
+ 2 files changed, 39 insertions(+), 45 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index ff44435..ae7791a 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -62,10 +62,6 @@ static const int cfq_hist_divisor = 4;
- static struct kmem_cache *cfq_pool;
- static struct kmem_cache *cfq_ioc_pool;
- 
--static DEFINE_PER_CPU(unsigned long, cfq_ioc_count);
--static struct completion *ioc_gone;
--static DEFINE_SPINLOCK(ioc_gone_lock);
--
- #define CFQ_PRIO_LISTS		IOPRIO_BE_NR
- #define cfq_class_idle(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_IDLE)
- #define cfq_class_rt(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_RT)
-@@ -2671,26 +2667,8 @@ static void cfq_put_queue(struct cfq_queue *cfqq)
- 
- static void cfq_cic_free_rcu(struct rcu_head *head)
- {
--	struct cfq_io_context *cic;
--
--	cic = container_of(head, struct cfq_io_context, rcu_head);
--
--	kmem_cache_free(cfq_ioc_pool, cic);
--	elv_ioc_count_dec(cfq_ioc_count);
--
--	if (ioc_gone) {
--		/*
--		 * CFQ scheduler is exiting, grab exit lock and check
--		 * the pending io context count. If it hits zero,
--		 * complete ioc_gone and set it back to NULL
--		 */
--		spin_lock(&ioc_gone_lock);
--		if (ioc_gone && !elv_ioc_count_read(cfq_ioc_count)) {
--			complete(ioc_gone);
--			ioc_gone = NULL;
--		}
--		spin_unlock(&ioc_gone_lock);
--	}
-+	kmem_cache_free(cfq_ioc_pool,
-+			container_of(head, struct cfq_io_context, rcu_head));
- }
- 
- static void cfq_cic_free(struct cfq_io_context *cic)
-@@ -2705,7 +2683,7 @@ static void cfq_release_cic(struct cfq_io_context *cic)
- 
- 	BUG_ON(!(dead_key & CIC_DEAD_KEY));
- 	radix_tree_delete(&ioc->radix_root, dead_key >> CIC_DEAD_INDEX_SHIFT);
--	hlist_del_rcu(&cic->cic_list);
-+	hlist_del(&cic->cic_list);
- 	cfq_cic_free(cic);
- }
- 
-@@ -2782,7 +2760,6 @@ cfq_alloc_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
- 		INIT_HLIST_NODE(&cic->cic_list);
- 		cic->exit = cfq_exit_cic;
- 		cic->release = cfq_release_cic;
--		elv_ioc_count_inc(cfq_ioc_count);
+diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+index 6f9bbd9..8bebf06 100644
+--- a/block/blk-ioc.c
++++ b/block/blk-ioc.c
+@@ -27,26 +27,28 @@ static void cfq_dtor(struct io_context *ioc)
  	}
- 
- 	return cic;
-@@ -3072,7 +3049,7 @@ static int cfq_create_cic(struct cfq_data *cfqd, gfp_t gfp_mask)
- 
- 	ret = radix_tree_insert(&ioc->radix_root, q->id, cic);
- 	if (likely(!ret)) {
--		hlist_add_head_rcu(&cic->cic_list, &ioc->cic_list);
-+		hlist_add_head(&cic->cic_list, &ioc->cic_list);
- 		list_add(&cic->queue_list, &cfqd->cic_list);
- 		cic = NULL;
- 	} else if (ret == -EEXIST) {
-@@ -4156,19 +4133,9 @@ static int __init cfq_init(void)
- 
- static void __exit cfq_exit(void)
- {
--	DECLARE_COMPLETION_ONSTACK(all_gone);
- 	blkio_policy_unregister(&blkio_policy_cfq);
- 	elv_unregister(&iosched_cfq);
--	ioc_gone = &all_gone;
--	/* ioc_gone's update must be visible before reading ioc_count */
--	smp_wmb();
--
--	/*
--	 * this also protects us from entering cfq_slab_kill() with
--	 * pending RCU callbacks
--	 */
--	if (elv_ioc_count_read(cfq_ioc_count))
--		wait_for_completion(&all_gone);
-+	rcu_barrier();	/* make sure all cic RCU frees are complete */
- 	cfq_slab_kill();
  }
- 
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index 2f6193e..a5a88f1 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -194,22 +194,5 @@ enum {
- 	INIT_LIST_HEAD(&(rq)->csd.list);	\
- 	} while (0)
  
 -/*
-- * io context count accounting
-- */
--#define elv_ioc_count_mod(name, __val) this_cpu_add(name, __val)
--#define elv_ioc_count_inc(name)	this_cpu_inc(name)
--#define elv_ioc_count_dec(name)	this_cpu_dec(name)
+- * IO Context helper functions. put_io_context() returns 1 if there are no
+- * more users of this io context, 0 otherwise.
++/**
++ * put_io_context - put a reference of io_context
++ * @ioc: io_context to put
++ *
++ * Decrement reference count of @ioc and release it if the count reaches
++ * zero.
+  */
+-int put_io_context(struct io_context *ioc)
++void put_io_context(struct io_context *ioc)
+ {
+ 	if (ioc == NULL)
+-		return 1;
++		return;
+ 
+-	BUG_ON(atomic_long_read(&ioc->refcount) == 0);
++	BUG_ON(atomic_long_read(&ioc->refcount) <= 0);
+ 
+-	if (atomic_long_dec_and_test(&ioc->refcount)) {
+-		rcu_read_lock();
+-		cfq_dtor(ioc);
+-		rcu_read_unlock();
++	if (!atomic_long_dec_and_test(&ioc->refcount))
++		return;
+ 
+-		kmem_cache_free(iocontext_cachep, ioc);
+-		return 1;
+-	}
+-	return 0;
++	rcu_read_lock();
++	cfq_dtor(ioc);
++	rcu_read_unlock();
++
++	kmem_cache_free(iocontext_cachep, ioc);
+ }
+ EXPORT_SYMBOL(put_io_context);
+ 
+@@ -84,33 +86,31 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
+ {
+ 	struct io_context *ioc;
+ 
+-	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags, node);
+-	if (ioc) {
+-		atomic_long_set(&ioc->refcount, 1);
+-		atomic_set(&ioc->nr_tasks, 1);
+-		spin_lock_init(&ioc->lock);
+-		ioc->ioprio_changed = 0;
+-		ioc->ioprio = 0;
+-		ioc->last_waited = 0; /* doesn't matter... */
+-		ioc->nr_batch_requests = 0; /* because this is 0 */
+-		INIT_RADIX_TREE(&ioc->radix_root, GFP_ATOMIC | __GFP_HIGH);
+-		INIT_HLIST_HEAD(&ioc->cic_list);
+-		ioc->ioc_data = NULL;
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+-		ioc->cgroup_changed = 0;
+-#endif
+-	}
++	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags | __GFP_ZERO,
++				    node);
++	if (unlikely(!ioc))
++		return NULL;
++
++	/* initialize */
++	atomic_long_set(&ioc->refcount, 1);
++	atomic_set(&ioc->nr_tasks, 1);
++	spin_lock_init(&ioc->lock);
++	INIT_RADIX_TREE(&ioc->radix_root, GFP_ATOMIC | __GFP_HIGH);
++	INIT_HLIST_HEAD(&ioc->cic_list);
+ 
+ 	return ioc;
+ }
+ 
+-/*
+- * If the current task has no IO context then create one and initialise it.
+- * Otherwise, return its existing IO context.
++/**
++ * current_io_context - get io_context of %current
++ * @gfp_flags: allocation flags, used if allocation is necessary
++ * @node: allocation node, used if allocation is necessary
+  *
+- * This returned IO context doesn't have a specifically elevated refcount,
+- * but since the current task itself holds a reference, the context can be
+- * used in general code, so long as it stays within `current` context.
++ * Return io_context of %current.  If it doesn't exist, it is created with
++ * @gfp_flags and @node.  The returned io_context does NOT have its
++ * reference count incremented.  Because io_context is exited only on task
++ * exit, %current can be sure that the returned io_context is valid and
++ * alive as long as it is executing.
+  */
+ struct io_context *current_io_context(gfp_t gfp_flags, int node)
+ {
+diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
+index 5037a0a..8a6ecb66 100644
+--- a/include/linux/iocontext.h
++++ b/include/linux/iocontext.h
+@@ -76,20 +76,14 @@ static inline struct io_context *ioc_task_link(struct io_context *ioc)
+ 
+ struct task_struct;
+ #ifdef CONFIG_BLOCK
+-int put_io_context(struct io_context *ioc);
++void put_io_context(struct io_context *ioc);
+ void exit_io_context(struct task_struct *task);
+ struct io_context *get_io_context(gfp_t gfp_flags, int node);
+ struct io_context *alloc_io_context(gfp_t gfp_flags, int node);
+ #else
+-static inline void exit_io_context(struct task_struct *task)
+-{
+-}
 -
--#define elv_ioc_count_read(name)				\
--({								\
--	unsigned long __val = 0;				\
--	int __cpu;						\
--	smp_wmb();						\
--	for_each_possible_cpu(__cpu)				\
--		__val += per_cpu(name, __cpu);			\
--	__val;							\
--})
--
- #endif /* CONFIG_BLOCK */
+ struct io_context;
+-static inline int put_io_context(struct io_context *ioc)
+-{
+-	return 1;
+-}
++static inline void put_io_context(struct io_context *ioc) { }
++static inline void exit_io_context(struct task_struct *task) { }
+ #endif
+ 
  #endif
 -- 
 1.7.3.1
