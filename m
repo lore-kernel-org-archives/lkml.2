@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470Ab1JZPxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 11:53:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37791 "EHLO mx2.mail.elte.hu"
+	id S933535Ab1JZP7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 11:59:35 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59972 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933042Ab1JZPxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 11:53:06 -0400
-Date: Wed, 26 Oct 2011 17:51:12 +0200
+	id S933036Ab1JZP7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 11:59:35 -0400
+Date: Wed, 26 Oct 2011 17:57:56 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [GIT PULL] x86/spinlock changes for v3.2
-Message-ID: <20111026155112.GA4391@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/uv change for v3.2
+Message-ID: <20111026155756.GA5379@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -33,813 +32,207 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-spinlocks-for-linus git tree from:
+Please pull the latest x86-uv-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-spinlocks-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-uv-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Jeremy Fitzhardinge (12):
-      x86, cmpxchg: <linux/alternative.h> has LOCK_PREFIX
-      x86, cmpxchg: Move 32-bit __cmpxchg_wrong_size to match 64 bit.
-      x86, cmpxchg: Move 64-bit set64_bit() to match 32-bit
-      x86, cmpxchg: Unify cmpxchg into cmpxchg.h
-      x86: Add xadd helper macro
-      x86: Use xadd helper more widely
-      x86, ticketlock: Clean up types and accessors
-      x86, ticketlock: Convert spin loop to C
-      x86, ticketlock: Convert __ticket_spin_lock to use xadd()
-      x86, ticketlock: Make __ticket_spin_trylock common
-      x86, cmpxchg: Use __compiletime_error() to make usage messages a bit nicer
-      x86, ticketlock: remove obsolete comment
+Jack Steiner (1):
+      x86: uv2: Workaround for UV2 Hub bug (system global address format)
 
 
- arch/x86/include/asm/atomic.h         |    8 +-
- arch/x86/include/asm/atomic64_64.h    |    6 +-
- arch/x86/include/asm/cmpxchg.h        |  205 +++++++++++++++++++++++++++++++++
- arch/x86/include/asm/cmpxchg_32.h     |  114 ------------------
- arch/x86/include/asm/cmpxchg_64.h     |  131 ---------------------
- arch/x86/include/asm/rwsem.h          |    8 +-
- arch/x86/include/asm/spinlock.h       |  114 +++++--------------
- arch/x86/include/asm/spinlock_types.h |   22 +++-
- arch/x86/include/asm/uv/uv_bau.h      |    6 +-
- 9 files changed, 257 insertions(+), 357 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h   |    1 +
+ arch/x86/include/asm/uv/uv_hub.h   |   37 +++++++++++++++++++++++++++++++++--
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 ++++-
+ arch/x86/platform/uv/tlb_uv.c      |   17 +++++----------
+ 4 files changed, 46 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 10572e3..58cb6d4 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -172,18 +172,14 @@ static inline int atomic_add_negative(int i, atomic_t *v)
-  */
- static inline int atomic_add_return(int i, atomic_t *v)
- {
--	int __i;
- #ifdef CONFIG_M386
-+	int __i;
- 	unsigned long flags;
- 	if (unlikely(boot_cpu_data.x86 <= 3))
- 		goto no_xadd;
- #endif
- 	/* Modern 486+ processor */
--	__i = i;
--	asm volatile(LOCK_PREFIX "xaddl %0, %1"
--		     : "+r" (i), "+m" (v->counter)
--		     : : "memory");
--	return i + __i;
-+	return i + xadd(&v->counter, i);
- 
- #ifdef CONFIG_M386
- no_xadd: /* Legacy 386 processor */
-diff --git a/arch/x86/include/asm/atomic64_64.h b/arch/x86/include/asm/atomic64_64.h
-index 017594d..0e1cbfc 100644
---- a/arch/x86/include/asm/atomic64_64.h
-+++ b/arch/x86/include/asm/atomic64_64.h
-@@ -170,11 +170,7 @@ static inline int atomic64_add_negative(long i, atomic64_t *v)
-  */
- static inline long atomic64_add_return(long i, atomic64_t *v)
- {
--	long __i = i;
--	asm volatile(LOCK_PREFIX "xaddq %0, %1;"
--		     : "+r" (i), "+m" (v->counter)
--		     : : "memory");
--	return i + __i;
-+	return i + xadd(&v->counter, i);
- }
- 
- static inline long atomic64_sub_return(long i, atomic64_t *v)
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index a460fa0..5d3acdf 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -1,5 +1,210 @@
-+#ifndef ASM_X86_CMPXCHG_H
-+#define ASM_X86_CMPXCHG_H
-+
-+#include <linux/compiler.h>
-+#include <asm/alternative.h> /* Provides LOCK_PREFIX */
-+
-+/*
-+ * Non-existant functions to indicate usage errors at link time
-+ * (or compile-time if the compiler implements __compiletime_error().
-+ */
-+extern void __xchg_wrong_size(void)
-+	__compiletime_error("Bad argument size for xchg");
-+extern void __cmpxchg_wrong_size(void)
-+	__compiletime_error("Bad argument size for cmpxchg");
-+extern void __xadd_wrong_size(void)
-+	__compiletime_error("Bad argument size for xadd");
-+
-+/*
-+ * Constants for operation sizes. On 32-bit, the 64-bit size it set to
-+ * -1 because sizeof will never return -1, thereby making those switch
-+ * case statements guaranteeed dead code which the compiler will
-+ * eliminate, and allowing the "missing symbol in the default case" to
-+ * indicate a usage error.
-+ */
-+#define __X86_CASE_B	1
-+#define __X86_CASE_W	2
-+#define __X86_CASE_L	4
-+#ifdef CONFIG_64BIT
-+#define __X86_CASE_Q	8
-+#else
-+#define	__X86_CASE_Q	-1		/* sizeof will never return -1 */
-+#endif
-+
-+/*
-+ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-+ * Since this is generally used to protect other memory information, we
-+ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-+ * information around.
-+ */
-+#define __xchg(x, ptr, size)						\
-+({									\
-+	__typeof(*(ptr)) __x = (x);					\
-+	switch (size) {							\
-+	case __X86_CASE_B:						\
-+	{								\
-+		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
-+		asm volatile("xchgb %0,%1"				\
-+			     : "=q" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case __X86_CASE_W:						\
-+	{								\
-+		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
-+		asm volatile("xchgw %0,%1"				\
-+			     : "=r" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case __X86_CASE_L:						\
-+	{								\
-+		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
-+		asm volatile("xchgl %0,%1"				\
-+			     : "=r" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case __X86_CASE_Q:						\
-+	{								\
-+		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
-+		asm volatile("xchgq %0,%1"				\
-+			     : "=r" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	default:							\
-+		__xchg_wrong_size();					\
-+	}								\
-+	__x;								\
-+})
-+
-+#define xchg(ptr, v)							\
-+	__xchg((v), (ptr), sizeof(*ptr))
-+
-+/*
-+ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-+ * store NEW in MEM.  Return the initial value in MEM.  Success is
-+ * indicated by comparing RETURN with OLD.
-+ */
-+#define __raw_cmpxchg(ptr, old, new, size, lock)			\
-+({									\
-+	__typeof__(*(ptr)) __ret;					\
-+	__typeof__(*(ptr)) __old = (old);				\
-+	__typeof__(*(ptr)) __new = (new);				\
-+	switch (size) {							\
-+	case __X86_CASE_B:						\
-+	{								\
-+		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
-+		asm volatile(lock "cmpxchgb %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "q" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case __X86_CASE_W:						\
-+	{								\
-+		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
-+		asm volatile(lock "cmpxchgw %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "r" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case __X86_CASE_L:						\
-+	{								\
-+		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
-+		asm volatile(lock "cmpxchgl %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "r" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case __X86_CASE_Q:						\
-+	{								\
-+		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
-+		asm volatile(lock "cmpxchgq %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "r" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	default:							\
-+		__cmpxchg_wrong_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
-+#define __cmpxchg(ptr, old, new, size)					\
-+	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
-+
-+#define __sync_cmpxchg(ptr, old, new, size)				\
-+	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
-+
-+#define __cmpxchg_local(ptr, old, new, size)				\
-+	__raw_cmpxchg((ptr), (old), (new), (size), "")
-+
- #ifdef CONFIG_X86_32
- # include "cmpxchg_32.h"
- #else
- # include "cmpxchg_64.h"
- #endif
-+
-+#ifdef __HAVE_ARCH_CMPXCHG
-+#define cmpxchg(ptr, old, new)						\
-+	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
-+
-+#define sync_cmpxchg(ptr, old, new)					\
-+	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
-+
-+#define cmpxchg_local(ptr, old, new)					\
-+	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
-+#endif
-+
-+#define __xadd(ptr, inc, lock)						\
-+	({								\
-+	        __typeof__ (*(ptr)) __ret = (inc);			\
-+		switch (sizeof(*(ptr))) {				\
-+		case __X86_CASE_B:					\
-+			asm volatile (lock "xaddb %b0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case __X86_CASE_W:					\
-+			asm volatile (lock "xaddw %w0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case __X86_CASE_L:					\
-+			asm volatile (lock "xaddl %0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case __X86_CASE_Q:					\
-+			asm volatile (lock "xaddq %q0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		default:						\
-+			__xadd_wrong_size();				\
-+		}							\
-+		__ret;							\
-+	})
-+
-+/*
-+ * xadd() adds "inc" to "*ptr" and atomically returns the previous
-+ * value of "*ptr".
-+ *
-+ * xadd() is locked when multiple CPUs are online
-+ * xadd_sync() is always locked
-+ * xadd_local() is never locked
-+ */
-+#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
-+#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
-+#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
-+
-+#endif	/* ASM_X86_CMPXCHG_H */
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 3deb725..fbebb07 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -1,61 +1,11 @@
- #ifndef _ASM_X86_CMPXCHG_32_H
- #define _ASM_X86_CMPXCHG_32_H
- 
--#include <linux/bitops.h> /* for LOCK_PREFIX */
--
- /*
-  * Note: if you use set64_bit(), __cmpxchg64(), or their variants, you
-  *       you need to test for the feature in boot_cpu_data.
-  */
- 
--extern void __xchg_wrong_size(void);
--
--/*
-- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-- * Since this is generally used to protect other memory information, we
-- * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-- * information around.
-- */
--#define __xchg(x, ptr, size)						\
--({									\
--	__typeof(*(ptr)) __x = (x);					\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile("xchgb %0,%1"				\
--			     : "=q" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile("xchgw %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile("xchgl %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__xchg_wrong_size();					\
--	}								\
--	__x;								\
--})
--
--#define xchg(ptr, v)							\
--	__xchg((v), (ptr), sizeof(*ptr))
--
- /*
-  * CMPXCHG8B only writes to the target if we had the previous
-  * value in registers, otherwise it acts as a read and gives us the
-@@ -84,72 +34,8 @@ static inline void set_64bit(volatile u64 *ptr, u64 value)
- 		     : "memory");
- }
- 
--extern void __cmpxchg_wrong_size(void);
--
--/*
-- * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-- * store NEW in MEM.  Return the initial value in MEM.  Success is
-- * indicated by comparing RETURN with OLD.
-- */
--#define __raw_cmpxchg(ptr, old, new, size, lock)			\
--({									\
--	__typeof__(*(ptr)) __ret;					\
--	__typeof__(*(ptr)) __old = (old);				\
--	__typeof__(*(ptr)) __new = (new);				\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile(lock "cmpxchgb %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "q" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile(lock "cmpxchgw %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile(lock "cmpxchgl %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__cmpxchg_wrong_size();					\
--	}								\
--	__ret;								\
--})
--
--#define __cmpxchg(ptr, old, new, size)					\
--	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
--
--#define __sync_cmpxchg(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
--
--#define __cmpxchg_local(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "")
--
- #ifdef CONFIG_X86_CMPXCHG
- #define __HAVE_ARCH_CMPXCHG 1
--
--#define cmpxchg(ptr, old, new)						\
--	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define sync_cmpxchg(ptr, old, new)					\
--	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define cmpxchg_local(ptr, old, new)					\
--	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
- #endif
- 
- #ifdef CONFIG_X86_CMPXCHG64
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
-index 7cf5c0a..285da02 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -1,144 +1,13 @@
- #ifndef _ASM_X86_CMPXCHG_64_H
- #define _ASM_X86_CMPXCHG_64_H
- 
--#include <asm/alternative.h> /* Provides LOCK_PREFIX */
--
- static inline void set_64bit(volatile u64 *ptr, u64 val)
- {
- 	*ptr = val;
- }
- 
--extern void __xchg_wrong_size(void);
--extern void __cmpxchg_wrong_size(void);
--
--/*
-- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-- * Since this is generally used to protect other memory information, we
-- * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-- * information around.
-- */
--#define __xchg(x, ptr, size)						\
--({									\
--	__typeof(*(ptr)) __x = (x);					\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile("xchgb %0,%1"				\
--			     : "=q" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile("xchgw %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile("xchgl %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 8:								\
--	{								\
--		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
--		asm volatile("xchgq %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__xchg_wrong_size();					\
--	}								\
--	__x;								\
--})
--
--#define xchg(ptr, v)							\
--	__xchg((v), (ptr), sizeof(*ptr))
--
- #define __HAVE_ARCH_CMPXCHG 1
- 
--/*
-- * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-- * store NEW in MEM.  Return the initial value in MEM.  Success is
-- * indicated by comparing RETURN with OLD.
-- */
--#define __raw_cmpxchg(ptr, old, new, size, lock)			\
--({									\
--	__typeof__(*(ptr)) __ret;					\
--	__typeof__(*(ptr)) __old = (old);				\
--	__typeof__(*(ptr)) __new = (new);				\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile(lock "cmpxchgb %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "q" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile(lock "cmpxchgw %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile(lock "cmpxchgl %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 8:								\
--	{								\
--		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
--		asm volatile(lock "cmpxchgq %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__cmpxchg_wrong_size();					\
--	}								\
--	__ret;								\
--})
--
--#define __cmpxchg(ptr, old, new, size)					\
--	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
--
--#define __sync_cmpxchg(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
--
--#define __cmpxchg_local(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "")
--
--#define cmpxchg(ptr, old, new)						\
--	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define sync_cmpxchg(ptr, old, new)					\
--	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define cmpxchg_local(ptr, old, new)					\
--	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
--
- #define cmpxchg64(ptr, o, n)						\
- ({									\
- 	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
-index df4cd32..2dbe4a7 100644
---- a/arch/x86/include/asm/rwsem.h
-+++ b/arch/x86/include/asm/rwsem.h
-@@ -204,13 +204,7 @@ static inline void rwsem_atomic_add(long delta, struct rw_semaphore *sem)
-  */
- static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
- {
--	long tmp = delta;
--
--	asm volatile(LOCK_PREFIX "xadd %0,%1"
--		     : "+r" (tmp), "+m" (sem->count)
--		     : : "memory");
--
--	return tmp + delta;
-+	return delta + xadd(&sem->count, delta);
- }
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index ee67edf..972c260 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -49,109 +49,49 @@
-  * issues and should be optimal for the uncontended case. Note the tail must be
-  * in the high part, because a wide xadd increment of the low part would carry
-  * up and contaminate the high part.
-- *
-- * With fewer than 2^8 possible CPUs, we can use x86's partial registers to
-- * save some instructions and make the code more elegant. There really isn't
-- * much between them in performance though, especially as locks are out of line.
-  */
--#if (NR_CPUS < 256)
--#define TICKET_SHIFT 8
--
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	short inc = 0x0100;
--
--	asm volatile (
--		LOCK_PREFIX "xaddw %w0, %1\n"
--		"1:\t"
--		"cmpb %h0, %b0\n\t"
--		"je 2f\n\t"
--		"rep ; nop\n\t"
--		"movb %1, %b0\n\t"
--		/* don't need lfence here, because loads are in-order */
--		"jmp 1b\n"
--		"2:"
--		: "+Q" (inc), "+m" (lock->slock)
--		:
--		: "memory", "cc");
-+	register struct __raw_tickets inc = { .tail = 1 };
-+
-+	inc = xadd(&lock->tickets, inc);
-+
-+	for (;;) {
-+		if (inc.head == inc.tail)
-+			break;
-+		cpu_relax();
-+		inc.head = ACCESS_ONCE(lock->tickets.head);
-+	}
-+	barrier();		/* make sure nothing creeps before the lock is taken */
- }
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp, new;
--
--	asm volatile("movzwl %2, %0\n\t"
--		     "cmpb %h0,%b0\n\t"
--		     "leal 0x100(%" REG_PTR_MODE "0), %1\n\t"
--		     "jne 1f\n\t"
--		     LOCK_PREFIX "cmpxchgw %w1,%2\n\t"
--		     "1:"
--		     "sete %b1\n\t"
--		     "movzbl %b1,%0\n\t"
--		     : "=&a" (tmp), "=&q" (new), "+m" (lock->slock)
--		     :
--		     : "memory", "cc");
-+	arch_spinlock_t old, new;
-+
-+	old.tickets = ACCESS_ONCE(lock->tickets);
-+	if (old.tickets.head != old.tickets.tail)
-+		return 0;
-+
-+	new.head_tail = old.head_tail + (1 << TICKET_SHIFT);
- 
--	return tmp;
-+	/* cmpxchg is a full barrier, so nothing can move before it */
-+	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
- }
- 
-+#if (NR_CPUS < 256)
- static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- {
- 	asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
--		     : "+m" (lock->slock)
-+		     : "+m" (lock->head_tail)
- 		     :
- 		     : "memory", "cc");
- }
- #else
--#define TICKET_SHIFT 16
--
--static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
--{
--	int inc = 0x00010000;
--	int tmp;
--
--	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
--		     "movzwl %w0, %2\n\t"
--		     "shrl $16, %0\n\t"
--		     "1:\t"
--		     "cmpl %0, %2\n\t"
--		     "je 2f\n\t"
--		     "rep ; nop\n\t"
--		     "movzwl %1, %2\n\t"
--		     /* don't need lfence here, because loads are in-order */
--		     "jmp 1b\n"
--		     "2:"
--		     : "+r" (inc), "+m" (lock->slock), "=&r" (tmp)
--		     :
--		     : "memory", "cc");
--}
--
--static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
--{
--	int tmp;
--	int new;
--
--	asm volatile("movl %2,%0\n\t"
--		     "movl %0,%1\n\t"
--		     "roll $16, %0\n\t"
--		     "cmpl %0,%1\n\t"
--		     "leal 0x00010000(%" REG_PTR_MODE "0), %1\n\t"
--		     "jne 1f\n\t"
--		     LOCK_PREFIX "cmpxchgl %1,%2\n\t"
--		     "1:"
--		     "sete %b1\n\t"
--		     "movzbl %b1,%0\n\t"
--		     : "=&a" (tmp), "=&q" (new), "+m" (lock->slock)
--		     :
--		     : "memory", "cc");
--
--	return tmp;
--}
--
- static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- {
- 	asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
--		     : "+m" (lock->slock)
-+		     : "+m" (lock->head_tail)
- 		     :
- 		     : "memory", "cc");
- }
-@@ -159,16 +99,16 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 
- static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return !!(((tmp >> TICKET_SHIFT) ^ tmp) & ((1 << TICKET_SHIFT) - 1));
-+	return !!(tmp.tail ^ tmp.head);
- }
- 
- static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return (((tmp >> TICKET_SHIFT) - tmp) & ((1 << TICKET_SHIFT) - 1)) > 1;
-+	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
- }
- 
- #ifndef CONFIG_PARAVIRT_SPINLOCKS
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 7c7a486..8ebd5df 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -5,11 +5,29 @@
- # error "please don't include this file directly"
- #endif
- 
-+#include <linux/types.h>
-+
-+#if (CONFIG_NR_CPUS < 256)
-+typedef u8  __ticket_t;
-+typedef u16 __ticketpair_t;
-+#else
-+typedef u16 __ticket_t;
-+typedef u32 __ticketpair_t;
-+#endif
-+
-+#define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
-+#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
-+
- typedef struct arch_spinlock {
--	unsigned int slock;
-+	union {
-+		__ticketpair_t head_tail;
-+		struct __raw_tickets {
-+			__ticket_t head, tail;
-+		} tickets;
-+	};
- } arch_spinlock_t;
- 
--#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
- 
- #include <asm/rwlock.h>
- 
 diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index 37d3698..c568ccc 100644
+index 37d3698..0c767a8 100644
 --- a/arch/x86/include/asm/uv/uv_bau.h
 +++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -656,11 +656,7 @@ static inline int atomic_read_short(const struct atomic_short *v)
-  */
- static inline int atom_asr(short i, struct atomic_short *v)
- {
--	short __i = i;
--	asm volatile(LOCK_PREFIX "xaddw %0, %1"
--			: "+r" (i), "+m" (v->counter)
--			: : "memory");
--	return i + __i;
-+	return i + xadd(&v->counter, i);
+@@ -55,6 +55,7 @@
+ #define UV_BAU_TUNABLES_DIR		"sgi_uv"
+ #define UV_BAU_TUNABLES_FILE		"bau_tunables"
+ #define WHITESPACE			" \t\n"
++#define uv_mmask			((1UL << uv_hub_info->m_val) - 1)
+ #define uv_physnodeaddr(x)		((__pa((unsigned long)(x)) & uv_mmask))
+ #define cpubit_isset(cpu, bau_local_cpumask) \
+ 	test_bit((cpu), (bau_local_cpumask).bits)
+diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
+index f26544a..54a13aa 100644
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -46,6 +46,13 @@
+  *	PNODE   - the low N bits of the GNODE. The PNODE is the most useful variant
+  *		  of the nasid for socket usage.
+  *
++ *	GPA	- (global physical address) a socket physical address converted
++ *		  so that it can be used by the GRU as a global address. Socket
++ *		  physical addresses 1) need additional NASID (node) bits added
++ *		  to the high end of the address, and 2) unaliased if the
++ *		  partition does not have a physical address 0. In addition, on
++ *		  UV2 rev 1, GPAs need the gnode left shifted to bits 39 or 40.
++ *
+  *
+  *  NumaLink Global Physical Address Format:
+  *  +--------------------------------+---------------------+
+@@ -141,6 +148,8 @@ struct uv_hub_info_s {
+ 	unsigned int		gnode_extra;
+ 	unsigned char		hub_revision;
+ 	unsigned char		apic_pnode_shift;
++	unsigned char		m_shift;
++	unsigned char		n_lshift;
+ 	unsigned long		gnode_upper;
+ 	unsigned long		lowmem_remap_top;
+ 	unsigned long		lowmem_remap_base;
+@@ -177,6 +186,16 @@ static inline int is_uv2_hub(void)
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
  }
  
- /*
++static inline int is_uv2_1_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
++}
++
++static inline int is_uv2_2_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
++}
++
+ union uvh_apicid {
+     unsigned long       v;
+     struct uvh_apicid_s {
+@@ -276,7 +295,10 @@ static inline unsigned long uv_soc_phys_ram_to_gpa(unsigned long paddr)
+ {
+ 	if (paddr < uv_hub_info->lowmem_remap_top)
+ 		paddr |= uv_hub_info->lowmem_remap_base;
+-	return paddr | uv_hub_info->gnode_upper;
++	paddr |= uv_hub_info->gnode_upper;
++	paddr = ((paddr << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((paddr >> uv_hub_info->m_val) << uv_hub_info->n_lshift);
++	return paddr;
+ }
+ 
+ 
+@@ -300,16 +322,19 @@ static inline unsigned long uv_gpa_to_soc_phys_ram(unsigned long gpa)
+ 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
+ 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
+ 
++	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
++	gpa = gpa & uv_hub_info->gpa_mask;
+ 	if (paddr >= remap_base && paddr < remap_base + remap_top)
+ 		paddr -= remap_base;
+ 	return paddr;
+ }
+ 
+ 
+-/* gnode -> pnode */
++/* gpa -> pnode */
+ static inline unsigned long uv_gpa_to_gnode(unsigned long gpa)
+ {
+-	return gpa >> uv_hub_info->m_val;
++	return gpa >> uv_hub_info->n_lshift;
+ }
+ 
+ /* gpa -> pnode */
+@@ -320,6 +345,12 @@ static inline int uv_gpa_to_pnode(unsigned long gpa)
+ 	return uv_gpa_to_gnode(gpa) & n_mask;
+ }
+ 
++/* gpa -> node offset*/
++static inline unsigned long uv_gpa_to_offset(unsigned long gpa)
++{
++	return (gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift;
++}
++
+ /* pnode, offset --> socket virtual */
+ static inline void *uv_pnode_offset_to_vaddr(int pnode, unsigned long offset)
+ {
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 34b1859..cfeb978 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -832,6 +832,10 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->apic_pnode_shift = uvh_apicid.s.pnode_shift;
+ 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
+ 
++		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
++		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
++				(m_val == 40 ? 40 : 39) : m_val;
++
+ 		pnode = uv_apicid_to_pnode(apicid);
+ 		blade = boot_pnode_to_blade(pnode);
+ 		lcpu = uv_blade_info[blade].nr_possible_cpus;
+@@ -862,8 +866,7 @@ void __init uv_system_init(void)
+ 		if (uv_node_to_blade[nid] >= 0)
+ 			continue;
+ 		paddr = node_start_pfn(nid) << PAGE_SHIFT;
+-		paddr = uv_soc_phys_ram_to_gpa(paddr);
+-		pnode = (paddr >> m_val) & pnode_mask;
++		pnode = uv_gpa_to_pnode(uv_soc_phys_ram_to_gpa(paddr));
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+ 	}
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index db8b915..5b55219 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -115,9 +115,6 @@ early_param("nobau", setup_nobau);
+ 
+ /* base pnode in this partition */
+ static int uv_base_pnode __read_mostly;
+-/* position of pnode (which is nasid>>1): */
+-static int uv_nshift __read_mostly;
+-static unsigned long uv_mmask __read_mostly;
+ 
+ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
+ static DEFINE_PER_CPU(struct bau_control, bau_control);
+@@ -1435,7 +1432,7 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
+ {
+ 	int i;
+ 	int cpu;
+-	unsigned long pa;
++	unsigned long gpa;
+ 	unsigned long m;
+ 	unsigned long n;
+ 	size_t dsize;
+@@ -1451,9 +1448,9 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
+ 	bau_desc = kmalloc_node(dsize, GFP_KERNEL, node);
+ 	BUG_ON(!bau_desc);
+ 
+-	pa = uv_gpa(bau_desc); /* need the real nasid*/
+-	n = pa >> uv_nshift;
+-	m = pa & uv_mmask;
++	gpa = uv_gpa(bau_desc);
++	n = uv_gpa_to_gnode(gpa);
++	m = uv_gpa_to_offset(gpa);
+ 
+ 	/* the 14-bit pnode */
+ 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
+@@ -1525,9 +1522,9 @@ static void pq_init(int node, int pnode)
+ 		bcp->queue_last		= pqp + (DEST_Q_SIZE - 1);
+ 	}
+ 	/*
+-	 * need the pnode of where the memory was really allocated
++	 * need the gnode of where the memory was really allocated
+ 	 */
+-	pn = uv_gpa(pqp) >> uv_nshift;
++	pn = uv_gpa_to_gnode(uv_gpa(pqp));
+ 	first = uv_physnodeaddr(pqp);
+ 	pn_first = ((unsigned long)pn << UV_PAYLOADQ_PNODE_SHIFT) | first;
+ 	last = uv_physnodeaddr(pqp + (DEST_Q_SIZE - 1));
+@@ -1837,8 +1834,6 @@ static int __init uv_bau_init(void)
+ 		zalloc_cpumask_var_node(mask, GFP_KERNEL, cpu_to_node(cur_cpu));
+ 	}
+ 
+-	uv_nshift = uv_hub_info->m_val;
+-	uv_mmask = (1UL << uv_hub_info->m_val) - 1;
+ 	nuvhubs = uv_num_possible_blades();
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = usec_2_cycles(congested_respns_us);
