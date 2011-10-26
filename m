@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933744Ab1JZSOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 14:14:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38370 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932855Ab1JZSOB convert rfc822-to-8bit (ORCPT
+	id S933707Ab1JZSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 14:22:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63342 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932818Ab1JZSWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 14:14:01 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: regression tracking
-Date: Wed, 26 Oct 2011 20:13:55 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; i686; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
-        linux-kernel@vger.kernel.org
-References: <CAErSpo4REhcp_SgDyUTbi8jw9_8317Zi1duo1fTihB8x=drtuw@mail.gmail.com>
-In-Reply-To: <CAErSpo4REhcp_SgDyUTbi8jw9_8317Zi1duo1fTihB8x=drtuw@mail.gmail.com>
+	Wed, 26 Oct 2011 14:22:15 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110262013.55562.maciej.rutecki@gmail.com>
+In-Reply-To: <1319582670.17505.31.camel@work-vm>
+References: <1310690138.3367.61.camel@work-vm> <1310724097.2586.296.camel@twins>
+ <1310752795.2945.4.camel@work-vm> <20110721072256.GE9216@elte.hu>
+ <1311251098.29152.130.camel@twins> <20110721125008.GF11246@pcnci.linuxbox.cz>
+ <1311252799.29152.147.camel@twins> <20110721184524.GB381@elte.hu>
+ <20110825185616.GA17078@faidon.noc.grnet.gr> <20110830223829.GB17450@kroah.com>
+ <20110904232657.GC6749@tty.gr> <CAPed3OHzO5usHfyeD_rK8dDhcGakZF+ByzEyZZb_Tdh3U00vOg@mail.gmail.com>
+ <1319582670.17505.31.camel@work-vm>
+From: Ruben Kerkhof <ruben@rubenkerkhof.com>
+Date: Wed, 26 Oct 2011 20:21:53 +0200
+Message-ID: <CAPed3OE0YSedYVfQvEkzdqpeaQWDNdiGHBSKYR1PcqVsHE26VA@mail.gmail.com>
+Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
+To: john stultz <johnstul@us.ibm.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        seto.hidetoshi@jp.fujitsu.com, Peter Zijlstra <peterz@infradead.org>,
+        MINOURA Makoto <minoura@valinux.co.jp>, Ingo Molnar <mingo@elte.hu>,
+        stable@kernel.org,
+        =?UTF-8?Q?Herv=C3=A9_Commowick?= <hcommowick@exosec.fr>,
+        Rand@jasper.es, Andrew Morton <akpm@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>, Faidon Liambotis <paravoid@debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Oct 26, 2011 at 00:44, john stultz <johnstul@us.ibm.com> wrote:
+> On Sun, 2011-10-23 at 20:31 +0200, Ruben Kerkhof wrote:
 
-On środa, 26 października 2011 o 19:23:11 Bjorn Helgaas wrote:
-> The regression tracking that you folks used to do before the demise of
-> bugzilla.kernel.org was incredibly valuable.
-> 
-> I'm very concerned about the fact that we don't have a systematic way
-> to do this any more.  Some things do get reported on LKML, of course,
-> but without the legwork you guys did, I'm afraid we're just dropping
-> things on the floor because there's no summary of what the issues are,
-> how many people are seeing them, who's responsible, etc.
-> 
-> Consider this as (1) kudos for performing an essential community
-> service, and (2) a plea for the resurrection or replacement of
-> bugzilla.kernel.org or some other mechanism for reviving regression
-> tracking.
+>> I just had two crashes on two different machines, both with an uptime
+>> of 208 days.
+>> Both were 5520's running 2.6.34.8, but with a CONFIG_HZ of 1000
+>>
+>> 2011-10-23T16:49:18.618029+02:00 phy001 kernel: BUG: soft lockup -
+>> CPU#0 stuck for 17163091968s! [qemu-kvm:16949]
+>
+> So were these actual crashes, or just softlockup false positives?
 
-Because bugzilla is still down, I yesterday started send regressions (found in 
-LKML) report directly to Rafael, to create summary report (etc.) of them. 
-Until bugzilla comes back, we plan to collect regression in this way, but any 
-proposal for a better solution is welcome.
+Just softlockups, I haven't seen the divide_by_zero crash.
 
-Regards
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+Thanks,
+
+Ruben
