@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933853Ab1JZRts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 13:49:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54971 "EHLO
+	id S933876Ab1JZRuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 13:50:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54969 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933778Ab1JZRsq (ORCPT
+	with ESMTP id S932878Ab1JZRsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 13:48:46 -0400
+	Wed, 26 Oct 2011 13:48:45 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/11] perf ui browser: Handle K_RESIZE in dialog windows
-Date: Wed, 26 Oct 2011 15:48:33 -0200
-Message-Id: <1319651314-29404-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/11] perf evlist: Fix grouping of multiple events
+Date: Wed, 26 Oct 2011 15:48:24 -0200
+Message-Id: <1319651314-29404-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1319651314-29404-1-git-send-email-acme@infradead.org>
 References: <1319651314-29404-1-git-send-email-acme@infradead.org>
@@ -29,352 +29,442 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Just provide wrappers for things like ui__warning, ui__dialog_yesno and
-if they return K_RESIZE, refresh dimensions, redraw the entries, etc.
+The __perf_evsel__open routing was grouping just the threads for that
+specific events per cpu when we want to group all threads in all events
+to the first fd opened on that cpu.
 
+So pass the xyarray with the first event, where the other events will be
+able to get that first per cpu fd.
+
+At some point top and record will switch to using perf_evlist__open that
+takes care of this detail and probably will also handle the fallback
+from hw to soft counters, etc.
+
+Reported-by: Deng-Cheng Zhu <dczhu@mips.com>
+Tested-by: Deng-Cheng Zhu <dczhu@mips.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3ih7hyk9weryxaxb501sfq4u@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ebm34rh098i9y9v4cytfdp0x@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/debug.c             |    7 +++--
- tools/perf/util/debug.h             |    6 ++--
- tools/perf/util/ui/browser.c        |   40 +++++++++++++++++++++++++++++++++++
- tools/perf/util/ui/browser.h        |    5 ++++
- tools/perf/util/ui/browsers/hists.c |   22 +++++++++++++------
- tools/perf/util/ui/helpline.c       |    6 +++++
- tools/perf/util/ui/helpline.h       |    2 +
- tools/perf/util/ui/util.c           |   27 ++++++++++++++---------
- tools/perf/util/ui/util.h           |    5 ++-
- 9 files changed, 94 insertions(+), 26 deletions(-)
+ tools/perf/builtin-record.c |   11 +++++++++--
+ tools/perf/builtin-stat.c   |   20 ++++++++++++++------
+ tools/perf/builtin-test.c   |    6 +++---
+ tools/perf/builtin-top.c    |   11 +++++++++--
+ tools/perf/util/evlist.c    |   30 ++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h    |    2 ++
+ tools/perf/util/evsel.c     |   43 +++++++++++++++++++++++++++++++------------
+ tools/perf/util/evsel.h     |   10 +++++++---
+ tools/perf/util/python.c    |   31 ++++++++++++++++++++++++++++++-
+ 9 files changed, 135 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 5563403..26817da 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -47,19 +47,20 @@ int dump_printf(const char *fmt, ...)
- }
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f82480f..40088a5 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -262,13 +262,16 @@ static bool perf_evlist__equal(struct perf_evlist *evlist,
  
- #ifdef NO_NEWT_SUPPORT
--void ui__warning(const char *format, ...)
-+int ui__warning(const char *format, ...)
+ static void open_counters(struct perf_evlist *evlist)
  {
- 	va_list args;
+-	struct perf_evsel *pos;
++	struct perf_evsel *pos, *first;
  
- 	va_start(args, format);
- 	vfprintf(stderr, format, args);
- 	va_end(args);
-+	return 0;
- }
- #endif
+ 	if (evlist->cpus->map[0] < 0)
+ 		no_inherit = true;
  
--void ui__error_paranoid(void)
-+int ui__error_paranoid(void)
++	first = list_entry(evlist->entries.next, struct perf_evsel, node);
++
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &pos->attr;
++		struct xyarray *group_fd = NULL;
+ 		/*
+ 		 * Check if parse_single_tracepoint_event has already asked for
+ 		 * PERF_SAMPLE_TIME.
+@@ -283,11 +286,15 @@ static void open_counters(struct perf_evlist *evlist)
+ 		 */
+ 		bool time_needed = attr->sample_type & PERF_SAMPLE_TIME;
+ 
++		if (group && pos != first)
++			group_fd = first->fd;
++
+ 		config_attr(pos, evlist);
+ retry_sample_id:
+ 		attr->sample_id_all = sample_id_all_avail ? 1 : 0;
+ try_again:
+-		if (perf_evsel__open(pos, evlist->cpus, evlist->threads, group) < 0) {
++		if (perf_evsel__open(pos, evlist->cpus, evlist->threads, group,
++				     group_fd) < 0) {
+ 			int err = errno;
+ 
+ 			if (err == EPERM || err == EACCES) {
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 7ce65f5..7d98676 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -278,9 +278,14 @@ struct stats			runtime_itlb_cache_stats[MAX_NR_CPUS];
+ struct stats			runtime_dtlb_cache_stats[MAX_NR_CPUS];
+ struct stats			walltime_nsecs_stats;
+ 
+-static int create_perf_stat_counter(struct perf_evsel *evsel)
++static int create_perf_stat_counter(struct perf_evsel *evsel,
++				    struct perf_evsel *first)
  {
--	ui__error("Permission error - are you root?\n"
-+	return ui__error("Permission error - are you root?\n"
- 		    "Consider tweaking /proc/sys/kernel/perf_event_paranoid:\n"
- 		    " -1 - Not paranoid at all\n"
- 		    "  0 - Disallow raw tracepoint access for unpriv\n"
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 16cc752..f2ce88d 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -27,10 +27,10 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
- extern char ui_helpline__last_msg[];
- int ui_helpline__show_help(const char *format, va_list ap);
- #include "ui/progress.h"
--void ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
-+int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
- #endif
+ 	struct perf_event_attr *attr = &evsel->attr;
++	struct xyarray *group_fd = NULL;
++
++	if (group && evsel != first)
++		group_fd = first->fd;
  
--void ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
--void ui__error_paranoid(void);
-+int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
-+int ui__error_paranoid(void);
+ 	if (scale)
+ 		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
+@@ -289,14 +294,15 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 	attr->inherit = !no_inherit;
  
- #endif	/* __PERF_DEBUG_H */
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 8607efa..d2051be 100644
---- a/tools/perf/util/ui/browser.c
-+++ b/tools/perf/util/ui/browser.c
-@@ -169,6 +169,46 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
- 	self->x = 0;
- }
- 
-+void ui_browser__handle_resize(struct ui_browser *browser)
-+{
-+	ui__refresh_dimensions(false);
-+	ui_browser__show(browser, browser->title, ui_helpline__current);
-+	ui_browser__refresh(browser);
-+}
-+
-+int ui_browser__warning(struct ui_browser *browser, const char *format, ...)
-+{
-+	va_list args;
-+	int key;
-+
-+	va_start(args, format);
-+	while ((key = __ui__warning("Warning!", format, args)) == K_RESIZE)
-+		ui_browser__handle_resize(browser);
-+	va_end(args);
-+
-+	return key;
-+}
-+
-+int ui_browser__help_window(struct ui_browser *browser, const char *text)
-+{
-+	int key;
-+
-+	while ((key = ui__help_window(text)) == K_RESIZE)
-+		ui_browser__handle_resize(browser);
-+
-+	return key;
-+}
-+
-+bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text)
-+{
-+	int key;
-+
-+	while ((key = ui__dialog_yesno(text)) == K_RESIZE)
-+		ui_browser__handle_resize(browser);
-+
-+	return key == K_ENTER || toupper(key) == 'Y';
-+}
-+
- void ui_browser__reset_index(struct ui_browser *self)
- {
- 	self->index = self->top_idx = 0;
-diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
-index 81a8d2a..fb1c598 100644
---- a/tools/perf/util/ui/browser.h
-+++ b/tools/perf/util/ui/browser.h
-@@ -43,6 +43,11 @@ void ui_browser__hide(struct ui_browser *self);
- int ui_browser__refresh(struct ui_browser *self);
- int ui_browser__run(struct ui_browser *browser, int delay_secs);
- void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries);
-+void ui_browser__handle_resize(struct ui_browser *browser);
-+
-+int ui_browser__warning(struct ui_browser *browser, const char *format, ...);
-+int ui_browser__help_window(struct ui_browser *browser, const char *text);
-+bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text);
- 
- void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence);
- unsigned int ui_browser__argv_refresh(struct ui_browser *browser);
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 44210d4..b8733c0 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -17,6 +17,7 @@
- #include "../browser.h"
- #include "../helpline.h"
- #include "../util.h"
-+#include "../ui.h"
- #include "map.h"
- 
- struct hist_browser {
-@@ -882,7 +883,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			goto out_free_stack;
- 		case 'a':
- 			if (!browser->has_symbols) {
--				ui__warning(
-+				ui_browser__warning(&browser->b,
- 			"Annotation is only available for symbolic views, "
- 			"include \"sym\" in --sort to use it.");
- 				continue;
-@@ -900,7 +901,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		case K_F1:
- 		case 'h':
- 		case '?':
--			ui__help_window("h/?/F1        Show this window\n"
-+			ui_browser__help_window(&browser->b,
-+					"h/?/F1        Show this window\n"
- 					"UP/DOWN/PGUP\n"
- 					"PGDN/SPACE    Navigate\n"
- 					"q/ESC/CTRL+C  Exit browser\n\n"
-@@ -939,7 +941,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		}
- 		case K_ESC:
- 			if (!left_exits &&
--			    !ui__dialog_yesno("Do you really want to exit?"))
-+			    !ui_browser__dialog_yesno(&browser->b,
-+					       "Do you really want to exit?"))
- 				continue;
- 			/* Fall thru */
- 		case 'q':
-@@ -992,6 +995,7 @@ add_exit_option:
- 
- 		if (choice == annotate) {
- 			struct hist_entry *he;
-+			int err;
- do_annotate:
- 			he = hist_browser__selected_entry(browser);
- 			if (he == NULL)
-@@ -1000,10 +1004,12 @@ do_annotate:
- 			 * Don't let this be freed, say, by hists__decay_entry.
- 			 */
- 			he->used = true;
--			hist_entry__tui_annotate(he, evsel->idx, nr_events,
--						 timer, arg, delay_secs);
-+			err = hist_entry__tui_annotate(he, evsel->idx, nr_events,
-+						       timer, arg, delay_secs);
- 			he->used = false;
- 			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
-+			if (err)
-+				ui_browser__handle_resize(&browser->b);
- 		} else if (choice == browse_map)
- 			map__browse(browser->selection->map);
- 		else if (choice == zoom_dso) {
-@@ -1132,7 +1138,8 @@ browse_hists:
- 					pos = list_entry(pos->node.prev, struct perf_evsel, node);
- 				goto browse_hists;
- 			case K_ESC:
--				if (!ui__dialog_yesno("Do you really want to exit?"))
-+				if (!ui_browser__dialog_yesno(&menu->b,
-+						"Do you really want to exit?"))
- 					continue;
- 				/* Fall thru */
- 			case 'q':
-@@ -1144,7 +1151,8 @@ browse_hists:
- 		case K_LEFT:
- 			continue;
- 		case K_ESC:
--			if (!ui__dialog_yesno("Do you really want to exit?"))
-+			if (!ui_browser__dialog_yesno(&menu->b,
-+					       "Do you really want to exit?"))
- 				continue;
- 			/* Fall thru */
- 		case 'q':
-diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
-index 600243d..6ef3c56 100644
---- a/tools/perf/util/ui/helpline.c
-+++ b/tools/perf/util/ui/helpline.c
-@@ -1,6 +1,7 @@
- #define _GNU_SOURCE
- #include <stdio.h>
- #include <stdlib.h>
-+#include <string.h>
- 
- #include "../debug.h"
- #include "helpline.h"
-@@ -11,12 +12,17 @@ void ui_helpline__pop(void)
- {
- }
- 
-+char ui_helpline__current[512];
-+
- void ui_helpline__push(const char *msg)
- {
-+	const size_t sz = sizeof(ui_helpline__current);
-+
- 	SLsmg_gotorc(SLtt_Screen_Rows - 1, 0);
- 	SLsmg_set_color(0);
- 	SLsmg_write_nstring((char *)msg, SLtt_Screen_Cols);
- 	SLsmg_refresh();
-+	strncpy(ui_helpline__current, msg, sz)[sz - 1] = '\0';
- }
- 
- void ui_helpline__vpush(const char *fmt, va_list ap)
-diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
-index fdcbc02..7bab6b3 100644
---- a/tools/perf/util/ui/helpline.h
-+++ b/tools/perf/util/ui/helpline.h
-@@ -11,4 +11,6 @@ void ui_helpline__vpush(const char *fmt, va_list ap);
- void ui_helpline__fpush(const char *fmt, ...);
- void ui_helpline__puts(const char *msg);
- 
-+extern char ui_helpline__current[];
-+
- #endif /* _PERF_UI_HELPLINE_H_ */
-diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
-index ef9b793..45daa7c 100644
---- a/tools/perf/util/ui/util.c
-+++ b/tools/perf/util/ui/util.c
-@@ -121,43 +121,48 @@ int ui__help_window(const char *text)
- 	return ui__question_window("Help", text, "Press any key...", 0);
- }
- 
--bool ui__dialog_yesno(const char *msg)
-+int ui__dialog_yesno(const char *msg)
- {
--	int answer = ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+ 	if (system_wide)
+-		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus, group);
 -
--	return answer == K_ENTER;
-+	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
- }
- 
--static void __ui__warning(const char *title, const char *format, va_list args)
-+int __ui__warning(const char *title, const char *format, va_list args)
- {
- 	char *s;
- 
- 	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
-+		int key;
-+
- 		pthread_mutex_lock(&ui__lock);
--		ui__question_window(title, s, "Press any key...", 0);
-+		key = ui__question_window(title, s, "Press any key...", 0);
- 		pthread_mutex_unlock(&ui__lock);
- 		free(s);
--		return;
-+		return key;
++		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
++						group, group_fd);
+ 	if (target_pid == -1 && target_tid == -1) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
  	}
  
- 	fprintf(stderr, "%s:\n", title);
- 	vfprintf(stderr, format, args);
-+	return K_ESC;
+-	return perf_evsel__open_per_thread(evsel, evsel_list->threads, group);
++	return perf_evsel__open_per_thread(evsel, evsel_list->threads,
++					   group, group_fd);
  }
  
--void ui__warning(const char *format, ...)
-+int ui__warning(const char *format, ...)
+ /*
+@@ -396,7 +402,7 @@ static int read_counter(struct perf_evsel *counter)
+ static int run_perf_stat(int argc __used, const char **argv)
  {
-+	int key;
- 	va_list args;
+ 	unsigned long long t0, t1;
+-	struct perf_evsel *counter;
++	struct perf_evsel *counter, *first;
+ 	int status = 0;
+ 	int child_ready_pipe[2], go_pipe[2];
+ 	const bool forks = (argc > 0);
+@@ -453,8 +459,10 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 		close(child_ready_pipe[0]);
+ 	}
  
- 	va_start(args, format);
--	__ui__warning("Warning", format, args);
-+	key = __ui__warning("Warning", format, args);
- 	va_end(args);
-+	return key;
- }
++	first = list_entry(evsel_list->entries.next, struct perf_evsel, node);
++
+ 	list_for_each_entry(counter, &evsel_list->entries, node) {
+-		if (create_perf_stat_counter(counter) < 0) {
++		if (create_perf_stat_counter(counter, first) < 0) {
+ 			if (errno == EINVAL || errno == ENOSYS || errno == ENOENT) {
+ 				if (verbose)
+ 					ui__warning("%s event is not supported by the kernel.\n",
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index efe696f..831d1ba 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -291,7 +291,7 @@ static int test__open_syscall_event(void)
+ 		goto out_thread_map_delete;
+ 	}
  
--void ui__error(const char *format, ...)
-+int ui__error(const char *format, ...)
+-	if (perf_evsel__open_per_thread(evsel, threads, false) < 0) {
++	if (perf_evsel__open_per_thread(evsel, threads, false, NULL) < 0) {
+ 		pr_debug("failed to open counter: %s, "
+ 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+ 			 strerror(errno));
+@@ -366,7 +366,7 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 		goto out_thread_map_delete;
+ 	}
+ 
+-	if (perf_evsel__open(evsel, cpus, threads, false) < 0) {
++	if (perf_evsel__open(evsel, cpus, threads, false, NULL) < 0) {
+ 		pr_debug("failed to open counter: %s, "
+ 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+ 			 strerror(errno));
+@@ -531,7 +531,7 @@ static int test__basic_mmap(void)
+ 
+ 		perf_evlist__add(evlist, evsels[i]);
+ 
+-		if (perf_evsel__open(evsels[i], cpus, threads, false) < 0) {
++		if (perf_evsel__open(evsels[i], cpus, threads, false, NULL) < 0) {
+ 			pr_debug("failed to open counter: %s, "
+ 				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+ 				 strerror(errno));
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 7a87171..d2fc754 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -834,10 +834,16 @@ static void perf_session__mmap_read(struct perf_session *self)
+ 
+ static void start_counters(struct perf_evlist *evlist)
  {
-+	int key;
- 	va_list args;
+-	struct perf_evsel *counter;
++	struct perf_evsel *counter, *first;
++
++	first = list_entry(evlist->entries.next, struct perf_evsel, node);
  
- 	va_start(args, format);
--	__ui__warning("Error", format, args);
-+	key = __ui__warning("Error", format, args);
- 	va_end(args);
-+	return key;
+ 	list_for_each_entry(counter, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &counter->attr;
++		struct xyarray *group_fd = NULL;
++
++		if (group && counter != first)
++			group_fd = first->fd;
+ 
+ 		attr->sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+ 
+@@ -860,7 +866,8 @@ static void start_counters(struct perf_evlist *evlist)
+ 		attr->inherit = inherit;
+ try_again:
+ 		if (perf_evsel__open(counter, top.evlist->cpus,
+-				     top.evlist->threads, group) < 0) {
++				     top.evlist->threads, group,
++				     group_fd) < 0) {
+ 			int err = errno;
+ 
+ 			if (err == EPERM || err == EACCES) {
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 2f6bc89..fbb4b4a 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -539,3 +539,33 @@ void perf_evlist__set_selected(struct perf_evlist *evlist,
+ {
+ 	evlist->selected = evsel;
  }
-diff --git a/tools/perf/util/ui/util.h b/tools/perf/util/ui/util.h
-index 9a25538..2d1738b 100644
---- a/tools/perf/util/ui/util.h
-+++ b/tools/perf/util/ui/util.h
-@@ -1,13 +1,14 @@
- #ifndef _PERF_UI_UTIL_H_
- #define _PERF_UI_UTIL_H_ 1
++
++int perf_evlist__open(struct perf_evlist *evlist, bool group)
++{
++	struct perf_evsel *evsel, *first;
++	int err, ncpus, nthreads;
++
++	first = list_entry(evlist->entries.next, struct perf_evsel, node);
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		struct xyarray *group_fd = NULL;
++
++		if (group && evsel != first)
++			group_fd = first->fd;
++
++		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads,
++				       group, group_fd);
++		if (err < 0)
++			goto out_err;
++	}
++
++	return 0;
++out_err:
++	ncpus = evlist->cpus ? evlist->cpus->nr : 1;
++	nthreads = evlist->threads ? evlist->threads->nr : 1;
++
++	list_for_each_entry_reverse(evsel, &evlist->entries, node)
++		perf_evsel__close(evsel, ncpus, nthreads);
++
++	return err;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 6be71fc..1779ffe 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -50,6 +50,8 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
  
--#include <stdbool.h>
-+#include <stdarg.h>
+ union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
  
- int ui__getch(int delay_secs);
- int ui__popup_menu(int argc, char * const argv[]);
- int ui__help_window(const char *text);
--bool ui__dialog_yesno(const char *msg);
-+int ui__dialog_yesno(const char *msg);
- int ui__question_window(const char *title, const char *text,
- 			const char *exit_msg, int delay_secs);
-+int __ui__warning(const char *title, const char *format, va_list args);
++int perf_evlist__open(struct perf_evlist *evlist, bool group);
++
+ int perf_evlist__alloc_mmap(struct perf_evlist *evlist);
+ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
+ void perf_evlist__munmap(struct perf_evlist *evlist);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index b46f6e4..e426264 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -16,6 +16,7 @@
+ #include "thread_map.h"
  
- #endif /* _PERF_UI_UTIL_H_ */
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
++#define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+ 
+ int __perf_evsel__sample_size(u64 sample_type)
+ {
+@@ -204,15 +205,16 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ }
+ 
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+-			      struct thread_map *threads, bool group)
++			      struct thread_map *threads, bool group,
++			      struct xyarray *group_fds)
+ {
+ 	int cpu, thread;
+ 	unsigned long flags = 0;
+-	int pid = -1;
++	int pid = -1, err;
+ 
+ 	if (evsel->fd == NULL &&
+ 	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
+-		return -1;
++		return -ENOMEM;
+ 
+ 	if (evsel->cgrp) {
+ 		flags = PERF_FLAG_PID_CGROUP;
+@@ -220,7 +222,7 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 	}
+ 
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+-		int group_fd = -1;
++		int group_fd = group_fds ? GROUP_FD(group_fds, cpu) : -1;
+ 
+ 		for (thread = 0; thread < threads->nr; thread++) {
+ 
+@@ -231,8 +233,10 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 								     pid,
+ 								     cpus->map[cpu],
+ 								     group_fd, flags);
+-			if (FD(evsel, cpu, thread) < 0)
++			if (FD(evsel, cpu, thread) < 0) {
++				err = -errno;
+ 				goto out_close;
++			}
+ 
+ 			if (group && group_fd == -1)
+ 				group_fd = FD(evsel, cpu, thread);
+@@ -249,7 +253,17 @@ out_close:
+ 		}
+ 		thread = threads->nr;
+ 	} while (--cpu >= 0);
+-	return -1;
++	return err;
++}
++
++void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads)
++{
++	if (evsel->fd == NULL)
++		return;
++
++	perf_evsel__close_fd(evsel, ncpus, nthreads);
++	perf_evsel__free_fd(evsel);
++	evsel->fd = NULL;
+ }
+ 
+ static struct {
+@@ -269,7 +283,8 @@ static struct {
+ };
+ 
+ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+-		     struct thread_map *threads, bool group)
++		     struct thread_map *threads, bool group,
++		     struct xyarray *group_fd)
+ {
+ 	if (cpus == NULL) {
+ 		/* Work around old compiler warnings about strict aliasing */
+@@ -279,19 +294,23 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 	if (threads == NULL)
+ 		threads = &empty_thread_map.map;
+ 
+-	return __perf_evsel__open(evsel, cpus, threads, group);
++	return __perf_evsel__open(evsel, cpus, threads, group, group_fd);
+ }
+ 
+ int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+-			     struct cpu_map *cpus, bool group)
++			     struct cpu_map *cpus, bool group,
++			     struct xyarray *group_fd)
+ {
+-	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group);
++	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group,
++				  group_fd);
+ }
+ 
+ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+-				struct thread_map *threads, bool group)
++				struct thread_map *threads, bool group,
++				struct xyarray *group_fd)
+ {
+-	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group);
++	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group,
++				  group_fd);
+ }
+ 
+ static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index e9a3155..b1d15e6 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -82,11 +82,15 @@ void perf_evsel__free_id(struct perf_evsel *evsel);
+ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
+ int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+-			     struct cpu_map *cpus, bool group);
++			     struct cpu_map *cpus, bool group,
++			     struct xyarray *group_fds);
+ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+-				struct thread_map *threads, bool group);
++				struct thread_map *threads, bool group,
++				struct xyarray *group_fds);
+ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+-		     struct thread_map *threads, bool group);
++		     struct thread_map *threads, bool group,
++		     struct xyarray *group_fds);
++void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
+ #define perf_evsel__match(evsel, t, c)		\
+ 	(evsel->attr.type == PERF_TYPE_##t &&	\
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 7624324..9dd47a4 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -623,7 +623,11 @@ static PyObject *pyrf_evsel__open(struct pyrf_evsel *pevsel,
+ 		cpus = ((struct pyrf_cpu_map *)pcpus)->cpus;
+ 
+ 	evsel->attr.inherit = inherit;
+-	if (perf_evsel__open(evsel, cpus, threads, group) < 0) {
++	/*
++	 * This will group just the fds for this single evsel, to group
++	 * multiple events, use evlist.open().
++	 */
++	if (perf_evsel__open(evsel, cpus, threads, group, NULL) < 0) {
+ 		PyErr_SetFromErrno(PyExc_OSError);
+ 		return NULL;
+ 	}
+@@ -814,6 +818,25 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 	return Py_None;
+ }
+ 
++static PyObject *pyrf_evlist__open(struct pyrf_evlist *pevlist,
++				   PyObject *args, PyObject *kwargs)
++{
++	struct perf_evlist *evlist = &pevlist->evlist;
++	int group = 0;
++	static char *kwlist[] = { "group", NULL };
++
++	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOii", kwlist, &group))
++		return NULL;
++
++	if (perf_evlist__open(evlist, group) < 0) {
++		PyErr_SetFromErrno(PyExc_OSError);
++		return NULL;
++	}
++
++	Py_INCREF(Py_None);
++	return Py_None;
++}
++
+ static PyMethodDef pyrf_evlist__methods[] = {
+ 	{
+ 		.ml_name  = "mmap",
+@@ -822,6 +845,12 @@ static PyMethodDef pyrf_evlist__methods[] = {
+ 		.ml_doc	  = PyDoc_STR("mmap the file descriptor table.")
+ 	},
+ 	{
++		.ml_name  = "open",
++		.ml_meth  = (PyCFunction)pyrf_evlist__open,
++		.ml_flags = METH_VARARGS | METH_KEYWORDS,
++		.ml_doc	  = PyDoc_STR("open the file descriptors.")
++	},
++	{
+ 		.ml_name  = "poll",
+ 		.ml_meth  = (PyCFunction)pyrf_evlist__poll,
+ 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
 -- 
 1.6.2.5
 
