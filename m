@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1JZFWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 01:22:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36621 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab1JZFWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 01:22:16 -0400
-Message-ID: <4EA79A0E.8030604@suse.de>
-Date: Wed, 26 Oct 2011 07:26:38 +0200
-From: Hannes Reinecke <hare@suse.de>
-Organization: SUSE Linux Products GmbH
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1754032Ab1JZFWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 01:22:42 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:41599
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753996Ab1JZFWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 01:22:40 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH] mutex:SMP:bf561:Run smp memory barrier after take atomic lock in mutex_fastpath APIs.
+Date: Wed, 26 Oct 2011 13:15:51 +0800
+Message-ID: <1319606151-29707-1-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: ya su <suya94335@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: about NPIV with qemu-kvm.
-References: <CA+tHM2Hw4jzTNmNtD3ttVpyCFCHnFB9USWK5XsUK6vqGJVmGRg@mail.gmail.com>
-In-Reply-To: <CA+tHM2Hw4jzTNmNtD3ttVpyCFCHnFB9USWK5XsUK6vqGJVmGRg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2011 06:40 AM, ya su wrote:
-> hi, hannes:
-> 
->     I want to use NPIV with qemu-kvm, I issued the following command:
-> 
->     echo '1111222233334444:5555666677778888' >
-> /sys/class/fc_host/host0/vport_create
-> 
->     and it will produce a new host6 and one vport succesfully, but it
-> does not create any virtual hba pci device. so I don't know how to
-> assign the virtual host to qemu-kvm.
-> 
-Well, you can't. There is no mechanism for. When using NPIV you need
-to pass in the individual LUNs via eg virtio-blk.
+From: Sonic Zhang <sonic.zhang@analog.com>
 
->     from your this mail, does array will first need to assign a lun to
-> this vport? and through this new created disk, like device /dev/sdf,
-> then I add qemu-kvm with -drive file=/dev/sdf,if=virtio... arguments?
-> 
-Yes. That's what you need to do.
+In blackfin SMP architecture, no cache coherence among cores is supppored by hardware. Data protected
+by spin lock or atomic operation are kept consistent by invalidating entired local cache in spin lock APIs
+and smp memory barrier APIs on the other cores.
 
-Cheers,
+In mutex fast path APIs, spin lock may not be called if the lock can be taken by atomic operation.
+So, smp memory barrier should be invoked to keep cache consistent for SMP architecture without hardware
+cache coherency support.
 
-Hannes
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ include/asm-generic/mutex-dec.h  |   10 +++++++++-
+ include/asm-generic/mutex-xchg.h |    8 ++++++++
+ 2 files changed, 17 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/mutex-dec.h b/include/asm-generic/mutex-dec.h
+index f104af7..61f722f 100644
+--- a/include/asm-generic/mutex-dec.h
++++ b/include/asm-generic/mutex-dec.h
+@@ -22,6 +22,8 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+ 		fail_fn(count);
++	else
++		smp_rmb();
+ }
+ 
+ /**
+@@ -39,6 +41,8 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+ 		return fail_fn(count);
++	else
++		smp_rmb();
+ 	return 0;
+ }
+ 
+@@ -60,6 +64,8 @@ __mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_inc_return(count) <= 0))
+ 		fail_fn(count);
++	else
++		smp_wmb();
+ }
+ 
+ #define __mutex_slowpath_needs_to_unlock()		1
+@@ -82,8 +88,10 @@ __mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ static inline int
+ __mutex_fastpath_trylock(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+-	if (likely(atomic_cmpxchg(count, 1, 0) == 1))
++	if (likely(atomic_cmpxchg(count, 1, 0) == 1)) {
++		smp_rmb();
+ 		return 1;
++	}
+ 	return 0;
+ }
+ 
+diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
+index 580a6d3..6d6bde8 100644
+--- a/include/asm-generic/mutex-xchg.h
++++ b/include/asm-generic/mutex-xchg.h
+@@ -27,6 +27,8 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+ 		fail_fn(count);
++	else
++		smp_rmb();
+ }
+ 
+ /**
+@@ -44,6 +46,8 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+ 		return fail_fn(count);
++	else
++		smp_rmb();
+ 	return 0;
+ }
+ 
+@@ -64,6 +68,8 @@ __mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ {
+ 	if (unlikely(atomic_xchg(count, 1) != 0))
+ 		fail_fn(count);
++	else
++		smp_wmb();
+ }
+ 
+ #define __mutex_slowpath_needs_to_unlock()		0
+@@ -104,6 +110,8 @@ __mutex_fastpath_trylock(atomic_t *count, int (*fail_fn)(atomic_t *))
+ 		if (prev < 0)
+ 			prev = 0;
+ 	}
++	if (prev)
++		smp_rmb();
+ 
+ 	return prev;
+ }
 -- 
-Dr. Hannes Reinecke              zSeries & Storage
-hare@suse.de                  +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+1.7.0.4
+
+
