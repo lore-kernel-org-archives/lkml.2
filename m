@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab1JZKfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 06:35:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22149 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932490Ab1JZKfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 06:35:00 -0400
-Message-ID: <4EA7E21B.8020805@redhat.com>
-Date: Wed, 26 Oct 2011 12:34:03 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S932731Ab1JZLOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 07:14:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55525 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932673Ab1JZLOD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 07:14:03 -0400
 MIME-Version: 1.0
-To: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-CC: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC V2 3/5] kvm hypervisor : Add two hypercalls to support
- pv-ticketlock
-References: <20111023190307.16364.35381.sendpatchset@oc5400248562.ibm.com> <20111023190558.16364.2136.sendpatchset@oc5400248562.ibm.com> <4EA53A7D.300@redhat.com> <20111024122734.GA10634@linux.vnet.ibm.com> <4EA56385.9040302@redhat.com> <20111024135032.GB10634@linux.vnet.ibm.com> <4EA6FEC2.1060209@linux.vnet.ibm.com>
-In-Reply-To: <4EA6FEC2.1060209@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.3.2
+Date: Wed, 26 Oct 2011 13:14:00 +0200
+Message-ID: <CAM8FrKKPjvmtqo2v_xjQBw+xBoBypynp_YdwkXThm=EVyU2y9Q@mail.gmail.com>
+Subject: Re: [PATCH] regulator: Use regmap_read/write(), regmap_update_bits
+ functions directly
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: jhbird.choi@samsung.com
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2011 08:24 PM, Raghavendra K T wrote:
->
-> So then do also you foresee the need for directed yield at some point,
-> to address LHP? provided we have good improvements to prove.
+Is'nt this change already made in commit
+90923351d480fffd0d24646db83f6f8315eed0d9 ?
 
-Doesn't this patchset completely eliminate lock holder preemption?
+Are you using an old kernel version?
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Copy from the git log:
 
+commit 90923351d480fffd0d24646db83f6f8315eed0d9
+Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date:   Sat Jun 18 01:18:51 2011 +0100
+
+    regulator: Convert tps65023 to use regmap API
+
+    Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+    Acked-by: Liam Girdwood <lrg@ti.com>
+    Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+
+Med vänliga hälsningar / Best regards
+Marcus Folkesson
