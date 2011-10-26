@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1JZGUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 02:20:18 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:51459 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab1JZGUR (ORCPT
+	id S1754123Ab1JZGVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 02:21:24 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10979 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab1JZGVX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 02:20:17 -0400
-Message-ID: <4EA7A69B.1050101@scalemp.com>
-Date: Wed, 26 Oct 2011 08:20:11 +0200
-From: Eial Czerwacki <eial@scalemp.com>
-Organization: ScaleMP
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101020 Remi/fc8 Thunderbird/3.1.5
+	Wed, 26 Oct 2011 02:21:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 25 Oct 2011 23:21:16 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Chanho Park <chanho61.park@samsung.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+Date: Tue, 25 Oct 2011 23:21:13 -0700
+Subject: RE: [PATCH] drivers: pinctrl: add a pin_base for sparse gpio-ranges
+Thread-Topic: [PATCH] drivers: pinctrl: add a pin_base for sparse gpio-ranges
+Thread-Index: AcyTlt07UXZp9UagRbu8use0Yme9FAAEBtnA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B452D@HQMAIL01.nvidia.com>
+References: <1319602943-17946-1-git-send-email-chanho61.park@samsung.com>
+In-Reply-To: <1319602943-17946-1-git-send-email-chanho61.park@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: linux-kernel@vger.kernel.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: Re: [PATCH] AMD: modify cpu probe from APICID to initial APICID
-References: <4EA6695C.1000904@scalemp.com>	<9B14D1490DDECA4E974F6B9FC9EBAB3140CD274366@VMBX108.ihostexchange.net>	<4EA699B5.4030008@scalemp.com>	<9B14D1490DDECA4E974F6B9FC9EBAB3140CD27436C@VMBX108.ihostexchange.net>	<4EA6A24D.1000400@scalemp.com> <CAE9FiQUrq-3GDhaZS8gOL5NBHF-ZcWjHiWWUYP4AdM2+q_12Ow@mail.gmail.com>
-In-Reply-To: <CAE9FiQUrq-3GDhaZS8gOL5NBHF-ZcWjHiWWUYP4AdM2+q_12Ow@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2011 11:51 PM, Yinghai Lu wrote:
-> On Tue, Oct 25, 2011 at 4:49 AM, Eial Czerwacki<eial@scalemp.com>  wrote:
->> Make AMD probe processors using APICID rather than the initial APICID.
->>
->>
->> Signed-off-by: Eial Czerwacki<eial@scalemp.com>
->> Signed-off-by: Shai Fultheim<shai@scalemp.com>
->> ---
->>
->> --- a/arch/x86/kernel/cpu/amd.c 2011-09-14 05:58:19.542910736 -0700
->> +++ b/arch/x86/kernel/cpu/amd.c 2011-09-14 06:01:41.493209624 -0700
->> @@ -299,9 +299,9 @@ static void __cpuinit amd_detect_cmp(str
->>
->>         bits = c->x86_coreid_bits;
->>         /* Low order bits define the core id (index of core in socket) */
->> -       c->cpu_core_id = c->initial_apicid&      ((1<<      bits)-1);
->> +       c->cpu_core_id = c->apicid&      ((1<<      bits)-1);
->>         /* Convert the initial APIC ID into the socket ID */
->> -       c->phys_proc_id = c->initial_apicid>>      bits;
->> +       c->phys_proc_id = c->apicid>>      bits;
->>         /* use socket ID also for last level cache */
->>         per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
->>         /* fixup topology information on multi-node processors */
->>
->
-> No, that is not right.
->
-> We have to initial apicid to get socket/core mapping.
->
-> BTW, your mail client has some problem with formatting.
->
-> Thanks
->
-> Yinghai
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Chanho Park wrote at Tuesday, October 25, 2011 10:22 PM:
+> This patch enables mapping a base offset of gpio ranges with
+> a pin offset even if does'nt matched. A base of pinctrl_gpio_range
+> means a base offset of gpio. However, we cannot convert gpio to pin
+> number for sparse gpio ranges just only using a gpio base offset.
+> We can convert a gpio to real pin number(even if not matched) using
+> a new pin_base which means a base pin offset of requested gpio range.
+...
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+...
+> @@ -289,38 +291,12 @@ So this complex system has one pin controller handling two different
+>  GPIO chips. Chip a has 16 pins and chip b has 8 pins. They are mapped in
+>  the global GPIO pin space at:
+> 
+> -chip a: [32 .. 47]
+> -chip b: [48 .. 55]
+> -
+> -When GPIO-specific functions in the pin control subsystem are called, these
+> -ranges will be used to look up the apropriate pin controller by inspecting
+> -and matching the pin to the pin ranges across all controllers. When a
+> -... [ quit a few lines of documentation removed]
+> -(If the GPIO subsystem is ever refactored to use a local per-GPIO controller
+> -pin space, this mapping will need to be augmented accordingly.)
+> -
+> +chip a:
+> +	gpio-range : [32 .. 47]
+> +	pin-range  : [32 .. 47]
+> +chip b:
+> +	gpio-range : [48 .. 55]
+> +	pin-range  : [64 .. 71]
 
-ok, I'll review the patch again.
+I'm all for replacing the example here with something more complete, but
+removing all that text from the documentation doesn't seem right.
 
-is the format ok now?
+...
+> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+> index 90dd28b..7768e44 100644
+> --- a/include/linux/pinctrl/pinctrl.h
+> +++ b/include/linux/pinctrl/pinctrl.h
+> @@ -127,6 +127,7 @@ struct pinctrl_pin_desc {
+>   * @name: a name for the chip in this range
+>   * @id: an ID number for the chip in this range
+>   * @base: base offset of the GPIO range
+> + * @pin_base: base pin offset of the GPIO range
 
+This may be bike-shedding, but I'd tend to call this "gpio_base", since
+it's the first "gpio" number of this range, not the first "pin" number
+("pins" are used in the pinctrl subsystem, but "gpios" by the GPIO
+Subsystem)
 
-Thanks,
+-- 
+nvpublic
 
-Eial.
