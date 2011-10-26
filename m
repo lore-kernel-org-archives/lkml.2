@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1JZDNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Oct 2011 23:13:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42837 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab1JZDNE (ORCPT
+	id S1754713Ab1JZDQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Oct 2011 23:16:25 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:45773 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab1JZDQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Oct 2011 23:13:04 -0400
-Message-ID: <4EA77ABB.40503@numascale-asia.com>
-Date: Wed, 26 Oct 2011 11:12:59 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Tue, 25 Oct 2011 23:16:24 -0400
+Message-ID: <4EA77B78.6080706@panasas.com>
+Date: Tue, 25 Oct 2011 20:16:08 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>, H Peter Anvin <hpa@zytor.com>,
-        Steffen Persvold <sp@numascale.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 3/3] Add NumaChip quirk
-References: <1318926156-25504-1-git-send-email-daniel@numascale-asia.com> <1318926156-25504-3-git-send-email-daniel@numascale-asia.com> <alpine.LFD.2.02.1110251550430.21837@ionos>
-In-Reply-To: <alpine.LFD.2.02.1110251550430.21837@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>
+Subject: Re: nfsd (and lock) changes for 3.2
+References: <20111025121924.GA15662@fieldses.org>
+In-Reply-To: <20111025121924.GA15662@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/10/2011 21:54, Thomas Gleixner wrote:
-> Daniel,
->
-> On Tue, 18 Oct 2011, Daniel J Blueman wrote:
->
->> Add quirk for Numascale's NumaChip to prevent resource conflicts.
->>
->> v2:
->>   - [Daniel] rediffed and validated against 3.1-rc10
->>
->> Signed-off-by: Steffen Persvold<sp@numascale.com>
-> So, who wrote that code? If Steffen, then you should put a From:
-> .... when sending patches.
-Steffen wrote the code; I reviewed and addressed compliance issues 
-(hence the Signed-off-by ordering).
+On 10/25/2011 05:19 AM, J. Bruce Fields wrote:
+> Changes for nfsd (and also a few file-locking changes) are available in
+> the git repository at:
+> 
+> 	git://linux-nfs.org/~bfields/linux.git for-3.2
+> 
+> This is the same tree I've always used--I assume you believe it's mine
+> without a need for signing anything.  Feel free to tell me otherwise.
+> 
 
-I'll add the From header and send the patches again.
+<Snip>
 
-Thanks Thomas,
-   Daniel
+> 
+> Boaz Harrosh (1):
+>       nfsd4: fix failure to end nfsd4 grace period
+> 
 
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+Bruce hi.
 
+As I recall this failure I have experienced in early stages of the
+3.1-rcX series. I admit that I always run with Benny's pnfs tree,
+but I do not think it is patches that Benny added from the 3.2 set
+I think it is breakage introduced by the 3.1 merge window.
+
+Therefor I think that this patch must be sent to Stable@ otherwise
+surly 3.1 Kernel users are to hit it. (You can escapee it)
+
+Though it has been pulled to Linus tree, without the CC: stable@kernel
+I think you can just send the patch to <stable@kernel.org> and it
+will be included.
+
+(What other 3.1 bug fixes are missing)
+
+Thanks
+Boaz
