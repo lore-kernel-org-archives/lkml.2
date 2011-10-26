@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab1JZGYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 02:24:11 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:21119 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab1JZGYJ (ORCPT
+	id S1754321Ab1JZGYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 02:24:24 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:41648 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754009Ab1JZGYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 02:24:09 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=HHFZDki0bGijVoAeC248bogTiY6qZeOZ2qj2/zOiEExVa/QbLWqnnZy62Vb6T5DH0
-	S++ESqzYzAk/Pss+2SSkA==
-Date: Tue, 25 Oct 2011 23:24:02 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Colin Cross <ccross@android.com>
-cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-In-Reply-To: <CAMbhsRS+-jn7d1bTd4F0_RB9860iWjOHLfOkDsqLfWEUbR3TYA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1110252322220.20273@chino.kir.corp.google.com>
-References: <1319524789-22818-1-git-send-email-ccross@android.com> <20111025090956.GA10797@suse.de> <alpine.DEB.2.00.1110251513520.26017@chino.kir.corp.google.com> <CAMbhsRQ3y2SBwEfjiYgfxz2-h0fgn20mLBYgFuBwGqon0f-a8g@mail.gmail.com>
- <alpine.DEB.2.00.1110252244270.18661@chino.kir.corp.google.com> <alpine.DEB.2.00.1110252311030.20273@chino.kir.corp.google.com> <CAMbhsRS+-jn7d1bTd4F0_RB9860iWjOHLfOkDsqLfWEUbR3TYA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 26 Oct 2011 02:24:23 -0400
+X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Oct 2011 02:24:23 EDT
+Date: Wed, 26 Oct 2011 02:15:21 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>,
+        Roland Vossen <rvossen@broadcom.com>
+Subject: Re: [PATCH] module,bug: Add TAINT_OOT_MODULE flag for modules not
+	built in-tree
+Message-ID: <20111026061521.GB16408@Krystal>
+References: <1319461948.31243.31.camel@deadeye> <4EA57CBF.2050901@xenotime.net> <87k47tpvvm.fsf@rustcorp.com.au> <20111025153855.GA24779@elliptictech.com> <1319558749.11727.6.camel@deadeye> <20111025165142.GA25354@elliptictech.com> <20111025200455.GA6376@kroah.com> <20111025201723.GA25063@redhat.com> <87zkgoo09f.fsf@rustcorp.com.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <87zkgoo09f.fsf@rustcorp.com.au>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 02:03:09 up 566 days, 15:52,  3 users,  load average: 1.03, 0.58,
+	0.25
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Oct 2011, Colin Cross wrote:
-
-> > Or, rather, when pm_restrict_gfp_mask() clears __GFP_IO and __GFP_FS that
-> > it also has the same behavior as __GFP_NORETRY in should_alloc_retry() by
-> > setting a variable in file scope.
-> >
+* Rusty Russell (rusty@rustcorp.com.au) wrote:
+> On Tue, 25 Oct 2011 16:17:24 -0400, Dave Jones <davej@redhat.com> wrote:
+> > commit 7816c45bf13255157c00fb8aca86cb64d825e878
+> > Author: Roland Vossen <rvossen@broadcom.com>
+> > Date:   Thu Apr 7 11:20:58 2011 +0200
+> > 
+> >     modules: Enabled dynamic debugging for staging modules
+> ...
+> >     
+> >     Signed-off-by: Roland Vossen <rvossen@broadcom.com>
+> >     Acked-by: Jason Baron <jbaron@redhat.com>
+> >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> Why do you prefer that over adding a gfp_required_mask?
+> Greg, you know better.  This is why we have maintainers: I can't track
+> patches I don't see.  Grrr...
 > 
+> > If we want to support out of tree modules with this, should we just nuke the
+> > whole check, or do we still want to prevent certain types of tainted kernels
+> > from using this stuff ?
+> 
+> It goes back to the first implementation of kernel markers.  IIRC, it
+> was to prevent dynamic debug stuff from circumventing licensing, but
+> testing for *any* taint seems overbroad.  Mathieu?
 
-Because it avoids an unnecessary OR in the page and slab allocator 
-fastpaths which are red hot :)
+This check for tainted modules was first introduced with markers, and
+then used by tracepoints, and then also by dynamic debug. The rationale
+for this check was mainly to ensure that the marker/tracepoint code
+would not trigger a crash when loading a module with incompatible module
+header, originally compiled for an older kernel, into a newer kernel.
+This problem would happen even if the said module does not contain any
+marker/tracepoint, because we happen to try to use fields that are
+non-existent in the module header.
+
+AFAIK, dynamic debug use a similar trick that require extra members in
+the module header, so checking that the module header format is
+compatible with the kernel would be enough. Is there a taint flag that
+allows us to check for this more narrowly ? TAINT_FORCED_MODULE would
+probably be the closest one we have now, although we might want to be
+more specific than that.
+
+Thanks,
+
+Mathieu
+
+> 
+> Thanks,
+> Rusty.
+> PS.  Can't see how this related to lockdep either...
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
