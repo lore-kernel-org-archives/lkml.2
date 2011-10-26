@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab1JZON3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 10:13:29 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54018 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab1JZON2 (ORCPT
+	id S933202Ab1JZOQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 10:16:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48072 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab1JZOQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 10:13:28 -0400
-Message-ID: <1319638397.6637.2.camel@phoenix>
-Subject: [PATCH] ASoC: tlv320aic3x: Use snd_soc_update_bits for
- read-modify-write
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jarkko Nikula <jhnikula@gmail.com>,
-        Vladimir Barinov <vbarinov@embeddedalley.com>,
-        alsa-devel@alsa-project.org
-Date: Wed, 26 Oct 2011 22:13:17 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 26 Oct 2011 10:16:40 -0400
+Date: Wed, 26 Oct 2011 16:16:35 +0200
+From: Domenico Andreoli <cavokz@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY/serial driver patches for 3.2
+Message-ID: <20111026141635.GA2293@glitch>
+Mail-Followup-To: Greg KH <gregkh@suse.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+References: <20111026114236.GA22180@kroah.com>
+ <CA+55aFycM+nHxJNnFSjEXQvZkeBfHu161ePC0=7sWKZR1toQNA@mail.gmail.com>
+ <20111026133438.GA26336@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111026133438.GA26336@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_update_bits for read-modify-write register access instead of
-open-coding it using snd_soc_read and snd_soc_write
+On Wed, Oct 26, 2011 at 03:34:38PM +0200, Greg KH wrote:
+> On Wed, Oct 26, 2011 at 03:18:21PM +0200, Linus Torvalds wrote:
+> > On Wed, Oct 26, 2011 at 1:42 PM, Greg KH <gregkh@suse.de> wrote:
+> > >
+> > > The one in 8250_pci.c is trivial to fix, the atmel_serial one isn't as
+> > > easy, but I'm sure you can figure it out :)  If you want me to do the
+> > > merge for it, I'll be glad to do so, just let me know.
+> > 
+> > So I figured it out, but please double-check, especially since it
+> > seems to be some arm-only driver that I can't even compile-test my
+> > resolution.
+> 
+> I think it looks correct, but yeah, as I can't build it either, it's
+> tough to tell.
+> 
+> Nicolas, can you verify that Linus's merge was done correctly?  If not,
+> can you send a patch?  It is commit
+> efb8d21b2c6db3497655cc6a033ae8a9883e4063 in Linus's tree right now.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/tlv320aic3x.c |   41 +++++++++++++--------------------------
- 1 files changed, 14 insertions(+), 27 deletions(-)
+tryed to build efb8d21 with at91cap9adk_defconfig + DT + 8250 but it fails:
 
-diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
-index 7a49390..a77f6ea 100644
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -833,7 +833,6 @@ static int aic3x_hw_params(struct snd_pcm_substream *substream,
- 	int codec_clk = 0, bypass_pll = 0, fsref, last_clk = 0;
- 	u8 data, j, r, p, pll_q, pll_p = 1, pll_r = 1, pll_j = 1;
- 	u16 d, pll_d = 1;
--	u8 reg;
- 	int clk;
- 
- 	/* select data word length */
-@@ -869,14 +868,13 @@ static int aic3x_hw_params(struct snd_pcm_substream *substream,
- 		snd_soc_write(codec, AIC3X_PLL_PROGA_REG, pll_q << PLLQ_SHIFT);
- 		snd_soc_write(codec, AIC3X_GPIOB_REG, CODEC_CLKIN_CLKDIV);
- 		/* disable PLL if it is bypassed */
--		reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
--		snd_soc_write(codec, AIC3X_PLL_PROGA_REG, reg & ~PLL_ENABLE);
-+		snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG, PLL_ENABLE, 0);
- 
- 	} else {
- 		snd_soc_write(codec, AIC3X_GPIOB_REG, CODEC_CLKIN_PLLDIV);
- 		/* enable PLL when it is used */
--		reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
--		snd_soc_write(codec, AIC3X_PLL_PROGA_REG, reg | PLL_ENABLE);
-+		snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG,
-+				    PLL_ENABLE, PLL_ENABLE);
- 	}
- 
- 	/* Route Left DAC to left channel input and
-@@ -1155,7 +1153,6 @@ static int aic3x_set_bias_level(struct snd_soc_codec *codec,
- 				enum snd_soc_bias_level level)
- {
- 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
--	u8 reg;
- 
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
-@@ -1164,9 +1161,8 @@ static int aic3x_set_bias_level(struct snd_soc_codec *codec,
- 		if (codec->dapm.bias_level == SND_SOC_BIAS_STANDBY &&
- 		    aic3x->master) {
- 			/* enable pll */
--			reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
--			snd_soc_write(codec, AIC3X_PLL_PROGA_REG,
--				      reg | PLL_ENABLE);
-+			snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG,
-+					    PLL_ENABLE, PLL_ENABLE);
- 		}
- 		break;
- 	case SND_SOC_BIAS_STANDBY:
-@@ -1175,9 +1171,8 @@ static int aic3x_set_bias_level(struct snd_soc_codec *codec,
- 		if (codec->dapm.bias_level == SND_SOC_BIAS_PREPARE &&
- 		    aic3x->master) {
- 			/* disable pll */
--			reg = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
--			snd_soc_write(codec, AIC3X_PLL_PROGA_REG,
--				      reg & ~PLL_ENABLE);
-+			snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG,
-+					    PLL_ENABLE, 0);
- 		}
- 		break;
- 	case SND_SOC_BIAS_OFF:
-@@ -1294,7 +1289,6 @@ static int aic3x_resume(struct snd_soc_codec *codec)
- static int aic3x_init(struct snd_soc_codec *codec)
- {
- 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
--	int reg;
- 
- 	snd_soc_write(codec, AIC3X_PAGE_SELECT, PAGE0_SELECT);
- 	snd_soc_write(codec, AIC3X_RESET, SOFT_RESET);
-@@ -1316,20 +1310,13 @@ static int aic3x_init(struct snd_soc_codec *codec)
- 	snd_soc_write(codec, DACR1_2_MONOLOPM_VOL, DEFAULT_VOL | ROUTE_ON);
- 
- 	/* unmute all outputs */
--	reg = snd_soc_read(codec, LLOPM_CTRL);
--	snd_soc_write(codec, LLOPM_CTRL, reg | UNMUTE);
--	reg = snd_soc_read(codec, RLOPM_CTRL);
--	snd_soc_write(codec, RLOPM_CTRL, reg | UNMUTE);
--	reg = snd_soc_read(codec, MONOLOPM_CTRL);
--	snd_soc_write(codec, MONOLOPM_CTRL, reg | UNMUTE);
--	reg = snd_soc_read(codec, HPLOUT_CTRL);
--	snd_soc_write(codec, HPLOUT_CTRL, reg | UNMUTE);
--	reg = snd_soc_read(codec, HPROUT_CTRL);
--	snd_soc_write(codec, HPROUT_CTRL, reg | UNMUTE);
--	reg = snd_soc_read(codec, HPLCOM_CTRL);
--	snd_soc_write(codec, HPLCOM_CTRL, reg | UNMUTE);
--	reg = snd_soc_read(codec, HPRCOM_CTRL);
--	snd_soc_write(codec, HPRCOM_CTRL, reg | UNMUTE);
-+	snd_soc_update_bits(codec, LLOPM_CTRL, UNMUTE, UNMUTE);
-+	snd_soc_update_bits(codec, RLOPM_CTRL, UNMUTE, UNMUTE);
-+	snd_soc_update_bits(codec, MONOLOPM_CTRL, UNMUTE, UNMUTE);
-+	snd_soc_update_bits(codec, HPLOUT_CTRL, UNMUTE, UNMUTE);
-+	snd_soc_update_bits(codec, HPROUT_CTRL, UNMUTE, UNMUTE);
-+	snd_soc_update_bits(codec, HPLCOM_CTRL, UNMUTE, UNMUTE);
-+	snd_soc_update_bits(codec, HPRCOM_CTRL, UNMUTE, UNMUTE);
- 
- 	/* ADC default volume and unmute */
- 	snd_soc_write(codec, LADC_VOL, DEFAULT_GAIN);
--- 
-1.7.5.4
+drivers/tty/serial/atmel_serial.c: In function 'atmel_serial_probe':
+drivers/tty/serial/atmel_serial.c:1788:3: error: implicit declaration of function 'of_alias_get_id' [-Werror=implicit-function-declaration]
+drivers/tty/serial/atmel_serial.c: At top level:
+drivers/tty/serial/atmel_serial.c:1893:3: error: implicit declaration of function 'of_match_ptr' [-Werror=implicit-function-declaration]
+drivers/tty/serial/atmel_serial.c:1893:3: error: initializer element is not constant
+drivers/tty/serial/atmel_serial.c:1893:3: error: (near initialization for 'atmel_serial_driver.driver.of_match_table')
+cc1: some warnings being treated as errors
 
+there is not mention of such (new) of_match_ptr macro anywhere in Linus' tree.
 
-
+Regards,
+Domenico
