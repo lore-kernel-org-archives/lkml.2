@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1JZVQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 17:16:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36821 "EHLO
+	id S1752660Ab1JZVPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 17:15:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36811 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab1JZVPI (ORCPT
+	with ESMTP id S1752058Ab1JZVPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 17:15:08 -0400
+	Wed, 26 Oct 2011 17:15:04 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
@@ -14,35 +14,56 @@ Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
         Chase Douglas <chase.douglas@canonical.com>,
         Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] Input: psmouse - Add PSMOUSE_CMD_RESET_WRAP
-Date: Wed, 26 Oct 2011 16:14:36 -0500
-Message-Id: <1319663681-11244-3-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH 0/7] Additional ALPS touchpad protocol support
+Date: Wed, 26 Oct 2011 16:14:34 -0500
+Message-Id: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
-References: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add this command in preparation for new ALPS protocol support.
+This patch series adds support for two ALPS touchpad protocol versions
+currently unsupported by the driver, which I've arbitrarily called
+versions 3 and 4 (with the two currently supported protocol versions
+changed to be called versions 1 and 2). The v3 touchpads are commonly
+found on Dell laptops, and the v4 touchpads are found on machines from a
+variety of other manufacturers.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
+Both the v3 and v4 touchpads are capable of low-resolution semi-MT
+support, but this series only includes support for semi-MT on v3. The v4
+protocol has a quirky format, with each data packet containing a full
+set of high-resolution ST coordinates and 1/3 of a set of MT data. Thus
+we receive 3 ST coordinates for every set of MT coordinates, and we can
+only determine the number of contacts every third packet as well. I
+haven't spent much time trying to work out the best way to handle this
+yet; suggestions are appreciated.
+
+Patches 1-4 are preparatory patches. Patch 5 adds ST support for the v3
+and v4 protocols, and patch 6 adds semi-MT support for the v3 protocol.
+Patch 7 documents both protocols.
+
+These patches have been through numerous rounds of user testing with
+various laptop models and are working well at this point.
+
+Special thanks to Andy Skalski, who made my job much easier by doing
+much of the grunt work to reverse-engineer the v3 protocol.
+
+Thanks,
+Seth
+
+
+Seth Forshee (7):
+      Input: ALPS - Move protocol information to Documentation
+      Input: psmouse - Add PSMOUSE_CMD_RESET_WRAP
+      Input: ALPS - Add protocol version field in alps_model_info
+      Input: ALPS - Remove assumptions about packet size
+      Input: ALPS - Add support for protocol versions 3 and 4
+      Input: ALPS - Add semi-MT support for v3 protocol
+      Input: ALPS - Add documentation for protocol versions 3 and 4
+
+ Documentation/input/alps.txt  |  188 ++++++++
+ drivers/input/mouse/alps.c    | 1047 +++++++++++++++++++++++++++++++++++++----
+ drivers/input/mouse/alps.h    |   19 +
  drivers/input/mouse/psmouse.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/input/mouse/psmouse.h b/drivers/input/mouse/psmouse.h
-index 593e910..c2b5aa6 100644
---- a/drivers/input/mouse/psmouse.h
-+++ b/drivers/input/mouse/psmouse.h
-@@ -8,6 +8,7 @@
- #define PSMOUSE_CMD_SETSTREAM	0x00ea
- #define PSMOUSE_CMD_SETPOLL	0x00f0
- #define PSMOUSE_CMD_POLL	0x00eb	/* caller sets number of bytes to receive */
-+#define PSMOUSE_CMD_RESET_WRAP	0x00ec
- #define PSMOUSE_CMD_GETID	0x02f2
- #define PSMOUSE_CMD_SETRATE	0x10f3
- #define PSMOUSE_CMD_ENABLE	0x00f4
--- 
-1.7.5.4
-
+ 4 files changed, 1170 insertions(+), 85 deletions(-)
+ create mode 100644 Documentation/input/alps.txt
