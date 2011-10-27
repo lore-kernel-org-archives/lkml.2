@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1J0Fyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 01:54:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43979 "EHLO mail.zytor.com"
+	id S1753168Ab1J0GAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 02:00:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56724 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475Ab1J0Fys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 01:54:48 -0400
-Message-ID: <4EA8F216.30807@zytor.com>
-Date: Thu, 27 Oct 2011 07:54:30 +0200
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1751922Ab1J0GA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 02:00:29 -0400
+Date: Thu, 27 Oct 2011 07:48:06 +0200
+From: Greg KH <gregkh@suse.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: miche@google.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: Regression: patch " hvc_console: display printk messages on
+ console." causing infinite loop with 3.2-rc0 + Xen.
+Message-ID: <20111027054806.GA1377@suse.de>
+References: <20111027053007.GA32765@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, giancarlo.asnaghi@st.com
-Subject: Re: x86/Kconfig: where to place a new chipset
-References: <20111027011737.GA17910@mail.gnudd.com>
-In-Reply-To: <20111027011737.GA17910@mail.gnudd.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111027053007.GA32765@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2011 03:17 AM, Alessandro Rubini wrote:
-> Hello.
+On Thu, Oct 27, 2011 at 01:30:08AM -0400, Konrad Rzeszutek Wilk wrote:
+> Hey Miche.
 > 
-> I'm currently working on a PCIe chipset (or IO-Hub), called STA2X11.
-> The device hosts a number of peripherals (sata, ether, spi, uart, ...)
-> and a DMA controller.  The individual PCI functions can't be enabled
-> by themselves, as chip support must be activated first.  This is both
-> because some internal mappings must be setup and because internal
-> device functions rely on the internal DMA engine. Actually, an
-> instance of swiotlb is being used.
+> The git commit 361162459f62dc0826b82c9690a741a940f457f0:
 > 
-> While I'm sure core code should be in arch/x86/platform (and there is
-> where I placed the initialization code), I'm wondering where should
-> the device fall in the Kconfig tree. I tend to put it in the
-> X86_32_NON_STANDARD stanza, even if the resulting kernel will also
-> work on standard computers (the "SGI Visual Workstation" config option
-> does the same).
+>     hvc_console: display printk messages on console.
 > 
-> On the other hand, the device can either be the core chipset (main use
-> case) or it can be plugged on a PCIe board.
+> is causing an infinite loop when booting Linux under Xen, as so:
 > 
+> [    2.382984] console [hvc0] enabled
+> [    2.382984] console [hvc0] enabled
+> [    2.382984] console [hvc0] enabled
+> [    2.382984] console [hvc0] enabled
+> [    2.382984] console [hvc0] enabled
+> [    2.382984] console [hvc0] enabled
+> .. 
+> 
+> (see attached file titled bad.log)
+> 
+> If I use Linus's latest git tree and revert your patch I get the kernel
+> to bootup (see good.log file),
 
-The nonstandard platform location seems fine to me.
+Ick, not good, thanks for letting us know.
 
-	-hpa
+Miche, want me to just revert this, or do you think you can fix it?
 
+thanks,
+
+greg k-h
