@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1J0Hqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 03:46:30 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33723 "EHLO mx2.mail.elte.hu"
+	id S1754623Ab1J0Hvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 03:51:52 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39618 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754459Ab1J0Hq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 03:46:28 -0400
-Date: Thu, 27 Oct 2011 09:44:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 1/3] Add Numachip APIC support
-Message-ID: <20111027074449.GF15923@elte.hu>
-References: <1319609230-18897-1-git-send-email-daniel@numascale-asia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319609230-18897-1-git-send-email-daniel@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1752353Ab1J0Hvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 03:51:50 -0400
+Subject: Re: drivers/net/ethernet/apple
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAMuHMdXxqKoPNNo9a+VK-Yzu0Qp-8zY2+OhHL6pDPF=dsnNK5Q@mail.gmail.com>
+References: <CAMuHMdXxqKoPNNo9a+VK-Yzu0Qp-8zY2+OhHL6pDPF=dsnNK5Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Oct 2011 09:46:39 +0200
+Message-ID: <1319701599.30202.29.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-10-25 at 22:19 +0200, Geert Uytterhoeven wrote:
+> Hi Jeff,
+> 
+> drivers/net/ethernet/apple/mac89x0.c is a driver for the Crystal Semiconductor
+> (Now Cirrus Logic) CS89[02]0, so it belongs in drivers/net/ethernet/cirrus,
+> next to cs89x0.c.
+> 
+> And according to drivers/net/ethernet/apple/mace.h, "mace" is the
+> "Am79C940 MACE (Medium Access Control for Ethernet)", so mace and
+> macmace should be in drivers/net/ethernet/amd/.
 
-* Daniel J Blueman <daniel@numascale-asia.com> wrote:
+The later is hard to tell for sure, it's coupled with an Apple DBDMA
+chip and wired in odd ways, so ...
 
-> +	numachip_write_local_csr(NUMACHIP_CSR_G3_EXT_INTERRUPT_GEN,
-> +				 int_gen.v);
+Ben.
 
-> +	numachip_write_local_csr(NUMACHIP_CSR_G3_EXT_INTERRUPT_GEN,
-> +				 int_gen.v);
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> +	numachip_write_local_csr(NUMACHIP_CSR_G3_EXT_INTERRUPT_GEN,
-> +				 int_gen.v);
 
-Please don't break the line in an ugly way like that just to placate 
-checkpatch.pl.
-
-checkpatch.pl is right to complain about the too long line here - but 
-your fix is wrong: the proper approach is to make the code *shorter*.
-
-So for example instead of numachip_write_local_csr() you could 
-abbreviate it to something obvious such as:
-
-	write_lcsr()
-
-it's not like these will be used outside of the Numachip code, so 
-there's no confusion from the missing numachip_ prefix.
-
-write_gcsr() can be used for the global registers.
-
-Likewise, NUMACHIP_CSR_G3_EXT_INTERRUPT_GEN is way too long as well - 
-you can easily rename it to CSR_G3_EXT_IRQ_GEN or such, without 
-losing expressive value. Then it could be written in the much shorter 
-form of:
-
-	write_lcsr(CSR_G3_EXT_IRQ_GEN, irq_gen.v);
-
-... and magically checkpatch.pl won't complain anymore.
-
-Likewise there's ton's of other way too long names in the patch as 
-well - please try to abbreviate them wherever that can be done 
-without losing expressive value.
-
-Note, we don't want to over-do it: we obviously don't want to shorten 
-names to CSRG3EIG kind of gibberish, so *some* length is of course 
-acceptable.
-
-When a line becomes too long then leave it too long instead of 
-breaking it - line length up to say 100 cols in width are still OK, 
-as long as the surrounding code does not have obvious deficiencies 
-like too much complexity.
-
-Note, while the merge window is in progress already, i think we can 
-still add these patches slightly outside the merge window as well, as 
-they add new hardware support and don't risk regressions elsewhere - 
-if all the structural and fine-detail problems i pointed out during 
-review are fixed.
-
-Thanks,
-
-	Ingo
