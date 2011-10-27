@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1J0Smn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 14:42:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13387 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab1J0Smm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 14:42:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 27 Oct 2011 11:42:38 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Oct 2011 11:42:37 -0700
-Subject: RE: [PATCH 1/2] pinmux: Remove double pin validity check.
-Thread-Topic: [PATCH 1/2] pinmux: Remove double pin validity check.
-Thread-Index: AcyU18VxUCtHmBSLR4qqNr04+vZu2AAAFU1w
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B4962@HQMAIL01.nvidia.com>
-References: <1319662641-28416-1-git-send-email-marek.belisko@open-nandra.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF173E1B48D0@HQMAIL01.nvidia.com>
- <CAAfyv35wup69rvZ0yQpzYfqeE8r+1Rcimr53rFoaBF09X=tTTw@mail.gmail.com>
-In-Reply-To: <CAAfyv35wup69rvZ0yQpzYfqeE8r+1Rcimr53rFoaBF09X=tTTw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754972Ab1J0Soe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 14:44:34 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:39227 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754761Ab1J0Sod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 14:44:33 -0400
+Date: Thu, 27 Oct 2011 11:32:21 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Bob Pearson <rpearson@systemfabricworks.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        David Miller <davem@davemloft.net>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Time for a fresh slice-by-8 crc32.c posting?
+Message-ID: <20111027183221.GV12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au> <20111021165703.GS12447@tux1.beaverton.ibm.com> <20111021191514.GA3997@gondor.apana.org.au> <20111026171556.GU12447@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111026171556.GU12447@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11102718-1976-0000-0000-0000006813BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9RIgqcZ024885
 
-Belisko Marek wrote at Thursday, October 27, 2011 12:40 PM:
-> On Thu, Oct 27, 2011 at 6:37 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > Belisko Marek wrote at Wednesday, October 26, 2011 2:57 PM:
-> >> Function pin_is_valid just call pin_desc_get which is in pin_request
-> >> call some line below. Remove pin_is_valid() check.
-> > ...
-> >> @@ -112,16 +112,6 @@ static int pin_request(struct pinctrl_dev *pctldev,
-> >>
-> >> Â  Â  Â  dev_dbg(&pctldev->dev, "request pin %d for %s\n", pin, function);
-> >>
-> >> - Â  Â  if (!pin_is_valid(pctldev, pin)) {
-> >> - Â  Â  Â  Â  Â  Â  dev_err(&pctldev->dev, "pin is invalid\n");
-> >> - Â  Â  Â  Â  Â  Â  return -EINVAL;
-> >> - Â  Â  }
-> >
-> > So that makes sense.
-> >
-> >> -
-> >> - Â  Â  if (!function) {
-> >> - Â  Â  Â  Â  Â  Â  dev_err(&pctldev->dev, "no function name given\n");
-> >> - Â  Â  Â  Â  Â  Â  return -EINVAL;
-> >> - Â  Â  }
-> >
-> > But I don't think you want to remove that? Oh actually, perhaps removing
-> > that /is/ valid, since it's an internal function and can't be called with
-> > a NULL function parameter. But, you should mention why in the changelog
-> > so it doesn't look like a mistake.
->
-> Well it's not removed. It's moved below pin_desc_get call.
+Hi Bob,
 
-Sigh, so it is. In that case,
+Would you mind posting your current crc32 patches to lkml again?  A couple of
+months have gone by, and it sure would be nice to replace the circa-July patch
+in -next with a newer one.  I recall that there were requests for some code
+changes even in Bob's 8/31 submission, so it'd be nice to have a fresh set from
+you with your latest changes.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+I'd also like to freshen my crc32c refactor patches and send them along too.
 
--- 
-nvpublic
+To clarify, I tried the new crc32{,c}  on my ppc32 and it passed the self test.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--D
+
+On Wed, Oct 26, 2011 at 10:16:10AM -0700, Darrick J. Wong wrote:
+> On Fri, Oct 21, 2011 at 09:15:14PM +0200, Herbert Xu wrote:
+> > On Fri, Oct 21, 2011 at 09:57:03AM -0700, Darrick J. Wong wrote:
+> > > 
+> > > My patchset builds upon Bob Pearson's crc32 patchset from early September.  Do
+> > > my patches fail to apply after applying his patchset?
+> > > 
+> > > Or, to speed things along, should I simply repost both Bob's and my patches as
+> > > one big series?
+> > > 
+> > > Bob, have you sent out a new iteration of your patches since September 6th?
+> > 
+> > I'm fine with you pushing this through whichever tree that Bob's
+> > patches are going through.
+> 
+> Bob,
+> 
+> Which tree (if any) are your patches going through?  
+> 
+> --D
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
