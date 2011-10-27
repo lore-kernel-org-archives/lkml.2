@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab1J0TqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 15:46:13 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2249 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1J0TqM convert rfc822-to-8bit (ORCPT
+	id S1752498Ab1J0Ts1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 15:48:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63672 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab1J0Ts0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 15:46:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 27 Oct 2011 12:45:58 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Thu, 27 Oct 2011 12:45:56 -0700
-Subject: RE: [PATCH 1/6] arm/tegra: initial device tree for tegra30
-Thread-Topic: [PATCH 1/6] arm/tegra: initial device tree for tegra30
-Thread-Index: AcyTNr/pRuzvL7kGTgiCMDnC6e9XUQBqe5Yg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B499C@HQMAIL01.nvidia.com>
-References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
- <1319561644-6160-2-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1319561644-6160-2-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Thu, 27 Oct 2011 15:48:26 -0400
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kbuild@vger.kernel.org
+In-Reply-To: <CAH+eYFBw99Yb-x+QEyZiXZ4yL3r=jr1Z+Gk95DG3hsYLkC_R_A@mail.gmail.com>
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
+	 <CAH+eYFBw99Yb-x+QEyZiXZ4yL3r=jr1Z+Gk95DG3hsYLkC_R_A@mail.gmail.com>
 Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Thu, 27 Oct 2011 22:46:49 +0200
+Message-ID: <1319748409.3235.0.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
-> From: Peter De Schrijver <pdeschrijver@nvidia.com>
->
-> This patch adds the initial device tree for tegra30
+On Thu, 2011-10-27 at 23:35 +0530, Rabin Vincent wrote:
+> On Thu, Oct 27, 2011 at 17:37, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > +config KVMTOOL_TEST_ENABLE
+> > +       bool "Enable options to create a bootable tools/kvm/ kernel"
+> > +       select NET
+> > +       select NETDEVICES
+> > +       select PCI
+> > +       select BLK_DEV
+> > +       select NETWORK_FILESYSTEMS
+> > +       select INET
+> > +       select EXPERIMENTAL
+> > +       select SERIAL_8250
+> > +       select SERIAL_8250_CONSOLE
+> > +       select IP_PNP
+> > +       select IP_PNP_DHCP
+> > +       select BINFMT_ELF
+> > +       select PCI_MSI
+> > +       select KGDB
+> > +       select KGDB_SERIAL_CONSOLE
+> > +       select VIRTIO
+> > +       select VIRTIO_RING
+> > +       select VIRTIO_PCI
+> > +       select VIRTIO_BLK
+> > +       select VIRTIO_CONSOLE
+> > +       select VIRTIO_NET
+> > +       select 9P_FS
+> > +       select NET_9P
+> > +       select NET_9P_VIRTIO
+> 
+> This lot doesn't seem to be enough for me on next-20111025.  I seem to
+> have to also enable CONFIG_FB_VESA for the kernel to boot.
+> 
+> Without CONFIG_FB_VESA, I just get:
+> 
+> $ tools/kvm/kvm run --debug arch/x86/boot/bzImage --disk
+> ~/kernel/linux-0.2.img
+>   # kvm run -k arch/x86/boot/bzImage -m 448 -c 4 --name guest-11466
+> PPrroobbiinngg  EEDDDD  ((eedddd==ooffff  ttoo  ddiissaabbllee))......  ookk
+> <no more output>
 
-It'd be nice if you could configure git send-email so it knows your name;
-that way the From email header will include it.
-
-> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-> new file mode 100644
-> index 0000000..3550b9a
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/tegra30.dtsi
-> @@ -0,0 +1,128 @@
-> +/include/ "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "NVIDIA Tegra 30";
-
-Separately later, I don't suppose you could send a patch to add a model
-field to tegra20.dtsi too?
-
-Otherwise, this patch seems fine.
-
-Acked-by: Stephen Warren <swarren@nvidia.com>
+This is a kvm tools issue and should be fixed within kvm tools.
 
 -- 
-nvpublic
+
+Sasha.
 
