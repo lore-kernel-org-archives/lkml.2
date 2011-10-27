@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1J0QZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 12:25:00 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:65507 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1J0QZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 12:25:00 -0400
-Date: Thu, 27 Oct 2011 09:24:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/13] block, cfq: misc updates to cfq_io_context
-Message-ID: <20111027162454.GC29899@google.com>
-References: <1319593719-19132-1-git-send-email-tj@kernel.org>
- <1319593719-19132-7-git-send-email-tj@kernel.org>
- <20111027153901.GG7491@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111027153901.GG7491@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753093Ab1J0Qb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 12:31:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987Ab1J0Qb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 12:31:58 -0400
+Subject: Re: [PATCH 0/4] iommu: iommu_ops group interface
+From: Alex Williamson <alex.williamson@redhat.com>
+To: joerg.roedel@amd.com
+Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
+        dwg@au1.ibm.com, scottwood@freescale.com, B08248@freescale.com,
+        benh@kernel.crashing.org
+Date: Thu, 27 Oct 2011 10:31:42 -0600
+In-Reply-To: <20111021195412.8438.9951.stgit@s20.home>
+References: <20111021195412.8438.9951.stgit@s20.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1319733103.5715.3.camel@x201.home>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
-
-On Thu, Oct 27, 2011 at 11:39:01AM -0400, Vivek Goyal wrote:
-> On Tue, Oct 25, 2011 at 06:48:32PM -0700, Tejun Heo wrote:
-> > Make the following changes to prepare for ioc/cic management cleanup.
-> > 
-> > * Add cic->q so that ioc can determine the associated queue without
-> >   querying cfq.  This will eventually replace ->key.
+On Fri, 2011-10-21 at 13:55 -0600, Alex Williamson wrote:
+> IOMMUs can't always distiguish transactions from each individual
+> device in a system.  Sometimes this is by design (such as powerpc
+> partitionable endpoints), other times by topology (PCIe-to-PCI
+> bridges masking downstream devices).  We call these sets of
+> indistinguishable devices "groups".
 > 
-> Not sure what's the advantage of storing cic->q instead of cic->cfqd.
-> In blk-ioc code getting to cic's queue becomes easier but then reaching
-> to cfqd in cfq code becomes much longer.
+> In order to support secure userspace drivers, like vfio, we need
+> an interface to expose the device-to-group relationship.  This
+> allows us to create policies ensuring that userspace controls all
+> of the devices in the group before allowing individual device
+> access.
+> 
+> This series implements the iommu_ops API interface and sysfs
+> interface for exposing groups to userspace.  This also includes
+> the intel-iommu and amd-iommu backend implementations.  It's
+> intended that the vfio driver will make use of these interfaces
+> to support generic device assignment for virtual machines.  See
+> git://github.com/awilliam/linux-vfio.git (vfio-ng) for a working
+> example using this interface.
+> 
+> Patches based on Joerg's next branch to support per-bus iommu_ops.
+> 
+> Note the amd-iommu is untested, I'm still working on setting up
+> an AMD-Vi capable system.  Thanks,
 
-It's primarily for API separation.  Currently, io_context and cfq are
-intermixed without clear layer of separation.  The optimization of
-avoiding one indirect deref at this level isn't worth blurring API
-boundaries especially when the cachelines being derefed are known to
-be hot (we're deep in elevator path after all).  I'm working on a
-patchset to make proper separation between them.  If reducing that one
-indrect load proves to be worthwhile (I'm extremely skeptical tho), we
-can use another another caching entry in cic.
+Now tested, even seems to work :)
 
-Thanks.
+Alex
 
--- 
-tejun
+> ---
+> 
+> Alex Williamson (4):
+>       iommu: Add option to group multi-function devices
+>       amd-iommu: Implement iommu_device_group
+>       intel-iommu: Implement iommu_device_group
+>       iommu: Add iommu_device_group callback and iommu_group sysfs entry
+> 
+> 
+>  Documentation/kernel-parameters.txt |    4 ++
+>  arch/ia64/include/asm/iommu.h       |    2 +
+>  arch/ia64/kernel/pci-dma.c          |    1 +
+>  arch/x86/include/asm/iommu.h        |    1 +
+>  arch/x86/kernel/pci-dma.c           |   11 ++++++
+>  drivers/iommu/amd_iommu.c           |   21 ++++++++++++
+>  drivers/iommu/intel-iommu.c         |   47 +++++++++++++++++++++++++++
+>  drivers/iommu/iommu.c               |   61 +++++++++++++++++++++++++++++++++++
+>  include/linux/iommu.h               |    7 ++++
+>  9 files changed, 154 insertions(+), 1 deletions(-)
+
+
+
