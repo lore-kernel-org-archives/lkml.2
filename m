@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab1J0AJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 20:09:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53381 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1J0AJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 20:09:42 -0400
-Date: Wed, 26 Oct 2011 17:09:27 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
- staging
-Message-ID: <20111027000926.GB6804@core.coreip.homeip.net>
-References: <1318658907-16698-1-git-send-email-kys@microsoft.com>
- <20111023072427.GA13268@core.coreip.homeip.net>
- <6E21E5352C11B742B20C142EB499E0481AA3369B@TK5EX14MBXC126.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA3369B@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753542Ab1J0Aez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:34:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20440 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab1J0Aez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 20:34:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="67922223"
+Subject: Re: Multi-partition block layer behaviour
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tiju Jacob <jacobtiju@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
+References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
+	 <CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
+	 <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Oct 2011 08:42:41 +0800
+Message-ID: <1319676161.22361.148.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 03:45:14PM +0000, KY Srinivasan wrote:
-> > > +
-> > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
-> > > +	if (t == 0) {
-> > > +		ret = -ETIMEDOUT;
-> > > +		goto cleanup;
-> > > +	}
-> > > +
-> > > +	response = &input_dev->protocol_resp;
-> > > +
-> > > +	if (!response->response.approved) {
-> > > +		pr_err("synthhid protocol request failed (version %d)",
-> > > +		       SYNTHHID_INPUT_VERSION);
-> > > +		ret = -ENODEV;
-> > > +		goto cleanup;
-> > > +	}
-> > > +
-> > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
-> > 
-> > We just completed the wait for this completion, why are we waiting on
-> > the same completion again?
+On Wed, 2011-10-26 at 18:10 +0800, Tiju Jacob wrote:
+> >> 1. When an I/O request is made to the filesystem, process 'A' acquires
+> >> a mutex FS lock and a mutex block driver lock.
+> >>
+> >> 2. Process 'B' tries to acquire the mutex FS lock, which is not
+> >> available. Hence, it goes to sleep. Due to the new plugging mechanism,
+> >> before going to sleep, shcedule() is invoked which disables preemption
+> >> and the context becomes atomic. In schedule(), the newly added
+> >> blk_flush_plug_list() is invoked which unplugs the block driver.
+> >>
+> >> 3) During unplug operation the block driver tries to acquire the mutex
+> >> lock which fails, because the lock was held by process 'A'. Previous
+> >> invocation of scheudle() in step 2 has already made the context as
+> >> atomic, hence the error "Schedule while atomic" occured.
+> > if blk_flush_plug_list() is called in schedule(), it will use
+> > blk_run_queue_async
+> > to unplug the queue. This runs in a workqueue. So how could this happen?
+> >
 > 
-> In response to our initial query, we expect the host to respond back with two
-> distinct pieces of information; we wait for both these responses.
+> The call stack goes as follows:
+> 
+> From schedule() it calls blk_schedule_flush_plug()  and
+> blk_flush_plug_list() gets invoked.
+> 
+> In blk_flush_plug_list() queue_unplugged() does not get invoked. Hence
+>  blk_run_queue_async is not called.
+> Instead __elv_add_request() is invoked with ELEVATOR_INSERT_SORT_MERGE
+> flag and the flag gets reassigned to ELEVATOR_INSERT_BACK.
+> 	
+> In ELEVATOR_INSERT_BACK, __blk_run_queue() gets invoked and calls request_fn().
+This doesn't make sense. why the flag is changed from
+ELEVATOR_INSERT_SORT_MERGE to ELEVATOR_INSERT_BACK?
 
-I think you misunderstand how completion works in Linux. IIRC about
-Windows events they are different ;) You can not signal completion
-several times and then expect to wait corrsponding number of times. Once
-you signal completion is it, well, complete.
+can you post a full log? or did your driver have something special?
 
->  
-> > 
-> > > +	if (t == 0) {
-> > > +		ret = -ETIMEDOUT;
-> > > +		goto cleanup;
-> > > +	}
-> > > +
-> > > +	/*
-> > > +	 * We should have gotten the device attr, hid desc and report
-> > > +	 * desc at this point
-> > > +	 */
-> > > +	if (input_dev->dev_info_status)
-> > > +		ret = -ENOMEM;
-> > 
-> > -ENOMEM seems wrong.
-> > 
-> There are many failures here and not being able to allocate memory is the 
-> primary one; and so I chose to capture that.
 
-Any chance that these failures have their own exit paths?
-
-Thanks.
-
--- 
-Dmitry
