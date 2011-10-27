@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1J0GNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 02:13:07 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41252 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab1J0GNF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 02:13:05 -0400
+	id S1753853Ab1J0GXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 02:23:00 -0400
+Received: from tundra.namei.org ([65.99.196.166]:34038 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752671Ab1J0GW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 02:22:59 -0400
+Date: Thu, 27 Oct 2011 17:20:20 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Zhou Peng <ailvpeng25@gmail.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        linux-security-module@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, security@kernel.org
+Subject: Re: [PATCH] ACL supports to mqueue
+In-Reply-To: <CAH-7YMmAM8e051PopL92WhqSvqz23_eWKjfZbuaLZ4_UhGR5jw@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1110271718510.5714@tundra.namei.org>
+References: <CAH-7YMmqs9j2-UTUSCZaFDEhxmjkAZvHzKVvbvy7nsG8JpFA9w@mail.gmail.com> <alpine.LRH.2.00.1110210232450.31056@tundra.namei.org> <CAH-7YMmx0J+pQFfrU4KW2ahFDPL3udvAUgPy4_Hf19HP46MZHw@mail.gmail.com>
+ <CAH-7YMmAM8e051PopL92WhqSvqz23_eWKjfZbuaLZ4_UhGR5jw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1110261405400.23111@chino.kir.corp.google.com>
-References: <1319662641-28416-1-git-send-email-marek.belisko@open-nandra.com>
-	<1319662641-28416-2-git-send-email-marek.belisko@open-nandra.com>
-	<alpine.DEB.2.00.1110261405400.23111@chino.kir.corp.google.com>
-Date: Thu, 27 Oct 2011 08:13:04 +0200
-Message-ID: <CAAfyv35KsspWGAkmZmZOaDw5v3tngKuV8YqQ_fvZU4azHCUtYA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinmux: Unify pin type from signed to unsigned.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: swarren@nvidia.com, linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-224552157-1319696421=:5714"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 11:06 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 26 Oct 2011, Marek Belisko wrote:
->
->> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
->> index 3605e94..34c33c7 100644
->> --- a/include/linux/pinctrl/pinctrl.h
->> +++ b/include/linux/pinctrl/pinctrl.h
->> @@ -112,7 +112,7 @@ struct pinctrl_desc {
->>  extern struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
->>                               struct device *dev, void *driver_data);
->>  extern void pinctrl_unregister(struct pinctrl_dev *pctldev);
->> -extern bool pin_is_valid(struct pinctrl_dev *pctldev, int pin);
->> +extern bool pin_is_valid(struct pinctrl_dev *pctldev, unsigned int pin);
->>  extern void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
->>                               struct pinctrl_gpio_range *range);
->>  extern void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
->> @@ -123,7 +123,7 @@ extern void *pinctrl_dev_get_drvdata(struct pinctrl_dev *pctldev);
->>
->>
->>  /* Sufficiently stupid default function when pinctrl is not in use */
->> -static inline bool pin_is_valid(struct pinctrl_dev *pctldev, int pin)
->> +static inline bool pin_is_valid(struct pinctrl_dev *pctldev, unsigned int pin)
->>  {
->>       return pin >= 0;
->>  }
->
->
-> So this would just become return true, right?
-Right I've overlooked it. Will send update version.
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-thanks,
+--1665246916-224552157-1319696421=:5714
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-marek
+On Tue, 25 Oct 2011, Zhou Peng wrote:
+
+> Hi, how about this patch pls?
+
+I'm not convinced that this is a necessary feature for the mainline 
+kernel.
+
+> 
+> On Fri, Oct 21, 2011 at 6:46 PM, Zhou Peng <ailvpeng25@gmail.com> wrote:
+> > * In general, it can give a more fine grained and flexible DAC to msg queue obj.
+> > * NFSARK(A distro) wants all posix ipc objects to support ACL, including mqueue.
+> > * Posix semphore and shmem both support ACL, but mqueue as one of the
+> > three basic ipc doesn't.
+> > * At least, it may save one note sentence for MQ_OVERVIEW(7) � ^_^
+> > � �"Linux does not currently (2.6.26) support the use of access
+> > control lists (ACLs) for POSIX message queues."
+> > � �http://www.kernel.org/doc/man-pages/online/pages/man7/mq_overview.7.html
+> >
+> > On Thu, Oct 20, 2011 at 11:33 PM, James Morris <jmorris@namei.org> wrote:
+> > > On Thu, 20 Oct 2011, Zhou Peng wrote:
+> > >
+> > >> This patch adds ACL supports to mqueue filesystem.
+> > >> Based on Linux 3.0.4.
+> > >
+> > > Why is this necessary, and who is planning to use it?
+> > >
+> > > Are any distros likely to enable this?
+> > >
+> 
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+James Morris
+<jmorris@namei.org>
+--1665246916-224552157-1319696421=:5714--
