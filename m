@@ -1,220 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab1J0AFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 20:05:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36097 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab1J0AFr convert rfc822-to-8bit (ORCPT
+	id S1753678Ab1J0AGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:06:12 -0400
+Received: from peace.netnation.com ([204.174.223.2]:47133 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab1J0AGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 20:05:47 -0400
+	Wed, 26 Oct 2011 20:06:10 -0400
+Date: Wed, 26 Oct 2011 17:06:09 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: linux-kernel@vger.kernel.org
+Subject: [3.1] lockdep scheduling while atomic on boot
+Message-ID: <20111027000609.GE2742@hostway.ca>
 MIME-Version: 1.0
-In-Reply-To: <CABDyM6S9XK64n374AKCu5YUq4PBAmaB0jCgE9+snnM9XeQo1yg@mail.gmail.com>
-References: <20111019060108.GA11588@gamma.logic.tuwien.ac.at>
-	<CABDyM6S9XK64n374AKCu5YUq4PBAmaB0jCgE9+snnM9XeQo1yg@mail.gmail.com>
-Date: Wed, 26 Oct 2011 20:05:47 -0400
-X-Google-Sender-Auth: 1_c4otz7n96HJn4VEX0_0hHOGOs
-Message-ID: <CABDyM6R-BBV1_oci2vMoxcybT=0cxPRfHELvtrQTRfSf6WO9Eg@mail.gmail.com>
-Subject: Fwd: iwlagn is getting very shaky
-From: Richard Yao <ryao@cs.stonybrook.edu>
-To: wey-yi.w.guy@intel.com
-Cc: Norbert Preining <preining@logic.at>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Wey,
+We were messing with initrd stuff to get root on MD to work with newer
+than original MD superblock versions (grumble), and threw a lockdep
+kernel on, which spat out the following during boot:
 
-Here is the message that I sent earlier.
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Linux version 3.1.0-hw-lockdep+ (root@packages01-dev) (gcc version 4.3.2 (Debian 4.3.2-1.1) ) #54 SMP Wed Oct 26 14:25:58 CDT 2011
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-3.1.0-hw-lockdep+ root=UUID=5c132cc5-ec54-4155-aa8d-ab1834b58eee ro quiet
+...
+[    0.004146] Mount-cache hash table entries: 256
+[    0.004999] Initializing cgroup subsys blkio
+[    0.005087] CPU: Physical Processor ID: 0
+[    0.005090] CPU: Processor Core ID: 0
+[    0.005092] mce: CPU supports 6 MCE banks
+[    0.005099] CPU0: Thermal monitoring enabled (TM1)
+[    0.005104] using mwait in idle threads.
+[    0.009021] ACPI: Core revision 20110623
+[    0.009157] BUG: scheduling while atomic: swapper/0/0x10000002
+[    0.009217] no locks held by swapper/0.
+[    0.009219] Modules linked in:
+[    0.009223] Pid: 0, comm: swapper Not tainted 3.1.0-hw-lockdep+ #54
+[    0.009225] Call Trace:
+[    0.009234]  [<ffffffff81051475>] __schedule_bug+0x85/0x90
+[    0.009240]  [<ffffffff816f5305>] __schedule+0x795/0xa20
+[    0.009245]  [<ffffffff81096c3d>] ? trace_hardirqs_on_caller+0x13d/0x1c0
+[    0.009250]  [<ffffffff81126a89>] ? kmem_cache_free+0x159/0x190
+[    0.009254]  [<ffffffff813da692>] ? acpi_os_release_object+0x9/0xd
+[    0.009258]  [<ffffffff81096c3d>] ? trace_hardirqs_on_caller+0x13d/0x1c0
+[    0.009261]  [<ffffffff81096ccd>] ? trace_hardirqs_on+0xd/0x10
+[    0.009265]  [<ffffffff813da692>] ? acpi_os_release_object+0x9/0xd
+[    0.009269]  [<ffffffff813f8340>] ? acpi_ps_free_op+0x22/0x24
+[    0.009273]  [<ffffffff81059335>] __cond_resched+0x25/0x40
+[    0.009277]  [<ffffffff816f561d>] _cond_resched+0x2d/0x40
+[    0.009280]  [<ffffffff813f75e8>] acpi_ps_complete_op+0x258/0x26e
+[    0.009284]  [<ffffffff813f7e54>] acpi_ps_parse_loop+0x856/0x9ae
+[    0.009287]  [<ffffffff813f6f2d>] acpi_ps_parse_aml+0x9a/0x282
+[    0.009291]  [<ffffffff813f55bc>] acpi_ns_one_complete_parse+0xfc/0x117
+[    0.009295]  [<ffffffff813f55f3>] acpi_ns_parse_table+0x1c/0x35
+[    0.009298]  [<ffffffff813f2d1a>] acpi_ns_load_table+0x4a/0x8c
+[    0.009302]  [<ffffffff813f9e1b>] acpi_load_tables+0xa0/0x164
+[    0.009307]  [<ffffffff81b0dbe9>] ? acpi_initialize_subsystem+0x84/0xac
+[    0.009310]  [<ffffffff81b0c8db>] acpi_early_init+0x6c/0xf7
+[    0.009315]  [<ffffffff81ae0ca5>] start_kernel+0x370/0x43e
+[    0.009320]  [<ffffffff81af77ba>] ? memblock_x86_reserve_range+0x2f/0x80
+[    0.009323]  [<ffffffff81ae02c5>] x86_64_start_reservations+0xa5/0xc9
+[    0.009327]  [<ffffffff81ae03f8>] x86_64_start_kernel+0x10f/0x12a
+[    0.009331]  [<ffffffff81ae0140>] ? early_idt_handlers+0x140/0x140
+[    0.012520] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+[    0.053354] CPU0: Intel(R) Pentium(R) Dual  CPU  E2220  @ 2.40GHz stepping 0d
+[    0.056003] Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+[    0.056003] PEBS disabled due to CPU errata.
+[    0.056003] ... version:                2
+[    0.056003] ... bit width:              40
+[    0.056003] ... generic registers:      2
+[    0.056003] ... value mask:             000000ffffffffff
+[    0.056003] ... max period:             000000007fffffff
+[    0.056003] ... fixed-purpose events:   3
+[    0.056003] ... event mask:             0000000700000003
+[    0.056003] NMI watchdog enabled, takes one hw-pmu counter.
+[    0.056003] lockdep: fixing up alternatives.
+[    0.056003] Booting Node   0, Processors  #1
+[    0.056003] smpboot cpu 1: start_ip = 9c000
+[    0.144097] NMI watchdog enabled, takes one hw-pmu counter.
+[    0.144159] Brought up 2 CPUs
 
-Yours truly,
-Richard Yao
+It still seems to work regardless of this BUG(). This didn't happen
+without lockdep, so I assume it has something to do with how lockdep
+checks are happening during early boot.
 
----------- Forwarded message ----------
-From: Richard Yao <ryao@cs.stonybrook.edu>
-Date: Wed, Oct 26, 2011 at 12:19 AM
-Subject: Re: iwlagn is getting very shaky
-To: linux-kernel@vger.kernel.org
-Cc: preining@logic.at
+Dell r200; config, acidump, and full dmesg here: 0x.ca/sim/ref/3.1/
 
-
-Dear Everyone,
-
-I have always had issues with Wi-Fi at my university, although they
-became particularly acute. The problem is characterized by an
-inordinate number of Tx excessive retries like what Norbert posted. I
-had been holding off on reporting this out of fear that my report
-wouldn't be good enough, but now that I see Norbert reported it, I
-thought I would contribute my findings.
-
-When I looked into this, I found that the wireless spectrum on my
-university is absurdly crowded. "iwlist wlan0 scan" reveals roughly
-100 access points at any given time, many of which have the same SSID.
-It is worst in the library, which probably one of the most densely
-populated buildings. This appears to be linked to the hidden node
-problem:
-
-http://en.wikipedia.org/wiki/Hidden_node_problem
-
-I found a few issues in the wireless stack that appear to exacerbate
-this problem. The first of which is a kernel problem. The iwlagn
-driver does not support "auto" for the rts and frag settings, so they
-default to off. I tried fiddling with various settings, but the only
-one that seems to make a difference is rts, which at the moment I have
-set to 0, which should turn it on and transmit a request to send for
-all traffic. I configured my laptop to set rts to 0 on boot and the
-results were remarkable. I went from having to wait 30 minutes to an
-hour to get a connection that would only last for 2 minutes if I was
-lucky to being able to obtain a relatively stable connection within a
-few minutes.
-
-I also encountered another kernel issue, but I haven't seen it in a
-while. That issue was characterized by "iwlagn 0000:03:00.0: Stopping
-AGG while state not ON or starting". After that went into the dmesg
-output, it looked like I was transmitting, but I never saw a single
-response from the outside world until I did "modprobe -r iwlagn &&
-modprobe iwlagn". I believe that this issue was present in kernel
-3.1.0-rc4, but I could be off by an rc or two. It normally occurred
-within 5 to 15 mnutes and only occurred if I had passed 11n_disable=1
-to the kernel module. I don't pass that anymore, so I don't know if it
-is still a problem.
-
-With that said, I discovered issues in other areas of the wireless
-stack. One is that Network Manager has a 25-second hard-coded timeout
-(in nm-device-wifi.c) when controlling WPA Supplicant. Ignoring the
-hard-coded part, having the time-out isn't so bad until you consider
-that WPA Supplicant will enter an infinite retry loop whenever Network
-Manager asks it to try connecting to an access point that is either
-malfunctioning or cannot hear your wireless NIC. Furthermore, if you
-are in an area where multiple access points use the same SSID, WPA
-supplicant will try to connect to each one with its own 9 second
-timeout, so Network Manager will kill it before it has gone through
-the entire list. I don't know if the 9 second timeout is hard coded,
-but the kernel lists 3 direct probe attempts in the dmesg output and
-if all 3 fail, WPA Supplicant will wait precisely 9 seconds (from the
-first one) before it tries something else. I imgaine that if someone
-patched the stack to implements some callbacks, things would become
-much better when they don't work the first time. With that said, WPA
-Supplicant needs a callback from the kernel when association fails and
-either WPA Supplicant, Network Manager or both need to be patched so
-that WPA Supplicant will not enter an infinite retry loop and instead
-it will give Network Manager a failure callback so that it can try
-something else.
-
-This might be the wrong mailing list to discuss issues that reside
-entirely in userland, but since I described a few other issues that
-were sort of a mix of both, I think I will throw in the other two that
-I found for completeness. With that said, another issue that sometimes
-happens is that the kernel loses the wireless access point
-association. If I do this manually, I can just use iwconfig to make
-the kerenl reassociate, but if that happens with Network Manager, it
-kills the entire connection and starts from scratch. This leads us to
-the last issue I identified, which is that dhclient can be horribly
-slow at times such that even if things work perfectly, getting a DHCP
-lease takes what feels like ages. This can be fixed by implementing
-RFC 4436 like Apple did in its products. It can also be worked around
-by configuring it to make an attempt every few seconds rather than
-every minute, which coincidentally, is the exact time that it takes
-for dhclient to time itself out and quit, making Network Manager kill
-an otherwise good connection. I reported this last year to my
-distribution, which has since changed the default config file, but in
-the course of diagnosing this year's problems, I managed to find
-various LUG mailing lists discussing this problem. Their workaround
-was to run dhclient manually, which causes zombie processes to be made
-and it really doesn't seem like the right solution to this issue.
-
-Anyway, that is everything that I know about this issue. I am right
-now sitting on as many as three other issues in other parts of the
-kernel, but I don't plan to report them until I understand them well
-enough to either write patches or post how to reliably reproduce them.
-The last time I posted something on the mailing list, someone named
-Ted yelled at me for asking a stupid question. If that happens again,
-I will probably just unsubscribe and let that be the end of it. I have
-only used Linux for less than 2 years and I am not paid to do this, so
-please be nice.
-
-Yours truly,
-Richard Yao
-
-On Wed, Oct 19, 2011 at 2:01 AM, Norbert Preining <preining@logic.at> wrote:
-> Hi everyone
->
-> (please Cc),
->
-> I am currently running 3.1.0-rc10, and I am having a hard time with
-> the wlan network here at the university.
->
-> For quite some time, like 10min, it is fine, then suddently the
-> iwlagn driver gives up on me and connection is dropped.
->
-> In the log file I see:
-> [  172.137011] iwlagn 0000:06:00.0: Tx aggregation enabled on ra = 00:24:c4:ab:bd:ef tid = 0
-> [  821.841016] iwlagn 0000:06:00.0: Tx aggregation enabled on ra = 00:24:c4:ab:bd:ef tid = 6
-> [ 1095.580735] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 1095.780076] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 1095.980101] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 1096.180117] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
-> [ 1105.255464] wlan0: deauthenticating from 00:24:c4:ab:bd:ef by local choice (reason=2)
-> [ 1105.255519] iwlagn 0000:06:00.0: Stopping AGG while state not ON or starting
-> [ 1105.265581] cfg80211: Calling CRDA for country: JP
-> [ 1105.271476] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 1)
-> [ 1105.468105] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 2)
-> [ 1105.668110] wlan0: authenticate with 00:24:c4:ab:bd:e0 (try 3)
-> [ 1105.868090] wlan0: authentication with 00:24:c4:ab:bd:e0 timed out
-> [ 1113.667890] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 1/3)
-> [ 1113.864116] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 2/3)
-> [ 1114.064095] wlan0: direct probe to 00:24:c4:ab:bd:e0 (try 3/3)
-> [ 1114.264109] wlan0: direct probe to 00:24:c4:ab:bd:e0 timed out
->
-> Somewhere around 1100 the connection is gone and never comes back again.
->
-> I tried removing the driver module from the kernel and reinserting it,
-> tried to turn on and off the hardware swithc (rfkill), all without
-> no success, the wlan connection remains dead until I reboot.
->
-> I am not sure exactely when it started, I guess somewhere in the
-> 3.1 cycle, before I was permanently working wiht wlan, now I always
-> plug in the cable.
->
-> If there is any way to track down this, or any suggestions how I can
-> debug it, please let me know.
->
-> Hardware: Sony VGN-Z11, Intel(R) WiFi Link 5100 AGN, REV=0x54
-> L1 Enabled; Disabling L0S
-> device EEPROM VER=0x11e, CALIB=0x4
-> Device SKU: 0Xf0
-> Tunable channels: 13 802.11bg, 24 802.11a channels
-> loaded firmware version 8.83.5.1 build 33692 (EXP)
->
->
-> On the other hand, the same laptop with the very same configuration
-> works very nicely in my flat's wlan, which is some dirt cheap Japanese
-> only wlan router.
->
-> Best wishes and thanks a lot
->
-> Norbert
-> ------------------------------------------------------------------------
-> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> JAIST, Japan                                 TeX Live & Debian Developer
-> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> ------------------------------------------------------------------------
-> DITHERINGTON (n)
-> Sudden access to panic experienced by one who realises that he is
-> being drawn inexorably into a clabby (q.v.) conversation, i.e. one he
-> has no hope of enjoying, benefiting from or understanding.
->                        --- Douglas Adams, The Meaning of Liff
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Simon-
