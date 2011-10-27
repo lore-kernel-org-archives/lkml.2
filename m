@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab1J0HNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 03:13:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33332 "EHLO mx2.mail.elte.hu"
+	id S1754523Ab1J0HOU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 03:14:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44647 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab1J0HNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 03:13:45 -0400
-Date: Thu, 27 Oct 2011 09:12:07 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Deng-Cheng Zhu <dczhu@mips.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 00/11] perf/core fixes and improvements
-Message-ID: <20111027071207.GB14858@elte.hu>
-References: <1319651314-29404-1-git-send-email-acme@infradead.org>
+	id S1753381Ab1J0HOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 03:14:18 -0400
+Message-ID: <4EA904BD.5060708@zytor.com>
+Date: Thu, 27 Oct 2011 09:14:05 +0200
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319651314-29404-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Ingo Molnar <mingo@elte.hu>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, v2] x86/mm changes for v3.2
+References: <20111026153600.GA819@elte.hu> <20111026163126.GC660@phenom.dumpdata.com> <6bee402a-c83c-4903-8cf3-24de582247f8@email.android.com> <20111027071054.GA14858@elte.hu>
+In-Reply-To: <20111027071054.GA14858@elte.hu>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/27/2011 09:10 AM, Ingo Molnar wrote:
+> 
+> Okay.
+> 
+> Linus, please ignore this pull request.
+> 
+> Peter, once you get some time please sort out which of these commits 
+> we want to keep:
+> 
+>  b17a5f97d413: x86_32: Calculate additional memory needed by the fixmap
+>  2e9fbad5955f: x86-64, mm: Do not assume head_64.S used 4KB pages when !use_pse
+>  1938931a20da: x86, init : Move memblock_x86_reserve_range PGTABLE to find_early_table_space
+>  d8ca7b16cfc1: Revert "x86,xen: introduce x86_init.mapping.pagetable_reserve"
+>  8e7f9f8d4076: x86, mm: Calculate precisely the memory needed by init_memory_mapping
+> 
+> for example 2e9fbad5955f looks independent.
+> 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+I'll take a look as soon as I can.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://github.com/acmel/linux.git perf/core
-> 
-> 	It _almost_ is libnewt free, got preempted now, will continue later.
-> 
-> 	Using libnewt ended up being inflexible and since I had to implement
-> the ui_browser to work directly with the existing perf hist_entry abstractions,
-> namely callchains, I ended up using it for menus and for the annotate browser.
-> 
-> 	It got less and less used and finally handling SIGWINCH made me decide
-> to work towards using just libslang.
-> 
-> 	The abstractions that are being put in place should make it not that
-> difficult to have a GUI at some point.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> HEAD now is   a9072bc0b0af991e274b699f17bc50cf201e377b
-> Changes since c752d04066a36ae30b29795f3fa3f536292c1f8c:
-> 
-> Arnaldo Carvalho de Melo (11):
->   perf evlist: Fix grouping of multiple events
->   perf ui progress: Reimplement using slang
->   perf ui: Improve handling sigwinch a bit
->   perf ui: Reimplement ui_helpline using libslang
->   perf ui: Reimplement ui__popup_menu using ui__browser
->   perf ui: Reimplement the popup windows using libslang
->   perf ui: Rename ui__warning_paranoid to ui__error_paranoid
->   perf hists browser: Use K_TIMER
->   perf ui browser: No need to switch char sets that often
->   perf ui browser: Handle K_RESIZE in dialog windows
->   perf header: Fix build on old systems
-> 
->  tools/perf/builtin-record.c            |   13 ++-
->  tools/perf/builtin-stat.c              |   20 +++-
->  tools/perf/builtin-test.c              |    6 +-
->  tools/perf/builtin-top.c               |   13 ++-
->  tools/perf/util/annotate.c             |    9 +-
->  tools/perf/util/debug.c                |    7 +-
->  tools/perf/util/debug.h                |   17 +--
->  tools/perf/util/evlist.c               |   30 +++++
->  tools/perf/util/evlist.h               |    2 +
->  tools/perf/util/evsel.c                |   43 ++++++--
->  tools/perf/util/evsel.h                |   10 ++-
->  tools/perf/util/header.c               |    2 +-
->  tools/perf/util/python.c               |   31 +++++-
->  tools/perf/util/session.c              |    8 +-
->  tools/perf/util/ui/browser.c           |  138 +++++++++++++++---------
->  tools/perf/util/ui/browser.h           |    8 ++
->  tools/perf/util/ui/browsers/annotate.c |   14 +--
->  tools/perf/util/ui/browsers/hists.c    |   27 +++--
->  tools/perf/util/ui/helpline.c          |   16 ++-
->  tools/perf/util/ui/helpline.h          |    2 +
->  tools/perf/util/ui/progress.c          |   65 +++---------
->  tools/perf/util/ui/progress.h          |    7 +-
->  tools/perf/util/ui/setup.c             |   83 ++++++++++++++-
->  tools/perf/util/ui/ui.h                |    3 +
->  tools/perf/util/ui/util.c              |  182 +++++++++++++++++++-------------
->  tools/perf/util/ui/util.h              |    8 +-
->  26 files changed, 504 insertions(+), 260 deletions(-)
+	-hpa
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
