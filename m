@@ -1,33 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab1JZX7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 19:59:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41914 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753589Ab1JZX7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 19:59:43 -0400
-Message-ID: <1319673581.21924.31.camel@Joe-Laptop>
-Subject: Re: [PATCH 1/6] Staging: hv: mousevsc: Make  boolean states  boolean
-From: Joe Perches <joe@perches.com>
+	id S1753570Ab1J0ADy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:03:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43383 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab1J0ADx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 20:03:53 -0400
+Date: Wed, 26 Oct 2011 17:03:43 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Greg KH <gregkh@suse.de>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, dmitry.torokhov@gmail.com,
+Cc: Joe Perches <joe@perches.com>, Haiyang Zhang <haiyangz@microsoft.com>,
         ohering@suse.com, linux-kernel@vger.kernel.org,
         virtualization@lists.osdl.org, devel@linuxdriverproject.org
-Date: Wed, 26 Oct 2011 16:59:41 -0700
-In-Reply-To: <20111026235054.GA31883@suse.de>
+Subject: Re: [PATCH 1/6] Staging: hv: mousevsc: Make  boolean states  boolean
+Message-ID: <20111027000342.GA6804@core.coreip.homeip.net>
 References: <1319588311-9935-1-git-send-email-kys@microsoft.com>
-	 <1319588392-9982-1-git-send-email-kys@microsoft.com>
-	 <1319587427.14932.7.camel@Joe-Laptop> <20111026060742.GA19973@suse.de>
-	 <1319669211.21924.16.camel@Joe-Laptop> <20111026235054.GA31883@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+ <1319588392-9982-1-git-send-email-kys@microsoft.com>
+ <1319587427.14932.7.camel@Joe-Laptop>
+ <20111026060742.GA19973@suse.de>
+ <1319669211.21924.16.camel@Joe-Laptop>
+ <20111026235054.GA31883@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111026235054.GA31883@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-27 at 01:50 +0200, Greg KH wrote:
+On Thu, Oct 27, 2011 at 01:50:54AM +0200, Greg KH wrote:
 > On Wed, Oct 26, 2011 at 03:46:51PM -0700, Joe Perches wrote:
 > > On Wed, 2011-10-26 at 08:07 +0200, Greg KH wrote:
 > > > On Tue, Oct 25, 2011 at 05:03:47PM -0700, Joe Perches wrote:
@@ -53,25 +56,30 @@ On Thu, 2011-10-27 at 01:50 +0200, Greg KH wrote:
 > > > > > +	bool			connected;
 > > > > >  	struct hid_device       *hid_device;
 > > > > >  };
+> > > > 
 > > > > One of the bools should be moved to be adjacent to the other.
 > > > For a mouse driver, it really doesn't matter.
+> > 
 > > 'course it doesn't matter, just like whitespace
 > > doesn't matter.  It's just done for form's sake.
+> 
 > Not at all.
+> 
 > Whitespace does matter, there is documented proof of that.
+> 
 > The fact that you want to move a bool to a different part of a structure
 > really is only your personal choice.  It doesn't matter for size or
 > layout to make this code work better at all to do this.
 
-Just as what you suggest is your opinion.
+It is a good practice to try minimizing footprint though. While it might
+not matter much in this particular driver we should still try to produce
+best code we can as it is often taken as source for new drivers.
 
-Whether or not 4 or 8 extra/wasted bytes in
-a struct is important or not is arguable.
+> 
+> This is your personal opinion only, please don't construe it as anything
+> else.
 
-I think disaggregating bools is akin to
-disaggregating bitfields.
+Same could be said about the email I am replying to.
 
-Not necessarily wrong, just odd.
-
-cheers, Joe
-
+-- 
+Dmitry
